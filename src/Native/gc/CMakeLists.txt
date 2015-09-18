@@ -47,3 +47,7 @@ add_compile_options(-Wno-tautological-undefined-compare)
 
 add_library(clrgc STATIC ${SOURCES})
 
+# Install the static clrgc library
+install (TARGETS clrgc DESTINATION lib)
+
+add_subdirectory(sample)

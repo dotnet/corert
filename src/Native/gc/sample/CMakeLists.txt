@@ -30,3 +30,6 @@ endif()
 target_link_libraries(gcsample 
     clrgc
 )
+
+# Install gcsample
+install (TARGETS gcsample DESTINATION .)
