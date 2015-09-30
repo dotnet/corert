@@ -239,7 +239,7 @@ Object * __load_string_literal(const char * string)
 
 // TODO: Rewrite in C#
 
-Object * __castclass_class(void * p, MethodTable * pTargetMT)
+extern "C" Object * __castclass_class(void * p, MethodTable * pTargetMT)
 {
     Object * o = (Object *)p;
 
@@ -259,7 +259,7 @@ Object * __castclass_class(void * p, MethodTable * pTargetMT)
     throw 1;
 }
 
-Object * __isinst_class(void * p, MethodTable * pTargetMT)
+extern "C" Object * __isinst_class(void * p, MethodTable * pTargetMT)
 {
     Object * o = (Object *)p;
 

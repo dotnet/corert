@@ -704,6 +704,22 @@ namespace Internal.JitInterface
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
+                    {
+                        var type = HandleToObject(pResolvedToken.hClass);
+                        _compilation.AddType(type);
+
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
+                    }
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
+                    {
+                        var type = HandleToObject(pResolvedToken.hClass);
+                        _compilation.AddType(type);
+
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
+                    }
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -749,7 +765,10 @@ namespace Internal.JitInterface
         void* getArrayInitializationData(IntPtr _this, CORINFO_FIELD_STRUCT_* field, uint size)
         { throw new NotImplementedException(); }
         CorInfoIsAccessAllowedResult canAccessClass(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_HELPER_DESC pAccessHelper)
-        { throw new NotImplementedException(); }
+        {
+            // TODO: Access check
+            return CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
+        }
 
         byte* getFieldName(IntPtr _this, CORINFO_FIELD_STRUCT_* ftn, byte** moduleName)
         {

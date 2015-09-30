@@ -200,10 +200,26 @@ namespace ILToNative
                             }
 
                             Debug.Assert(methodSlot != -1);
-                            Out.Write(8 /* sizeof(EEType */ + (baseSlots + methodSlot) * _typeSystemContext.Target.PointerSize);
+                            Out.Write(16 /* sizeof(EEType */ + (baseSlots + methodSlot) * _typeSystemContext.Target.PointerSize);
                         }
 
                         Out.WriteLine("(%rax)");
+                        break;
+
+                    case ReadyToRunHelperId.IsInstanceOf:
+                        Out.Write("leaq __EEType_");
+                        Out.Write(GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.WriteLine("(%rip), %rdx");
+
+                        Out.WriteLine("jmp __isinst_class");
+                        break;
+
+                    case ReadyToRunHelperId.CastClass:
+                        Out.Write("leaq __EEType_");
+                        Out.Write(GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.WriteLine("(%rip), %rdx");
+
+                        Out.WriteLine("jmp __castclass_class");
                         break;
 
                     default:
@@ -226,6 +242,16 @@ namespace ILToNative
                 Out.WriteLine(":");
 
                 Out.WriteLine(".int 0, 24");
+
+                if (t.Type.BaseType != null)
+                {
+                    Out.Write(".quad __EEType_");
+                    Out.WriteLine(GetMangledTypeName(t.Type.BaseType));
+                }
+                else
+                {
+                    Out.WriteLine(".quad 0");
+                }
 
                 if (t.Constructed)
                     OutputVirtualSlots(t.Type, t.Type);
