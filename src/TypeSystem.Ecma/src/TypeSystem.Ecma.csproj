@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{05F88F48-EF79-4866-8CAF-870BD1949196}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Internal.TypeSystem.Ecma</RootNamespace>
+    <AssemblyName>TypeSystem.Ecma</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaField.cs" />
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaGenericParameter.cs" />
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaMethod.cs" />
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaModule.cs" />
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaSignatureParser.cs" />
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaType.cs" />
+    <Compile Include="..\..\TypeSystem\src\Ecma\IMetadataStringDecoderProvider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\TypeSystem\src\TypeSystem.csproj">
+      <Project>{dd5b6baa-d41a-4a6e-9e7d-83060f394b10}</Project>
+      <Name>TypeSystem</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

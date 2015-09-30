@@ -1,0 +1,21 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
+  </PropertyGroup>
+
+  <Import Project="..\dir.targets" />
+
+  <!-- Returns the assembly version of the project for consumption
+       by the NuGet package generation -->
+  <Target Name="GetAssemblyVersion"
+          Returns="$(AssemblyVersion)"/>
+
+  <!-- Returns the generated documentation file for consumption
+       by the NuGet package generation -->
+  <Target Name="GetDocumentationFile"
+          Returns="$(DocumentationFile)"/>
+
+  <Import Project="$(ToolsDir)Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets')" />
+  <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
+
+</Project>
