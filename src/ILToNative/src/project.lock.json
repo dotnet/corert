@@ -43,7 +43,7 @@
           "lib/dotnet/System.Collections.Immutable.dll": {}
         }
       },
-      "System.Console/4.0.0-beta-23329": {
+      "System.Console/4.0.0-beta-23330": {
         "type": "package",
         "dependencies": {
           "System.IO": "4.0.0",
@@ -402,10 +402,10 @@
         "System.Collections.Immutable.nuspec"
       ]
     },
-    "System.Console/4.0.0-beta-23329": {
+    "System.Console/4.0.0-beta-23330": {
       "type": "package",
       "serviceable": true,
-      "sha512": "gh2YHjUh3sY74pn/JpzktS8+z3rsPfsaNGPIyfrr90HC0XMy/wE/XLdMuFEUgr4Jn2VtYS26sopiEGUnK3ke0A==",
+      "sha512": "zsvCt5wo0eTkZXwzGLfJ5arE1gt4Be4HDPbl1k6Z3ajBOI/ez0BtCJLZCTWdGMTeIDpFoMKjJRaotp1DFQ39og==",
       "files": [
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
@@ -419,8 +419,8 @@
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "runtime.json",
-        "System.Console.4.0.0-beta-23329.nupkg",
-        "System.Console.4.0.0-beta-23329.nupkg.sha512",
+        "System.Console.4.0.0-beta-23330.nupkg",
+        "System.Console.4.0.0-beta-23330.nupkg.sha512",
         "System.Console.nuspec"
       ]
     },
