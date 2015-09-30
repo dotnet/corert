@@ -1,0 +1,63 @@
+//
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+#ifndef DACCESS_COMPILE
+#include "commontypes.h"
+#include "daccess.h"
+#include "commonmacros.h"
+#include "assert.h"
+#include "rhbinder.h"
+#include "eetype.h"
+#include "genericinstance.h"
+#else
+#include "gcrhenv.h"
+#endif
+
+bool UnifiedGenericInstance::Equals(GenericInstanceDesc * pLocalGid)
+{
+    GenericInstanceDesc * pCanonicalGid = GetGid();
+    UInt32 cTypeVars = pCanonicalGid->GetArity();
+
+    // If the number of type arguments is different, we can never have a match.
+    if (cTypeVars != pLocalGid->GetArity())
+        return false;
+
+    // Compare the generic type itself.
+    if (pCanonicalGid->GetGenericTypeDef().GetValue() != pLocalGid->GetGenericTypeDef().GetValue())
+        return false;
+
+    // Compare the type arguments of the instantiation.
+    for (UInt32 i = 0; i < cTypeVars; i++)
+    {
+        EEType * pUnifiedType = pCanonicalGid->GetParameterType(i).GetValue();
+        EEType * pLocalType = pLocalGid->GetParameterType(i).GetValue();
+        if (pUnifiedType != pLocalType)
+        {
+            // Direct pointer comparison failed, but there are a couple of cases where converting the local
+            // generic instantiation to the unified version had to update the type variable EEType to avoid
+            // including a pointer to an arbitrary module (one not related to the generic instantiation via a
+            // direct type dependence).
+            //  * Cloned types were converted to their underlying canonical types.
+            //  * Some array types were re-written to use a module-neutral definition.
+            if (pLocalType->IsCanonical())
+                return false;
+            if (pLocalType->IsCloned())
+            {
+                if (pUnifiedType != pLocalType->get_CanonicalEEType())
+                    return false;
+                else
+                    continue;   // type parameter matches
+            }
+            ASSERT(pLocalType->IsParameterizedType());
+            if (!pUnifiedType->IsParameterizedType())
+                return false;
+            if (pUnifiedType->get_RelatedParameterType() != pLocalType->get_RelatedParameterType())
+                return false;
+            if (pUnifiedType->get_ParameterizedTypeShape() != pLocalType->get_ParameterizedTypeShape())
+                return false;
+        }
+    }
+
+    return true;
+}
