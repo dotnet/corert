@@ -1,0 +1,113 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Runtime.InteropServices;
+using System.Collections.Immutable;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+
+namespace Internal.IL
+{
+    public class EcmaMethodIL : MethodIL
+    {
+        EcmaModule _module;
+        MethodBodyBlock _methodBody;
+
+        static public EcmaMethodIL Create(EcmaMethod method)
+        {
+            var rva = method.MethodDefinition.RelativeVirtualAddress;
+            if (rva == 0)
+                return null;
+            return new EcmaMethodIL(method.Module, method.Module.PEReader.GetMethodBody(rva));
+        }
+
+        public EcmaMethodIL(EcmaModule module, MethodBodyBlock methodBody)
+        {
+            _module = module;
+            _methodBody = methodBody;
+        }
+
+        // Avoid unnecessary copy
+        static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
+        {
+            var union = new ByteArrayUnion();
+            union.ImmutableArray = array;
+            return union.UnderlyingArray;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct ByteArrayUnion
+        {
+            [FieldOffset(0)]
+            internal byte[] UnderlyingArray;
+
+            [FieldOffset(0)]
+            internal ImmutableArray<byte> ImmutableArray;
+        }
+
+        public override byte[] GetILBytes()
+        {
+            return DangerousGetUnderlyingArray(_methodBody.GetILContent());
+        }
+
+        public override bool GetInitLocals()
+        {
+            return _methodBody.LocalVariablesInitialized;
+        }
+
+        public override int GetMaxStack()
+        {
+            return _methodBody.MaxStack;
+        }
+
+        public override TypeDesc[] GetLocals()
+        {
+            var metadataReader = _module.MetadataReader;
+            var localSignature = _methodBody.LocalSignature;
+            if (localSignature.IsNil)
+                return TypeDesc.EmptyTypes;
+            BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetStandaloneSignature(localSignature).Signature);
+
+            EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
+            return parser.ParseLocalsSignature();
+        }
+
+        public override ILExceptionRegion[] GetExceptionRegions()
+        {
+            ImmutableArray<ExceptionRegion> exceptionRegions = _methodBody.ExceptionRegions;
+
+            int length = exceptionRegions.Length;
+            if (exceptionRegions.Length == 0)
+                return new ILExceptionRegion[0]; // TODO: Array.Empty<ILExceptionRegion>()
+
+            ILExceptionRegion[] ilExceptionRegions = new ILExceptionRegion[length];
+            for (int i = 0; i < length; i++)
+            {
+                var exceptionRegion = exceptionRegions[i];
+
+                ilExceptionRegions[i] = new ILExceptionRegion(
+                    (ILExceptionRegionKind)exceptionRegion.Kind, // assumes that ILExceptionRegionKind and ExceptionRegionKind enums are in sync
+                    exceptionRegion.TryOffset,
+                    exceptionRegion.TryLength,
+                    exceptionRegion.HandlerOffset,
+                    exceptionRegion.HandlerLength,
+                    MetadataTokens.GetToken(exceptionRegion.CatchType),
+                    exceptionRegion.FilterOffset);
+            }
+            return ilExceptionRegions;
+        }
+
+        public override object GetObject(int token)
+        {
+            // UserStrings cannot be wrapped in EntityHandle
+            if ((token & 0xFF000000) == 0x70000000)
+                return _module.GetUserString(MetadataTokens.UserStringHandle(token));
+
+            return _module.GetObject(MetadataTokens.EntityHandle(token));
+        }
+    }
+}
