@@ -1,0 +1,224 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+
+using Internal.IL;
+using Internal.TypeSystem;
+
+namespace Internal.IL.Stubs
+{
+    public class ILCodeStream
+    {
+        static readonly byte[] s_empty = new byte[0];
+
+        internal byte[] _instructions;
+        internal int _length;
+
+        internal ILCodeStream()
+        {
+            _instructions = s_empty;
+        }
+
+        private void EmitByte(byte b)
+        {
+            if (_instructions.Length == _length)
+                Array.Resize<byte>(ref _instructions, 2 * _instructions.Length + 10);
+            _instructions[_length++] = b;
+        }
+
+        private void EmitUInt16(ushort value)
+        {
+            EmitByte((byte)value);
+            EmitByte((byte)(value >> 8));
+        }
+
+        private void EmitUInt32(int value)
+        {
+            EmitByte((byte)value);
+            EmitByte((byte)(value >> 8));
+            EmitByte((byte)(value >> 16));
+            EmitByte((byte)(value >> 24));
+        }
+
+        public void Emit(ILOpcode opcode)
+        {
+            if ((int)opcode > 0x100)
+                EmitByte((byte)ILOpcode.prefix1);
+            EmitByte((byte)opcode);
+        }
+
+        public void Emit(ILOpcode opcode, int token)
+        {
+            Emit(opcode);
+            EmitUInt32(token);
+        }
+
+        public void EmitLdArg(int index)
+        {
+            if (index < 4)
+            {
+                Emit((ILOpcode)(ILOpcode.ldarg_0 + index));
+            }
+            else
+            {
+                Emit(ILOpcode.ldarg);
+                EmitUInt16((ushort)index);
+            }
+        }
+    }
+
+    class ILStubMethodIL : MethodIL
+    {
+        byte[] _ilBytes;
+        TypeDesc[] _locals;
+        Object[] _tokens;
+
+        public ILStubMethodIL(byte[] ilBytes, TypeDesc[] locals, Object[] tokens)
+        {
+            _ilBytes = ilBytes;
+            _locals = locals;
+            _tokens = tokens;
+        }
+        public override byte[] GetILBytes()
+        {
+            return _ilBytes;
+        }
+        public override int GetMaxStack()
+        {
+            // Conservative estimate...
+            return _ilBytes.Length;
+        }
+        public override ILExceptionRegion[] GetExceptionRegions()
+        {
+            return new ILExceptionRegion[0]; // TODO: Array.Empty<ILExceptionRegion>()
+        }
+        public override bool GetInitLocals()
+        {
+            return true;
+        }
+        public override TypeDesc[] GetLocals()
+        {
+            return _locals;
+        }
+        public override Object GetObject(int token)
+        {
+            return _tokens[(token & 0xFFFFFF) - 1];
+        }
+    }
+
+    struct ListBuilder<T> // struct to avoid unnecessary allocations
+    {
+        static readonly T[] s_empty = new T[0];
+
+        T[] _items;
+        int _count;
+
+        internal void Initialize() // TODO: Change to default constructor once it is available
+        {
+            _items = s_empty; // TODO: Change to Array.GetEmpty<T>() once it is available
+            _count = 0;
+        }
+
+        internal T[] ToArray()
+        {
+            if (_count != _items.Length)
+                Array.Resize(ref _items, _count);
+            return _items;
+        }
+
+        public void Add(T item)
+        {
+            if (_count == _items.Length)
+                Array.Resize(ref _items, 2 * _count + 1);
+            _items[_count++] = item;
+        }
+
+        public int Count
+        {
+            get
+            {
+                return _count;
+            }
+        }
+
+        public T this[int index]
+        {
+            get
+            {
+                return _items[index];
+            }
+        }
+    }
+
+    public class ILEmitter
+    {
+        ListBuilder<ILCodeStream> _codeStreams;
+        ListBuilder<TypeDesc> _locals;
+        ListBuilder<Object> _tokens;
+
+        public ILEmitter()
+        {
+            _codeStreams.Initialize();
+            _locals.Initialize();
+            _tokens.Initialize();
+        }
+
+        public ILCodeStream NewCodeStream()
+        {
+            ILCodeStream stream = new ILCodeStream();
+            _codeStreams.Add(stream);
+            return stream;
+        }
+
+        private int NewToken(Object value, int tokenType)
+        {
+            _tokens.Add(value);
+            return _tokens.Count | tokenType;
+        }
+
+        public int NewToken(TypeDesc value)
+        {
+            return NewToken(value, 0x01000000);
+        }
+
+        public int NewToken(MethodDesc value)
+        {
+            return NewToken(value, 0x0a000000);
+        }
+
+        public int NewToken(FieldDesc value)
+        {
+            return NewToken(value, 0x0a000000);
+        }
+
+        public int NewToken(string value)
+        {
+            return NewToken(value, 0x70000000);
+        }
+
+        public MethodIL Link()
+        {
+            int totalLength = 0;
+            for (int i = 0; i < _codeStreams.Count; i++)
+                totalLength += _codeStreams[i]._length;
+
+            byte[] ilInstructions = new byte[totalLength];
+            int copiedLength = 0;
+            for (int i = 0; i < _codeStreams.Count; i++)
+            {
+                ILCodeStream ilCodeStream = _codeStreams[i];
+                Array.Copy(ilCodeStream._instructions, 0, ilInstructions, copiedLength, ilCodeStream._length);
+                copiedLength += ilCodeStream._length;
+            }
+
+            return new ILStubMethodIL(ilInstructions, _locals.ToArray(), _tokens.ToArray());
+        }
+    }
+
+    public abstract class ILStubMethod : MethodDesc
+    {
+        public abstract MethodIL EmitIL();
+    }
+}
