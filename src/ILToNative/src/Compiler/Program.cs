@@ -2,12 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Linq;
 using System.IO;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -22,8 +20,8 @@ namespace ILToNative
 
         string _outputPath;
 
-        Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
-        Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+        Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         CompilerTypeSystemContext _compilerTypeSystemContext;
 
@@ -33,7 +31,7 @@ namespace ILToNative
 
         void Help()
         {
-            Console.WriteLine("ILToNative compiler version " + typeof(Program).Assembly.GetName().Version.ToString());
+            Console.WriteLine("ILToNative compiler version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
             Console.WriteLine();
             Console.WriteLine("-help        Display this usage message (Short form: -?)");
             Console.WriteLine("-out         Specify output file name");

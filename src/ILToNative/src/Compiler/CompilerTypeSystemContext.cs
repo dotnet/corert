@@ -52,7 +52,7 @@ namespace ILToNative
 
         EcmaModule _systemModule;
 
-        Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.InvariantCultureIgnoreCase);
+        Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
         class ModuleData
         {
@@ -127,7 +127,7 @@ namespace ILToNative
 
             MetadataReader metadataReader = module.MetadataReader;
             string actualSimpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
-            if (!actualSimpleName.Equals(simpleName, StringComparison.InvariantCultureIgnoreCase))
+            if (!actualSimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase))
                 throw new CommandLineException("Assembly name does not match filename " + filePath);
 
             _modules.Add(simpleName, module);

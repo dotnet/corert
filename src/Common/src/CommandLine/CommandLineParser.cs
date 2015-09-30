@@ -35,14 +35,12 @@ namespace Internal.CommandLine
             {
                 opt = opt.Substring(1);
             }
-#if !FXCORE
             else
             if (Path.DirectorySeparatorChar != '/' && opt.StartsWith("/"))
             {
                 // For convenience, allow command line options starting with slash on Windows
                 opt = opt.Substring(1);
             }
-#endif
             else
             {
                 return "";
@@ -80,11 +78,8 @@ namespace Internal.CommandLine
             {
                 foreach (string fileName in Directory.EnumerateFiles(directoryName, searchPattern))
                 {
-#if !FXCORE
                     string fullFileName = Path.GetFullPath(fileName);
-#else
-                    string fullFileName = fileName;
-#endif
+
                     string simpleName = Path.GetFileNameWithoutExtension(fileName);
 
                     if (dictionary.ContainsKey(simpleName))
