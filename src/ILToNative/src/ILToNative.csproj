@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ILToNative</RootNamespace>
+    <AssemblyName>ILToNative</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Compiler\AsmWriter.cs" />
+    <Compile Include="Compiler\Compilation.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="Compiler\MemoryHelper.cs" />
+    <Compile Include="Compiler\MethodCode.cs" />
+    <Compile Include="Compiler\Program.cs" />
+    <Compile Include="Compiler\ReadyToRunHelper.cs" />
+    <Compile Include="Compiler\RegisteredField.cs" />
+    <Compile Include="Compiler\RegisteredMethod.cs" />
+    <Compile Include="Compiler\RegisteredType.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">
+      <Link>CommandLine\CommandLineException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\CommandLine\CommandLineParser.cs">
+      <Link>CommandLine\CommandLineParser.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\TypeSystem\src\Common\AlignmentHelper.cs">
+      <Link>TypeSystem\AlignmentHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\ArrayType.cs">
+      <Link>TypeSystem\ArrayType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\ByRefType.cs">
+      <Link>TypeSystem\ByRefType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\FieldForInstantiatedType.cs">
+      <Link>TypeSystem\FieldForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\FieldLayout.cs">
+      <Link>TypeSystem\FieldLayout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\InstantiatedMethod.cs">
+      <Link>TypeSystem\InstantiatedMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\InstantiatedType.cs">
+      <Link>TypeSystem\InstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\MetadataType.cs">
+      <Link>TypeSystem\MetadataType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\MethodForInstantiatedType.cs">
+      <Link>TypeSystem\MethodForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\ParameterizedType.cs">
+      <Link>TypeSystem\ParameterizedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\PointerType.cs">
+      <Link>TypeSystem\PointerType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\SignatureVariable.cs">
+      <Link>TypeSystem\SignatureVariable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TargetDetails.cs">
+      <Link>TypeSystem\TargetDetails.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TypeCast.cs">
+      <Link>TypeSystem\TypeCast.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TypeFlags.cs">
+      <Link>TypeSystem\TypeFlags.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TypeHashingAlgorithms.cs">
+      <Link>TypeSystem\TypeHashingAlgorithms.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TypeSystemContext.cs">
+      <Link>TypeSystem\TypeSystemContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TypeSystemHelpers.cs">
+      <Link>TypeSystem\TypeSystemHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\WellKnownType.cs">
+      <Link>TypeSystem\WellKnownType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\FieldDesc.cs">
+      <Link>TypeSystem\FieldDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\MethodDesc.cs">
+      <Link>TypeSystem\MethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TypeDesc.cs">
+      <Link>TypeSystem\TypeDesc.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaField.cs">
+      <Link>TypeSystem.Ecma\EcmaField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaGenericParameter.cs">
+      <Link>TypeSystem.Ecma\EcmaGenericParameter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaMethod.cs">
+      <Link>TypeSystem.Ecma\EcmaMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaModule.cs">
+      <Link>TypeSystem.Ecma\EcmaModule.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaSignatureParser.cs">
+      <Link>TypeSystem.Ecma\EcmaSignatureParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaType.cs">
+      <Link>TypeSystem.Ecma\EcmaType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Ecma\IMetadataStringDecoderProvider.cs">
+      <Link>TypeSystem.Ecma\IMetadataStringDecoderProvider.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\TypeSystem\src\IL\EcmaMethodIL.cs">
+      <Link>IL\EcmaMethodIL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\IL\ILOpcode.cs">
+      <Link>IL\ILOpcode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\IL\ILProvider.cs">
+      <Link>IL\ILProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\IL\InstantiatedMethodIL.cs">
+      <Link>IL\InstantiatedMethodIL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\IL\MethodIL.cs">
+      <Link>IL\MethodIL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\IL\Stubs\ArrayMethodILEmitter.cs">
+      <Link>IL\Stubs\ArrayMethodILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\IL\Stubs\DelegateThunks.cs">
+      <Link>IL\Stubs\DelegateThunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\IL\Stubs\ILEmitter.cs">
+      <Link>IL\Stubs\ILEmitter.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
+      <Link>JitInterface\CorInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoHelpFunc.cs">
+      <Link>JitInterface\CorInfoHelpFunc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
+      <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
+      <Link>JitInterface\CorInfoTypes.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -47,7 +47,7 @@ namespace Internal.JitInterface
 
             _comp = CreateUnmanagedInstance();
 
-            string clrjitPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\clrjit.dll";
+            string clrjitPath = AppContext.BaseDirectory + "\\clrjit.dll";
             IntPtr jit = LoadLibraryEx(clrjitPath, new IntPtr(0), 0x1300);
 
             IntPtr proc = GetProcAddress(jit, "getJit");
@@ -790,7 +790,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_FIELD_INFO* tmp = &pResult)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf(typeof(CORINFO_FIELD_INFO)));
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_FIELD_INFO>());
 #endif
 
             Debug.Assert(((int)flags & ((int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET |
@@ -1198,16 +1198,14 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.Bool)]
         bool logMsg(IntPtr _this, uint level, byte* fmt, IntPtr args)
         {
-            // TODO: Use Encoding.GetString(byte* bytes, int byteCount)
-            // Console.WriteLine(new String((sbyte*)fmt));
+            // Console.WriteLine(Marshal.PtrToStringAnsi((IntPtr)fmt));
             return false;
         }
 
         int doAssert(IntPtr _this, byte* szFile, int iLine, byte* szExpr)
         {
-            // TODO: Use Encoding.GetString(byte* bytes, int byteCount)
-            Log.WriteLine(new String((sbyte*)szFile) + ":" + iLine);
-            Log.WriteLine(new String((sbyte*)szExpr));
+            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szFile) + ":" + iLine);
+            Log.WriteLine(Marshal.PtrToStringAnsi((IntPtr)szExpr));
 
             return 1;
         }

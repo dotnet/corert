@@ -539,13 +539,16 @@ public:
 
 #define MTFlag_ContainsPointers 1
 #define MTFlag_HasFinalizer 2
+#define MTFlag_IsArray 4
 
 class MethodTable
 {
 public:
-    uint32_t    m_baseSize;
     uint16_t    m_componentSize;
     uint16_t    m_flags;
+    uint32_t    m_baseSize;
+
+    MethodTable * m_pRelatedType;
 
 public:
     void InitializeFreeObject()
@@ -588,6 +591,17 @@ public:
     bool HasCriticalFinalizer()
     {
         return false;
+    }
+
+    bool IsArray()
+    {
+        return (m_flags & MTFlag_IsArray) != 0;
+    }
+
+    MethodTable * GetParent()
+    {
+        _ASSERTE(!IsArray());
+        return m_pRelatedType;
     }
 
     bool SanityCheck()
