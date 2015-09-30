@@ -43,8 +43,8 @@ extern "C" Object * __allocate_array(MethodTable * pMT, size_t elements);
 __declspec(noreturn) void __throw_exception(void * pEx);
 Object * __load_string_literal(const char * string);
 
-Object * __castclass_class(void * p, MethodTable * pMT);
-Object * __isinst_class(void * p, MethodTable * pMT);
+extern "C" Object * __castclass_class(void * p, MethodTable * pMT);
+extern "C" Object * __isinst_class(void * p, MethodTable * pMT);
 
 void __range_check(void * a, size_t elem);
 
