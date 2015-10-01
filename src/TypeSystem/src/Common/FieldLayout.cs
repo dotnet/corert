@@ -8,21 +8,21 @@ using Interlocked = System.Threading.Interlocked;
 
 namespace Internal.TypeSystem
 {
-    public struct InstanceFieldMason
+    public struct FieldMason
     {
         private MetadataType _type;
         private int _numInstanceFields;
 
         private ComputedInstanceFieldLayout _computedLayout;
 
-        private InstanceFieldMason(MetadataType type, int numInstanceFields)
+        private FieldMason(MetadataType type, int numInstanceFields)
         {
             _type = type;
             _computedLayout = new ComputedInstanceFieldLayout();
             _numInstanceFields = numInstanceFields;
         }
 
-        public static ComputedInstanceFieldLayout ComputeFieldLayout(MetadataType type)
+        public static ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type)
         {
             // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
             if (type.HasInstantiation && type.IsExplicitLayout)
@@ -139,7 +139,7 @@ namespace Internal.TypeSystem
 
             // At this point all special cases are handled and all inputs validated
 
-            InstanceFieldMason mason = new InstanceFieldMason(type, numInstanceFields);
+            FieldMason mason = new FieldMason(type, numInstanceFields);
 
             if (type.IsExplicitLayout)
             {
@@ -152,6 +152,63 @@ namespace Internal.TypeSystem
             }
 
             return mason._computedLayout;
+        }
+
+        public static unsafe ComputedStaticFieldLayout ComputeStaticFieldLayout(MetadataType type)
+        {
+            int numStaticFields = 0;
+
+            foreach (var field in type.GetFields())
+            {
+                if (!field.IsStatic)
+                    continue;
+
+                numStaticFields++;
+            }
+
+            FieldAndOffset[] computedOffsets = new FieldAndOffset[numStaticFields];
+
+            int* cumulativeFieldPos = stackalloc int[3];
+            int* largestAlignmentRequired = stackalloc int[3];
+            int index = 0;
+
+            foreach (var field in type.GetFields())
+            {
+                if (!field.IsStatic)
+                    continue;
+
+                int offsetType = field.IsThreadStatic ? 2 :
+                    field.HasGCStaticBase ? 1 :
+                    0;
+
+                if (field.HasRva)
+                {
+                    throw new NotImplementedException();
+                }
+
+                SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, type.Context.Target.DefaultPackingSize);
+
+                cumulativeFieldPos[offsetType] = AlignmentHelper.AlignUp(cumulativeFieldPos[offsetType], sizeAndAlignment.Alignment);
+                computedOffsets[index] = new FieldAndOffset(field, cumulativeFieldPos[offsetType]);
+                cumulativeFieldPos[offsetType] = checked(cumulativeFieldPos[offsetType] + sizeAndAlignment.Size);
+
+                largestAlignmentRequired[offsetType] = Math.Max(largestAlignmentRequired[offsetType], sizeAndAlignment.Alignment);
+
+                index++;
+            }
+
+            ComputedStaticFieldLayout result;
+
+            result.NonGCStaticFieldSize = cumulativeFieldPos[0];
+            result.NonGCStaticFieldAlignment = largestAlignmentRequired[0];
+            result.GCStaticFieldSize = cumulativeFieldPos[1];
+            result.GCStaticFieldAlignment = largestAlignmentRequired[1];
+            result.ThreadStaticFieldSize = cumulativeFieldPos[2];
+            result.ThreadStaticFieldAlignment = largestAlignmentRequired[2];
+
+            result.Offsets = computedOffsets;
+
+            return result;
         }
 
         private void ComputeExplicitFieldLayout()
@@ -385,6 +442,25 @@ namespace Internal.TypeSystem
         }
     }
 
+    public partial class TypeDesc
+    {
+        public virtual int NonGCStaticFieldSize
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
+        public virtual int NonGCStaticFieldAlignment
+        {
+            get
+            {
+                return 0;
+            }
+        }
+    }
+
     public partial class MetadataType
     {
         private class FieldLayoutFlags
@@ -392,6 +468,7 @@ namespace Internal.TypeSystem
             public const int HasContainsPointers = 1;
             public const int ContainsPointers = 2;
             public const int HasInstanceFieldLayout = 4;
+            public const int HasStaticFieldLayout = 8;
         }
 
         volatile int _fieldLayoutFlags;
@@ -399,6 +476,9 @@ namespace Internal.TypeSystem
         int _instanceFieldSize;
         int _instanceByteCount;
         int _instanceFieldAlignment;
+
+        int _nonGCStaticFieldSize;
+        int _nonGCStaticFieldAlignment;
 
         public bool ContainsPointers
         {
@@ -453,9 +533,33 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override int NonGCStaticFieldSize
+        {
+            get
+            {
+                if ((_fieldLayoutFlags & FieldLayoutFlags.HasStaticFieldLayout) == 0)
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _nonGCStaticFieldSize;
+            }
+        }
+
+        public override int NonGCStaticFieldAlignment
+        {
+            get
+            {
+                if ((_fieldLayoutFlags & FieldLayoutFlags.HasStaticFieldLayout) == 0)
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _nonGCStaticFieldAlignment;
+            }
+        }
+
         internal void ComputeInstanceFieldLayout()
         {
-            var computedLayout = InstanceFieldMason.ComputeFieldLayout(this);
+            var computedLayout = FieldMason.ComputeInstanceFieldLayout(this);
 
             _instanceFieldSize = computedLayout.FieldSize;
             _instanceFieldAlignment = computedLayout.FieldAlignment;
@@ -468,6 +572,21 @@ namespace Internal.TypeSystem
             }
 
             EnableFieldLayoutFlags(FieldLayoutFlags.HasInstanceFieldLayout);
+        }
+
+        internal void ComputeStaticFieldLayout()
+        {
+            var computedStaticLayout = FieldMason.ComputeStaticFieldLayout(this);
+
+            _nonGCStaticFieldSize = computedStaticLayout.NonGCStaticFieldSize;
+            _nonGCStaticFieldAlignment = computedStaticLayout.NonGCStaticFieldAlignment;
+
+            foreach (var fieldAndOffset in computedStaticLayout.Offsets)
+            {
+                Debug.Assert(fieldAndOffset.Field.OwningType == this);
+                fieldAndOffset.Field.InitializeOffset(fieldAndOffset.Offset);
+            }
+            EnableFieldLayoutFlags(FieldLayoutFlags.HasStaticFieldLayout);
         }
 
         private bool ComputeTypeContainsPointers()
@@ -546,7 +665,11 @@ namespace Internal.TypeSystem
             {
                 if (_offset == FieldAndOffset.InvalidOffset)
                 {
-                    OwningType.ComputeInstanceFieldLayout();
+                    if (IsStatic)
+                        OwningType.ComputeStaticFieldLayout();
+                    else
+                        OwningType.ComputeInstanceFieldLayout();
+                    Debug.Assert(_offset != FieldAndOffset.InvalidOffset);
                 }
                 return _offset;
             }
@@ -565,6 +688,20 @@ namespace Internal.TypeSystem
         public int FieldSize;
         public int FieldAlignment;
         public int ByteCount;
+        public FieldAndOffset[] Offsets;
+    }
+
+    public struct ComputedStaticFieldLayout
+    {
+        public int NonGCStaticFieldSize;
+        public int NonGCStaticFieldAlignment;
+
+        public int GCStaticFieldSize;
+        public int GCStaticFieldAlignment;
+
+        public int ThreadStaticFieldSize;
+        public int ThreadStaticFieldAlignment;
+
         public FieldAndOffset[] Offsets;
     }
 }

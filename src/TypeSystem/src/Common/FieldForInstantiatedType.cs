@@ -64,6 +64,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsThreadStatic
+        {
+            get
+            {
+                return _fieldDef.IsThreadStatic;
+            }
+        }
+
+        public override bool HasRva
+        {
+            get
+            {
+                return _fieldDef.HasRva;
+            }
+        }
+
         public override FieldDesc GetTypicalFieldDefinition()
         {
             return _fieldDef;

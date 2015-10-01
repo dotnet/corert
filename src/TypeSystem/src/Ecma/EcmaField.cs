@@ -19,6 +19,7 @@ namespace Internal.TypeSystem.Ecma
             BasicMetadataCache  = 0x01,
             Static              = 0x02,
             InitOnly            = 0x04,
+            ThreadStatic        = 0x08,
         };
 
         EcmaType _type;
@@ -116,6 +117,9 @@ namespace Internal.TypeSystem.Ecma
                 if ((fieldAttributes & FieldAttributes.InitOnly) != 0)
                     flags |= FieldFlags.InitOnly;
 
+                if (HasCustomAttribute("System.ThreadStaticAttribute"))
+                    flags |= FieldFlags.ThreadStatic;
+
                 flags |= FieldFlags.BasicMetadataCache;
             }
 
@@ -139,6 +143,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetFieldFlags(FieldFlags.BasicMetadataCache | FieldFlags.Static) & FieldFlags.Static) != 0;
+            }
+        }
+
+        public override bool IsThreadStatic
+        {
+            get
+            {
+                return (GetFieldFlags(FieldFlags.BasicMetadataCache | FieldFlags.ThreadStatic) & FieldFlags.ThreadStatic) != 0;
             }
         }
 
@@ -167,6 +179,19 @@ namespace Internal.TypeSystem.Ecma
                 var fieldDefinition = metadataReader.GetFieldDefinition(_handle);
                 return metadataReader.GetString(fieldDefinition.Name);
             }
+        }
+
+        public override bool HasRva
+        {
+            get
+            {
+                return (FieldDefinition.Attributes & FieldAttributes.HasFieldRVA) != 0;
+            }
+        }
+
+        public bool HasCustomAttribute(string customAttributeName)
+        {
+            return this.Module.HasCustomAttribute(FieldDefinition.GetCustomAttributes(), customAttributeName);
         }
 
         public override string ToString()

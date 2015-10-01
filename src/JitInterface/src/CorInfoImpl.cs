@@ -782,7 +782,10 @@ namespace Internal.JitInterface
         }
 
         CORINFO_CLASS_STRUCT_* getFieldClass(IntPtr _this, CORINFO_FIELD_STRUCT_* field)
-        { throw new NotImplementedException(); }
+        {
+            var fieldDesc = HandleToObject(field);
+            return ObjectToHandle(fieldDesc.OwningType);
+        }
 
         CorInfoType getFieldType(IntPtr _this, CORINFO_FIELD_STRUCT_* field, ref CORINFO_CLASS_STRUCT_* structType, CORINFO_CLASS_STRUCT_* memberParent)
         {
@@ -825,10 +828,30 @@ namespace Internal.JitInterface
             if (field.IsStatic)
             {
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
-                fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_ADDRESS;
 
-                // TODO: Shared statics/HasFieldRVA
-                throw new NotImplementedException();
+                if (field.HasRva)
+                {
+                    throw new NotSupportedException();
+                }
+
+                // Make sure to include the type in the compilation
+                _compilation.AddType(field.OwningType);
+
+                fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
+                pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
+
+                ReadyToRunHelperId helperId;
+                if (field.IsThreadStatic || field.HasGCStaticBase)
+                {
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                }
+
+                pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(helperId, field.OwningType));
+                pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
             }
             else
             {
