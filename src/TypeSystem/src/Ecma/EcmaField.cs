@@ -9,8 +9,6 @@ using System.Runtime.CompilerServices;
 
 using Internal.TypeSystem;
 
-using Interlocked = System.Threading.Interlocked;
-
 namespace Internal.TypeSystem.Ecma
 {
     public sealed class EcmaField : FieldDesc
@@ -31,7 +29,7 @@ namespace Internal.TypeSystem.Ecma
         FieldDefinitionHandle _handle;
 
         // Cached values
-        volatile int _fieldFlags;
+        ThreadSafeFlags _fieldFlags;
         TypeDesc _fieldType;
         string _name;
 
@@ -152,14 +150,7 @@ namespace Internal.TypeSystem.Ecma
 
             Debug.Assert((flags & mask) != 0);
 
-            // Atomically update flags
-            var originalFlags = _fieldFlags;
-            while (Interlocked.CompareExchange(ref _fieldFlags, (int)(originalFlags | flags), originalFlags) != originalFlags)
-            {
-                originalFlags = _fieldFlags;
-            }
-
-            _fieldFlags |= flags;
+            _fieldFlags.AddFlags(flags);
 
             return flags & mask;
         }
@@ -167,7 +158,7 @@ namespace Internal.TypeSystem.Ecma
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetFieldFlags(int mask)
         {
-            int flags = _fieldFlags & mask;
+            int flags = _fieldFlags.Value & mask;
             if (flags != 0)
                 return flags;
             return InitializeFieldFlags(mask);

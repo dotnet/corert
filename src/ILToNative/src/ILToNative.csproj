@@ -34,6 +34,9 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\TypeSystem\src\Common\ThreadSafeFlags.cs">
+      <Link>TypeSystem\ThreadSafeFlags.cs</Link>
+    </Compile>
     <Compile Include="Compiler\AsmWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />

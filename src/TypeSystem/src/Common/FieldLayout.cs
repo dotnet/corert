@@ -4,7 +4,6 @@
 using System;
 using System.Linq;
 using Debug = System.Diagnostics.Debug;
-using Interlocked = System.Threading.Interlocked;
 
 namespace Internal.TypeSystem
 {
@@ -458,7 +457,7 @@ namespace Internal.TypeSystem
             public StaticsBlock ThreadStatics;
         }
 
-        volatile int _fieldLayoutFlags;
+        ThreadSafeFlags _fieldLayoutFlags;
 
         int _instanceFieldSize;
         int _instanceByteCount;
@@ -471,16 +470,11 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if ((_fieldLayoutFlags & FieldLayoutFlags.HasContainsPointers) == 0)
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasContainsPointers))
                 {
-                    var flagsToAdd = FieldLayoutFlags.HasContainsPointers;
-
-                    if (ComputeTypeContainsPointers())
-                        flagsToAdd |= FieldLayoutFlags.ContainsPointers;
-
-                    EnableFieldLayoutFlags(flagsToAdd);
+                    ComputeTypeContainsPointers();
                 }
-                return (_fieldLayoutFlags & FieldLayoutFlags.ContainsPointers) != 0;
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsPointers);
             }
         }
 
@@ -488,7 +482,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if ((_fieldLayoutFlags & FieldLayoutFlags.HasInstanceFieldLayout) == 0)
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
                 {
                     ComputeInstanceFieldLayout();
                 }
@@ -500,7 +494,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if ((_fieldLayoutFlags & FieldLayoutFlags.HasInstanceFieldLayout) == 0)
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
                 {
                     ComputeInstanceFieldLayout();
                 }
@@ -512,7 +506,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if ((_fieldLayoutFlags & FieldLayoutFlags.HasInstanceFieldLayout) == 0)
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
                 {
                     ComputeInstanceFieldLayout();
                 }
@@ -524,7 +518,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if ((_fieldLayoutFlags & FieldLayoutFlags.HasStaticFieldLayout) == 0)
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -536,7 +530,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if ((_fieldLayoutFlags & FieldLayoutFlags.HasStaticFieldLayout) == 0)
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -558,7 +552,7 @@ namespace Internal.TypeSystem
                 fieldAndOffset.Field.InitializeOffset(fieldAndOffset.Offset);
             }
 
-            EnableFieldLayoutFlags(FieldLayoutFlags.HasInstanceFieldLayout);
+            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.HasInstanceFieldLayout);
         }
 
         internal void ComputeStaticFieldLayout()
@@ -584,13 +578,18 @@ namespace Internal.TypeSystem
                 }
             }
 
-            EnableFieldLayoutFlags(FieldLayoutFlags.HasStaticFieldLayout);
+            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.HasStaticFieldLayout);
         }
 
-        private bool ComputeTypeContainsPointers()
+        private void ComputeTypeContainsPointers()
         {
+            int flagsToAdd = FieldLayoutFlags.HasContainsPointers;
+
             if (!IsValueType && HasBaseType && BaseType.ContainsPointers)
-                return true;
+            {
+                _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
+                return;
+            }
 
             foreach (var field in GetFields())
             {
@@ -606,24 +605,19 @@ namespace Internal.TypeSystem
                     // case TypeFlags.MethodGenericParameter?
                     case TypeFlags.GenericParameter:
                     case TypeFlags.ByRef:
-                        return true;
+                        _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
+                        return;
                     case TypeFlags.ValueType:
                         if (((MetadataType)fieldType).ContainsPointers)
-                            return true;
+                        {
+                            _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
+                            return;
+                        }
                         break;
                 }
             }
 
-            return false;
-        }
-
-        private void EnableFieldLayoutFlags(int flagsToAdd)
-        {
-            var originalFlags = _fieldLayoutFlags;
-            while (Interlocked.CompareExchange(ref _fieldLayoutFlags, originalFlags | flagsToAdd, originalFlags) != originalFlags)
-            {
-                originalFlags = _fieldLayoutFlags;
-            }
+            _fieldLayoutFlags.AddFlags(flagsToAdd);
         }
     }
 
