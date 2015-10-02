@@ -6,7 +6,7 @@ using Interlocked = System.Threading.Interlocked;
 
 namespace Internal.TypeSystem
 {
-    struct ThreadSafeFlags
+    public struct ThreadSafeFlags
     {
         private volatile int _value;
 
