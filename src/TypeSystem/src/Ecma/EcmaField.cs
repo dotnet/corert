@@ -235,11 +235,6 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public bool HasCustomAttribute(string customAttributeName)
-        {
-            return this.Module.HasCustomAttribute(FieldDefinition.GetCustomAttributes(), customAttributeName);
-        }
-
         public override string ToString()
         {
             return _type.ToString() + "." + this.Name;
