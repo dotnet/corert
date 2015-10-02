@@ -279,15 +279,19 @@ namespace ILToNative
                 if (!t.IncludedInCompilation)
                     continue;
 
-                if (t.Type.NonGCStaticFieldSize > 0)
+                var type = t.Type as MetadataType;
+                if (type == null)
+                    continue;
+
+                if (type.NonGCStaticFieldSize > 0)
                 {
                     Out.Write(".align ");
-                    Out.WriteLine(t.Type.NonGCStaticFieldAlignment);
+                    Out.WriteLine(type.NonGCStaticFieldAlignment);
                     Out.Write("__NonGCStaticBase_");
-                    Out.Write(GetMangledTypeName(t.Type));
+                    Out.Write(GetMangledTypeName(type));
                     Out.WriteLine(":");
                     Out.Write(".rept ");
-                    Out.WriteLine(t.Type.NonGCStaticFieldSize);
+                    Out.WriteLine(type.NonGCStaticFieldSize);
                     Out.WriteLine(".byte 0");
                     Out.WriteLine(".endr");
                     Out.WriteLine();

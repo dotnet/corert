@@ -21,20 +21,5 @@ namespace Internal.TypeSystem
         {
             return type.Context.GetByRefType(type);
         }
-
-        static public TypeFlags UnderlyingCategory(this TypeDesc type)
-        {
-            TypeFlags category = type.Category;
-            if (type.IsEnum)
-            {
-                foreach (var field in type.GetFields())
-                {
-                    if (!field.IsStatic)
-                        return field.FieldType.Category;
-                }
-                throw new TypeLoadException();
-            }
-            return category;
-        }
     }
 }

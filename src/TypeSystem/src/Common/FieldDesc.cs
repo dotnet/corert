@@ -66,24 +66,6 @@ namespace Internal.TypeSystem
             get;
         }
 
-        public bool HasGCStaticBase
-        {
-            get
-            {
-                Debug.Assert(IsStatic);
-                TypeFlags category = FieldType.UnderlyingCategory();
-                switch (category)
-                {
-                    case TypeFlags.ValueType:
-                    case TypeFlags.Class:
-                    case TypeFlags.Array:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-        }
-
         public virtual FieldDesc GetTypicalFieldDefinition()
         {
             return this;

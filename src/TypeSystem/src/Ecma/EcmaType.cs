@@ -257,7 +257,11 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetFields())
             {
-                yield return (FieldDesc)this.Module.GetObject(handle);
+                var field = (EcmaField)this.Module.GetObject(handle);
+
+                // Literal fields are not interesting for codegen purposes
+                if (!field.IsLiteral)
+                    yield return field;
             }
         }
 
@@ -269,7 +273,13 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in _typeDefinition.GetFields())
             {
                 if (stringComparer.Equals(metadataReader.GetFieldDefinition(handle).Name, name))
-                    return (FieldDesc)this.Module.GetObject(handle);
+                {
+                    var field = (EcmaField)this.Module.GetObject(handle);
+
+                    // Literal fields are not interesting for codegen purposes
+                    if (!field.IsLiteral)
+                        return field;
+                }
             }
 
             return null;
