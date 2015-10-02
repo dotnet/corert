@@ -29,7 +29,10 @@ namespace Internal.IL
             else
             if (method is MethodForInstantiatedType)
             {
-                return new InstantiatedMethodIL(GetMethodIL(method.GetTypicalMethodDefinition()), method.OwningType.Instantiation, new Instantiation());
+                var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
+                if (methodDefinitionIL == null)
+                    return null;
+                return new InstantiatedMethodIL(methodDefinitionIL, method.OwningType.Instantiation, new Instantiation());
             }
             else
             if (method is InstantiatedMethod)

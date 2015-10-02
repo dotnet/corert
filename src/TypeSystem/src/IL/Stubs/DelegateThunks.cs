@@ -57,10 +57,12 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
 
             var codeStream = emitter.NewCodeStream();
-            for (int i = 0; i < _signature.Length; i++)
+
+            for (int i = 0; i < Signature.Length; i++)
             {
                 codeStream.EmitLdArg(i + 1);
             }
+
             codeStream.Emit(ILOpcode.call, emitter.NewToken(_target));
             codeStream.Emit(ILOpcode.ret);
 

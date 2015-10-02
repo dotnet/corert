@@ -50,7 +50,7 @@ namespace ILToNative
             Out.Write(mangledName);
             Out.WriteLine(":");
 
-            var methodCode = m.MethodCode;
+            var methodCode = (MethodCode)m.MethodCode;
 
             Relocation[] relocs = methodCode.Relocs;
             int currentRelocIndex = 0;
