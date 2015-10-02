@@ -20,6 +20,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 msbuild.log
+project.lock.json
 
 # Visual Studio 2015
 .vs/
