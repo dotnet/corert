@@ -34,9 +34,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\TypeSystem\src\Common\ThreadSafeFlags.cs">
-      <Link>TypeSystem\ThreadSafeFlags.cs</Link>
-    </Compile>
     <Compile Include="Compiler\AsmWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
@@ -95,6 +92,9 @@
     </Compile>
     <Compile Include="..\..\TypeSystem\src\Common\TargetDetails.cs">
       <Link>TypeSystem\TargetDetails.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\ThreadSafeFlags.cs">
+      <Link>TypeSystem\ThreadSafeFlags.cs</Link>
     </Compile>
     <Compile Include="..\..\TypeSystem\src\Common\TypeCast.cs">
       <Link>TypeSystem\TypeCast.cs</Link>
