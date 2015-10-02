@@ -32,6 +32,11 @@ namespace ILToNative
 
             OutputEETypes();
 
+            Out.WriteLine();
+            Out.WriteLine(".data");
+
+            OutputStatics();
+
             Out.Dispose();
         }
 
@@ -222,6 +227,13 @@ namespace ILToNative
                         Out.WriteLine("jmp __castclass_class");
                         break;
 
+                    case ReadyToRunHelperId.GetNonGCStaticBase:
+                        Out.Write("leaq __NonGCStaticBase_");
+                        Out.Write(GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.WriteLine("(%rip), %rax");
+                        Out.WriteLine("ret");
+                        break;
+
                     default:
                         throw new NotImplementedException();
                 }
@@ -257,6 +269,33 @@ namespace ILToNative
                     OutputVirtualSlots(t.Type, t.Type);
 
                 Out.WriteLine();
+            }
+        }
+
+        void OutputStatics()
+        {
+            foreach (var t in _registeredTypes.Values)
+            {
+                if (!t.IncludedInCompilation)
+                    continue;
+
+                var type = t.Type as MetadataType;
+                if (type == null)
+                    continue;
+
+                if (type.NonGCStaticFieldSize > 0)
+                {
+                    Out.Write(".align ");
+                    Out.WriteLine(type.NonGCStaticFieldAlignment);
+                    Out.Write("__NonGCStaticBase_");
+                    Out.Write(GetMangledTypeName(type));
+                    Out.WriteLine(":");
+                    Out.Write(".rept ");
+                    Out.WriteLine(type.NonGCStaticFieldSize);
+                    Out.WriteLine(".byte 0");
+                    Out.WriteLine(".endr");
+                    Out.WriteLine();
+                }
             }
         }
 

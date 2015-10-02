@@ -4,6 +4,8 @@
 using System;
 using System.Runtime.CompilerServices;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem
 {
     public abstract partial class FieldDesc
@@ -50,6 +52,16 @@ namespace Internal.TypeSystem
         }
 
         public abstract bool IsInitOnly
+        {
+            get;
+        }
+
+        public abstract bool IsThreadStatic
+        {
+            get;
+        }
+
+        public abstract bool HasRva
         {
             get;
         }

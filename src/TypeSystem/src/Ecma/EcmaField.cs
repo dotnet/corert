@@ -9,23 +9,28 @@ using System.Runtime.CompilerServices;
 
 using Internal.TypeSystem;
 
+using Interlocked = System.Threading.Interlocked;
+
 namespace Internal.TypeSystem.Ecma
 {
     public sealed class EcmaField : FieldDesc
     {
-        [Flags]
-        enum FieldFlags
+        static class FieldFlags
         {
-            BasicMetadataCache  = 0x01,
-            Static              = 0x02,
-            InitOnly            = 0x04,
+            public const int BasicMetadataCache     = 0x0001;
+            public const int Static                 = 0x0002;
+            public const int InitOnly               = 0x0004;
+            public const int Literal                = 0x0008;
+
+            public const int AttributeMetadataCache = 0x0100;
+            public const int ThreadStatic           = 0x0200;
         };
 
         EcmaType _type;
         FieldDefinitionHandle _handle;
 
         TypeDesc _fieldType;
-        FieldFlags _fieldFlags;
+        volatile int _fieldFlags;
 
         internal EcmaField(EcmaType type, FieldDefinitionHandle handle)
         {
@@ -101,9 +106,9 @@ namespace Internal.TypeSystem.Ecma
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private FieldFlags InitializeFieldFlags(FieldFlags mask)
+        private int InitializeFieldFlags(int mask)
         {
-            FieldFlags flags = 0;
+            int flags = 0;
 
             if ((mask & FieldFlags.BasicMetadataCache) != 0)
             {
@@ -116,19 +121,55 @@ namespace Internal.TypeSystem.Ecma
                 if ((fieldAttributes & FieldAttributes.InitOnly) != 0)
                     flags |= FieldFlags.InitOnly;
 
+                if ((fieldAttributes & FieldAttributes.Literal) != 0)
+                    flags |= FieldFlags.Literal;
+
                 flags |= FieldFlags.BasicMetadataCache;
             }
 
+            // Fetching custom attribute based properties is more expensive, so keep that under
+            // a separate cache that might not be accessed very frequently.
+            if ((mask & FieldFlags.AttributeMetadataCache) != 0)
+            {
+                var fieldDefinition = this.MetadataReader.GetFieldDefinition(_handle);
+
+                foreach (var customAttributeHandle in fieldDefinition.GetCustomAttributes())
+                {
+                    var customAttribute = this.MetadataReader.GetCustomAttribute(customAttributeHandle);
+                    var constructorHandle = customAttribute.Constructor;
+
+                    var constructor = Module.GetMethod(constructorHandle);
+                    var type = constructor.OwningType;
+
+                    switch (type.Name)
+                    {
+                        case "System.ThreadStaticAttribute":
+                            flags |= FieldFlags.ThreadStatic;
+                            break;
+                    }
+                }
+
+                flags |= FieldFlags.AttributeMetadataCache;
+            }
+
             Debug.Assert((flags & mask) != 0);
+
+            // Atomically update flags
+            var originalFlags = _fieldFlags;
+            while (Interlocked.CompareExchange(ref _fieldFlags, (int)(originalFlags | flags), originalFlags) != originalFlags)
+            {
+                originalFlags = _fieldFlags;
+            }
+
             _fieldFlags |= flags;
 
             return flags & mask;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private FieldFlags GetFieldFlags(FieldFlags mask)
+        private int GetFieldFlags(int mask)
         {
-            FieldFlags flags = _fieldFlags & mask;
+            int flags = _fieldFlags & mask;
             if (flags != 0)
                 return flags;
             return InitializeFieldFlags(mask);
@@ -142,11 +183,28 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsThreadStatic
+        {
+            get
+            {
+                return IsStatic &&
+                    (GetFieldFlags(FieldFlags.AttributeMetadataCache | FieldFlags.ThreadStatic) & FieldFlags.ThreadStatic) != 0;
+            }
+        }
+
         public override bool IsInitOnly
         {
             get
             {
                 return (GetFieldFlags(FieldFlags.BasicMetadataCache | FieldFlags.InitOnly) & FieldFlags.InitOnly) != 0;
+            }
+        }
+
+        public bool IsLiteral
+        {
+            get
+            {
+                return (GetFieldFlags(FieldFlags.BasicMetadataCache | FieldFlags.Literal) & FieldFlags.Literal) != 0;
             }
         }
 
@@ -166,6 +224,14 @@ namespace Internal.TypeSystem.Ecma
                 var metadataReader = this.MetadataReader;
                 var fieldDefinition = metadataReader.GetFieldDefinition(_handle);
                 return metadataReader.GetString(fieldDefinition.Name);
+            }
+        }
+
+        public override bool HasRva
+        {
+            get
+            {
+                return (FieldDefinition.Attributes & FieldAttributes.HasFieldRVA) != 0;
             }
         }
 
