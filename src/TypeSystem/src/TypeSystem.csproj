@@ -44,6 +44,7 @@
     <Compile Include="Common\PointerType.cs" />
     <Compile Include="Common\SignatureVariable.cs" />
     <Compile Include="Common\TargetDetails.cs" />
+    <Compile Include="Common\ThreadSafeFlags.cs" />
     <Compile Include="Common\TypeCast.cs" />
     <Compile Include="Common\TypeFlags.cs" />
     <Compile Include="Common\TypeHashingAlgorithms.cs" />

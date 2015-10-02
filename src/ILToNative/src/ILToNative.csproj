@@ -93,6 +93,9 @@
     <Compile Include="..\..\TypeSystem\src\Common\TargetDetails.cs">
       <Link>TypeSystem\TargetDetails.cs</Link>
     </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\ThreadSafeFlags.cs">
+      <Link>TypeSystem\ThreadSafeFlags.cs</Link>
+    </Compile>
     <Compile Include="..\..\TypeSystem\src\Common\TypeCast.cs">
       <Link>TypeSystem\TypeCast.cs</Link>
     </Compile>
