@@ -19,6 +19,12 @@ namespace Internal.TypeSystem.Ecma
 
         TypeDefinition _typeDefinition;
 
+        // Cached values
+        string _name;
+        TypeDesc[] _genericParameters;
+        MetadataType _baseType;
+        TypeDesc[] _implementedInterfaces;
+
         internal EcmaType(EcmaModule module, TypeDefinitionHandle handle)
         {
             _module = module;
@@ -42,33 +48,32 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        TypeDesc[] _genericParameters;
+        void ComputeGenericParameters()
+        {
+            var genericParameterHandles = _typeDefinition.GetGenericParameters();
+            int count = genericParameterHandles.Count;
+            if (count > 0)
+            {
+                TypeDesc[] genericParameters = new TypeDesc[count];
+                int i = 0;
+                foreach (var genericParameterHandle in genericParameterHandles)
+                {
+                    genericParameters[i++] = new EcmaGenericParameter(this.Module, genericParameterHandle);
+                }
+                Interlocked.CompareExchange(ref _genericParameters, genericParameters, null);
+            }
+            else
+            {
+                _genericParameters = TypeDesc.EmptyTypes;
+            }
+        }
 
         public override Instantiation Instantiation
         {
             get
             {
                 if (_genericParameters == null)
-                {
-                    var genericParameterHandles = _typeDefinition.GetGenericParameters();
-                    int count = genericParameterHandles.Count;
-                    if (count > 0)
-                    {
-                        TypeDesc[] genericParameters = new TypeDesc[count];
-                        int i = 0;
-                        foreach (var genericParameterHandle in genericParameterHandles)
-                        {
-                            genericParameters[i++] = new EcmaGenericParameter(this.Module, genericParameterHandle);
-                        }
-                        Interlocked.CompareExchange(ref _genericParameters, genericParameters, null);
-                    }
-                    else
-                    {
-                        _genericParameters = TypeDesc.EmptyTypes;
-                    }
-
-                }
-
+                    ComputeGenericParameters();
                 return new Instantiation(_genericParameters);
             }
         }
@@ -97,17 +102,6 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-
-        public TypeDefinition TypeDefinition
-        {
-            get
-            {
-                return _typeDefinition;
-            }
-        }
-
-        MetadataType _baseType /* = this */;
-
         MetadataType InitializeBaseType()
         {
             var baseTypeHandle = _typeDefinition.BaseType;
@@ -135,8 +129,6 @@ namespace Internal.TypeSystem.Ecma
                 return _baseType;
             }
         }
-
-        TypeDesc[] _implementedInterfaces;
 
         private TypeDesc[] InitializeImplementedInterfaces()
         {
@@ -205,8 +197,6 @@ namespace Internal.TypeSystem.Ecma
 
             return flags;
         }
-
-        string _name;
 
         private string InitializeName()
         {
@@ -336,12 +326,12 @@ namespace Internal.TypeSystem.Ecma
 
         public override string ToString()
         {
-            return this.Name;
+            return "[" + Module.GetName().Name + "]" + this.Name;
         }
 
         public override ClassLayoutMetadata GetClassLayout()
         {
-            TypeLayout layout = TypeDefinition.GetLayout();
+            TypeLayout layout = _typeDefinition.GetLayout();
 
             ClassLayoutMetadata result;
             result.PackingSize = layout.PackingSize;
@@ -350,9 +340,10 @@ namespace Internal.TypeSystem.Ecma
             // Skip reading field offsets if this is not explicit layout
             if (IsExplicitLayout)
             {
+                var fieldDefinitionHandles = _typeDefinition.GetFields();
                 var numInstanceFields = 0;
 
-                foreach (var handle in _typeDefinition.GetFields())
+                foreach (var handle in fieldDefinitionHandles)
                 {
                     var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
                     if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
@@ -364,7 +355,7 @@ namespace Internal.TypeSystem.Ecma
                 result.Offsets = new FieldAndOffset[numInstanceFields];
 
                 int index = 0;
-                foreach (var handle in _typeDefinition.GetFields())
+                foreach (var handle in fieldDefinitionHandles)
                 {
                     var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
                     if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
@@ -405,8 +396,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                // TODO: make this return true if this is the <Module> type.
-                return false;
+                return Module.GetGlobalModuleType() == this;
             }
         }
     }

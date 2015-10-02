@@ -25,18 +25,16 @@ namespace Internal.TypeSystem.Ecma
         EcmaType _type;
         MethodDefinitionHandle _handle;
 
-        MethodDefinition _methodDefinition;
-
         // Cached values
-        MethodSignature _signature;
         MethodFlags _methodFlags;
+        MethodSignature _signature;
+        string _name;
+        TypeDesc[] _genericParameters; // TODO: Optional field?
 
         internal EcmaMethod(EcmaType type, MethodDefinitionHandle handle)
         {
             _type = type;
             _handle = handle;
-
-            _methodDefinition = type.MetadataReader.GetMethodDefinition(handle);
         }
 
         public override TypeSystemContext Context
@@ -55,12 +53,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        void ComputeSignature()
+        private MethodSignature InitializeSignature()
         {
-            BlobReader signatureReader = this.MetadataReader.GetBlobReader(_methodDefinition.Signature);
+            var metadataReader = MetadataReader;
+            BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Signature);
 
-            EcmaSignatureParser parser = new EcmaSignatureParser(this.Module, signatureReader);
-            _signature = parser.ParseMethodSignature();
+            EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader);
+            var signature = parser.ParseMethodSignature();
+            return (_signature = signature);
         }
 
         public override MethodSignature Signature
@@ -68,7 +68,7 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 if (_signature == null)
-                    ComputeSignature();
+                    return InitializeSignature();
                 return _signature;
             }
         }
@@ -97,14 +97,6 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public MethodDefinition MethodDefinition
-        {
-            get
-            {
-                return _methodDefinition;
-            }
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private MethodFlags InitializeMethodFlags(MethodFlags mask)
         {
@@ -112,7 +104,8 @@ namespace Internal.TypeSystem.Ecma
 
             if ((mask & MethodFlags.BasicMetadataCache) != 0)
             {
-                var methodAttributes = _methodDefinition.Attributes;
+                var methodAttributes = Attributes;
+
                 if ((methodAttributes & MethodAttributes.Virtual) != 0)
                     flags |= MethodFlags.Virtual;
 
@@ -157,7 +150,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _methodDefinition.Attributes;
+                return MetadataReader.GetMethodDefinition(_handle).Attributes;
             }
         }
 
@@ -165,56 +158,65 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _methodDefinition.ImplAttributes;
+                return MetadataReader.GetMethodDefinition(_handle).ImplAttributes;
             }
+        }
+
+        private string InitializeName()
+        {
+            var metadataReader = MetadataReader;
+            var name = metadataReader.GetString(metadataReader.GetMethodDefinition(_handle).Name);
+            return (_name = name);
         }
 
         public override string Name
         {
             get
             {
-                return this.MetadataReader.GetString(_methodDefinition.Name);
+                if (_name == null)
+                    return InitializeName();
+                return _name;
             }
         }
 
-        TypeDesc[] _genericParameters;
+        void ComputeGenericParameters()
+        {
+            var genericParameterHandles = MetadataReader.GetMethodDefinition(_handle).GetGenericParameters();
+            int count = genericParameterHandles.Count;
+            if (count > 0)
+            {
+                TypeDesc[] genericParameters = new TypeDesc[count];
+                int i = 0;
+                foreach (var genericParameterHandle in genericParameterHandles)
+                {
+                    genericParameters[i++] = new EcmaGenericParameter(Module, genericParameterHandle);
+                }
+                Interlocked.CompareExchange(ref _genericParameters, genericParameters, null);
+            }
+            else
+            {
+                _genericParameters = TypeDesc.EmptyTypes;
+            }
+        }
 
         public override Instantiation Instantiation
         {
             get
             {
                 if (_genericParameters == null)
-                {
-                    var genericParameterHandles = _methodDefinition.GetGenericParameters();
-                    int count = genericParameterHandles.Count;
-                    if (count > 0)
-                    {
-                        TypeDesc[] genericParameters = new TypeDesc[count];
-                        int i = 0;
-                        foreach (var genericParameterHandle in genericParameterHandles)
-                        {
-                            genericParameters[i++] = new EcmaGenericParameter(this.Module, genericParameterHandle);
-                        }
-                        Interlocked.CompareExchange(ref _genericParameters, genericParameters, null);
-                    }
-                    else
-                    {
-                        _genericParameters = TypeDesc.EmptyTypes;
-                    }
-                }
-
+                    ComputeGenericParameters();
                 return new Instantiation(_genericParameters);
             }
         }
 
         public bool HasCustomAttribute(string customAttributeName)
         {
-            return this.Module.HasCustomAttribute(_methodDefinition.GetCustomAttributes(), customAttributeName);
+            return Module.HasCustomAttribute(MetadataReader.GetMethodDefinition(_handle).GetCustomAttributes(), customAttributeName);
         }
 
         public override string ToString()
         {
-            return "[" + Module.GetName().Name + "]" + _type.ToString() + "." + this.Name;
+            return _type.ToString() + "." + Name;
         }
 
         public bool IsPInvoke()
@@ -227,7 +229,8 @@ namespace Internal.TypeSystem.Ecma
             if (((int)Attributes & (int)MethodAttributes.PinvokeImpl) == 0)
                 return null;
 
-            return this.MetadataReader.GetString(_methodDefinition.GetImport().Name);
+            var metadataReader = MetadataReader;
+            return metadataReader.GetString(metadataReader.GetMethodDefinition(_handle).GetImport().Name);
         }
     }
 
