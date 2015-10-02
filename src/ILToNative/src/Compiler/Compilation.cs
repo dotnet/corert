@@ -17,18 +17,35 @@ using Internal.JitInterface;
 
 namespace ILToNative
 {
+    public struct CompilationOptions
+    {
+        public bool Cpp;
+    }
+
     public partial class Compilation
     {
-        TypeSystemContext _typeSystemContext;
+        readonly TypeSystemContext _typeSystemContext;
+        readonly CompilationOptions _options;
 
         Dictionary<TypeDesc, RegisteredType> _registeredTypes = new Dictionary<TypeDesc, RegisteredType>();
         Dictionary<MethodDesc, RegisteredMethod> _registeredMethods = new Dictionary<MethodDesc, RegisteredMethod>();
         Dictionary<FieldDesc, RegisteredField> _registeredFields = new Dictionary<FieldDesc, RegisteredField>();
         List<MethodDesc> _methodsThatNeedsCompilation = null;
 
-        public Compilation(TypeSystemContext typeSystemContext)
+        ILToNative.CppCodeGen.CppWriter _cppWriter = null;
+
+        public Compilation(TypeSystemContext typeSystemContext, CompilationOptions options)
         {
             _typeSystemContext = typeSystemContext;
+            _options = options;
+        }
+
+        public TypeSystemContext TypeSystemContext
+        {
+            get
+            {
+                return _typeSystemContext;
+            }
         }
 
         public TextWriter Log
@@ -45,8 +62,23 @@ namespace ILToNative
 
         MethodDesc _mainMethod;
 
+        internal MethodDesc MainMethod
+        {
+            get
+            {
+                return _mainMethod;
+            }
+        }
 
-        RegisteredType GetRegisteredType(TypeDesc type)
+        internal IEnumerable<RegisteredType> RegisteredTypes
+        {
+            get
+            {
+                return _registeredTypes.Values;
+            }
+        }
+
+        internal RegisteredType GetRegisteredType(TypeDesc type)
         {
             RegisteredType existingRegistration;
             if (_registeredTypes.TryGetValue(type, out existingRegistration))
@@ -63,7 +95,7 @@ namespace ILToNative
             return registration;
         }
 
-        RegisteredMethod GetRegisteredMethod(MethodDesc method)
+        internal RegisteredMethod GetRegisteredMethod(MethodDesc method)
         {
             RegisteredMethod existingRegistration;
             if (_registeredMethods.TryGetValue(method, out existingRegistration))
@@ -77,7 +109,7 @@ namespace ILToNative
             return registration;
         }
 
-        RegisteredField GetRegisteredField(FieldDesc field)
+        internal RegisteredField GetRegisteredField(FieldDesc field)
         {
             RegisteredField existingRegistration;
             if (_registeredFields.TryGetValue(field, out existingRegistration))
@@ -96,8 +128,7 @@ namespace ILToNative
             Unknown,
             PInvoke,
             RuntimeImport,
-            Intrinsic,
-            BoundsChecking,
+            Intrinsic
         };
 
         SpecialMethodKind DetectSpecialMethodKind(MethodDesc method)
@@ -117,11 +148,6 @@ namespace ILToNative
                 {
                     Log.WriteLine("Intrinsic: " + method.ToString());
                     return SpecialMethodKind.Intrinsic;
-                }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.CompilerServices.BoundsCheckingAttribute"))
-                {
-                    Log.WriteLine("BoundsChecking: " + method.ToString());
-                    return SpecialMethodKind.BoundsChecking;
                 }
                 else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.InteropServices.NativeCallableAttribute"))
                 {
@@ -166,17 +192,15 @@ namespace ILToNative
 
             foreach (MethodDesc method in pendingMethods)
             {
-                try
+                if (_options.Cpp)
+                {
+                    _cppWriter.CompileMethod(method);
+                }
+                else
                 {
                     CompileMethod(method);
                 }
-                catch (Exception e)
-                {
-                    Log.WriteLine(e.Message + " (" + method + ")");
-
-                    throw new NotImplementedException();
-                }
-            }
+           }
         }
 
         void ExpandVirtualMethods()
@@ -210,7 +234,14 @@ namespace ILToNative
 
         public void CompileSingleFile(MethodDesc mainMethod)
         {
-            _corInfo = new CorInfoImpl(this);
+            if (_options.Cpp)
+            {
+                _cppWriter = new CppCodeGen.CppWriter(this);
+            }
+            else
+            {
+                _corInfo = new CorInfoImpl(this);
+            }
 
             _mainMethod = mainMethod;
             AddMethod(mainMethod);
@@ -222,7 +253,14 @@ namespace ILToNative
                 ExpandVirtualMethods();
             }
 
-            OutputCode();
+            if (_options.Cpp)
+            {
+                _cppWriter.OutputCode();
+            }
+            else
+            {
+                OutputCode();
+            }
         }
 
         public void AddMethod(MethodDesc method)
@@ -232,13 +270,21 @@ namespace ILToNative
                 return;
             reg.IncludedInCompilation = true;
 
-            RegisteredType regType = GetRegisteredType(method.OwningType);
-            reg.Next = regType.Methods;
-            regType.Methods = reg;
-
             if (_methodsThatNeedsCompilation == null)
                 _methodsThatNeedsCompilation = new List<MethodDesc>();
             _methodsThatNeedsCompilation.Add(method);
+
+            GetMangledMethodName(method);
+
+            if (_options.Cpp)
+            {
+                // Precreate name to ensure that all types referenced by signatures are present
+                GetMangledTypeName(method.OwningType);
+                var signature = method.Signature;
+                GetMangledTypeName(signature.ReturnType);
+                for (int i = 0; i < signature.Length; i++)
+                    GetMangledTypeName(signature[i]);
+            }
         }
 
         public void AddVirtualSlot(MethodDesc method)
@@ -282,9 +328,16 @@ namespace ILToNative
             if (reg.IncludedInCompilation)
                 return;
             reg.IncludedInCompilation = true;
+
+            if (_options.Cpp)
+            {
+                // Precreate name to ensure that all types referenced by signatures are present
+                GetMangledTypeName(field.OwningType);
+                GetMangledTypeName(field.FieldType);
+            }
         }
 
-        MethodDesc ResolveVirtualMethod(TypeDesc implType, MethodDesc declMethod)
+        internal MethodDesc ResolveVirtualMethod(TypeDesc implType, MethodDesc declMethod)
         {
             // TODO: Proper virtual method resolution
             string name = declMethod.Name;
@@ -299,11 +352,6 @@ namespace ILToNative
                     return implMethod;
                 t = t.BaseType;
             }
-        }
-
-        internal TypeDesc GetWellKnownType(WellKnownType wellKnownType)
-        {
-            return _typeSystemContext.GetWellKnownType(wellKnownType);
         }
 
         // Turn a name into a valid identifier
@@ -331,21 +379,44 @@ namespace ILToNative
             switch (type.Category)
             {
                 case TypeFlags.Array:
+                    // mangledName = "Array<" + GetSignatureCPPTypeName(((ArrayType)type).ElementType) + ">";
                     mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__Array";
+                    if (((ArrayType)type).Rank != 1)
+                        mangledName += "Rank" + ((ArrayType)type).Rank.ToString();
                     break;
                 case TypeFlags.ByRef:
-                    mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + "__ByRef";
+                    if (_options.Cpp)
+                        mangledName = _cppWriter.GetCppSignatureTypeName(((ByRefType)type).ParameterType) + "*";
+                    else
+                        mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + "__ByRef";
                     break;
                 case TypeFlags.Pointer:
-                    mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + "__Pointer";
+                    if (_options.Cpp)
+                        mangledName = _cppWriter.GetCppSignatureTypeName(((PointerType)type).ParameterType) + "*";
+                    else
+                        mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + "__Pointer";
                     break;
+
                 default:
-                    // TODO: Include encapsulating type
-                    mangledName = SanitizeName(type.Name);
+                    mangledName = type.Name;
 
-                    mangledName = mangledName.Replace(".", "_");
+                    // Include encapsulating type
+                    TypeDesc def = type.GetTypeDefinition();
+                    TypeDesc containingType = (def is EcmaType) ? ((EcmaType)def).ContainingType : null;
+                    while (containingType != null)
+                    {
+                        mangledName = containingType.Name + "__" + mangledName;
 
-                    if (type.HasInstantiation || _deduplicator.Contains(mangledName))
+                        containingType = ((EcmaType)containingType).ContainingType;
+                    }
+
+                    mangledName = SanitizeName(mangledName);
+
+                    mangledName = mangledName.Replace(".", _options.Cpp ? "::" : "_");
+
+                    // TODO: the special handling for "Interop" is needed due to type name / namespace name clashes;
+                    //       find a better solution
+                    if (type.HasInstantiation || _deduplicator.Contains(mangledName) || mangledName == "Interop")
                         mangledName = mangledName + "_" + _unique++;
                     _deduplicator.Add(mangledName);
 
@@ -364,15 +435,16 @@ namespace ILToNative
             if (mangledName != null)
                 return mangledName;
 
-            RegisteredType owner = GetRegisteredType(method.OwningType);
+            RegisteredType regType = GetRegisteredType(method.OwningType);
 
             mangledName = SanitizeName(method.Name);
 
             mangledName = mangledName.Replace(".", "_"); // To handle names like .ctor
 
-            mangledName = GetMangledTypeName(method.OwningType) + "__" + mangledName;
+            if (!_options.Cpp)
+                mangledName = GetMangledTypeName(method.OwningType) + "__" + mangledName;
 
-            RegisteredMethod rm = owner.Methods;
+            RegisteredMethod rm = regType.Methods;
             bool dedup = false;
             while (rm != null)
             {
@@ -385,9 +457,13 @@ namespace ILToNative
                 rm = rm.Next;
             }
             if (dedup)
-                mangledName = mangledName + "_" + owner.UniqueMethod++;
+                mangledName = mangledName + "_" + regType.UniqueMethod++;
 
             reg.MangledName = mangledName;
+
+            reg.Next = regType.Methods;
+            regType.Methods = reg;
+
             return mangledName;
         }
 

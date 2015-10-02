@@ -18,6 +18,7 @@ namespace ILToNative
         public int UniqueMethod;
 
         public string MangledName;
+        public string MangledSignatureName; // CppCodeGen specific
 
         public RegisteredMethod Methods;
 

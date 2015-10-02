@@ -23,6 +23,8 @@ namespace ILToNative
         Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        CompilationOptions _options;
+
         CompilerTypeSystemContext _compilerTypeSystemContext;
 
         Program()
@@ -67,6 +69,10 @@ namespace ILToNative
                     parser.AppendExpandedPaths(_referenceFilePaths, false);
                     break;
 
+                case "cpp":
+                    _options.Cpp = true;
+                    break;
+
                 default:
                     throw new CommandLineException("Unrecognized option: " + parser.GetCurrentOption());
                 }
@@ -98,7 +104,7 @@ namespace ILToNative
             int entryPointToken = entryPointModule.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress;
             MethodDesc entryPointMethod = entryPointModule.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
 
-            Compilation compilation = new Compilation(_compilerTypeSystemContext);
+            Compilation compilation = new Compilation(_compilerTypeSystemContext, _options);
             compilation.Log = Console.Out;
             compilation.Out = new StreamWriter(File.Create(_outputPath));
 
@@ -136,6 +142,9 @@ namespace ILToNative
 
         static int Main(string[] args)
         {
+#if DEBUG
+            return new Program().Run(args);
+#else
             try
             {
                 return new Program().Run(args);
@@ -145,6 +154,7 @@ namespace ILToNative
                 Console.Error.WriteLine("Error: " + e.Message);
                 return 1;
             }
+#endif
         }
     }
 }

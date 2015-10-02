@@ -15,7 +15,7 @@ namespace ILToNative
 
         public string MangledName;
 
-        public MethodCode MethodCode;
+        public Object MethodCode;
 
         public RegisteredMethod Next;
     }

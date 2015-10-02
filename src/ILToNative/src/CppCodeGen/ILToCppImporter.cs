@@ -628,11 +628,11 @@ namespace Internal.IL
                         var arraySlot = Pop();
 
                         var fieldDesc = (TypeSystem.Ecma.EcmaField)fieldSlot.Value.Aux;
-                        int addr = fieldDesc.FieldDefinition.GetRelativeVirtualAddress();
+                        int addr = fieldDesc.MetadataReader.GetFieldDefinition(fieldDesc.Handle).GetRelativeVirtualAddress();
                         var memBlock = fieldDesc.Module.PEReader.GetSectionData(addr).GetContent();
 
                         var fieldType = (TypeSystem.Ecma.EcmaType)fieldDesc.FieldType;
-                        int size = fieldType.TypeDefinition.GetLayout().Size;
+                        int size = fieldType.MetadataReader.GetTypeDefinition(fieldType.Handle).GetLayout().Size;
                         if (size == 0)
                             throw new NotImplementedException();
 
