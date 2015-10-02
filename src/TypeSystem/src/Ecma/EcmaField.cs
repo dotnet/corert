@@ -21,6 +21,7 @@ namespace Internal.TypeSystem.Ecma
             public const int Static                 = 0x0002;
             public const int InitOnly               = 0x0004;
             public const int Literal                = 0x0008;
+            public const int HasRva                 = 0x0010;
 
             public const int AttributeMetadataCache = 0x0100;
             public const int ThreadStatic           = 0x0200;
@@ -29,8 +30,10 @@ namespace Internal.TypeSystem.Ecma
         EcmaType _type;
         FieldDefinitionHandle _handle;
 
-        TypeDesc _fieldType;
+        // Cached values
         volatile int _fieldFlags;
+        TypeDesc _fieldType;
+        string _name;
 
         internal EcmaField(EcmaType type, FieldDefinitionHandle handle)
         {
@@ -77,22 +80,15 @@ namespace Internal.TypeSystem.Ecma
                 return _handle;
             }
         }
-        
-        public FieldDefinition FieldDefinition
-        {
-            get
-            {
-                return this.MetadataReader.GetFieldDefinition(_handle);
-            }
-        }
 
-        void ComputeFieldType()
+        private TypeDesc InitializeFieldType()
         {
-            var metadataReader = this.Module.MetadataReader;
+            var metadataReader = MetadataReader;
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetFieldDefinition(_handle).Signature);
 
-            EcmaSignatureParser parser = new EcmaSignatureParser(this.Module, signatureReader);
-            _fieldType = parser.ParseFieldSignature();
+            EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader);
+            var fieldType = parser.ParseFieldSignature();
+            return (_fieldType = fieldType);
         }
 
         public override TypeDesc FieldType
@@ -100,7 +96,7 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 if (_fieldType == null)
-                    ComputeFieldType();
+                    return InitializeFieldType();
                 return _fieldType;
             }
         }
@@ -112,9 +108,8 @@ namespace Internal.TypeSystem.Ecma
 
             if ((mask & FieldFlags.BasicMetadataCache) != 0)
             {
-                var fieldDefinition = this.MetadataReader.GetFieldDefinition(_handle);
+                var fieldAttributes = Attributes;
 
-                var fieldAttributes = fieldDefinition.Attributes;
                 if ((fieldAttributes & FieldAttributes.Static) != 0)
                     flags |= FieldFlags.Static;
 
@@ -123,6 +118,9 @@ namespace Internal.TypeSystem.Ecma
 
                 if ((fieldAttributes & FieldAttributes.Literal) != 0)
                     flags |= FieldFlags.Literal;
+
+                if ((fieldAttributes & FieldAttributes.HasFieldRVA) != 0)
+                    flags |= FieldFlags.HasRva;
 
                 flags |= FieldFlags.BasicMetadataCache;
             }
@@ -200,6 +198,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool HasRva
+        {
+            get
+            {
+                return (GetFieldFlags(FieldFlags.BasicMetadataCache | FieldFlags.HasRva) & FieldFlags.HasRva) != 0;
+            }
+        }
+
         public bool IsLiteral
         {
             get
@@ -212,32 +218,35 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                var fieldDefinition = this.MetadataReader.GetFieldDefinition(_handle);
-                return fieldDefinition.Attributes;
+                return MetadataReader.GetFieldDefinition(_handle).Attributes;
             }
+        }
+
+        private string InitializeName()
+        {
+            var metadataReader = MetadataReader;
+            var name = metadataReader.GetString(metadataReader.GetFieldDefinition(_handle).Name);
+            return (_name = name);
         }
 
         public override string Name
         {
             get
             {
-                var metadataReader = this.MetadataReader;
-                var fieldDefinition = metadataReader.GetFieldDefinition(_handle);
-                return metadataReader.GetString(fieldDefinition.Name);
+                if (_name == null)
+                    return InitializeName();
+                return _name;
             }
         }
 
-        public override bool HasRva
+        public bool HasCustomAttribute(string customAttributeName)
         {
-            get
-            {
-                return (FieldDefinition.Attributes & FieldAttributes.HasFieldRVA) != 0;
-            }
+            return Module.HasCustomAttribute(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(), customAttributeName);
         }
 
         public override string ToString()
         {
-            return _type.ToString() + "." + this.Name;
+            return _type.ToString() + "." + Name;
         }
     }
 }
