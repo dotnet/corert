@@ -107,7 +107,9 @@ namespace System { class String : public System::Object { public:
 static MethodTable * __getMethodTable();
 }; };
 
-
+namespace System { class EETypePtr { public:
+    intptr_t m_value;
+}; }
 
 //
 // The fast paths for object allocation and write barriers is performance critical. They are often
@@ -145,8 +147,6 @@ extern "C" Object * __allocate_object(MethodTable * pMT)
 
 Object * __allocate_string(int32_t len)
 {
-    throw 42;
-#if 0
 #if !USE_MRT
     alloc_context * acontext = GetThread()->GetAllocContext();
     Object * pObject;
@@ -177,7 +177,6 @@ Object * __allocate_string(int32_t len)
     return pObject;
 #else
     return RhNewArray(System::String::__getMethodTable(), len);
-#endif
 #endif
 }
 
@@ -299,7 +298,6 @@ static MethodTable * __getMethodTable();
 
 Object * __get_commandline_args(int argc, char * argv[])
 {
-#if 0
     System::Array * p = (System::Array *)__allocate_array(System::String__Array::__getMethodTable(), argc);
 
     for (int i = 0; i < argc; i++)
@@ -309,16 +307,13 @@ Object * __get_commandline_args(int argc, char * argv[])
     }    
 
     return (Object *)p;
-#endif
-    return NULL;
 }
 
 // FCalls
 
-namespace System { namespace Runtime { class RuntimeImports : public System::Object { public:
-static uint8_t TryArrayCopy(System::Array*, int32_t, System::Array*, int32_t, int32_t);
-}; }; };
-
+#ifdef _MSC_VER
+#pragma warning(disable:4297)
+#endif
 
 FORCEINLINE bool CheckArraySlice(System::Array * pArray, int32_t index, int32_t length)
 {
@@ -329,7 +324,7 @@ FORCEINLINE bool CheckArraySlice(System::Array * pArray, int32_t index, int32_t 
         (length <= arrayLength - index);
 }
 
-uint8_t System::Runtime::RuntimeImports::TryArrayCopy(System::Array* pSourceArray, int32_t sourceIndex, System::Array* pDestinationArray, int32_t destinationIndex, int32_t length)
+extern "C" uint8_t RhpArrayCopy(System::Array* pSourceArray, int32_t sourceIndex, System::Array* pDestinationArray, int32_t destinationIndex, int32_t length)
 {
     if (pSourceArray == NULL || pDestinationArray == NULL)
         return false;
@@ -385,7 +380,150 @@ uint8_t System::Runtime::RuntimeImports::TryArrayCopy(System::Array* pSourceArra
     return true;
 }
 
+void GCSafeFillMemory(void * mem, size_t size, size_t pv)
+{
+    uint8_t * memBytes = (uint8_t *)mem;
+    uint8_t * endBytes = &memBytes[size];
 
+    // handle unaligned bytes at the beginning 
+    while (!IS_ALIGNED(memBytes, sizeof(void *)) && (memBytes < endBytes))
+        *memBytes++ = (uint8_t)pv;
+
+    // now write pointer sized pieces 
+    size_t nPtrs = (endBytes - memBytes) / sizeof(void *);
+    UIntNative* memPtr = (UIntNative*)memBytes;
+    for (size_t i = 0; i < nPtrs; i++)
+        *memPtr++ = pv;
+
+    // handle remaining bytes at the end 
+    memBytes = (uint8_t*)memPtr;
+    while (memBytes < endBytes)
+        *memBytes++ = (uint8_t)pv;
+}
+
+extern "C" uint8_t RhpArrayClear(System::Array *pArray, int32_t index, int32_t length)
+{
+    if (pArray == NULL)
+        return false;
+
+    EEType* pArrayType = pArray->get_EEType();
+
+    size_t componentSize = pArrayType->RawGetComponentSize();
+    if (componentSize == 0) // Not an array
+        return false;
+
+    if (!CheckArraySlice(pArray, index, length))
+        return false;
+
+    if (length == 0)
+        return true;
+
+    GCSafeFillMemory((uint8_t *)pArray->GetArrayData() + index * componentSize, length * componentSize, 0);
+
+    return true;
+}
+
+extern "C" uint8_t RhTypeCast_AreTypesEquivalent(System::EETypePtr pType1, System::EETypePtr pType2)
+{
+    if (pType1.m_value == pType2.m_value)
+    {
+        return 1;
+    }
+
+    throw 42;
+}
+
+extern "C" System::String* RhNewArray(System::EETypePtr, int32_t len)
+{
+    return (System::String*)__allocate_string(len);
+}
+
+extern "C" intptr_t RhFindMethodStartAddress(intptr_t)
+{
+    throw 42;
+}
+
+extern "C" intptr_t RhGetModuleFromPointer(intptr_t)
+{
+    throw 42;
+}
+
+extern "C" System::Object* RhMemberwiseClone(System::Object*)
+{
+    throw 42;
+}
+
+extern "C" int32_t RhGetModuleFileName(intptr_t, uint16_t**)
+{
+    throw 42;
+}
+
+extern "C" void RhSuppressFinalize(System::Object*)
+{
+    throw 42;
+}
+
+extern "C" uint8_t RhGetCorElementType(System::EETypePtr)
+{
+    throw 42;
+}
+
+extern "C" System::EETypePtr RhGetRelatedParameterType(System::EETypePtr)
+{
+    throw 42;
+}
+
+extern "C" uint16_t RhGetComponentSize(System::EETypePtr)
+{
+    throw 42;
+}
+
+extern "C" uint8_t RhHasReferenceFields(System::EETypePtr)
+{
+    throw 42;
+}
+
+extern "C" uint8_t RhIsValueType(System::EETypePtr)
+{
+    throw 42;
+}
+
+extern "C" intptr_t RhHandleAllocDependent(System::Object*, System::Object*)
+{
+    throw 42;
+}
+
+extern "C" System::Object* RhHandleGetDependent(intptr_t)
+{
+    throw 42;
+}
+
+extern "C" System::Object* RhHandleGet(intptr_t)
+{
+    throw 42;
+}
+
+extern "C" intptr_t RhSetErrorInfoBuffer(intptr_t)
+{
+    throw 42;
+}
+
+extern "C" uint32_t RhGetLoadedModules(System::Object*)
+{
+    throw 42;
+}
+
+extern "C" uint8_t RhGetExceptionsForCurrentThread(System::Object*, int *)
+{
+    throw 42;
+}
+
+extern "C" intptr_t RhGetModuleFromEEType(System::EETypePtr)
+{
+    throw 42;
+}
+
+#if 0
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
 
 extern "C" int Program__Main();
@@ -395,12 +533,10 @@ int main(int argc, char * argv[]) {
     __register_module(&__module);
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
 
-    Program__Main();
-#if 0
     Program::Main((System::String__Array*)__get_commandline_args(argc - 1, argv + 1));
-#endif
 
     __reverse_pinvoke_return(&frame);
     __shutdown_runtime();
     return 0;
 }
+#endif
