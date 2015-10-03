@@ -44,6 +44,18 @@ namespace ILToNative.CppCodeGen
             SetWellKnownTypeSignatureName(WellKnownType.UIntPtr, "uintptr_t");
             SetWellKnownTypeSignatureName(WellKnownType.Single, "float");
             SetWellKnownTypeSignatureName(WellKnownType.Double, "double");
+
+            // TODO: For now, ensure that all types/methods referenced by temporary implementation in stubs.cpp are present
+            var stringType = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String);
+            _compilation.AddMethod(stringType.GetMethod("get_Chars", null));
+            AddInstanceFields(stringType);
+
+            var stringArrayType = stringType.MakeArrayType();
+            _compilation.AddType(stringArrayType);
+            _compilation.MarkAsConstructed(stringArrayType);
+
+            var bufferType = ((EcmaType)stringType).Module.GetType("System", "Buffer");
+            _compilation.AddMethod(bufferType.GetMethod("BlockCopy", null));
         }
 
         public string GetCppSignatureTypeName(TypeDesc type)

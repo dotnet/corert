@@ -23,6 +23,7 @@
 
 #ifndef WIN32
 #include <pthread.h>
+#include <alloca.h>
 #endif
 
 using namespace std;
@@ -40,6 +41,7 @@ void __shutdown_runtime();
 
 extern "C" Object * __allocate_object(MethodTable * pMT);
 extern "C" Object * __allocate_array(MethodTable * pMT, size_t elements);
+Object * __allocate_string(int32_t len);
 __declspec(noreturn) void __throw_exception(void * pEx);
 Object * __load_string_literal(const char * string);
 
@@ -92,10 +94,27 @@ struct SimpleModuleHeader
 
 void __register_module(SimpleModuleHeader* pModule);
 
+// TODO: this might be wrong...
+typedef size_t UIntNative;
+
+inline bool IS_ALIGNED(UIntNative val, UIntNative alignment)
+{
+    //ASSERT(0 == (alignment & (alignment - 1)));
+    return 0 == (val & (alignment - 1));
+}
+
+template <typename T>
+inline bool IS_ALIGNED(T* val, UIntNative alignment)
+{
+    //ASSERT(0 == (alignment & (alignment - 1)));
+    return IS_ALIGNED(reinterpret_cast<UIntNative>(val), alignment);
+}
 
 #pragma warning(disable:4102)
 
-#define AlignBaseSize(s) ((s < MIN_OBJECT_SIZE) ? MIN_OBJECT_SIZE : ((s + (sizeof(intptr_t)-1) & ~(sizeof(intptr_t)-1))))
+#define RAW_MIN_OBJECT_SIZE (3*sizeof(void*))
+
+#define AlignBaseSize(s) ((s < RAW_MIN_OBJECT_SIZE) ? RAW_MIN_OBJECT_SIZE : ((s + (sizeof(intptr_t)-1) & ~(sizeof(intptr_t)-1))))
 
 #define ARRAY_BASE (2*sizeof(void*))
 
