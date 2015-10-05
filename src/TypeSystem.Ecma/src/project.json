@@ -17,6 +17,6 @@
     "System.Reflection.Metadata": "1.0.22"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "dotnet": {}
   }
 }

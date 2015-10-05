@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ExcludeResourcesImport>true</ExcludeResourcesImport>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

@@ -34,7 +34,7 @@
 
   <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="Clean">
-    <RemoveDir Directories="$(BinDir)" />
+    <RemoveDir Directories="$(ObjDir)" />
   </Target>
 
 </Project>
