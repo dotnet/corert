@@ -41,6 +41,7 @@ char (*COUNTOF_helper(_CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
 #define offsetof(s,m)   (UIntNative)( (IntNative)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
 #endif // offsetof
 
+#ifndef GCENV_INCLUDED
 #define FORCEINLINE __forceinline
 
 inline UIntNative ALIGN_UP(UIntNative val, UIntNative alignment);
@@ -54,6 +55,7 @@ inline T* ALIGN_DOWN(T* val, UIntNative alignment);
 inline bool IS_ALIGNED(UIntNative val, UIntNative alignment);
 template <typename T>
 inline bool IS_ALIGNED(T* val, UIntNative alignment);
+#endif // GCENV_INCLUDED
 
 #ifndef DACCESS_COMPILE
 //
@@ -96,28 +98,18 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 
 #if defined(_AMD64_)
 
-#define DATA_ALIGNMENT  8
-#define OS_PAGE_SIZE    0x1000
 #define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
 #elif defined(_X86_)
 
-#define DATA_ALIGNMENT  4
-#ifndef OS_PAGE_SIZE
-#define OS_PAGE_SIZE    0x1000
-#endif
 #define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
 #elif defined(_ARM_)
 
-#define DATA_ALIGNMENT  4
-#ifndef OS_PAGE_SIZE
-#define OS_PAGE_SIZE    0x1000
-#endif
 #define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
@@ -125,6 +117,31 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 #else
 #error Unsupported target architecture
 #endif
+
+#ifndef GCENV_INCLUDED
+#if defined(_AMD64_)
+
+#define DATA_ALIGNMENT  8
+#define OS_PAGE_SIZE    0x1000
+
+#elif defined(_X86_)
+
+#define DATA_ALIGNMENT  4
+#ifndef OS_PAGE_SIZE
+#define OS_PAGE_SIZE    0x1000
+#endif
+
+#elif defined(_ARM_)
+
+#define DATA_ALIGNMENT  4
+#ifndef OS_PAGE_SIZE
+#define OS_PAGE_SIZE    0x1000
+#endif
+
+#else
+#error Unsupported target architecture
+#endif
+#endif // GCENV_INCLUDED
 
 //
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
@@ -169,5 +186,6 @@ bool inline FitsInI4(__int64 val)
 {
     return val == (__int64)(__int32)val;
 }
-
+#ifndef GCENV_INCLUDED
 #define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
+#endif // GCENV_INCLUDED

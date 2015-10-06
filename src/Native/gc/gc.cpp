@@ -34432,9 +34432,9 @@ void gc_heap::do_pre_gc()
     {
 #ifdef BACKGROUND_GC
         full_gc_counts[gc_type_background]++;
-#ifdef STRESS_HEAP
+#if defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
         GCHeap::gc_stress_fgcs_in_bgc = 0;
-#endif // STRESS_HEAP
+#endif // STRESS_HEAP && !FEATURE_REDHAWK
 #endif // BACKGROUND_GC
     }
     else

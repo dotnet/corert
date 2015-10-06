@@ -8,7 +8,7 @@
 // StressLog infrastructure
 // ---------------------------------------------------------------------------
 
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #include "sospriv.h"

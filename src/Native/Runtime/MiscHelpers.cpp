@@ -7,7 +7,7 @@
 // Miscellaneous unmanaged helpers called by managed code.
 //
 
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #endif // DACCESS_COMPILE

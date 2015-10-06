@@ -160,7 +160,7 @@ public:
                                           DWORD flags=0);
 
     // Find the relocation address for an object
-	PER_HEAP_ISOLATED void    Relocate (Object** object,
+    PER_HEAP_ISOLATED void    Relocate (Object** object,
                                            ScanContext* sc, 
                                            DWORD flags=0);
 
@@ -226,7 +226,7 @@ public:
     BOOL FinalizeAppDomain(AppDomain *pDomain, BOOL fRunFinalizers);
     BOOL ShouldRestartFinalizerWatchDog();
 
-	void SetCardsAfterBulkCopy( Object**, size_t);
+    void SetCardsAfterBulkCopy( Object**, size_t);
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     void WalkObject (Object* obj, walk_fn fn, void* context);
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)

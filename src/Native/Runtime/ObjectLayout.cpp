@@ -6,7 +6,7 @@
 //
 // Implementations of functions dealing with object layout related types.
 //
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #endif // DACCESS_COMPILE

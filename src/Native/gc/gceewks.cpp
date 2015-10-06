@@ -8,6 +8,7 @@
 #include "common.h"
 
 #include "gcenv.h"
+#include "gcobject.h"
 
 #include "gc.h"
 #include "gcscan.h"

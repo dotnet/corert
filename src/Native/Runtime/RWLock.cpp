@@ -6,7 +6,7 @@
 //
 // RWLock.cpp -- adapted from CLR SimpleRWLock.cpp
 //
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #endif // DACCESS_COMPILE

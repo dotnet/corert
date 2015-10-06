@@ -7,7 +7,7 @@
 // Implementations of methods of OptionalFields which are used only at runtime (i.e. reading field values).
 //
 
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #else // DACCESS_COMPILE

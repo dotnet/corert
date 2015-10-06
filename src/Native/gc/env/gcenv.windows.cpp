@@ -342,3 +342,4 @@ bool PalHasCapability(PalCapability capability)
     // TODO: Implement for background GC
     return false;
 }
+

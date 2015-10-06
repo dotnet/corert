@@ -10,6 +10,8 @@
 #define FEATURE_REDHAWK 1
 #define FEATURE_CONSERVATIVE_GC 1
 
+#define GCENV_INCLUDED
+
 #ifndef _MSC_VER
 #define __stdcall
 #define __forceinline inline
@@ -508,151 +510,10 @@ void FastInterlockAnd(uint32_t volatile *p, uint32_t msk);
 #define CALLER_LIMITS_SPINNING 0
 bool __SwitchToThread (uint32_t dwSleepMSec, uint32_t dwSwitchCount);
 
-//-------------------------------------------------------------------------------------------------
-//
-// Low-level types describing GC object layouts.
-//
-
-// Bits stolen from the sync block index that the GC/HandleTable knows about (currently these are at the same
-// positions as the mainline runtime but we can change this below when it becomes apparent how Redhawk will
-// handle sync blocks).
-#define BIT_SBLK_GC_RESERVE                 0x20000000
-#define BIT_SBLK_FINALIZER_RUN              0x40000000
-
-// The sync block index header (small structure that immediately precedes every object in the GC heap). Only
-// the GC uses this so far, and only to store a couple of bits of information.
-class ObjHeader
-{
-private:
-#if defined(_WIN64)
-    uint32_t m_uAlignpad;
-#endif // _WIN64
-    uint32_t m_uSyncBlockValue;
-
-public:
-    uint32_t GetBits() { return m_uSyncBlockValue; }
-    void SetBit(uint32_t uBit) { FastInterlockOr(&m_uSyncBlockValue, uBit); }
-    void ClrBit(uint32_t uBit) { FastInterlockAnd(&m_uSyncBlockValue, ~uBit); }
-    void SetGCBit() { m_uSyncBlockValue |= BIT_SBLK_GC_RESERVE; }
-    void ClrGCBit() { m_uSyncBlockValue &= ~BIT_SBLK_GC_RESERVE; }
-};
-
-#define MTFlag_ContainsPointers 1
-#define MTFlag_HasFinalizer 2
-#define MTFlag_IsArray 4
-
-class MethodTable
-{
-public:
-    uint16_t    m_componentSize;
-    uint16_t    m_flags;
-    uint32_t    m_baseSize;
-
-    MethodTable * m_pRelatedType;
-
-public:
-    void InitializeFreeObject()
-    {
-        m_baseSize = 3 * sizeof(void *);
-        m_componentSize = 1;
-        m_flags = 0;
-    }
-
-    uint32_t GetBaseSize()
-    {
-        return m_baseSize;
-    }
-
-    uint16_t RawGetComponentSize()
-    {
-        return m_componentSize;
-    }
-
-    bool ContainsPointers()
-    {
-        return (m_flags & MTFlag_ContainsPointers) != 0;
-    }
-
-    bool ContainsPointersOrCollectible()
-    {
-        return ContainsPointers();
-    }
-
-    bool HasComponentSize()
-    {
-        return m_componentSize != 0;
-    }
-
-    bool HasFinalizer()
-    {
-        return (m_flags & MTFlag_HasFinalizer) != 0;
-    }
-
-    bool HasCriticalFinalizer()
-    {
-        return false;
-    }
-
-    bool IsArray()
-    {
-        return (m_flags & MTFlag_IsArray) != 0;
-    }
-
-    MethodTable * GetParent()
-    {
-        _ASSERTE(!IsArray());
-        return m_pRelatedType;
-    }
-
-    bool SanityCheck()
-    {
-        return true;
-    }
-};
-#define EEType MethodTable
-
-class Object
-{
-    MethodTable * m_pMethTab;
-
-public:
-    ObjHeader * GetHeader()
-    { 
-        return ((ObjHeader *)this) - 1;
-    }
-
-    MethodTable * RawGetMethodTable() const
-    {
-        return m_pMethTab;
-    }
-
-    void RawSetMethodTable(MethodTable * pMT)
-    {
-        m_pMethTab = pMT;
-    }
-
-    void SetMethodTable(MethodTable * pMT)
-    {
-        m_pMethTab = pMT;
-    }
-};
-#define MIN_OBJECT_SIZE     (2*sizeof(BYTE*) + sizeof(ObjHeader))
-
-class ArrayBase : public Object
-{
-    DWORD m_dwLength;
-
-public:
-    DWORD GetNumComponents()
-    {
-        return m_dwLength;
-    }
-
-    static SIZE_T GetOffsetOfNumComponents()
-    {
-        return offsetof(ArrayBase, m_dwLength);
-    }
-};
+class ObjHeader;
+class MethodTable;
+class Object;
+class ArrayBase;
 
 // Various types used to refer to object references or handles. This will get more complex if we decide
 // Redhawk wants to wrap object references in the debug build.
@@ -1369,3 +1230,54 @@ public:
     AppDomain *DefaultDomain() { return NULL; }
     DWORD GetTotalNumSizedRefHandles() { return 0; }
 };
+
+#ifdef STRESS_HEAP
+namespace GCStressPolicy
+{
+    static volatile int32_t s_cGcStressDisables;
+
+    inline bool IsEnabled() { return s_cGcStressDisables == 0; }
+    inline void GlobalDisable() { FastInterlockIncrement(&s_cGcStressDisables); }
+    inline void GlobalEnable() { FastInterlockDecrement(&s_cGcStressDisables); }
+}
+
+enum gcs_trigger_points
+{
+    cfg_any,
+};
+
+template <enum gcs_trigger_points tp>
+class GCStress
+{
+public:
+    static inline bool IsEnabled()
+    {
+        return g_pConfig->GetGCStressLevel() != 0;
+    }
+};
+#endif // STRESS_HEAP
+
+#ifdef VERIFY_HEAP
+class SyncBlockCache;
+
+extern SyncBlockCache g_sSyncBlockCache;
+
+class SyncBlockCache
+{
+public:
+    static SyncBlockCache *GetSyncBlockCache() { return &g_sSyncBlockCache; }
+    void GCWeakPtrScan(void *pCallback, LPARAM pCtx, int dummy)
+    {
+        UNREFERENCED_PARAMETER(pCallback);
+        UNREFERENCED_PARAMETER(pCtx);
+        UNREFERENCED_PARAMETER(dummy);
+    }
+    void GCDone(uint32_t demoting, int max_gen)
+    {
+        UNREFERENCED_PARAMETER(demoting);
+        UNREFERENCED_PARAMETER(max_gen);
+    }
+    void VerifySyncTableEntry() {}
+};
+
+#endif // VERIFY_HEAP
