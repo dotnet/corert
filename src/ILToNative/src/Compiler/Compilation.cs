@@ -221,7 +221,7 @@ namespace ILToNative
                         {
                             MethodDesc declMethod = declReg.VirtualSlots[i];
 
-                            AddMethod(ResolveVirtualMethod(reg.Type, declMethod));
+                            AddMethod(VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, reg.Type.GetClosestDefType()));
                         }
                     }
 
@@ -335,11 +335,6 @@ namespace ILToNative
                 GetMangledTypeName(field.OwningType);
                 GetMangledTypeName(field.FieldType);
             }
-        }
-
-        internal MethodDesc ResolveVirtualMethod(TypeDesc implType, MethodDesc declMethod)
-        {
-            return VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestDefType());
         }
 
         // Turn a name into a valid identifier

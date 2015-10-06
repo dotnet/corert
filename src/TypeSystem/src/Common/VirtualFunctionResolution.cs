@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
-    class VirtualFunctionResolution
+    static class VirtualFunctionResolution
     {
         class UnificationGroup
         {
@@ -72,12 +72,12 @@ namespace Internal.TypeSystem
         public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, MetadataType objectType)
         {
             // Step 1, convert objectType to uninstantiated form
-            MetadataType uninstantiatedType = objectType;
+            TypeDesc uninstantiatedType = objectType;
             MethodDesc initialTargetMethod = targetMethod;
             InstantiatedType initialInstantiatedType = objectType as InstantiatedType;
             if (initialInstantiatedType != null)
             {
-                uninstantiatedType = (MetadataType)initialInstantiatedType.GetTypeDefinition();
+                uninstantiatedType = initialInstantiatedType.GetTypeDefinition();
             }
 
             // Step 2, convert targetMethod to method in type hierarchy of uninstantiated form
@@ -291,7 +291,7 @@ namespace Internal.TypeSystem
             }
 
             // Next find members which have seperated or added themselves to the group via MethodImpls
-            foreach (MethodImplRecord methodImplRecord in currentType.GetAllVirtualMethodImplsForType())
+            foreach (MethodImplRecord methodImplRecord in currentType.VirtualMethodImplsForType)
             {
                 MethodDesc declSlot = FindSlotDefiningMethodForVirtualMethod(methodImplRecord.Decl);
                 MethodDesc implSlot = FindSlotDefiningMethodForVirtualMethod(methodImplRecord.Body);

@@ -722,8 +722,7 @@ namespace ILToNative.CppCodeGen
                 for (int i = 0; i < reg.VirtualSlots.Count; i++)
                 {
                     MethodDesc declMethod = reg.VirtualSlots[i];
-
-                    MethodDesc implMethod = _compilation.ResolveVirtualMethod(implType, declMethod);
+                    MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestDefType());
 
                     sb.Append("(void*)&");
                     sb.Append(GetCppTypeName(implMethod.OwningType));

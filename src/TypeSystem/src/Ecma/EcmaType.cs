@@ -460,12 +460,11 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        protected override MethodImplRecord[] ComputeGetAllVirtualMethodImplsForType()
+        protected override MethodImplRecord[] ComputeVirtualMethodImplsForType()
         {
             List<MethodImplRecord> records = new List<MethodImplRecord>();
 
             MetadataReader metadataReader = _module.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var methodImplHandle in _typeDefinition.GetMethodImplementations())
             {
@@ -483,14 +482,14 @@ namespace Internal.TypeSystem.Ecma
                 }
 
                 MetadataType owningType = null;
-                switch (methodImpl.MethodDeclaration.Kind)
+                switch (methodDeclHandleKind)
                 {
                     case HandleKind.MethodDefinition:
                         owningType = ((MethodDesc)_module.GetObject(methodDeclCheckHandle)).OwningType as MetadataType;
                         break;
 
                     case HandleKind.MemberReference:
-                        EntityHandle owningTypeHandle = metadataReader.GetMemberReference((MemberReferenceHandle)methodImpl.MethodDeclaration).Parent;
+                        EntityHandle owningTypeHandle = metadataReader.GetMemberReference((MemberReferenceHandle)methodDeclCheckHandle).Parent;
                         owningType = _module.GetObject(owningTypeHandle) as MetadataType;
                         break;
                 }

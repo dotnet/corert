@@ -18,21 +18,24 @@ namespace Internal.TypeSystem
         /// Compute an array of all MethodImpls that pertain to overriding virtual (non-interface methods) on this type.
         /// May be expensive.
         /// </summary>
-        protected abstract MethodImplRecord[] ComputeGetAllVirtualMethodImplsForType();
+        protected abstract MethodImplRecord[] ComputeVirtualMethodImplsForType();
 
         private MethodImplRecord[] _allVirtualMethodImplsForType;
         /// <summary>
         /// Get an array of all MethodImpls that pertain to overriding virtual (non-interface methods) on this type. 
         /// Expected to cache results so this api can be used repeatedly.
         /// </summary>
-        public MethodImplRecord[] GetAllVirtualMethodImplsForType()
+        public MethodImplRecord[] VirtualMethodImplsForType
         {
-            if (_allVirtualMethodImplsForType == null)
+            get
             {
-                _allVirtualMethodImplsForType = ComputeGetAllVirtualMethodImplsForType();
-            }
+                if (_allVirtualMethodImplsForType == null)
+                {
+                    _allVirtualMethodImplsForType = ComputeVirtualMethodImplsForType();
+                }
 
-            return _allVirtualMethodImplsForType;
+                return _allVirtualMethodImplsForType;
+            }
         }
 
         /// <summary>
@@ -67,9 +70,9 @@ namespace Internal.TypeSystem
             return instMethodImpls;
         }
 
-        protected override MethodImplRecord[] ComputeGetAllVirtualMethodImplsForType()
+        protected override MethodImplRecord[] ComputeVirtualMethodImplsForType()
         {
-            MethodImplRecord[] uninstMethodImpls = _typeDef.GetAllVirtualMethodImplsForType();
+            MethodImplRecord[] uninstMethodImpls = _typeDef.VirtualMethodImplsForType;
             return InstantiateMethodImpls(uninstMethodImpls);
         }
 

@@ -312,7 +312,7 @@ namespace ILToNative
                 {
                     MethodDesc declMethod = reg.VirtualSlots[i];
 
-                    MethodDesc implMethod = ResolveVirtualMethod(implType, declMethod);
+                    MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestDefType());
 
                     Out.Write(".quad ");
                     Out.WriteLine(GetMangledMethodName(implMethod));

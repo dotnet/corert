@@ -45,13 +45,15 @@ namespace Internal.TypeSystem
         {
             // Assert that either type is instantiated and its type definition is the type that defines the typical
             // method definition of method, or that the owning type of the method typical definition is exactly type
-            System.Diagnostics.Debug.Assert((type is InstantiatedType) ? 
+            Debug.Assert((type is InstantiatedType) ? 
                 ((InstantiatedType)type).GetTypeDefinition() == method.GetTypicalMethodDefinition().OwningType :
                 type == method.GetTypicalMethodDefinition().OwningType);
 
+            MethodDesc methodTypicalDefinition = method.GetTypicalMethodDefinition();
+
             foreach (MethodDesc methodToExamine in type.GetMethods())
             {
-                if (methodToExamine.GetTypicalMethodDefinition() == method.GetTypicalMethodDefinition())
+                if (methodToExamine.GetTypicalMethodDefinition() == methodTypicalDefinition)
                     return methodToExamine;
             }
 
@@ -61,15 +63,14 @@ namespace Internal.TypeSystem
 
         static public MethodDesc FindMethodOnTypeWithMatchingTypicalMethod(this TypeDesc typeExamine, MethodDesc method)
         {
-            TypeDesc typicalTypeInHierarchyOfTargetMethod = null;
-            typicalTypeInHierarchyOfTargetMethod = method.GetTypicalMethodDefinition().OwningType;
+            TypeDesc typicalTypeInHierarchyOfTargetMethod = method.GetTypicalMethodDefinition().OwningType;
             TypeDesc typeInHierarchyOfTypeExamine = typeExamine;
             do
             {
                 TypeDesc typicalTypeInHierarchyOfTypeExamine = typeInHierarchyOfTypeExamine;
                 if (typicalTypeInHierarchyOfTypeExamine is InstantiatedType)
                 {
-                    typicalTypeInHierarchyOfTypeExamine = ((InstantiatedType)typicalTypeInHierarchyOfTypeExamine).GetTypeDefinition();
+                    typicalTypeInHierarchyOfTypeExamine = typicalTypeInHierarchyOfTypeExamine.GetTypeDefinition();
                 }
                 if (typicalTypeInHierarchyOfTypeExamine == typicalTypeInHierarchyOfTargetMethod)
                 {
