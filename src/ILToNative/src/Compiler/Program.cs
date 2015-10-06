@@ -70,7 +70,7 @@ namespace ILToNative
                     break;
 
                 case "cpp":
-                    _options.Cpp = true;
+                    _options.IsCppCodeGen = true;
                     break;
 
                 default:

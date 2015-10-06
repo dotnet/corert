@@ -267,3 +267,10 @@ Makefile
 
 # Cross compilation
 cross/rootfs/*
+
+# Temporary files from ad hoc testing projects
+src/ILToNative/reproNative/repro.cpp
+src/ILToNative/reproNative/repro.s
+src/ILToNative/reproNative/reproNative.sln
+src/ILToNative/reproNative/reproNativeCpp.sln
+

@@ -19,7 +19,7 @@ namespace ILToNative
 {
     public struct CompilationOptions
     {
-        public bool Cpp;
+        public bool IsCppCodeGen;
     }
 
     public partial class Compilation
@@ -32,12 +32,16 @@ namespace ILToNative
         Dictionary<FieldDesc, RegisteredField> _registeredFields = new Dictionary<FieldDesc, RegisteredField>();
         List<MethodDesc> _methodsThatNeedsCompilation = null;
 
+        NameMangler _nameMangler = null;
+
         ILToNative.CppCodeGen.CppWriter _cppWriter = null;
 
         public Compilation(TypeSystemContext typeSystemContext, CompilationOptions options)
         {
             _typeSystemContext = typeSystemContext;
             _options = options;
+
+            _nameMangler = new NameMangler(this);
         }
 
         public TypeSystemContext TypeSystemContext
@@ -45,6 +49,14 @@ namespace ILToNative
             get
             {
                 return _typeSystemContext;
+            }
+        }
+
+        public NameMangler NameMangler
+        {
+            get
+            {
+                return _nameMangler;
             }
         }
 
@@ -67,6 +79,14 @@ namespace ILToNative
             get
             {
                 return _mainMethod;
+            }
+        }
+
+        internal bool IsCppCodeGen
+        {
+            get
+            {
+                return _options.IsCppCodeGen;
             }
         }
 
@@ -192,7 +212,7 @@ namespace ILToNative
 
             foreach (MethodDesc method in pendingMethods)
             {
-                if (_options.Cpp)
+                if (_options.IsCppCodeGen)
                 {
                     _cppWriter.CompileMethod(method);
                 }
@@ -234,7 +254,7 @@ namespace ILToNative
 
         public void CompileSingleFile(MethodDesc mainMethod)
         {
-            if (_options.Cpp)
+            if (_options.IsCppCodeGen)
             {
                 _cppWriter = new CppCodeGen.CppWriter(this);
             }
@@ -253,7 +273,7 @@ namespace ILToNative
                 ExpandVirtualMethods();
             }
 
-            if (_options.Cpp)
+            if (_options.IsCppCodeGen)
             {
                 _cppWriter.OutputCode();
             }
@@ -274,16 +294,16 @@ namespace ILToNative
                 _methodsThatNeedsCompilation = new List<MethodDesc>();
             _methodsThatNeedsCompilation.Add(method);
 
-            GetMangledMethodName(method);
+            NameMangler.GetMangledMethodName(method);
 
-            if (_options.Cpp)
+            if (_options.IsCppCodeGen)
             {
                 // Precreate name to ensure that all types referenced by signatures are present
-                GetMangledTypeName(method.OwningType);
+                NameMangler.GetMangledTypeName(method.OwningType);
                 var signature = method.Signature;
-                GetMangledTypeName(signature.ReturnType);
+                NameMangler.GetMangledTypeName(signature.ReturnType);
                 for (int i = 0; i < signature.Length; i++)
-                    GetMangledTypeName(signature[i]);
+                    NameMangler.GetMangledTypeName(signature[i]);
             }
         }
 
@@ -329,11 +349,11 @@ namespace ILToNative
                 return;
             reg.IncludedInCompilation = true;
 
-            if (_options.Cpp)
+            if (_options.IsCppCodeGen)
             {
                 // Precreate name to ensure that all types referenced by signatures are present
-                GetMangledTypeName(field.OwningType);
-                GetMangledTypeName(field.FieldType);
+                NameMangler.GetMangledTypeName(field.OwningType);
+                NameMangler.GetMangledTypeName(field.FieldType);
             }
         }
 
@@ -352,119 +372,6 @@ namespace ILToNative
                     return implMethod;
                 t = t.BaseType;
             }
-        }
-
-        // Turn a name into a valid identifier
-        private static string SanitizeName(string s)
-        {
-            // TODO: Handle Unicode, etc.
-            s = s.Replace("`", "_");
-            s = s.Replace("<", "_");
-            s = s.Replace(">", "_");
-            s = s.Replace("$", "_");
-            return s;
-        }
-
-        int _unique = 1;
-        HashSet<String> _deduplicator = new HashSet<String>();
-
-        internal string GetMangledTypeName(TypeDesc type)
-        {
-            var reg = GetRegisteredType(type);
-
-            string mangledName = reg.MangledName;
-            if (mangledName != null)
-                return mangledName;
-
-            switch (type.Category)
-            {
-                case TypeFlags.Array:
-                    // mangledName = "Array<" + GetSignatureCPPTypeName(((ArrayType)type).ElementType) + ">";
-                    mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__Array";
-                    if (((ArrayType)type).Rank != 1)
-                        mangledName += "Rank" + ((ArrayType)type).Rank.ToString();
-                    break;
-                case TypeFlags.ByRef:
-                    if (_options.Cpp)
-                        mangledName = _cppWriter.GetCppSignatureTypeName(((ByRefType)type).ParameterType) + "*";
-                    else
-                        mangledName = GetMangledTypeName(((ByRefType)type).ParameterType) + "__ByRef";
-                    break;
-                case TypeFlags.Pointer:
-                    if (_options.Cpp)
-                        mangledName = _cppWriter.GetCppSignatureTypeName(((PointerType)type).ParameterType) + "*";
-                    else
-                        mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + "__Pointer";
-                    break;
-
-                default:
-                    mangledName = type.Name;
-
-                    // Include encapsulating type
-                    TypeDesc def = type.GetTypeDefinition();
-                    TypeDesc containingType = (def is EcmaType) ? ((EcmaType)def).ContainingType : null;
-                    while (containingType != null)
-                    {
-                        mangledName = containingType.Name + "__" + mangledName;
-
-                        containingType = ((EcmaType)containingType).ContainingType;
-                    }
-
-                    mangledName = SanitizeName(mangledName);
-
-                    mangledName = mangledName.Replace(".", _options.Cpp ? "::" : "_");
-
-                    // TODO: the special handling for "Interop" is needed due to type name / namespace name clashes;
-                    //       find a better solution
-                    if (type.HasInstantiation || _deduplicator.Contains(mangledName) || mangledName == "Interop")
-                        mangledName = mangledName + "_" + _unique++;
-                    _deduplicator.Add(mangledName);
-
-                    break;
-            }
-
-            reg.MangledName = mangledName;
-            return mangledName;
-        }
-
-        internal string GetMangledMethodName(MethodDesc method)
-        {
-            var reg = GetRegisteredMethod(method);
-
-            string mangledName = reg.MangledName;
-            if (mangledName != null)
-                return mangledName;
-
-            RegisteredType regType = GetRegisteredType(method.OwningType);
-
-            mangledName = SanitizeName(method.Name);
-
-            mangledName = mangledName.Replace(".", "_"); // To handle names like .ctor
-
-            if (!_options.Cpp)
-                mangledName = GetMangledTypeName(method.OwningType) + "__" + mangledName;
-
-            RegisteredMethod rm = regType.Methods;
-            bool dedup = false;
-            while (rm != null)
-            {
-                if (rm.MangledName != null && rm.MangledName == mangledName)
-                {
-                    dedup = true;
-                    break;
-                }
-
-                rm = rm.Next;
-            }
-            if (dedup)
-                mangledName = mangledName + "_" + regType.UniqueMethod++;
-
-            reg.MangledName = mangledName;
-
-            reg.Next = regType.Methods;
-            regType.Methods = reg;
-
-            return mangledName;
         }
 
         struct ReadyToRunHelperKey : IEquatable<ReadyToRunHelperKey>
