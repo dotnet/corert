@@ -128,6 +128,12 @@
     <Compile Include="..\..\TypeSystem\src\Common\TypeDesc.cs">
       <Link>TypeSystem\TypeDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\TypeDesc.MethodImpls.cs">
+      <Link>TypeSystem\TypeDesc.MethodImpls.cs</Link>
+    </Compile>
+    <Compile Include="..\..\TypeSystem\src\Common\VirtualFunctionResolution.cs">
+      <Link>TypeSystem\VirtualFunctionResolution.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\TypeSystem\src\Ecma\EcmaField.cs">
