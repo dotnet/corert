@@ -127,6 +127,9 @@
     <Compile Include="..\..\TypeSystem\src\Common\TypeDesc.cs">
       <Link>TypeSystem\TypeDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\TypeSystem\VirtualFunctionResolution.cs">
+      <Link>TypeSystem\VirtualFunctionResolution.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\TypeSystem\src\Ecma\EcmaField.cs">
@@ -199,6 +202,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
+    <Compile Include="TypeSystem\TypeDesc.MethodImpls.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
