@@ -42,7 +42,7 @@ namespace ILToNative
 
         void OutputMethodCode(RegisteredMethod m)
         {
-            string mangledName = GetMangledMethodName(m.Method);
+            string mangledName = NameMangler.GetMangledMethodName(m.Method);
 
             Out.Write(".global ");
             Out.WriteLine(mangledName);
@@ -82,7 +82,7 @@ namespace ILToNative
                     string targetName;
                     if (target is MethodDesc)
                     {
-                        targetName = GetMangledMethodName((MethodDesc)target);
+                        targetName = NameMangler.GetMangledMethodName((MethodDesc)target);
                     }
                     else
                     if (target is ReadyToRunHelper)
@@ -167,7 +167,7 @@ namespace ILToNative
                 {
                     case ReadyToRunHelperId.NewHelper:
                         Out.Write("leaq __EEType_");
-                        Out.Write(GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
                         Out.WriteLine("(%rip), %rcx");
 
                         Out.WriteLine("jmp __allocate_object");
@@ -213,7 +213,7 @@ namespace ILToNative
 
                     case ReadyToRunHelperId.IsInstanceOf:
                         Out.Write("leaq __EEType_");
-                        Out.Write(GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
                         Out.WriteLine("(%rip), %rdx");
 
                         Out.WriteLine("jmp __isinst_class");
@@ -221,7 +221,7 @@ namespace ILToNative
 
                     case ReadyToRunHelperId.CastClass:
                         Out.Write("leaq __EEType_");
-                        Out.Write(GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
                         Out.WriteLine("(%rip), %rdx");
 
                         Out.WriteLine("jmp __castclass_class");
@@ -229,7 +229,7 @@ namespace ILToNative
 
                     case ReadyToRunHelperId.GetNonGCStaticBase:
                         Out.Write("leaq __NonGCStaticBase_");
-                        Out.Write(GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
                         Out.WriteLine("(%rip), %rax");
                         Out.WriteLine("ret");
                         break;
@@ -250,7 +250,7 @@ namespace ILToNative
 
                 Out.WriteLine(".align 16");
                 Out.Write("__EEType_");
-                Out.Write(GetMangledTypeName(t.Type));
+                Out.Write(NameMangler.GetMangledTypeName(t.Type));
                 Out.WriteLine(":");
 
                 Out.WriteLine(".int 0, 24");
@@ -258,7 +258,7 @@ namespace ILToNative
                 if (t.Type.BaseType != null)
                 {
                     Out.Write(".quad __EEType_");
-                    Out.WriteLine(GetMangledTypeName(t.Type.BaseType));
+                    Out.WriteLine(NameMangler.GetMangledTypeName(t.Type.BaseType));
                 }
                 else
                 {
@@ -288,7 +288,7 @@ namespace ILToNative
                     Out.Write(".align ");
                     Out.WriteLine(type.NonGCStaticFieldAlignment);
                     Out.Write("__NonGCStaticBase_");
-                    Out.Write(GetMangledTypeName(type));
+                    Out.Write(NameMangler.GetMangledTypeName(type));
                     Out.WriteLine(":");
                     Out.Write(".rept ");
                     Out.WriteLine(type.NonGCStaticFieldSize);
@@ -315,7 +315,7 @@ namespace ILToNative
                     MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestDefType());
 
                     Out.Write(".quad ");
-                    Out.WriteLine(GetMangledMethodName(implMethod));
+                    Out.WriteLine(NameMangler.GetMangledMethodName(implMethod));
                 }
             }
         }

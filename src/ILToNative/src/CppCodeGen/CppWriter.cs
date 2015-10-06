@@ -232,12 +232,19 @@ namespace ILToNative.CppCodeGen
 
         public string GetCppTypeName(TypeDesc type)
         {
-            return _compilation.GetMangledTypeName(type);
+            switch (type.Category)
+            {
+                case TypeFlags.ByRef:
+                case TypeFlags.Pointer:
+                    return GetCppSignatureTypeName(((ParameterizedType)type).ParameterType) + "*";
+                default:
+                    return _compilation.NameMangler.GetMangledTypeName(type);
+            }
         }
 
         public string GetCppMethodName(MethodDesc method)
         {
-            return _compilation.GetMangledMethodName(method);
+            return _compilation.NameMangler.GetMangledMethodName(method);
         }
 
         public string GetCppStaticFieldName(FieldDesc field)

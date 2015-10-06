@@ -41,6 +41,7 @@
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MethodCode.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
+    <Compile Include="Compiler\NameMangler.cs" />
     <Compile Include="Compiler\Program.cs" />
     <Compile Include="Compiler\ReadyToRunHelper.cs" />
     <Compile Include="Compiler\RegisteredField.cs" />
