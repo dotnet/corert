@@ -42,15 +42,15 @@ namespace ILToNative
                 switch (this.Id)
                 {
                     case ReadyToRunHelperId.NewHelper:
-                        return "__NewHelper_" + _compilation.GetMangledTypeName((TypeDesc)this.Target);
+                        return "__NewHelper_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.VirtualCall:
-                        return "__VirtualCall_" + _compilation.GetMangledMethodName((MethodDesc)this.Target);
+                        return "__VirtualCall_" + _compilation.NameMangler.GetMangledMethodName((MethodDesc)this.Target);
                     case ReadyToRunHelperId.IsInstanceOf:
-                        return "__IsInstanceOf_" + _compilation.GetMangledTypeName((TypeDesc)this.Target);
+                        return "__IsInstanceOf_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.CastClass:
-                        return "__CastClass_" + _compilation.GetMangledTypeName((TypeDesc)this.Target);
+                        return "__CastClass_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.GetNonGCStaticBase:
-                        return "__GetNonGCStaticBase_" + _compilation.GetMangledTypeName((TypeDesc)this.Target);
+                        return "__GetNonGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     default:
                         throw new NotImplementedException();
                 }
