@@ -399,5 +399,112 @@ namespace Internal.TypeSystem.Ecma
                 return Module.GetGlobalModuleType() == this;
             }
         }
+
+        // Virtual function related functionality
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string declName)
+        {
+            MetadataReader metadataReader = _module.MetadataReader;
+            var stringComparer = metadataReader.StringComparer;
+            List<MethodImplRecord> foundRecords = null;
+
+            foreach (var methodImplHandle in _typeDefinition.GetMethodImplementations())
+            {
+                MethodImplementation methodImpl = metadataReader.GetMethodImplementation(methodImplHandle);
+
+                EntityHandle methodDeclCheckHandle = methodImpl.MethodDeclaration;
+                HandleKind methodDeclHandleKind = methodDeclCheckHandle.Kind;
+
+                // We want to check that the method name matches before actually getting the MethodDesc. For MethodSpecifications
+                // we need to dereference that handle to the underlying member reference to look at name matching.
+                if (methodDeclHandleKind == HandleKind.MethodSpecification)
+                {
+                    methodDeclCheckHandle = metadataReader.GetMethodSpecification((MethodSpecificationHandle)methodDeclCheckHandle).Method;
+                    methodDeclHandleKind = methodDeclCheckHandle.Kind;
+                }
+
+                bool foundRecord = false;
+
+                switch (methodImpl.MethodDeclaration.Kind)
+                {
+                    case HandleKind.MethodDefinition:
+                        if (stringComparer.Equals(metadataReader.GetMethodDefinition((MethodDefinitionHandle)methodDeclCheckHandle).Name, declName))
+                        {
+                            foundRecord = true;
+                        }
+                        break;
+
+                    case HandleKind.MemberReference:
+                        if (stringComparer.Equals(metadataReader.GetMemberReference((MemberReferenceHandle)methodDeclCheckHandle).Name, declName))
+                        {
+                            foundRecord = true;
+                        }
+                        break;
+                }
+
+                if (foundRecord)
+                {
+                    if (foundRecords == null)
+                        foundRecords = new List<MethodImplRecord>();
+
+                    MethodImplRecord newRecord = new MethodImplRecord();
+                    newRecord.Decl = (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration);
+                    newRecord.Body = (MethodDesc)_module.GetObject(methodImpl.MethodBody);
+
+                    foundRecords.Add(newRecord);
+                }
+            }
+
+            if (foundRecords != null)
+                return foundRecords.ToArray();
+
+            return null;
+        }
+
+        protected override MethodImplRecord[] ComputeGetAllVirtualMethodImplsForType()
+        {
+            List<MethodImplRecord> records = new List<MethodImplRecord>();
+
+            MetadataReader metadataReader = _module.MetadataReader;
+            var stringComparer = metadataReader.StringComparer;
+
+            foreach (var methodImplHandle in _typeDefinition.GetMethodImplementations())
+            {
+                MethodImplementation methodImpl = metadataReader.GetMethodImplementation(methodImplHandle);
+
+                EntityHandle methodDeclCheckHandle = methodImpl.MethodDeclaration;
+                HandleKind methodDeclHandleKind = methodDeclCheckHandle.Kind;
+
+                // We want to check that the method name matches before actually getting the MethodDesc. For MethodSpecifications
+                // we need to dereference that handle to the underlying member reference to look at name matching.
+                if (methodDeclHandleKind == HandleKind.MethodSpecification)
+                {
+                    methodDeclCheckHandle = metadataReader.GetMethodSpecification((MethodSpecificationHandle)methodDeclCheckHandle).Method;
+                    methodDeclHandleKind = methodDeclCheckHandle.Kind;
+                }
+
+                MetadataType owningType = null;
+                switch (methodImpl.MethodDeclaration.Kind)
+                {
+                    case HandleKind.MethodDefinition:
+                        owningType = ((MethodDesc)_module.GetObject(methodDeclCheckHandle)).OwningType as MetadataType;
+                        break;
+
+                    case HandleKind.MemberReference:
+                        EntityHandle owningTypeHandle = metadataReader.GetMemberReference((MemberReferenceHandle)methodImpl.MethodDeclaration).Parent;
+                        owningType = _module.GetObject(owningTypeHandle) as MetadataType;
+                        break;
+                }
+
+                if (!owningType.IsInterface)
+                {
+                    MethodImplRecord newRecord = new MethodImplRecord();
+                    newRecord.Decl = (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration);
+                    newRecord.Body = (MethodDesc)_module.GetObject(methodImpl.MethodBody);
+                    records.Add(newRecord);
+                }
+            }
+
+            return records.ToArray();
+        }
     }
 }

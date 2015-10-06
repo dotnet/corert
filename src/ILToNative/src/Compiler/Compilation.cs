@@ -339,19 +339,7 @@ namespace ILToNative
 
         internal MethodDesc ResolveVirtualMethod(TypeDesc implType, MethodDesc declMethod)
         {
-            // TODO: Proper virtual method resolution
-            string name = declMethod.Name;
-            MethodSignature sig = declMethod.Signature;
-
-            MethodDesc implMethod;
-            TypeDesc t = implType;
-            for (;;)
-            {
-                implMethod = t.GetMethod(name, sig);
-                if (implMethod != null)
-                    return implMethod;
-                t = t.BaseType;
-            }
+            return VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestDefType());
         }
 
         // Turn a name into a valid identifier
