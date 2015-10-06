@@ -38,6 +38,7 @@
     <Compile Include="Compiler\AsmWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MethodCode.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />

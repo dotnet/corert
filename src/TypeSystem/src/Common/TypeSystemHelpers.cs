@@ -40,6 +40,17 @@ namespace Internal.TypeSystem
                 return type.BaseType;
         }
 
+        static public int GetElementSize(this TypeDesc type)
+        {
+            if (type.IsValueType)
+            {
+                return ((MetadataType)type).InstanceFieldSize;
+            }
+            else
+            {
+                return type.Context.Target.PointerSize;
+            }
+        }
 
         static private MethodDesc FindMethodOnExactTypeWithMatchingTypicalMethod(this TypeDesc type, MethodDesc method)
         {

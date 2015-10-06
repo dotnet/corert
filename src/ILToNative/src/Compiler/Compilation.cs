@@ -403,5 +403,16 @@ namespace ILToNative
 
             return helper;
         }
+
+        Dictionary<JitHelperId, JitHelper> _jitHelpers = new Dictionary<JitHelperId, JitHelper>();
+        public Object GetJitHelper(JitHelperId id)
+        {
+            JitHelper helper;
+
+            if (!_jitHelpers.TryGetValue(id, out helper))
+                _jitHelpers.Add(id, helper = new JitHelper(this, id));
+
+            return helper;
+        }
     }
 }

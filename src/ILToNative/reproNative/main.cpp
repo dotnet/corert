@@ -196,7 +196,7 @@ Object * __allocate_string(int32_t len)
 #endif
 }
 
-extern "C" Object * __allocate_array(MethodTable * pMT, size_t elements)
+extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
 {
 #if !USE_MRT
     alloc_context * acontext = GetThread()->GetAllocContext();
@@ -301,6 +301,11 @@ void ThrowRangeOverflowException()
     throw 0;
 }
 
+void __range_check_fail()
+{
+    ThrowRangeOverflowException();
+}
+
 void __range_check(void * a, size_t elem)
 {
     if (elem >= *((size_t*)a + 1))
@@ -310,7 +315,7 @@ void __range_check(void * a, size_t elem)
 #ifdef CPPCODEGEN
 Object * __get_commandline_args(int argc, char * argv[])
 {
-    System::Array * p = (System::Array *)__allocate_array(System::String__Array::__getMethodTable(), argc);
+    System::Array * p = (System::Array *)__allocate_array(argc, System::String__Array::__getMethodTable());
 
     for (int i = 0; i < argc; i++)
     {

@@ -14,6 +14,7 @@ namespace ILToNative
     public enum ReadyToRunHelperId
     {
         NewHelper,
+        NewArr1,
         VirtualCall,
         IsInstanceOf,
         CastClass,
@@ -43,6 +44,8 @@ namespace ILToNative
                 {
                     case ReadyToRunHelperId.NewHelper:
                         return "__NewHelper_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
+                    case ReadyToRunHelperId.NewArr1:
+                        return "__NewArr1_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.VirtualCall:
                         return "__VirtualCall_" + _compilation.NameMangler.GetMangledMethodName((MethodDesc)this.Target);
                     case ReadyToRunHelperId.IsInstanceOf:

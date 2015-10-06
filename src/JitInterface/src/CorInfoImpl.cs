@@ -203,7 +203,7 @@ namespace Internal.JitInterface
 
             sig.numArgs = (ushort)signature.Length;
 
-            sig.args = (CORINFO_ARG_LIST_STRUCT_ * )0; // CORINFO_ARG_LIST_STRUCT_ is argument index
+            sig.args = (CORINFO_ARG_LIST_STRUCT_*)0; // CORINFO_ARG_LIST_STRUCT_ is argument index
 
             // TODO: Shared generic
             sig.sigInst.classInst = null;
@@ -211,7 +211,7 @@ namespace Internal.JitInterface
             sig.sigInst.methInst = null;
             sig.sigInst.methInstCount = 0;
 
-            sig.pSig = (byte * )ObjectToHandle(signature);
+            sig.pSig = (byte*)ObjectToHandle(signature);
             sig.cbSig = 0; // Not used by the JIT
             sig.scope = null; // Not used by the JIT
             sig.token = 0; // Not used by the JIT
@@ -246,7 +246,7 @@ namespace Internal.JitInterface
             sig.token = 0; // Not used by the JIT
         }
 
-        CorInfoType asCorInfoType(TypeDesc type, out CORINFO_CLASS_STRUCT_* structType)
+        CorInfoType asCorInfoType(TypeDesc type)
         {
             if (type.IsEnum)
             {
@@ -258,18 +258,27 @@ namespace Internal.JitInterface
                 Debug.Assert((CorInfoType)TypeFlags.Void == CorInfoType.CORINFO_TYPE_VOID);
                 Debug.Assert((CorInfoType)TypeFlags.Double == CorInfoType.CORINFO_TYPE_DOUBLE);
 
-                structType = null;
                 return (CorInfoType)type.Category;
+            }
+
+            if (type.IsByRef)
+            {
+                return CorInfoType.CORINFO_TYPE_BYREF;
             }
 
             if (type.IsValueType)
             {
-                structType = ObjectToHandle(type);
                 return CorInfoType.CORINFO_TYPE_VALUECLASS;
             }
 
-            structType = null;
             return CorInfoType.CORINFO_TYPE_CLASS;
+        }
+
+        CorInfoType asCorInfoType(TypeDesc type, out CORINFO_CLASS_STRUCT_* structType)
+        {
+            var corInfoType = asCorInfoType(type);
+            structType = (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ? ObjectToHandle(type) : null;
+            return corInfoType;
         }
 
         uint getMethodAttribsInternal(MethodDesc method)
@@ -501,8 +510,12 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.Bool)]
         bool shouldEnforceCallvirtRestriction(IntPtr _this, CORINFO_MODULE_STRUCT_* scope)
         { throw new NotImplementedException(); }
+
         CorInfoType asCorInfoType(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        {
+            var type = HandleToObject(cls);
+            return asCorInfoType(type);
+        }
 
         byte* getClassName(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
@@ -598,14 +611,7 @@ namespace Internal.JitInterface
         uint getClassSize(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
-            if (type.IsValueType)
-            {
-                return (uint)((MetadataType)type).InstanceFieldSize;
-            }
-            else
-            {
-                return (uint)type.Context.Target.PointerSize;
-            }
+            return (uint)type.GetElementSize();
         }
 
         uint getClassAlignmentRequirement(IntPtr _this, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fDoubleAlignHint)
@@ -704,6 +710,16 @@ namespace Internal.JitInterface
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
+                    {
+                        var type = HandleToObject(pResolvedToken.hClass);
+                        var arrayType = type.Context.GetArrayType(type);
+                        _compilation.AddType(arrayType);
+                        _compilation.MarkAsConstructed(arrayType);
+
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewArr1, arrayType));
+                    }
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
@@ -740,8 +756,12 @@ namespace Internal.JitInterface
 
         CORINFO_CLASS_STRUCT_* getBuiltinClass(IntPtr _this, CorInfoClassId classId)
         { throw new NotImplementedException(); }
+
         CorInfoType getTypeForPrimitiveValueClass(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        {
+            return asCorInfoType(HandleToObject(cls));
+        }
+
         [return: MarshalAs(UnmanagedType.Bool)]
         bool canCast(IntPtr _this, CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
         { throw new NotImplementedException(); }
@@ -1034,7 +1054,15 @@ namespace Internal.JitInterface
         SIZE_T* getAddrModuleDomainID(IntPtr _this, CORINFO_MODULE_STRUCT_* module)
         { throw new NotImplementedException(); }
         void* getHelperFtn(IntPtr _this, CorInfoHelpFunc ftnNum, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        {
+            switch (ftnNum)
+            {
+                case CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL:
+                    return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.RngChkFail));
+                default:
+                    throw new NotImplementedException();
+            }
+        }
         void getFunctionEntryPoint(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         { throw new NotImplementedException(); }
         void getFunctionFixedEntryPoint(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)

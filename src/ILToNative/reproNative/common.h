@@ -40,7 +40,7 @@ int __initialize_runtime();
 void __shutdown_runtime();
 
 extern "C" Object * __allocate_object(MethodTable * pMT);
-extern "C" Object * __allocate_array(MethodTable * pMT, size_t elements);
+extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT);
 Object * __allocate_string(int32_t len);
 __declspec(noreturn) void __throw_exception(void * pEx);
 Object * __load_string_literal(const char * string);
@@ -48,6 +48,7 @@ Object * __load_string_literal(const char * string);
 extern "C" Object * __castclass_class(void * p, MethodTable * pMT);
 extern "C" Object * __isinst_class(void * p, MethodTable * pMT);
 
+extern "C" void __range_check_fail();
 void __range_check(void * a, size_t elem);
 
 Object * __get_commandline_args(int argc, char * argv[]);
