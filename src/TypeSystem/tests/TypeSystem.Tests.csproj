@@ -35,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InstanceFieldLayoutTests.cs" />
+    <Compile Include="StaticFieldLayoutTests.cs" />
     <Compile Include="TestTypeSystemContext.cs" />
   </ItemGroup>
 
