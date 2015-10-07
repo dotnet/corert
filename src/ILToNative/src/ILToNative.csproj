@@ -35,6 +35,12 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\ILToNative.TypeSystem\src\ILToNative.TypeSystem.csproj">
+      <Project>{dd5b6baa-d41a-4a6e-9e7d-83060f394b10}</Project>
+      <Name>ILToNative.TypeSystem</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Compiler\AsmWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
@@ -59,131 +65,31 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\TypeSystem\src\Common\AlignmentHelper.cs">
-      <Link>TypeSystem\AlignmentHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\ArrayType.cs">
-      <Link>TypeSystem\ArrayType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\ByRefType.cs">
-      <Link>TypeSystem\ByRefType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\FieldForInstantiatedType.cs">
-      <Link>TypeSystem\FieldForInstantiatedType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\FieldLayout.cs">
-      <Link>TypeSystem\FieldLayout.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\InstantiatedMethod.cs">
-      <Link>TypeSystem\InstantiatedMethod.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\InstantiatedType.cs">
-      <Link>TypeSystem\InstantiatedType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\MetadataType.cs">
-      <Link>TypeSystem\MetadataType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\MethodForInstantiatedType.cs">
-      <Link>TypeSystem\MethodForInstantiatedType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\ParameterizedType.cs">
-      <Link>TypeSystem\ParameterizedType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\PointerType.cs">
-      <Link>TypeSystem\PointerType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\SignatureVariable.cs">
-      <Link>TypeSystem\SignatureVariable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TargetDetails.cs">
-      <Link>TypeSystem\TargetDetails.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\ThreadSafeFlags.cs">
-      <Link>TypeSystem\ThreadSafeFlags.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TypeCast.cs">
-      <Link>TypeSystem\TypeCast.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TypeFlags.cs">
-      <Link>TypeSystem\TypeFlags.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TypeHashingAlgorithms.cs">
-      <Link>TypeSystem\TypeHashingAlgorithms.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TypeSystemContext.cs">
-      <Link>TypeSystem\TypeSystemContext.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TypeSystemHelpers.cs">
-      <Link>TypeSystem\TypeSystemHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\WellKnownType.cs">
-      <Link>TypeSystem\WellKnownType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\FieldDesc.cs">
-      <Link>TypeSystem\FieldDesc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\MethodDesc.cs">
-      <Link>TypeSystem\MethodDesc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TypeDesc.cs">
-      <Link>TypeSystem\TypeDesc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\TypeDesc.MethodImpls.cs">
-      <Link>TypeSystem\TypeDesc.MethodImpls.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Common\VirtualFunctionResolution.cs">
-      <Link>TypeSystem\VirtualFunctionResolution.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaField.cs">
-      <Link>TypeSystem.Ecma\EcmaField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaGenericParameter.cs">
-      <Link>TypeSystem.Ecma\EcmaGenericParameter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaMethod.cs">
-      <Link>TypeSystem.Ecma\EcmaMethod.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaModule.cs">
-      <Link>TypeSystem.Ecma\EcmaModule.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaSignatureParser.cs">
-      <Link>TypeSystem.Ecma\EcmaSignatureParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Ecma\EcmaType.cs">
-      <Link>TypeSystem.Ecma\EcmaType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\TypeSystem\src\Ecma\IMetadataStringDecoderProvider.cs">
-      <Link>TypeSystem.Ecma\IMetadataStringDecoderProvider.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\TypeSystem\src\IL\EcmaMethodIL.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\ILOpcode.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILOpcode.cs">
       <Link>IL\ILOpcode.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\ILProvider.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILProvider.cs">
       <Link>IL\ILProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\InstantiatedMethodIL.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\InstantiatedMethodIL.cs">
       <Link>IL\InstantiatedMethodIL.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\MethodIL.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\ILImporter.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\Stubs\ArrayMethodILEmitter.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ArrayMethodILEmitter.cs">
       <Link>IL\Stubs\ArrayMethodILEmitter.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\Stubs\DelegateThunks.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
     </Compile>
-    <Compile Include="..\..\TypeSystem\src\IL\Stubs\ILEmitter.cs">
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
   </ItemGroup>
