@@ -32,6 +32,7 @@
   <ItemGroup>
     <Compile Include="Platform.cs" />
     <Compile Include="InstanceFieldLayout.cs" />
+    <Compile Include="StaticFieldLayout.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
