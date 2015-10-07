@@ -54,7 +54,9 @@
     <Compile Include="Common\WellKnownType.cs" />
     <Compile Include="Common\FieldDesc.cs" />
     <Compile Include="Common\MethodDesc.cs" />
+    <Compile Include="Common\VirtualFunctionResolution.cs" />
     <Compile Include="Common\TypeDesc.cs" />
+    <Compile Include="Common\TypeDesc.MethodImpls.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

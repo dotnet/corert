@@ -44,7 +44,7 @@ namespace Internal.TypeSystem
             public void RemoveFromGroup(MethodDesc method)
             {
                 if (method == DefiningMethod)
-                    throw new InvalidProgramException();
+                    throw new BadImageFormatException();
 
                 Members.Remove(method);
             }
