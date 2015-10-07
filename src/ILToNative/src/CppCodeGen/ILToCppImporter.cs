@@ -824,7 +824,7 @@ namespace Internal.IL
                 if (delegateInvoke)
                 {
                     _stack[_stackTop - (methodSignature.Length + 1)].Value.Name =
-                        "((System::Delegate *)" +
+                        "((" + _writer.GetCppSignatureTypeName(GetWellKnownType(WellKnownType.MulticastDelegate)) + ")" +
                             _stack[_stackTop - (methodSignature.Length + 1)].Value.Name + ")->m_firstParameter";
                 }
             }

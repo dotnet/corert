@@ -613,12 +613,13 @@ namespace ILToNative.CppCodeGen
                     _statics.AppendLine("bool __cctor_" + GetCppTypeName(t.Type).Replace("::", "__") + ";");
                 }
 
-                RegisteredMethod m = t.Methods;
-                while (m != null)
+                if (t.Methods != null)
                 {
-                    if (m.IncludedInCompilation)
-                        OutputMethod(m);
-                    m = m.Next;
+                    foreach (var m in t.Methods)
+                    {
+                        if (m.IncludedInCompilation)
+                            OutputMethod(m);
+                    }
                 }
                 Out.Write("};");
             }
@@ -859,12 +860,14 @@ namespace ILToNative.CppCodeGen
                 {
                     Out.WriteLine(GetCodeForType(t.Type));
                 }
-                RegisteredMethod m = t.Methods;
-                while (m != null)
+
+                if (t.Methods != null)
                 {
-                    if (m.MethodCode != null)
-                        Out.WriteLine(m.MethodCode);
-                    m = m.Next;
+                    foreach (var m in t.Methods)
+                    {
+                        if (m.MethodCode != null)
+                            Out.WriteLine(m.MethodCode);
+                    }
                 }
             }
 

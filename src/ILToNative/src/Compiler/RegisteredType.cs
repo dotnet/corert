@@ -15,12 +15,9 @@ namespace ILToNative
         public bool IncludedInCompilation;
         public bool Constructed;
 
-        public int UniqueMethod;
-
-        public string MangledName;
         public string MangledSignatureName; // CppCodeGen specific
 
-        public RegisteredMethod Methods;
+        public List<RegisteredMethod> Methods;
 
         public List<MethodDesc> VirtualSlots;
     }
