@@ -546,10 +546,13 @@ namespace Internal.TypeSystem
             _instanceFieldAlignment = computedLayout.FieldAlignment;
             _instanceByteCount = computedLayout.ByteCount;
 
-            foreach (var fieldAndOffset in computedLayout.Offsets)
+            if (computedLayout.Offsets != null)
             {
-                Debug.Assert(fieldAndOffset.Field.OwningType == this);
-                fieldAndOffset.Field.InitializeOffset(fieldAndOffset.Offset);
+                foreach (var fieldAndOffset in computedLayout.Offsets)
+                {
+                    Debug.Assert(fieldAndOffset.Field.OwningType == this);
+                    fieldAndOffset.Field.InitializeOffset(fieldAndOffset.Offset);
+                }
             }
 
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.HasInstanceFieldLayout);
