@@ -88,28 +88,38 @@ void __register_module(SimpleModuleHeader* pModule)
 #endif // USE_MRT
 }
 
-namespace System { class Object {
-public:
-    EEType * get_EEType() { return *(EEType **)this; }
+namespace mscorlib { namespace System { 
+
+    class Object {
+    public:
+        EEType * get_EEType() { return *(EEType **)this; }
+    };
+
+    class Array : public Object {
+    public:
+        int32_t GetArrayLength() {
+            return *(int32_t *)((void **)this + 1);
+        }
+        void * GetArrayData() {
+            return (void **)this + 2;
+        }
+    };
+
+    class String : public Object { public:
+        static MethodTable * __getMethodTable();
+    };
+
+    class String__Array : public Object { public:
+        static MethodTable * __getMethodTable();
+    };
+
+    class EETypePtr { public:
+        intptr_t m_value;
+    };
+
 }; };
 
-namespace System { class Array : public System::Object {
-public:
-    int32_t GetArrayLength() {
-        return *(int32_t *)((void **)this + 1);
-    }
-    void * GetArrayData() {
-        return (void **)this + 2;
-    }
-}; };
-
-namespace System { class String : public System::Object { public:
-static MethodTable * __getMethodTable();
-}; };
-
-namespace System { class EETypePtr { public:
-    intptr_t m_value;
-}; }
+using namespace mscorlib;
 
 //
 // The fast paths for object allocation and write barriers is performance critical. They are often
@@ -147,6 +157,8 @@ extern "C" Object * __allocate_object(MethodTable * pMT)
 
 Object * __allocate_string(int32_t len)
 {
+#ifdef CPPCODEGEN
+
 #if !USE_MRT
     alloc_context * acontext = GetThread()->GetAllocContext();
     Object * pObject;
@@ -177,6 +189,10 @@ Object * __allocate_string(int32_t len)
     return pObject;
 #else
     return RhNewArray(System::String::__getMethodTable(), len);
+#endif
+
+#else
+    throw 42;
 #endif
 }
 
@@ -291,11 +307,7 @@ void __range_check(void * a, size_t elem)
         ThrowRangeOverflowException();
 }
 
-namespace System { class String__Array : public System::Object { public:
-static MethodTable * __getMethodTable();
-}; };
-
-
+#ifdef CPPCODEGEN
 Object * __get_commandline_args(int argc, char * argv[])
 {
     System::Array * p = (System::Array *)__allocate_array(System::String__Array::__getMethodTable(), argc);
@@ -308,6 +320,7 @@ Object * __get_commandline_args(int argc, char * argv[])
 
     return (Object *)p;
 }
+#endif
 
 // FCalls
 
@@ -523,17 +536,17 @@ extern "C" intptr_t RhGetModuleFromEEType(System::EETypePtr)
     throw 42;
 }
 
-#if 0
+#ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
 
-extern "C" int Program__Main();
+extern "C" int repro_Program__Main();
 
 int main(int argc, char * argv[]) {
     if (__initialize_runtime() != 0) return -1;
     __register_module(&__module);
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
 
-    Program::Main((System::String__Array*)__get_commandline_args(argc - 1, argv + 1));
+    repro_Program__Main();
 
     __reverse_pinvoke_return(&frame);
     __shutdown_runtime();

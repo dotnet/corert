@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -202,6 +203,16 @@ namespace Internal.TypeSystem
         public override TypeDesc GetTypeDefinition()
         {
             return _typeDef;
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder(_typeDef.ToString());
+            sb.Append('<');
+            for (int i = 0; i < _instantiation.Length; i++)
+                sb.Append(_instantiation[i].ToString());
+            sb.Append('>');
+            return sb.ToString();
         }
     }
 }

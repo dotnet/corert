@@ -13,10 +13,6 @@ namespace ILToNative
 
         public bool IncludedInCompilation;
 
-        public string MangledName;
-
         public Object MethodCode;
-
-        public RegisteredMethod Next;
     }
 }

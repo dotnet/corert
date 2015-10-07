@@ -2,7 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -10,7 +14,9 @@ using Internal.TypeSystem.Ecma;
 namespace ILToNative
 {
     //
-    // NameMangler is reponsible for giving extern C/C++ names to types, methods and fields
+    // NameMangler is reponsible for giving extern C/C++ names to managed types, methods and fields
+    //
+    // The key invariant is that the mangled names are independent on the compilation order.
     //
     public class NameMangler
     {
@@ -21,27 +27,118 @@ namespace ILToNative
             _compilation = compilation;
         }
 
-        // Turn a name into a valid identifier
-        private static string SanitizeName(string s)
+        //
+        // Turn a name into a valid C/C++ identifier
+        //
+        private string SanitizeName(string s, bool typeName = false)
         {
-            // TODO: Handle Unicode, etc.
-            s = s.Replace("`", "_");
-            s = s.Replace("<", "_");
-            s = s.Replace(">", "_");
-            s = s.Replace("$", "_");
-            return s;
+            StringBuilder sb = null;
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+
+                if (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')))
+                {
+                    if (sb != null)
+                        sb.Append(c);
+                    continue;
+                }
+
+                if ((c >= '0') && (c <= '9'))
+                {
+                    // C identifiers cannot start with a digit. Prepend underscores.
+                    if (i == 0)
+                    {
+                        if (sb == null)
+                            sb = new StringBuilder(s.Length + 2);
+                        sb.Append("_");
+                    }
+                    if (sb != null)
+                        sb.Append(c);
+                    continue;
+                }
+
+                if (sb == null)
+                    sb = new StringBuilder(s, 0, i, s.Length);
+
+                // For CppCodeGen, replace "." (C# namespace separator) with "::" (C++ namespace separator)
+                if (typeName && c == '.' && _compilation.IsCppCodeGen)
+                {
+                    sb.Append("::");
+                    continue;
+                }
+
+                // Everything else is replaced by underscore.
+                // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.                
+                sb.Append("_");
+            }
+            return (sb != null) ? sb.ToString() : s;
         }
 
-        int _unique = 1;
-        HashSet<String> _deduplicator = new HashSet<String>();
+        ImmutableDictionary<TypeDesc, string> _mangledTypeNames = ImmutableDictionary<TypeDesc, string>.Empty;
 
-        internal string GetMangledTypeName(TypeDesc type)
+        public string GetMangledTypeName(TypeDesc type)
         {
-            var reg = _compilation.GetRegisteredType(type);
-
-            string mangledName = reg.MangledName;
-            if (mangledName != null)
+            string mangledName;
+            if (_mangledTypeNames.TryGetValue(type, out mangledName))
                 return mangledName;
+
+            return ComputeMangledTypeName(type);
+        }
+
+        private string ComputeMangledTypeName(TypeDesc type)
+        {
+            if (type is EcmaType)
+            {
+                string prependAssemblyName = SanitizeName(((EcmaType)type).Module.GetName().Name);
+
+                var deduplicator = new HashSet<string>();
+
+                // Add consistent names for all types in the module, independent on the order in which 
+                // they are compiled
+                lock (this)
+                {
+                    foreach (var t in ((EcmaType)type).Module.GetAllTypes())
+                    {
+                        string name = t.Name;
+
+                        // Include encapsulating type
+                        TypeDesc containingType = ((EcmaType)t).ContainingType;
+                        while (containingType != null)
+                        {
+                            name = containingType.Name + "_" + name;
+                            containingType = ((EcmaType)containingType).ContainingType;
+                        }
+
+                        name = SanitizeName(name, true);
+
+                        if (deduplicator.Contains(name))
+                        {
+                            string nameWithIndex;
+                            for (int index = 1; ; index++)
+                            {
+                                nameWithIndex = name + "_" + index.ToString(CultureInfo.InvariantCulture);
+                                if (!deduplicator.Contains(nameWithIndex))
+                                    break;
+                            }
+                            name = nameWithIndex;
+                        }
+                        deduplicator.Add(name);
+
+                        if (_compilation.IsCppCodeGen)
+                            name = prependAssemblyName + "::" + name;
+                        else
+                            name = prependAssemblyName + "_" + name;
+
+                        _mangledTypeNames = _mangledTypeNames.Add(t, name);
+                    }
+                }
+
+                return _mangledTypeNames[type];
+            }
+
+
+            string mangledName;
 
             switch (type.Category)
             {
@@ -57,73 +154,118 @@ namespace ILToNative
                 case TypeFlags.Pointer:
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + "__Pointer";
                     break;
-
                 default:
-                    mangledName = type.Name;
-
-                    // Include encapsulating type
-                    TypeDesc def = type.GetTypeDefinition();
-                    TypeDesc containingType = (def is EcmaType) ? ((EcmaType)def).ContainingType : null;
-                    while (containingType != null)
+                    var typeDefinition = type.GetTypeDefinition();
+                    if (typeDefinition != type)
                     {
-                        mangledName = containingType.Name + "__" + mangledName;
+                        mangledName = GetMangledTypeName(typeDefinition);
 
-                        containingType = ((EcmaType)containingType).ContainingType;
+                        var inst = type.Instantiation;
+                        for (int i = 0; i < inst.Length; i++)
+                        {
+                            string instArgName = GetMangledTypeName(inst[i]);
+                            if (_compilation.IsCppCodeGen)
+                                instArgName = instArgName.Replace("::", "_");
+                            mangledName += "__" + instArgName;
+                        }
                     }
-
-                    mangledName = SanitizeName(mangledName);
-
-                    mangledName = mangledName.Replace(".", _compilation.IsCppCodeGen ? "::" : "_");
-
-                    // TODO: the special handling for "Interop" is needed due to type name / namespace name clashes;
-                    //       find a better solution
-                    if (type.HasInstantiation || _deduplicator.Contains(mangledName) || mangledName == "Interop")
-                        mangledName = mangledName + "_" + _unique++;
-                    _deduplicator.Add(mangledName);
-
+                    else
+                    {
+                        mangledName = type.Name;
+                    }
                     break;
             }
 
-            reg.MangledName = mangledName;
+            lock (this)
+            {
+                _mangledTypeNames = _mangledTypeNames.Add(type, mangledName);
+            }
+
             return mangledName;
         }
 
-        internal string GetMangledMethodName(MethodDesc method)
-        {
-            var reg = _compilation.GetRegisteredMethod(method);
+        ImmutableDictionary<MethodDesc, string> _mangledMethodNames = ImmutableDictionary<MethodDesc, string>.Empty;
 
-            string mangledName = reg.MangledName;
-            if (mangledName != null)
+        public string GetMangledMethodName(MethodDesc method)
+        {
+            string mangledName;
+            if (_mangledMethodNames.TryGetValue(method, out mangledName))
                 return mangledName;
 
-            RegisteredType regType = _compilation.GetRegisteredType(method.OwningType);
+            return ComputeMangledMethodName(method);
+        }
 
-            mangledName = SanitizeName(method.Name);
-
-            mangledName = mangledName.Replace(".", "_"); // To handle names like .ctor
-
+        private string ComputeMangledMethodName(MethodDesc method)
+        {
+            string prependTypeName = null;
             if (!_compilation.IsCppCodeGen)
-                mangledName = GetMangledTypeName(method.OwningType) + "__" + mangledName;
+                prependTypeName = GetMangledTypeName(method.OwningType);
 
-            RegisteredMethod rm = regType.Methods;
-            bool dedup = false;
-            while (rm != null)
+            if (method is EcmaMethod)
             {
-                if (rm.MangledName != null && rm.MangledName == mangledName)
+                var deduplicator = new HashSet<string>();
+
+                // Add consistent names for all methods of the type, independent on the order in which
+                // they are compiled
+                lock (this)
                 {
-                    dedup = true;
-                    break;
+                    foreach (var m in method.OwningType.GetMethods())
+                    {
+                        string name = SanitizeName(m.Name);
+
+                        if (deduplicator.Contains(name))
+                        {
+                            string nameWithIndex;
+                            for (int index = 1; ; index++)
+                            {
+                                nameWithIndex = name + "_" + index.ToString(CultureInfo.InvariantCulture);
+                                if (!deduplicator.Contains(nameWithIndex))
+                                    break;
+                            }
+                            name = nameWithIndex;
+                        }
+                        deduplicator.Add(name);
+
+                        if (prependTypeName != null)
+                            name = prependTypeName + "__" + name;
+
+                        _mangledMethodNames = _mangledMethodNames.Add(m, name);
+                    }
                 }
 
-                rm = rm.Next;
+                return _mangledMethodNames[method];
             }
-            if (dedup)
-                mangledName = mangledName + "_" + regType.UniqueMethod++;
 
-            reg.MangledName = mangledName;
 
-            reg.Next = regType.Methods;
-            regType.Methods = reg;
+            string mangledName;
+
+            var methodDefinition = method.GetTypicalMethodDefinition();
+            if (methodDefinition != method)
+            {
+                mangledName = GetMangledMethodName(methodDefinition.GetMethodDefinition());
+
+                var inst = method.Instantiation;
+                for (int i = 0; i < inst.Length; i++)
+                {
+                    string instArgName = GetMangledTypeName(inst[i]);
+                    if (_compilation.IsCppCodeGen)
+                        instArgName = instArgName.Replace("::", "_");
+                    mangledName += "__" + instArgName;
+                }
+            }
+            else
+            {
+                // Assume that Name is unique for all other methods
+                mangledName = method.Name;
+            }
+
+            if (prependTypeName != null)
+                mangledName = prependTypeName + "__" + mangledName;
+
+            lock (this)
+            {
+                _mangledMethodNames = _mangledMethodNames.Add(method, mangledName);
+            }
 
             return mangledName;
         }

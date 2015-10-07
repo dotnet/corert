@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Text;
 
 namespace Internal.TypeSystem
 {
@@ -91,8 +92,12 @@ namespace Internal.TypeSystem
 
         public override string ToString()
         {
-            // TODO: Append instantiation
-            return _methodDef.ToString();
+            var sb = new StringBuilder(_methodDef.ToString());
+            sb.Append('<');
+            for (int i = 0; i < _instantiation.Length; i++)
+                sb.Append(_instantiation[i].ToString());
+            sb.Append('>');
+            return sb.ToString();
         }
     }
 }

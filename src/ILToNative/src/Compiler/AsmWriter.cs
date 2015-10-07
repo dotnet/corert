@@ -16,12 +16,13 @@ namespace ILToNative
 
             foreach (var t in _registeredTypes.Values)
             {
-                RegisteredMethod m = t.Methods;
-                while (m != null)
+                if (t.Methods != null)
                 {
-                    if (m.MethodCode != null)
-                        OutputMethodCode(m);
-                    m = m.Next;
+                    foreach (var m in t.Methods)
+                    {
+                        if (m.MethodCode != null)
+                            OutputMethodCode(m);
+                    }
                 }
             }
 

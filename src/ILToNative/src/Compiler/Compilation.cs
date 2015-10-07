@@ -290,20 +290,23 @@ namespace ILToNative
                 return;
             reg.IncludedInCompilation = true;
 
+            RegisteredType regType = GetRegisteredType(method.OwningType);
+            if (regType.Methods == null)
+                regType.Methods = new List<RegisteredMethod>();
+            regType.Methods.Add(reg);
+
             if (_methodsThatNeedsCompilation == null)
                 _methodsThatNeedsCompilation = new List<MethodDesc>();
             _methodsThatNeedsCompilation.Add(method);
 
-            NameMangler.GetMangledMethodName(method);
-
             if (_options.IsCppCodeGen)
             {
                 // Precreate name to ensure that all types referenced by signatures are present
-                NameMangler.GetMangledTypeName(method.OwningType);
+                GetRegisteredType(method.OwningType);
                 var signature = method.Signature;
-                NameMangler.GetMangledTypeName(signature.ReturnType);
+                GetRegisteredType(signature.ReturnType);
                 for (int i = 0; i < signature.Length; i++)
-                    NameMangler.GetMangledTypeName(signature[i]);
+                    GetRegisteredType(signature[i]);
             }
         }
 
@@ -352,8 +355,8 @@ namespace ILToNative
             if (_options.IsCppCodeGen)
             {
                 // Precreate name to ensure that all types referenced by signatures are present
-                NameMangler.GetMangledTypeName(field.OwningType);
-                NameMangler.GetMangledTypeName(field.FieldType);
+                GetRegisteredType(field.OwningType);
+                GetRegisteredType(field.FieldType);
             }
         }
 
