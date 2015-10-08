@@ -162,61 +162,14 @@ namespace Internal.IL.Stubs
         }
     }
 
-    struct ListBuilder<T> // struct to avoid unnecessary allocations
-    {
-        static readonly T[] s_empty = new T[0];
-
-        T[] _items;
-        int _count;
-
-        internal void Initialize() // TODO: Change to default constructor once it is available
-        {
-            _items = s_empty; // TODO: Change to Array.GetEmpty<T>() once it is available
-            _count = 0;
-        }
-
-        internal T[] ToArray()
-        {
-            if (_count != _items.Length)
-                Array.Resize(ref _items, _count);
-            return _items;
-        }
-
-        public void Add(T item)
-        {
-            if (_count == _items.Length)
-                Array.Resize(ref _items, 2 * _count + 1);
-            _items[_count++] = item;
-        }
-
-        public int Count
-        {
-            get
-            {
-                return _count;
-            }
-        }
-
-        public T this[int index]
-        {
-            get
-            {
-                return _items[index];
-            }
-        }
-    }
-
     public class ILEmitter
     {
-        ListBuilder<ILCodeStream> _codeStreams;
-        ListBuilder<TypeDesc> _locals;
-        ListBuilder<Object> _tokens;
+        ArrayBuilder<ILCodeStream> _codeStreams;
+        ArrayBuilder<TypeDesc> _locals;
+        ArrayBuilder<Object> _tokens;
 
         public ILEmitter()
         {
-            _codeStreams.Initialize();
-            _locals.Initialize();
-            _tokens.Initialize();
         }
 
         public ILCodeStream NewCodeStream()
