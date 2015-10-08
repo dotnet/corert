@@ -1779,9 +1779,10 @@ namespace Internal.IL
             _compilation.MarkAsConstructed(arrayType);
 
             Append("__allocate_array(");
-            Append(_writer.GetCppTypeName(arrayType));
-            Append("::__getMethodTable(), ");
             Append(numElements.Value.Name);
+            Append(", ");
+            Append(_writer.GetCppTypeName(arrayType));
+            Append("::__getMethodTable()");
             Append(")");
             Finish();
         }

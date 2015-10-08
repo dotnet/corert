@@ -91,6 +91,11 @@ namespace ILToNative
                         targetName = ((ReadyToRunHelper)target).MangledName;
                     }
                     else
+                    if (target is JitHelper)
+                    {
+                        targetName = ((JitHelper)target).MangledName;
+                    }
+                    else
                     {
                         // TODO:
                         throw new NotImplementedException();
@@ -228,6 +233,14 @@ namespace ILToNative
                         Out.WriteLine("jmp __castclass_class");
                         break;
 
+                    case ReadyToRunHelperId.NewArr1:
+                        Out.Write("leaq __EEType_");
+                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.WriteLine("(%rip), %rdx");
+
+                        Out.WriteLine("jmp __allocate_array");
+                        break;
+
                     case ReadyToRunHelperId.GetNonGCStaticBase:
                         Out.Write("leaq __NonGCStaticBase_");
                         Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
@@ -254,7 +267,17 @@ namespace ILToNative
                 Out.Write(NameMangler.GetMangledTypeName(t.Type));
                 Out.WriteLine(":");
 
-                Out.WriteLine(".int 0, 24");
+                if (t.Type.IsArray && ((ArrayType)t.Type).Rank == 1)
+                {
+                    Out.Write(".word ");
+                    Out.WriteLine(t.Type.GetElementSize()); // m_ComponentSize
+                    Out.WriteLine(".word 4");               // m_flags: IsArray(0x4)
+                    Out.WriteLine(".int 24");
+                }
+                else
+                {
+                    Out.WriteLine(".int 0, 24");
+                }
 
                 if (t.Type.BaseType != null)
                 {
