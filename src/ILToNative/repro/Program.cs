@@ -7,7 +7,8 @@ internal class Program
 {
     private static void Main(string[] args)
     {
-        Console.WriteLine("Hello world");
+        var o = new int[10, 10];
+        o[3, 3] = 5;
     }
 }
 
