@@ -357,6 +357,9 @@ namespace Internal.JitInterface
         CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR, // Return the reference to a counter to decide to take cloned path in debug stress.
         CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, // Print a message that a loop cloning optimization has occurred in debug mode.
 
+        CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
+        CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
+
         CORINFO_HELP_COUNT,
     }
 }

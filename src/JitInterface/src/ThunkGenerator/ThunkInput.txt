@@ -137,6 +137,7 @@ CORINFO_CLASS_HANDLE*,ref CORINFO_CLASS_STRUCT_*
 CORINFO_ARG_LIST_HANDLE,CORINFO_ARG_LIST_STRUCT_*
 CORINFO_VARARGS_HANDLE,IntPtr
 CORINFO_CONTEXT_HANDLE,CORINFO_CONTEXT_STRUCT*
+SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*
 
 ICorDebugInfo::OffsetMapping*,OffsetMapping*
 ICorDebugInfo::ILVarInfo**,ILVarInfo**
@@ -258,6 +259,7 @@ FUNCTIONS
     const char* getMethodName(CORINFO_METHOD_HANDLE ftn, const char **moduleName);
     unsigned getMethodHash(CORINFO_METHOD_HANDLE       ftn);
     size_t findNameOfToken(CORINFO_MODULE_HANDLE       moduleHandle,mdToken                     token, char * szFQName,size_t FQNameCapacity);
+    bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     int getIntConfigValue(const wchar_t *name, int defaultValue);
     wchar_t *getStringConfigValue(const wchar_t *name);
     void freeStringConfigValue(wchar_t *value);
@@ -282,7 +284,7 @@ FUNCTIONS
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE       method, CORINFO_JUST_MY_CODE_HANDLE**ppIndirection);
     void GetProfilingHandle(BOOL *pbHookFunction, void **pProfilerHandle, BOOL *pbIndirectedHandles);
-    void getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken, CORINFO_METHOD_HANDLE   callerHandle, CORINFO_CALLINFO_FLAGS  flags, CORINFO_CALL_INFO       *pResult);
+    void getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_RESOLVED_TOKEN_PTR pConstrainedResolvedToken, CORINFO_METHOD_HANDLE   callerHandle, CORINFO_CALLINFO_FLAGS  flags, CORINFO_CALL_INFO       *pResult);
     BOOL canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
     BOOL isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE    cls, void                  **ppIndirection);
