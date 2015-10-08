@@ -51,6 +51,7 @@
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaSignatureParser.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

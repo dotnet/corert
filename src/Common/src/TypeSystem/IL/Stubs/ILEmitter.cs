@@ -55,6 +55,24 @@ namespace Internal.IL.Stubs
             EmitUInt32(token);
         }
 
+        public void EmitLdc(int value)
+        {
+            if (-1 <= value && value <= 8)
+            {
+                Emit((ILOpcode)(ILOpcode.ldc_i4_0 + value));
+            }
+            else if (value == (sbyte)value)
+            {
+                Emit(ILOpcode.ldc_i4_s);
+                EmitByte((byte)value);
+            }
+            else
+            {
+                Emit(ILOpcode.ldc_i4);
+                EmitUInt32(value);
+            }
+        }
+
         public void EmitLdArg(int index)
         {
             if (index < 4)
@@ -64,6 +82,42 @@ namespace Internal.IL.Stubs
             else
             {
                 Emit(ILOpcode.ldarg);
+                EmitUInt16((ushort)index);
+            }
+        }
+
+        public void EmitLdLoc(int index)
+        {
+            if (index < 4)
+            {
+                Emit((ILOpcode)(ILOpcode.ldloc_0 + index));
+            }
+            else if (index < 0x100)
+            {
+                Emit(ILOpcode.ldloc_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.ldloc);
+                EmitUInt16((ushort)index);
+            }
+        }
+
+        public void EmitStLoc(int index)
+        {
+            if (index < 4)
+            {
+                Emit((ILOpcode)(ILOpcode.stloc_0 + index));
+            }
+            else if (index < 0x100)
+            {
+                Emit(ILOpcode.stloc_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.stloc);
                 EmitUInt16((ushort)index);
             }
         }
@@ -108,61 +162,14 @@ namespace Internal.IL.Stubs
         }
     }
 
-    struct ListBuilder<T> // struct to avoid unnecessary allocations
-    {
-        static readonly T[] s_empty = new T[0];
-
-        T[] _items;
-        int _count;
-
-        internal void Initialize() // TODO: Change to default constructor once it is available
-        {
-            _items = s_empty; // TODO: Change to Array.GetEmpty<T>() once it is available
-            _count = 0;
-        }
-
-        internal T[] ToArray()
-        {
-            if (_count != _items.Length)
-                Array.Resize(ref _items, _count);
-            return _items;
-        }
-
-        public void Add(T item)
-        {
-            if (_count == _items.Length)
-                Array.Resize(ref _items, 2 * _count + 1);
-            _items[_count++] = item;
-        }
-
-        public int Count
-        {
-            get
-            {
-                return _count;
-            }
-        }
-
-        public T this[int index]
-        {
-            get
-            {
-                return _items[index];
-            }
-        }
-    }
-
     public class ILEmitter
     {
-        ListBuilder<ILCodeStream> _codeStreams;
-        ListBuilder<TypeDesc> _locals;
-        ListBuilder<Object> _tokens;
+        ArrayBuilder<ILCodeStream> _codeStreams;
+        ArrayBuilder<TypeDesc> _locals;
+        ArrayBuilder<Object> _tokens;
 
         public ILEmitter()
         {
-            _codeStreams.Initialize();
-            _locals.Initialize();
-            _tokens.Initialize();
         }
 
         public ILCodeStream NewCodeStream()
@@ -196,6 +203,13 @@ namespace Internal.IL.Stubs
         public int NewToken(string value)
         {
             return NewToken(value, 0x70000000);
+        }
+
+        public int NewLocal(TypeDesc localType)
+        {
+            int index = _locals.Count;
+            _locals.Add(localType);
+            return index;
         }
 
         public MethodIL Link()
