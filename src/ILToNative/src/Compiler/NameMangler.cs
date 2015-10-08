@@ -171,7 +171,7 @@ namespace ILToNative
                     }
                     else
                     {
-                        mangledName = type.Name;
+                        mangledName = SanitizeName(type.Name, true);
                     }
                     break;
             }
@@ -256,7 +256,7 @@ namespace ILToNative
             else
             {
                 // Assume that Name is unique for all other methods
-                mangledName = method.Name;
+                mangledName = SanitizeName(method.Name);
             }
 
             if (prependTypeName != null)

@@ -405,7 +405,7 @@ namespace Internal.TypeSystem.Ecma
         {
             MetadataReader metadataReader = _module.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
-            List<MethodImplRecord> foundRecords = null;
+            ArrayBuilder<MethodImplRecord> foundRecords = new ArrayBuilder<MethodImplRecord>();
 
             foreach (var methodImplHandle in _typeDefinition.GetMethodImplementations())
             {
@@ -443,9 +443,6 @@ namespace Internal.TypeSystem.Ecma
 
                 if (foundRecord)
                 {
-                    if (foundRecords == null)
-                        foundRecords = new List<MethodImplRecord>();
-
                     MethodImplRecord newRecord = new MethodImplRecord();
                     newRecord.Decl = (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration);
                     newRecord.Body = (MethodDesc)_module.GetObject(methodImpl.MethodBody);
@@ -454,7 +451,7 @@ namespace Internal.TypeSystem.Ecma
                 }
             }
 
-            if (foundRecords != null)
+            if (foundRecords.Count != 0)
                 return foundRecords.ToArray();
 
             return null;
@@ -462,7 +459,7 @@ namespace Internal.TypeSystem.Ecma
 
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType()
         {
-            List<MethodImplRecord> records = new List<MethodImplRecord>();
+            ArrayBuilder<MethodImplRecord> records = new ArrayBuilder<MethodImplRecord>();
 
             MetadataReader metadataReader = _module.MetadataReader;
 

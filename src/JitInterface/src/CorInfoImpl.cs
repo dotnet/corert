@@ -47,7 +47,7 @@ namespace Internal.JitInterface
 
             _comp = CreateUnmanagedInstance();
 
-            string clrjitPath = AppContext.BaseDirectory + "\\clrjit.dll";
+            string clrjitPath = AppContext.BaseDirectory + "\\protojit.dll";
             IntPtr jit = LoadLibraryEx(clrjitPath, new IntPtr(0), 0x1300);
 
             IntPtr proc = GetProcAddress(jit, "getJit");
@@ -1038,6 +1038,8 @@ namespace Internal.JitInterface
         }
 
         byte* findNameOfToken(IntPtr _this, CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
+        { throw new NotImplementedException(); }
+        bool getSystemVAmd64PassStructInRegisterDescriptor(IntPtr _this, CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         { throw new NotImplementedException(); }
         int getIntConfigValue(IntPtr _this, String name, int defaultValue)
         { throw new NotImplementedException(); }

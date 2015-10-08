@@ -16,13 +16,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\TypeSystem.csproj">
+    <ProjectReference Include="..\src\ILToNative.TypeSystem.csproj">
       <Project>{dd5b6baa-d41a-4a6e-9e7d-83060f394b10}</Project>
-      <Name>TypeSystem</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\TypeSystem.Ecma\src\TypeSystem.Ecma.csproj">
-      <Project>{dd5b6baa-d41a-4a6e-9e7d-83060f394b10}</Project>
-      <Name>TypeSystem</Name>
+      <Name>ILToNative.TypeSystem</Name>
     </ProjectReference>
 
     <!-- Make sure the test data gets built -->
@@ -35,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InstanceFieldLayoutTests.cs" />
+    <Compile Include="StaticFieldLayoutTests.cs" />
     <Compile Include="TestTypeSystemContext.cs" />
   </ItemGroup>
 
