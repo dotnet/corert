@@ -55,6 +55,24 @@ namespace Internal.IL.Stubs
             EmitUInt32(token);
         }
 
+        public void EmitLdc(int value)
+        {
+            if (-1 <= value && value <= 8)
+            {
+                Emit((ILOpcode)(ILOpcode.ldc_i4_0 + value));
+            }
+            else if (value == (sbyte)value)
+            {
+                Emit(ILOpcode.ldc_i4_s);
+                EmitByte((byte)value);
+            }
+            else
+            {
+                Emit(ILOpcode.ldc_i4);
+                EmitUInt32(value);
+            }
+        }
+
         public void EmitLdArg(int index)
         {
             if (index < 4)
@@ -64,6 +82,42 @@ namespace Internal.IL.Stubs
             else
             {
                 Emit(ILOpcode.ldarg);
+                EmitUInt16((ushort)index);
+            }
+        }
+
+        public void EmitLdLoc(int index)
+        {
+            if (index < 4)
+            {
+                Emit((ILOpcode)(ILOpcode.ldloc_0 + index));
+            }
+            else if (index < 0x100)
+            {
+                Emit(ILOpcode.ldloc_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.ldloc);
+                EmitUInt16((ushort)index);
+            }
+        }
+
+        public void EmitStLoc(int index)
+        {
+            if (index < 4)
+            {
+                Emit((ILOpcode)(ILOpcode.stloc_0 + index));
+            }
+            else if (index < 0x100)
+            {
+                Emit(ILOpcode.stloc_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.stloc);
                 EmitUInt16((ushort)index);
             }
         }
@@ -196,6 +250,13 @@ namespace Internal.IL.Stubs
         public int NewToken(string value)
         {
             return NewToken(value, 0x70000000);
+        }
+
+        public int NewLocal(TypeDesc localType)
+        {
+            int index = _locals.Count;
+            _locals.Add(localType);
+            return index;
         }
 
         public MethodIL Link()
