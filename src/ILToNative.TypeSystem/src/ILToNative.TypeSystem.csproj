@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Internal.TypeSystem</RootNamespace>
+    <AssemblyName>ILToNative.TypeSystem</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <CLSCompliant>false</CLSCompliant>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ExcludeResourcesImport>true</ExcludeResourcesImport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\TypeSystem\Common\AlignmentHelper.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\ByRefType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldForInstantiatedType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldLayout.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedMethod.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MethodForInstantiatedType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\ParameterizedType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\PointerType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\SignatureVariable.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TargetDetails.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\ThreadSafeFlags.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeCast.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeFlags.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeSystemContext.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeSystemHelpers.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\WellKnownType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MethodDesc.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\VirtualFunctionResolution.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.MethodImpls.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaField.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaGenericParameter.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaMethod.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaModule.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaSignatureParser.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

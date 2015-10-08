@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILToNative", "src\ILToNativ
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "repro", "repro\repro.csproj", "{FBA029C3-B184-4457-AEEC-38D0C2523067}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILToNative.TypeSystem", "..\ILToNative.TypeSystem\src\ILToNative.TypeSystem.csproj", "{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{FBA029C3-B184-4457-AEEC-38D0C2523067}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBA029C3-B184-4457-AEEC-38D0C2523067}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBA029C3-B184-4457-AEEC-38D0C2523067}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
-    static class VirtualFunctionResolution
+    public static class VirtualFunctionResolution
     {
         class UnificationGroup
         {
