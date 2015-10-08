@@ -538,6 +538,30 @@ namespace Internal.TypeSystem
             }
         }
 
+        public int GCStaticFieldSize
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _staticBlockInfo == null ? 0 : _staticBlockInfo.GcStatics.Size;
+            }
+        }
+
+        public int GCStaticFieldAlignment
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _staticBlockInfo == null ? 0 : _staticBlockInfo.GcStatics.LargestAlignment;
+            }
+        }
+
         internal void ComputeInstanceFieldLayout()
         {
             var computedLayout = FieldLayoutAlgorithm.ComputeInstanceFieldLayout(this);

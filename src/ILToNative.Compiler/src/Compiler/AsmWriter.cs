@@ -30,13 +30,20 @@ namespace ILToNative
             Out.WriteLine();
 
             OutputReadyToHelpers();
+            OutputJitHelpers();
 
             OutputEETypes();
 
             Out.WriteLine();
             Out.WriteLine(".data");
 
-            OutputStatics();
+            Out.WriteLine();
+            Out.WriteLine("// Non-GC statics");
+            OutputNonGCStatics();
+
+            Out.WriteLine();
+            Out.WriteLine("// GC statics");
+            OutputGCStatics();
 
             Out.Dispose();
         }
@@ -162,6 +169,15 @@ namespace ILToNative
             Out.WriteLine();
         }
 
+        void OutputJitHelpers()
+        {
+            // assignReference is always the same. This will be a call into the runtime.
+            Out.WriteLine("__assignReference:");
+            Out.WriteLine("movq %rdx, (%rcx)");
+            Out.WriteLine("ret");
+            Out.WriteLine();
+        }
+
         void OutputReadyToHelpers()
         {
             foreach (var helper in _readyToRunHelpers.Values)
@@ -248,6 +264,13 @@ namespace ILToNative
                         Out.WriteLine("ret");
                         break;
 
+                    case ReadyToRunHelperId.GetGCStaticBase:
+                        Out.Write("leaq __GCStaticBase_");
+                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.WriteLine("(%rip), %rax");
+                        Out.WriteLine("ret");
+                        break;
+
                     default:
                         throw new NotImplementedException();
                 }
@@ -296,7 +319,7 @@ namespace ILToNative
             }
         }
 
-        void OutputStatics()
+        void OutputNonGCStatics()
         {
             foreach (var t in _registeredTypes.Values)
             {
@@ -316,6 +339,33 @@ namespace ILToNative
                     Out.WriteLine(":");
                     Out.Write(".rept ");
                     Out.WriteLine(type.NonGCStaticFieldSize);
+                    Out.WriteLine(".byte 0");
+                    Out.WriteLine(".endr");
+                    Out.WriteLine();
+                }
+            }
+        }
+
+        void OutputGCStatics()
+        {
+            foreach (var t in _registeredTypes.Values)
+            {
+                if (!t.IncludedInCompilation)
+                    continue;
+
+                var type = t.Type as MetadataType;
+                if (type == null)
+                    continue;
+
+                if (type.GCStaticFieldSize > 0)
+                {
+                    Out.Write(".align ");
+                    Out.WriteLine(type.GCStaticFieldAlignment);
+                    Out.Write("__GCStaticBase_");
+                    Out.Write(NameMangler.GetMangledTypeName(type));
+                    Out.WriteLine(":");
+                    Out.Write(".rept ");
+                    Out.WriteLine(type.GCStaticFieldSize);
                     Out.WriteLine(".byte 0");
                     Out.WriteLine(".endr");
                     Out.WriteLine();

@@ -11,6 +11,7 @@ namespace ILToNative
     public enum JitHelperId
     {
         RngChkFail,
+        AssignRef,
     }
 
     class JitHelper
@@ -34,6 +35,9 @@ namespace ILToNative
                 {
                     case JitHelperId.RngChkFail:
                         return "__range_check_fail";
+
+                    case JitHelperId.AssignRef:
+                        return "__assignReference";
 
                     default:
                         throw new NotImplementedException();
