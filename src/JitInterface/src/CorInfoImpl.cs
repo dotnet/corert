@@ -1180,8 +1180,15 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         bool canGetVarArgsHandle(IntPtr _this, CORINFO_SIG_INFO* pSig)
         { throw new NotImplementedException(); }
+
         InfoAccessType constructStringLiteral(IntPtr _this, CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
-        { throw new NotImplementedException(); }
+        {
+            MethodIL methodIL = (MethodIL) HandleToObject((IntPtr)module);
+            object literal = methodIL.GetObject((int)metaTok);
+            ppValue = (void*) ObjectToHandle(literal);
+            return InfoAccessType.IAT_PVALUE;
+        }
+
         InfoAccessType emptyStringLiteral(IntPtr _this, ref void* ppValue)
         { throw new NotImplementedException(); }
         uint getFieldThreadLocalStoreID(IntPtr _this, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
@@ -1364,7 +1371,10 @@ namespace Internal.JitInterface
         }
 
         ushort getRelocTypeHint(IntPtr _this, void* target)
-        { throw new NotImplementedException(); }
+        {
+            // TODO: Hint to use REL32
+            return 0xFFFF;
+        }
         void getModuleNativeEntryPointRange(IntPtr _this, ref void* pStart, ref void* pEnd)
         { throw new NotImplementedException(); }
 
