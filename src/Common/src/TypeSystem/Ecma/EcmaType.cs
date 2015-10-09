@@ -424,7 +424,7 @@ namespace Internal.TypeSystem.Ecma
 
                 bool foundRecord = false;
 
-                switch (methodImpl.MethodDeclaration.Kind)
+                switch (methodDeclHandleKind)
                 {
                     case HandleKind.MethodDefinition:
                         if (stringComparer.Equals(metadataReader.GetMethodDefinition((MethodDefinitionHandle)methodDeclCheckHandle).Name, declName))
@@ -470,8 +470,9 @@ namespace Internal.TypeSystem.Ecma
                 EntityHandle methodDeclCheckHandle = methodImpl.MethodDeclaration;
                 HandleKind methodDeclHandleKind = methodDeclCheckHandle.Kind;
 
-                // We want to check that the method name matches before actually getting the MethodDesc. For MethodSpecifications
-                // we need to dereference that handle to the underlying member reference to look at name matching.
+                // We want to check that the type is not an interface matches before actually getting the MethodDesc. 
+                // For MethodSpecifications we need to dereference that handle to the underlying member reference to 
+                // look at the owning type.
                 if (methodDeclHandleKind == HandleKind.MethodSpecification)
                 {
                     methodDeclCheckHandle = metadataReader.GetMethodSpecification((MethodSpecificationHandle)methodDeclCheckHandle).Method;
