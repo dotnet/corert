@@ -100,12 +100,23 @@ namespace ILToNative.DependencyAnalysis
                 objData.EmitShort((short)_type.GetElementSize()); // m_ComponentSize
                 objData.EmitShort(0x4);                           // m_flags: IsArray(0x4)
             }
+            else if (_type.IsString)
+            {
+                objData.EmitShort(2); // m_ComponentSize
+                objData.EmitShort(0); // m_flags: 0
+            }
             else
             {
                 objData.EmitShort(0); // m_ComponentSize
                 objData.EmitShort(0); // m_flags: 0
             }
-            objData.EmitInt(24);
+
+            int minimumObjectSize = _type.Context.Target.PointerSize * 3;
+            int objectSize = _type.Context.Target.PointerSize + ((MetadataType)_type).InstanceByteCount;
+            objectSize = AlignmentHelper.AlignUp(objectSize, _type.Context.Target.PointerSize);
+            objectSize = Math.Max(minimumObjectSize, objectSize);
+            objData.EmitInt(objectSize);
+
             if (Type.BaseType != null)
             {
                 if (_constructed)

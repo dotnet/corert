@@ -492,7 +492,9 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isDelegateCreationAllowed(IntPtr _this, CORINFO_CLASS_STRUCT_* delegateHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
-        { throw new NotImplementedException(); }
+        {
+            return true;
+        }
         CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException(); }
         void initConstraintsForVerification(IntPtr _this, CORINFO_METHOD_STRUCT_* method, [MarshalAs(UnmanagedType.Bool)] ref bool pfHasCircularClassConstraints, [MarshalAs(UnmanagedType.Bool)] ref bool pfHasCircularMethodConstraint)
@@ -653,6 +655,9 @@ namespace Internal.JitInterface
             // TODO
             // if (type.ContainsPointers)
             //    result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
+
+            if (type.IsDelegate)
+                result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
             var ecmaType = type.GetTypeDefinition() as EcmaType;
             if (ecmaType != null)
@@ -836,6 +841,19 @@ namespace Internal.JitInterface
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.CCtorTrigger, type));
+                    }
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR:
+                    {
+                        var type = HandleToObject(pResolvedToken.hClass);
+                        _compilation.AddType(type);
+                        var method = HandleToObject(pResolvedToken.hMethod);
+                        _compilation.AddMethod(method);
+
+                        DelegateInfo delegateInfo = (DelegateInfo)_compilation.GetDelegateCtor(method);
+                        _compilation.AddMethod(delegateInfo.Ctor);
+
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
                     }
                     break;
                 default:
@@ -1334,6 +1352,11 @@ namespace Internal.JitInterface
                 _compilation.AddVirtualSlot(method);
                 pResult.codePointerOrStubLookup.constLookup.addr = 
                     (void *)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.VirtualCall, method));
+
+                if ((pResult.methodFlags & (uint)CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE) != 0)
+                {
+                    pResult._nullInstanceCheck = 1;
+                }
             }
             else
             {
