@@ -3,13 +3,16 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.IL;
 
 namespace ILToNative
 {
@@ -55,8 +58,7 @@ namespace ILToNative
         class ModuleData
         {
             public string Path;
-            // public ISymbolReader SymbolReader;
-
+            public Microsoft.DiaSymReader.ISymUnmanagedReader PdbReader;
         }
         Dictionary<EcmaModule, ModuleData> _moduleData = new Dictionary<EcmaModule, ModuleData>();
 
@@ -130,10 +132,75 @@ namespace ILToNative
 
             _modules.Add(simpleName, module);
 
-            ModuleData moduleData = new ModuleData() { Path = filePath };
+            ModuleData moduleData = new ModuleData() {
+                Path = filePath
+            };
+
+            InitializeSymbolReader(moduleData);
+
             _moduleData.Add(module, moduleData);
 
             return module;
+        }
+
+        //
+        // Symbols
+        //
+
+        PdbSymbolProvider _pdbSymbolProvider;
+
+        private void InitializeSymbolReader(ModuleData moduleData)
+        {
+            if (_pdbSymbolProvider == null)
+                _pdbSymbolProvider = new PdbSymbolProvider();
+
+            moduleData.PdbReader = _pdbSymbolProvider.GetSymbolReaderForFile(moduleData.Path);
+       }
+
+        public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodDesc method)
+        {
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            if (ecmaMethod == null)
+                return null;
+
+            ModuleData moduleData = _moduleData[ecmaMethod.Module];
+            if (moduleData.PdbReader == null)
+                return null;
+
+            return _pdbSymbolProvider.GetSequencePointsForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+        }
+
+        public IEnumerable<LocalVariable> GetLocalVariableNamesForMethod(MethodDesc method)
+        {
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            if (ecmaMethod == null)
+                return null;
+
+            ModuleData moduleData = _moduleData[ecmaMethod.Module];
+            if (moduleData.PdbReader == null)
+                return null;
+
+            return _pdbSymbolProvider.GetLocalVariableNamesForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+        }
+
+        public IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
+        {
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            if (ecmaMethod == null)
+                yield break;
+
+            ParameterHandleCollection parameters = ecmaMethod.MetadataReader.GetMethodDefinition(ecmaMethod.Handle).GetParameters();
+
+            if (!ecmaMethod.Signature.IsStatic)
+            {
+                yield return "_this";
+            }
+
+            foreach (var parameterHandle in parameters)
+            {
+                Parameter p = ecmaMethod.MetadataReader.GetParameter(parameterHandle);
+                yield return ecmaMethod.MetadataReader.GetString(p.Name);
+            }
         }
     }
 }

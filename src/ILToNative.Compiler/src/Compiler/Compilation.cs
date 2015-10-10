@@ -20,11 +20,12 @@ namespace ILToNative
     public struct CompilationOptions
     {
         public bool IsCppCodeGen;
+        public bool NoLineNumbers;
     }
 
     public partial class Compilation
     {
-        readonly TypeSystemContext _typeSystemContext;
+        readonly CompilerTypeSystemContext _typeSystemContext;
         readonly CompilationOptions _options;
 
         Dictionary<TypeDesc, RegisteredType> _registeredTypes = new Dictionary<TypeDesc, RegisteredType>();
@@ -36,7 +37,7 @@ namespace ILToNative
 
         ILToNative.CppCodeGen.CppWriter _cppWriter = null;
 
-        public Compilation(TypeSystemContext typeSystemContext, CompilationOptions options)
+        public Compilation(CompilerTypeSystemContext typeSystemContext, CompilationOptions options)
         {
             _typeSystemContext = typeSystemContext;
             _options = options;
@@ -44,7 +45,7 @@ namespace ILToNative
             _nameMangler = new NameMangler(this);
         }
 
-        public TypeSystemContext TypeSystemContext
+        public CompilerTypeSystemContext TypeSystemContext
         {
             get
             {
@@ -87,6 +88,14 @@ namespace ILToNative
             get
             {
                 return _options.IsCppCodeGen;
+            }
+        }
+
+        internal CompilationOptions Options
+        {
+           get
+            {
+                return _options;
             }
         }
 

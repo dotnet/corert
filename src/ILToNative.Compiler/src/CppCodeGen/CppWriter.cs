@@ -118,24 +118,19 @@ namespace ILToNative.CppCodeGen
                 argCount++;
 
             List<string> parameterNames = null;
-#if TODO // PDBs
-            if (ParameterNamesCallback != null)
+            IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+            if (parameters != null)
             {
-                IEnumerable<string> parameters = ParameterNamesCallback(method);
-                if (parameters != null)
+                parameterNames = new List<string>(parameters);
+                if (parameterNames.Count != 0)
                 {
-                    parameterNames = new List<string>(parameters);
-                    if (parameterNames.Count != 0)
-                    {
-                        System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
-                    }
-                    else
-                    {
-                        parameterNames = null;
-                    }
+                    System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
+                }
+                else
+                {
+                    parameterNames = null;
                 }
             }
-#endif
 
             for (int i = 0; i < argCount; i++)
             {
@@ -194,24 +189,19 @@ namespace ILToNative.CppCodeGen
                 argCount++;
 
             List<string> parameterNames = null;
-#if TODO // PDBs
-            if (ParameterNamesCallback != null)
+            IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+            if (parameters != null)
             {
-                IEnumerable<string> parameters = ParameterNamesCallback(method);
-                if (parameters != null)
+                parameterNames = new List<string>(parameters);
+                if (parameterNames.Count != 0)
                 {
-                    parameterNames = new List<string>(parameters);
-                    if (parameterNames.Count != 0)
-                    {
-                        System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
-                    }
-                    else
-                    {
-                        parameterNames = null;
-                    }
+                    System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
+                }
+                else
+                {
+                    parameterNames = null;
                 }
             }
-#endif
 
             for (int i = 0; i < argCount; i++)
             {
@@ -367,28 +357,22 @@ namespace ILToNative.CppCodeGen
 
             var ilImporter = new ILImporter(_compilation, this, method, methodIL);
 
-#if TODO // PDBS
-            if (SequencePointsCallback != null)
+            CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
+
+            if (!_compilation.Options.NoLineNumbers)
             {
-                IEnumerable<ILSequencePoint> sequencePoints = SequencePointsCallback(method);
+                IEnumerable<ILSequencePoint> sequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
                 if (sequencePoints != null)
                     ilImporter.SetSequencePoints(sequencePoints);
             }
 
-            if (LocalVariablesCallback != null)
-            {
-                IEnumerable<LocalVariable> localVariables = LocalVariablesCallback(method);
-                if (localVariables != null)
-                    ilImporter.SetLocalVariables(localVariables);
-            }
+            IEnumerable<LocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method);
+            if (localVariables != null)
+                ilImporter.SetLocalVariables(localVariables);
 
-            if (ParameterNamesCallback != null)
-            {
-                IEnumerable<string> parameters = ParameterNamesCallback(method);
-                if (parameters != null)
-                    ilImporter.SetParameterNames(parameters);
-            }
-#endif
+            IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(method);
+            if (parameters != null)
+                ilImporter.SetParameterNames(parameters);
 
             string methodCode;
             try
