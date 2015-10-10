@@ -277,7 +277,7 @@ namespace Internal.JitInterface
         CorInfoType asCorInfoType(TypeDesc type, out CORINFO_CLASS_STRUCT_* structType)
         {
             var corInfoType = asCorInfoType(type);
-            structType = (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ? ObjectToHandle(type) : null;
+            structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) || (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS)) ? ObjectToHandle(type) : null;
             return corInfoType;
         }
 
@@ -317,9 +317,9 @@ namespace Internal.JitInterface
                 // method body.
                 //
 
-                EcmaType owningType = (EcmaType)method.OwningType;
+                var owningType = method.OwningType;
 
-                var typeAttribs = owningType.Attributes;
+                var typeAttribs = ((EcmaType)owningType.GetTypeDefinition()).Attributes;
 
                 // method or class might have the final bit
                 if ((attribs & MethodAttributes.Final) != 0 || (typeAttribs & TypeAttributes.Sealed) != 0)
@@ -988,8 +988,13 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         uint GetErrorMessage(IntPtr _this, short* buffer, uint bufferLength)
         { throw new NotImplementedException(); }
+
         int FilterException(IntPtr _this, _EXCEPTION_POINTERS* pExceptionPointers)
-        { throw new NotImplementedException(); }
+        {
+            Debug.Assert(false);
+            throw new NotImplementedException();
+        }
+
         void HandleException(IntPtr _this, _EXCEPTION_POINTERS* pExceptionPointers)
         { throw new NotImplementedException(); }
         void ThrowExceptionForJitResult(IntPtr _this, HRESULT result)
