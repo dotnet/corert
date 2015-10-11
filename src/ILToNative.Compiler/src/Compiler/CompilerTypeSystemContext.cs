@@ -11,11 +11,9 @@ using System.Reflection.PortableExecutable;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using Internal.CommandLine;
-
 namespace ILToNative
 {
-    class CompilerTypeSystemContext : TypeSystemContext
+    public class CompilerTypeSystemContext : TypeSystemContext
     {
         static readonly string[] s_wellKnownTypeNames = new string[] {
             "Void",
@@ -120,7 +118,7 @@ namespace ILToNative
             if (!InputFilePaths.TryGetValue(simpleName, out filePath))
             {
                 if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
-                    throw new CommandLineException("Assembly not found: " + simpleName);
+                    throw new FileNotFoundException("Assembly not found: " + simpleName);
             }
 
             EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(filePath)));
@@ -128,7 +126,7 @@ namespace ILToNative
             MetadataReader metadataReader = module.MetadataReader;
             string actualSimpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
             if (!actualSimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase))
-                throw new CommandLineException("Assembly name does not match filename " + filePath);
+                throw new FileNotFoundException("Assembly name does not match filename " + filePath);
 
             _modules.Add(simpleName, module);
 

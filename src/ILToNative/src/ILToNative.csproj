@@ -35,27 +35,7 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ILToNative.TypeSystem\src\ILToNative.TypeSystem.csproj">
-      <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
-      <Name>ILToNative.TypeSystem</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Compiler\AsmWriter.cs" />
-    <Compile Include="Compiler\Compilation.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
-    <Compile Include="Compiler\JitHelper.cs" />
-    <Compile Include="Compiler\MemoryHelper.cs" />
-    <Compile Include="Compiler\MethodCode.cs" />
-    <Compile Include="Compiler\MethodExtensions.cs" />
-    <Compile Include="Compiler\NameMangler.cs" />
-    <Compile Include="Compiler\Program.cs" />
-    <Compile Include="Compiler\ReadyToRunHelper.cs" />
-    <Compile Include="Compiler\RegisteredField.cs" />
-    <Compile Include="Compiler\RegisteredMethod.cs" />
-    <Compile Include="Compiler\RegisteredType.cs" />
-    <Compile Include="CppCodeGen\CppWriter.cs" />
-    <Compile Include="CppCodeGen\IntrinsicMethods.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">
@@ -66,58 +46,17 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
-      <Link>Common\ArrayBuilder.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\EcmaMethodIL.cs">
-      <Link>IL\EcmaMethodIL.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\ILOpcode.cs">
-      <Link>IL\ILOpcode.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\ILProvider.cs">
-      <Link>IL\ILProvider.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\InstantiatedMethodIL.cs">
-      <Link>IL\InstantiatedMethodIL.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\MethodIL.cs">
-      <Link>IL\MethodIL.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\ILImporter.cs">
-      <Link>IL\ILImporter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ArrayMethodILEmitter.cs">
-      <Link>IL\Stubs\ArrayMethodILEmitter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\DelegateThunks.cs">
-      <Link>IL\Stubs\DelegateThunks.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ILEmitter.cs">
-      <Link>IL\Stubs\ILEmitter.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
-      <Link>JitInterface\CorInfoBase.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\CorInfoHelpFunc.cs">
-      <Link>JitInterface\CorInfoHelpFunc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
-      <Link>JitInterface\CorInfoImpl.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
-      <Link>JitInterface\CorInfoTypes.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="CppCodeGen\ILToCppImporter.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ILToNative.Compiler\src\ILToNative.Compiler.csproj">
+      <Project>{13bb3788-c3eb-4046-8105-a95f8ae49404}</Project>
+      <Name>ILToNative.Compiler</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILToNative.TypeSystem\src\ILToNative.TypeSystem.csproj">
+      <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
+      <Name>ILToNative.TypeSystem</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
