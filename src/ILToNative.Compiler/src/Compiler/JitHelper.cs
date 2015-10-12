@@ -37,7 +37,7 @@ namespace ILToNative
                         return "__range_check_fail";
 
                     case JitHelperId.AssignRef:
-                        return "__assignReference";
+                        return "WriteBarrier";
 
                     default:
                         throw new NotImplementedException();

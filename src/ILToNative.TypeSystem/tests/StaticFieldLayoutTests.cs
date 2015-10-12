@@ -124,10 +124,10 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "string1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(8, field.Offset);
                         break;
                     case "class1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(16, field.Offset);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -152,19 +152,19 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "string1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(8, field.Offset);
                         break;
                     case "int1":
                         Assert.Equal(0, field.Offset);
                         break;
                     case "class1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(16, field.Offset);
                         break;
                     case "int2":
                         Assert.Equal(4, field.Offset);
                         break;
                     case "string2":
-                        Assert.Equal(16, field.Offset);
+                        Assert.Equal(24, field.Offset);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -193,7 +193,7 @@ namespace TypeSystemTests
                         Assert.Equal(0, field.Offset);
                         break;
                     case "string3":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(8, field.Offset);
                         break;
                     default:
                         throw new Exception(field.Name);

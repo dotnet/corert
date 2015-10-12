@@ -30,8 +30,6 @@ namespace ILToNative
             Out.WriteLine();
 
             OutputReadyToHelpers();
-            OutputJitHelpers();
-
             OutputEETypes();
 
             Out.WriteLine();
@@ -169,15 +167,6 @@ namespace ILToNative
             Out.WriteLine();
         }
 
-        void OutputJitHelpers()
-        {
-            // assignReference is always the same. This will be a call into the runtime.
-            Out.WriteLine("__assignReference:");
-            Out.WriteLine("movq %rdx, (%rcx)");
-            Out.WriteLine("ret");
-            Out.WriteLine();
-        }
-
         void OutputReadyToHelpers()
         {
             foreach (var helper in _readyToRunHelpers.Values)
@@ -268,6 +257,8 @@ namespace ILToNative
                         Out.Write("leaq __GCStaticBase_");
                         Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
                         Out.WriteLine("(%rip), %rax");
+                        Out.WriteLine("mov (%rax), %rax");
+                        Out.WriteLine("mov (%rax), %rax"); // RAX is now a GC pointer
                         Out.WriteLine("ret");
                         break;
 
@@ -348,6 +339,13 @@ namespace ILToNative
 
         void OutputGCStatics()
         {
+            // Emit an array of GCHandle-sized elements for each type with GC statics
+            // Each element will be initially pointing at the pseudo EEType for the static.
+            // At runtime, it will be replaced by a GC handle to the GC-heap allocated object.
+
+            Out.WriteLine(".global __GCStaticRegionStart");
+            Out.WriteLine("__GCStaticRegionStart:");
+
             foreach (var t in _registeredTypes.Values)
             {
                 if (!t.IncludedInCompilation)
@@ -359,16 +357,49 @@ namespace ILToNative
 
                 if (type.GCStaticFieldSize > 0)
                 {
-                    Out.Write(".align ");
-                    Out.WriteLine(type.GCStaticFieldAlignment);
                     Out.Write("__GCStaticBase_");
                     Out.Write(NameMangler.GetMangledTypeName(type));
                     Out.WriteLine(":");
-                    Out.Write(".rept ");
-                    Out.WriteLine(type.GCStaticFieldSize);
-                    Out.WriteLine(".byte 0");
-                    Out.WriteLine(".endr");
+                    Out.Write(".quad ");
+                    Out.Write("__GCStaticEEType_");
+                    Out.Write(NameMangler.GetMangledTypeName(type));
                     Out.WriteLine();
+                }
+            }        
+
+            Out.WriteLine(".global __GCStaticRegionEnd");
+            Out.WriteLine("__GCStaticRegionEnd:");
+
+            // Next emit a GCDesc followed by the size of the region described by the GCDesc
+            // for each type with GC statics.
+
+            // It should be possible to intern these at some point.
+
+            foreach (var t in _registeredTypes.Values)
+            {
+                if (!t.IncludedInCompilation)
+                    continue;
+
+                var type = t.Type as MetadataType;
+                if (type == null)
+                    continue;
+
+                if (type.GCStaticFieldSize > 0)
+                {
+                    // numSeries
+                    Out.WriteLine(".quad 0");
+
+                    Out.Write("__GCStaticEEType_");
+                    Out.Write(NameMangler.GetMangledTypeName(type));
+                    Out.WriteLine(":");
+                    Out.WriteLine(".int 0");
+                    Out.Write(".int ");
+
+                    // GC requires a minimum object size
+                    int minimumObjectSize = type.Context.Target.PointerSize * 3;
+                    int gcStaticSize = Math.Max(type.GCStaticFieldSize, minimumObjectSize);
+
+                    Out.WriteLine(gcStaticSize);
                 }
             }
         }
