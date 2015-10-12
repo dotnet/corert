@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "repro", "repro\repro.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILToNative.TypeSystem", "..\ILToNative.TypeSystem\src\ILToNative.TypeSystem.csproj", "{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILToNative.Compiler", "..\ILToNative.Compiler\src\ILToNative.Compiler.csproj", "{13BB3788-C3EB-4046-8105-A95F8AE49404}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop", "desktop\desktop.csproj", "{B2C35178-5E42-4010-A72A-938711D7F8F0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +31,14 @@ Global
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13BB3788-C3EB-4046-8105-A95F8AE49404}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13BB3788-C3EB-4046-8105-A95F8AE49404}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13BB3788-C3EB-4046-8105-A95F8AE49404}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13BB3788-C3EB-4046-8105-A95F8AE49404}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2C35178-5E42-4010-A72A-938711D7F8F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C35178-5E42-4010-A72A-938711D7F8F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C35178-5E42-4010-A72A-938711D7F8F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C35178-5E42-4010-A72A-938711D7F8F0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
