@@ -16,9 +16,12 @@
     "System.Reflection.Extensions": "4.0.0",
     "System.AppContext": "4.0.0",
     "System.Collections.Immutable": "1.1.37",
-    "System.Reflection.Metadata": "1.0.22"
+    "System.Reflection.Metadata": "1.0.22",
+    "Microsoft.DiaSymReader": "1.0.6"
   },
   "frameworks": {
-    "dotnet": {}
+    "dotnet": {
+      "imports": "portable-net452"
+    }
   }
 }

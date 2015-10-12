@@ -33,6 +33,7 @@
     <Compile Include="Compiler\MethodCode.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
+    <Compile Include="Compiler\PdbSymbolProvider.cs" />
     <Compile Include="Compiler\ReadyToRunHelper.cs" />
     <Compile Include="Compiler\RegisteredField.cs" />
     <Compile Include="Compiler\RegisteredMethod.cs" />

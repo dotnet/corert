@@ -73,6 +73,10 @@ namespace ILToNative
                     _options.IsCppCodeGen = true;
                     break;
 
+                case "nolinenumbers":
+                    _options.NoLineNumbers = true;
+                    break;
+
                 default:
                     throw new CommandLineException("Unrecognized option: " + parser.GetCurrentOption());
                 }
