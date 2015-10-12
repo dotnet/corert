@@ -153,6 +153,26 @@ namespace Internal.TypeSystem
             return algorithm._computedLayout;
         }
 
+        #region Runtime specific adjustements to the static field layout
+        // TODO: these should be factored out to make the static field layout algorithm more general purpose
+
+        private static void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
+        {
+            // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
+            layout.GcStatics.Size = context.Target.PointerSize;
+        }
+
+        private static void FinalizeRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
+        {
+            // If the size of GCStatics is equal to the size set in PrepareRuntimeSpecificStaticFieldLayout, we
+            // don't have any GC statics
+            if (layout.GcStatics.Size == context.Target.PointerSize)
+            {
+                layout.GcStatics.Size = 0;
+            }
+        }
+        #endregion
+
         public static unsafe ComputedStaticFieldLayout ComputeStaticFieldLayout(MetadataType type)
         {
             int numStaticFields = 0;
@@ -177,6 +197,8 @@ namespace Internal.TypeSystem
             }
 
             result.Offsets = new FieldAndOffset[numStaticFields];
+
+            PrepareRuntimeSpecificStaticFieldLayout(type.Context, ref result);
 
             int index = 0;
 
@@ -205,6 +227,8 @@ namespace Internal.TypeSystem
 
                 index++;
             }
+
+            FinalizeRuntimeSpecificStaticFieldLayout(type.Context, ref result);
 
             return result;
         }
@@ -535,6 +559,30 @@ namespace Internal.TypeSystem
                     ComputeStaticFieldLayout();
                 }
                 return _staticBlockInfo == null ? 0 : _staticBlockInfo.NonGcStatics.LargestAlignment;
+            }
+        }
+
+        public int GCStaticFieldSize
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _staticBlockInfo == null ? 0 : _staticBlockInfo.GcStatics.Size;
+            }
+        }
+
+        public int GCStaticFieldAlignment
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _staticBlockInfo == null ? 0 : _staticBlockInfo.GcStatics.LargestAlignment;
             }
         }
 

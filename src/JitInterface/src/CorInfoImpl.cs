@@ -861,9 +861,13 @@ namespace Internal.JitInterface
                 pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
                 ReadyToRunHelperId helperId;
-                if (field.IsThreadStatic || field.HasGCStaticBase)
+                if (field.IsThreadStatic)
                 {
                     throw new NotImplementedException();
+                }
+                else if (field.HasGCStaticBase)
+                {
+                    helperId = ReadyToRunHelperId.GetGCStaticBase;
                 }
                 else
                 {
@@ -1066,6 +1070,8 @@ namespace Internal.JitInterface
             {
                 case CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL:
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.RngChkFail));
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF:
+                    return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.AssignRef));
                 default:
                     throw new NotImplementedException();
             }

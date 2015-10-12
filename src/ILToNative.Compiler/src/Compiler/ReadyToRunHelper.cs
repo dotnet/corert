@@ -19,6 +19,7 @@ namespace ILToNative
         IsInstanceOf,
         CastClass,
         GetNonGCStaticBase,
+        GetGCStaticBase,
     }
 
     class ReadyToRunHelper
@@ -54,6 +55,8 @@ namespace ILToNative
                         return "__CastClass_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.GetNonGCStaticBase:
                         return "__GetNonGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
+                    case ReadyToRunHelperId.GetGCStaticBase:
+                        return "__GetGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     default:
                         throw new NotImplementedException();
                 }

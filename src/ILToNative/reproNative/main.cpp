@@ -81,11 +81,24 @@ void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
 #endif // USE_MRT
 }
 
+extern "C" void* __GCStaticRegionStart;
+extern "C" void* __GCStaticRegionEnd;
+
 void __register_module(SimpleModuleHeader* pModule)
 {
 #if USE_MRT
     RhpRegisterSimpleModule(pModule);
 #endif // USE_MRT
+
+
+    // Initialize GC statics in the module
+    // TODO: emit a ModuleHeader and use it here
+
+    for (void** currentBlock = &__GCStaticRegionStart; currentBlock < &__GCStaticRegionEnd; currentBlock++)
+    {
+        Object* gcBlock = __allocate_object((MethodTable*)*currentBlock);
+        *currentBlock = CreateGlobalHandle(ObjectToOBJECTREF(gcBlock));
+    }
 }
 
 namespace mscorlib { namespace System { 
@@ -229,6 +242,38 @@ extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
 #else
     return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
 #endif 
+}
+
+#if defined(_WIN64)
+// Card byte shift is different on 64bit.
+#define card_byte_shift     11
+#else
+#define card_byte_shift     10
+#endif
+
+#define card_byte(addr) (((size_t)(addr)) >> card_byte_shift)
+
+inline void ErectWriteBarrier(Object ** dst, Object * ref)
+{
+    // if the dst is outside of the heap (unboxed value classes) then we
+    //      simply exit
+    if (((BYTE*)dst < g_lowest_address) || ((BYTE*)dst >= g_highest_address))
+        return;
+
+    if ((BYTE*)ref >= g_ephemeral_low && (BYTE*)ref < g_ephemeral_high)
+    {
+        // volatile is used here to prevent fetch of g_card_table from being reordered 
+        // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
+        BYTE* pCardByte = (BYTE *)*(volatile BYTE **)(&g_card_table) + card_byte((BYTE *)dst);
+        if (*pCardByte != 0xFF)
+            *pCardByte = 0xFF;
+    }
+}
+
+extern "C" void WriteBarrier(Object ** dst, Object * ref)
+{
+    *dst = ref;
+    ErectWriteBarrier(dst, ref);
 }
 
 void __throw_exception(void * pEx)
