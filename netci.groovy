@@ -4,19 +4,20 @@ import jobs.generation.InternalUtilities;
 
 // Defines a the new of the repo, used elsewhere in the file
 def project = 'dotnet/corert' 
-// Define build string
-def lowercaseConfiguration = ${configuration}.toLowerCase()
-def buildString = "build.cmd ${lowercaseConfiguration}"
 
 // Generate the builds for debug and release, commit and PRJob
 [true, false].each { isPR -> // Defines a closure over true and false, value assigned to isPR
     ['Debug', 'Release'].each { configuration ->
+
+        // Define build string
+        def lowercaseConfiguration = ${configuration}.toLowerCase()
+        def buildString = "build.cmd ${lowercaseConfiguration}"
         
         // Determine the name for the new job.  The first parameter is the project,
         // the second parameter is the base name for the job, and the last parameter
         // is a boolean indicating whether the job will be a PR job.  If true, the
         // suffix _prtest will be appended.
-        def newJobName = InternalUtilities.getFullJobName(project, configuration.toLowerCase(), isPR)
+        def newJobName = InternalUtilities.getFullJobName(project, lowercaseConfiguration, isPR)
         
         // Create a new job with the specified name.  The brace opens a new closure
         // and calls made within that closure apply to the newly created job.
