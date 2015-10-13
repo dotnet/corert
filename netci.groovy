@@ -10,7 +10,7 @@ def project = 'dotnet/corert'
     ['Debug', 'Release'].each { configuration ->
 
         // Define build string
-        def lowercaseConfiguration = ${configuration}.toLowerCase()
+        def lowercaseConfiguration = configuration.toLowerCase()
         def buildString = "build.cmd ${lowercaseConfiguration}"
         
         // Determine the name for the new job.  The first parameter is the project,
