@@ -20,6 +20,8 @@ extern "C" int32_t RhpEnableConservativeStackReporting();
 extern "C" void RhpRegisterSimpleModule(SimpleModuleHeader* pModule);
 #endif // USE_MRT
 
+#include "platform.h"
+
 int __initialize_runtime()
 {
 #if USE_MRT
@@ -169,10 +171,10 @@ extern "C" Object * __allocate_object(MethodTable * pMT)
 #endif
 }
 
+extern "C" void __EEType_mscorlib_System_String();
+
 Object * __allocate_string(int32_t len)
 {
-#ifdef CPPCODEGEN
-
 #if !USE_MRT
     alloc_context * acontext = GetThread()->GetAllocContext();
     Object * pObject;
@@ -195,18 +197,15 @@ Object * __allocate_string(int32_t len)
         if (pObject == NULL)
             return NULL; // TODO: Throw OOM
     }
-
+#ifdef CPPCODEGEN
     pObject->SetMethodTable(System::String::__getMethodTable());
-
-    *(int32_t *)(((intptr_t *)pObject)+1) = len;
-
-    return pObject;
+#else
+    pObject->SetMethodTable((MethodTable*)__EEType_mscorlib_System_String);
+#endif
+	*(int32_t *)(((intptr_t *)pObject) + 1) = len;
+	return pObject;
 #else
     return RhNewArray(System::String::__getMethodTable(), len);
-#endif
-
-#else
-    throw 42;
 #endif
 }
 
@@ -295,6 +294,16 @@ Object * __load_string_literal(const char * string)
     uint16_t * p = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     for (size_t i = 0; i < len; i++)
         p[i] = string[i];
+    return pString;
+}
+
+Object* __load_static_string_literal(const uint8_t* utf8, int32_t utf8Len, int32_t strLen, OBJECTHANDLE* pHandle)
+{
+    Object * pString = __allocate_string(strLen);
+    uint16_t * buffer = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
+    if (strLen > 0)
+        UTF8ToWideChar((char*)utf8, utf8Len, buffer, strLen);
+    *pHandle = CreateGlobalHandle(ObjectToOBJECTREF(pString));
     return pString;
 }
 
@@ -592,10 +601,41 @@ SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */
 
 extern "C" int repro_Program__Main();
 
+extern "C" void __str_fixup();
+extern "C" void __str_fixup_end();
+int __reloc_string_fixup()
+{
+    for (unsigned** ptr = (unsigned**)__str_fixup;
+         ptr < (unsigned**)__str_fixup_end; ptr++)
+    {
+        int utf8Len;
+        uint8_t* bytes = (uint8_t*) *ptr;
+        if (AsmDataFormat::DecodeUnsigned(&bytes, bytes + 5, (unsigned*)&utf8Len) != 0)
+            return -1;
+
+        assert(bytes <= ((uint8_t*)*ptr) + 5);
+        assert(utf8Len >= 0);
+
+        int strLen = 0;
+        if (utf8Len != 0)
+        {
+            strLen = UTF8ToWideCharLen((char*)bytes, utf8Len);
+            if (strLen <= 0) return -1;
+        }
+
+        OBJECTHANDLE handle;
+        *((Object**)ptr) = __load_static_string_literal(bytes, utf8Len, strLen, &handle);
+        // TODO: This "handle" will leak, deallocate with __unload
+    }
+    return 0;
+}
+
 int main(int argc, char * argv[]) {
     if (__initialize_runtime() != 0) return -1;
     __register_module(&__module);
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
+	
+    if (__reloc_string_fixup() != 0) return -1;
 
     repro_Program__Main();
 
