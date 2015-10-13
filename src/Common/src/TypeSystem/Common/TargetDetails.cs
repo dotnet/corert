@@ -42,6 +42,15 @@ namespace Internal.TypeSystem
             }
         }
 
+        public int MinimumFunctionAlignment
+        {
+            get
+            {
+                // We use a minimum alignment of 4 irrespective of the platform.
+                return 4;
+            }
+        }
+
         public TargetDetails(TargetArchitecture architecture)
         {
             Architecture = architecture;

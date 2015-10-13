@@ -3,13 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ILToNative.DependencyAnalysisFramework
 {
-    public class DependencyNode
+    public abstract class DependencyNode
     {
         private object _mark;
 
@@ -19,8 +20,11 @@ namespace ILToNative.DependencyAnalysisFramework
 
         internal void SetMark(object mark)
         {
+            Debug.Assert(mark != null);
+            Debug.Assert(_mark == null);
             _mark = mark;
         }
+
         internal object GetMark()
         {
             return _mark;
@@ -32,6 +36,14 @@ namespace ILToNative.DependencyAnalysisFramework
             {
                 return _mark != null;
             }
+        }
+
+        // Force all non-abstract nodes to provide a name
+        public abstract string GetName();
+
+        public sealed override string ToString()
+        {
+            return GetName();
         }
     }
 }

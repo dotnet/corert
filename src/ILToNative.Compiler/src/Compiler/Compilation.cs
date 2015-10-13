@@ -14,6 +14,8 @@ using Internal.TypeSystem.Ecma;
 using Internal.IL;
 
 using Internal.JitInterface;
+using ILToNative.DependencyAnalysis;
+using ILToNative.DependencyAnalysisFramework;
 
 namespace ILToNative
 {
@@ -21,6 +23,8 @@ namespace ILToNative
     {
         public bool IsCppCodeGen;
         public bool NoLineNumbers;
+        public string DgmlLog;
+        public bool FullLog;
     }
 
     public partial class Compilation
@@ -29,6 +33,10 @@ namespace ILToNative
         readonly CompilationOptions _options;
 
         Dictionary<string, int> _stringTable = new Dictionary<string, int>();
+        
+        NodeFactory _nodeFactory;
+        DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
+
         Dictionary<TypeDesc, RegisteredType> _registeredTypes = new Dictionary<TypeDesc, RegisteredType>();
         Dictionary<MethodDesc, RegisteredMethod> _registeredMethods = new Dictionary<MethodDesc, RegisteredMethod>();
         Dictionary<FieldDesc, RegisteredField> _registeredFields = new Dictionary<FieldDesc, RegisteredField>();
@@ -283,24 +291,162 @@ namespace ILToNative
             }
 
             _mainMethod = mainMethod;
-            AddMethod(mainMethod);
 
-            AddWellKnownTypes();
-
-            while (_methodsThatNeedsCompilation != null)
+            if (!_options.IsCppCodeGen)
             {
-                CompileMethods();
+                _nodeFactory = new NodeFactory(this._typeSystemContext.Target);
+                NodeFactory.NameMangler = NameMangler;
+                var rootNode = _nodeFactory.MethodEntrypoint(_mainMethod);
 
-                ExpandVirtualMethods();
-            }
+                // Choose which dependency graph implementation to use based on the amount of logging requested.
+                if (_options.DgmlLog == null)
+                {
+                    // No log uses the NoLogStrategy
+                    _dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                }
+                else
+                {
+                    if (_options.FullLog)
+                    {
+                        // Full log uses the full log strategy
+                        _dependencyGraph = new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                    }
+                    else
+                    {
+                        // Otherwise, use the first mark strategy
+                        _dependencyGraph = new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                    }
+                }
+                
+                _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
+                _dependencyGraph.AddRoot(rootNode, "Main method");
+                AddWellKnownTypes(_dependencyGraph);
 
-            if (_options.IsCppCodeGen)
-            {
-                _cppWriter.OutputCode();
+                _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
+                var nodes = _dependencyGraph.MarkedNodeList;
+                AsmWriter.EmitAsm(Out, nodes, _nodeFactory);
+
+                if (_options.DgmlLog != null)
+                {
+                    // I'd like to write the below, but IlToNative build environment results in a runtime use of the facade
+                    // for System.IO.FileSystem, but the implementation for System.IO.FileSystem.Primitives. This results
+                    // in the ctor call failing to bind at runtime, so I'm resorting to reflection to make this call.
+                    //
+                    // using (FileStream dgmlOutput = new FileStream(_options.DgmlLog, FileMode.Create))
+                    FileStream dgmlOutput = null;
+                    foreach (var ci in System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(FileStream)).DeclaredConstructors)
+                    {
+                        if (ci.GetParameters().Length != 2)
+                            continue;
+                        if (ci.GetParameters()[0].ParameterType.Name != "String")
+                            continue;
+                        if (ci.GetParameters()[1].ParameterType.Name != "FileMode")
+                            continue;
+                        dgmlOutput = (FileStream)ci.Invoke(new object[] { _options.DgmlLog, FileMode.Create });
+                        break;
+                    }
+                    {
+                        DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                    }
+                    dgmlOutput.Flush();
+                    dgmlOutput.Dispose();
+                }
             }
             else
             {
-                OutputCode();
+                AddMethod(mainMethod);
+                AddWellKnownTypes();
+
+                while (_methodsThatNeedsCompilation != null)
+                {
+                    CompileMethods();
+
+                    ExpandVirtualMethods();
+                }
+
+                if (_options.IsCppCodeGen)
+                {
+                    _cppWriter.OutputCode();
+                }
+                else
+                {
+                    OutputCode();
+                }
+            }
+        }
+
+        private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
+        {
+            foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
+            {
+                MethodDesc method = methodCodeNodeNeedingCode.Method;
+                string methodName = method.ToString();
+                Log.WriteLine("Compiling " + methodName);
+
+                SpecialMethodKind kind = DetectSpecialMethodKind(method);
+
+                if (kind == SpecialMethodKind.Unknown || kind == SpecialMethodKind.Intrinsic)
+                {
+                    var methodIL = _ilProvider.GetMethodIL(method);
+                    if (methodIL == null)
+                        return;
+
+                    var methodCode = _corInfo.CompileMethod(method);
+
+                    ObjectDataBuilder objData = new ObjectDataBuilder();
+                    objData.Alignment = _nodeFactory.Target.MinimumFunctionAlignment;
+                    objData.EmitBytes(methodCode.Code);
+                    objData.DefinedSymbols.Add(methodCodeNodeNeedingCode);
+
+                    if (methodCode.Relocs != null)
+                    {
+                        for (int i = 0; i < methodCode.Relocs.Length; i++)
+                        {
+                            // Relocs with delta not yet supported
+                            if (methodCode.Relocs[i].Delta != 0)
+                                throw new NotImplementedException();
+
+                            int offset = methodCode.Relocs[i].Offset;
+                            RelocType relocType = (RelocType)methodCode.Relocs[i].RelocType;
+                            int instructionLength = 1;
+                            ISymbolNode targetNode;
+
+                            object target = methodCode.Relocs[i].Target;
+                            if (target is MethodDesc)
+                            {
+                                targetNode = _nodeFactory.MethodEntrypoint((MethodDesc)target);
+                            }
+                            else if (target is ReadyToRunHelper)
+                            {
+                                targetNode = _nodeFactory.ReadyToRunHelper((ReadyToRunHelper)target);
+                            }
+                            else if (target is JitHelper)
+                            {
+                                targetNode = _nodeFactory.ExternSymbol(((JitHelper)target).MangledName);
+                            }
+                            else if (target is string)
+                            {
+                                targetNode = _nodeFactory.StringIndirection((string)target);
+                            }
+                            else
+                            {
+                                // TODO:
+                                throw new NotImplementedException();
+                            }
+
+                            objData.AddRelocAtOffset(targetNode, relocType, offset, instructionLength);
+                        }
+                    }
+                    // TODO: ColdCode
+                    if (methodCode.ColdCode != null)
+                        throw new NotImplementedException();
+
+                    // TODO: ROData
+                    if (methodCode.ROData != null)
+                        throw new NotImplementedException();
+
+                    methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());
+                }
             }
         }
 
@@ -309,6 +455,12 @@ namespace ILToNative
             var stringType = TypeSystemContext.GetWellKnownType(WellKnownType.String);
             AddType(stringType);
             MarkAsConstructed(stringType);
+        }
+
+        private void AddWellKnownTypes(DependencyAnalyzerBase<NodeFactory> analyzer)
+        {
+            var stringType = TypeSystemContext.GetWellKnownType(WellKnownType.String);
+            analyzer.AddRoot(_nodeFactory.ConstructedTypeSymbol(stringType), "String type is always generated");
         }
 
         public void AddMethod(MethodDesc method)

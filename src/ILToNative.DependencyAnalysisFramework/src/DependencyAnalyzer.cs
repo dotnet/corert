@@ -135,9 +135,13 @@ namespace ILToNative.DependencyAnalysisFramework
         // Internal details
         void GetStaticDependenciesImpl(DependencyNodeCore<DependencyContextType> node)
         {
-            foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in node.GetStaticDependencies(_dependencyContext))
+            IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> staticDependencies = node.GetStaticDependencies(_dependencyContext);
+            if (staticDependencies != null)
             {
-                AddToMarkStack(dependency.Node, dependency.Reason, node, null);
+                foreach (DependencyNodeCore<DependencyContextType>.DependencyListEntry dependency in staticDependencies)
+                {
+                    AddToMarkStack(dependency.Node, dependency.Reason, node, null);
+                }
             }
 
             if (node.HasConditionalStaticDependencies)
@@ -222,9 +226,6 @@ namespace ILToNative.DependencyAnalysisFramework
 
                         _conditional_dependency_store.Remove(currentNode);
                     }
-
-                    if (NewMarkedNode != null)
-                        NewMarkedNode(currentNode);
                 }
 
                 // Find new dependencies introduced by dynamic depedencies
@@ -270,6 +271,11 @@ namespace ILToNative.DependencyAnalysisFramework
             {
                 _markStack.Push(node);
                 _markedNodes.Add(node);
+
+                node.CallOnMarked(_dependencyContext);
+
+                if (NewMarkedNode != null)
+                    NewMarkedNode(node);
 
                 return true;
             }

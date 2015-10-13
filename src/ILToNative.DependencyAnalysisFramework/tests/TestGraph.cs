@@ -30,7 +30,7 @@ namespace ILToNative.DependencyAnalysisFramework.Tests
                 }
             }
 
-            public override string ToString()
+            public override string GetName()
             {
                 return _data;
             }

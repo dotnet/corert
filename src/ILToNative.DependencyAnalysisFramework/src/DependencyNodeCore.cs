@@ -20,8 +20,29 @@ namespace ILToNative.DependencyAnalysisFramework
                 Reason = reason;
             }
 
+            public DependencyListEntry(object node,
+                                       string reason)
+            {
+                Node = (DependencyNodeCore<DependencyContextType>)node;
+                Reason = reason;
+            }
+
             public DependencyNodeCore<DependencyContextType> Node;
             public string Reason;
+        }
+
+        public class DependencyList : List<DependencyListEntry>
+        {
+            public void Add(DependencyNodeCore<DependencyContextType> node,
+                                       string reason)
+            {
+                this.Add(new DependencyListEntry(node, reason));
+            }
+
+            public void Add(object node, string reason)
+            {
+                this.Add(new DependencyListEntry((DependencyNodeCore<DependencyContextType>)node, reason));
+            }
         }
 
         public struct CombinedDependencyListEntry
@@ -32,6 +53,15 @@ namespace ILToNative.DependencyAnalysisFramework
             {
                 Node = node;
                 OtherReasonNode = otherReasonNode;
+                Reason = reason;
+            }
+
+            public CombinedDependencyListEntry(object node,
+                                               object otherReasonNode,
+                                               string reason)
+            {
+                Node = (DependencyNodeCore<DependencyContextType>)node;
+                OtherReasonNode = (DependencyNodeCore<DependencyContextType>)otherReasonNode;
                 Reason = reason;
             }
 
@@ -66,5 +96,20 @@ namespace ILToNative.DependencyAnalysisFramework
         public abstract IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(DependencyContextType context);
 
         public abstract IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencyContextType context);
+
+        internal void CallOnMarked(DependencyContextType context)
+        {
+            OnMarked(context);
+        }
+
+        /// <summary>
+        /// Overrides of this method allow a node to perform actions when said node becomes
+        /// marked.
+        /// </summary>
+        /// <param name="context"></param>
+        protected virtual void OnMarked(DependencyContextType context)
+        {
+            // Do nothing by default
+        }
     }
 }

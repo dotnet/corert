@@ -469,5 +469,31 @@ namespace Internal.TypeSystem
                 currentType = currentType.BaseType;
             }
         }
+
+        // Enumerate all possible virtual slots of a type
+        public static IEnumerable<MethodDesc> EnumAllVirtualSlots(MetadataType type)
+        {
+            HashSet<MethodDesc> alreadyEnumerated = new HashSet<MethodDesc>();
+            if (!type.IsInterface)
+            {
+                do
+                {
+                    foreach (MethodDesc m in type.GetMethods())
+                    {
+                        if (m.IsVirtual)
+                        {
+                            MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
+                            if (!alreadyEnumerated.Contains(possibleVirtual))
+                            {
+                                alreadyEnumerated.Add(possibleVirtual);
+                                yield return possibleVirtual;
+                            }
+                        }
+                    }
+
+                    type = type.BaseType;
+                } while (type != null);
+            }
+        }
     }
 }

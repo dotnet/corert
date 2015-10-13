@@ -29,6 +29,21 @@ namespace System.Collections.Generic
             _items[_count++] = item;
         }
 
+        public void Append(T[] newItems)
+        {
+            if (_items == null || (_count + newItems.Length) >= _items.Length)
+            {
+                int newCount = 2 * _count + 1;
+                while ((_count + newItems.Length) >= newCount)
+                {
+                    newCount = 2 * newCount + 1;
+                }
+                Array.Resize(ref _items, newCount);
+            }
+            Array.Copy(newItems, 0, _items, _count, newItems.Length);
+            _count += newItems.Length;
+        }
+
         public int Count
         {
             get

@@ -14,7 +14,6 @@ namespace ILToNative.DependencyAnalysisFramework
     {
         private IEnumerable<DependencyListEntry> _dependencies;
         private IEnumerable<CombinedDependencyListEntry> _conditionalDependencies;
-        private static CombinedDependencyListEntry[] s_emptyDynamicList = new CombinedDependencyListEntry[0];
 
         public void SetStaticDependencies(IEnumerable<DependencyListEntry> dependencies,
                                           IEnumerable<CombinedDependencyListEntry> conditionalDependencies)
@@ -71,7 +70,7 @@ namespace ILToNative.DependencyAnalysisFramework
 
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencyContextType context)
         {
-            return s_emptyDynamicList;
+            return Array.Empty<CombinedDependencyListEntry>();
         }
     }
 }

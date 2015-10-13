@@ -1,0 +1,141 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Internal.TypeSystem;
+
+namespace ILToNative.DependencyAnalysis
+{
+    public struct ObjectDataBuilder
+    {
+        public ObjectDataBuilder(NodeFactory factory)
+        {
+            _target = factory.Target;
+            _data = new ArrayBuilder<byte>();
+            _relocs = new ArrayBuilder<Relocation>();
+            Alignment = 1;
+            DefinedSymbols = new ArrayBuilder<ISymbolNode>();
+        }
+
+        private TargetDetails _target;
+        private ArrayBuilder<Relocation> _relocs;
+        private ArrayBuilder<byte> _data;
+        internal int Alignment;
+        internal ArrayBuilder<ISymbolNode> DefinedSymbols;
+
+        public int CountBytes
+        {
+            get
+            {
+                return _data.Count;
+            }
+        }
+
+        public void RequireAlignment(int align)
+        {
+            Alignment = Math.Min(align, Alignment);
+        }
+
+        public void RequirePointerAlignment()
+        {
+            RequireAlignment(_target.PointerSize);
+        }
+
+        public void EmitByte(byte emit)
+        {
+            _data.Add(emit);
+        }
+
+        public void EmitShort(short emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+        }
+
+        public void EmitInt(int emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+            EmitByte((byte)((emit >> 16) & 0xFF));
+            EmitByte((byte)((emit >> 24) & 0xFF));
+        }
+
+        public void EmitLong(long emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+            EmitByte((byte)((emit >> 16) & 0xFF));
+            EmitByte((byte)((emit >> 24) & 0xFF));
+            EmitByte((byte)((emit >> 32) & 0xFF));
+            EmitByte((byte)((emit >> 40) & 0xFF));
+            EmitByte((byte)((emit >> 48) & 0xFF));
+            EmitByte((byte)((emit >> 56) & 0xFF));
+        }
+
+        public void EmitBytes(byte[] bytes)
+        {
+            _data.Append(bytes);
+        }
+
+        public void EmitZeroPointer()
+        {
+            for (int i = 0; i < _target.PointerSize; i++)
+                EmitByte(0);
+        }
+
+        public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int instructionLength)
+        {
+            Relocation symbolReloc = new Relocation();
+            symbolReloc.Target = symbol;
+            symbolReloc.RelocType = relocType;
+            symbolReloc.Offset = offset;
+            symbolReloc.Delta = 0;
+            symbolReloc.InstructionLength = (byte)instructionLength;
+            _relocs.Add(symbolReloc);
+        }
+
+        public void EmitReloc(ISymbolNode symbol, RelocType relocType, int instructionLength)
+        {
+            AddRelocAtOffset(symbol, relocType, _data.Count, instructionLength);
+
+            // And add space for the reloc
+            switch (relocType)
+            {
+                case RelocType.IMAGE_REL_BASED_REL32:
+                    EmitInt(0);
+                    break;
+                case RelocType.IMAGE_REL_BASED_DIR64:
+                    EmitLong(0);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        public void EmitPointerReloc(ISymbolNode symbol)
+        {
+            if (_target.PointerSize == 8)
+            {
+                EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64, 0);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public ObjectNode.ObjectData ToObjectData()
+        {
+            ObjectNode.ObjectData returnData = new ObjectNode.ObjectData(_data.ToArray(), 
+                                                                         _relocs.ToArray(),
+                                                                         Alignment,
+                                                                         DefinedSymbols.ToArray());
+
+            return returnData;
+        }
+    }
+}
