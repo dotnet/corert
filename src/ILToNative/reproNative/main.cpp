@@ -90,7 +90,7 @@ void __register_module(SimpleModuleHeader* pModule)
     RhpRegisterSimpleModule(pModule);
 #endif // USE_MRT
 
-
+#ifndef CPPCODEGEN
     // Initialize GC statics in the module
     // TODO: emit a ModuleHeader and use it here
 
@@ -99,6 +99,7 @@ void __register_module(SimpleModuleHeader* pModule)
         Object* gcBlock = __allocate_object((MethodTable*)*currentBlock);
         *currentBlock = CreateGlobalHandle(ObjectToOBJECTREF(gcBlock));
     }
+#endif
 }
 
 namespace mscorlib { namespace System { 
