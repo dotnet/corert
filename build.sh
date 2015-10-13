@@ -106,11 +106,6 @@ prepare_native_build()
     # This is where all built CoreClr libraries will copied to.
     export __CMakeBinDir="$__BinDir"
 
-    # Configure environment if we are doing a clean build.
-    if [ $__CleanBuild == 1 ]; then
-        clean
-    fi
-
     # Configure environment if we are doing a verbose build
     if [ $__VerboseBuild == 1 ]; then
         export VERBOSE=1
@@ -295,6 +290,11 @@ __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Nati
 __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
 
 # Make the directories necessary for build if they don't exist
+
+# Configure environment if we are doing a clean build.
+if [ $__CleanBuild == 1 ]; then
+    clean
+fi
 
 setup_dirs
 
