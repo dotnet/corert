@@ -887,6 +887,11 @@ void GCToEEInterface::GcDone(int condemned)
     RestrictedCallouts::InvokeGcCallouts(GCRC_EndCollection, condemned);
 }
 
+bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
+{
+    return RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObj);
+}
+
 // Thread functions
 bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
 {
