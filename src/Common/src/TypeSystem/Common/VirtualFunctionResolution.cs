@@ -71,6 +71,20 @@ namespace Internal.TypeSystem
         /// <returns>The override of the virtual method that should be called</returns>
         public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, MetadataType objectType)
         {
+            // Workaround for https://github.com/dotnet/corert/issues/48
+#if true
+            string name = targetMethod.Name;
+            MethodSignature sig = targetMethod.Signature;
+
+            TypeDesc t = objectType;
+            for (;;)
+            {
+                MethodDesc implMethod = t.GetMethod(name, sig);
+                if (implMethod != null)
+                    return implMethod;
+                t = t.BaseType;
+            }
+#else
             // Step 1, convert objectType to uninstantiated form
             TypeDesc uninstantiatedType = objectType;
             MethodDesc initialTargetMethod = targetMethod;
@@ -106,6 +120,7 @@ namespace Internal.TypeSystem
             }
 
             return resolutionTarget;
+#endif
         }
 
         private static bool IsInterfaceImplementedOnType(MetadataType type, MetadataType interfaceType)
