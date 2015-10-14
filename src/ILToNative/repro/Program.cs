@@ -5,14 +5,9 @@ using System;
 
 internal class Program
 {
-    public virtual void foo()
-    {
-    }
-
     private static void Main(string[] args)
     {
-        var o = new Program();
-        o.foo();
+        Console.WriteLine("Hello world");
     }
 }
 

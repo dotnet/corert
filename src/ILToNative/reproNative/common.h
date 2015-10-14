@@ -42,7 +42,7 @@ void __shutdown_runtime();
 extern "C" Object * __allocate_object(MethodTable * pMT);
 extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT);
 Object * __allocate_string(int32_t len);
-__declspec(noreturn) void __throw_exception(void * pEx);
+extern "C" __declspec(noreturn) void __throw_exception(void * pEx);
 Object * __load_string_literal(const char * string);
 
 extern "C" Object * __castclass_class(void * p, MethodTable * pMT);
