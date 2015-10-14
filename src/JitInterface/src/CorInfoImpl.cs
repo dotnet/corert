@@ -292,6 +292,30 @@ namespace Internal.JitInterface
             return corInfoType;
         }
 
+        MethodDesc methodFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
+        {
+            if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
+            {
+                return null;
+            }
+            else
+            {
+                return HandleToObject((CORINFO_METHOD_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+            }
+        }
+
+        TypeDesc typeFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
+        {
+            if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
+            {
+                return HandleToObject((CORINFO_CLASS_STRUCT_*)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
+            }
+            else
+            {
+                return methodFromContext(contextStruct).OwningType;
+            }
+        }
+
         uint getMethodAttribsInternal(MethodDesc method)
         {
             CorInfoFlag result = 0;
@@ -808,6 +832,15 @@ namespace Internal.JitInterface
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
+                    {
+                        var type = HandleToObject(pResolvedToken.hClass);
+                        _compilation.AddType(type);
+                        _compilation.AddMethod(type.GetStaticConstructor());
+
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.CCtorTrigger, type));
+                    }
+                    break;
                 default:
                     throw new NotImplementedException();
             }
@@ -818,8 +851,57 @@ namespace Internal.JitInterface
 
         CorInfoInitClassResult initClass(IntPtr _this, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative)
         {
-            // TODO: Cctor triggers
-            return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+            FieldDesc fd = field == null ? null : HandleToObject(field);
+            Debug.Assert(fd == null || fd.IsStatic);
+
+            MethodDesc md = HandleToObject(method);
+            MetadataType typeToInit = (MetadataType)(fd != null ? fd.OwningType : typeFromContext(context));
+
+            if (!typeToInit.HasStaticConstructor)
+            {
+                return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+            }
+
+            if (typeToInit.IsModuleType)
+            {
+                // For both jitted and ngen code the global class is always considered initialized
+                return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+            }
+
+            if (fd == null)
+            {
+                if (typeToInit.IsBeforeFieldInit)
+                {
+                    // We can wait for field accesses to run .cctor
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+
+                // Run .cctor on statics & constructors
+                if (md.Signature.IsStatic)
+                {
+                    // Except don't class construct on .cctor - it would be circular
+                    if (md.IsStaticConstructor)
+                    {
+                        return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                    }
+                }
+                else if (!md.IsConstructor && !typeToInit.IsValueType)
+                {
+                    // According to the spec, we should be able to do this optimization for both reference and valuetypes.
+                    // To maintain backward compatibility, we are doing it for reference types only.
+                    // For instance methods of types with precise-initialization
+                    // semantics, we can assume that the .ctor triggerred the
+                    // type initialization.
+                    // This does not hold for NULL "this" object. However, the spec does
+                    // not require that case to work.
+                    return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
+                }
+            }
+
+            // TODO: before giving up and asking to generate a helper call, check to see if this is some pattern we can
+            //       prove doesn't need initclass anymore because we initialized it earlier.
+
+            return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
         }
 
         void classMustBeLoadedBeforeCodeIsRun(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
@@ -1190,8 +1272,14 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         void embedGenericHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.Bool)]bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
         { throw new NotImplementedException(); }
-        CORINFO_LOOKUP_KIND getLocationOfThisType(IntPtr _this, CORINFO_METHOD_STRUCT_* context)
-        { throw new NotImplementedException(); }
+        void getLocationOfThisType(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context)
+        {
+            result->needsRuntimeLookup = false;
+            result->runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+
+            // TODO: shared generics
+        }
+
         void* getPInvokeUnmanagedTarget(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException(); }
         void* getAddressOfPInvokeFixup(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)

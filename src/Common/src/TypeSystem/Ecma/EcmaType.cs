@@ -397,6 +397,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsBeforeFieldInit
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.BeforeFieldInit) != 0;
+            }
+        }
+
         public override bool IsModuleType
         {
             get

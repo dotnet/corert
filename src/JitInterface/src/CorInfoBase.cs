@@ -257,7 +257,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
         delegate void _embedGenericHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.Bool)]bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
-        delegate CORINFO_LOOKUP_KIND _getLocationOfThisType(IntPtr _this, CORINFO_METHOD_STRUCT_* context);
+        delegate void _getLocationOfThisType(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
         delegate void* _getPInvokeUnmanagedTarget(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]

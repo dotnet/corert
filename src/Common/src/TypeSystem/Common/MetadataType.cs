@@ -11,7 +11,22 @@ namespace Internal.TypeSystem
 
         public abstract bool IsSequentialLayout { get; }
 
+        public abstract bool IsBeforeFieldInit { get; }
+
         public abstract bool IsModuleType { get; }
+
+        public bool HasStaticConstructor
+        {
+            get
+            {
+                foreach (var method in GetMethods())
+                {
+                    if (method.IsStaticConstructor)
+                        return true;
+                }
+                return false;
+            }
+        }
     }
 
     public struct ClassLayoutMetadata

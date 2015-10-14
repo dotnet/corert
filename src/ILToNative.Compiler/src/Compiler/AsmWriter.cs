@@ -288,6 +288,18 @@ namespace ILToNative
                         Out.WriteLine("ret");
                         break;
 
+                    case ReadyToRunHelperId.CCtorTrigger:
+                        Out.Write("leaq __NonGCStaticBase_");
+                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
+                        Out.WriteLine(" - 16(%rip), %rax");
+
+                        Out.WriteLine("jmp *(%rax)");
+
+                        // TODO: actually call into the managed helper that does a better job at this
+                        //       and won't call the same constructor twice...
+
+                        break;
+
                     default:
                         throw new NotImplementedException();
                 }
@@ -382,19 +394,63 @@ namespace ILToNative
                 if (type == null)
                     continue;
 
+                if (type.NonGCStaticFieldSize == 0 && !type.HasStaticConstructor)
+                    continue;
+
+                // If the type has a class constructor, the GC statics section is prepended
+                // by System.Runtime.CompilerServices.StaticClassConstructionContext.
+
+                bool isAligned = false;
+
+                if (type.HasStaticConstructor && _registeredMethods.ContainsKey(type.GetStaticConstructor()))
+                {
+                    int pointerSize = type.Context.Target.PointerSize;
+
+                    // TODO: Assert that StaticClassConstructionContext type has the expected size and alignment
+                    //       (need to make it a well known type?)
+                    int alignmentRequired = Math.Max(type.NonGCStaticFieldAlignment, pointerSize);
+                    int classConstructionContextSize = 2 * pointerSize;
+
+                    Out.Write(".align ");
+                    Out.WriteLine(alignmentRequired);
+
+                    // Prepend the context to the existing fields without messing up the alignment of those fields.
+                    int classConstructorContextStorageSize = AlignmentHelper.AlignUp(classConstructionContextSize, alignmentRequired);
+
+                    // Add padding before the context if alignment forces us to do so
+                    if (classConstructorContextStorageSize - classConstructionContextSize > 0)
+                    {
+                        Out.Write(".rept ");
+                        Out.WriteLine(classConstructorContextStorageSize - classConstructionContextSize);
+                    }
+
+                    isAligned = true;
+
+                    var cctorMethod = type.GetStaticConstructor();
+
+                    Out.Write(".quad ");
+                    Out.WriteLine(NameMangler.GetMangledMethodName(cctorMethod));
+                    Out.WriteLine(".quad 0");
+                }
+
+                Out.Write("__NonGCStaticBase_");
+                Out.Write(NameMangler.GetMangledTypeName(type));
+                Out.WriteLine(":");
+
                 if (type.NonGCStaticFieldSize > 0)
                 {
-                    Out.Write(".align ");
-                    Out.WriteLine(type.NonGCStaticFieldAlignment);
-                    Out.Write("__NonGCStaticBase_");
-                    Out.Write(NameMangler.GetMangledTypeName(type));
-                    Out.WriteLine(":");
+                    if (!isAligned)
+                    {
+                        Out.Write(".align ");
+                        Out.WriteLine(type.NonGCStaticFieldAlignment);
+                    }
                     Out.Write(".rept ");
                     Out.WriteLine(type.NonGCStaticFieldSize);
                     Out.WriteLine(".byte 0");
                     Out.WriteLine(".endr");
-                    Out.WriteLine();
                 }
+
+                Out.WriteLine();
             }
         }
 

@@ -251,6 +251,16 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsStaticConstructor
+        {
+            get
+            {
+                // TODO: Precise check
+                // TODO: Cache?
+                return this.Name == ".cctor";
+            }
+        }
+
         public virtual string Name
         {
             get
