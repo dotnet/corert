@@ -135,8 +135,8 @@ public:
     int GetHomeHeapNumber ();
     bool IsThreadUsingAllocationContextHeap(alloc_context* acontext, int thread_number);
     int GetNumberOfHeaps ();
-	void HideAllocContext(alloc_context*);
-	void RevealAllocContext(alloc_context*);
+    void HideAllocContext(alloc_context*);
+    void RevealAllocContext(alloc_context*);
    
     static BOOL IsLargeObject(MethodTable *mt);
 
@@ -160,7 +160,7 @@ public:
                                           DWORD flags=0);
 
     // Find the relocation address for an object
-	PER_HEAP_ISOLATED void    Relocate (Object** object,
+    PER_HEAP_ISOLATED void    Relocate (Object** object,
                                            ScanContext* sc, 
                                            DWORD flags=0);
 
@@ -180,7 +180,7 @@ public:
     BOOL    IsHeapPointer (void* object, BOOL small_heap_only = FALSE);
     
 #ifdef VERIFY_HEAP
-	void    ValidateObjectMember (Object *obj);
+    void    ValidateObjectMember (Object *obj);
 #endif //_DEBUG
 
     PER_HEAP    size_t  ApproxTotalBytesInUse(BOOL small_heap_only = FALSE);
@@ -226,7 +226,7 @@ public:
     BOOL FinalizeAppDomain(AppDomain *pDomain, BOOL fRunFinalizers);
     BOOL ShouldRestartFinalizerWatchDog();
 
-	void SetCardsAfterBulkCopy( Object**, size_t);
+    void SetCardsAfterBulkCopy( Object**, size_t);
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     void WalkObject (Object* obj, walk_fn fn, void* context);
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
@@ -255,6 +255,7 @@ public:	// FIX
 #ifdef FEATURE_BASICFREEZE
     // frozen segment management functions
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo);
+    virtual void UnregisterFrozenSegment(segment_handle seg);
 #endif // FEATURE_BASICFREEZE
 
     void    WaitUntilConcurrentGCComplete ();                               // Use in managd threads
@@ -267,7 +268,7 @@ public:	// FIX
     void TemporaryEnableConcurrentGC();
     void TemporaryDisableConcurrentGC();
     BOOL IsConcurrentGCEnabled();    
-  
+
     PER_HEAP_ISOLATED   CLREvent *WaitForGCEvent;     // used for syncing w/GC
 
     PER_HEAP_ISOLATED    CFinalize* m_Finalize;

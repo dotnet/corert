@@ -13,7 +13,7 @@ public:
     bool IsValid() const;
     bool Set();
     bool Reset();
-    UInt32 Wait(UInt32 dwMilliseconds, bool bAlertable, bool bAllowReentrantWait = false);
+    uint32_t Wait(uint32_t dwMilliseconds, bool bAlertable, bool bAllowReentrantWait = false);
     HANDLE GetOSEvent();
 
 private:

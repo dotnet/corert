@@ -6,15 +6,24 @@
 //
 // Unmanaged helpers called by the managed finalizer thread.
 //
+#include "common.h"
+#include "gcenv.h"
+#include "gc.h"
 
-#include "gcrhenv.h"
-#include "RuntimeInstance.h"
+#include "slist.h"
+#include "gcrhinterface.h"
+#include "rwlock.h"
+#include "runtimeinstance.h"
 #include "module.h"
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
 EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
 {
+#ifdef USE_PORTABLE_HELPERS
+    ASSERT(!"@TODO: FINALIZER THREAD NYI");
+    return FALSE;
+#else
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
     // the finalizer thread initiates as a result is not sufficient to remove the low memory condition the
@@ -30,8 +39,9 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
     // two second timeout expires.
     do
     {
-        HANDLE  rgWaitHandles[] = { pHeap->GetFinalizerEvent(), pHeap->GetLowMemoryNotificationEvent() };
-        UInt32  cWaitHandles = (fLastEventWasLowMemory || pHeap->GetLowMemoryNotificationEvent() == NULL) ? 1 : 2;
+        HANDLE  lowMemEvent = pHeap->GetLowMemoryNotificationEvent();
+        HANDLE  rgWaitHandles[] = { pHeap->GetFinalizerEvent(), lowMemEvent };
+        UInt32  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         UInt32  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
         UInt32 uResult = PalWaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, FALSE, uTimeout, FALSE);
@@ -59,14 +69,20 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
             return FALSE;
         }
     } while (true);
+#endif
 }
 
 // Indicate that the current round of finalizations is complete.
 EXTERN_C REDHAWK_API void __cdecl RhpSignalFinalizationComplete()
 {
+#ifdef USE_PORTABLE_HELPERS
+    ASSERT(!"@TODO: FINALIZER THREAD NYI");
+#else
     GCHeap::GetGCHeap()->SignalFinalizationDone(TRUE);
+#endif 
 }
 
+#ifdef FEATURE_PREMORTEM_FINALIZATION
 // Enable a last pass of the finalizer during (clean) runtime shutdown. Specify the number of milliseconds
 // we'll wait before giving up a proceeding with the shutdown (INFINITE is an allowable value).
 COOP_PINVOKE_HELPER(void, RhEnableShutdownFinalization, (UInt32 uiTimeout))
@@ -80,6 +96,7 @@ COOP_PINVOKE_HELPER(UInt8, RhHasShutdownStarted, ())
 {
     return g_fShutdownHasStarted ? 1 : 0;
 }
+#endif // FEATURE_PREMORTEM_FINALIZATION
 
 //
 // The following helpers are special in that they interact with internal GC state or directly manipulate

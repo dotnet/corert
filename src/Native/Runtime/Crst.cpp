@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #endif // DACCESS_COMPILE
@@ -15,6 +15,11 @@
 #include "holder.h"
 #include "crst.h"
 #endif // !DACCESS_COMPILE
+
+bool EEThreadId::IsSameThread()
+{
+    return PalGetCurrentThreadId() == m_uiId;
+}
 
 void CrstStatic::Init(CrstType eType, CrstFlags eFlags)
 {

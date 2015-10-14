@@ -597,12 +597,7 @@ public:
     // static if since restricting for all heaps is fine
     virtual size_t GetValidSegmentSize(BOOL large_seg = FALSE) = 0;
 
-
-    static BOOL IsLargeObject(MethodTable *mt) { 
-        WRAPPER_NO_CONTRACT;
-
-        return mt->GetBaseSize() >= LARGE_OBJECT_SIZE; 
-    }
+    static BOOL IsLargeObject(MethodTable *mt);
     
     static unsigned GetMaxGeneration() {
         LIMITED_METHOD_DAC_CONTRACT;  
@@ -621,6 +616,7 @@ public:
 #ifdef FEATURE_BASICFREEZE
     // frozen segment management functions
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo) = 0;
+    virtual void UnregisterFrozenSegment(segment_handle seg) = 0;
 #endif //FEATURE_BASICFREEZE
 
         // debug support 

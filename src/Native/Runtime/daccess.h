@@ -2171,7 +2171,9 @@ typedef void** PTR_PTR_VOID;
 #define S16PTR(type) type*
 #define S16PTRMAX(type, maxChars) type*
 
+#ifndef GCENV_INCLUDED
 #define PTR_TO_TADDR(ptr) (reinterpret_cast<TADDR>(ptr))
+#endif // GCENV_INCLUDED
 #define GFN_TADDR(name) (reinterpret_cast<TADDR>(&(name)))
 
 #define GVAL_ADDR(g) (&(g))
@@ -2310,6 +2312,7 @@ inline Tgt dac_cast(Src src)
 //
 //----------------------------------------------------------------------------
 
+#ifndef GCENV_INCLUDED
 #define SPTR_DECL(type, var) _SPTR_DECL(type*, PTR_##type, var)
 #define SPTR_IMPL(type, cls, var) _SPTR_IMPL(type*, PTR_##type, cls, var)
 #define SPTR_IMPL_INIT(type, cls, var, init) _SPTR_IMPL_INIT(type*, PTR_##type, cls, var, init)
@@ -2318,7 +2321,7 @@ inline Tgt dac_cast(Src src)
 #define GPTR_DECL(type, var) _GPTR_DECL(type*, PTR_##type, var)
 #define GPTR_IMPL(type, var) _GPTR_IMPL(type*, PTR_##type, var)
 #define GPTR_IMPL_INIT(type, var, init) _GPTR_IMPL_INIT(type*, PTR_##type, var, init)
-
+#endif // GCENV_INCLUDED
 
 // If you want to marshal a single instance of an ArrayDPtr over to the host and
 // return a pointer to it, you can use this function.  However, this is unsafe because

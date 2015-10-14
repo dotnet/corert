@@ -3,6 +3,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 #ifndef DACCESS_COMPILE
+#include "rhcommon.h"
 #include "commontypes.h"
 #include "daccess.h"
 #include "commonmacros.h"

@@ -34,6 +34,10 @@ public:
 //-------------------------------------------------------------------------------------------------
 static UIntNative const SYNC_BLOCK_SKEW  = sizeof(void *);
 
+class EEType;
+typedef DPTR(class EEType) PTR_EEType;
+class MethodTable;
+
 //-------------------------------------------------------------------------------------------------
 class Object
 {
@@ -53,6 +57,24 @@ public:
 
     size_t GetSize();
 #endif
+
+    //
+    // Adapter methods for GC code so that GC and runtime code can use the same type.  
+    // These methods are deprecated -- only use from existing GC code.
+    //
+    MethodTable * RawGetMethodTable() const
+    {
+        return (MethodTable*)m_pEEType;
+    }
+    void RawSetMethodTable(MethodTable * pMT)
+    {
+        m_pEEType = (EEType *)pMT;
+    }
+    void SetMethodTable(MethodTable * pMT)
+    {
+        m_pEEType = (EEType *)pMT;
+    }
+    ////// End adaptor methods 
 };
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
@@ -66,6 +88,7 @@ static UIntNative const REFERENCE_SIZE   = sizeof(Object *);
 //-------------------------------------------------------------------------------------------------
 class Array : public Object
 {
+    friend class ArrayBase;
     friend class AsmOffsets;
 
     UInt32       m_Length;

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #endif // DACCESS_COMPILE
@@ -267,9 +267,6 @@ void ThreadStore::UnlockThreadStore()
 { 
     m_Lock.ReleaseReadLock();
 }
-
-// defined in gcrhenv.cpp
-extern SYSTEM_INFO g_SystemInfo;
 
 void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
 {

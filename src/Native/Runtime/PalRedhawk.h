@@ -106,6 +106,18 @@ struct SYSTEM_INFO
     UInt16      wProcessorRevision;
 };
 
+// defined in gcrhenv.cpp
+bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
+
+// @TODO: also declared in gcenv.h
+struct GCSystemInfo
+{
+    uint32_t dwNumberOfProcessors;
+    uint32_t dwPageSize;
+    uint32_t dwAllocationGranularity;
+};
+extern GCSystemInfo g_SystemInfo;
+
 struct OSVERSIONINFOEXW
 {
     UInt32 dwOSVersionInfoSize;

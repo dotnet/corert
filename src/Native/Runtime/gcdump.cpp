@@ -13,9 +13,10 @@
  */
 #include "common.h"
 
-#if defined(_DEBUG) || defined(DACCESS_COMPILE)
+#if (defined(_DEBUG) || defined(DACCESS_COMPILE))
 
-#include "gcrhenv.h"    // @TODO: move off of gcrhenv.h
+#include "gcenv.h"
+#include "varint.h"
 #include "gcinfo.h"
 #include "gcdump.h"
 

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "common.h"
+#include "rhcommon.h"
 #ifdef DACCESS_COMPILE
 #include "gcrhenv.h"
 #endif // DACCESS_COMPILE
@@ -266,8 +266,10 @@ PTR_ExInfo Thread::GetCurExInfo()
 
 void Thread::Construct()
 {
+#ifndef USE_PORTABLE_HELPERS
     C_ASSERT(OFFSETOF__Thread__m_pTransitionFrame == 
              (offsetof(Thread, m_pTransitionFrame)));
+#endif // USE_PORTABLE_HELPERS
 
     m_numDynamicTypesTlsCells = 0;
     m_pDynamicTypesTlsCells = NULL;

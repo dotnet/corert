@@ -10,9 +10,11 @@
 // binder has special knowledge of these methods and doesn't generate the normal code to transition out of the
 // runtime prior to the call.
 // 
-
-#include "gcrhenv.h"
+#include "common.h"
+#include "gcenv.h"
+#include "objecthandle.h"
 #include "restrictedcallouts.h"
+
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
 {

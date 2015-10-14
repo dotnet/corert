@@ -1,0 +1,253 @@
+//
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+
+extern "C" UInt16 __stdcall CaptureStackBackTrace(UInt32, UInt32, void*, UInt32*);
+inline UInt16 PalCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3, UInt32* arg4)
+{
+    return CaptureStackBackTrace(arg1, arg2, arg3, arg4);
+}
+
+extern "C" UInt32_BOOL __stdcall CloseHandle(HANDLE);
+inline UInt32_BOOL PalCloseHandle(HANDLE arg1)
+{
+    return CloseHandle(arg1);
+}
+
+extern "C" UInt32_BOOL __stdcall CreateDirectoryW(LPCWSTR, LPSECURITY_ATTRIBUTES);
+inline UInt32_BOOL PalCreateDirectoryW(LPCWSTR arg1, LPSECURITY_ATTRIBUTES arg2)
+{
+    return CreateDirectoryW(arg1, arg2);
+}
+
+extern "C" void __stdcall DeleteCriticalSection(CRITICAL_SECTION *);
+inline void PalDeleteCriticalSection(CRITICAL_SECTION * arg1)
+{
+    DeleteCriticalSection(arg1);
+}
+
+extern "C" UInt32_BOOL __stdcall DuplicateHandle(HANDLE, HANDLE, HANDLE, HANDLE *, UInt32, UInt32_BOOL, UInt32);
+inline UInt32_BOOL PalDuplicateHandle(HANDLE arg1, HANDLE arg2, HANDLE arg3, HANDLE * arg4, UInt32 arg5, UInt32_BOOL arg6, UInt32 arg7)
+{
+    return DuplicateHandle(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+}
+
+extern "C" void __stdcall EnterCriticalSection(CRITICAL_SECTION *);
+inline void PalEnterCriticalSection(CRITICAL_SECTION * arg1)
+{
+    EnterCriticalSection(arg1);
+}
+
+extern "C" void __stdcall ExitProcess(UInt32);
+inline void PalExitProcess(UInt32 arg1)
+{
+    ExitProcess(arg1);
+}
+
+extern "C" UInt32 __stdcall FlsAlloc(PFLS_CALLBACK_FUNCTION);
+inline UInt32 PalFlsAlloc(PFLS_CALLBACK_FUNCTION arg1)
+{
+    return FlsAlloc(arg1);
+}
+
+extern "C" void * __stdcall FlsGetValue(UInt32);
+inline void * PalFlsGetValue(UInt32 arg1)
+{
+    return FlsGetValue(arg1);
+}
+
+extern "C" UInt32_BOOL __stdcall FlsSetValue(UInt32, void *);
+inline UInt32_BOOL PalFlsSetValue(UInt32 arg1, void * arg2)
+{
+    return FlsSetValue(arg1, arg2);
+}
+
+extern "C" UInt32_BOOL __stdcall FlushFileBuffers(HANDLE);
+inline UInt32_BOOL PalFlushFileBuffers(HANDLE arg1)
+{
+    return FlushFileBuffers(arg1);
+}
+
+extern "C" void __stdcall FlushProcessWriteBuffers();
+inline void PalFlushProcessWriteBuffers()
+{
+    FlushProcessWriteBuffers();
+}
+
+extern "C" HANDLE __stdcall GetCurrentProcess();
+inline HANDLE PalGetCurrentProcess()
+{
+    return GetCurrentProcess();
+}
+
+extern "C" UInt32 __stdcall GetCurrentProcessId();
+inline UInt32 PalGetCurrentProcessId()
+{
+    return GetCurrentProcessId();
+}
+
+extern "C" HANDLE __stdcall GetCurrentThread();
+inline HANDLE PalGetCurrentThread()
+{
+    return GetCurrentThread();
+}
+
+extern "C" UInt32 __stdcall GetCurrentThreadId();
+inline UInt32 PalGetCurrentThreadId()
+{
+    return GetCurrentThreadId();
+}
+
+extern "C" UInt32 __stdcall GetEnvironmentVariableW(LPCWSTR, LPWSTR, UInt32);
+inline UInt32 PalGetEnvironmentVariableW(LPCWSTR arg1, LPWSTR arg2, UInt32 arg3)
+{
+    return GetEnvironmentVariableW(arg1, arg2, arg3);
+}
+
+extern "C" UInt32 __stdcall GetLastError();
+inline UInt32 PalGetLastError()
+{
+    return GetLastError();
+}
+
+extern "C" void * __stdcall GetProcAddress(HANDLE, char *);
+inline void * PalGetProcAddress(HANDLE arg1, char * arg2)
+{
+    return GetProcAddress(arg1, arg2);
+}
+
+extern "C" HANDLE __stdcall GetProcessHeap();
+inline HANDLE PalGetProcessHeap()
+{
+    return GetProcessHeap();
+}
+
+
+extern "C" UInt64 __stdcall GetTickCount64();
+inline UInt64 PalGetTickCount64()
+{
+    return GetTickCount64();
+}
+
+extern "C" void* __stdcall HeapAlloc(HANDLE, UInt32, UIntNative);
+inline void* PalHeapAlloc(HANDLE arg1, UInt32 arg2, UIntNative arg3)
+{
+    return HeapAlloc(arg1, arg2, arg3);
+}
+
+extern "C" UInt32_BOOL __stdcall HeapFree(HANDLE, UInt32, void *);
+inline UInt32_BOOL PalHeapFree(HANDLE arg1, UInt32 arg2, void * arg3)
+{
+    return HeapFree(arg1, arg2, arg3);
+}
+
+extern "C" UInt32_BOOL __stdcall InitializeCriticalSectionEx(CRITICAL_SECTION *, UInt32, UInt32);
+inline UInt32_BOOL PalInitializeCriticalSectionEx(CRITICAL_SECTION * arg1, UInt32 arg2, UInt32 arg3)
+{
+    return InitializeCriticalSectionEx(arg1, arg2, arg3);
+}
+
+extern "C" UInt32_BOOL __stdcall IsDebuggerPresent();
+inline UInt32_BOOL PalIsDebuggerPresent()
+{
+    return IsDebuggerPresent();
+}
+
+extern "C" void __stdcall LeaveCriticalSection(CRITICAL_SECTION *);
+inline void PalLeaveCriticalSection(CRITICAL_SECTION * arg1)
+{
+    LeaveCriticalSection(arg1);
+}
+
+extern "C" HANDLE __stdcall LoadLibraryExW(WCHAR *, HANDLE, UInt32);
+inline HANDLE PalLoadLibraryExW(WCHAR * arg1, HANDLE arg2, UInt32 arg3)
+{
+    return LoadLibraryExW(arg1, arg2, arg3);
+}
+
+extern "C" UInt32_BOOL __stdcall QueryPerformanceCounter(LARGE_INTEGER *);
+inline UInt32_BOOL PalQueryPerformanceCounter(LARGE_INTEGER * arg1)
+{
+    return QueryPerformanceCounter(arg1);
+}
+
+extern "C" UInt32_BOOL __stdcall QueryPerformanceFrequency(LARGE_INTEGER *);
+inline UInt32_BOOL PalQueryPerformanceFrequency(LARGE_INTEGER * arg1)
+{
+    return QueryPerformanceFrequency(arg1);
+}
+
+extern "C" void __stdcall RaiseException(UInt32, UInt32, UInt32, const UInt32 *);
+inline void PalRaiseException(UInt32 arg1, UInt32 arg2, UInt32 arg3, const UInt32 * arg4)
+{
+    RaiseException(arg1, arg2, arg3, arg4);
+}
+
+extern "C" UInt32_BOOL __stdcall ReleaseMutex(HANDLE);
+inline UInt32_BOOL PalReleaseMutex(HANDLE arg1)
+{
+    return ReleaseMutex(arg1);
+}
+
+extern "C" UInt32_BOOL __stdcall ResetEvent(HANDLE);
+inline UInt32_BOOL PalResetEvent(HANDLE arg1)
+{
+    return ResetEvent(arg1);
+}
+
+extern "C" UInt32_BOOL __stdcall SetEvent(HANDLE);
+inline UInt32_BOOL PalSetEvent(HANDLE arg1)
+{
+    return SetEvent(arg1);
+}
+
+extern "C" UInt32_BOOL __stdcall SetFilePointerEx(HANDLE, LARGE_INTEGER, LARGE_INTEGER *, UInt32);
+inline UInt32_BOOL PalSetFilePointerEx(HANDLE arg1, LARGE_INTEGER arg2, LARGE_INTEGER * arg3, UInt32 arg4)
+{
+    return SetFilePointerEx(arg1, arg2, arg3, arg4);
+}
+
+extern "C" void __stdcall TerminateProcess(HANDLE, UInt32);
+inline void PalTerminateProcess(HANDLE arg1, UInt32 arg2)
+{
+    TerminateProcess(arg1, arg2);
+}
+
+extern "C" UInt32 __stdcall WaitForMultipleObjectsEx(UInt32, HANDLE *, UInt32_BOOL, UInt32, UInt32_BOOL);
+inline UInt32 PalWaitForMultipleObjectsEx(UInt32 arg1, HANDLE * arg2, UInt32_BOOL arg3, UInt32 arg4, UInt32_BOOL arg5)
+{
+    return WaitForMultipleObjectsEx(arg1, arg2, arg3, arg4, arg5);
+}
+
+extern "C" UInt32 __stdcall WaitForSingleObjectEx(HANDLE, UInt32, UInt32_BOOL);
+inline UInt32 PalWaitForSingleObjectEx(HANDLE arg1, UInt32 arg2, UInt32_BOOL arg3)
+{
+    return WaitForSingleObjectEx(arg1, arg2, arg3);
+}
+
+#ifdef PAL_REDHAWK_INCLUDED
+extern "C" void __stdcall GetNativeSystemInfo(SYSTEM_INFO *);
+inline void PalGetNativeSystemInfo(SYSTEM_INFO * arg1)
+{
+    GetNativeSystemInfo(arg1);
+}
+
+extern "C" void __stdcall GetSystemTimeAsFileTime(FILETIME *);
+inline void PalGetSystemTimeAsFileTime(FILETIME * arg1)
+{
+    GetSystemTimeAsFileTime(arg1);
+}
+
+extern "C" void __stdcall RaiseFailFastException(PEXCEPTION_RECORD, PCONTEXT, UInt32);
+inline void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
+{
+    RaiseFailFastException(arg1, arg2, arg3);
+}
+
+extern "C" UInt32_BOOL __stdcall WriteFile(HANDLE, const void *, UInt32, UInt32 *, LPOVERLAPPED);
+inline UInt32_BOOL PalWriteFile(HANDLE arg1, const void * arg2, UInt32 arg3, UInt32 * arg4, LPOVERLAPPED arg5)
+{
+    return WriteFile(arg1, arg2, arg3, arg4, arg5);
+}
+#endif 

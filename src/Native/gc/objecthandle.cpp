@@ -17,6 +17,10 @@
 #include "gc.h"
 #include "gcscan.h"
 
+#ifdef FEATURE_REDHAWK
+#include "restrictedcallouts.h"
+#endif // FEATURE_REDHAWK
+
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
@@ -46,7 +50,7 @@ struct VARSCANINFO
 {
     LPARAM         lEnableMask; // mask of types to trace
     HANDLESCANPROC pfnTrace;    // tracing function to use
-	LPARAM		   lp2;			// second parameter
+    LPARAM         lp2;         // second parameter
 };
 
 
@@ -73,7 +77,7 @@ void CALLBACK VariableTraceDispatcher(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pEx
     }
 }
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
 /*
  * Scan callback for tracing ref-counted handles.
  *
@@ -97,11 +101,15 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInf
 
     if (!HndIsNullOrDestroyedHandle(pObj) && !GCHeap::GetGCHeap()->IsPromoted(pObj))
     {
+#ifdef FEATURE_REDHAWK
+        BOOL fIsActive = RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObj);
+#else // FEATURE_REDHAWK
         //<REVISIT_TODO>@todo optimize the access to the ref-count
         ComCallWrapper* pWrap = ComCallWrapper::GetWrapperForObject((OBJECTREF)pObj);
         _ASSERTE(pWrap != NULL);
 
         BOOL fIsActive = pWrap->IsWrapperActive();
+#endif // FEATURE_REDHAWK
         if (fIsActive)
         {
             _ASSERTE(lp2);
@@ -113,7 +121,7 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInf
     // Assert this object wasn't relocated since we are passing a temporary object's address.
     _ASSERTE(pOldObj == pObj);
 }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 
 void CALLBACK TraceDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInfo, LPARAM lp1, LPARAM lp2)
 {
@@ -446,14 +454,28 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, LPARAM
         break;
 
     case    HNDTYPE_VARIABLE:
-#if 0 // this feature appears to be unused for now
-        rootFlags |= COR_PRF_GC_ROOT_VARIABLE;
+#ifdef FEATURE_REDHAWK
+    {
+        // Set the appropriate ETW flags for the current strength of this variable handle
+        UINT nVarHandleType = GetVariableHandleType(handle);
+        if (((nVarHandleType & VHT_WEAK_SHORT) != 0) ||
+            ((nVarHandleType & VHT_WEAK_LONG) != 0))
+        {
+            rootFlags |= kEtwGCRootFlagsWeakRef;
+        }
+        if ((nVarHandleType & VHT_PINNED) != 0)
+        {
+            rootFlags |= kEtwGCRootFlagsPinning;
+        }
+
+        // No special ETW flag for strong handles (VHT_STRONG)
+    }
 #else
         _ASSERTE(!"Variable handle encountered");
 #endif
         break;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_REDHAWK)
     case    HNDTYPE_REFCOUNTED:
         rootFlags |= kEtwGCRootFlagsRefCounted;
         if (*pRef != NULL)
@@ -463,7 +485,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, LPARAM
                 rootFlags |= kEtwGCRootFlagsWeakRef;
         }
         break;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
     }
 
     _UNCHECKED_OBJECTREF pSec = NULL;
@@ -948,6 +970,17 @@ OBJECTHANDLE CreateVariableHandle(HHANDLETABLE hTable, OBJECTREF object, UINT ty
     return HndCreateHandle(hTable, HNDTYPE_VARIABLE, object, (LPARAM)type);
 }
 
+/*
+* GetVariableHandleType.
+*
+* Retrieves the dynamic type of a variable-strength handle.
+*/
+UINT GetVariableHandleType(OBJECTHANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return (UINT)HndGetHandleExtraInfo(handle);
+}
 
 /*
  * UpdateVariableHandleType.
@@ -979,6 +1012,23 @@ void UpdateVariableHandleType(OBJECTHANDLE handle, UINT type)
 
     // store the type in the handle's extra info
     HndSetHandleExtraInfo(handle, HNDTYPE_VARIABLE, (LPARAM)type);
+}
+
+/*
+* CompareExchangeVariableHandleType.
+*
+* Changes the dynamic type of a variable-strength handle. Unlike UpdateVariableHandleType we assume that the
+* types have already been validated.
+*/
+UINT CompareExchangeVariableHandleType(OBJECTHANDLE handle, UINT oldType, UINT newType)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // verify that we are being asked to get/set valid types
+    _ASSERTE(IS_VALID_VHT_VALUE(oldType) && IS_VALID_VHT_VALUE(newType));
+
+    // attempt to store the type in the handle's extra info
+    return (UINT)HndCompareExchangeHandleExtraInfo(handle, HNDTYPE_VARIABLE, (LPARAM)oldType, (LPARAM)newType);
 }
 
 
@@ -1122,7 +1172,7 @@ void Ref_TraceNormalRoots(UINT condemned, UINT maxgen, ScanContext* sc, Ref_prom
     // promote objects pointed to by variable handles whose dynamic type is VHT_STRONG
     TraceVariableHandles(PromoteObject, LPARAM(sc), LPARAM(fn), VHT_STRONG, condemned, maxgen, flags);
 
-#ifdef FEATURE_COMINTEROP    
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
     // don't scan ref-counted handles during concurrent phase as the clean-up of CCWs can race with AD unload and cause AV's
     if (!sc->concurrent)
     {
@@ -1141,7 +1191,7 @@ void Ref_TraceNormalRoots(UINT condemned, UINT maxgen, ScanContext* sc, Ref_prom
             walk = walk->pNext;
         }
     }
-#endif // FEATURE_COMINTEROP    
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -1184,9 +1234,9 @@ void Ref_CheckReachable(UINT condemned, UINT maxgen, LPARAM lp1)
     UINT types[] =
     {
         HNDTYPE_WEAK_LONG,
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
     };
 
     // check objects pointed to by short weak handles
@@ -1534,8 +1584,10 @@ void Ref_UpdatePointers(UINT condemned, UINT maxgen, ScanContext* sc, Ref_promot
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
         HNDTYPE_STRONG,
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
         HNDTYPE_WEAK_WINRT,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_SIZEDREF,
@@ -1547,12 +1599,12 @@ void Ref_UpdatePointers(UINT condemned, UINT maxgen, ScanContext* sc, Ref_promot
     HandleTableMap *walk = &g_HandleTableMap;
     while (walk) {
         for (UINT i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
-        	if (walk->pBuckets[i] != NULL)
-	       {
-	            HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-            if (hTable)
-                HndScanHandlesForGC(hTable, UpdatePointer, LPARAM(sc), LPARAM(fn), types, _countof(types), condemned, maxgen, flags);
-        }
+            if (walk->pBuckets[i] != NULL)
+            {
+                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
+                if (hTable)
+                    HndScanHandlesForGC(hTable, UpdatePointer, LPARAM(sc), LPARAM(fn), types, _countof(types), condemned, maxgen, flags);
+            }
         walk = walk->pNext;
     }
 
@@ -1578,10 +1630,12 @@ void Ref_ScanPointersForProfilerAndETW(UINT maxgen, LPARAM lp1)
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
         HNDTYPE_STRONG,
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
         HNDTYPE_WEAK_WINRT,
-#endif // FEATURE_COMINTEROP,
+#endif // FEATURE_COMINTEROP
         HNDTYPE_PINNED,
 //        HNDTYPE_VARIABLE,
         HNDTYPE_ASYNCPINNED,
@@ -1671,8 +1725,10 @@ void Ref_AgeHandles(UINT condemned, UINT maxgen, LPARAM lp1)
 
         HNDTYPE_PINNED,
         HNDTYPE_VARIABLE,
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
         HNDTYPE_WEAK_WINRT,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
@@ -1712,8 +1768,10 @@ void Ref_RejuvenateHandles(UINT condemned, UINT maxgen, LPARAM lp1)
 
         HNDTYPE_PINNED,
         HNDTYPE_VARIABLE,
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
         HNDTYPE_WEAK_WINRT,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
@@ -1752,8 +1810,10 @@ void Ref_VerifyHandleTable(UINT condemned, UINT maxgen, ScanContext* sc)
 
         HNDTYPE_PINNED,
         HNDTYPE_VARIABLE,
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
         HNDTYPE_REFCOUNTED,
+#endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
+#ifdef FEATURE_COMINTEROP
         HNDTYPE_WEAK_WINRT,
 #endif // FEATURE_COMINTEROP
         HNDTYPE_ASYNCPINNED,
@@ -1781,8 +1841,8 @@ int GetCurrentThreadHomeHeapNumber()
 {
     WRAPPER_NO_CONTRACT;
 
-	if (!GCHeap::IsGCHeapInitialized())
-		return 0;
+    if (!GCHeap::IsGCHeapInitialized())
+        return 0;
     return GCHeap::GetGCHeap()->GetHomeHeapNumber();
 }
 

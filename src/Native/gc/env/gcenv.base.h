@@ -10,6 +10,8 @@
 #define FEATURE_REDHAWK 1
 #define FEATURE_CONSERVATIVE_GC 1
 
+#define GCENV_INCLUDED
+
 #ifndef _MSC_VER
 #define __stdcall
 #define __forceinline inline
@@ -508,151 +510,10 @@ void FastInterlockAnd(uint32_t volatile *p, uint32_t msk);
 #define CALLER_LIMITS_SPINNING 0
 bool __SwitchToThread (uint32_t dwSleepMSec, uint32_t dwSwitchCount);
 
-//-------------------------------------------------------------------------------------------------
-//
-// Low-level types describing GC object layouts.
-//
-
-// Bits stolen from the sync block index that the GC/HandleTable knows about (currently these are at the same
-// positions as the mainline runtime but we can change this below when it becomes apparent how Redhawk will
-// handle sync blocks).
-#define BIT_SBLK_GC_RESERVE                 0x20000000
-#define BIT_SBLK_FINALIZER_RUN              0x40000000
-
-// The sync block index header (small structure that immediately precedes every object in the GC heap). Only
-// the GC uses this so far, and only to store a couple of bits of information.
-class ObjHeader
-{
-private:
-#if defined(_WIN64)
-    uint32_t m_uAlignpad;
-#endif // _WIN64
-    uint32_t m_uSyncBlockValue;
-
-public:
-    uint32_t GetBits() { return m_uSyncBlockValue; }
-    void SetBit(uint32_t uBit) { FastInterlockOr(&m_uSyncBlockValue, uBit); }
-    void ClrBit(uint32_t uBit) { FastInterlockAnd(&m_uSyncBlockValue, ~uBit); }
-    void SetGCBit() { m_uSyncBlockValue |= BIT_SBLK_GC_RESERVE; }
-    void ClrGCBit() { m_uSyncBlockValue &= ~BIT_SBLK_GC_RESERVE; }
-};
-
-#define MTFlag_ContainsPointers 1
-#define MTFlag_HasFinalizer 2
-#define MTFlag_IsArray 4
-
-class MethodTable
-{
-public:
-    uint16_t    m_componentSize;
-    uint16_t    m_flags;
-    uint32_t    m_baseSize;
-
-    MethodTable * m_pRelatedType;
-
-public:
-    void InitializeFreeObject()
-    {
-        m_baseSize = 3 * sizeof(void *);
-        m_componentSize = 1;
-        m_flags = 0;
-    }
-
-    uint32_t GetBaseSize()
-    {
-        return m_baseSize;
-    }
-
-    uint16_t RawGetComponentSize()
-    {
-        return m_componentSize;
-    }
-
-    bool ContainsPointers()
-    {
-        return (m_flags & MTFlag_ContainsPointers) != 0;
-    }
-
-    bool ContainsPointersOrCollectible()
-    {
-        return ContainsPointers();
-    }
-
-    bool HasComponentSize()
-    {
-        return m_componentSize != 0;
-    }
-
-    bool HasFinalizer()
-    {
-        return (m_flags & MTFlag_HasFinalizer) != 0;
-    }
-
-    bool HasCriticalFinalizer()
-    {
-        return false;
-    }
-
-    bool IsArray()
-    {
-        return (m_flags & MTFlag_IsArray) != 0;
-    }
-
-    MethodTable * GetParent()
-    {
-        _ASSERTE(!IsArray());
-        return m_pRelatedType;
-    }
-
-    bool SanityCheck()
-    {
-        return true;
-    }
-};
-#define EEType MethodTable
-
-class Object
-{
-    MethodTable * m_pMethTab;
-
-public:
-    ObjHeader * GetHeader()
-    { 
-        return ((ObjHeader *)this) - 1;
-    }
-
-    MethodTable * RawGetMethodTable() const
-    {
-        return m_pMethTab;
-    }
-
-    void RawSetMethodTable(MethodTable * pMT)
-    {
-        m_pMethTab = pMT;
-    }
-
-    void SetMethodTable(MethodTable * pMT)
-    {
-        m_pMethTab = pMT;
-    }
-};
-#define MIN_OBJECT_SIZE     (2*sizeof(BYTE*) + sizeof(ObjHeader))
-
-class ArrayBase : public Object
-{
-    DWORD m_dwLength;
-
-public:
-    DWORD GetNumComponents()
-    {
-        return m_dwLength;
-    }
-
-    static SIZE_T GetOffsetOfNumComponents()
-    {
-        return offsetof(ArrayBase, m_dwLength);
-    }
-};
+class ObjHeader;
+class MethodTable;
+class Object;
+class ArrayBase;
 
 // Various types used to refer to object references or handles. This will get more complex if we decide
 // Redhawk wants to wrap object references in the debug build.
@@ -777,61 +638,9 @@ ClrVirtualProtect(
 //
 
 struct alloc_context;
-
-class Thread
-{
-    uint32_t m_fPreemptiveGCDisabled;
-    uintptr_t m_alloc_context[16]; // Reserve enough space to fix allocation context
-
-    friend class ThreadStore;
-    Thread * m_pNext;
-
-public:
-    Thread()
-    {
-    }
-
-    bool PreemptiveGCDisabled()
-    {
-        return !!m_fPreemptiveGCDisabled;
-    }
-
-    void EnablePreemptiveGC()
-    {
-        m_fPreemptiveGCDisabled = false;
-    }
-
-    void DisablePreemptiveGC()
-    {
-        m_fPreemptiveGCDisabled = true;
-    }
-
-    alloc_context* GetAllocContext()
-    {
-        return (alloc_context *)&m_alloc_context;
-    }
-
-    void SetGCSpecial(bool fGCSpecial)
-    {
-    }
-
-    bool CatchAtSafePoint()
-    {
-        // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-        // a foreground GC proceed at that point. So it's always safe to return true.
-        return true;
-    }
-};
+class Thread;
 
 Thread * GetThread();
-
-class ThreadStore
-{
-public:
-    static Thread * GetThreadList(Thread * pThread);
-
-    static void AttachCurrentThread(bool fAcquireThreadStoreLock);
-};
 
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
@@ -882,17 +691,33 @@ public:
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2) { }
     static void SyncBlockCacheDemote(int max_gen) { }
     static void SyncBlockCachePromotionsGranted(int max_gen) { }
+
+    // Thread functions
+    static bool IsPreemptiveGCDisabled(Thread * pThread);
+    static void EnablePreemptiveGC(Thread * pThread);
+    static void DisablePreemptiveGC(Thread * pThread);
+    static void SetGCSpecial(Thread * pThread);
+    static alloc_context * GetAllocContext(Thread * pThread);
+    static bool CatchAtSafePoint(Thread * pThread);
+
+    // ThreadStore functions
+    static void AttachCurrentThread(); // does not acquire thread store lock
+    static Thread * GetThreadList(Thread * pThread);
 };
 
 class FinalizerThread
 {
 public:
+    static bool Initialize();
     static void EnableFinalization();
 
-    static bool HaveExtraWorkForFinalizer()
-    {
-        return false;
-    }
+    static bool HaveExtraWorkForFinalizer();
+
+    static bool IsCurrentThreadFinalizer();
+    static void Wait(DWORD timeout, bool allowReentrantWait = false);
+    static bool WatchDog();
+    static void SignalFinalizationDone(bool fFinalizer);
+    static void SetFinalizerThread(Thread * pThread);
 };
 
 typedef uint32_t (__stdcall *BackgroundCallback)(void* pCallbackContext);
@@ -1028,6 +853,7 @@ inline void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
 {
 }
 
+#if 0 // runtime-specific
 // -----------------------------------------------------------------------------------------------------------
 // Config file enumulation
 //
@@ -1086,6 +912,7 @@ public:
 };
 
 extern EEConfig * g_pConfig;
+#endif
 
 class CLRConfig
 {
@@ -1137,163 +964,6 @@ public:
         return 0; 
     }
 };
-
-
-// -----------------------------------------------------------------------------------------------------------
-//
-// Helper classes expected by the GC
-//
-
-class EEThreadId
-{
-public:
-    EEThreadId(UINT32 uiId) : m_uiId(uiId) {}
-    bool IsSameThread()
-    {
-        return m_uiId == GetCurrentThreadId();
-    }
-
-private:
-    UINT32 m_uiId;
-};
-
-#define CRST_REENTRANCY         0
-#define CRST_UNSAFE_SAMELEVEL   0
-#define CRST_UNSAFE_ANYMODE     0
-#define CRST_DEBUGGER_THREAD    0
-#define CRST_DEFAULT            0
-
-#define CrstHandleTable         0
-
-typedef int CrstFlags;
-typedef int CrstType;
-
-class CrstStatic
-{
-    CRITICAL_SECTION m_cs;
-#ifdef _DEBUG
-    UINT32 m_holderThreadId;
-#endif
-
-public:
-    bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
-    {
-        UnsafeInitializeCriticalSection(&m_cs);
-        return true;
-    }
-
-    void Destroy()
-    {
-        UnsafeDeleteCriticalSection(&m_cs);
-    }
-
-    void Enter()
-    {
-        UnsafeEEEnterCriticalSection(&m_cs);
-#ifdef _DEBUG
-        m_holderThreadId = GetCurrentThreadId();
-#endif
-    }
-
-    void Leave()
-    {
-#ifdef _DEBUG
-        m_holderThreadId = 0;
-#endif
-        UnsafeEELeaveCriticalSection(&m_cs);
-    }
-
-#ifdef _DEBUG
-    EEThreadId GetHolderThreadId()
-    {
-        return m_holderThreadId;
-    }
-
-    bool OwnedByCurrentThread()
-    {
-        return GetHolderThreadId().IsSameThread();
-    }
-#endif
-};
-
-class CLREventStatic
-{
-public:
-    void CreateManualEvent(bool bInitialState);
-    void CreateAutoEvent(bool bInitialState);
-    void CreateOSManualEvent(bool bInitialState);
-    void CreateOSAutoEvent(bool bInitialState);
-    void CloseEvent();
-    bool IsValid() const;
-    bool Set();
-    bool Reset();
-    uint32_t Wait(uint32_t dwMilliseconds, bool bAlertable);
-
-private:
-    HANDLE  m_hEvent;
-    bool    m_fInitialized;
-};
-
-class CrstHolder
-{
-    CrstStatic * m_pLock;
-
-public:
-    CrstHolder(CrstStatic * pLock)
-        : m_pLock(pLock)
-    {
-        m_pLock->Enter();
-    }
-
-    ~CrstHolder()
-    {
-        m_pLock->Leave();
-    }
-};
-
-class CrstHolderWithState
-{
-    CrstStatic * m_pLock;
-    bool m_fAcquired;
-
-public:
-    CrstHolderWithState(CrstStatic * pLock, bool fAcquire = true)
-        : m_pLock(pLock), m_fAcquired(fAcquire)
-    {
-        if (fAcquire)
-            m_pLock->Enter();
-    }
-
-    ~CrstHolderWithState()
-    {
-        if (m_fAcquired)
-            m_pLock->Leave();
-    }
-
-    void Acquire()
-    {
-        if (!m_fAcquired)
-        {
-            m_pLock->Enter();
-            m_fAcquired = true;
-        }
-    }
-
-    void Release()
-    {
-        if (m_fAcquired)
-        {
-            m_pLock->Leave();
-            m_fAcquired = false;
-        }
-    }
-
-    CrstStatic * GetValue()
-    {
-        return m_pLock;
-    }
-};
-
 
 template <typename TYPE>
 class NewHolder
@@ -1369,3 +1039,30 @@ public:
     AppDomain *DefaultDomain() { return NULL; }
     DWORD GetTotalNumSizedRefHandles() { return 0; }
 };
+
+#ifdef STRESS_HEAP
+namespace GCStressPolicy
+{
+    static volatile int32_t s_cGcStressDisables;
+
+    inline bool IsEnabled() { return s_cGcStressDisables == 0; }
+    inline void GlobalDisable() { FastInterlockIncrement(&s_cGcStressDisables); }
+    inline void GlobalEnable() { FastInterlockDecrement(&s_cGcStressDisables); }
+}
+
+enum gcs_trigger_points
+{
+    cfg_any,
+};
+
+template <enum gcs_trigger_points tp>
+class GCStress
+{
+public:
+    static inline bool IsEnabled()
+    {
+        return g_pConfig->GetGCStressLevel() != 0;
+    }
+};
+#endif // STRESS_HEAP
+

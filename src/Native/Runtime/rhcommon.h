@@ -14,3 +14,5 @@
 // For our DAC build, we precompile gcrhenv.h because it is extremely large (~3MB of text).  For non-DAC
 // builds, we do not do this because the majority of the files have more constrained #includes.
 //
+
+#include "stdint.h"

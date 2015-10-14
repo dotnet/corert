@@ -269,6 +269,15 @@ namespace ETW
                 // 1 means the notification was due to allocation; 0 means it was due to other factors.
                 ULONG Alloc; 
             } GCFullNotify;
+
+            typedef  enum _GC_ROOT_KIND {
+                GC_ROOT_STACK = 0,
+                GC_ROOT_FQ = 1,
+                GC_ROOT_HANDLES = 2,
+                GC_ROOT_OLDER = 3,
+                GC_ROOT_SIZEDREF = 4,
+                GC_ROOT_OVERFLOW = 5
+            } GC_ROOT_KIND;
         } ETW_GC_INFO, *PETW_GC_INFO;
 
 #ifdef FEATURE_EVENT_TRACE

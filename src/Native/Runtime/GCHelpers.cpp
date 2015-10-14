@@ -7,14 +7,25 @@
 // Unmanaged helpers exposed by the System.GC managed class.
 //
 
-#include "gcrhenv.h"
+#include "common.h"
+#include "gcenv.h"
+#include "gc.h"
 #include "restrictedcallouts.h"
+
+#include "gcrhinterface.h"
+
+#include "palredhawkcommon.h"
+#include "slist.h"
+#include "varint.h"
+#include "regdisplay.h"
+#include "stackframeiterator.h"
+
+#include "thread.h"
 
 COOP_PINVOKE_HELPER(void, RhSuppressFinalize, (OBJECTREF refObj))
 {
     if (!refObj->get_EEType()->HasFinalizer())
         return;
-
     GCHeap::GetGCHeap()->SetFinalizationRun(refObj);
 }
 
@@ -24,7 +35,11 @@ EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(BOOL allowReentrant
     // called in cooperative mode.
     ASSERT(!GetThread()->PreemptiveGCDisabled());
 
+#ifdef USE_PORTABLE_HELPERS
+    ASSERT(!"@TODO: FINALIZER THREAD NYI");
+#else
     GCHeap::GetGCHeap()->FinalizerThreadWait(INFINITE, allowReentrantWait);
+#endif
 }
 
 COOP_PINVOKE_HELPER(Int32, RhGetMaxGcGeneration, ())

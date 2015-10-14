@@ -8,6 +8,7 @@
 // RestrictedCallouts.h for more detail.
 //
 
+#include "rhcommon.h"
 #include "commontypes.h"
 #include "commonmacros.h"
 #include "daccess.h"

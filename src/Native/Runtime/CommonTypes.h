@@ -35,7 +35,9 @@ typedef UInt32              UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, 
 #define UInt32_FALSE        0
 #define UInt32_TRUE         1
 
+#ifndef GCENV_INCLUDED
 #define UNREFERENCED_PARAMETER(P)          (P)
+#endif // GCENV_INCLUDED
 
 #define NULL 0
 
