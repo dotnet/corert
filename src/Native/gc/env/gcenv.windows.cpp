@@ -102,87 +102,6 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     }
 }
 
-void CLREventStatic::CreateManualEvent(bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL); 
-    m_fInitialized = true;
-}
-
-void CLREventStatic::CreateAutoEvent(bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL); 
-    m_fInitialized = true;
-}
-
-void CLREventStatic::CreateOSManualEvent(bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL); 
-    m_fInitialized = true;
-}
-
-void CLREventStatic::CreateOSAutoEvent (bool bInitialState) 
-{ 
-    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL); 
-    m_fInitialized = true;
-}
-
-void CLREventStatic::CloseEvent() 
-{ 
-    if (m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE)
-    { 
-        CloseHandle(m_hEvent);
-        m_hEvent = INVALID_HANDLE_VALUE;
-    }
-}
-
-bool CLREventStatic::IsValid() const 
-{ 
-    return m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE; 
-}
-
-bool CLREventStatic::Set() 
-{ 
-    if (!m_fInitialized)
-        return false;
-    return !!SetEvent(m_hEvent); 
-}
-
-bool CLREventStatic::Reset() 
-{ 
-    if (!m_fInitialized)
-        return false;
-    return !!ResetEvent(m_hEvent); 
-}
-
-uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
-{
-    DWORD result = WAIT_FAILED;
-
-    if (m_fInitialized)
-    {
-        bool        disablePreemptive = false;
-        Thread *    pCurThread  = GetThread();
-
-        if (NULL != pCurThread)
-        {
-            if (pCurThread->PreemptiveGCDisabled())
-            {
-                pCurThread->EnablePreemptiveGC();
-                disablePreemptive = true;
-            }
-        }
-
-        result = WaitForSingleObjectEx(m_hEvent, dwMilliseconds, bAlertable); 
-
-        if (disablePreemptive)
-        {
-            pCurThread->DisablePreemptiveGC();
-        }
-    }
-
-    return result;
-}
-
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
 {
     SwitchToThread();
@@ -228,8 +147,6 @@ ClrVirtualProtect(
 
 MethodTable * g_pFreeObjectMethodTable;
 
-EEConfig * g_pConfig;
-
 GCSystemInfo g_SystemInfo;
 
 void InitializeSystemInfo()
@@ -246,38 +163,106 @@ int32_t g_TrapReturningThreads;
 
 bool g_fFinalizerRunOnShutDown;
 
+void DestroyThread(Thread * pThread)
+{
+    // TODO: Implement
+}
+
+bool PalHasCapability(PalCapability capability)
+{
+    // TODO: Implement for background GC
+    return false;
+}
+
+#if 0 // @TODO: Move this runtime-specific code to another file
+EEConfig * g_pConfig;
+
+void CLREventStatic::CreateManualEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL);
+    m_fInitialized = true;
+}
+
+void CLREventStatic::CreateAutoEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL);
+    m_fInitialized = true;
+}
+
+void CLREventStatic::CreateOSManualEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL);
+    m_fInitialized = true;
+}
+
+void CLREventStatic::CreateOSAutoEvent(bool bInitialState)
+{
+    m_hEvent = CreateEventW(NULL, FALSE, bInitialState, NULL);
+    m_fInitialized = true;
+}
+
+void CLREventStatic::CloseEvent()
+{
+    if (m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(m_hEvent);
+        m_hEvent = INVALID_HANDLE_VALUE;
+    }
+}
+
+bool CLREventStatic::IsValid() const
+{
+    return m_fInitialized && m_hEvent != INVALID_HANDLE_VALUE;
+}
+
+bool CLREventStatic::Set()
+{
+    if (!m_fInitialized)
+        return false;
+    return !!SetEvent(m_hEvent);
+}
+
+bool CLREventStatic::Reset()
+{
+    if (!m_fInitialized)
+        return false;
+    return !!ResetEvent(m_hEvent);
+}
+
+uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
+{
+    DWORD result = WAIT_FAILED;
+
+    if (m_fInitialized)
+    {
+        bool        disablePreemptive = false;
+        Thread *    pCurThread = GetThread();
+
+        if (NULL != pCurThread)
+        {
+            if (GCToEEInterface::IsPreemptiveGCDisabled(pCurThread))
+            {
+                GCToEEInterface::EnablePreemptiveGC(pCurThread);
+                disablePreemptive = true;
+            }
+        }
+
+        result = WaitForSingleObjectEx(m_hEvent, dwMilliseconds, bAlertable);
+
+        if (disablePreemptive)
+        {
+            GCToEEInterface::DisablePreemptiveGC(pCurThread);
+        }
+    }
+
+    return result;
+}
+
 __declspec(thread) Thread * pCurrentThread;
 
 Thread * GetThread()
 {
     return pCurrentThread;
-}
-
-Thread * g_pThreadList = NULL;
-
-Thread * ThreadStore::GetThreadList(Thread * pThread)
-{
-    if (pThread == NULL)
-        return g_pThreadList;
-
-    return pThread->m_pNext;
-}
-
-void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
-{
-    // TODO: Locks
-
-    Thread * pThread = new Thread();
-    pThread->GetAllocContext()->init();
-    pCurrentThread = pThread;
-
-    pThread->m_pNext = g_pThreadList;
-    g_pThreadList = pThread;
-}
-
-void DestroyThread(Thread * pThread)
-{
-    // TODO: Implement
 }
 
 void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
@@ -325,6 +310,11 @@ void FinalizerThread::EnableFinalization()
     // TODO: Implement for finalization
 }
 
+bool FinalizerThread::HaveExtraWorkForFinalizer()
+{
+    return false;
+}
+
 bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
 {
     // TODO: Implement for background GC
@@ -336,10 +326,4 @@ bool IsGCSpecialThread()
     // TODO: Implement for background GC
     return false;
 }
-
-bool PalHasCapability(PalCapability capability)
-{
-    // TODO: Implement for background GC
-    return false;
-}
-
+#endif

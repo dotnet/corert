@@ -5,8 +5,6 @@
 #ifndef __SPINLOCK_H__
 #define __SPINLOCK_H__
 
-UInt32_BOOL __SwitchToThread(UInt32 dwSleepMSec, UInt32 dwSwitchCount);
-
 // #SwitchToThreadSpinning
 // 
 // If you call __SwitchToThread in a loop waiting for a condition to be met,

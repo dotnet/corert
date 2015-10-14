@@ -268,9 +268,6 @@ void ThreadStore::UnlockThreadStore()
     m_Lock.ReleaseReadLock();
 }
 
-// defined in gcrhenv.cpp
-extern SYSTEM_INFO g_SystemInfo;
-
 void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
 {
     Thread * pThisThread = GetCurrentThreadIfAvailable();

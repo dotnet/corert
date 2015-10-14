@@ -18,8 +18,6 @@
 #include "gcscan.h"
 
 #ifdef FEATURE_REDHAWK
-#include "commontypes.h"
-#include "commonmacros.h"
 #include "restrictedcallouts.h"
 #endif // FEATURE_REDHAWK
 
@@ -477,7 +475,7 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, LPARAM
 #endif
         break;
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_REDHAWK)
+#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_REDHAWK)
     case    HNDTYPE_REFCOUNTED:
         rootFlags |= kEtwGCRootFlagsRefCounted;
         if (*pRef != NULL)

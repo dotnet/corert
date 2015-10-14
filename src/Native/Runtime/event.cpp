@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
+#include "rhcommon.h"
 #include "commontypes.h"
 #include "daccess.h"
 #include "commonmacros.h"
@@ -79,7 +80,7 @@ bool CLREventStatic::Reset()
     return PalResetEvent(m_hEvent); 
 }
 
-UInt32 CLREventStatic::Wait(UInt32 dwMilliseconds, bool bAlertable, bool bAllowReentrantWait)
+uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable, bool bAllowReentrantWait)
 {
     UInt32 result = WAIT_FAILED;
 

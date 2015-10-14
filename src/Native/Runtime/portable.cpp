@@ -251,3 +251,4 @@ COOP_PINVOKE_HELPER(void, RhTypeCast_CheckVectorElemAddr, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+

@@ -105,10 +105,6 @@ ReaderWriterLock::ReaderWriterLock() :
 
 #ifndef DACCESS_COMPILE
 
-// defined in gcrhenv.cpp
-UInt32_BOOL __SwitchToThread(UInt32 dwSleepMSec, UInt32 dwSwitchCount);
-extern SYSTEM_INFO g_SystemInfo;
-
 // Attempt to take the read lock, but do not wait if a writer has the lock.
 // Release the lock if successfully acquired.  Returns true if the lock was
 // taken and released.  Returns false if a writer had the lock.  

@@ -10,15 +10,17 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gc.h"
-#include "commontypes.h"
-#include "commonmacros.h"
 #include "restrictedcallouts.h"
 
-#include "daccess.h"
-#include "targetptrs.h"
-#include "eetype.h"
-#include "objectlayout.h"
+#include "gcrhinterface.h"
 
+#include "palredhawkcommon.h"
+#include "slist.h"
+#include "varint.h"
+#include "regdisplay.h"
+#include "stackframeiterator.h"
+
+#include "thread.h"
 
 COOP_PINVOKE_HELPER(void, RhSuppressFinalize, (OBJECTREF refObj))
 {

@@ -9,16 +9,12 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gc.h"
-#include "commontypes.h"
-#include "commonmacros.h"
-#include "daccess.h"
 
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "rwlock.h"
 #include "runtimeinstance.h"
 #include "module.h"
-#include "objectlayout.h"
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).

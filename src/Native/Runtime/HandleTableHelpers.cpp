@@ -13,8 +13,6 @@
 #include "common.h"
 #include "gcenv.h"
 #include "objecthandle.h"
-#include "commontypes.h"
-#include "commonmacros.h"
 #include "restrictedcallouts.h"
 
 

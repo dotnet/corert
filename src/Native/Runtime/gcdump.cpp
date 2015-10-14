@@ -11,11 +11,12 @@
  * or may be persisted by a managed native code compiler conforming
  * to the standard code-manager spec.
  */
-#include "rhcommon.h"
+#include "common.h"
 
-#if (defined(_DEBUG) || defined(DACCESS_COMPILE)) && !defined(USE_PORTABLE_HELPERS)
+#if (defined(_DEBUG) || defined(DACCESS_COMPILE))
 
-#include "gcrhenv.h"    // @TODO: move off of gcrhenv.h
+#include "gcenv.h"
+#include "varint.h"
 #include "gcinfo.h"
 #include "gcdump.h"
 

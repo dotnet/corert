@@ -16,6 +16,11 @@
 #include "crst.h"
 #endif // !DACCESS_COMPILE
 
+bool EEThreadId::IsSameThread()
+{
+    return PalGetCurrentThreadId() == m_uiId;
+}
+
 void CrstStatic::Init(CrstType eType, CrstFlags eFlags)
 {
 #ifndef DACCESS_COMPILE

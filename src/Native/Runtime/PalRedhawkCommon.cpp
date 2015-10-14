@@ -34,11 +34,9 @@
 
 #ifdef APP_LOCAL_RUNTIME
 #ifdef _DEBUG
-EXTERN_C {
-    HANDLE WINAPI GetStdHandle(
+EXTERN_C WINBASEAPI HANDLE WINAPI GetStdHandle(
         _In_  DWORD nStdHandle
         );
-}
 #endif // _DEBUG
 #endif // APP_LOCAL_RUNTIME
 

@@ -111,12 +111,6 @@ inline UInt32 PalGetLastError()
     return GetLastError();
 }
 
-extern "C" void __stdcall GetNativeSystemInfo(SYSTEM_INFO *);
-inline void PalGetNativeSystemInfo(SYSTEM_INFO * arg1)
-{
-    GetNativeSystemInfo(arg1);
-}
-
 extern "C" void * __stdcall GetProcAddress(HANDLE, char *);
 inline void * PalGetProcAddress(HANDLE arg1, char * arg2)
 {
@@ -129,11 +123,6 @@ inline HANDLE PalGetProcessHeap()
     return GetProcessHeap();
 }
 
-extern "C" void __stdcall GetSystemTimeAsFileTime(FILETIME *);
-inline void PalGetSystemTimeAsFileTime(FILETIME * arg1)
-{
-    GetSystemTimeAsFileTime(arg1);
-}
 
 extern "C" UInt64 __stdcall GetTickCount64();
 inline UInt64 PalGetTickCount64()
@@ -195,12 +184,6 @@ inline void PalRaiseException(UInt32 arg1, UInt32 arg2, UInt32 arg3, const UInt3
     RaiseException(arg1, arg2, arg3, arg4);
 }
 
-extern "C" void __stdcall RaiseFailFastException(PEXCEPTION_RECORD, PCONTEXT, UInt32);
-inline void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
-{
-    RaiseFailFastException(arg1, arg2, arg3);
-}
-
 extern "C" UInt32_BOOL __stdcall ReleaseMutex(HANDLE);
 inline UInt32_BOOL PalReleaseMutex(HANDLE arg1)
 {
@@ -243,9 +226,28 @@ inline UInt32 PalWaitForSingleObjectEx(HANDLE arg1, UInt32 arg2, UInt32_BOOL arg
     return WaitForSingleObjectEx(arg1, arg2, arg3);
 }
 
+#ifdef PAL_REDHAWK_INCLUDED
+extern "C" void __stdcall GetNativeSystemInfo(SYSTEM_INFO *);
+inline void PalGetNativeSystemInfo(SYSTEM_INFO * arg1)
+{
+    GetNativeSystemInfo(arg1);
+}
+
+extern "C" void __stdcall GetSystemTimeAsFileTime(FILETIME *);
+inline void PalGetSystemTimeAsFileTime(FILETIME * arg1)
+{
+    GetSystemTimeAsFileTime(arg1);
+}
+
+extern "C" void __stdcall RaiseFailFastException(PEXCEPTION_RECORD, PCONTEXT, UInt32);
+inline void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
+{
+    RaiseFailFastException(arg1, arg2, arg3);
+}
+
 extern "C" UInt32_BOOL __stdcall WriteFile(HANDLE, const void *, UInt32, UInt32 *, LPOVERLAPPED);
 inline UInt32_BOOL PalWriteFile(HANDLE arg1, const void * arg2, UInt32 arg3, UInt32 * arg4, LPOVERLAPPED arg5)
 {
     return WriteFile(arg1, arg2, arg3, arg4, arg5);
 }
-
+#endif 

@@ -616,6 +616,7 @@ public:
 #ifdef FEATURE_BASICFREEZE
     // frozen segment management functions
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo) = 0;
+    virtual void UnregisterFrozenSegment(segment_handle seg) = 0;
 #endif //FEATURE_BASICFREEZE
 
         // debug support 

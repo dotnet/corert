@@ -638,61 +638,9 @@ ClrVirtualProtect(
 //
 
 struct alloc_context;
-
-class Thread
-{
-    uint32_t m_fPreemptiveGCDisabled;
-    uintptr_t m_alloc_context[16]; // Reserve enough space to fix allocation context
-
-    friend class ThreadStore;
-    Thread * m_pNext;
-
-public:
-    Thread()
-    {
-    }
-
-    bool PreemptiveGCDisabled()
-    {
-        return !!m_fPreemptiveGCDisabled;
-    }
-
-    void EnablePreemptiveGC()
-    {
-        m_fPreemptiveGCDisabled = false;
-    }
-
-    void DisablePreemptiveGC()
-    {
-        m_fPreemptiveGCDisabled = true;
-    }
-
-    alloc_context* GetAllocContext()
-    {
-        return (alloc_context *)&m_alloc_context;
-    }
-
-    void SetGCSpecial(bool fGCSpecial)
-    {
-    }
-
-    bool CatchAtSafePoint()
-    {
-        // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-        // a foreground GC proceed at that point. So it's always safe to return true.
-        return true;
-    }
-};
+class Thread;
 
 Thread * GetThread();
-
-class ThreadStore
-{
-public:
-    static Thread * GetThreadList(Thread * pThread);
-
-    static void AttachCurrentThread(bool fAcquireThreadStoreLock);
-};
 
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
@@ -743,17 +691,33 @@ public:
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2) { }
     static void SyncBlockCacheDemote(int max_gen) { }
     static void SyncBlockCachePromotionsGranted(int max_gen) { }
+
+    // Thread functions
+    static bool IsPreemptiveGCDisabled(Thread * pThread);
+    static void EnablePreemptiveGC(Thread * pThread);
+    static void DisablePreemptiveGC(Thread * pThread);
+    static void SetGCSpecial(Thread * pThread);
+    static alloc_context * GetAllocContext(Thread * pThread);
+    static bool CatchAtSafePoint(Thread * pThread);
+
+    // ThreadStore functions
+    static void AttachCurrentThread(); // does not acquire thread store lock
+    static Thread * GetThreadList(Thread * pThread);
 };
 
 class FinalizerThread
 {
 public:
+    static bool Initialize();
     static void EnableFinalization();
 
-    static bool HaveExtraWorkForFinalizer()
-    {
-        return false;
-    }
+    static bool HaveExtraWorkForFinalizer();
+
+    static bool IsCurrentThreadFinalizer();
+    static void Wait(DWORD timeout, bool allowReentrantWait = false);
+    static bool WatchDog();
+    static void SignalFinalizationDone(bool fFinalizer);
+    static void SetFinalizerThread(Thread * pThread);
 };
 
 typedef uint32_t (__stdcall *BackgroundCallback)(void* pCallbackContext);
@@ -889,6 +853,7 @@ inline void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
 {
 }
 
+#if 0 // runtime-specific
 // -----------------------------------------------------------------------------------------------------------
 // Config file enumulation
 //
@@ -947,6 +912,7 @@ public:
 };
 
 extern EEConfig * g_pConfig;
+#endif
 
 class CLRConfig
 {
@@ -998,163 +964,6 @@ public:
         return 0; 
     }
 };
-
-
-// -----------------------------------------------------------------------------------------------------------
-//
-// Helper classes expected by the GC
-//
-
-class EEThreadId
-{
-public:
-    EEThreadId(UINT32 uiId) : m_uiId(uiId) {}
-    bool IsSameThread()
-    {
-        return m_uiId == GetCurrentThreadId();
-    }
-
-private:
-    UINT32 m_uiId;
-};
-
-#define CRST_REENTRANCY         0
-#define CRST_UNSAFE_SAMELEVEL   0
-#define CRST_UNSAFE_ANYMODE     0
-#define CRST_DEBUGGER_THREAD    0
-#define CRST_DEFAULT            0
-
-#define CrstHandleTable         0
-
-typedef int CrstFlags;
-typedef int CrstType;
-
-class CrstStatic
-{
-    CRITICAL_SECTION m_cs;
-#ifdef _DEBUG
-    UINT32 m_holderThreadId;
-#endif
-
-public:
-    bool InitNoThrow(CrstType eType, CrstFlags eFlags = CRST_DEFAULT)
-    {
-        UnsafeInitializeCriticalSection(&m_cs);
-        return true;
-    }
-
-    void Destroy()
-    {
-        UnsafeDeleteCriticalSection(&m_cs);
-    }
-
-    void Enter()
-    {
-        UnsafeEEEnterCriticalSection(&m_cs);
-#ifdef _DEBUG
-        m_holderThreadId = GetCurrentThreadId();
-#endif
-    }
-
-    void Leave()
-    {
-#ifdef _DEBUG
-        m_holderThreadId = 0;
-#endif
-        UnsafeEELeaveCriticalSection(&m_cs);
-    }
-
-#ifdef _DEBUG
-    EEThreadId GetHolderThreadId()
-    {
-        return m_holderThreadId;
-    }
-
-    bool OwnedByCurrentThread()
-    {
-        return GetHolderThreadId().IsSameThread();
-    }
-#endif
-};
-
-class CLREventStatic
-{
-public:
-    void CreateManualEvent(bool bInitialState);
-    void CreateAutoEvent(bool bInitialState);
-    void CreateOSManualEvent(bool bInitialState);
-    void CreateOSAutoEvent(bool bInitialState);
-    void CloseEvent();
-    bool IsValid() const;
-    bool Set();
-    bool Reset();
-    uint32_t Wait(uint32_t dwMilliseconds, bool bAlertable);
-
-private:
-    HANDLE  m_hEvent;
-    bool    m_fInitialized;
-};
-
-class CrstHolder
-{
-    CrstStatic * m_pLock;
-
-public:
-    CrstHolder(CrstStatic * pLock)
-        : m_pLock(pLock)
-    {
-        m_pLock->Enter();
-    }
-
-    ~CrstHolder()
-    {
-        m_pLock->Leave();
-    }
-};
-
-class CrstHolderWithState
-{
-    CrstStatic * m_pLock;
-    bool m_fAcquired;
-
-public:
-    CrstHolderWithState(CrstStatic * pLock, bool fAcquire = true)
-        : m_pLock(pLock), m_fAcquired(fAcquire)
-    {
-        if (fAcquire)
-            m_pLock->Enter();
-    }
-
-    ~CrstHolderWithState()
-    {
-        if (m_fAcquired)
-            m_pLock->Leave();
-    }
-
-    void Acquire()
-    {
-        if (!m_fAcquired)
-        {
-            m_pLock->Enter();
-            m_fAcquired = true;
-        }
-    }
-
-    void Release()
-    {
-        if (m_fAcquired)
-        {
-            m_pLock->Leave();
-            m_fAcquired = false;
-        }
-    }
-
-    CrstStatic * GetValue()
-    {
-        return m_pLock;
-    }
-};
-
 
 template <typename TYPE>
 class NewHolder
@@ -1257,27 +1066,3 @@ public:
 };
 #endif // STRESS_HEAP
 
-#ifdef VERIFY_HEAP
-class SyncBlockCache;
-
-extern SyncBlockCache g_sSyncBlockCache;
-
-class SyncBlockCache
-{
-public:
-    static SyncBlockCache *GetSyncBlockCache() { return &g_sSyncBlockCache; }
-    void GCWeakPtrScan(void *pCallback, LPARAM pCtx, int dummy)
-    {
-        UNREFERENCED_PARAMETER(pCallback);
-        UNREFERENCED_PARAMETER(pCtx);
-        UNREFERENCED_PARAMETER(dummy);
-    }
-    void GCDone(uint32_t demoting, int max_gen)
-    {
-        UNREFERENCED_PARAMETER(demoting);
-        UNREFERENCED_PARAMETER(max_gen);
-    }
-    void VerifySyncTableEntry() {}
-};
-
-#endif // VERIFY_HEAP
