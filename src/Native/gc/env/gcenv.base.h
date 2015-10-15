@@ -687,6 +687,9 @@ public:
     // post-gc callback.
     static void GcDone(int condemned);
 
+    // Promote refcounted handle callback
+    static bool RefCountedHandleCallbacks(Object * pObject);
+
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, LPARAM lp1, LPARAM lp2) { }
     static void SyncBlockCacheDemote(int max_gen) { }
@@ -852,67 +855,6 @@ inline void StompWriteBarrierEphemeral()
 inline void StompWriteBarrierResize(BOOL bReqUpperBoundsCheck)
 {
 }
-
-#if 0 // runtime-specific
-// -----------------------------------------------------------------------------------------------------------
-// Config file enumulation
-//
-
-class EEConfig
-{
-public:
-    enum HeapVerifyFlags {
-        HEAPVERIFY_NONE             = 0,
-        HEAPVERIFY_GC               = 1,   // Verify the heap at beginning and end of GC
-        HEAPVERIFY_BARRIERCHECK     = 2,   // Verify the brick table
-        HEAPVERIFY_SYNCBLK          = 4,   // Verify sync block scanning
-
-        // the following options can be used to mitigate some of the overhead introduced
-        // by heap verification.  some options might cause heap verifiction to be less
-        // effective depending on the scenario.
-
-        HEAPVERIFY_NO_RANGE_CHECKS  = 0x10,   // Excludes checking if an OBJECTREF is within the bounds of the managed heap
-        HEAPVERIFY_NO_MEM_FILL      = 0x20,   // Excludes filling unused segment portions with fill pattern
-        HEAPVERIFY_POST_GC_ONLY     = 0x40,   // Performs heap verification post-GCs only (instead of before and after each GC)
-        HEAPVERIFY_DEEP_ON_COMPACT  = 0x80    // Performs deep object verfication only on compacting GCs.
-    };
-
-    enum  GCStressFlags {
-        GCSTRESS_NONE               = 0,
-        GCSTRESS_ALLOC              = 1,    // GC on all allocs and 'easy' places
-        GCSTRESS_TRANSITION         = 2,    // GC on transitions to preemtive GC
-        GCSTRESS_INSTR_JIT          = 4,    // GC on every allowable JITed instr
-        GCSTRESS_INSTR_NGEN         = 8,    // GC on every allowable NGEN instr
-        GCSTRESS_UNIQUE             = 16,   // GC only on a unique stack trace
-    };
-   
-    int     GetHeapVerifyLevel()                  { return 0; }
-    bool    IsHeapVerifyEnabled()                 { return GetHeapVerifyLevel() != 0; }
-
-    GCStressFlags GetGCStressLevel()        const { return GCSTRESS_NONE; }
-    bool    IsGCStressMix()                 const { return false; }
-
-    int     GetGCtraceStart()               const { return 0; }
-    int     GetGCtraceEnd  ()               const { return 0; }//1000000000; }
-    int     GetGCtraceFac  ()               const { return 0; }
-    int     GetGCprnLvl    ()               const { return 0; }
-    bool    IsGCBreakOnOOMEnabled()         const { return false; }
-    int     GetGCgen0size  ()               const { return 0; }
-    int     GetSegmentSize ()               const { return 0; }
-    int     GetGCconcurrent()               const { return 1; }
-    int     GetGCLatencyMode()              const { return 1; }
-    int     GetGCForceCompact()             const { return 0; }
-    int     GetGCRetainVM ()                const { return 0; }
-    int     GetGCTrimCommit()               const { return 0; }
-    int     GetGCLOHCompactionMode()        const { return 0; }
-
-    bool    GetGCAllowVeryLargeObjects ()   const { return false; }
-
-    bool    GetGCConservative()             const { return true; }
-};
-
-extern EEConfig * g_pConfig;
-#endif
 
 class CLRConfig
 {

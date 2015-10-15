@@ -17,10 +17,6 @@
 #include "gc.h"
 #include "gcscan.h"
 
-#ifdef FEATURE_REDHAWK
-#include "restrictedcallouts.h"
-#endif // FEATURE_REDHAWK
-
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
@@ -101,16 +97,7 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInf
 
     if (!HndIsNullOrDestroyedHandle(pObj) && !GCHeap::GetGCHeap()->IsPromoted(pObj))
     {
-#ifdef FEATURE_REDHAWK
-        BOOL fIsActive = RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObj);
-#else // FEATURE_REDHAWK
-        //<REVISIT_TODO>@todo optimize the access to the ref-count
-        ComCallWrapper* pWrap = ComCallWrapper::GetWrapperForObject((OBJECTREF)pObj);
-        _ASSERTE(pWrap != NULL);
-
-        BOOL fIsActive = pWrap->IsWrapperActive();
-#endif // FEATURE_REDHAWK
-        if (fIsActive)
+        if (GCToEEInterface::RefCountedHandleCallbacks(pObj))
         {
             _ASSERTE(lp2);
             promote_func* callback = (promote_func*) lp2;
