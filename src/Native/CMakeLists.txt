@@ -93,7 +93,7 @@ endif()
 
 if(WIN32)
     add_definitions(-DWIN32)
-    add_compile_options(-D$<$<CONFIG:Debug>:DEBUG>)
+    add_compile_options($<$<CONFIG:Debug>:-DDEBUG>)
 else(WIN32)
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)

@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     //
     // Initialize current thread
     //
-    GCToEEInterface::AttachCurrentThread();
+    ThreadStore::AttachCurrentThread(false);
 
     //
     // Create a Methodtable with GCDesc
