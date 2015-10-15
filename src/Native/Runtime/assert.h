@@ -25,7 +25,7 @@
 #define ASSERT_UNCONDITIONALLY(message) \
     Assert("ASSERT_UNCONDITIONALLY", __FILE__, __LINE__, message); \
 
-void Assert(const char * expr, const char * file, UInt32 line_num, const char * message);
+void Assert(const char * expr, const char * file, unsigned int line_num, const char * message);
 
 #else
 
@@ -38,6 +38,8 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
 #define ASSERT_UNCONDITIONALLY(message)
 
 #endif 
+
+#define assert(expr) ASSERT(expr)
 
 #define UNREACHABLE() \
     ASSERT_UNCONDITIONALLY("UNREACHABLE"); \

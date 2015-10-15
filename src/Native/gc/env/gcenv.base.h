@@ -439,15 +439,6 @@ struct _DacGlobals;
 
 #define OS_PAGE_SIZE 4096
 
-#if defined(_DEBUG)
-#ifndef _DEBUG_IMPL
-#define _DEBUG_IMPL 1
-#endif
-#define ASSERT(_expr) assert(_expr)
-#else
-#define ASSERT(_expr)
-#endif
-
 #ifndef _ASSERTE
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif

@@ -27,6 +27,9 @@ set __SkipTestBuild=
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 if /i "%1" == "/?" goto Usage
+if /i "%1" == "x64"    (set __BuildArch=x64&&shift&goto Arg_Loop)
+if /i "%1" == "x86"    (set __BuildArch=x86&&shift&goto Arg_Loop)
+if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"    (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
@@ -45,6 +48,11 @@ echo.
 
 :: Set the remaining variables based upon the determined build configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+
+:: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
+set "__CMakeBinDir=%__BinDir%"
+set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 
 :: Configure environment if we are doing a clean build.
 if not defined __CleanBuild goto MakeDirs
@@ -62,15 +70,15 @@ if exist "%__LogsDir%" del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__B
 
 :MakeDirs
 if not exist "%__BinDir%" md "%__BinDir%"
+if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%" md "%__LogsDir%"
 
 :CheckPrereqs
 :: Check prerequisites
 echo Checking pre-requisites...
 echo.
-rem ******************************************
-rem PUT NATIVE BUILD PRE-REQUISITES CHECK HERE
-rem ******************************************
+:: Eval the output from probe-win1.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\Native\probe-win.ps1"""') do %%a
 
 :CheckVS
 
@@ -111,9 +119,43 @@ if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see h
 :: All set to commence the build
 
 setlocal
-rem *********************
-rem PUT NATIVE BUILD HERE
-rem *********************
+echo Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
+echo.
+
+:: Set the environment for the native build
+set __VCBuildArch=x86_amd64
+if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
+call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+
+if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
+echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
+This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
+at VS install location of previous version. Workaround is to copy DIA SDK folder from VS install location ^
+of previous version to "%VSINSTALLDIR%" and then resume build.
+:: DIA SDK not included in Express editions
+echo Visual Studio 2013 Express does not include the DIA SDK. ^
+You need Visual Studio 2013+ (Community is free).
+echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+exit /b 1
+
+:GenVSSolution
+:: Regenerate the VS solution
+pushd "%__IntermediatesDir%"
+call "%__SourceDir%\Native\gen-buildsys-win.bat" "%__ProjectDir%\src\Native" %__VSVersion% %__BuildArch% 
+popd
+
+:BuildComponents
+if exist "%__IntermediatesDir%\install.vcxproj" goto BuildCoreRT
+echo Failed to generate native component build project!
+exit /b 1
+
+REM Build CoreRT
+:BuildCoreRT
+set "__CoreRTBuildLog=%__LogsDir%\CoreRT_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+%_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__CoreRTBuildLog%"
+IF NOT ERRORLEVEL 1 goto ManagedBuild
+echo Native component build failed. Refer !__CoreRTBuildLog! for details.
+exit /b 1
 
 :ManagedBuild
 REM endlocal to rid us of environment changes from vcvarsall.bat
