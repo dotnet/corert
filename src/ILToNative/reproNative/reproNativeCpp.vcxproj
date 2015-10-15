@@ -56,7 +56,7 @@
       <PreprocessorDefinitions>CPPCODEGEN;WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env;..\..\Native\gc\sample</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -74,7 +74,7 @@
       <PreprocessorDefinitions>CPPCODEGEN;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\gc;..\..\Native\gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\gc;..\..\Native\gc\env;..\..\Native\gc\sample</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -100,11 +100,13 @@
     <ClCompile Include="..\..\Native\gc\handletablescan.cpp" />
     <ClCompile Include="..\..\Native\gc\objecthandle.cpp" />
     <ClCompile Include="..\..\Native\gc\env\gcenv.windows.cpp" />
+    <ClCompile Include="..\..\Native\gc\sample\gcenv.cpp" />
     <ClCompile Include="common.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="platform.windows.cpp" />
     <ClCompile Include="repro.cpp" />
     <ClInclude Include="stubs.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
