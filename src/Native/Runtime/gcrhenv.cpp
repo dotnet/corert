@@ -889,7 +889,7 @@ void GCToEEInterface::GcDone(int condemned)
 
 bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 {
-    return RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObj);
+    return RestrictedCallouts::InvokeRefCountedHandleCallbacks(pObject);
 }
 
 // Thread functions
