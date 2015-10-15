@@ -18911,7 +18911,7 @@ void gc_heap::scan_dependent_handles (int condemned_gen_number, ScanContext *sc,
     }
 
     // Process any mark stack overflow that may have resulted from scanning handles (or if we didn't need to
-    // scan any handles at all this is the processing of overflows that may have occured prior to this method
+    // scan any handles at all this is the processing of overflows that may have occurred prior to this method
     // invocation).
     process_mark_overflow(condemned_gen_number);
 }
@@ -22544,7 +22544,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
 
 void gc_heap::make_free_list_in_brick (BYTE* tree, make_free_args* args)
 {
-    assert ((tree >= 0));
+    assert ((tree != NULL));
     {
         int  right_node = node_right_child (tree);
         int left_node = node_left_child (tree);
@@ -23282,7 +23282,7 @@ void gc_heap::relocate_survivors_in_plug (BYTE* plug, BYTE* plug_end,
 
 void gc_heap::relocate_survivors_in_brick (BYTE* tree, relocate_args* args)
 {
-    assert ((tree != 0));
+    assert ((tree != NULL));
 
     dprintf (3, ("tree: %Ix, args->last_plug: %Ix, left: %Ix, right: %Ix, gap(t): %Ix",
         tree, args->last_plug, 
@@ -23463,7 +23463,7 @@ void gc_heap::walk_plug (BYTE* plug, size_t size, BOOL check_last_object_p, walk
 
 void gc_heap::walk_relocation_in_brick (BYTE* tree, walk_relocate_args* args, size_t profiling_context)
 {
-    assert ((tree != 0));
+    assert ((tree != NULL));
     if (node_left_child (tree))
     {
         walk_relocation_in_brick (tree + node_left_child (tree), args, profiling_context);
@@ -24041,7 +24041,7 @@ void gc_heap::compact_plug (BYTE* plug, size_t size, BOOL check_last_object_p, c
 
 void gc_heap::compact_in_brick (BYTE* tree, compact_args* args)
 {
-    assert (tree >= 0);
+    assert (tree != NULL);
     int   left_node = node_left_child (tree);
     int   right_node = node_right_child (tree);
     ptrdiff_t relocation = node_relocation_distance (tree);
@@ -27497,7 +27497,7 @@ void gc_heap::count_plug (size_t last_plug_size, BYTE*& last_plug)
 
 void gc_heap::count_plugs_in_brick (BYTE* tree, BYTE*& last_plug)
 {
-    assert ((tree != 0));
+    assert ((tree != NULL));
     if (node_left_child (tree))
     {
         count_plugs_in_brick (tree + node_left_child (tree), last_plug);
@@ -28518,7 +28518,7 @@ void gc_heap::realloc_in_brick (BYTE* tree, BYTE*& last_plug,
                                 unsigned int& active_new_gen_number,
                                 BYTE*& last_pinned_gap, BOOL& leftp)
 {
-    assert (tree >= 0);
+    assert (tree != NULL);
     int   left_node = node_left_child (tree);
     int   right_node = node_right_child (tree);
 
@@ -31551,7 +31551,7 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
                 assert (seg == hp->ephemeral_heap_segment);
                 assert (curr_gen_number0 <= max_generation);
                 //
-                if ((curr_gen_number0 == max_generation))
+                if (curr_gen_number0 == max_generation)
                 {
                     if (heap_segment_mem (seg) < generation_allocation_start (hp->generation_of (max_generation-1)))
                     {
@@ -36204,7 +36204,7 @@ inline void testGCShadow(Object** ptr)
         // If you get this assertion, someone updated a GC poitner in the heap without
         // using the write barrier.  To find out who, check the value of 
         // dd_collection_count (dynamic_data_of (0)). Also
-        // note the value of 'ptr'.  Rerun the App that the previous GC just occured.
+        // note the value of 'ptr'.  Rerun the App that the previous GC just occurred.
         // Then put a data breakpoint for the value of 'ptr'  Then check every write
         // to pointer between the two GCs.  The last one is not using the write barrier.
 
