@@ -154,6 +154,7 @@ namespace Internal.IL
                 foreach (var v in localVariables)
                 {
                     LocalVariable modifiedLocal = v;
+                    modifiedLocal.Name = _compilation.NameMangler.SanitizeName(modifiedLocal.Name);
                     if (!names.Add(v.Name))
                     {
                         modifiedLocal.Name = string.Format("{0}_local{1}", v.Name, v.Slot);
@@ -1421,7 +1422,7 @@ namespace Internal.IL
             {
                 Append(thisPtr.Value.Name);
                 Append(".");
-                Append(field.Name);
+                Append(_writer.GetCppFieldName(field));
             }
             else
             {
@@ -1430,7 +1431,7 @@ namespace Internal.IL
                 Append("*)");
                 Append(thisPtr.Value.Name);
                 Append(")->");
-                Append(field.Name);
+                Append(_writer.GetCppFieldName(field));
             }
 
             Finish();
@@ -1481,7 +1482,7 @@ namespace Internal.IL
                 Append("*)");
                 Append(thisPtr.Value.Name);
                 Append(")->");
-                Append(field.Name);
+                Append(_writer.GetCppFieldName(field));
             }
 
             Finish();
@@ -1529,7 +1530,7 @@ namespace Internal.IL
                 Append("*)");
                 Append(thisPtr.Value.Name);
                 Append(")->");
-                Append(field.Name);
+                Append(_writer.GetCppFieldName(field));
             }
             Append("=");
             if (!fieldType.IsValueType)

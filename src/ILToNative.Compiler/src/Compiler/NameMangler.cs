@@ -30,7 +30,7 @@ namespace ILToNative
         //
         // Turn a name into a valid C/C++ identifier
         //
-        private string SanitizeName(string s, bool typeName = false)
+        internal string SanitizeName(string s, bool typeName = false)
         {
             StringBuilder sb = null;
             for (int i = 0; i < s.Length; i++)

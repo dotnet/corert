@@ -237,11 +237,16 @@ namespace ILToNative.CppCodeGen
             return _compilation.NameMangler.GetMangledMethodName(method);
         }
 
+        public string GetCppFieldName(FieldDesc field)
+        {
+            return _compilation.NameMangler.SanitizeName(field.Name);
+        }
+
         public string GetCppStaticFieldName(FieldDesc field)
         {
             TypeDesc type = field.OwningType;
             string typeName = GetCppTypeName(type);
-            return typeName.Replace("::", "__") + "__" + SanitizeName(field.Name);
+            return typeName.Replace("::", "__") + "__" + _compilation.NameMangler.SanitizeName(field.Name);
         }
 
         enum SpecialMethodKind
@@ -355,28 +360,28 @@ namespace ILToNative.CppCodeGen
                 return;
             }
 
-            var ilImporter = new ILImporter(_compilation, this, method, methodIL);
-
-            CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-
-            if (!_compilation.Options.NoLineNumbers)
-            {
-                IEnumerable<ILSequencePoint> sequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
-                if (sequencePoints != null)
-                    ilImporter.SetSequencePoints(sequencePoints);
-            }
-
-            IEnumerable<LocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method);
-            if (localVariables != null)
-                ilImporter.SetLocalVariables(localVariables);
-
-            IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(method);
-            if (parameters != null)
-                ilImporter.SetParameterNames(parameters);
-
             string methodCode;
             try
             {
+                var ilImporter = new ILImporter(_compilation, this, method, methodIL);
+
+                CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
+
+                if (!_compilation.Options.NoLineNumbers)
+                {
+                    IEnumerable<ILSequencePoint> sequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
+                    if (sequencePoints != null)
+                        ilImporter.SetSequencePoints(sequencePoints);
+                }
+
+                IEnumerable<LocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method);
+                if (localVariables != null)
+                    ilImporter.SetLocalVariables(localVariables);
+
+                IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(method);
+                if (parameters != null)
+                    ilImporter.SetParameterNames(parameters);
+
                 methodCode = ilImporter.Compile();
             }
             catch (Exception e)
@@ -387,17 +392,6 @@ namespace ILToNative.CppCodeGen
             }
 
             _compilation.GetRegisteredMethod(method).MethodCode = methodCode;
-        }
-
-        // Turn a name into a valid CPP identifier
-        private static string SanitizeName(string s)
-        {
-            // TODO: Handle Unicode, etc.
-            s = s.Replace("`", "_");
-            s = s.Replace("<", "_");
-            s = s.Replace(">", "_");
-            s = s.Replace("$", "_");
-            return s;
         }
 
         TextWriter Out
@@ -589,7 +583,7 @@ namespace ILToNative.CppCodeGen
                     }
                     else
                     {
-                        Out.WriteLine(GetCppSignatureTypeName(field.FieldType) + " " + field.Name + ";");
+                        Out.WriteLine(GetCppSignatureTypeName(field.FieldType) + " " + GetCppFieldName(field) + ";");
                     }
                 }
                 if (t.Type.GetMethod(".cctor", null) != null)
@@ -677,7 +671,9 @@ namespace ILToNative.CppCodeGen
             sb.Append(GetCppMethodName(method));
             sb.Append("(void * pThis) { return (__slot__");
             sb.Append(GetCppMethodName(method));
-            sb.Append(")(((System::Delegate *)pThis)->m_functionPointer);");
+            sb.Append(")(((");
+            sb.Append(GetCppSignatureTypeName(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.MulticastDelegate)));
+            sb.Append(")pThis)->m_functionPointer);");
             sb.AppendLine(" };");
 
             return sb.ToString();
