@@ -297,14 +297,13 @@ Object * __load_string_literal(const char * string)
     return pString;
 }
 
-Object* __load_static_string_literal(const uint8_t* utf8, int32_t utf8Len, int32_t strLen, OBJECTHANDLE* pHandle)
+OBJECTHANDLE __load_static_string_literal(const uint8_t* utf8, int32_t utf8Len, int32_t strLen)
 {
     Object * pString = __allocate_string(strLen);
     uint16_t * buffer = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     if (strLen > 0)
         UTF8ToWideChar((char*)utf8, utf8Len, buffer, strLen);
-    *pHandle = CreateGlobalHandle(ObjectToOBJECTREF(pString));
-    return pString;
+    return CreateGlobalHandle(ObjectToOBJECTREF(pString));
 }
 
 // TODO: Rewrite in C#
@@ -624,7 +623,7 @@ int __reloc_string_fixup()
         }
 
         OBJECTHANDLE handle;
-        *((Object**)ptr) = __load_static_string_literal(bytes, utf8Len, strLen, &handle);
+        *((OBJECTHANDLE*)ptr) = __load_static_string_literal(bytes, utf8Len, strLen);
         // TODO: This "handle" will leak, deallocate with __unload
     }
     return 0;

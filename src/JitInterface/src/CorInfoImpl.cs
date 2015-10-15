@@ -1186,7 +1186,7 @@ namespace Internal.JitInterface
             MethodIL methodIL = (MethodIL) HandleToObject((IntPtr)module);
             object literal = methodIL.GetObject((int)metaTok);
             ppValue = (void*) ObjectToHandle(literal);
-            return InfoAccessType.IAT_PVALUE;
+            return InfoAccessType.IAT_PPVALUE;
         }
 
         InfoAccessType emptyStringLiteral(IntPtr _this, ref void* ppValue)
