@@ -53,12 +53,22 @@ namespace Internal.TypeSystem
 
         MetadataType InitializeBaseType()
         {
-            var uninst = _typeDef.BaseType;
+            var uninst = _typeDef.MetadataBaseType;
 
             return (_baseType = (uninst != null) ? (MetadataType)uninst.InstantiateSignature(_instantiation, new Instantiation()) : null);
         }
 
-        public override MetadataType BaseType
+        public override DefType BaseType
+        {
+            get
+            {
+                if (_baseType == this)
+                    return InitializeBaseType();
+                return _baseType;
+            }
+        }
+
+        public override MetadataType MetadataBaseType
         {
             get
             {
@@ -222,5 +232,37 @@ namespace Internal.TypeSystem
             sb.Append('>');
             return sb.ToString();
         }
+
+        // Properties that are passed through from the type definition
+        public override ClassLayoutMetadata GetClassLayout()
+        {
+            return _typeDef.GetClassLayout();
+        }
+
+        public override bool IsExplicitLayout
+        {
+            get
+            {
+                return _typeDef.IsExplicitLayout;
+            }
+        }
+
+        public override bool IsSequentialLayout
+        {
+            get
+            {
+                return _typeDef.IsSequentialLayout;
+            }
+        }
+
+        public override bool IsBeforeFieldInit
+        {
+            get
+            {
+                return _typeDef.IsBeforeFieldInit;
+            }
+        }
+
+        public override bool IsModuleType { get { return false; } }
     }
 }

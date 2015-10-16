@@ -759,7 +759,7 @@ namespace Internal.JitInterface
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
                 }
-                else if (fieldType.HasBaseType)
+                else if ((fieldType is DefType) || (fieldType is ArrayType))
                 {
                     gcType = CorInfoGCType.TYPE_GC_REF;
                 }

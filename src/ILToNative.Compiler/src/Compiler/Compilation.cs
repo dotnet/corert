@@ -232,7 +232,7 @@ namespace ILToNative
                         {
                             MethodDesc declMethod = declReg.VirtualSlots[i];
 
-                            AddMethod(VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, reg.Type.GetClosestDefType()));
+                            AddMethod(VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, reg.Type.GetClosestMetadataType()));
                         }
                     }
 

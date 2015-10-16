@@ -3,7 +3,10 @@
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class MetadataType : TypeDesc
+    /// <summary>
+    /// Type with metadata available that is equivalent to a TypeDef record in an ECMA 335 metadata stream.
+    /// </summary>
+    public abstract partial class MetadataType : DefType
     {
         public override bool HasStaticConstructor
         {
@@ -22,6 +25,8 @@ namespace Internal.TypeSystem
         public abstract bool IsBeforeFieldInit { get; }
 
         public abstract bool IsModuleType { get; }
+
+        public abstract MetadataType MetadataBaseType { get; }
     }
 
     public struct ClassLayoutMetadata

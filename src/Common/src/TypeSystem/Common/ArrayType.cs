@@ -22,7 +22,7 @@ namespace Internal.TypeSystem
             return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(this.ElementType.GetHashCode(), _rank);
         }
 
-        public override MetadataType BaseType
+        public override DefType BaseType
         {
             get
             {
