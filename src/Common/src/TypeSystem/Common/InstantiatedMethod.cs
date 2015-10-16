@@ -72,6 +72,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsVirtual
+        {
+            get
+            {
+                return _methodDef.IsVirtual;
+            }
+        }
+
+        public override bool IsNewSlot
+        {
+            get
+            {
+                return _methodDef.IsNewSlot;
+            }
+        }
+
         public override MethodDesc GetMethodDefinition()
         {
             return _methodDef;
