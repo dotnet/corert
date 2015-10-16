@@ -209,9 +209,18 @@ namespace ILToNative
                 if (methodIL == null)
                     return;
 
-                var methodCode = _corInfo.CompileMethod(method);
+                try
+                {
+                    var methodCode = _corInfo.CompileMethod(method);
 
-                GetRegisteredMethod(method).MethodCode = methodCode;
+                    GetRegisteredMethod(method).MethodCode = methodCode;
+                }
+                catch (Exception e)
+                {
+                    Log.WriteLine(e.Message + " (" + method + ")");
+
+                    GetRegisteredMethod(method).MethodCode = new MethodCode();
+                }
             }
         }
 

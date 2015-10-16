@@ -60,6 +60,13 @@ namespace ILToNative
 
             var methodCode = (MethodCode)m.MethodCode;
 
+            if (methodCode.Code == null)
+            {
+                Out.WriteLine("call DebugBreak");
+                Out.WriteLine("ret");
+                return;
+            }
+
             Relocation[] relocs = methodCode.Relocs;
             int currentRelocIndex = 0;
             int nextRelocOffset = -1;
