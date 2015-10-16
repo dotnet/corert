@@ -532,7 +532,6 @@ extern "C" int32_t RhGetModuleFileName(intptr_t, uint16_t**)
 
 extern "C" void RhSuppressFinalize(System::Object*)
 {
-    throw 42;
 }
 
 extern "C" uint8_t RhGetCorElementType(System::EETypePtr)
@@ -560,6 +559,21 @@ extern "C" uint8_t RhIsValueType(System::EETypePtr)
     throw 42;
 }
 
+extern "C" uint8_t RhIsArray(System::EETypePtr)
+{
+    throw 42;
+}
+
+extern "C" intptr_t RhHandleAlloc(System::Object *pObject, int type)
+{
+    return (intptr_t)HndCreateHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], type, (OBJECTREF)pObject);
+}
+
+extern "C" void RhHandleFree(OBJECTHANDLE handle)
+{
+    DestroyTypedHandle(handle);
+}
+
 extern "C" intptr_t RhHandleAllocDependent(System::Object*, System::Object*)
 {
     throw 42;
@@ -570,9 +584,9 @@ extern "C" System::Object* RhHandleGetDependent(intptr_t)
     throw 42;
 }
 
-extern "C" System::Object* RhHandleGet(intptr_t)
+extern "C" System::Object* RhHandleGet(OBJECTHANDLE handle)
 {
-    throw 42;
+    return (System::Object*)ObjectFromHandle(handle);
 }
 
 extern "C" intptr_t RhSetErrorInfoBuffer(intptr_t)

@@ -77,13 +77,25 @@ namespace Internal.TypeSystem
             MethodSignature sig = targetMethod.Signature;
 
             TypeDesc t = objectType;
-            for (;;)
+            while (t != null)
             {
                 MethodDesc implMethod = t.GetMethod(name, sig);
                 if (implMethod != null)
                     return implMethod;
                 t = t.BaseType;
             }
+
+            t = objectType;
+            while (t != null)
+            {
+                MethodDesc implMethod = t.GetMethod(name, null);
+                if (implMethod != null)
+                    return implMethod;
+                t = t.BaseType;
+            }
+
+            Debug.Assert(false);
+            return null;
 #else
             // Step 1, convert objectType to uninstantiated form
             TypeDesc uninstantiatedType = objectType;

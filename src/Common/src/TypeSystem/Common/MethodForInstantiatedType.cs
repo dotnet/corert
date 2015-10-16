@@ -67,6 +67,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsVirtual
+        {
+            get
+            {
+                return _typicalMethodDef.IsVirtual;
+            }
+        }
+
+        public override bool IsNewSlot
+        {
+            get
+            {
+                return _typicalMethodDef.IsNewSlot;
+            }
+        }
+
         public override MethodDesc GetTypicalMethodDefinition()
         {
             return _typicalMethodDef;
