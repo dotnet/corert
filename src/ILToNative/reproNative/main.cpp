@@ -276,7 +276,7 @@ extern "C" void WriteBarrier(Object ** dst, Object * ref)
     ErectWriteBarrier(dst, ref);
 }
 
-void __throw_exception(void * pEx)
+extern "C" void __throw_exception(void * pEx)
 {
     // TODO: Exception throwing
     throw pEx;

@@ -12,6 +12,8 @@ namespace ILToNative
     {
         RngChkFail,
         AssignRef,
+        CheckedAssignRef,
+        Throw,
     }
 
     class JitHelper
@@ -37,7 +39,11 @@ namespace ILToNative
                         return "__range_check_fail";
 
                     case JitHelperId.AssignRef:
+                    case JitHelperId.CheckedAssignRef:
                         return "WriteBarrier";
+
+                    case JitHelperId.Throw:
+                        return "__throw_exception";
 
                     default:
                         throw new NotImplementedException();

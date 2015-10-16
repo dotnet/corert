@@ -33,6 +33,11 @@ namespace Internal.TypeSystem.Ecma
             _typeDefinition = module.MetadataReader.GetTypeDefinition(handle);
 
             _baseType = this; // Not yet initialized flag
+
+#if DEBUG
+            // Initialize name eagerly in debug builds for convenience
+            this.ToString();
+#endif
         }
 
         // TODO: Use stable hashcode based on the type name?

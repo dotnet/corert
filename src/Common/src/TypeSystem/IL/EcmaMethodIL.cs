@@ -17,6 +17,11 @@ namespace Internal.IL
         EcmaModule _module;
         MethodBodyBlock _methodBody;
 
+        // Cached values
+        byte[] _ilBytes;
+        TypeDesc[] _locals;
+        ILExceptionRegion[] _ilExceptionRegions;
+
         static public EcmaMethodIL Create(EcmaMethod method)
         {
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
@@ -51,7 +56,11 @@ namespace Internal.IL
 
         public override byte[] GetILBytes()
         {
-            return DangerousGetUnderlyingArray(_methodBody.GetILContent());
+            if (_ilBytes != null)
+                return _ilBytes;
+
+            byte[] ilBytes = DangerousGetUnderlyingArray(_methodBody.GetILContent());
+            return (_ilBytes = ilBytes);
         }
 
         public override bool GetInitLocals()
@@ -66,6 +75,9 @@ namespace Internal.IL
 
         public override TypeDesc[] GetLocals()
         {
+            if (_locals != null)
+                return _locals;
+
             var metadataReader = _module.MetadataReader;
             var localSignature = _methodBody.LocalSignature;
             if (localSignature.IsNil)
@@ -73,32 +85,42 @@ namespace Internal.IL
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetStandaloneSignature(localSignature).Signature);
 
             EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
-            return parser.ParseLocalsSignature();
+            TypeDesc[] locals = parser.ParseLocalsSignature();
+            return (_locals = locals);
         }
 
         public override ILExceptionRegion[] GetExceptionRegions()
         {
+            if (_ilExceptionRegions != null)
+                return _ilExceptionRegions;
+
             ImmutableArray<ExceptionRegion> exceptionRegions = _methodBody.ExceptionRegions;
+            ILExceptionRegion[] ilExceptionRegions;
 
             int length = exceptionRegions.Length;
-            if (exceptionRegions.Length == 0)
-                return new ILExceptionRegion[0]; // TODO: Array.Empty<ILExceptionRegion>()
-
-            ILExceptionRegion[] ilExceptionRegions = new ILExceptionRegion[length];
-            for (int i = 0; i < length; i++)
+            if (length == 0)
             {
-                var exceptionRegion = exceptionRegions[i];
-
-                ilExceptionRegions[i] = new ILExceptionRegion(
-                    (ILExceptionRegionKind)exceptionRegion.Kind, // assumes that ILExceptionRegionKind and ExceptionRegionKind enums are in sync
-                    exceptionRegion.TryOffset,
-                    exceptionRegion.TryLength,
-                    exceptionRegion.HandlerOffset,
-                    exceptionRegion.HandlerLength,
-                    MetadataTokens.GetToken(exceptionRegion.CatchType),
-                    exceptionRegion.FilterOffset);
+                ilExceptionRegions = Array.Empty<ILExceptionRegion>();
             }
-            return ilExceptionRegions;
+            else
+            {
+                ilExceptionRegions = new ILExceptionRegion[length];
+                for (int i = 0; i < length; i++)
+                {
+                    var exceptionRegion = exceptionRegions[i];
+
+                    ilExceptionRegions[i] = new ILExceptionRegion(
+                        (ILExceptionRegionKind)exceptionRegion.Kind, // assumes that ILExceptionRegionKind and ExceptionRegionKind enums are in sync
+                        exceptionRegion.TryOffset,
+                        exceptionRegion.TryLength,
+                        exceptionRegion.HandlerOffset,
+                        exceptionRegion.HandlerLength,
+                        MetadataTokens.GetToken(exceptionRegion.CatchType),
+                        exceptionRegion.FilterOffset);
+                }
+            }
+
+            return (_ilExceptionRegions = ilExceptionRegions);
         }
 
         public override object GetObject(int token)

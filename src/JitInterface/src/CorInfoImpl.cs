@@ -103,6 +103,14 @@ namespace Internal.JitInterface
             }
         }
 
+        int PointerSize
+        {
+            get
+            {
+                return _compilation.TypeSystemContext.Target.PointerSize;
+            }
+        }
+
         // TODO: Free pins at the end of the compilation
         Dictionary<Object, GCHandle> _pins = new Dictionary<object, GCHandle>();
 
@@ -334,8 +342,9 @@ namespace Internal.JitInterface
                 // if (pMD->IsSharedByGenericInstantiations())
                 //     result |= CORINFO_FLG_SHAREDINST;
 
-                if ((attribs & MethodAttributes.PinvokeImpl) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+                // TODO: PInvoke
+                // if ((attribs & MethodAttributes.PinvokeImpl) != 0)
+                //    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
 
                 // TODO: Cache inlining hits
                 // Check for an inlining directive.
@@ -412,7 +421,18 @@ namespace Internal.JitInterface
         }
 
         void getEHinfo(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
-        { throw new NotImplementedException(); }
+        {
+            var methodIL = _compilation.GetMethodIL(HandleToObject(ftn));
+
+            var ehRegion = methodIL.GetExceptionRegions()[EHnumber];
+
+            clause.Flags = (CORINFO_EH_CLAUSE_FLAGS)ehRegion.Kind;
+            clause.TryOffset = (uint)ehRegion.TryOffset;
+            clause.TryLength = (uint)ehRegion.TryLength;
+            clause.HandlerOffset = (uint)ehRegion.HandlerOffset;
+            clause.HandlerLength = (uint)ehRegion.HandlerLength;
+            clause.ClassTokenOrOffset = (uint)((ehRegion.Kind == ILExceptionRegionKind.Filter) ? ehRegion.FilterOffset : ehRegion.ClassToken);
+        }
 
         CORINFO_CLASS_STRUCT_* getMethodClass(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
         {
@@ -630,7 +650,7 @@ namespace Internal.JitInterface
 
             Debug.Assert(type.IsValueType);
 
-            int pointerSize = type.Context.Target.PointerSize;
+            int pointerSize = PointerSize;
 
             int ptrsCount = AlignmentHelper.AlignUp(type.InstanceByteCount, pointerSize) / pointerSize;
 
@@ -764,7 +784,12 @@ namespace Internal.JitInterface
 
         CorInfoType getTypeForPrimitiveValueClass(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
-            return asCorInfoType(HandleToObject(cls));
+            var type = HandleToObject(cls);
+
+            if (!type.IsPrimitive && !type.IsEnum)
+                return CorInfoType.CORINFO_TYPE_UNDEF;
+
+            return asCorInfoType(type);
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -1010,8 +1035,16 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         void ThrowExceptionForHelper(IntPtr _this, ref CORINFO_HELPER_DESC throwHelper)
         { throw new NotImplementedException(); }
+
         void getEEInfo(IntPtr _this, ref CORINFO_EE_INFO pEEInfoOut)
-        { throw new NotImplementedException(); }
+        {
+            pEEInfoOut = new CORINFO_EE_INFO();
+
+            int pointerSize = this.PointerSize;
+
+            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
+            pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
+        }
 
         [return: MarshalAs(UnmanagedType.LPWStr)]
         string getJitTimeLogFilename(IntPtr _this)
@@ -1077,6 +1110,10 @@ namespace Internal.JitInterface
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.RngChkFail));
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF:
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.AssignRef));
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
+                    return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.CheckedAssignRef));
+                case CorInfoHelpFunc.CORINFO_HELP_THROW:
+                    return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.Throw));
                 default:
                     throw new NotImplementedException();
             }
@@ -1087,8 +1124,13 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         void* getMethodSync(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
         { throw new NotImplementedException(); }
+
         CorInfoHelpFunc getLazyStringLiteralHelper(IntPtr _this, CORINFO_MODULE_STRUCT_* handle)
-        { throw new NotImplementedException(); }
+        {
+            // TODO: Lazy string literal helper
+            return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
+        }
+
         CORINFO_MODULE_STRUCT_* embedModuleHandle(IntPtr _this, CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException(); }
         CORINFO_CLASS_STRUCT_* embedClassHandle(IntPtr _this, CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
@@ -1143,7 +1185,7 @@ namespace Internal.JitInterface
             pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
             
             pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
-            pResult._nullInstanceCheck = 0;
+            pResult._nullInstanceCheck = (uint)(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) ? 1 : 0);
 
             // TODO: Generics
             // pResult.contextHandle;
@@ -1153,7 +1195,7 @@ namespace Internal.JitInterface
             // TODO: CORINFO_CALL_CODE_POINTER
             pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-            if (method.IsVirtual)
+            if (((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && method.IsVirtual)
             {
                 _compilation.AddVirtualSlot(method);
                 pResult.codePointerOrStubLookup.constLookup.addr = 
