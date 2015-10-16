@@ -261,6 +261,11 @@ namespace Internal.JitInterface
                 return (CorInfoType)type.Category;
             }
 
+            if (type.IsPointer)
+            {
+                return CorInfoType.CORINFO_TYPE_PTR;
+            }
+
             if (type.IsByRef)
             {
                 return CorInfoType.CORINFO_TYPE_BYREF;
