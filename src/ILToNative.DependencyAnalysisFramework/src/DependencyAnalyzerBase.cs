@@ -30,6 +30,14 @@ namespace ILToNative.DependencyAnalysisFramework
         public abstract void AddRoot(DependencyNodeCore<DependencyContextType> rootNode, string reason);
 
         /// <summary>
+        /// Add a root node
+        /// </summary>
+        public void AddRoot(object rootNode, string reason)
+        {
+            AddRoot((DependencyNodeCore<DependencyContextType>)rootNode, reason);
+        }
+
+        /// <summary>
         /// Return the marked node list. Do not modify this list, as it will cause unexpected behavior.
         /// </summary>
         public abstract ImmutableArray<DependencyNodeCore<DependencyContextType>> MarkedNodeList

@@ -37,6 +37,8 @@ namespace ILToNative
             Console.WriteLine();
             Console.WriteLine("-help        Display this usage message (Short form: -?)");
             Console.WriteLine("-out         Specify output file name");
+            Console.WriteLine("-dgmllog     Dump dgml log of dependency graph to specified file");
+            Console.WriteLine("-fulllog     Generate full dependency log graph");
             Console.WriteLine("-reference   Reference metadata from the specified assembly (Short form: -r)");
         }
 
@@ -62,6 +64,14 @@ namespace ILToNative
                 case "o":
                 case "out":
                     _outputPath = parser.GetStringValue();
+                    break;
+
+                case "dgmllog":
+                    _options.DgmlLog = parser.GetStringValue();
+                    break;
+                   
+                case "fulllog":
+                    _options.FullLog = true;
                     break;
 
                 case "r":

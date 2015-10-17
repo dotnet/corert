@@ -19,6 +19,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\ILToNative.DependencyAnalysisFramework\src\ILToNative.DependencyAnalysisFramework.csproj">
+      <Project>{dac23e9f-f826-4577-ae7a-0849ff83280c}</Project>
+      <Name>ILToNative.DependencyAnalysisFramework</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\ILToNative.TypeSystem\src\ILToNative.TypeSystem.csproj">
       <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
       <Name>ILToNative.TypeSystem</Name>
@@ -29,6 +33,30 @@
     <Compile Include="Compiler\AsmWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StringDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StringIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AsmWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MethodCode.cs" />

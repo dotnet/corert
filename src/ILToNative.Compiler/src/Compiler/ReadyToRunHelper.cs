@@ -22,7 +22,7 @@ namespace ILToNative
         GetGCStaticBase,
     }
 
-    class ReadyToRunHelper
+    public class ReadyToRunHelper : IEquatable<ReadyToRunHelper>
     {
         Compilation _compilation;
 
@@ -60,7 +60,25 @@ namespace ILToNative
                     default:
                         throw new NotImplementedException();
                 }
-            }            
+            }
+        }
+
+        public bool Equals(ReadyToRunHelper other)
+        {
+            return (Id == other.Id) && ReferenceEquals(Target, other.Target);
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode() ^ Target.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is ReadyToRunHelper))
+                return false;
+
+            return Equals((ReadyToRunHelper)obj);
         }
     }
 }
