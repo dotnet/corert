@@ -110,5 +110,7 @@ endif (WIN32)
 
 include(configure.cmake)
 
-add_subdirectory(gc)
+if(WIN32)
+  add_subdirectory(gc)
+endif()
 add_subdirectory(Runtime)

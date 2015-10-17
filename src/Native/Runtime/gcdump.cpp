@@ -41,7 +41,7 @@ GCDump::GCDump()
 
 /*****************************************************************************/
 
-static char * calleeSaveRegMaskBitNumberToName[] = 
+static const char * const calleeSaveRegMaskBitNumberToName[] = 
 {
 #ifdef _ARM_
     "R4",
@@ -106,7 +106,7 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
         gcPrintf("   epilogSize:     %d\r\n", pHeader->GetFixedEpilogSize());
 
     gcPrintf("   epilogCount:    %d %s\r\n", epilogCount, epilogAtEnd ? "[end]" : "");
-    char * returnKind = "????";
+    const char * returnKind = "????";
     unsigned reversePinvokeFrameOffset = 0;     // it can't be 0 because [ebp+0] is the previous ebp
     switch (pHeader->GetReturnKind())
     {
@@ -116,6 +116,9 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
         case GCInfoHeader::MRK_ReturnsToNative: 
             returnKind = "to native"; 
             reversePinvokeFrameOffset = pHeader->GetReversePinvokeFrameOffset();
+            break;
+        case GCInfoHeader::MRK_Unknown:
+            //ASSERT("Unexpected return kind")
             break;
     }
     gcPrintf("   returnKind:     %s\r\n", returnKind);
@@ -191,7 +194,7 @@ void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
     gcPrintf("local slot 0n%d, [R7+%02X] \r\n", slotNum, 
                 ((GCInfoHeader*)pHeader)->GetFrameSize() - ((slotNum + 1) * POINTER_SIZE));
 #else
-    char* regAndSign = "EBP-";
+    const char* regAndSign = "EBP-";
     size_t offset = pHeader->GetPreservedRegsSaveSize() + (slotNum * POINTER_SIZE);
 # ifdef TARGET_AMD64
     if (((GCInfoHeader*)pHeader)->GetFramePointerOffset() == 0)
@@ -256,9 +259,9 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
         case 0x40:
             {
                 // case 3 -- "register"
-                char* regName = "???";
-                char* interior = (b & 0x10) ? "+" : "";
-                char* pinned   = (b & 0x08) ? "!" : "";
+                const char* regName = "???";
+                const char* interior = (b & 0x10) ? "+" : "";
+                const char* pinned   = (b & 0x08) ? "!" : "";
 
                 switch (b & 0x7)
                 {
@@ -334,14 +337,14 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 unsigned mask = 0;
                 PTR_UInt8 pInts = pCursor;
                 unsigned offset = VarInt::ReadUnsigned(pCursor);
-                char* interior = (b & 0x10) ? "+" : "";
-                char* pinned   = (b & 0x08) ? "!" : "";
+                const char* interior = (b & 0x10) ? "+" : "";
+                const char* pinned   = (b & 0x08) ? "!" : "";
 #ifdef TARGET_ARM
-                char* baseReg  = (b & 0x04) ? "R7" : "SP";
+                const char* baseReg  = (b & 0x04) ? "R7" : "SP";
 #else
-                char* baseReg  = (b & 0x04) ? "EBP" : "ESP";
+                const char* baseReg  = (b & 0x04) ? "EBP" : "ESP";
 #endif
-                char* sign     = (b & 0x02) ? "-" : "+";
+                const char* sign     = (b & 0x02) ? "-" : "+";
                 if (b & 0x01)
                 {
                     mask = VarInt::ReadUnsigned(pCursor);

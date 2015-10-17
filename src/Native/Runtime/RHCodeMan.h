@@ -6,7 +6,7 @@ struct REGDISPLAY;
 struct GCInfoHeader;
 struct GCEnumContext;
 class MethodInfo;
-enum GCRefKind;
+enum GCRefKind : unsigned char;
 
 class EEMethodInfo
 {

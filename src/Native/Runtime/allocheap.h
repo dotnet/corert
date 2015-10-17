@@ -119,6 +119,6 @@ class AllocHeap
 typedef DPTR(AllocHeap) PTR_AllocHeap;
 
 //-------------------------------------------------------------------------------------------------
-void * __cdecl operator new(UIntNative n, AllocHeap * alloc);
-void * __cdecl operator new[](UIntNative n, AllocHeap * alloc);
+void * __cdecl operator new(size_t n, AllocHeap * alloc);
+void * __cdecl operator new[](size_t n, AllocHeap * alloc);
 

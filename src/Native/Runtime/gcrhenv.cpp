@@ -198,7 +198,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     InitializeSystemInfo();
 
     // Initialize the special EEType used to mark free list entries in the GC heap.
-    EEType *pFreeObjectType = new EEType();      //@TODO: remove 'new'
+    EEType *pFreeObjectType = new (nothrow) EEType();      //@TODO: remove 'new'
     pFreeObjectType->InitializeAsGcFreeType();
 
     // Place the pointer to this type in a global cell (typed as the structurally equivalent MethodTable
@@ -331,8 +331,9 @@ AppDomain g_sDefaultDomain;
 // Trivial sync block cache. Will no doubt be replaced with a real implementation soon.
 //
 
+#ifdef VERIFY_HEAP
 SyncBlockCache g_sSyncBlockCache;
-
+#endif // VERIFY_HEAP
 
 //-------------------------------------------------------------------------------------------------
 // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap. It
@@ -427,6 +428,7 @@ void RedhawkGCInterface::GarbageCollect(UInt32 uGeneration, UInt32 uMode)
 // static 
 GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt32 SizeSection)
 {
+#ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
 
     seginfo.pvMem           = pSection;
@@ -436,6 +438,9 @@ GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt3
     seginfo.ibReserved      = seginfo.ibAllocated;
 
     return (GcSegmentHandle)GCHeap::GetGCHeap()->RegisterFrozenSegment(&seginfo);
+#else // FEATURE_BASICFREEZE
+    return NULL;
+#endif // FEATURE_BASICFREEZE    
 }
 
 // static 
@@ -798,6 +803,7 @@ void RedhawkGCInterface::ShutdownFinalization()
 
 // Thread static representing the last allocation.
 // This is used to log the type information for each slow allocation.
+DECLSPEC_THREAD
 EEType * RedhawkGCInterface::tls_pLastAllocationEEType = NULL;
 
 // Get the last allocation for this thread.
@@ -1039,9 +1045,9 @@ bool FinalizerThread::Initialize()
     // queue of finalizable objects. It's mainly used by GC.WaitForPendingFinalizers(). The
     // hEventFinalizerToShutDown and hEventShutDownToFinalizer are used to synchronize the main thread and the
     // finalizer during the optional final finalization pass at shutdown.
-    hEventFinalizerDone = new CLREventStatic();
+    hEventFinalizerDone = new (nothrow) CLREventStatic();
     hEventFinalizerDone->CreateManualEvent(FALSE);
-    hEventFinalizer = new CLREventStatic();
+    hEventFinalizer = new (nothrow) CLREventStatic();
     hEventFinalizer->CreateAutoEvent(FALSE);
 
     // Create the finalizer thread itself.

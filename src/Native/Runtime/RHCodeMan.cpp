@@ -792,6 +792,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 #endif // _ARM_
 
     void ** ppvResult;
+    UInt8 * RSP;
 
     UInt32 epilogOffset = 0;
     UInt32 epilogSize = 0;
@@ -841,7 +842,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 
     // We do not have a frame pointer, but we are also not in the prolog or epilog
 
-    UInt8 * RSP = (UInt8 *)pContext->GetSP();
+    RSP = (UInt8 *)pContext->GetSP();
     RSP += pHeader->GetFrameSize();
     RSP += pHeader->GetPreservedRegsSaveSize();
 
@@ -858,9 +859,9 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 
 GCRefKind EECodeManager::GetReturnValueKind(EEMethodInfo * pMethodInfo)
 {
-    STATIC_ASSERT(GCInfoHeader::MRK_ReturnsScalar == GCRK_Scalar);
-    STATIC_ASSERT(GCInfoHeader::MRK_ReturnsObject == GCRK_Object);
-    STATIC_ASSERT(GCInfoHeader::MRK_ReturnsByref  == GCRK_Byref);
+    STATIC_ASSERT((GCRefKind)GCInfoHeader::MRK_ReturnsScalar == GCRK_Scalar);
+    STATIC_ASSERT((GCRefKind)GCInfoHeader::MRK_ReturnsObject == GCRK_Object);
+    STATIC_ASSERT((GCRefKind)GCInfoHeader::MRK_ReturnsByref  == GCRK_Byref);
 
     GCInfoHeader::MethodReturnKind retKind = pMethodInfo->GetGCInfoHeader()->GetReturnKind();
     switch (retKind)
@@ -872,6 +873,8 @@ GCRefKind EECodeManager::GetReturnValueKind(EEMethodInfo * pMethodInfo)
             return GCRK_Object;
         case GCInfoHeader::MRK_ReturnsByref:
             return GCRK_Byref;
+        default:
+            break;
     }
     UNREACHABLE_MSG("unexpected return kind");
 }

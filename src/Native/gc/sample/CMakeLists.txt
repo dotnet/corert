@@ -25,15 +25,11 @@ else()
         ../env/gcenv.unix.cpp)
 endif()
 
-add_executable(gcsample
-    ${SOURCES}
-)
-
 if(CLR_CMAKE_PLATFORM_UNIX)
-add_compile_options(-Wno-format)
-add_compile_options(-Wno-unused-variable)
-add_compile_options(-Wno-unused-private-field)
-add_compile_options(-Wno-tautological-undefined-compare)
+  add_compile_options(-Wno-format)
+  add_compile_options(-Wno-unused-variable)
+  add_compile_options(-Wno-unused-private-field)
+  add_compile_options(-Wno-tautological-undefined-compare)
 endif()
 
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
@@ -51,6 +47,10 @@ elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
 else()
   clr_unknown_arch()
 endif()
+
+add_executable(gcsample
+    ${SOURCES}
+)
 
 # Install gcsample
 install (TARGETS gcsample DESTINATION .)

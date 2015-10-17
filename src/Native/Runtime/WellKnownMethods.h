@@ -25,7 +25,7 @@ enum WellKnownMethodIds
 
 // Define an array of well known method names which are indexed by the enums defined above.
 #define DEFINE_WELL_KNOWN_METHOD(_name) #_name,
-extern __declspec(selectany) const char *g_rgWellKnownMethodNames[] = 
+extern __declspec(selectany) const char * const g_rgWellKnownMethodNames[] = 
 {
 #include "WellKnownMethodList.h"
 };

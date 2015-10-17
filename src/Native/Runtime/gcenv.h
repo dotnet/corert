@@ -15,7 +15,6 @@
 #include "eetype.h"
 #include "ObjectLayout.h"
 
-
 // Adapter for GC's view of Array
 class ArrayBase : Array
 {

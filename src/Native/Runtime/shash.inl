@@ -9,14 +9,14 @@
 
 template <typename TRAITS>
 SHash<TRAITS>::SHash()
-  : m_table(TADDR(NULL)),
+  : m_table(nullptr),
     m_tableSize(0),
     m_tableCount(0),
     m_tableOccupied(0),
     m_tableMax(0)
 {
-    C_ASSERT(s_growth_factor_numerator > s_growth_factor_denominator);
-    C_ASSERT(s_density_factor_numerator < s_density_factor_denominator);
+    C_ASSERT(TRAITS::s_growth_factor_numerator > TRAITS::s_growth_factor_denominator);
+    C_ASSERT(TRAITS::s_density_factor_numerator < TRAITS::s_density_factor_denominator);
 }
 
 template <typename TRAITS>
@@ -41,7 +41,7 @@ template <typename TRAITS>
 typename SHash< TRAITS>::element_t SHash<TRAITS>::Lookup(key_t key) const
 {
     const element_t *pRet = Lookup(m_table, m_tableSize, key);
-    return ((pRet != NULL) ? (*pRet) : Null());
+    return ((pRet != NULL) ? (*pRet) : TRAITS::Null());
 }
 
 template <typename TRAITS>
@@ -152,15 +152,15 @@ template <typename TRAITS>
 bool SHash<TRAITS>::Grow()
 {
     count_t newSize = (count_t) (m_tableCount 
-                                 * s_growth_factor_numerator / s_growth_factor_denominator
-                                 * s_density_factor_denominator / s_density_factor_numerator);
-    if (newSize < s_minimum_allocation)
-        newSize = s_minimum_allocation;
+                                 * TRAITS::s_growth_factor_numerator / TRAITS::s_growth_factor_denominator
+                                 * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator);
+    if (newSize < TRAITS::s_minimum_allocation)
+        newSize = TRAITS::s_minimum_allocation;
 
     // handle potential overflow
     if (newSize < m_tableCount)
     {
-        OnFailure(ftOverflow);
+        TRAITS::OnFailure(ftOverflow);
         return false;
     }
 
@@ -175,7 +175,7 @@ bool SHash<TRAITS>::CheckGrowth(count_t newElements)
     // handle potential overflow
     if (newCount < newElements)
     {
-        OnFailure(ftOverflow);
+        TRAITS::OnFailure(ftOverflow);
         return false;
     }
 
@@ -183,24 +183,24 @@ bool SHash<TRAITS>::CheckGrowth(count_t newElements)
     if (newCount < m_tableMax)
         return true;
 
-    count_t newSize = (count_t) (newCount * s_density_factor_denominator / s_density_factor_numerator) + 1;
+    count_t newSize = (count_t) (newCount * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator) + 1;
 
     // handle potential overflow
     if (newSize < newCount)
     {
-        OnFailure(ftOverflow);
+        TRAITS::OnFailure(ftOverflow);
         return false;
     }
 
     // accelerate the growth to avoid unnecessary rehashing
-    count_t newSize2 = (m_tableCount * s_growth_factor_numerator / s_growth_factor_denominator
-                                     * s_density_factor_denominator / s_density_factor_numerator);
+    count_t newSize2 = (m_tableCount * TRAITS::s_growth_factor_numerator / TRAITS::s_growth_factor_denominator
+                                     * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator);
 
     if (newSize < newSize2)
         newSize = newSize2;
 
-    if (newSize < s_minimum_allocation)
-        newSize = s_minimum_allocation;
+    if (newSize < TRAITS::s_minimum_allocation)
+        newSize = TRAITS::s_minimum_allocation;
 
     return Reallocate(newSize);
 }
@@ -209,28 +209,28 @@ template <typename TRAITS>
 bool SHash<TRAITS>::Reallocate(count_t newTableSize)
 {
     ASSERT(newTableSize >= 
-                 (count_t) (GetCount() * s_density_factor_denominator / s_density_factor_numerator));
+                 (count_t) (GetCount() * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator));
 
     // Allocation size must be a prime number.  This is necessary so that hashes uniformly
     // distribute to all indices, and so that chaining will visit all indices in the hash table.
     newTableSize = NextPrime(newTableSize);
     if (newTableSize == 0)
     {
-        OnFailure(ftOverflow);
+        TRAITS::OnFailure(ftOverflow);
         return false;
     }
 
-    element_t *newTable = new element_t [newTableSize];
+    element_t *newTable = new (nothrow) element_t [newTableSize];
     if (newTable == NULL)
     {
-        OnFailure(ftAllocation);
+        TRAITS::OnFailure(ftAllocation);
         return false;
     }
 
     element_t *p = newTable, *pEnd = newTable + newTableSize;
     while (p < pEnd)
     {
-        *p = Null();
+        *p = TRAITS::Null();
         p++;
     }
 
@@ -239,7 +239,7 @@ bool SHash<TRAITS>::Reallocate(count_t newTableSize)
     for (Iterator i = Begin(), end = End(); i != end; i++)
     {
         const element_t & cur = (*i);
-        if (!IsNull(cur) && !IsDeleted(cur))
+        if (!TRAITS::IsNull(cur) && !TRAITS::IsDeleted(cur))
             Add(newTable, newTableSize, cur);
     }
 
@@ -250,7 +250,7 @@ bool SHash<TRAITS>::Reallocate(count_t newTableSize)
 
     m_table = PTR_element_t(newTable);
     m_tableSize = newTableSize;
-    m_tableMax = (count_t) (newTableSize * s_density_factor_numerator / s_density_factor_denominator);
+    m_tableMax = (count_t) (newTableSize * TRAITS::s_density_factor_numerator / TRAITS::s_density_factor_denominator);
     m_tableOccupied = m_tableCount;
 
     return true;
@@ -262,7 +262,7 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
     if (tableSize == 0)
         return NULL;
 
-    count_t hash = Hash(key);
+    count_t hash = TRAITS::Hash(key);
     count_t index = hash % tableSize; 
     count_t increment = 0; // delay computation
 
@@ -270,11 +270,11 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
     {
         element_t& current = table[index];
             
-        if (IsNull(current))
+        if (TRAITS::IsNull(current))
             return NULL;
 
-        if (!IsDeleted(current)
-            && Equals(key, GetKey(current)))
+        if (!TRAITS::IsDeleted(current)
+            && TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
             return &current;
         }
@@ -291,9 +291,9 @@ const typename SHash<TRAITS>::element_t * SHash<TRAITS>::Lookup(PTR_element_t ta
 template <typename TRAITS>
 bool SHash<TRAITS>::Add(element_t *table, count_t tableSize, const element_t &element)
 {
-    key_t key = GetKey(element);
+    key_t key = TRAITS::GetKey(element);
 
-    count_t hash = Hash(key);
+    count_t hash = TRAITS::Hash(key);
     count_t index = hash % tableSize; 
     count_t increment = 0; // delay computation
 
@@ -301,13 +301,13 @@ bool SHash<TRAITS>::Add(element_t *table, count_t tableSize, const element_t &el
     {
         element_t& current = table[index];
             
-        if (IsNull(current))
+        if (TRAITS::IsNull(current))
         {
             table[index] = element;
             return true;
         }
 
-        if (IsDeleted(current))
+        if (TRAITS::IsDeleted(current))
         {
             table[index] = element;
             return false;
@@ -325,27 +325,27 @@ bool SHash<TRAITS>::Add(element_t *table, count_t tableSize, const element_t &el
 template <typename TRAITS>
 void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const element_t &element)
 {
-    ASSERT(!s_supports_remove);        
+    ASSERT(!TRAITS::s_supports_remove);        
 
-    key_t key = GetKey(element);
+    key_t key = TRAITS::GetKey(element);
 
-    count_t hash = Hash(key);
+    count_t hash = TRAITS::Hash(key);
     count_t index = hash % tableSize; 
     count_t increment = 0; // delay computation
 
     while (true)
     {
         element_t& current = table[index];
-        ASSERT(!IsDeleted(current));    
+        ASSERT(!TRAITS::IsDeleted(current));    
  
-        if (IsNull(current))
+        if (TRAITS::IsNull(current))
         {
             table[index] = element;
             m_tableCount++;
             m_tableOccupied++;
             return;
         }
-        else if (Equals(key, GetKey(current)))
+        else if (TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
             table[index] = element;
             return;
@@ -366,10 +366,10 @@ void SHash<TRAITS>::AddOrReplace(element_t *table, count_t tableSize, const elem
 template <typename TRAITS>
 void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
 {
-    ASSERT(s_supports_remove);
+    ASSERT(TRAITS::s_supports_remove);
     ASSERT(Lookup(table, tableSize, key) != NULL);
 
-    count_t hash = Hash(key);
+    count_t hash = TRAITS::Hash(key);
     count_t index = hash % tableSize; 
     count_t increment = 0; // delay computation
 
@@ -377,13 +377,13 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
     {
         element_t& current = table[index];
             
-        if (IsNull(current))
+        if (TRAITS::IsNull(current))
             return;
 
-        if (!IsDeleted(current)
-            && Equals(key, GetKey(current)))
+        if (!TRAITS::IsDeleted(current)
+            && TRAITS::Equals(key, TRAITS::GetKey(current)))
         {
-            table[index] = Deleted();
+            table[index] = TRAITS::Deleted();
       	    m_tableCount--;
             return;
         }
@@ -403,11 +403,11 @@ void SHash<TRAITS>::Remove(element_t *table, count_t tableSize, key_t key)
 template <typename TRAITS>
 void SHash<TRAITS>::RemoveElement(element_t *table, count_t tableSize, element_t *element)
 {
-    ASSERT(s_supports_remove);
+    ASSERT(TRAITS::s_supports_remove);
     ASSERT(table <= element && element < table + tableSize);
-    ASSERT(!IsNull(*element) && !IsDeleted(*element));
+    ASSERT(!TRAITS::IsNull(*element) && !TRAITS::IsDeleted(*element));
 
-    *element = Deleted();
+    *element = TRAITS::Deleted();
     m_tableCount--;
 }
 
@@ -434,7 +434,7 @@ bool SHash<TRAITS>::IsPrime(count_t number)
 
 namespace
 {
-    extern __declspec(selectany) const UInt32 g_shash_primes[] = {
+    const UInt32 g_shash_primes[] = {
         11,17,23,29,37,47,59,71,89,107,131,163,197,239,293,353,431,521,631,761,919,
         1103,1327,1597,1931,2333,2801,3371,4049,4861,5839,7013,8419,10103,12143,14591,
         17519,21023,25229,30293,36353,43627,52361,62851,75431,90523, 108631, 130363, 

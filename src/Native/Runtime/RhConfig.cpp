@@ -26,7 +26,7 @@
 #include "RhConfig.h"
 
 
-UInt32 RhConfig::ReadConfigValue(_In_z_ WCHAR *wszName)
+UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName)
 {
     WCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // 8 hex digits plus a nul terminator.
     const UInt32 cchBuffer = sizeof(wszBuffer) / sizeof(wszBuffer[0]);
@@ -69,7 +69,7 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ WCHAR *wszName)
 //if the file is not avaliable, or unreadable zero will always be returned
 //cchOuputBuffer is the maximum number of characters to write to outputBuffer
 //cchOutputBuffer must be a size >= CONFIG_VAL_MAXLEN + 1
-UInt32 RhConfig::GetIniVariable(_In_z_ WCHAR* configName, _Out_writes_all_(cchBuff) WCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer)
+UInt32 RhConfig::GetIniVariable(_In_z_ const WCHAR* configName, _Out_writes_all_(cchBuff) WCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer)
 {
     //the buffer needs to be big enough to read the value buffer + null terminator
     if (cchOuputBuffer < CONFIG_VAL_MAXLEN + 1)
@@ -158,7 +158,14 @@ void RhConfig::ReadConfigIni()
             return;
         }
 
-        ConfigPair* iniBuff = new ConfigPair[RCV_Count];
+        ConfigPair* iniBuff = new (nothrow) ConfigPair[RCV_Count];
+        if (iniBuff == NULL)
+        {
+            //only set if another thread hasn't initialized the buffer yet, otherwise ignore and let the first setter win
+            PalInterlockedCompareExchangePointer(&g_iniSettings, CONFIG_INI_NOT_AVAIL, NULL);
+
+            return;
+        }
 
         UInt32 iBuff = 0;
         UInt32 iIniBuff = 0;
@@ -241,17 +248,19 @@ _Ret_maybenull_z_ WCHAR* RhConfig::GetConfigPath()
         return NULL;
     }
 
-    WCHAR* configPath = new WCHAR[iLastBackslash + 1 + wcslen(CONFIG_INI_FILENAME) + 1];
-
-    //copy the path base and file name
-    for (UInt32 i = 0; i <= iLastBackslash; i++)
+    WCHAR* configPath = new (nothrow) WCHAR[iLastBackslash + 1 + wcslen(CONFIG_INI_FILENAME) + 1];
+    if (configPath != NULL)
     {
-        configPath[i] = exePathBuff[i];
-    }
+        //copy the path base and file name
+        for (UInt32 i = 0; i <= iLastBackslash; i++)
+        {
+            configPath[i] = exePathBuff[i];
+        }
 
-    for (UInt32 i = 0; i <= wcslen(CONFIG_INI_FILENAME); i++)
-    {
-        configPath[i + iLastBackslash + 1] = CONFIG_INI_FILENAME[i];
+        for (UInt32 i = 0; i <= wcslen(CONFIG_INI_FILENAME); i++)
+        {
+            configPath[i + iLastBackslash + 1] = CONFIG_INI_FILENAME[i];
+        }
     }
 
     return configPath;

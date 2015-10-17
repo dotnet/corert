@@ -5,7 +5,7 @@
 #ifdef _MSC_VER
 #define ASSUME(expr) __assume(expr)
 #else  // _MSC_VER
-#define ASSUME(expr)
+#define ASSUME(expr) do { if (!(expr)) __builtin_unreachable(); } while (0) 
 #endif // _MSC_VER
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)

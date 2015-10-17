@@ -71,8 +71,8 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
            expr, file, line_num);
 
     HANDLE hMod = PalLoadLibraryExW(L"user32.dll", NULL, 0);
-    Int32 (* pfn)(HANDLE, char *, char *, UInt32) = 
-        (Int32 (*)(HANDLE, char *, char *, UInt32))PalGetProcAddress(hMod, "MessageBoxA");
+    Int32 (* pfn)(HANDLE, char *, const char *, UInt32) = 
+        (Int32 (*)(HANDLE, char *, const char *, UInt32))PalGetProcAddress(hMod, "MessageBoxA");
 
     Int32 result = pfn(NULL, buffer, "Redhawk Assert", MB_ABORTRETRYIGNORE);
 

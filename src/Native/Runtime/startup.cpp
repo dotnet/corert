@@ -26,13 +26,12 @@
 #include "RWLock.h"
 #include "threadstore.h"
 #include "RuntimeInstance.h"
-#include "InstanceStore.h"
 #include "rhbinder.h"
 #include "CachedInterfaceDispatch.h"
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
-#endif !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 

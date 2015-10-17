@@ -32,7 +32,7 @@ class Module
     friend struct DefaultSListTraits<Module>;
     friend class RuntimeInstance;
 public:
-    ~Module();
+    virtual ~Module();
 
     static Module *     Create(ModuleHeader *pModuleHeader);
     static Module *     Create(SimpleModuleHeader *pModuleHeader);

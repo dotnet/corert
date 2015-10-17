@@ -27,7 +27,6 @@
 #include "RWLock.h"
 #include "threadstore.h"
 #include "RuntimeInstance.h"
-#include "new.h"
 #include "ObjectLayout.h"
 #include "TargetPtrs.h"
 #include "eetype.h"
@@ -89,7 +88,7 @@ ThreadStore::~ThreadStore()
 // static 
 ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
 {
-    NewHolder<ThreadStore> pNewThreadStore = new ThreadStore();
+    NewHolder<ThreadStore> pNewThreadStore = new (nothrow) ThreadStore();
     if (NULL == pNewThreadStore)
         return NULL;
 
@@ -367,7 +366,7 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
 EXTERN_C Thread * FASTCALL RhpGetThread();
 #ifdef FEATURE_DECLSPEC_THREAD
-__declspec(thread) ThreadBuffer tls_CurrentThread = 
+DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 { 
     { 0 },                              // m_rgbAllocContextBuffer
     Thread::TSF_Unknown,                // m_ThreadStateFlags
@@ -415,7 +414,7 @@ void * ThreadStore::CreateCurrentThreadBuffer()
     ASSERT(_tls_index < 64);
     ASSERT(NULL == PalTlsGetValue(_tls_index));
 
-    TlsSectionStruct * pTlsBlock = new TlsSectionStruct();
+    TlsSectionStruct * pTlsBlock = new (nothrow) TlsSectionStruct();
     ASSERT(NULL != pTlsBlock);   // we require NT6's __declspec(thread) support for reliability
 
     PalTlsSetValue(_tls_index, pTlsBlock);
@@ -521,7 +520,7 @@ COOP_PINVOKE_HELPER(Boolean, RhGetExceptionsForCurrentThread, (Array* pOutputArr
 Boolean ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, Int32* pWrittenCountOut)
 {
     Int32 countWritten = 0;
-
+    Object** pArrayElements;
     Thread * pThread = GetCurrentThread();
     
     for (PTR_ExInfo pInfo = pThread->m_pExInfoStackHead; pInfo != NULL; pInfo = pInfo->m_pPrevExInfo)
@@ -546,7 +545,7 @@ Boolean ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, Int32* p
     if (countWritten == 0)
         return Boolean_true;
 
-    Object** pArrayElements = (Object**)pOutputArray->GetArrayData();
+    pArrayElements = (Object**)pOutputArray->GetArrayData();
     for (PTR_ExInfo pInfo = pThread->m_pExInfoStackHead; pInfo != NULL; pInfo = pInfo->m_pPrevExInfo)
     {
         if (pInfo->m_exception == NULL)

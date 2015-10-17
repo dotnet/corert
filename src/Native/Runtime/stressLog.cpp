@@ -109,7 +109,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
 
     g_pStressLog = &theLog;
 
-    theLog.pLock = new CrstStatic();
+    theLog.pLock = new (nothrow) CrstStatic();
     theLog.pLock->Init(CrstStressLog);
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
@@ -225,7 +225,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper(Thread * pThread) {
     }
 
     if (msgs == 0)  {
-        msgs = new ThreadStressLog();
+        msgs = new (nothrow) ThreadStressLog();
 
         if (msgs == 0 ||!msgs->IsValid ()) 
         {

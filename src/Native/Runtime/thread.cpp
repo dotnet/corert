@@ -27,7 +27,6 @@
 #include "threadstore.h"
 #include "RuntimeInstance.h"
 #include "module.h"
-#include "new.h"
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
@@ -296,7 +295,7 @@ void Thread::Construct()
     m_pTEB = PalNtCurrentTeb();
 
 #ifdef STRESS_LOG
-    if (StressLog::StressLogOn(~0ul, 0))
+    if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
 #endif // STRESS_LOG
 }
@@ -394,7 +393,7 @@ void Thread::Destroy()
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
 
 #if _DEBUG
-    memset(this, 0x06, sizeof(this));
+    memset(this, 0x06, sizeof(*this));
 #endif // _DEBUG
 
     // Thread::Destroy is called when the thread's "home" fiber dies.  We mark the thread as "detached" here
@@ -1006,7 +1005,7 @@ PTR_UInt8 Thread::AllocateThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset
         if (numTlsCells < 2 * m_numDynamicTypesTlsCells)
             numTlsCells = 2 * m_numDynamicTypesTlsCells;
 
-        PTR_UInt8* pTlsCells = new PTR_UInt8[numTlsCells];
+        PTR_UInt8* pTlsCells = new (nothrow) PTR_UInt8[numTlsCells];
         if (pTlsCells == NULL)
             return NULL;
 
@@ -1026,7 +1025,7 @@ PTR_UInt8 Thread::AllocateThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset
 
     if (m_pDynamicTypesTlsCells[uTlsTypeOffset] == NULL)
     {
-        UInt8* pTlsStorage = new UInt8[tlsStorageSize];
+        UInt8* pTlsStorage = new (nothrow) UInt8[tlsStorageSize];
         if (pTlsStorage == NULL)
             return NULL;
 
