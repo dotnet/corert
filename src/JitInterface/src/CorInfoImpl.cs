@@ -522,8 +522,24 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         void findCallSiteSig(IntPtr _this, CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         { throw new NotImplementedException(); }
+
         CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
-        { throw new NotImplementedException(); }
+        {
+            WellKnownType result = WellKnownType.RuntimeTypeHandle;
+
+            if (pResolvedToken.hMethod != null)
+            {
+                result = WellKnownType.RuntimeMethodHandle;
+            }
+            else
+            if (pResolvedToken.hField != null)
+            {
+                result = WellKnownType.RuntimeFieldHandle;
+            }
+
+            return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(result));
+        }
+
         CorInfoCanSkipVerificationResult canSkipVerification(IntPtr _this, CORINFO_MODULE_STRUCT_* module)
         { throw new NotImplementedException(); }
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -713,10 +729,23 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         CorInfoHelpFunc getSecurityPrologHelper(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn)
         { throw new NotImplementedException(); }
+
         CORINFO_CLASS_STRUCT_* getTypeForBox(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        {
+            var type = HandleToObject(cls);
+
+            var typeForBox = type.IsNullable ? type.Instantiation[0] : type;
+
+            return ObjectToHandle(typeForBox);
+        }
+
         CorInfoHelpFunc getBoxHelper(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        {
+            var type = HandleToObject(cls);
+
+            return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_BOX;
+        }
+
         CorInfoHelpFunc getUnBoxHelper(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException(); }
 
