@@ -481,8 +481,21 @@ namespace Internal.JitInterface
 
         CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException(); }
+
         void getGSCookie(IntPtr _this, GSCookie* pCookieVal, GSCookie** ppCookieVal)
-        { throw new NotImplementedException(); }
+        {
+            // TODO: fully implement GS cookies
+
+            if (pCookieVal != null)
+            {
+                *pCookieVal = (GSCookie)0x216D6F6D202C6948;
+                *ppCookieVal = null;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
 
         void resolveToken(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
@@ -1141,8 +1154,10 @@ namespace Internal.JitInterface
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.AssignRef));
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.CheckedAssignRef));
-                case CorInfoHelpFunc.CORINFO_HELP_THROW:
+                case CorInfoHelpFunc.CORINFO_HELP_THROW:                
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.Throw));
+                case CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST:
+                    return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.FailFast));
                 default:
                     throw new NotImplementedException();
             }
