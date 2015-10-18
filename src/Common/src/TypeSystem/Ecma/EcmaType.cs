@@ -248,6 +248,25 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
+        public override MethodDesc GetStaticConstructor()
+        {
+            var metadataReader = this.MetadataReader;
+            var stringComparer = metadataReader.StringComparer;
+
+            foreach (var handle in _typeDefinition.GetMethods())
+            {
+                var methodDefinition = metadataReader.GetMethodDefinition(handle);
+                if ((methodDefinition.Attributes & MethodAttributes.SpecialName) != 0 &&
+                    stringComparer.Equals(methodDefinition.Name, ".cctor"))
+                {
+                    MethodDesc method = (MethodDesc)this.Module.GetObject(handle);
+                    return method;
+                }
+            }
+
+            return null;
+        }
+
         public override IEnumerable<FieldDesc> GetFields()
         {
             foreach (var handle in _typeDefinition.GetFields())

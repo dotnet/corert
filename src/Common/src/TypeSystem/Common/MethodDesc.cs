@@ -255,9 +255,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // TODO: Precise check
-                // TODO: Cache?
-                return this.Name == ".cctor";
+                return this == this.OwningType.GetStaticConstructor();
             }
         }
 

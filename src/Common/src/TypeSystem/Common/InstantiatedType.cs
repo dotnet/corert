@@ -157,6 +157,14 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
         }
 
+        public override MethodDesc GetStaticConstructor()
+        {
+            MethodDesc typicalCctor = _typeDef.GetStaticConstructor();
+            if (typicalCctor == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalCctor, this);
+        }
+
         public override IEnumerable<FieldDesc> GetFields()
         {
             foreach (var fieldDef in _typeDef.GetFields())

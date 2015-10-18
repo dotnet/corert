@@ -59,7 +59,7 @@ namespace ILToNative
                     case ReadyToRunHelperId.GetGCStaticBase:
                         return "__GetGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.CCtorTrigger:
-                        return "__StaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
+                        return "__CCtorTrigger_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     default:
                         throw new NotImplementedException();
                 }

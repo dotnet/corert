@@ -94,19 +94,5 @@ namespace Internal.TypeSystem
             Debug.Assert(false, "method has no related type in the type hierarchy of type");
             return null;
         }
-
-        static public MethodDesc GetStaticConstructor(this TypeDesc type)
-        {
-            foreach (var method in type.GetMethods())
-            {
-                if (method.IsStaticConstructor)
-                {
-                    return method;
-                }
-            }
-
-            Debug.Assert(false, "GetStaticConstructor called on a type with no static constructors");
-            return null;
-        }
     }
 }

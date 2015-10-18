@@ -49,7 +49,13 @@ namespace ILToNative
             "RuntimeFieldHandle",
         };
 
+        static readonly string[][] s_wellKnownEntrypointNames = new string[][] {
+            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstruction" }
+        };
+
         MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
+
+        MethodDesc[] _wellKnownEntrypoints = new MethodDesc[s_wellKnownEntrypointNames.Length];
 
         EcmaModule _systemModule;
 
@@ -93,11 +99,26 @@ namespace ILToNative
                 type.SetWellKnownType((WellKnownType)(typeIndex + 1));
                 _wellKnownTypes[typeIndex] = type;
             }
+
+            // Initialize all well known entrypoints
+            for (int entrypointIndex = 0; entrypointIndex < _wellKnownEntrypoints.Length; entrypointIndex++)
+            {
+                MetadataType type = _systemModule.GetType(
+                    s_wellKnownEntrypointNames[entrypointIndex][0],
+                    s_wellKnownEntrypointNames[entrypointIndex][1]);
+                MethodDesc method = type.GetMethod(s_wellKnownEntrypointNames[entrypointIndex][2], null);
+                _wellKnownEntrypoints[entrypointIndex] = method;
+            }
         }
 
         public override MetadataType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _wellKnownTypes[(int)wellKnownType - 1];
+        }
+
+        public MethodDesc GetWellKnownEntryPoint(WellKnownEntrypoint entryPoint)
+        {
+            return _wellKnownEntrypoints[(int)entryPoint - 1];
         }
 
         public override object ResolveAssembly(System.Reflection.AssemblyName name)
@@ -202,5 +223,11 @@ namespace ILToNative
                 yield return ecmaMethod.MetadataReader.GetString(p.Name);
             }
         }
+    }
+
+    public enum WellKnownEntrypoint
+    {
+        Unknown,
+        EnsureClassConstructorRun,
     }
 }

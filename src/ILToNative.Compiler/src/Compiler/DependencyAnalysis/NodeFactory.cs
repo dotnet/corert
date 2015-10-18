@@ -11,10 +11,12 @@ namespace ILToNative.DependencyAnalysis
     public class NodeFactory
     {
         TargetDetails _target;
+        CompilerTypeSystemContext _context;
 
-        public NodeFactory(TargetDetails target)
+        public NodeFactory(CompilerTypeSystemContext context)
         {
-            _target = target;
+            _target = context.Target;
+            _context = context;
             CreateNodeCaches();
         }
 
@@ -141,6 +143,11 @@ namespace ILToNative.DependencyAnalysis
             return _nonGCStatics.GetOrAdd(type);
         }
 
+        public ISymbolNode TypeCctorContextSymbol(MetadataType type)
+        {
+            return _nonGCStatics.GetOrAdd(type).ClassConstructorContext;
+        }
+
         private NodeCache<MetadataType, GCStaticsNode> _GCStatics;
 
         public GCStaticsNode TypeGCStaticsSymbol(MetadataType type)
@@ -204,6 +211,12 @@ namespace ILToNative.DependencyAnalysis
         public ISymbolNode MethodEntrypoint(MethodDesc method)
         {
             return _methodCode.GetOrAdd(method);
+        }
+
+        public ISymbolNode WellKnownEntrypoint(WellKnownEntrypoint entrypoint)
+        {
+            MethodDesc method = _context.GetWellKnownEntryPoint(entrypoint);
+            return MethodEntrypoint(method);
         }
 
         private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;

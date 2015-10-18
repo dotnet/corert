@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Debug = System.Diagnostics.Debug;
 
 namespace System.Collections.Generic
 {
@@ -31,17 +32,25 @@ namespace System.Collections.Generic
 
         public void Append(T[] newItems)
         {
-            if (_items == null || (_count + newItems.Length) >= _items.Length)
+            var oldCount = _count;
+            ZeroExtend(newItems.Length);
+            Array.Copy(newItems, 0, _items, oldCount, newItems.Length);
+        }
+
+        public void ZeroExtend(int numItems)
+        {
+            Debug.Assert(numItems >= 0);
+
+            if (_items == null || (_count + numItems) >= _items.Length)
             {
                 int newCount = 2 * _count + 1;
-                while ((_count + newItems.Length) >= newCount)
+                while ((_count + numItems) >= newCount)
                 {
                     newCount = 2 * newCount + 1;
                 }
                 Array.Resize(ref _items, newCount);
             }
-            Array.Copy(newItems, 0, _items, _count, newItems.Length);
-            _count += newItems.Length;
+            _count += numItems;
         }
 
         public int Count

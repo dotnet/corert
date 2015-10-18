@@ -294,7 +294,7 @@ namespace ILToNative
 
             if (!_options.IsCppCodeGen)
             {
-                _nodeFactory = new NodeFactory(this._typeSystemContext.Target);
+                _nodeFactory = new NodeFactory(this._typeSystemContext);
                 NodeFactory.NameMangler = NameMangler;
                 var rootNode = _nodeFactory.MethodEntrypoint(_mainMethod);
 
