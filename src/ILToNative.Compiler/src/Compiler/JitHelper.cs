@@ -14,6 +14,7 @@ namespace ILToNative
         AssignRef,
         CheckedAssignRef,
         Throw,
+        FailFast,
     }
 
     class JitHelper
@@ -45,6 +46,9 @@ namespace ILToNative
                     case JitHelperId.Throw:
                         return "__throw_exception";
 
+                    case JitHelperId.FailFast:
+                        return "__fail_fast";
+                            
                     default:
                         throw new NotImplementedException();
                 }

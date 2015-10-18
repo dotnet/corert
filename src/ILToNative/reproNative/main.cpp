@@ -282,6 +282,12 @@ extern "C" void __throw_exception(void * pEx)
     throw pEx;
 }
 
+extern "C" void __fail_fast()
+{
+    // TODO: FailFast
+    throw 42;
+}
+
 Object * __load_string_literal(const char * string)
 {
     // TODO: Cache/intern string literals
