@@ -75,16 +75,26 @@ namespace Internal.IL
             {
                 o = ((MethodDesc)o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
             }
-            else
-            if (o is TypeDesc)
+            else if (o is TypeDesc)
             {
                 o = ((TypeDesc)o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
             }
-            else
-            if (o is FieldDesc)
+            else if (o is FieldDesc)
             {
                 o = ((FieldDesc)o).InstantiateSignature(_typeInstantiation, _methodInstantiation);
             }
+            else if (o is MethodSignature)
+            {
+                MethodSignature template = (MethodSignature)o;
+                MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
+
+                builder.ReturnType = template.ReturnType.InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                for (int i = 0; i < template.Length; i++)
+                    builder[i] = template[i].InstantiateSignature(_typeInstantiation, _methodInstantiation);
+
+                o = builder.ToSignature();
+            }
+
 
             return o;
         }

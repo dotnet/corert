@@ -188,16 +188,14 @@ namespace Internal.JitInterface
             methodInfo.options = methodIL.GetInitLocals() ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
             methodInfo.regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
 
-            Get_CORINFO_SIG_INFO(method, out methodInfo.args);
+            Get_CORINFO_SIG_INFO(method.Signature, out methodInfo.args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), out methodInfo.locals);
 
             return true;
         }
 
-        void Get_CORINFO_SIG_INFO(MethodDesc method, out CORINFO_SIG_INFO sig)
+        void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
         {
-            var signature = method.Signature;
-
             sig.callConv = (CorInfoCallConv)0;
             if (!signature.IsStatic) sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
 
@@ -393,7 +391,7 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
-            Get_CORINFO_SIG_INFO(method, out *sig);
+            Get_CORINFO_SIG_INFO(method.Signature, out *sig);
         }
 
         [return: MarshalAs(UnmanagedType.I1)]
@@ -414,7 +412,10 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.I1)]
         bool canTailCall(IntPtr _this, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix)
-        { throw new NotImplementedException(); }
+        {
+            // TODO: tail call
+            return false;
+        }
 
         void reportTailCallDecision(IntPtr _this, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
         {
@@ -532,7 +533,11 @@ namespace Internal.JitInterface
         }
 
         void findSig(IntPtr _this, CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
-        { throw new NotImplementedException(); }
+        {
+            var methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            Get_CORINFO_SIG_INFO((MethodSignature)methodIL.GetObject((int)sigTOK), out *sig);
+        }
+
         void findCallSiteSig(IntPtr _this, CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         { throw new NotImplementedException(); }
 
@@ -1218,7 +1223,7 @@ namespace Internal.JitInterface
 
             pResult.classFlags = getClassAttribsInternal(method.OwningType);
 
-            Get_CORINFO_SIG_INFO(method, out pResult.sig);
+            Get_CORINFO_SIG_INFO(method.Signature, out pResult.sig);
 
             pResult.verMethodFlags = pResult.methodFlags;
             pResult.verSig = pResult.sig;
