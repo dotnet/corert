@@ -251,6 +251,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsStaticConstructor
+        {
+            get
+            {
+                return this == this.OwningType.GetStaticConstructor();
+            }
+        }
+
         public virtual string Name
         {
             get

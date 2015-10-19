@@ -37,7 +37,7 @@ namespace ILToNative.DependencyAnalysis
 
         public void RequireAlignment(int align)
         {
-            Alignment = Math.Min(align, Alignment);
+            Alignment = Math.Max(align, Alignment);
         }
 
         public void RequirePointerAlignment()
@@ -83,8 +83,12 @@ namespace ILToNative.DependencyAnalysis
 
         public void EmitZeroPointer()
         {
-            for (int i = 0; i < _target.PointerSize; i++)
-                EmitByte(0);
+            _data.ZeroExtend(_target.PointerSize);
+        }
+
+        public void EmitZeros(int numBytes)
+        {
+            _data.ZeroExtend(numBytes);
         }
 
         public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int instructionLength)

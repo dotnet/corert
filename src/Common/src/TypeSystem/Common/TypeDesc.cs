@@ -336,6 +336,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public virtual bool HasStaticConstructor
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public virtual IEnumerable<MethodDesc> GetMethods()
         {
             return MethodDesc.EmptyMethods;
@@ -352,6 +360,11 @@ namespace Internal.TypeSystem
                         return method;
                 }
             }
+            return null;
+        }
+
+        public virtual MethodDesc GetStaticConstructor()
+        {
             return null;
         }
 

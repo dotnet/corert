@@ -93,6 +93,11 @@ namespace ILToNative.DependencyAnalysis
                     encoder.EmitRET();
                     break;
 
+                case ReadyToRunHelperId.CCtorTrigger:
+                    encoder.EmitLEAQ(Register.RCX, factory.TypeCctorContextSymbol((MetadataType)Helper.Target));
+                    encoder.EmitJMP(factory.WellKnownEntrypoint(WellKnownEntrypoint.EnsureClassConstructorRun));
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }

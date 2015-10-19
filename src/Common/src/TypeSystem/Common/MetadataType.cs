@@ -5,11 +5,21 @@ namespace Internal.TypeSystem
 {
     public abstract partial class MetadataType : TypeDesc
     {
+        public override bool HasStaticConstructor
+        {
+            get
+            {
+                return GetStaticConstructor() != null;
+            }
+        }
+
         public abstract ClassLayoutMetadata GetClassLayout();
 
         public abstract bool IsExplicitLayout { get; }
 
         public abstract bool IsSequentialLayout { get; }
+
+        public abstract bool IsBeforeFieldInit { get; }
 
         public abstract bool IsModuleType { get; }
     }

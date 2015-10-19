@@ -695,6 +695,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsBeforeFieldInit
+        {
+            get
+            {
+                return _typeDef.IsBeforeFieldInit;
+            }
+        }
+
         public override bool IsModuleType { get { return false; } }
     }
 

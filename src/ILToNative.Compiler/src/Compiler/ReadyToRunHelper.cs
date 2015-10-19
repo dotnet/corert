@@ -20,6 +20,7 @@ namespace ILToNative
         CastClass,
         GetNonGCStaticBase,
         GetGCStaticBase,
+        CCtorTrigger,
     }
 
     public class ReadyToRunHelper : IEquatable<ReadyToRunHelper>
@@ -57,6 +58,8 @@ namespace ILToNative
                         return "__GetNonGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.GetGCStaticBase:
                         return "__GetGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
+                    case ReadyToRunHelperId.CCtorTrigger:
+                        return "__CCtorTrigger_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     default:
                         throw new NotImplementedException();
                 }
