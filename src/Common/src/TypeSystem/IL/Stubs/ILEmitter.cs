@@ -205,6 +205,11 @@ namespace Internal.IL.Stubs
             return NewToken(value, 0x70000000);
         }
 
+        public int NewToken(MethodSignature value)
+        {
+            return NewToken(value, 0x11000000);
+        }
+
         public int NewLocal(TypeDesc localType)
         {
             int index = _locals.Count;

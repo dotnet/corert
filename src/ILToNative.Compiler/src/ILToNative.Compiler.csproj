@@ -97,6 +97,9 @@
     <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ArrayMethodILEmitter.cs">
       <Link>IL\Stubs\ArrayMethodILEmitter.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\CalliIntrinsic.cs">
+      <Link>IL\Stubs\CalliIntrinsic.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
     </Compile>
