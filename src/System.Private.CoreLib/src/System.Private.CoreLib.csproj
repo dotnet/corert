@@ -14,9 +14,22 @@
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
 	
-	<!-- temporary workaround to exclude all references including mscorlib.dll -->
+	<!-- temporary workaround to exclude all references including mscorlib.dll 
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths>$(_TargetFrameworkDirectories)</_FullFrameworkReferenceAssemblyPaths>
+-->
+    <IsCoreAssembly>true</IsCoreAssembly>
+    <!--
+      Need to avoid target platform being empty because that would drag in an mscorlib design-time
+      facade into the references and break us.
+    -->
+    <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
+    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
+    <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
+    <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
+
 <!--    
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
 
@@ -490,13 +503,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <PropertyGroup>
-    <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateResponseFile</CoreCompileDependsOn>
+    <!--CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateResponseFile</CoreCompileDependsOn-->
     
     <!-- Exclude AssemblyInfoPartialFile -->
     <AssemblyInfoPartialFile></AssemblyInfoPartialFile>
   </PropertyGroup>
   
-  <Target Name="GenerateResponseFile">
+  <!--Target Name="GenerateResponseFile">
     <WriteLinesToFile File="$(IntermediateOutputPath)\compiler.rsp"
                       Lines="/runtimemetadataversion:v4.0.30319"
                       Overwrite="true" />
@@ -506,6 +519,6 @@
     <PropertyGroup>
       <CompilerResponseFile>$(IntermediateOutputPath)\compiler.rsp</CompilerResponseFile>
     </PropertyGroup>
-  </Target>
+  </Target-->
 
 </Project>
