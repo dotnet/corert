@@ -1,0 +1,132 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+//
+//  System.Private.CoreLib cannot directly interop with WinRT because the interop DLL depends on System.Private.CoreLib which causes circular dependancy. 
+//  To enable System.Private.CoreLib to call WinRT, we do have another assembly System.Private.WinRTInterop.CoreLib.dll which does the interop with WinRT 
+//  and to allow System.Private.CoreLib to call System.Private.WinRTInterop.CoreLib we do the following trick
+//      o   RmtGen tool will inject code WinRT.Initialize() to the app before the app Main method while building it 
+//      o   the injected code will just call the System.Private.CoreLib code Internal.Runtime.Augments.Initialize and pass the interface 
+//          WinRTInteropCallbacks which System.Private.CoreLib can call to interact with the WinRT
+//
+
+using System;
+using System.Collections.Generic;
+
+namespace Internal.Runtime.Augments
+{
+    public static class WinRTInterop
+    {
+        [CLSCompliant(false)]
+        public static void Initialize(WinRTInteropCallbacks winRTCallback)
+        {
+            if (s_winRTCallback != null)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_Calling);
+            }
+            s_winRTCallback = winRTCallback;
+        }
+
+        [CLSCompliant(false)]
+        public static WinRTInteropCallbacks Callbacks
+        {
+            get
+            {
+                if (s_winRTCallback == null)
+                {
+                    // We cannot use a localized exception message here because we depend on WinRT to get the resource
+                    // string and here WinRT is not initialized yet.
+                    throw new InvalidOperationException(c_EarlyCallingExceptionMessage);
+                }
+
+                return s_winRTCallback;
+            }
+        }
+
+        //
+        // This non throw version of the Callbacks property as we got some code runs early enough 
+        // which can cause a problem if we throw exception.
+        // This property shouldn't be used in other cases and instead Callbacks should be used
+        //
+        internal static WinRTInteropCallbacks UnsafeCallbacks
+        {
+            get { return s_winRTCallback; }
+        }
+
+        private static WinRTInteropCallbacks s_winRTCallback;
+        private const string c_EarlyCallingExceptionMessage = "WinRT Interop has not been initialized yet. If trying to access something in a static variable initialization or static constructor try to do this work lazily on first use instead.";
+    }
+
+    public enum CausalityRelation
+    {
+        AssignDelegate = 0,
+        Join = 1,
+        Choice = 2,
+        Cancel = 3,
+        Error = 4,
+    }
+
+    public enum CausalitySource
+    {
+        Application = 0,
+        Library = 1,
+        System = 2,
+    }
+
+    public enum CausalityTraceLevel
+    {
+        Required = 0,
+        Important = 1,
+        Verbose = 2,
+    }
+
+    public enum AsyncStatus
+    {
+        Started = 0,
+        Completed = 1,
+        Canceled = 2,
+        Error = 3,
+    }
+
+    public enum CausalitySynchronousWork
+    {
+        CompletionNotification = 0,
+        ProgressNotification = 1,
+        Execution = 2,
+    }
+
+    [CLSCompliant(false)]
+    public abstract class WinRTInteropCallbacks
+    {
+        public abstract int GetJapaneseEraCount();
+        public abstract bool GetJapaneseEraInfo(int era, out DateTimeOffset startDate, out string eraName, out string abbreviatedEraName);
+        public abstract int GetHijriDateAdjustment();
+        public abstract string GetLanguageDisplayName(string cultureName);
+        public abstract string GetRegionDisplayName(string isoCountryCode);
+        public abstract Object GetUserDefaultCulture();
+        public abstract void SetGlobalDefaultCulture(Object culture);
+        public abstract void SetThreadpoolDispatchCallback(Action callback);
+        public abstract void SubmitThreadpoolDispatchCallback();
+        public abstract void SubmitLongRunningThreadpoolWork(Action callback);
+        public abstract Delegate CreateTimerDelegate(Action callback);
+        public abstract void ReleaseTimer(Object timer, bool cancelled);
+        public abstract Object CreateTimer(Delegate timerElapsedHandler, TimeSpan delay);
+        public abstract Object GetCurrentCoreDispatcher();
+        public abstract void PostToCoreDispatcher(Object dispatcher, Action<object> action, object state);
+        public abstract Object GetResourceMap(string subtreeName);
+        public abstract string GetResourceString(Object resourceMap, string resourceName, string languageName);
+        public abstract bool IsAppxModel();
+        public abstract bool ReportUnhandledError(Exception ex);
+        public abstract void SetCOMWeakReferenceTarget(object weakReference, object target);
+        public abstract object GetCOMWeakReferenceTarget(object weakReference);
+        public abstract object ReadFileIntoStream(string name);
+        public abstract byte[] ComputeSHA1(byte[] plainText);
+        public abstract void InitTracingStatusChanged(Action<bool> tracingStatusChanged);
+        public abstract void TraceOperationCompletion(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, AsyncStatus status);
+        public abstract void TraceOperationCreation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, string operationName, ulong relatedContext);
+        public abstract void TraceOperationRelation(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalityRelation relation);
+        public abstract void TraceSynchronousWorkCompletion(CausalityTraceLevel traceLevel, CausalitySource source, CausalitySynchronousWork work);
+        public abstract void TraceSynchronousWorkStart(CausalityTraceLevel traceLevel, CausalitySource source, Guid platformId, ulong operationId, CausalitySynchronousWork work);
+        public abstract IList<T> CreateSystemCollectionsGenericList<T>();
+    }
+}

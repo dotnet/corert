@@ -1,0 +1,124 @@
+SourceId,TargetId,Comment
+*,T:<PrivateImplementationDetails>*,
+*,T:System.SR,
+*,A:System.Runtime,
+*,A:System.Diagnostics.Contracts,
+*,A:System.Diagnostics.Debug,
+A:System.Diagnostics.Contracts,G:Internal.Threading,
+A:System.Diagnostics.Debug,G:Interop,
+A:System.Diagnostics.Debug,G:Internal.CompilerServices,
+A:System.Diagnostics.Debug,T:System.Environment,Needed for NewLine
+A:System.Globalization,G:Interop,
+A:System.Globalization,G:Internal.Threading,
+A:System.Globalization,G:Internal.CompilerServices,
+A:System.Globalization,G:Internal.Collections,
+A:System.Globalization,A:System.Runtime.Extensions,
+A:System.Runtime,G:Interop,
+A:System.Runtime,G:Internal.Collections,
+A:System.Runtime,G:Internal.CompilerServices,
+A:System.Runtime,G:Internal.Threading,
+A:System.Runtime,T:System.Globalization.FormatProvider,Needed for basic formatting and parsing
+A:System.Runtime,T:System.Math,"Various methods like min, max, abs, pow are used."
+A:System.Runtime,T:System.Environment,"NewLine, FailFast and CurrentManagedThreadId are used."
+A:System.Runtime,T:System.BitConverter,Various conversions are used
+A:System.Runtime.Extensions,G:Interop,
+A:System.Runtime.Extensions,G:Internal.CompilerServices,
+A:System.Runtime.Extensions,G:Internal.Collections,
+A:System.Runtime.Extensions,G:Internal.Threading,
+A:System.Runtime.Extensions,A:System.Text.Encoding,
+A:System.Runtime.Extensions,T:System.Globalization.FormatProvider,Needed for basic formatting and parsing
+A:System.Text.Encoding,G:Internal.Threading,
+A:System.Text.Encoding,G:Internal.CompilerServices,
+A:System.Text.Encoding,G:Internal.Collections,
+A:System.Text.Encoding,T:System.Globalization.FormatProvider,Needed for basic formatting and parsing
+G:Internal.Collections.Concurrent,G:Internal.Threading,
+G:Internal.InteropServices,G:Interop,
+G:Internal.InteropServices,G:Internal.Threading,
+G:Internal.RuntimeReflection,G:Internal.Threading,
+G:Internal.RuntimeReflection,G:Internal.CompilerServices,
+G:Internal.RuntimeReflection,G:Internal.Collections.Concurrent,
+G:Internal.RuntimeReflection,G:Internal.Runtime.Augments,
+G:Internal.Runtime.Augments,G:Internal.RuntimeReflection,
+G:Internal.RuntimeServices,G:Interop,
+G:Internal.Threading,A:System.Runtime.Extensions,
+G:Internal.Threading,G:Interop,
+G:Internal.Threading,G:Internal.InteropServices,
+G:Internal.Threading,G:Internal.CompilerServices,
+G:Interop,G:Internal.InteropServices,
+G:Interop,A:System.Runtime.Extensions,
+G:Interop,G:Internal.Collections,
+G:Interop,T:System.Globalization.FormatProvider,
+,,
+T:System.String,G:Internal.RuntimeServices,Needed to import/export the string constructors
+T:Internal.Runtime.Augments.RuntimeAugments,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:Internal.RuntimeReflection.RuntimeTypeUnifier,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Array,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Buffer,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Delegate,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.EETypePtr,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Enum,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Environment,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Environment,T:System.RuntimeExceptionHelpers,Needs access to Runtime
+T:System.GC,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.MulticastDelegate,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Object,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Runtime.CompilerServices.DependentHandle,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Runtime.CompilerServices.RuntimeHelpers,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Runtime.GCSettings,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Runtime.InteropServices.GCHandle,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.RuntimeTypeHandle,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Threading.Lock,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.Threading.SpinWait,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.WeakReference,T:System.Runtime.RuntimeImports,Needs access to Runtime
+T:System.WeakReference`1,T:System.Runtime.RuntimeImports,Needs access to Runtime
+,,
+T:System.Array,G:Internal.RuntimeReflection,Needs access to some reflection APs
+T:System.Object,G:Internal.RuntimeReflection,Needs access to some reflection APIs
+T:System.Enum,G:Internal.RuntimeReflection,Needs access to some reflection APIs
+T:System.Type,G:Internal.RuntimeReflection,Needs access to some reflection APIs
+T:System.Activator,G:Internal.RuntimeReflection,Needs access to some reflection APIs
+,,
+T:System.Array,G:Internal.Runtime.Augments,Needs access to some reflection APs
+T:System.Enum,G:Internal.Runtime.Augments,Needs access to some reflection APIs
+T:System.Activator,G:Internal.Runtime.Augments,Needs access to some reflection APIs
+T:System.Type,G:Internal.Runtime.Augments,Needs access to some reflection APIs
+,,
+T:System.Char,T:System.Globalization.UnicodeCategory,Needed for Unicode charactorization
+,,
+T:System.Globalization.CalendarData,T:System.Runtime.InteropServices.GCHandle,Needs access to GCHandles
+T:System.Globalization.CultureData,T:System.Runtime.InteropServices.GCHandle,Needs access to GCHandles
+T:System.Runtime.RuntimeImports,T:System.Runtime.InteropServices.GCHandleType,Needs access to GCHandles
+T:System.WeakReference,T:System.Runtime.InteropServices.GCHandle,Needs access to GCHandles
+T:System.WeakReference,T:System.Runtime.InteropServices.GCHandleType,Needs access to GCHandles
+T:System.WeakReference`1,T:System.Runtime.InteropServices.GCHandle,Needs access to GCHandles
+T:System.WeakReference`1,T:System.Runtime.InteropServices.GCHandleType,Needs access to GCHandles
+,,
+T:Interop.Calendar,A:System.Globalization,Globalization specific interop
+T:Interop.RegionInfo,A:System.Globalization,Globalization specific interop
+,,
+T:System.Text.Encoding,T:System.Globalization.EncodingTable,Needs access to some of the encoding tables
+T:System.Text.Encoding,T:System.Globalization.InternalCodePageDataItem,Needs access to some of the encoding tables
+T:System.Guid,T:System.ParseNumbers,Look at moving ParseNumbers under FormatProvider
+T:System.Convert,T:System.ParseNumbers,Look at moving ParseNumbers under FormatProvider
+T:System.Decimal,T:System.MidpointRounding,Used by internal round method on decimal
+T:System.Type,T:System.Reflection.Missing,Uses Missing.Value as a static field.
+T:System.UriHelper,A:System.Text.Encoding,Used by Uri in Sys.Runtime and uses encoding pretty heavily
+T:System.Threading.WaitHandle,T:System.Runtime.InteropServices.SafeHandle,Needs access to SafeHandle
+,,
+T:System.Globalization.CultureInfo,G:DesktopInterop,Grandfathered access to the desktop SDK
+T:System.Threading.LowLevelThread,G:DesktopInterop,Grandfathered access to the desktop SDK
+T:System.Threading.SpinWait,G:DesktopInterop,Grandfathered access to the desktop SDK
+,,
+T:System.Globalization.CultureData,G:WinRT,WinRT interop
+T:System.Globalization.CultureInfo,G:WinRT,WinRT interop
+T:System.Globalization.HijriCalendar,G:WinRT,WinRT interop
+T:System.Globalization.JapaneseCalendar,G:WinRT,WinRT interop
+T:System.IO.Path,G:WinRT,WinRT interop
+,,
+T:System.IO.LongPathHelper,G:Interop,Regular MCG interop dependancy
+T:System.IO.PathHelper,T:System.IO.LongPathHelper,Used to get long path from short path
+,,
+T:System.Runtime.InteropServices.InteropExtensions,T:System.Runtime.RuntimeImports,Needed to provide the marshal class details about types
+T:System.Runtime.InteropServices.InteropExtensions,T:Midori.Runtime.Magic,Needed to provide runtime magic for interop
+T:Internal.Numerics.BigIntegerFormatProvider,T:System.Globalization.FormatProvider,Currently implemented inside System.Private.CoreLib so needs access to the basic globalization
+T:Internal.Numerics.BigIntegerFormatProvider,T:System.Globalization.NumberFormatInfo,Currently implemented inside System.Private.CoreLib so needs access to the basic globalization
