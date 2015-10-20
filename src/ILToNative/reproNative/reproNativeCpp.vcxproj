@@ -62,6 +62,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);..\..\..\bin\Product\Windows_NT.x64.Debug\lib\Runtime.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -82,25 +83,13 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);..\..\..\bin\Product\Windows_NT.x64.Release\lib\Runtime.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Native\gc\gccommon.cpp" />
-    <ClCompile Include="..\..\Native\gc\gceesvr.cpp" />
-    <ClCompile Include="..\..\Native\gc\gceewks.cpp" />
-    <ClCompile Include="..\..\Native\gc\gcscan.cpp" />
-    <ClCompile Include="..\..\Native\gc\gcsvr.cpp" />
-    <ClCompile Include="..\..\Native\gc\gcwks.cpp" />
-    <ClCompile Include="..\..\Native\gc\handletable.cpp" />
-    <ClCompile Include="..\..\Native\gc\handletablecache.cpp" />
-    <ClCompile Include="..\..\Native\gc\handletablecore.cpp" />
-    <ClCompile Include="..\..\Native\gc\handletablescan.cpp" />
-    <ClCompile Include="..\..\Native\gc\objecthandle.cpp" />
-    <ClCompile Include="..\..\Native\gc\env\gcenv.windows.cpp" />
-    <ClCompile Include="..\..\Native\gc\sample\gcenv.cpp" />
     <ClCompile Include="common.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>

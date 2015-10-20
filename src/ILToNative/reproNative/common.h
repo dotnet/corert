@@ -135,10 +135,6 @@ struct RawEEType
     uint32_t    m_uHashCode;
 };
 
-#if !USE_MRT
-#define EEType MethodTable
-#endif
-
 struct ReversePInvokeFrame
 {
     void*   m_savedPInvokeTransitionFrame;
