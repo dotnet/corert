@@ -705,16 +705,24 @@ namespace Internal.IL
                 if (opcode == ILOpcode.newobj)
                     retType = owningType;
 
-                if (opcode == ILOpcode.newobj && owningType.IsString)
+                if (opcode == ILOpcode.newobj)
                 {
-                    // String constructors actually look like regular method calls
-                    MethodSignatureBuilder builder = new MethodSignatureBuilder(method.Signature);
-                    builder.Flags = MethodSignatureFlags.Static;
-                    builder.ReturnType = owningType;
-                    method = owningType.GetMethod("Ctor", builder.ToSignature());
-                    if (method == null)
-                        throw new NotImplementedException();
-                    opcode = ILOpcode.call;
+                    if (owningType.IsString)
+                    {
+                        // String constructors actually look like regular method calls
+                        MethodSignatureBuilder builder = new MethodSignatureBuilder(method.Signature);
+                        builder.Flags = MethodSignatureFlags.Static;
+                        builder.ReturnType = owningType;
+                        method = owningType.GetMethod("Ctor", builder.ToSignature());
+                        if (method == null)
+                            throw new NotImplementedException();
+                        opcode = ILOpcode.call;
+                    }
+                    else if (owningType.IsArray)
+                    {
+                        // Array constructors
+                        !!!
+                    }
                 }
                 else
                 if (owningType.IsDelegate)
