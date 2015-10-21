@@ -34,7 +34,7 @@ namespace ILToNative.DependencyAnalysis
                     {
                         // TODO make this more structured, and flexible to handle other instructions
                         nextRelocOffset -= 3;
-                        Debug.Assert((bytes[nextRelocOffset] == 0x48) || (bytes[nextRelocOffset] == 0x44)); // REX
+                        Debug.Assert((bytes[nextRelocOffset] == 0x48) || (bytes[nextRelocOffset] == 0x44) || (bytes[nextRelocOffset] == 0x4c)); // REX
                         Debug.Assert(bytes[nextRelocOffset + 1] == 0x8D); // lea opcode
                         byte regTargetByte = bytes[nextRelocOffset + 2];
                         Debug.Assert((regTargetByte & 0x07) == 5);

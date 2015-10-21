@@ -98,6 +98,28 @@ namespace ILToNative.DependencyAnalysis
                     encoder.EmitJMP(factory.WellKnownEntrypoint(WellKnownEntrypoint.EnsureClassConstructorRun));
                     break;
 
+                case ReadyToRunHelperId.DelegateCtor:
+                    {
+                        DelegateInfo target = (DelegateInfo)Helper.Target;
+
+                        if (target.ShuffleThunk != null)
+                        {
+                            // TBD: mscorlib doesn't have ctor for static delegate, but we can make use of the
+                            // ctor for non-static delegate, by passing the delegate ref as the first argument
+                            // and the shuffle thunk as the second argument.
+                            Register rcxDirect = (Register)((int)Register.RCX + (int)Register.RegDirect);
+                            AddrMode loadFromRcxDirect = new AddrMode(rcxDirect, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(Register.RDX, ref loadFromRcxDirect);
+                            encoder.EmitLEAQ(Register.R8, factory.MethodEntrypoint(target.ShuffleThunk));
+                        }
+                        else
+                        {
+                            encoder.EmitLEAQ(Register.R8, factory.MethodEntrypoint(target.Target));
+                        }
+                        encoder.EmitJMP(factory.MethodEntrypoint(target.Ctor));
+                    }
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }
