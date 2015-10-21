@@ -94,6 +94,12 @@
     <Compile Include="$(CommonPath)\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\MethodILDebugView.cs">
+      <Link>IL\MethodILDebugView.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILDisassember.cs">
+      <Link>IL\ILDisassember.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>
     </Compile>
