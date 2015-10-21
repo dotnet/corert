@@ -161,42 +161,6 @@ namespace ILToNative
             return registration;
         }
 
-        enum SpecialMethodKind
-        {
-            Unknown,
-            PInvoke,
-            RuntimeImport,
-            Intrinsic
-        };
-
-        SpecialMethodKind DetectSpecialMethodKind(MethodDesc method)
-        {
-            if (method is EcmaMethod)
-            {
-                if (((EcmaMethod)method).IsPInvoke())
-                {
-                    return SpecialMethodKind.PInvoke;
-                }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.RuntimeImportAttribute"))
-                {
-                    Log.WriteLine("RuntimeImport: " + method.ToString());
-                    return SpecialMethodKind.RuntimeImport;
-                }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.CompilerServices.IntrinsicAttribute"))
-                {
-                    Log.WriteLine("Intrinsic: " + method.ToString());
-                    return SpecialMethodKind.Intrinsic;
-                }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.InteropServices.NativeCallableAttribute"))
-                {
-                    Log.WriteLine("NativeCallable: " + method.ToString());
-                    // TODO: add reverse pinvoke callout
-                    throw new NotImplementedException();
-                }
-            }
-            return SpecialMethodKind.Unknown;
-        }
-
         ILProvider _ilProvider = new ILProvider();
 
         public MethodIL GetMethodIL(MethodDesc method)
@@ -207,9 +171,10 @@ namespace ILToNative
         void CompileMethod(MethodDesc method)
         {
             string methodName = method.ToString();
-            Log.WriteLine("Compiling " + methodName);
+            Log.Write("Compiling " + methodName);
 
-            SpecialMethodKind kind = DetectSpecialMethodKind(method);
+            SpecialMethodKind kind = method.DetectSpecialMethodKind();
+            Log.WriteLine(", kind: " + kind.ToString());
 
             if (kind == SpecialMethodKind.Unknown || kind == SpecialMethodKind.Intrinsic)
             {
@@ -381,9 +346,10 @@ namespace ILToNative
             {
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
                 string methodName = method.ToString();
-                Log.WriteLine("Compiling " + methodName);
+                Log.Write("Compiling " + methodName);
 
-                SpecialMethodKind kind = DetectSpecialMethodKind(method);
+                SpecialMethodKind kind = method.DetectSpecialMethodKind();
+                Log.WriteLine(", kind: " + kind.ToString());
 
                 if (kind == SpecialMethodKind.Unknown || kind == SpecialMethodKind.Intrinsic)
                 {

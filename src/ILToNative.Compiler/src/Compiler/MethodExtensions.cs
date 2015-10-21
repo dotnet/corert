@@ -8,6 +8,14 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILToNative
 {
+    public enum SpecialMethodKind
+    {
+        Unknown,
+        PInvoke,
+        RuntimeImport,
+        Intrinsic
+    };
+
     static class MethodExtensions
     {
         const string RuntimeImportAttributeName = "System.Runtime.RuntimeImportAttribute";
@@ -52,5 +60,29 @@ namespace ILToNative
             return null;
         }
 
+        public static SpecialMethodKind DetectSpecialMethodKind(this MethodDesc method)
+        {
+            if (method is EcmaMethod)
+            {
+                if (((EcmaMethod)method).IsPInvoke())
+                {
+                    return SpecialMethodKind.PInvoke;
+                }
+                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.RuntimeImportAttribute"))
+                {
+                    return SpecialMethodKind.RuntimeImport;
+                }
+                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.CompilerServices.IntrinsicAttribute"))
+                {
+                    return SpecialMethodKind.Intrinsic;
+                }
+                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.InteropServices.NativeCallableAttribute"))
+                {
+                    // TODO: add reverse pinvoke callout
+                    throw new NotImplementedException();
+                }
+            }
+            return SpecialMethodKind.Unknown;
+        }
     }
 }

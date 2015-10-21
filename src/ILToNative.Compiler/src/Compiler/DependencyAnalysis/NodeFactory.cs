@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using ILToNative.DependencyAnalysisFramework;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILToNative.DependencyAnalysis
 {
@@ -99,6 +100,11 @@ namespace ILToNative.DependencyAnalysis
             _methodCode = new NodeCache<MethodDesc, MethodCodeNode>((MethodDesc method) =>
             {
                 return new MethodCodeNode(method);
+            });
+
+            _jumpStubs = new NodeCache<ISymbolNode, JumpStubNode>((ISymbolNode node) =>
+            {
+                return new JumpStubNode(node);
             });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
@@ -207,9 +213,14 @@ namespace ILToNative.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, MethodCodeNode> _methodCode;
+        private NodeCache<ISymbolNode, JumpStubNode> _jumpStubs;
 
         public ISymbolNode MethodEntrypoint(MethodDesc method)
         {
+            if (method.DetectSpecialMethodKind() == SpecialMethodKind.PInvoke)
+            {
+                return _jumpStubs.GetOrAdd(ExternSymbol(((EcmaMethod)method).GetPInvokeImportName()));
+            }
             return _methodCode.GetOrAdd(method);
         }
 
