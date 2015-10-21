@@ -53,7 +53,7 @@ namespace System.Runtime
             {
                 entry = CacheMiss(pEETypePtr, pEETypePtr, SignatureKind.DefaultConstructor);
             }
-            RawCalliHelper.HasThisCall(entry.Result, ptrToData);
+            RawCalliHelper.Call(entry.Result, ptrToData);
         }
 
         //
@@ -98,7 +98,7 @@ namespace System.Runtime
             {
                 entry = CacheMiss(context, signature);
             }
-            RawCalliHelper.HasThisCall(entry.Result, arg);
+            RawCalliHelper.Call(entry.Result, arg);
         }
 
         [RuntimeExport("GenericLookupAndAllocObject")]
@@ -420,7 +420,7 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static void HasThisCall(System.IntPtr pfn, Object arg)
+        public static void Call(System.IntPtr pfn, Object arg)
         {
         }
 
