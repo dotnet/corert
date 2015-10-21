@@ -95,9 +95,9 @@ namespace ILToNative.DependencyAnalysis
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
             objData.Alignment = 16;
             objData.DefinedSymbols.Add(this);
-            if (_type.IsArray && ((ArrayType)_type).Rank == 1)
+            if (_type.IsArray)
             {
-                objData.EmitShort((short)_type.GetElementSize()); // m_ComponentSize
+                objData.EmitShort((short)((ArrayType)_type).ElementType.GetElementSize()); // m_ComponentSize
                 objData.EmitShort(0x4);                           // m_flags: IsArray(0x4)
             }
             else if (_type.IsString)

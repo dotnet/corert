@@ -288,7 +288,9 @@ namespace Internal.JitInterface
         CorInfoType asCorInfoType(TypeDesc type, out CORINFO_CLASS_STRUCT_* structType)
         {
             var corInfoType = asCorInfoType(type);
-            structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) || (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS)) ? ObjectToHandle(type) : null;
+            structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) ||
+                (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ||
+                (corInfoType == CorInfoType.CORINFO_TYPE_BYREF)) ? ObjectToHandle(type) : null;
             return corInfoType;
         }
 
@@ -565,7 +567,10 @@ namespace Internal.JitInterface
         }
 
         void findCallSiteSig(IntPtr _this, CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
-        { throw new NotImplementedException(); }
+        {
+            // TODO: dynamic scopes
+            // TODO: verification
+        }
 
         CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
@@ -605,7 +610,7 @@ namespace Internal.JitInterface
         byte* getClassName(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
-            return (byte*)GetPin(StringToUTF8(type.Name));
+            return (byte*)GetPin(StringToUTF8(type.ToString()));
         }
 
         int appendClassName(IntPtr _this, short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fNamespace, [MarshalAs(UnmanagedType.Bool)]bool fFullInst, [MarshalAs(UnmanagedType.Bool)]bool fAssembly)
@@ -636,6 +641,11 @@ namespace Internal.JitInterface
             //       4. Finalizer support: CORINFO_FLG_HAS_FINALIZER
 
             CorInfoFlag result = (CorInfoFlag)0;
+
+            // The array flag is used to identify the faked-up methods on
+            // array types, i.e. .ctor, Get, Set and Address
+            if (type.IsArray)
+                result |= CorInfoFlag.CORINFO_FLG_ARRAY;
 
             if (type.IsInterface)
                 result |= CorInfoFlag.CORINFO_FLG_INTERFACE;
@@ -870,12 +880,14 @@ namespace Internal.JitInterface
             Debug.Assert(fd == null || fd.IsStatic);
 
             MethodDesc md = HandleToObject(method);
-            MetadataType typeToInit = (MetadataType)(fd != null ? fd.OwningType : typeFromContext(context));
+            TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (!typeToInit.HasStaticConstructor)
+            if (!type.HasStaticConstructor)
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
+
+            MetadataType typeToInit = (MetadataType)type;
 
             if (typeToInit.IsModuleType)
             {
@@ -946,8 +958,23 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         CORINFO_CLASS_STRUCT_* getParentType(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException(); }
+
         CorInfoType getChildType(IntPtr _this, CORINFO_CLASS_STRUCT_* clsHnd, ref CORINFO_CLASS_STRUCT_* clsRet)
-        { throw new NotImplementedException(); }
+        {
+            CorInfoType result = CorInfoType.CORINFO_TYPE_UNDEF;
+
+            var td = HandleToObject(clsHnd);
+            if (td.IsArray || td.IsByRef)
+            {
+                TypeDesc returnType = ((ParameterizedType)td).ParameterType;
+                result = asCorInfoType(returnType, out clsRet);
+            }
+            else
+                clsRet = null;
+
+            return result;
+        }
+
         [return: MarshalAs(UnmanagedType.Bool)]
         bool satisfiesClassConstraints(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException(); }
@@ -1260,6 +1287,8 @@ namespace Internal.JitInterface
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.Throw));
                 case CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST:
                     return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.FailFast));
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
+                    return (void*)ObjectToHandle(_compilation.GetJitHelper(JitHelperId.NewMDArray));
                 default:
                     throw new NotImplementedException();
             }
@@ -1285,8 +1314,72 @@ namespace Internal.JitInterface
         { throw new NotImplementedException(); }
         CORINFO_FIELD_STRUCT_* embedFieldHandle(IntPtr _this, CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException(); }
+
         void embedGenericHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.Bool)]bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
-        { throw new NotImplementedException(); }
+        {
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
+#endif
+
+            MethodDesc templateMethod;
+
+            if (!fEmbedParent && pResolvedToken.hMethod != null)
+            {
+                throw new NotImplementedException();
+            }
+            else if (!fEmbedParent && pResolvedToken.hField != null)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
+
+                if (fEmbedParent && pResolvedToken.hMethod != null)
+                {
+                    MethodDesc declaringMD = HandleToObject(pResolvedToken.hMethod);
+                    if (declaringMD.OwningType.GetTypeDefinition() != td.GetTypeDefinition())
+                    {
+                        //
+                        // The method type may point to a sub-class of the actual class that declares the method.
+                        // It is important to embed the declaring type in this case.
+                        //
+
+                        templateMethod = declaringMD;
+
+                        pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(declaringMD.OwningType);
+                    }
+                }
+
+                // IsSharedByGenericInstantiations would not work here. The runtime lookup is required
+                // even for standalone generic variables that show up as __Cannon here.
+                //fRuntimeLookup = th.IsCanonicalSubtype();
+            }
+
+            Debug.Assert(pResult.compileTimeHandle != null);
+
+            // TODO: shared generics
+            //if (...)
+            //{
+            //    ...
+            //}
+            // else
+            {
+                // If the target is not shared then we've already got our result and
+                // can simply do a static look up
+                pResult.lookup.lookupKind.needsRuntimeLookup = false;
+
+                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)pResult.compileTimeHandle;
+                pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            }
+        }
+
         void getLocationOfThisType(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context)
         {
             result->needsRuntimeLookup = false;

@@ -429,3 +429,53 @@ extern "C" void System_Console_Interop_mincore__GetFileType()
     throw 42;
 }
 #endif
+
+extern "C" Object * __allocate_mdarray(MethodTable * pMT, int32_t rank, ...)
+{
+    va_list argp;
+    va_start(argp, rank);
+
+    size_t elements = va_arg(argp, int);
+
+    for (int32_t i = 1; i < rank; i++)
+    {
+        // TODO: Overflow checks
+        elements *= va_arg(argp, int);
+    }
+
+    alloc_context * acontext = GetThread()->GetAllocContext();
+    Object * pObject;
+
+    // TODO: Overflow checks
+    size_t size = 2 * sizeof(intptr_t) + 2 * rank * sizeof(int32_t) + (elements * pMT->RawGetComponentSize());
+    // Align up
+    size = (size + (sizeof(intptr_t) - 1)) & ~(sizeof(intptr_t) - 1);
+
+    BYTE* result = acontext->alloc_ptr;
+    BYTE* advance = result + size;
+    if (advance <= acontext->alloc_limit)
+    {
+        acontext->alloc_ptr = advance;
+        pObject = (Object *)result;
+    }
+    else
+    {
+        pObject = GCHeap::GetGCHeap()->Alloc(acontext, size, 0);
+        if (pObject == NULL)
+            return NULL; // TODO: Throw OOM
+    }
+
+    pObject->SetMethodTable(pMT);
+
+    *(int32_t *)(((intptr_t *)pObject) + 1) = (int32_t)elements;
+    int32_t* pSizes = (int32_t*)(((intptr_t *)pObject) + 2);
+
+    va_start(argp, rank);
+    for (int32_t i = 0; i < rank; i++)
+    {
+        *(pSizes + i) = va_arg(argp, int);
+    }
+
+    return pObject;
+}
+

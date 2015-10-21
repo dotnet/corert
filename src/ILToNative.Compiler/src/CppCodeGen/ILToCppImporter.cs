@@ -672,6 +672,7 @@ namespace Internal.IL
             bool callViaSlot = false;
             bool delegateInvoke = false;
             bool staticShuffleThunk = false;
+            bool mdArrayCreate = false;
 
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
 
@@ -705,16 +706,23 @@ namespace Internal.IL
                 if (opcode == ILOpcode.newobj)
                     retType = owningType;
 
-                if (opcode == ILOpcode.newobj && owningType.IsString)
+                if (opcode == ILOpcode.newobj)
                 {
-                    // String constructors actually look like regular method calls
-                    MethodSignatureBuilder builder = new MethodSignatureBuilder(method.Signature);
-                    builder.Flags = MethodSignatureFlags.Static;
-                    builder.ReturnType = owningType;
-                    method = owningType.GetMethod("Ctor", builder.ToSignature());
-                    if (method == null)
-                        throw new NotImplementedException();
-                    opcode = ILOpcode.call;
+                    if (owningType.IsString)
+                    {
+                        // String constructors actually look like regular method calls
+                        MethodSignatureBuilder builder = new MethodSignatureBuilder(method.Signature);
+                        builder.Flags = MethodSignatureFlags.Static;
+                        builder.ReturnType = owningType;
+                        method = owningType.GetMethod("Ctor", builder.ToSignature());
+                        if (method == null)
+                            throw new NotImplementedException();
+                        opcode = ILOpcode.call;
+                    }
+                    else if (owningType.IsArray)
+                    {
+                        mdArrayCreate = true;
+                    }
                 }
                 else
                 if (owningType.IsDelegate)
@@ -756,7 +764,7 @@ namespace Internal.IL
                 }
             }
 
-            if (!callViaSlot && !delegateInvoke)
+            if (!callViaSlot && !delegateInvoke && !mdArrayCreate)
                 _compilation.AddMethod(method);
 
             if (opcode == ILOpcode.newobj)
@@ -793,7 +801,7 @@ namespace Internal.IL
                 }
             }
 
-            if (opcode == ILOpcode.newobj)
+            if (opcode == ILOpcode.newobj && !mdArrayCreate)
             {
                 if (!retType.IsValueType)
                 {
@@ -829,6 +837,11 @@ namespace Internal.IL
                             _stack[_stackTop - (methodSignature.Length + 1)].Value.Name + ")->m_firstParameter";
                 }
             }
+            else if (mdArrayCreate)
+            {
+                _compilation.AddType(method.OwningType);
+                Append("__allocate_mdarray");
+            }
             else
             {
                 Append(_writer.GetCppTypeName(method.OwningType));
@@ -842,7 +855,15 @@ namespace Internal.IL
             bool hasThis = !methodSignature.IsStatic;
             if (hasThis)
                 count++;
-            if (opcode == ILOpcode.newobj)
+            if (mdArrayCreate)
+            {
+                Append(_writer.GetCppTypeName(method.OwningType));
+                Append("::__getMethodTable(), ");
+                Append(((ArrayType)method.OwningType).Rank.ToString());
+                Append(", ");
+                count--;
+            }
+            else if (opcode == ILOpcode.newobj)
             {
                 Append("(");
                 if (retType.IsValueType)

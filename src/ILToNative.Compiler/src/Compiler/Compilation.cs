@@ -395,6 +395,10 @@ namespace ILToNative
                             {
                                 targetNode = _nodeFactory.StringIndirection((string)target);
                             }
+                            else if (target is TypeDesc)
+                            {
+                                targetNode = _nodeFactory.NecessaryTypeSymbol((TypeDesc)target);
+                            }
                             else
                             {
                                 // TODO:

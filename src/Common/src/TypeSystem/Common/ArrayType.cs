@@ -278,5 +278,10 @@ namespace Internal.TypeSystem
             else
                 return this;
         }
+
+        public override string ToString()
+        {
+            return _owningType.ToString() + "." + Name;
+        }
     }
 }
