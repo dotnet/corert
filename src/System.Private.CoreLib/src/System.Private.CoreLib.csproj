@@ -13,23 +13,27 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
-	
-	<!-- temporary workaround to exclude all references including mscorlib.dll 
+  </PropertyGroup>
+
+  <PropertyGroup>
+<!-- 
+	temporary workaround to exclude all references including mscorlib.dll 
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths>$(_TargetFrameworkDirectories)</_FullFrameworkReferenceAssemblyPaths>
+    Condition="'$(IsProjectNLibrary)' != 'true'  
 -->
-    <IsCoreAssembly>true</IsCoreAssembly>
+    <IsCoreAssembly>true</IsCoreAssembly> 
     <!--
       Need to avoid target platform being empty because that would drag in an mscorlib design-time
       facade into the references and break us.
     -->
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
     <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
     <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
-
+	
 <!--    
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
 
@@ -38,8 +42,8 @@
     <ExcludeFrameworkTargetingImport>true</ExcludeFrameworkTargetingImport>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>  
 -->
-
   </PropertyGroup>
+  
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -499,26 +503,11 @@
     </EmbeddedResource>
   </ItemGroup>
   
-  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <PropertyGroup>
-    <!--CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateResponseFile</CoreCompileDependsOn-->
-    
     <!-- Exclude AssemblyInfoPartialFile -->
     <AssemblyInfoPartialFile></AssemblyInfoPartialFile>
   </PropertyGroup>
-  
-  <!--Target Name="GenerateResponseFile">
-    <WriteLinesToFile File="$(IntermediateOutputPath)\compiler.rsp"
-                      Lines="/runtimemetadataversion:v4.0.30319"
-                      Overwrite="true" />
-    <ItemGroup>
-      <Clean Include="$(IntermediateOutputPath)\compiler.rsp" />
-    </ItemGroup>
-    <PropertyGroup>
-      <CompilerResponseFile>$(IntermediateOutputPath)\compiler.rsp</CompilerResponseFile>
-    </PropertyGroup>
-  </Target-->
 
 </Project>
