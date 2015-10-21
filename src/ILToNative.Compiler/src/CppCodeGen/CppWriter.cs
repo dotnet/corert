@@ -764,6 +764,16 @@ namespace ILToNative.CppCodeGen
                 sb.Append("), 4 /* MTFlag_IsArray */, 3 * sizeof(void*), "); // flags, baseSize
             }
             else
+            if (type.IsArray)
+            {
+                Debug.Assert(((ArrayType)type).Rank > 1);
+                sb.Append("{ sizeof(");
+                sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // component size
+                sb.Append("), 4 /* MTFlag_IsArray */, 3 * sizeof(void*) + "); // flags, baseSize
+                sb.Append(((ArrayType)type).Rank.ToString());
+                sb.Append("* sizeof(int32_t) * 2, ");
+            }
+            else
             {
                 // sizeof(void*) == size of object header
                 sb.Append("{ 0, 0, AlignBaseSize(sizeof(void*)+sizeof("); // component size, flags, baseSize

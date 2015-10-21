@@ -4,9 +4,8 @@
 using System;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
-using Internal.IL;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
@@ -14,8 +13,9 @@ namespace Internal.IL.Stubs
     {
         ArrayMethod _method;
         TypeDesc _elementType;
-        TypeDesc _backingType;
         int _rank;
+
+        int _helperFieldToken;
 
         public ArrayMethodILEmitter(ArrayMethod method)
         {
@@ -24,12 +24,19 @@ namespace Internal.IL.Stubs
             ArrayType arrayType = (ArrayType)method.OwningType;
             _rank = arrayType.Rank;
             _elementType = arrayType.ElementType;
+        }
 
-            var systemModule = ((EcmaType)method.Context.GetWellKnownType(WellKnownType.Object)).Module;
+        void EmitLoadInteriorAddress(ILCodeStream codeStream, int offset)
+        {
+            // This helper field is needed to generate proper GC tracking. There is no direct way
+            // to create interior pointer. 
+            if (_helperFieldToken == 0)
+                _helperFieldToken = NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetField("m_pEEType"));
 
-            _backingType = systemModule.GetType("System", "MDArrayRank" + _rank.ToString() + "`1").MakeInstantiatedType(
-                    new Instantiation(new TypeDesc[] { _elementType })
-                );
+            codeStream.EmitLdArg(0); // this
+            codeStream.Emit(ILOpcode.ldflda, _helperFieldToken);
+            codeStream.EmitLdc(offset);
+            codeStream.Emit(ILOpcode.add);
         }
 
         public MethodIL EmitIL()
@@ -37,128 +44,117 @@ namespace Internal.IL.Stubs
             switch (_method.Kind)
             {
                 case ArrayMethodKind.Get:
-                    EmitILForGet();
-                    break;
                 case ArrayMethodKind.Set:
-                    EmitILForSet();
-                    break;
                 case ArrayMethodKind.Address:
-                    EmitILForAddress();
+                    EmitILForAccessor();
                     break;
+
+                case ArrayMethodKind.Ctor:
+                    // .ctor is implemented as a JIT helper and the JIT shouldn't be asking for the IL.
                 default:
-                    EmitILForCtor();
-                    break;
+                    // Asking for anything else is invalid.
+                    throw new InvalidOperationException();
             }
 
             return Link();
         }
 
-        void EmitComputeIndex(ILCodeStream codeStream)
+        void EmitILForAccessor()
         {
-            // Compute index into the backing array
-            for (int i = 1; i < _rank; i++)
+            Debug.Assert(_rank > 1);
+
+            var codeStream = NewCodeStream();
+
+            var int32Type = _method.Context.GetWellKnownType(WellKnownType.Int32);
+
+            var totalLocalNum = NewLocal(int32Type);
+            var lengthLocalNum = NewLocal(int32Type);
+
+            int pointerSize = _method.Context.Target.PointerSize;
+
+            // TODO: type check
+
+            for (int i = 0; i < _rank; i++)
             {
-                FieldDesc upperBoundField = _backingType.GetField("m_upperBound" + _rank);
-                codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldfld, NewToken(upperBoundField));
-                for (int j = _rank - 1; j > i; j--)
+                // The first two fields are EEType pointer and total length. Lengths for each dimension follows.
+                int lengthOffset = (2 * pointerSize + i * int32Type.GetElementSize());
+
+                EmitLoadInteriorAddress(codeStream, lengthOffset);
+                codeStream.Emit(ILOpcode.ldind_i4);
+                codeStream.EmitStLoc(lengthLocalNum);
+
+                codeStream.EmitLdArg(i + 1);
+
+#if false
+                // TODO: generate IL to check bounds
+                // Compare with length
+                codeStream.Emit(ILOpcode.dup);
+                codeStream.EmitLdLoc(lengthLocalNum);
+                codeStream.Emit(ILOpcode.bge_un, rangeExceptionLabel1);
+#endif
+
+                // Add to the running total if we have one already
+                if (i > 0)
                 {
-                    upperBoundField = _backingType.GetField("m_upperBound" + j);
-                    codeStream.EmitLdArg(0);
-                    codeStream.Emit(ILOpcode.ldfld, NewToken(upperBoundField));
+                    codeStream.EmitLdLoc(totalLocalNum);
+                    codeStream.EmitLdLoc(lengthLocalNum);
                     codeStream.Emit(ILOpcode.mul);
-                }
-
-                codeStream.EmitLdArg(i);
-                codeStream.Emit(ILOpcode.mul);
-
-                if (i != 1)
-                {
                     codeStream.Emit(ILOpcode.add);
                 }
+                codeStream.EmitStLoc(totalLocalNum);
             }
 
-            codeStream.EmitLdArg(_rank);
+            // Compute element offset
+            // TODO: This leaves unused space for lower bounds to match CoreCLR...
+            int firstElementOffset = (2 * pointerSize + 2 * _rank * int32Type.GetElementSize());
+            EmitLoadInteriorAddress(codeStream, firstElementOffset);
+
+            codeStream.EmitLdLoc(totalLocalNum);
+
+            int elementSize = _elementType.GetElementSize();
+            if (elementSize != 1)
+            {
+                codeStream.EmitLdc(elementSize);
+                codeStream.Emit(ILOpcode.mul);
+            }
             codeStream.Emit(ILOpcode.add);
-        }
 
-        void EmitILForCtor()
-        {
-            var codeStream = NewCodeStream();
-
-            // TODO: generate IL to check for negative bounds and throw OverflowException
-
-            codeStream.EmitLdArg(0);
-
-            // Compute size of the backing array
-            codeStream.EmitLdArg(1);
-            for (int i = 2; i <= _rank; i++)
+            switch (_method.Kind)
             {
-                codeStream.EmitLdArg(i);
-                codeStream.Emit(ILOpcode.mul_ovf);
-            }
+                case ArrayMethodKind.Get:
+                    codeStream.Emit(ILOpcode.ldobj, NewToken(_elementType));
+                    break;
 
-            // Allocate backing array and store it in the private field
-            codeStream.Emit(ILOpcode.newarr, NewToken(_elementType));
-            FieldDesc backingArrayField = _backingType.GetField("m_array");
-            codeStream.Emit(ILOpcode.stfld, NewToken(backingArrayField));
+                case ArrayMethodKind.Set:
+                    codeStream.EmitLdArg(_rank + 1);
+                    codeStream.Emit(ILOpcode.stobj, NewToken(_elementType));
+                    break;
 
-            // Store bounds
-            for (int i = 1; i <= _rank; i++)
-            {
-                FieldDesc upperBoundField = _backingType.GetField("m_upperBound" + i);
-
-                codeStream.EmitLdArg(0);
-                codeStream.EmitLdArg(i);
-                codeStream.Emit(ILOpcode.stfld, NewToken(upperBoundField));
+                case ArrayMethodKind.Address:
+                    break;
             }
 
             codeStream.Emit(ILOpcode.ret);
-        }
 
-        MethodIL EmitILForSet()
-        {
-            var codeStream = NewCodeStream();
+#if false
+            codeStream.EmitLdc(0);
+            codeStream.EmitLabel(rangeExceptionLabel1); // Assumes that there is one "int" pushed on the stack
+            codeStream.Emit(ILOpcode.pop);
 
-            // TODO: generate IL to check bounds
+            var tokIndexOutOfRangeCtorExcep = GetToken(GetException(kIndexOutOfRangeException).GetDefaultConstructor());
+            codeStream.EmitLabel(rangeExceptionLabel);
+            codeStream.Emit(ILOpcode.newobj, tokIndexOutOfRangeCtorExcep, 0);
+            codeStream.Emit(ILOpcode.throw_);
 
-            codeStream.EmitLdArg(0);
-            FieldDesc backingArrayField = _backingType.GetField("m_array");
-            codeStream.Emit(ILOpcode.ldfld, NewToken(backingArrayField));
+            if (typeMismatchExceptionLabel != null)
+            {
+                var tokTypeMismatchExcepCtor = GetToken(GetException(kArrayTypeMismatchException).GetDefaultConstructor());
 
-            EmitComputeIndex(codeStream);
-
-            // Store value at index
-            codeStream.EmitLdArg(_rank + 1);
-            codeStream.Emit(ILOpcode.stelem, NewToken(_elementType));
-
-            codeStream.Emit(ILOpcode.ret);
-
-            return Link();
-        }
-
-        void EmitILForGet()
-        {
-            var codeStream = NewCodeStream();
-
-            // TODO: generate IL to check bounds
-
-            codeStream.EmitLdArg(0);
-            FieldDesc backingArrayField = _backingType.GetField("m_array");
-            codeStream.Emit(ILOpcode.ldfld, NewToken(backingArrayField));
-
-            EmitComputeIndex(codeStream);
-
-            // Load value at index
-            codeStream.Emit(ILOpcode.ldelem, NewToken(_elementType));
-
-            codeStream.Emit(ILOpcode.ret);
-        }
-
-        void EmitILForAddress()
-        {
-            // TODO
-            throw new NotImplementedException();
+                codeStream.EmitLabel(typeMismatchExceptionLabel);
+                codeStream.Emit(ILOpcode.newobj, tokTypeMismatchExcepCtor, 0);
+                codeStream.Emit(ILOpcode.throw_);
+            }
+#endif
         }
     }
 }

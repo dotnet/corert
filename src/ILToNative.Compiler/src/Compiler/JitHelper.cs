@@ -15,6 +15,7 @@ namespace ILToNative
         CheckedAssignRef,
         Throw,
         FailFast,
+        NewMDArray,
     }
 
     class JitHelper
@@ -48,6 +49,9 @@ namespace ILToNative
 
                     case JitHelperId.FailFast:
                         return "__fail_fast";
+
+                    case JitHelperId.NewMDArray:
+                        return "RhNewMDArray";
                             
                     default:
                         throw new NotImplementedException();

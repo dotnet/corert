@@ -143,6 +143,63 @@ COOP_PINVOKE_HELPER(Array *, RhNewArray, (EEType * pArrayEEType, int numElements
     return pObject;
 }
 
+COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, int rank, ...))
+{
+    ASSERT_MSG(!pArrayEEType->RequiresAlign8(), "NYI");
+
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
+    alloc_context * acontext = pCurThread->GetAllocContext();
+    MDArray * pObject;
+
+    va_list argp;
+    va_start(argp, rank);
+
+    int numElements = va_arg(argp, int);
+
+    for (Int32 i = 1; i < rank; i++)
+    {
+        // TODO: Overflow checks
+        numElements *= va_arg(argp, Int32);
+    }
+
+    // TODO: Overflow checks
+    size_t size = 3 * sizeof(UIntNative) + 2 * rank * sizeof(Int32) + (numElements * pArrayEEType->get_ComponentSize());
+    // Align up
+    size = (size + (sizeof(UIntNative) - 1)) & ~(sizeof(UIntNative) - 1);
+
+    UInt8* result = acontext->alloc_ptr;
+    UInt8* advance = result + size;
+    bool needsPublish = false;
+    if (advance <= acontext->alloc_limit)
+    {
+        acontext->alloc_ptr = advance;
+        pObject = (MDArray *)result;
+    }
+    else
+    {
+        needsPublish = true;
+        pObject = (MDArray *)RedhawkGCInterface::Alloc(pCurThread, size, 0, pArrayEEType);
+        if (pObject == nullptr)
+        {
+            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
+        }
+    }
+
+    pObject->set_EEType(pArrayEEType);
+    pObject->InitMDArrayLength((UInt32)numElements);
+
+    va_start(argp, rank);
+    for (UInt32 i = 0; i < rank; i++)
+    {
+        pObject->InitMDArrayDimension(i, va_arg(argp, UInt32));
+    }
+
+    if (needsPublish && size >= RH_LARGE_OBJECT_SIZE)
+        RhpPublishObject(pObject, size);
+
+    return pObject;
+}
+
 COOP_PINVOKE_HELPER(void, RhpNewFast, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
