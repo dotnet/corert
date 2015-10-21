@@ -40,7 +40,7 @@ int __initialize_runtime();
 void __shutdown_runtime();
 
 extern "C" Object * __allocate_object(MethodTable * pMT);
-extern "C" Object * __allocate_mdarray(MethodTable * pMT, int32_t rank,...);
+extern "C" Object * RhNewMDArray(MethodTable * pMT, int32_t rank,...);
 extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT);
 Object * __allocate_string(int32_t len);
 extern "C" __declspec(noreturn) void __throw_exception(void * pEx);

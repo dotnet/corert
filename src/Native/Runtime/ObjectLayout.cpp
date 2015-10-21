@@ -51,6 +51,19 @@ void Array::InitArrayLength(UInt32 length)
     m_Length = length;
 }
 
+void MDArray::InitMDArrayLength(UInt32 length)
+{
+    ASSERT(NULL == m_Length);
+    m_Length = length;
+}
+
+void MDArray::InitMDArrayDimension(UInt32 dimension, UInt32 value)
+{
+    ASSERT(dimension < 32);
+    ASSERT(m_Dimensions[dimension] == NULL);
+    m_Dimensions[dimension] = value;
+}
+
 void ObjHeader::SetBit(UInt32 uBit)
 {
     PalInterlockedOr(&m_uSyncBlockValue, uBit);

@@ -570,6 +570,8 @@ namespace Internal.JitInterface
         {
             // TODO: dynamic scopes
             // TODO: verification
+            var methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)).Signature, out *sig);
         }
 
         CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
@@ -1324,8 +1326,6 @@ namespace Internal.JitInterface
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
 #endif
 
-            MethodDesc templateMethod;
-
             if (!fEmbedParent && pResolvedToken.hMethod != null)
             {
                 throw new NotImplementedException();
@@ -1341,24 +1341,11 @@ namespace Internal.JitInterface
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
 
-                if (fEmbedParent && pResolvedToken.hMethod != null)
-                {
-                    MethodDesc declaringMD = HandleToObject(pResolvedToken.hMethod);
-                    if (declaringMD.OwningType.GetTypeDefinition() != td.GetTypeDefinition())
-                    {
-                        //
-                        // The method type may point to a sub-class of the actual class that declares the method.
-                        // It is important to embed the declaring type in this case.
-                        //
-
-                        templateMethod = declaringMD;
-
-                        pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(declaringMD.OwningType);
-                    }
-                }
+                // TODO? If we're embedding a method handle for a method that points to a sub-class of the actual
+                //       class, we might need to embed the actual declaring type in compileTimeHandle.  
 
                 // IsSharedByGenericInstantiations would not work here. The runtime lookup is required
-                // even for standalone generic variables that show up as __Cannon here.
+                // even for standalone generic variables that show up as __Canon here.
                 //fRuntimeLookup = th.IsCanonicalSubtype();
             }
 

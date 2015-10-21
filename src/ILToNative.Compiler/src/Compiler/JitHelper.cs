@@ -51,7 +51,7 @@ namespace ILToNative
                         return "__fail_fast";
 
                     case JitHelperId.NewMDArray:
-                        return "__allocate_mdarray";
+                        return "RhNewMDArray";
                             
                     default:
                         throw new NotImplementedException();

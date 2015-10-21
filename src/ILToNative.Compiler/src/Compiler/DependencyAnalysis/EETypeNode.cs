@@ -111,9 +111,26 @@ namespace ILToNative.DependencyAnalysis
                 objData.EmitShort(0); // m_flags: 0
             }
 
-            int minimumObjectSize = _type.Context.Target.PointerSize * 3;
-            int objectSize = _type.Context.Target.PointerSize + ((MetadataType)_type).InstanceByteCount;
-            objectSize = AlignmentHelper.AlignUp(objectSize, _type.Context.Target.PointerSize);
+            int pointerSize = _type.Context.Target.PointerSize;
+            int minimumObjectSize = pointerSize * 3;
+            int objectSize;
+            if (_type is MetadataType)
+            {
+                objectSize = pointerSize +
+                    ((MetadataType)_type).InstanceByteCount; // +pointerSize for SyncBlock
+            }
+            else if (_type is ArrayType)
+            {
+                objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
+                int rank = ((ArrayType)_type).Rank;
+                if (rank > 1)
+                    objectSize +=
+                        2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * rank;
+            }
+            else
+                throw new NotImplementedException();
+
+            objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
             objectSize = Math.Max(minimumObjectSize, objectSize);
             objData.EmitInt(objectSize);
 

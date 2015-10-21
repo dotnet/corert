@@ -840,7 +840,7 @@ namespace Internal.IL
             else if (mdArrayCreate)
             {
                 _compilation.AddType(method.OwningType);
-                Append("__allocate_mdarray");
+                Append("RhNewMDArray");
             }
             else
             {
