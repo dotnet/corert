@@ -1,0 +1,74 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Internal.TypeSystem;
+using System;
+using System.Text;
+
+namespace Internal.IL
+{
+    internal sealed class MethodILDebugView
+    {
+        private readonly MethodIL _methodIL;
+
+        public MethodILDebugView(MethodIL methodIL)
+        {
+            _methodIL = methodIL;
+        }
+
+        public string Disassembly
+        {
+            get
+            {
+                byte[] ilBytes = _methodIL.GetILBytes() ?? Array.Empty<byte>();
+
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append("// Code size: ");
+                sb.Append(ilBytes.Length);
+                sb.AppendLine();
+                sb.Append(".maxstack ");
+                sb.Append(_methodIL.GetMaxStack());
+                sb.AppendLine();
+
+                TypeDesc[] locals = _methodIL.GetLocals();
+                if (locals != null && locals.Length > 0)
+                {
+                    sb.Append(".locals ");
+                    if (_methodIL.GetInitLocals())
+                        sb.Append("init ");
+
+                    sb.Append("(");
+
+                    for (int i = 0; i < locals.Length; i++)
+                    {
+                        if (i != 0)
+                        {
+                            sb.AppendLine(",");
+                            sb.Append(' ', 4);
+                        }
+                        sb.Append(locals[i].ToString());
+                        sb.Append(" ");
+                        sb.Append("V_");
+                        sb.Append(i);
+                    }
+                    sb.AppendLine(")");
+                }
+                sb.AppendLine();
+
+                int offset = 0;
+                
+                Func<int, string> resolver = token => _methodIL.GetObject(token).ToString();
+
+                while (offset < ilBytes.Length)
+                {
+                    sb.Append(ILDisassember.FormatOffset(offset));
+                    sb.Append(": ");
+                    sb.AppendLine(ILDisassember.Disassemble(resolver, ilBytes, ref offset));
+                }
+
+                return sb.ToString();
+            }
+        }
+    }
+}
