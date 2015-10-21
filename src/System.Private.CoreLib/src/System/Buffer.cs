@@ -11,6 +11,13 @@ namespace System
 {
     public static class Buffer
     {
+#if CORERT
+        // CORERT-TODO This depends on a lot of stuff that we do not handle yet
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static unsafe extern void BlockCopy(Array src, int srcOffset,
+                                            Array dst, int dstOffset,
+                                            int count);
+#else
         public static unsafe void BlockCopy(Array src, int srcOffset,
                                             Array dst, int dstOffset,
                                             int count)
@@ -62,6 +69,7 @@ namespace System
                 RuntimeImports.memmove(pDst, pSrc, count);
             }
         }
+#endif
 
         // This is ported from the optimized CRT assembly in memchr.asm. The JIT generates 
         // pretty good code here and this ends up being within a couple % of the CRT asm.

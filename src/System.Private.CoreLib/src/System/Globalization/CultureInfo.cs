@@ -269,6 +269,10 @@ namespace System.Globalization
         {
             get
             {
+#if CORERT
+                // CORERT-TODO CultureInfo
+                return null;
+#else
                 CultureInfo ci = GetUserDefaultCultureCacheOverride();
                 if (ci != null)
                 {
@@ -295,6 +299,7 @@ namespace System.Globalization
 
                 Contract.Assert(s_userDefaultCulture != null);
                 return s_userDefaultCulture;
+#endif
             }
 
             set

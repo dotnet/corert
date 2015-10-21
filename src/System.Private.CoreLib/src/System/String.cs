@@ -60,7 +60,7 @@ namespace System
     // is _stringLength.
     //
     // Our base_size is the size of the fixed portion of the string defined below.  It, therefore, contains 
-    // the size of the m_firstChar field in it.  This means that, since our string data actually starts 
+    // the size of the _firstChar field in it.  This means that, since our string data actually starts 
     // inside the fixed 'base_size' area, and our num_elements is equal to String.Length, we end up with one 
     // extra character at the end.  This is how we get our extra null terminator which allows us to pass a 
     // pinned string out to native code as a null-terminated string.  This is also why we don't increment the
@@ -99,28 +99,36 @@ namespace System
         // CS0169: The private field '{blah}' is never used
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 169, 649
+#if !CORERT
         [Bound]
+#endif
         [FieldOffset(STRING_LENGTH_OFFSET)]
         private int _stringLength;
         [FieldOffset(FIRST_CHAR_OFFSET)]
         private char _firstChar;
 #pragma warning restore
 
-        // String constructors
-        // These are special. the implementation methods for these have a different signature from the
-        // declared constructors. We use a RuntimeImport/RuntimeExport combination to workaround this difference.
-        // TODO: Determine a more reasonable solution for this.
+// String constructors
+// These are special. the implementation methods for these have a different signature from the
+// declared constructors. We use a RuntimeImport/RuntimeExport combination to workaround this difference.
+// TODO: Determine a more reasonable solution for this.
 
-        // TODO: For (length == 0), the code goes through AllocateString and returns an empty string. If this
-        // is more common, we can explicitly check for it. We should also decide on semantics when passed in array/char* is NULL. 
-        // The code checks and returns String.Empty.
+// TODO: For (length == 0), the code goes through AllocateString and returns an empty string. If this
+// is more common, we can explicitly check for it. We should also decide on semantics when passed in array/char* is NULL. 
+// The code checks and returns String.Empty.
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if CORERT
+        public extern String(char[] value);   // CtorCharArray
+
+        private static String Ctor(char[] value)
+#else
         [RuntimeImport(".", "CtorCharArray")]
         public extern String(char[] value);   // CtorCharArray
 
         [RuntimeExport("CtorCharArray")]
         private static String CtorCharArray(char[] value)
+#endif
         {
             if (value != null && value.Length != 0)
             {
@@ -140,11 +148,17 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if CORERT
+        public extern String(char[] value, int startIndex, int length);   // CtorCharArrayStartLength
+
+        private static String Ctor(char[] value, int startIndex, int length)
+#else
         [RuntimeImport(".", "CtorCharArrayStartLength")]
         public extern String(char[] value, int startIndex, int length);   // CtorCharArrayStartLength
 
         [RuntimeExport("CtorCharArrayStartLength")]
         private static String CtorCharArrayStartLength(char[] value, int startIndex, int length)
+#endif
         {
             if (value == null)
                 throw new ArgumentNullException("value");
@@ -178,12 +192,18 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(".", "CtorCharPtr")]
         [SecurityCritical] // required to match contract
+#if CORERT
+        unsafe public extern String(char* value);   // CtorCharPtr
+
+        private static unsafe String Ctor(char* ptr)
+#else
+        [RuntimeImport(".", "CtorCharPtr")]
         unsafe public extern String(char* value);   // CtorCharPtr
 
         [RuntimeExport("CtorCharPtr")]
         private static unsafe String CtorCharPtr(char* ptr)
+#endif
         {
             if (ptr == null)
                 return String.Empty;
@@ -212,12 +232,18 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(".", "CtorCharPtrStartLength")]
         [SecurityCritical] // required to match contract
+#if CORERT
+        unsafe public extern String(char* value, int startIndex, int length);   // CtorCharPtrStartLength
+
+        private static unsafe String Ctor(char* ptr, int startIndex, int length)
+#else
+        [RuntimeImport(".", "CtorCharPtrStartLength")]
         unsafe public extern String(char* value, int startIndex, int length);   // CtorCharPtrStartLength
 
         [RuntimeExport("CtorCharPtrStartLength")]
         private static unsafe String CtorCharPtrStartLength(char* ptr, int startIndex, int length)
+#endif
         {
             if (length < 0)
             {
@@ -255,11 +281,17 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if CORERT
+        public extern String(char c, int count);                          // CtorCharCount
+
+        private static String Ctor(char c, int count)
+#else
         [RuntimeImport(".", "CtorCharCount")]
         public extern String(char c, int count);                          // CtorCharCount
 
         [RuntimeExport("CtorCharCount")]
         private static String CtorCharCount(char c, int count)
+#endif
         {
             if (count > 0)
             {
@@ -954,13 +986,23 @@ namespace System
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public unsafe char this[int index]
         {
-            [BoundsChecking]
             [NonVersionable]
+#if CORERT
+            get
+            {
+                if ((uint)index >= _stringLength)
+                    throw new IndexOutOfRangeException();
+                fixed (char* s = &_firstChar)
+                    return s[index];
+            }
+#else
+            [BoundsChecking]
             get
             {
                 System.Runtime.CompilerServices.ByReference<char> mgdPtr = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _firstChar);
                 return System.Runtime.CompilerServices.ByReference<char>.LoadAtIndex(mgdPtr, index);
             }
+#endif
         }
 
         // Converts a substring of this string to an array of characters.  Copies the

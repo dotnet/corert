@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -287,7 +287,12 @@ namespace System.Text
             if (s_encodings == null)
                 Interlocked.CompareExchange<EncodingCache>(ref s_encodings, new EncodingCache(), null);
 
+#if CORERT
+            // CORERT-TODO: For now, always return UTF8 encoding
+            return UTF8;
+#else
             return s_encodings.GetOrAdd(codepage);
+#endif
         }
 
         private sealed class EncodingCache : ConcurrentUnifier<int, Encoding>
