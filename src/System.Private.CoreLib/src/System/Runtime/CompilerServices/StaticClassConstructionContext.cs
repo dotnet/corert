@@ -27,7 +27,9 @@ namespace System.Runtime.CompilerServices
         // than a binary state for each cctor if it so desires.
         public volatile int initialized;
     }
-    /*
+
+#if CORERT 
+    // CORERT-TODO: Use full cctor helper instead
     [McgIntrinsics]
     internal sealed class CctorHelper
     {
@@ -106,5 +108,5 @@ namespace System.Runtime.CompilerServices
             return default(T);
         }
      }
-     */
+#endif
 }

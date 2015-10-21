@@ -8,10 +8,7 @@ namespace System.Runtime.CompilerServices
 {
     // This attribute is only for use in a Class Library 
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field)]
-    internal sealed class IntrinsicAttribute : Attribute
-    {
-        public bool IgnoreBody;
-    }
+    internal sealed class IntrinsicAttribute : Attribute { }
 
     // At the moment, we don't inline anything across modules other than Object..ctor,
     // so this attribute is only for use in a Class Library.  If we ever broaden this,
@@ -19,11 +16,13 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Property | AttributeTargets.Method)]
     internal sealed class NonVersionableAttribute : Attribute { }
 
+#if !CORERT
     [AttributeUsage(AttributeTargets.Field)]
     internal sealed class BoundAttribute : Attribute { }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
     public sealed class BoundsCheckingAttribute : Attribute { }
+#endif
 
     [AttributeUsage(AttributeTargets.Struct)]
     public sealed class StackOnlyAttribute : Attribute { }

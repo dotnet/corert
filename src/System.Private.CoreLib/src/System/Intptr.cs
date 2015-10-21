@@ -28,108 +28,133 @@ namespace System
         public static readonly IntPtr Zero;
 
         [Intrinsic]
-        public extern IntPtr(int value);
+        [NonVersionable]
+        public unsafe IntPtr(int value)
+        {
+#if WIN32
+            _value = (void *)value;
+#else
+            _value = (void*)(long)value;
+#endif
+        }
 
         [Intrinsic]
-        public extern IntPtr(long value);
+        [NonVersionable]
+        public unsafe IntPtr(long value)
+        {
+#if WIN32
+            _value = (void *)checked((int)value);
+#else
+            _value = (void*)value;
+#endif
+        }
 
         [CLSCompliant(false)]
         [Intrinsic]
         [SecurityCritical] // required to match contract
-        public extern unsafe IntPtr(void* value);
+        [NonVersionable]
+        public unsafe IntPtr(void* value)
+        {
+            _value = value;
+        }
 
         [CLSCompliant(false)]
         [Intrinsic]
+        [NonVersionable]
         public unsafe void* ToPointer()
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return ToPointer();
+            return _value;
         }
 
         [Intrinsic]
-        public int ToInt32()
+        [NonVersionable]
+        public unsafe int ToInt32()
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return ToInt32();
+#if WIN32
+            return (int)_value;
+#else
+            long l = (long)_value;
+            return checked((int)l);
+#endif
         }
 
         [Intrinsic]
-        public long ToInt64()
+        [NonVersionable]
+        public unsafe long ToInt64()
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return ToInt64();
+#if WIN32
+            return (long)(int)_value;
+#else
+            return (long)_value;
+#endif
         }
 
         [Intrinsic]
-        public static explicit operator IntPtr(int value)
+        [NonVersionable]
+        public unsafe static explicit operator IntPtr(int value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (IntPtr)value;
+            return new IntPtr(value);
         }
 
         [Intrinsic]
-        public static explicit operator IntPtr(long value)
+        [NonVersionable]
+        public unsafe static explicit operator IntPtr(long value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (IntPtr)value;
+            return new IntPtr(value);
         }
-
 
         [CLSCompliant(false)]
         [Intrinsic]
         [SecurityCritical] // required to match contract
-        public static unsafe explicit operator IntPtr(void* value)
+        [NonVersionable]
+        public unsafe static explicit operator IntPtr(void* value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (IntPtr)value;
+            return new IntPtr(value);
         }
 
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe explicit operator void* (IntPtr value)
+        [NonVersionable]
+        public unsafe static explicit operator void* (IntPtr value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (void*)value;
+            return value._value;
         }
 
         [Intrinsic]
+        [NonVersionable]
         public unsafe static explicit operator int (IntPtr value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (int)value;
+#if WIN32
+            return (int)value._value;
+#else
+            long l = (long)value._value;
+            return checked((int)l);
+#endif
         }
 
-
         [Intrinsic]
-        public static explicit operator long (IntPtr value)
+        [NonVersionable]
+        public unsafe static explicit operator long (IntPtr value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (long)value;
+#if WIN32
+            return (long)(int)value._value;
+#else
+            return (long)value._value;
+#endif
         }
 
         [Intrinsic]
-        public static bool operator ==(IntPtr value1, IntPtr value2)
+        [NonVersionable]
+        public unsafe static bool operator ==(IntPtr value1, IntPtr value2)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return value1 == value2;
+            return value1._value == value2._value;
         }
 
         [Intrinsic]
+        [NonVersionable]
         public unsafe static bool operator !=(IntPtr value1, IntPtr value2)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return value1 != value2;
+            return value1._value != value2._value;
         }
 
         internal unsafe bool IsNull()
@@ -137,39 +162,52 @@ namespace System
             return (_value == null);
         }
 
+        [NonVersionable]
         public static IntPtr Add(IntPtr pointer, int offset)
         {
             return pointer + offset;
         }
 
         [Intrinsic]
-        public static IntPtr operator +(IntPtr pointer, int offset)
+        [NonVersionable]
+        public unsafe static IntPtr operator +(IntPtr pointer, int offset)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return pointer + offset;
+#if WIN32
+            return new IntPtr((int)pointer._value + offset);
+#else
+            return new IntPtr((long)pointer._value + offset);
+#endif
         }
 
+        [NonVersionable]
         public static IntPtr Subtract(IntPtr pointer, int offset)
         {
             return pointer - offset;
         }
 
         [Intrinsic]
-        public static IntPtr operator -(IntPtr pointer, int offset)
+        [NonVersionable]
+        public unsafe static IntPtr operator -(IntPtr pointer, int offset)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return pointer - offset;
+#if WIN32
+            return new IntPtr((int)pointer._value - offset);
+#else
+            return new IntPtr((long)pointer._value - offset);
+#endif
         }
 
-        public static unsafe int Size
+        public unsafe static int Size
         {
-            // Have to provide a body since csc doesn't like extern properties
-            // on value types
-            [Intrinsic(IgnoreBody = true)]
+            [Intrinsic]
+            [NonVersionable]
             get
-            { return sizeof(IntPtr); }
+            {
+#if WIN32
+                return 4;
+#else
+                return 8;
+#endif
+            }
         }
 
         public unsafe override String ToString()
@@ -206,5 +244,3 @@ namespace System
         }
     }
 }
-
-

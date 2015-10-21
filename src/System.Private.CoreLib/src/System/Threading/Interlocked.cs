@@ -15,58 +15,119 @@ namespace System.Threading
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            if (oldValue == comparand)
+                location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [NonVersionable]
         [Intrinsic]
-        internal static extern uint CompareExchange(ref uint location1, uint value, uint comparand);
+        internal static uint CompareExchange(ref uint location1, uint value, uint comparand)
+        {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            if (oldValue == comparand)
+                location1 = value;
+            return oldValue;
+#else
+            // This is actually an intrinsic and not a recursive function call.
+            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
+            return CompareExchange(ref location1, value, comparand);
+#endif
+        }
 
         [NonVersionable]
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            if (oldValue == comparand)
+                location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [NonVersionable]
         [Intrinsic]
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            if (oldValue == comparand)
+                location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [NonVersionable]
         [Intrinsic]
         public static float CompareExchange(ref float location1, float value, float comparand)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            if (oldValue == comparand)
+                location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [NonVersionable]
         [Intrinsic]
         public static double CompareExchange(ref double location1, double value, double comparand)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            if (oldValue == comparand)
+                location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [NonVersionable]
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            if (oldValue == comparand)
+                location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange<T>(ref location1, value, comparand);
+#endif
         }
 
         [NonVersionable]
@@ -79,17 +140,24 @@ namespace System.Threading
         [Intrinsic]
         internal static extern T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class;
 
-        #endregion
+#endregion
 
-        #region Exchange
+#region Exchange
 
         [NonVersionable]
         [Intrinsic]
         public static int Exchange(ref int location1, int value)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
+#endif
         }
 
 #if X86
@@ -111,9 +179,16 @@ namespace System.Threading
         [Intrinsic]
         public static long Exchange(ref long location1, long value)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
+#endif
         }
 #endif
 
@@ -121,18 +196,32 @@ namespace System.Threading
         [Intrinsic]
         public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
+#endif
         }
 
         [NonVersionable]
         [Intrinsic]
         public static float Exchange(ref float location1, float value)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
+#endif
         }
 
 #if X86
@@ -154,9 +243,16 @@ namespace System.Threading
         [Intrinsic]
         public static double Exchange(ref double location1, double value)
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
+#endif
         }
 #endif
 
@@ -164,9 +260,16 @@ namespace System.Threading
         [Intrinsic]
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+            var oldValue = location1;
+            location1 = value;
+            return oldValue;
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange<T>(ref location1, value);
+#endif
         }
 
         [NonVersionable]
@@ -300,9 +403,13 @@ namespace System.Threading
         [Intrinsic]
         public static void MemoryBarrier()
         {
+#if CORERT
+            // CORERT-TODO: Implement interlocked intrinsics
+#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             MemoryBarrier();
+#endif
         }
         #endregion
 

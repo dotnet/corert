@@ -28,113 +28,130 @@ namespace System
         public static readonly UIntPtr Zero;
 
         [Intrinsic]
-        public extern unsafe UIntPtr(uint value);
+        [NonVersionable]
+        public unsafe UIntPtr(uint value)
+        {
+            _value = (void*)value;
+        }
 
         [Intrinsic]
-        public extern unsafe UIntPtr(ulong value);
+        [NonVersionable]
+        public unsafe UIntPtr(ulong value)
+        {
+#if WIN32
+            _value = (void*)checked((uint)value);
+#else
+            _value = (void*)value;
+#endif
+        }
 
         [Intrinsic]
         [SecurityCritical] // required to match contract
-        public extern unsafe UIntPtr(void* value);
+        [NonVersionable]
+        public unsafe UIntPtr(void* value)
+        {
+            _value = value;
+        }
 
         [Intrinsic]
+        [NonVersionable]
         public unsafe void* ToPointer()
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return ToPointer();
+            return _value;
         }
 
         [Intrinsic]
-        public uint ToUInt32()
+        [NonVersionable]
+        public unsafe uint ToUInt32()
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return ToUInt32();
+#if WIN32
+            return (uint)_value;
+#else
+            return checked((uint)_value);
+#endif
         }
 
         [Intrinsic]
-        public ulong ToUInt64()
+        [NonVersionable]
+        public unsafe ulong ToUInt64()
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return ToUInt64();
+            return (ulong)_value;
         }
 
         [Intrinsic]
+        [NonVersionable]
         public static explicit operator UIntPtr(uint value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (UIntPtr)value;
+            return new UIntPtr(value);
         }
 
         [Intrinsic]
+        [NonVersionable]
         public static explicit operator UIntPtr(ulong value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (UIntPtr)value;
+            return new UIntPtr(value);
         }
-
 
         [Intrinsic]
         [SecurityCritical] // required to match contract
+        [NonVersionable]
         public static unsafe explicit operator UIntPtr(void* value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (UIntPtr)value;
+            return new UIntPtr(value);
         }
 
         [Intrinsic]
         [SecurityCritical] // required to match contract
+        [NonVersionable]
         public static unsafe explicit operator void* (UIntPtr value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (void*)value;
+            return value._value;
         }
 
         [Intrinsic]
-        public static explicit operator uint (UIntPtr value)
+        [NonVersionable]
+        public unsafe static explicit operator uint (UIntPtr value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (uint)value;
+#if WIN32
+            return (uint)value._value;
+#else
+            return checked((uint)value._value);
+#endif
         }
 
         [Intrinsic]
-        public static explicit operator ulong (UIntPtr value)
+        [NonVersionable]
+        public unsafe static explicit operator ulong (UIntPtr value)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return (ulong)value;
+            return (ulong)value._value;
         }
 
         [Intrinsic]
+        [NonVersionable]
         public unsafe static bool operator ==(UIntPtr value1, UIntPtr value2)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return value1 == value2;
+            return value1._value == value2._value;
         }
 
         [Intrinsic]
+        [NonVersionable]
         public unsafe static bool operator !=(UIntPtr value1, UIntPtr value2)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return value1 != value2;
+            return value1._value != value2._value;
         }
 
         public static unsafe int Size
         {
-            // Have to provide a body since csc doesn't like extern properties
-            // on value types
-            [Intrinsic(IgnoreBody = true)]
+            [Intrinsic]
+            [NonVersionable]
             get
-            { return sizeof(UIntPtr); }
+            {
+#if WIN32
+                return 4;
+#else
+                return 8;
+#endif
+            }
         }
 
         public unsafe override String ToString()
@@ -161,30 +178,38 @@ namespace System
             return unchecked((int)((long)_value)) & 0x7fffffff;
         }
 
+        [NonVersionable]
         public static UIntPtr Add(UIntPtr pointer, int offset)
         {
             return pointer + offset;
         }
 
         [Intrinsic]
+        [NonVersionable]
         public static UIntPtr operator +(UIntPtr pointer, int offset)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return pointer + offset;
+#if WIN32
+            return new UIntPtr(pointer.ToUInt32() + (uint)offset);
+#else
+            return new UIntPtr(pointer.ToUInt64() + (ulong)offset);
+#endif
         }
 
+        [NonVersionable]
         public static UIntPtr Subtract(UIntPtr pointer, int offset)
         {
             return pointer - offset;
         }
 
         [Intrinsic]
+        [NonVersionable]
         public static UIntPtr operator -(UIntPtr pointer, int offset)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return pointer - offset;
+#if WIN32
+            return new UIntPtr(pointer.ToUInt32() - (uint)offset);
+#else
+            return new UIntPtr(pointer.ToUInt64() - (ulong)offset);
+#endif
         }
     }
 }

@@ -9,10 +9,6 @@
     <AssemblyName>System.Private.CoreLib</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -66,6 +62,8 @@
 
   <PropertyGroup>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <!-- TODO: @tarekgh Define this for CoreRT builds only -->
+    <DefineConstants>CORERT</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\SR.Core.cs">
