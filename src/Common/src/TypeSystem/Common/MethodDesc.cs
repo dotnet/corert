@@ -283,6 +283,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public virtual bool IsAbstract
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         // Strips method instantiation. E.g C<int>.m<string> -> C<int>.m<U>
         public virtual MethodDesc GetMethodDefinition()
         {

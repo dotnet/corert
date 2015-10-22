@@ -358,7 +358,19 @@ namespace ILToNative
                     if (methodIL == null)
                         return;
 
-                    var methodCode = _corInfo.CompileMethod(method);
+                    MethodCode methodCode;
+                    try
+                    {
+                        methodCode = _corInfo.CompileMethod(method);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.WriteLine(e.Message + " (" + method + ")");
+                        methodCode = new MethodCode
+                        {
+                            Code = new byte[] { 0xCC }
+                        };
+                    }
 
                     ObjectDataBuilder objData = new ObjectDataBuilder();
                     objData.Alignment = _nodeFactory.Target.MinimumFunctionAlignment;

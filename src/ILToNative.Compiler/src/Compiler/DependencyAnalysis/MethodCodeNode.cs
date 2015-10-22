@@ -14,6 +14,7 @@ namespace ILToNative.DependencyAnalysis
 
         public MethodCodeNode(MethodDesc method)
         {
+            Debug.Assert(!method.IsAbstract);
             _method = method;
         }
 

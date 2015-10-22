@@ -20,6 +20,7 @@ namespace Internal.TypeSystem.Ecma
             BasicMetadataCache = 0x01,
             Virtual = 0x02,
             NewSlot = 0x04,
+            Abstract = 0x08,
         };
 
         EcmaType _type;
@@ -117,6 +118,9 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodAttributes & MethodAttributes.NewSlot) != 0)
                     flags |= MethodFlags.NewSlot;
 
+                if ((methodAttributes & MethodAttributes.Abstract) != 0)
+                    flags |= MethodFlags.Abstract;
+
                 flags |= MethodFlags.BasicMetadataCache;
             }
 
@@ -148,6 +152,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.NewSlot) & MethodFlags.NewSlot) != 0;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Abstract) & MethodFlags.Abstract) != 0;
             }
         }
 

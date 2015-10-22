@@ -88,6 +88,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAbstract
+        {
+            get
+            {
+                return _methodDef.IsAbstract;
+            }
+        }
+
         public override MethodDesc GetMethodDefinition()
         {
             return _methodDef;
