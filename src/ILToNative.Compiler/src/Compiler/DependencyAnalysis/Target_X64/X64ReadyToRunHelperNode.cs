@@ -81,21 +81,40 @@ namespace ILToNative.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.GetNonGCStaticBase:
-                    encoder.EmitLEAQ(Register.RAX, factory.TypeNonGCStaticsSymbol((MetadataType)Helper.Target));
-                    encoder.EmitRET();
+                    if (!((MetadataType)Helper.Target).HasStaticConstructor)
+                    {
+                        Debug.Assert(Helper.Id == ReadyToRunHelperId.GetNonGCStaticBase);
+                        encoder.EmitLEAQ(Register.RAX, factory.TypeNonGCStaticsSymbol((MetadataType)Helper.Target));
+                        encoder.EmitRET();
+                    }
+                    else
+                    {
+                        // We need to trigger the cctor before returning the base
+                        encoder.EmitLEAQ(Register.RCX, factory.TypeCctorContextSymbol((MetadataType)Helper.Target));
+                        encoder.EmitLEAQ(Register.RDX, factory.TypeNonGCStaticsSymbol((MetadataType)Helper.Target));
+                        encoder.EmitJMP(factory.WellKnownEntrypoint(WellKnownEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
+                    }
                     break;
 
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    encoder.EmitLEAQ(Register.RAX, factory.TypeGCStaticsSymbol((MetadataType)Helper.Target));
-                    AddrMode loadFromRax = new AddrMode(Register.RAX, null, 0, 0, AddrModeSize.Int64);
-                    encoder.EmitMOV(Register.RAX, ref loadFromRax);
-                    encoder.EmitMOV(Register.RAX, ref loadFromRax);
-                    encoder.EmitRET();
-                    break;
-
-                case ReadyToRunHelperId.CCtorTrigger:
-                    encoder.EmitLEAQ(Register.RCX, factory.TypeCctorContextSymbol((MetadataType)Helper.Target));
-                    encoder.EmitJMP(factory.WellKnownEntrypoint(WellKnownEntrypoint.EnsureClassConstructorRun));
+                    if (!((MetadataType)Helper.Target).HasStaticConstructor)
+                    {
+                        encoder.EmitLEAQ(Register.RAX, factory.TypeGCStaticsSymbol((MetadataType)Helper.Target));
+                        AddrMode loadFromRax = new AddrMode(Register.RAX, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(Register.RAX, ref loadFromRax);
+                        encoder.EmitMOV(Register.RAX, ref loadFromRax);
+                        encoder.EmitRET();
+                    }
+                    else
+                    {
+                        // We need to trigger the cctor before returning the base
+                        encoder.EmitLEAQ(Register.RCX, factory.TypeCctorContextSymbol((MetadataType)Helper.Target));
+                        encoder.EmitLEAQ(Register.RDX, factory.TypeGCStaticsSymbol((MetadataType)Helper.Target));
+                        AddrMode loadFromRdx = new AddrMode(Register.RDX, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(Register.RDX, ref loadFromRdx);
+                        encoder.EmitMOV(Register.RDX, ref loadFromRdx);
+                        encoder.EmitJMP(factory.WellKnownEntrypoint(WellKnownEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
+                    }
                     break;
 
                 case ReadyToRunHelperId.DelegateCtor:

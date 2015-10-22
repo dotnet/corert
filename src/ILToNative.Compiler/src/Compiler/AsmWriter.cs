@@ -288,18 +288,6 @@ namespace ILToNative
                         Out.WriteLine("ret");
                         break;
 
-                    case ReadyToRunHelperId.CCtorTrigger:
-                        Out.Write("leaq __NonGCStaticBase_");
-                        Out.Write(NameMangler.GetMangledTypeName((TypeDesc)helper.Target));
-                        Out.WriteLine(" - 16(%rip), %rax");
-
-                        Out.WriteLine("jmp *(%rax)");
-
-                        // TODO: actually call into the managed helper that does a better job at this
-                        //       and won't call the same constructor twice...
-
-                        break;
-
                     default:
                         throw new NotImplementedException();
                 }

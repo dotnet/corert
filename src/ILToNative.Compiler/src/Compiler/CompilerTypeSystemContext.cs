@@ -50,7 +50,8 @@ namespace ILToNative
         };
 
         static readonly string[][] s_wellKnownEntrypointNames = new string[][] {
-            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstruction" }
+            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnGCStaticBase" },
+            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnNonGCStaticBase" }
         };
 
         MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
@@ -228,6 +229,7 @@ namespace ILToNative
     public enum WellKnownEntrypoint
     {
         Unknown,
-        EnsureClassConstructorRun,
+        EnsureClassConstructorRunAndReturnGCStaticBase,
+        EnsureClassConstructorRunAndReturnNonGCStaticBase,
     }
 }
