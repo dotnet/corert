@@ -251,14 +251,6 @@ Object * __get_commandline_args(int argc, char * argv[])
 }
 #endif
 
-extern "C" unsigned short String_get_Chars(class System::String *pString, int index)
-{
-    throw 42;
-    /*if ((uint32_t)index >= (uint32_t)pString->m_stringLength)
-        ThrowRangeOverflowException();
-    return *(&pString->m_firstChar + index);*/
-}
-
 extern "C" void Buffer_BlockCopy(class System::Array * src, int srcOfs, class System::Array * dst, int dstOfs, int count)
 {
     // TODO: Argument validation

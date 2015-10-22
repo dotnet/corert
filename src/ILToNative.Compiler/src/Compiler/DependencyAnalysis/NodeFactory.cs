@@ -203,6 +203,8 @@ namespace ILToNative.DependencyAnalysis
 
         public ISymbolNode ExternSymbol(string name)
         {
+            // We can't call the real C++ WriteBarrier implementation because that one expects
+            // a register spill zone. JIT doesn't generate a spill zone before the call.
             if (name == "WriteBarrier")
             {
                 return _writeBarrierHelper;
