@@ -287,9 +287,29 @@ extern "C" uint8_t RhIsValueType(MethodTable*)
     throw 42;
 }
 
-extern "C" intptr_t RhHandleAllocDependent(Object*, Object*)
+extern "C" uint8_t RhIsArray(MethodTable*)
 {
     throw 42;
+}
+
+extern "C" uint8_t RhTypeCast_AreTypesEquivalent(MethodTable*, MethodTable*)
+{
+    throw 42;
+}
+
+extern "C" void RhGetCurrentThreadStackTrace()
+{
+    throw 42;
+}
+
+extern "C" intptr_t RhHandleAlloc(Object * pObject, int type)
+{
+    return (intptr_t)CreateTypedHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
+}
+
+extern "C" intptr_t RhHandleAllocDependent(Object* pPrimary, Object* pSecondary)
+{
+    return (intptr_t)CreateDependentHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pPrimary, pSecondary);
 }
 
 extern "C" void RhpUniversalTransition()

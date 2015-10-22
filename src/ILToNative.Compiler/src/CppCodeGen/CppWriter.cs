@@ -47,7 +47,6 @@ namespace ILToNative.CppCodeGen
 
             // TODO: For now, ensure that all types/methods referenced by temporary implementation in stubs.cpp are present
             var stringType = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String);
-            _compilation.AddMethod(stringType.GetMethod("get_Chars", null));
             AddInstanceFields(stringType);
 
             var stringArrayType = stringType.MakeArrayType();
@@ -303,7 +302,7 @@ namespace ILToNative.CppCodeGen
                             importName = ecmaMethod.Name;
 
                         // TODO: hacky special-case
-                        if (importName != "memmove") // memmove is already declared by the CRT headers
+                        if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
                         {
                             builder.AppendLine(GetCppMethodDeclaration(method, false, importName));
                         }

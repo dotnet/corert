@@ -1944,7 +1944,44 @@ namespace Internal.IL
 
         void ImportUnbox(int token, ILOpcode opCode)
         {
-            throw new NotImplementedException();
+            var type = ResolveTypeToken(token);
+
+            var obj = Pop();
+
+            if (opCode == ILOpcode.unbox)
+            {
+                PushTemp(StackValueKind.ByRef, type.MakeByRefType());
+            }
+            else
+            {
+                PushTemp(GetStackValueKind(type), type);
+            }
+
+            if (type.IsValueType)
+            {
+                // TODO: Unbox of nullable types
+                if (type.IsNullable)
+                    throw new NotImplementedException();
+
+                if (opCode == ILOpcode.unbox_any)
+                {
+                    string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
+                    Append("*(");
+                    Append(typeName);
+                    Append("*)");
+                }
+
+                Append("((void **)");
+                Append(obj.Value.Name);
+                Append("+1)");
+            }
+            else
+            {
+                // TODO: Cast
+                Append(obj.Value.Name);
+            }
+
+            Finish();
         }
 
         void ImportRefAnyVal(int token)
