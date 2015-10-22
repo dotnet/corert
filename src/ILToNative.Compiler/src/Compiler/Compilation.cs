@@ -356,13 +356,30 @@ namespace ILToNative
                     {
                         methodCode = _corInfo.CompileMethod(method);
                     }
-                    catch (Exception e)
+                    catch (NotImplementedException e)
                     {
                         Log.WriteLine(e.Message + " (" + method + ")");
                         methodCode = new MethodCode
                         {
                             Code = new byte[] { 0xCC }
                         };
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                        Log.WriteLine(e.Message + " (" + method + ")");
+                        methodCode = new MethodCode
+                        {
+                            Code = new byte[] { 0xCC }
+                        };
+                    }
+
+                    BlobNode roDataBlob = null;
+                    if (methodCode.ROData != null)
+                    {
+                        roDataBlob = _nodeFactory.ReadOnlyDataBlob(
+                            "__rodata_" + ((ISymbolNode)methodCodeNodeNeedingCode).MangledName,
+                            methodCode.ROData,
+                            _nodeFactory.Target.MinimumFunctionAlignment);
                     }
 
                     ObjectDataBuilder objData = new ObjectDataBuilder();
@@ -376,6 +393,10 @@ namespace ILToNative
                         {
                             // Relocs with delta not yet supported
                             if (methodCode.Relocs[i].Delta != 0)
+                                throw new NotImplementedException();
+
+                            // Relocs targeting anything but code are not yet supported.
+                            if (methodCode.Relocs[i].Block == 0)
                                 throw new NotImplementedException();
 
                             int offset = methodCode.Relocs[i].Offset;
@@ -404,6 +425,10 @@ namespace ILToNative
                             {
                                 targetNode = _nodeFactory.NecessaryTypeSymbol((TypeDesc)target);
                             }
+                            else if (target is BlockRelativeTarget)
+                            {
+                                targetNode = _nodeFactory.ExternSymbol("RODATA");
+                            }
                             else
                             {
                                 // TODO:
@@ -415,10 +440,6 @@ namespace ILToNative
                     }
                     // TODO: ColdCode
                     if (methodCode.ColdCode != null)
-                        throw new NotImplementedException();
-
-                    // TODO: ROData
-                    if (methodCode.ROData != null)
                         throw new NotImplementedException();
 
                     methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());

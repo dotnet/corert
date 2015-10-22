@@ -86,6 +86,11 @@ namespace ILToNative.DependencyAnalysis
                 return new GCStaticEETypeNode(gcdesc, this);
             }, new BoolArrayEqualityComparer());
 
+            _readOnlyDataBlobs = new NodeCache<byte[], BlobNode>((Tuple<string, byte[], int> key) =>
+            {
+                return new BlobNode(key.Item1, "text", key.Item2, key.Item3);
+            });
+
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
             {
                 return new ExternSymbolNode(name);
@@ -196,6 +201,13 @@ namespace ILToNative.DependencyAnalysis
         public ISymbolNode GCStaticEEType(bool[] gcdesc)
         {
             return _GCStaticEETypes.GetOrAdd(gcdesc);
+        }
+
+        private NodeCache<Tuple<string, byte[], int>, BlobNode> _readOnlyDataBlobs;
+
+        public BlobNode ReadOnlyDataBlob(string name, byte[] blobData, int alignment)
+        {
+            return _readOnlyDataBlobs.GetOrAdd(new Tuple<string, byte[], int>(name, blobData, alignment));
         }
 
         private BlobNode _writeBarrierHelper = new BlobNode("WriteBarrierWorkaround", "text", new byte[] { 0x48, 0x89, 0x11, 0xC3 }, 16);

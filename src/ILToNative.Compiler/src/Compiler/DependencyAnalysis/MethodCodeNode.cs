@@ -11,6 +11,7 @@ namespace ILToNative.DependencyAnalysis
     {
         MethodDesc _method;
         ObjectData _methodCode;
+        BlobNode _roData;
 
         public MethodCodeNode(MethodDesc method)
         {
@@ -22,6 +23,12 @@ namespace ILToNative.DependencyAnalysis
         {
             Debug.Assert(_methodCode == null);
             _methodCode = data;
+        }
+
+        public void SetROData(BlobNode roData)
+        {
+            Debug.Assert(_roData == null);
+            _roData = roData;
         }
 
         public MethodDesc Method
