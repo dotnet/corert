@@ -45,16 +45,13 @@ namespace ILToNative.CppCodeGen
             SetWellKnownTypeSignatureName(WellKnownType.Single, "float");
             SetWellKnownTypeSignatureName(WellKnownType.Double, "double");
 
-            // TODO: For now, ensure that all types/methods referenced by temporary implementation in stubs.cpp are present
+            // TODO: For now, ensure that all types/methods referenced by unmanaged helpers are present
             var stringType = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String);
             AddInstanceFields(stringType);
 
             var stringArrayType = stringType.MakeArrayType();
             _compilation.AddType(stringArrayType);
             _compilation.MarkAsConstructed(stringArrayType);
-
-            var bufferType = ((EcmaType)stringType).Module.GetType("System", "Buffer");
-            _compilation.AddMethod(bufferType.GetMethod("BlockCopy", null));
         }
 
         public string GetCppSignatureTypeName(TypeDesc type)
@@ -883,8 +880,6 @@ namespace ILToNative.CppCodeGen
 
                 if (voidReturn) Out.WriteLine(voidReturn ? "return 0;" : "return ret;");
                 Out.WriteLine("}");
-
-                Out.WriteLine("#include \"stubs.cpp\"");
             }
 
             Out.Dispose();

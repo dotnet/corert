@@ -97,9 +97,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="platform.windows.cpp" />
     <ClCompile Include="repro.cpp" />
-    <ClInclude Include="stubs.cpp">
-      <ExcludedFromBuild>true</ExcludedFromBuild>
-    </ClInclude>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
