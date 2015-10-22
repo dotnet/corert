@@ -145,7 +145,7 @@ namespace ILToNative
             _compilerTypeSystemContext.InputFilePaths = _inputFilePaths;
             _compilerTypeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
-            _compilerTypeSystemContext.SetSystemModule(_compilerTypeSystemContext.GetModuleForSimpleName("mscorlib"));
+            _compilerTypeSystemContext.SetSystemModule(_compilerTypeSystemContext.GetModuleForSimpleName("System.Private.CoreLib"));
 
             // For now, we can do single file compilation only
             // TODO: Multifile

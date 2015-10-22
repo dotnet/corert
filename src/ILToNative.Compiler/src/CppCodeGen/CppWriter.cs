@@ -254,8 +254,7 @@ namespace ILToNative.CppCodeGen
             Unknown,
             PInvoke,
             RuntimeImport,
-            Intrinsic,
-            BoundsChecking,
+            Intrinsic
         };
 
         SpecialMethodKind DetectSpecialMethodKind(MethodDesc method)
@@ -275,11 +274,6 @@ namespace ILToNative.CppCodeGen
                 {
                     _compilation.Log.WriteLine("Intrinsic: " + method.ToString());
                     return SpecialMethodKind.Intrinsic;
-                }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.CompilerServices.BoundsCheckingAttribute"))
-                {
-                    _compilation.Log.WriteLine("BoundsChecking: " + method.ToString());
-                    return SpecialMethodKind.BoundsChecking;
                 }
                 else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.InteropServices.NativeCallableAttribute"))
                 {
@@ -326,9 +320,6 @@ namespace ILToNative.CppCodeGen
 
                         return builder.ToString();
                     }
-
-                case SpecialMethodKind.BoundsChecking:
-                    return null;
 
                 default:
                     // TODO: hacky special-case
