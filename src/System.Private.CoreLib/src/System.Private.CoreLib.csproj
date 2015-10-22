@@ -62,8 +62,8 @@
 
   <PropertyGroup>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
-    <!-- TODO: @tarekgh Define this for CoreRT builds only -->
-    <DefineConstants>CORERT</DefineConstants>
+    <!-- TODO: @tarekgh Define this for CoreRT / 64-bit builds only -->
+    <DefineConstants>CORERT;WIN64</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\SR.Core.cs">
