@@ -852,7 +852,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.CCtorTrigger, type));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR:
