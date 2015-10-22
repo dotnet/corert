@@ -1,18 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using namespace mscorlib;
-
-//
-// BoundsChecking
-//
-void ThrowRangeOverflowException();
-unsigned short System::String::get_Chars(class System::String *pString, int index)
-{
-    if ((uint32_t)index >= (uint32_t)pString->m_stringLength)
-        ThrowRangeOverflowException();
-    return *(&pString->m_firstChar + index);
-}
+using namespace System_Private_CoreLib;
 
 //
 // unattributed, no body method

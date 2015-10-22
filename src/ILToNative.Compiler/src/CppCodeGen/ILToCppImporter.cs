@@ -723,20 +723,15 @@ namespace Internal.IL
                     {
                         mdArrayCreate = true;
                     }
+                    else if (owningType.IsDelegate)
+                    {
+                        method = GetDelegateCtor(owningType, ref _stack[_stackTop - 1].Value, out staticShuffleThunk);
+                    }
                 }
                 else
                 if (owningType.IsDelegate)
                 {
-                    string methodName = method.Name;
-                    if (methodName == ".ctor")
-                    {
-                        if (opcode != ILOpcode.newobj)
-                            throw new BadImageFormatException();
-
-                        method = GetDelegateCtor(owningType, ref _stack[_stackTop - 1].Value, out staticShuffleThunk);
-                    }
-                    else
-                    if (methodName == "Invoke")
+                    if (method.Name == "Invoke")
                     {
                         opcode = ILOpcode.call;
                         delegateInvoke = true;
@@ -1997,12 +1992,6 @@ namespace Internal.IL
 
         void ImportLocalAlloc()
         {
-            if (Msvc)
-            {
-                // Need to test this
-                throw new NotImplementedException();
-            }
-
             StackValue count = Pop();
 
             // TODO: this is machine dependent and might not result in a HW stack overflow exception

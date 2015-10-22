@@ -50,7 +50,7 @@ void __register_module(SimpleModuleHeader* pModule)
     RhpRegisterSimpleModule(pModule);
 }
 
-namespace mscorlib { namespace System { 
+namespace System_Private_CoreLib { namespace System { 
 
     class Object {
     public:
@@ -81,7 +81,7 @@ namespace mscorlib { namespace System {
 
 }; };
 
-using namespace mscorlib;
+using namespace System_Private_CoreLib;
 
 //
 // The fast paths for object allocation and write barriers is performance critical. They are often
@@ -92,14 +92,14 @@ extern "C" Object * __allocate_object(MethodTable * pMT)
     return RhNewObject(pMT);
 }
 
-extern "C" void __EEType_mscorlib_System_String();
+extern "C" void __EEType_System_Private_CoreLib_System_String();
 
 Object * __allocate_string(int32_t len)
 {
 #ifdef CPPCODEGEN
     return RhNewArray(System::String::__getMethodTable(), len);
 #else
-    return RhNewArray((MethodTable*)__EEType_mscorlib_System_String, len);
+    return RhNewArray((MethodTable*)__EEType_System_Private_CoreLib_System_String, len);
 #endif
 }
 
@@ -396,7 +396,7 @@ int main(int argc, char * argv[]) {
     return 0;
 }
 
-extern "C" void mscorlib_System_Runtime_RuntimeImports__RhNewArrayAsString()
+extern "C" void System_Private_CoreLib_System_Runtime_RuntimeImports__RhNewArrayAsString()
 {
     throw 42;
 }
@@ -412,15 +412,15 @@ extern "C" void System_Console_Interop_mincore__WriteFile()
 {
     throw 42;
 }
-extern "C" void mscorlib_System_String__get_Chars()
+extern "C" void System_Private_CoreLib_System_String__get_Chars()
 {
     throw 42;
 }
-extern "C" void mscorlib_System_Runtime_RuntimeImports__memmove()
+extern "C" void System_Private_CoreLib_System_Runtime_RuntimeImports__memmove()
 {
     throw 42;
 }
-extern "C" void mscorlib_Interop_mincore__PInvoke_CompareStringOrdinal()
+extern "C" void System_Private_CoreLib_Interop_mincore__PInvoke_CompareStringOrdinal()
 {
     throw 42;
 }
