@@ -134,7 +134,7 @@ namespace ILToNative.DependencyAnalysis
             int totalSize = 0;
             foreach (int run in _runLengths)
             {
-                totalSize += run;
+                totalSize += run * _targetPointerSize;
             }
 
             dataBuilder.EmitShort(0); // ComponentSize is always 0

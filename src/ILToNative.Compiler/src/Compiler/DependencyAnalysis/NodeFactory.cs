@@ -198,10 +198,18 @@ namespace ILToNative.DependencyAnalysis
             return _GCStaticEETypes.GetOrAdd(gcdesc);
         }
 
+        private BlobNode _writeBarrierHelper = new BlobNode("WriteBarrierWorkaround", "text", new byte[] { 0x48, 0x89, 0x11, 0xC3 }, 16);
         private NodeCache<string, ExternSymbolNode> _externSymbols;
 
         public ISymbolNode ExternSymbol(string name)
         {
+            // We can't call the real C++ WriteBarrier implementation because that one expects
+            // a register spill zone. JIT doesn't generate a spill zone before the call.
+            if (name == "WriteBarrier")
+            {
+                return _writeBarrierHelper;
+            }
+
             return _externSymbols.GetOrAdd(name);
         }
 
@@ -217,10 +225,16 @@ namespace ILToNative.DependencyAnalysis
 
         public ISymbolNode MethodEntrypoint(MethodDesc method)
         {
-            if (method.DetectSpecialMethodKind() == SpecialMethodKind.PInvoke)
+            var kind = method.DetectSpecialMethodKind();
+            if (kind == SpecialMethodKind.PInvoke)
             {
                 return _jumpStubs.GetOrAdd(ExternSymbol(((EcmaMethod)method).GetPInvokeImportName()));
             }
+            else if (kind == SpecialMethodKind.RuntimeImport)
+            {
+                return ExternSymbol(((EcmaMethod)method).GetRuntimeImportEntryPointName());
+            }
+
             return _methodCode.GetOrAdd(method);
         }
 

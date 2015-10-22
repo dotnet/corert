@@ -13,7 +13,7 @@ namespace System
     {
 #if CORERT
         // CORERT-TODO This depends on a lot of stuff that we do not handle yet
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport("Buffer_BlockCopy")]
         public static unsafe extern void BlockCopy(Array src, int srcOffset,
                                             Array dst, int dstOffset,
                                             int count);

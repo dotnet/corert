@@ -251,6 +251,12 @@ Object * __get_commandline_args(int argc, char * argv[])
 }
 #endif
 
+extern "C" void Buffer_BlockCopy(class System::Array * src, int srcOfs, class System::Array * dst, int dstOfs, int count)
+{
+    // TODO: Argument validation
+    memmove((uint8_t*)dst + 2 * sizeof(void*) + dstOfs, (uint8_t*)src + 2 * sizeof(void*) + srcOfs, count);
+}
+
 extern "C" Object* RhMemberwiseClone(Object*)
 {
     throw 42;

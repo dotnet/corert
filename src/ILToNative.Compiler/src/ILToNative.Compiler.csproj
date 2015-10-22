@@ -42,6 +42,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AsmWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />

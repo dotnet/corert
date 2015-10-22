@@ -83,6 +83,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAbstract
+        {
+            get
+            {
+                return _typicalMethodDef.IsAbstract;
+            }
+        }
+
         public override MethodDesc GetTypicalMethodDefinition()
         {
             return _typicalMethodDef;
