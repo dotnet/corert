@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ILToNative.DependencyAnalysisFramework;
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILToNative.DependencyAnalysis
 {
@@ -132,6 +131,16 @@ namespace ILToNative.DependencyAnalysis
 
             objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
             objectSize = Math.Max(minimumObjectSize, objectSize);
+
+            if (_type.IsString)
+            {
+                // If this is a string, throw away objectSize we computed so far. Strings are special.
+                // SyncBlock + EETypePtr + length + firstChar
+                objectSize = 2 * pointerSize +
+                    _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() +
+                    _type.Context.GetWellKnownType(WellKnownType.Char).GetElementSize();
+            }
+
             objData.EmitInt(objectSize);
 
             if (Type.BaseType != null)
