@@ -438,10 +438,6 @@ extern "C" void System_Console_Interop_mincore__WriteFile()
 {
     throw 42;
 }
-extern "C" void System_Private_CoreLib_System_String__get_Chars()
-{
-    throw 42;
-}
 extern "C" void System_Private_CoreLib_System_Runtime_RuntimeImports__memmove()
 {
     throw 42;
