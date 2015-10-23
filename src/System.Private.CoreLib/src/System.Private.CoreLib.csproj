@@ -294,7 +294,7 @@
     <Compile Include="System\ObjectDisposedException.cs" />
     <Compile Include="System\ObsoleteAttribute.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
-    <Compile Include="System\overflowexception.cs" />
+    <Compile Include="System\OverflowException.cs" />
     <Compile Include="System\ParamsArray.cs" />
     <Compile Include="System\ParseNumbers.cs" />
     <Compile Include="System\PlatformNotSupportedException.cs" />
