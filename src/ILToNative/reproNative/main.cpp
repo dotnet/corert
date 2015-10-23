@@ -422,36 +422,4 @@ int main(int argc, char * argv[]) {
     return 0;
 }
 
-extern "C" void System_Private_CoreLib_System_Runtime_RuntimeImports__RhNewArrayAsString()
-{
-    throw 42;
-}
-extern "C" void System_Console_Interop_mincore__GetConsoleOutputCP()
-{
-    throw 42;
-}
-extern "C" void System_Console_Interop_mincore__GetStdHandle()
-{
-    throw 42;
-}
-extern "C" void System_Console_Interop_mincore__WriteFile()
-{
-    throw 42;
-}
-extern "C" void System_Private_CoreLib_System_String__get_Chars()
-{
-    throw 42;
-}
-extern "C" void System_Private_CoreLib_System_Runtime_RuntimeImports__memmove()
-{
-    throw 42;
-}
-extern "C" void System_Private_CoreLib_Interop_mincore__PInvoke_CompareStringOrdinal()
-{
-    throw 42;
-}
-extern "C" void System_Console_Interop_mincore__GetFileType()
-{
-    throw 42;
-}
 #endif
