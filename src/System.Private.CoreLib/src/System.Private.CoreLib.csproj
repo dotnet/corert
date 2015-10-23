@@ -174,7 +174,7 @@
     <Compile Include="System\Globalization\FormatProvider.cs" />
     <Compile Include="System\Globalization\CalendarWeekRule.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfoData.cs" />
-    <Compile Include="System\Globalization\culturenotfoundexception.cs" />
+    <Compile Include="System\Globalization\CultureNotFoundException.cs" />
     <Compile Include="System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="System\Globalization\HebrewCalendar.cs" />
     <Compile Include="System\Globalization\HebrewNumber.cs" />
