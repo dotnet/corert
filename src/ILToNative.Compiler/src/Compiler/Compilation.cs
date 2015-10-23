@@ -32,8 +32,6 @@ namespace ILToNative
     {
         readonly CompilerTypeSystemContext _typeSystemContext;
         readonly CompilationOptions _options;
-
-        Dictionary<string, int> _stringTable = new Dictionary<string, int>();
         
         NodeFactory _nodeFactory;
         DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
@@ -514,14 +512,6 @@ namespace ILToNative
                 GetRegisteredType(field.OwningType);
                 GetRegisteredType(field.FieldType);
             }
-        }
-
-        internal int AddToStringTable(string str)
-        {
-            int id;
-            if (!_stringTable.TryGetValue(str, out id))
-                _stringTable.Add(str, id = _stringTable.Count);
-            return id;
         }
 
         struct ReadyToRunHelperKey : IEquatable<ReadyToRunHelperKey>
