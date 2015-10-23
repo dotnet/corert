@@ -16,6 +16,27 @@
   <Import Project="$(ToolsDir)packages.targets" Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'" />
   <Import Project="$(ToolsDir)UpdateBuildValues.targets" Condition="Exists('$(ToolsDir)UpdateBuildValues.targets')" />
 
+  <!-- Have a task to copy ILToNative.exe to ILToNative.dll for inclusion into the NoDep nuget package -->
+  <ItemGroup>
+        <SourceName Include="$(OutputPath)ILToNative.exe"/>
+        <TargetName Include="$(OutputPath)ILToNative.dll"/>
+  </ItemGroup>
+
+  <Target Name="RenameILToNative" AfterTargets="Build">
+    <Copy SourceFiles="@(SourceName)" DestinationFiles="@(TargetName)" />
+  </Target>
+
+  <!-- 
+      Generate Microsoft.Dotnet.CoreRT nuget package and associated development package 
+      TODO: For now, we will generate Nuget packages only for Windows.
+  -->
+
+  <Target Name="BuildNuGetPackages" Condition="'$(BuildNugetPackage)' != 'false' and '$(OSGroup)' == 'Windows_NT'" AfterTargets="RenameILToNative">
+    <MakeDir Directories="$(ProductPackageDir)" Condition="!Exists('$(ProductPackageDir)')" />
+    <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(ProductPackageDir)" />
+    <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+  </Target>
+
   <PropertyGroup Condition="Exists('$(ToolsDir)packages.targets') and '$(ImportGetNuGetPackageVersions)' != 'false'">
     <TraversalBuildDependsOn>
       $(TraversalBuildDependsOn);

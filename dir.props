@@ -35,7 +35,10 @@
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
     <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
+    <ProductBinDir Condition="'$(ProductBinDir)'==''">$(BinDir)Product/</ProductBinDir>
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
+
+    <!-- Folder where restored Nuget packages will go -->
     <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages/</PackagesOutDir>
 
     <!-- Input Directories -->
@@ -43,10 +46,33 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
   </PropertyGroup>
 
+  <!-- Set up the default output and intermediate paths -->
+  <PropertyGroup>
+    <OSPlatformConfig>$(__BuildOS).$(__BuildArch).$(__BuildType)</OSPlatformConfig>
+
+    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(ProductBinDir)</BaseOutputPath>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\</OutputPath>
+
+    <!-- Folder where we will drop the Nuget package for the toolchain -->
+    <ProductPackageDir Condition="'$(ProductPackageDir)'==''">$(OutputPath).nuget/</ProductPackageDir>
+    
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
+    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
+
+    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
+
+    <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
+  </PropertyGroup>
+
   <!-- list of nuget package sources passed to nuget.exe -->
   <ItemGroup>
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
+    <NuSpecSrcs Include="$(SourceDir).nuget\Microsoft.DotNet.ILToNative.nuspec" />
+    <NuSpecSrcs Include="$(SourceDir).nuget\Microsoft.DotNet.ILToNative.Development.nuspec" />
+    <NuSpecs Include="$(ProductPackageDir)Microsoft.DotNet.ILToNative.nuspec" />
+    <NuSpecs Include="$(ProductPackageDir)Microsoft.DotNet.ILToNative.Development.nuspec" />
   </ItemGroup>
 
   <!-- Common nuget properties -->
@@ -199,22 +225,6 @@
   <PropertyGroup>
     <CommonPath>$(SourceDir)Common\src</CommonPath>
     <CommonTestPath>$(SourceDir)Common\tests</CommonTestPath>
-  </PropertyGroup>
-
-  <!-- Set up the default output and intermediate paths -->
-  <PropertyGroup>
-    <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
-
-    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\$(MSBuildProjectName)\</OutputPath>
-
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
-    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
-
-    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
-
-    <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
 
   <!-- Set up common target properties that we use to conditionally include sources -->
