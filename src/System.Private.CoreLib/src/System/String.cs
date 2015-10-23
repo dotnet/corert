@@ -83,7 +83,11 @@ namespace System
     // eagerly constructed to avoid the cost of defered ctors. I can't imagine any app that doesn't use string
     //
     [ComVisible(true)]
+#if !CORERT
     [StructLayout(LayoutKind.Explicit)]
+#else
+    [StructLayout(LayoutKind.Sequential)]
+#endif
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
     public sealed class String : IComparable, IEnumerable, IEnumerable<char>, IComparable<String>, IEquatable<String>, IConvertible
     {
@@ -99,12 +103,18 @@ namespace System
         // CS0169: The private field '{blah}' is never used
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 169, 649
+
+        // CORERT porting note: offset is if'd out because it's bogus. These were needed for Bartok
+        // compatibility years ago and NUTC has a corresponding workaround for this in the field layout code.
+        // We should remove the if'd out code on the .NET Native side too and remove the workaround in NUTC.
 #if !CORERT
         [Bound]
-#endif
         [FieldOffset(STRING_LENGTH_OFFSET)]
+#endif
         private int _stringLength;
+#if !CORERT
         [FieldOffset(FIRST_CHAR_OFFSET)]
+#endif
         private char _firstChar;
 #pragma warning restore
 
@@ -112,10 +122,6 @@ namespace System
 // These are special. the implementation methods for these have a different signature from the
 // declared constructors. We use a RuntimeImport/RuntimeExport combination to workaround this difference.
 // TODO: Determine a more reasonable solution for this.
-
-// TODO: For (length == 0), the code goes through AllocateString and returns an empty string. If this
-// is more common, we can explicitly check for it. We should also decide on semantics when passed in array/char* is NULL. 
-// The code checks and returns String.Empty.
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
 #if CORERT
