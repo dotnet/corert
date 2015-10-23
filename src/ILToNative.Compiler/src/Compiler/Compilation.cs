@@ -330,14 +330,7 @@ namespace ILToNative
                     ExpandVirtualMethods();
                 }
 
-                if (_options.IsCppCodeGen)
-                {
-                    _cppWriter.OutputCode();
-                }
-                else
-                {
-                    OutputCode();
-                }
+                _cppWriter.OutputCode();
             }
         }
 
