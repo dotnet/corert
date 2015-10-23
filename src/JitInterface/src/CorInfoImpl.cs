@@ -686,8 +686,14 @@ namespace Internal.JitInterface
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]
+
         bool isStructRequiringStackAllocRetBuf(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        {
+            // Disable this optimization. It has limited value (only kicks in on x86, and only for less common structs),
+            // causes bugs and introduces odd ABI differences not compatible with ReadyToRun.
+            return false;
+        }
+
         CORINFO_MODULE_STRUCT_* getClassModule(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException(); }
         CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(IntPtr _this, CORINFO_MODULE_STRUCT_* mod)
