@@ -13,30 +13,30 @@
 
 #include "gcenv.h"
 #include "gc.h"
-#include "restrictedcallouts.h"
+#include "RestrictedCallouts.h"
 
-#include "palredhawkcommon.h"
+#include "PalRedhawkCommon.h"
 
 #include "gcrhinterface.h"
 
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 
 #include "thread.h"
 
 #include "module.h"
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "objecthandle.h"
 #include "eetype.inl"
-#include "rhconfig.h"
+#include "RhConfig.h"
 
 #include "threadstore.h"
 
 #include "gcdesc.h"
-#include "syncclean.hpp"
+#include "SyncClean.hpp"
 
 typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
 

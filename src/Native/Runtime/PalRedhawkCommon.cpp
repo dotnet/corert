@@ -17,11 +17,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <evntprov.h>
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
 #include <palredhawkcommon.h>
 #include <winternl.h>
-#include "commonmacros.h"
+#include "CommonMacros.h"
 #include "assert.h"
 
 #ifdef USE_PORTABLE_HELPERS

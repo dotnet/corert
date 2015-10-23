@@ -10,15 +10,15 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gc.h"
-#include "restrictedcallouts.h"
+#include "RestrictedCallouts.h"
 
 #include "gcrhinterface.h"
 
-#include "palredhawkcommon.h"
+#include "PalRedhawkCommon.h"
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 
 #include "thread.h"
 

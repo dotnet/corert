@@ -3,24 +3,24 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 #include "rhcommon.h"
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
-#include "debugmacrosext.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonMacros.h"
+#include "DebugMacrosExt.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "static_check.h"
 #include "slist.h"
 #include "holder.h"
-#include "crst.h"
-#include "range.h"
+#include "Crst.h"
+#include "Range.h"
 #ifdef FEATURE_RWX_MEMORY
 #include "memaccessmgr.h"
 #endif
 #include "allocheap.h"
 
-#include "commonmacros.inl"
+#include "CommonMacros.inl"
 #include "slist.inl"
 
 using namespace rh::util;

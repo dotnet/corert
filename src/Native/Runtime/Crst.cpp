@@ -8,12 +8,12 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "holder.h"
-#include "crst.h"
+#include "Crst.h"
 #endif // !DACCESS_COMPILE
 
 bool EEThreadId::IsSameThread()

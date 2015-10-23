@@ -12,10 +12,10 @@
 
 #if defined(FEATURE_EVENT_TRACE)
 
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "debugmacrosext.h"
-#include "palredhawkcommon.h"
+#include "DebugMacrosExt.h"
+#include "PalRedhawkCommon.h"
 #include "gcrhenv.h"
 
 

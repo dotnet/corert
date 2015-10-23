@@ -3,13 +3,13 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
+#include "CommonMacros.h"
 #include "assert.h"
 #include "rhbinder.h"
 #include "eetype.h"
-#include "genericinstance.h"
+#include "GenericInstance.h"
 #else
 #include "gcrhenv.h"
 #endif

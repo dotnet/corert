@@ -8,35 +8,35 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "static_check.h"
 #include "slist.h"
 #include "holder.h"
-#include "crst.h"
-#include "rhbinder.h" // for GenericInstanceDesc
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "Crst.h"
+#include "rhbinder.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "event.h"
 #include "threadstore.h"
 #include "gcrhinterface.h"
 #include "module.h"
 #include "eetype.h"
-#include "genericinstance.h"
+#include "GenericInstance.h"
 #include "varint.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 #include "thread.h"
-#include "debugeventsource.h"
+#include "DebugEventSource.h"
 
-#include "commonmacros.inl"
+#include "CommonMacros.inl"
 #include "slist.inl"
 #include "eetype.inl"
-#include "optionalfields.inl"
+#include "OptionalFields.inl"
 
 #ifdef  FEATURE_GC_STRESS
 enum HijackType { htLoop, htCallsite };

@@ -9,23 +9,23 @@
 #include "gc.h"
 #include "objecthandle.h"
 
-#include "restrictedcallouts.h"
+#include "RestrictedCallouts.h"
 
 
-#include "palredhawkcommon.h"
+#include "PalRedhawkCommon.h"
 
 #include "gcrhinterface.h"
 
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 
 #include "thread.h"
 
 #include "module.h"
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "threadstore.h"
 
 // todo: remove this hack (brain-dead logging).

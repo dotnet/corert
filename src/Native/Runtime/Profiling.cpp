@@ -8,19 +8,19 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "static_check.h"
 #include "slist.h"
 #include "holder.h"
-#include "crst.h"
-#include "rhbinder.h" // for GenericInstanceDesc
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "Crst.h"
+#include "rhbinder.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "gcrhinterface.h"
 #include "module.h"
 #else

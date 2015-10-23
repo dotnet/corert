@@ -8,30 +8,30 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
-#include "redhawkwarnings.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
+#include "RedhawkWarnings.h"
 #include "assert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 #include "thread.h"
 #include "holder.h"
-#include "crst.h"
-#include "rwlock.h"
+#include "Crst.h"
+#include "RWLock.h"
 #include "static_check.h"
 #include "event.h"
 #include "threadstore.h"
-#include "stresslog.h"
+#include "stressLog.h"
 #endif
 
 #include "module.h"
-#include "runtimeinstance.h"
+#include "RuntimeInstance.h"
 #include "rhbinder.h"
 
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label

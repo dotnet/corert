@@ -13,15 +13,15 @@
 #else // DACCESS_COMPILE
 
 #ifndef RHDUMP
-#include "commontypes.h"
-#include "commonmacros.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "daccess.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "rhbinder.h"
 #include "eetype.h"
-#include "objectlayout.h"
+#include "ObjectLayout.h"
 #include "varint.h"
 #endif
 

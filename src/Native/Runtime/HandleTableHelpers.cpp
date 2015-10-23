@@ -13,7 +13,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "objecthandle.h"
-#include "restrictedcallouts.h"
+#include "RestrictedCallouts.h"
 
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
