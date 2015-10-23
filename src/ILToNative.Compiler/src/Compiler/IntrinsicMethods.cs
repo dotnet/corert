@@ -3,7 +3,7 @@
 
 using Internal.TypeSystem;
 
-namespace ILToNative.CppCodeGen
+namespace ILToNative
 {
     enum IntrinsicMethodKind
     {

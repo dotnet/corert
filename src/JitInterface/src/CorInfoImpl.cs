@@ -294,6 +294,17 @@ namespace Internal.JitInterface
             return corInfoType;
         }
 
+        CorInfoIntrinsics asCorInfoIntrinsic(IntrinsicMethodKind methodKind)
+        {
+            switch (methodKind)
+            {
+                case IntrinsicMethodKind.RuntimeHelpersInitializeArray:
+                    return CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
         MethodDesc methodFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
             if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
@@ -335,8 +346,9 @@ namespace Internal.JitInterface
                 // TODO: if (pMD->IsSynchronized())
                 //    result |= CORINFO_FLG_SYNCH;
 
-                // TODO: if (pMD->IsFCallOrIntrinsic())
-                //    result |= CORINFO_FLG_NOGCCHECK | CORINFO_FLG_INTRINSIC;
+                // TODO: intrinsics other than InitializeArray - many require extra work
+                if (ecmaMethod.IsIntrinsic && ecmaMethod.Name == "InitializeArray")
+                    result |= CorInfoFlag.CORINFO_FLG_NOGCCHECK | CorInfoFlag.CORINFO_FLG_INTRINSIC;
 
                 if ((attribs & MethodAttributes.Virtual) != 0)
                     result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
@@ -472,7 +484,10 @@ namespace Internal.JitInterface
         void getMethodVTableOffset(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
         { throw new NotImplementedException(); }
         CorInfoIntrinsics getIntrinsicID(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException(); }
+        {
+            var md = HandleToObject(method);
+            return asCorInfoIntrinsic(IntrinsicMethods.GetIntrinsicMethodClassification(md));
+        }
 
         [return: MarshalAs(UnmanagedType.I1)]
         bool isInSIMDModule(IntPtr _this, CORINFO_CLASS_STRUCT_* classHnd)
@@ -551,7 +566,10 @@ namespace Internal.JitInterface
             }
             else
             {
-                pResolvedToken.hClass = ObjectToHandle((TypeDesc)result);
+                TypeDesc type = (TypeDesc)result;
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                    type = type.MakeArrayType();
+                pResolvedToken.hClass = ObjectToHandle(type);
             }
 
             pResolvedToken.pTypeSpec = null;
@@ -980,13 +998,28 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.Bool)]
         bool satisfiesClassConstraints(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException(); }
+
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isSDArray(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        {
+            var td = HandleToObject(cls);
+            return td.IsSzArray;
+        }
+
         uint getArrayRank(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException(); }
+
         void* getArrayInitializationData(IntPtr _this, CORINFO_FIELD_STRUCT_* field, uint size)
-        { throw new NotImplementedException(); }
+        {
+            var fd = HandleToObject(field);
+            if (!fd.HasRva)
+            {
+                return null;
+            }
+
+            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fd));
+        }
+
         CorInfoIsAccessAllowedResult canAccessClass(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_HELPER_DESC pAccessHelper)
         {
             // TODO: Access check
@@ -1332,7 +1365,10 @@ namespace Internal.JitInterface
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
-                throw new NotImplementedException();
+                pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD;
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hField;
+
+                // fRuntimeLookup = th.IsSharedByGenericInstantiations() && pFD->IsStatic();
             }
             else
             {

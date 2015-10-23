@@ -70,8 +70,9 @@
     <Compile Include="Compiler\RegisteredField.cs" />
     <Compile Include="Compiler\RegisteredMethod.cs" />
     <Compile Include="Compiler\RegisteredType.cs" />
+    <Compile Include="Compiler\RvaFieldData.cs" />
+    <Compile Include="Compiler\IntrinsicMethods.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
-    <Compile Include="CppCodeGen\IntrinsicMethods.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">

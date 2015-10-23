@@ -14,20 +14,22 @@ namespace Internal.TypeSystem.Ecma
 {
     public sealed class EcmaMethod : MethodDesc
     {
-        [Flags]
-        enum MethodFlags
+        static class MethodFlags
         {
-            BasicMetadataCache = 0x01,
-            Virtual = 0x02,
-            NewSlot = 0x04,
-            Abstract = 0x08,
+            public const int BasicMetadataCache     = 0x0001;
+            public const int Virtual                = 0x0002;
+            public const int NewSlot                = 0x0004;
+            public const int Abstract               = 0x0008;
+
+            public const int AttributeMetadataCache = 0x0100;
+            public const int Intrinsic            = 0x0200;
         };
 
         EcmaType _type;
         MethodDefinitionHandle _handle;
 
         // Cached values
-        MethodFlags _methodFlags;
+        ThreadSafeFlags _methodFlags;
         MethodSignature _signature;
         string _name;
         TypeDesc[] _genericParameters; // TODO: Optional field?
@@ -104,9 +106,9 @@ namespace Internal.TypeSystem.Ecma
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private MethodFlags InitializeMethodFlags(MethodFlags mask)
+        private int InitializeMethodFlags(int mask)
         {
-            MethodFlags flags = 0;
+            int flags = 0;
 
             if ((mask & MethodFlags.BasicMetadataCache) != 0)
             {
@@ -124,16 +126,41 @@ namespace Internal.TypeSystem.Ecma
                 flags |= MethodFlags.BasicMetadataCache;
             }
 
+            // Fetching custom attribute based properties is more expensive, so keep that under
+            // a separate cache that might not be accessed very frequently.
+            if ((mask & MethodFlags.AttributeMetadataCache) != 0)
+            {
+                var methodDefinition = this.MetadataReader.GetMethodDefinition(_handle);
+
+                foreach (var customAttributeHandle in methodDefinition.GetCustomAttributes())
+                {
+                    var customAttribute = this.MetadataReader.GetCustomAttribute(customAttributeHandle);
+                    var constructorHandle = customAttribute.Constructor;
+
+                    var constructor = Module.GetMethod(constructorHandle);
+                    var type = constructor.OwningType;
+
+                    switch (type.Name)
+                    {
+                        case "System.Runtime.CompilerServices.IntrinsicAttribute":
+                            flags |= MethodFlags.Intrinsic;
+                            break;
+                    }
+                }
+
+                flags |= MethodFlags.AttributeMetadataCache;
+            }
+
             Debug.Assert((flags & mask) != 0);
-            _methodFlags |= flags;
+            _methodFlags.AddFlags(flags);
 
             return flags & mask;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private MethodFlags GetMethodFlags(MethodFlags mask)
+        private int GetMethodFlags(int mask)
         {
-            MethodFlags flags = _methodFlags & mask;
+            int flags = _methodFlags.Value & mask;
             if (flags != 0)
                 return flags;
             return InitializeMethodFlags(mask);
@@ -160,6 +187,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Abstract) & MethodFlags.Abstract) != 0;
+            }
+        }
+
+        public override bool IsIntrinsic
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.Intrinsic) & MethodFlags.Intrinsic) != 0;
             }
         }
 

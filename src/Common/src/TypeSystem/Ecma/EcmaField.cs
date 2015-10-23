@@ -245,4 +245,27 @@ namespace Internal.TypeSystem.Ecma
             return _type.ToString() + "." + Name;
         }
     }
+
+    public static class EcmaFieldExtensions
+    {
+        /// <summary>
+        /// Retrieves the data associated with an RVA mapped field from the PE module.
+        /// </summary>
+        public static byte[] GetFieldRvaData(this EcmaField field)
+        {
+            Debug.Assert(field.HasRva);
+            int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
+            var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
+
+            var fieldType = (EcmaType)field.FieldType;
+            int size = fieldType.MetadataReader.GetTypeDefinition(fieldType.Handle).GetLayout().Size;
+            if (size == 0)
+                throw new NotImplementedException();
+
+            byte[] result = new byte[size];
+            memBlock.CopyTo(0, result, 0, result.Length);
+
+            return result;
+        }
+    }
 }
