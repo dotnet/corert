@@ -12,8 +12,8 @@
 
 #include "slist.h"
 #include "gcrhinterface.h"
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "module.h"
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low

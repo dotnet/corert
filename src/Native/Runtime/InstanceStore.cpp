@@ -3,20 +3,20 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 #include "rhcommon.h"
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "static_check.h"
 #include "type_traits.hpp"
 #include "slist.h"
 #include "holder.h"
-#include "crst.h"
-#include "instancestore.h"
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "Crst.h"
+#include "InstanceStore.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 
 #include "slist.inl"
 

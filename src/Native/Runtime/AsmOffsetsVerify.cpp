@@ -2,26 +2,26 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "gcrhenvbase.h"
 #include "eventtrace.h"
 #include "gc.h"
 #include "assert.h"
-#include "redhawkwarnings.h"
+#include "RedhawkWarnings.h"
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 #include "thread.h"
 #include "rhbinder.h"
 #include "holder.h"
-#include "crst.h"
-#include "rwlock.h"
-#include "runtimeinstance.h"
-#include "cachedinterfacedispatch.h"
+#include "Crst.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
+#include "CachedInterfaceDispatch.h"
 #include "module.h"
-#include "calldescr.h"
+#include "CallDescr.h"
 
 class AsmOffsets
 {

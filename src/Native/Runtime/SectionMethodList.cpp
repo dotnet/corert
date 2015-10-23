@@ -8,16 +8,16 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
-#include "commonmacros.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "daccess.h"
 #include "assert.h"
 
-#include "commonmacros.inl"
+#include "CommonMacros.inl"
 #endif
 
 #include "rhbinder.h"
-#include "sectionmethodlist.h"
+#include "SectionMethodList.h"
 
 
 

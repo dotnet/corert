@@ -12,16 +12,16 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
+#include "CommonMacros.h"
 #include "assert.h"
-#include "redhawkwarnings.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
-#include "targetptrs.h"
+#include "RedhawkWarnings.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
+#include "TargetPtrs.h"
 #include "eetype.h"
-#include "objectlayout.h"
+#include "ObjectLayout.h"
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE

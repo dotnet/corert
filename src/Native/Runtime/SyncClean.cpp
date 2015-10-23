@@ -3,23 +3,23 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 #include "rhcommon.h"
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
 #include "forward_declarations.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "slist.h"
 #include "holder.h"
-#include "spinlock.h"
+#include "SpinLock.h"
 #include "rhbinder.h"
 #ifdef FEATURE_VSD
 #include "virtualcallstub.h"
 #endif // FEATURE_VSD
-#include "cachedinterfacedispatch.h"
+#include "CachedInterfaceDispatch.h"
 
-#include "syncclean.hpp"
+#include "SyncClean.hpp"
 
 void SyncClean::Terminate()
 {

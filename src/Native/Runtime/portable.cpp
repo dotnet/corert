@@ -4,11 +4,11 @@
 //
 #include "rhcommon.h"
 
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 
 #include "slist.h"
@@ -17,17 +17,17 @@
 #include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
-#include "crst.h"
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "Crst.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "event.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
 
 #include "eetype.h"
-#include "objectlayout.h"
+#include "ObjectLayout.h"
 
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
 

@@ -8,22 +8,22 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
-#include "commonmacros.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "daccess.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
-#include "commonmacros.inl"
+#include "CommonMacros.inl"
 #include "regdisplay.h"
-#include "targetptrs.h"
+#include "TargetPtrs.h"
 #include "eetype.h"
-#include "objectlayout.h"
+#include "ObjectLayout.h"
 #include "varint.h"
 #endif
 
 #include "gcinfo.h"
-#include "rhcodeman.h"
+#include "RHCodeMan.h"
 
 #include "ICodeManager.h"
 

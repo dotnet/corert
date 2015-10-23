@@ -7,29 +7,29 @@
 #if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
 
 
-#include "commontypes.h"
+#include "CommonTypes.h"
 #include "daccess.h"
-#include "commonmacros.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "CommonMacros.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "static_check.h"
 #include "holder.h"
-#include "crst.h"
-#include "rhconfig.h"
+#include "Crst.h"
+#include "RhConfig.h"
 #include "gcrhinterface.h"
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "forward_declarations.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 #include "thread.h"
 #include "event.h"
-#include "rwlock.h"
+#include "RWLock.h"
 #include "threadstore.h"
 #include "shash.h"
 #include "shash.inl"
-#include "gcstresscontrol.h"
+#include "GcStressControl.h"
 
 
 class GcStressControl

@@ -6,14 +6,14 @@
 
 #include "gcenv.base.h"
 
-#include "crst.h"
+#include "Crst.h"
 #include "event.h"
-#include "commontypes.h"
-#include "commonmacros.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "daccess.h"
-#include "targetptrs.h"
+#include "TargetPtrs.h"
 #include "eetype.h"
-#include "objectlayout.h"
+#include "ObjectLayout.h"
 
 
 // Adapter for GC's view of Array

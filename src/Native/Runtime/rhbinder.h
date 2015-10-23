@@ -7,10 +7,10 @@
 // This header contains binder-generated data structures that the runtime consumes.
 //
 #ifndef RHDUMP_TARGET_NEUTRAL
-#include "targetptrs.h"
+#include "TargetPtrs.h"
 #endif
 #ifndef RHDUMP
-#include "wellknownmethods.h"
+#include "WellKnownMethods.h"
 #endif
 #if !defined(RHDUMP) || defined(RHDUMP_TARGET_NEUTRAL)
 //

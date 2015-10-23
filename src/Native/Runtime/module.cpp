@@ -8,11 +8,11 @@
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#include "commontypes.h"
-#include "commonmacros.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "daccess.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "slist.h"
 #include "holder.h"
@@ -20,19 +20,19 @@
 #include "module.h"
 #include "varint.h"
 #include "rhbinder.h"
-#include "crst.h"
+#include "Crst.h"
 #include "regdisplay.h"
-#include "stackframeiterator.h"
+#include "StackFrameIterator.h"
 #include "thread.h"
 #include "event.h"
-#include "rwlock.h"
-#include "runtimeinstance.h"
+#include "RWLock.h"
+#include "RuntimeInstance.h"
 #include "eetype.h"
-#include "objectlayout.h"
-#include "genericinstance.h"
+#include "ObjectLayout.h"
+#include "GenericInstance.h"
 #include "threadstore.h"
 
-#include "commonmacros.inl"
+#include "CommonMacros.inl"
 #include "slist.inl"
 #else
 #include "gcrhinterface.h"
@@ -41,7 +41,7 @@
 #endif
 
 #include "gcinfo.h"
-#include "rhcodeman.h"
+#include "RHCodeMan.h"
 
 #include "rheventtrace.h"
 
