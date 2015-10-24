@@ -54,7 +54,7 @@ namespace ILToNative.DependencyAnalysis
             }
         }
 
-        private static void EmitSymbolDefinition(TextWriter output, int currentOffset, ISymbolNode[] definedSymbols, ref int lineLength)
+        private static void EmitSymbolDefinition(TextWriter output, int currentOffset, ISymbolNode[] definedSymbols, ISymbolNode mainMethodNode, ref int lineLength)
         {
             foreach (ISymbolNode node in definedSymbols)
             {
@@ -71,11 +71,18 @@ namespace ILToNative.DependencyAnalysis
 
                     output.Write(node.MangledName);
                     output.WriteLine(":");
+
+                    // TODO: Remove if and when entry point is directly emitted.
+                    if (node == mainMethodNode)
+                    {
+                        output.WriteLine(".global __managed__Main");
+                        output.WriteLine("__managed__Main:");
+                    }
                 }
             }
         }
 
-        public static void EmitAsm(TextWriter Out, IEnumerable<DependencyNode> nodes, NodeFactory factory)
+        public static void EmitAsm(TextWriter Out, IEnumerable<DependencyNode> nodes, ISymbolNode mainMethodNode, NodeFactory factory)
         {
             string currentSection = "";
 
@@ -106,7 +113,7 @@ namespace ILToNative.DependencyAnalysis
                 for (int i = 0; i < nodeContents.Data.Length; i++)
                 {
                     // Emit symbol definitions if necessary
-                    EmitSymbolDefinition(Out, i, nodeContents.DefinedSymbols, ref lineLength);
+                    EmitSymbolDefinition(Out, i, nodeContents.DefinedSymbols, mainMethodNode, ref lineLength);
 
                     if (i == nextRelocOffset)
                     {
@@ -192,7 +199,7 @@ namespace ILToNative.DependencyAnalysis
                 }
 
                 // It is possible to have a symbol just after all of the data.
-                EmitSymbolDefinition(Out, nodeContents.Data.Length, nodeContents.DefinedSymbols, ref lineLength);
+                EmitSymbolDefinition(Out, nodeContents.Data.Length, nodeContents.DefinedSymbols, mainMethodNode, ref lineLength);
 
                 if (lineLength > 0)
                     Out.WriteLine();
