@@ -28,7 +28,9 @@ namespace ILToNative.DependencyAnalysis
                     {
                         nextRelocOffset--;
                         Debug.Assert((bytes[nextRelocOffset] == 0xE9) || // jmp
-                                     (bytes[nextRelocOffset] == 0xE8));  // call
+                                     (bytes[nextRelocOffset] == 0xE8) || // call
+                                     (bytes[nextRelocOffset] == 0x05) || // add
+                                     (bytes[nextRelocOffset] == 0x15));  // adc
                     }
                     else if (relocs[currentRelocIndex].InstructionLength == 3)
                     {
@@ -140,14 +142,25 @@ namespace ILToNative.DependencyAnalysis
                                     {
                                         case 0xE8: // call
                                             Out.Write("call ");
+                                            Out.WriteLine(targetName);
                                             break;
                                         case 0xE9: // jmp
                                             Out.Write("jmp ");
+                                            Out.WriteLine(targetName);
+                                            break;
+                                        case 0x05: // add rAX, imm16/32
+                                            Out.Write("add ");
+                                            Out.Write(targetName);
+                                            Out.WriteLine("(%rip), %rax");
+                                            break;
+                                        case 0x15: // adc rAX, imm16/32
+                                            Out.Write("adc ");
+                                            Out.Write(targetName);
+                                            Out.WriteLine("(%rip), %rax");
                                             break;
                                         default:
                                             throw new NotImplementedException();
                                     }
-                                    Out.WriteLine(targetName);
                                 }
                                 else if (reloc.InstructionLength == 3)
                                 {
