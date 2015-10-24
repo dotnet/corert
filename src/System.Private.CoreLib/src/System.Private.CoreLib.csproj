@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
+
   <PropertyGroup>
     <ProjectGuid>{BE95C560-B508-4588-8907-F9FC5BC1A0CF}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -12,13 +12,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-<!-- 
-	temporary workaround to exclude all references including mscorlib.dll 
+<!--
+	temporary workaround to exclude all references including mscorlib.dll
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths>$(_TargetFrameworkDirectories)</_FullFrameworkReferenceAssemblyPaths>
-    Condition="'$(IsProjectNLibrary)' != 'true'  
+    Condition="'$(IsProjectNLibrary)' != 'true'
 -->
-    <IsCoreAssembly>true</IsCoreAssembly> 
+    <IsCoreAssembly>true</IsCoreAssembly>
     <!--
       Need to avoid target platform being empty because that would drag in an mscorlib design-time
       facade into the references and break us.
@@ -29,17 +29,17 @@
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
     <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
-	
-<!--    
+
+<!--
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
 
     <ExcludeVersioningImport>true</ExcludeVersioningImport>
     <TargetingDefaultPlatform>true</TargetingDefaultPlatform>
     <ExcludeFrameworkTargetingImport>true</ExcludeFrameworkTargetingImport>
-    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>  
+    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
 -->
   </PropertyGroup>
-  
+
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -70,7 +70,7 @@
       <Link>Resources\Common</Link>
     </Compile>
   </ItemGroup>
-  
+
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
@@ -223,14 +223,10 @@
     <Compile Include="System\GC.cs" />
     <Compile Include="System\Globalization\Calendar.cs" />
     <Compile Include="System\Globalization\CalendarData.cs" />
-    <Compile Include="System\Globalization\CalendarData.Win32.cs" />
     <Compile Include="System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="System\Globalization\CompareInfo.cs" />
-    <Compile Include="System\Globalization\CompareInfo.Win32.cs" />
     <Compile Include="System\Globalization\CultureData.cs" />
-    <Compile Include="System\Globalization\CultureData.Win32.cs" />
     <Compile Include="System\Globalization\CultureInfo.cs" />
-    <Compile Include="System\Globalization\CultureInfo.Win32.cs" />
     <Compile Include="System\Globalization\FormatProvider.DateTimeFormat.cs" />
     <Compile Include="System\Globalization\DateTimeFormatInfo.cs" />
     <Compile Include="System\Globalization\DateTimeFormatInfoScanner.cs" />
@@ -250,7 +246,6 @@
     <Compile Include="System\Globalization\NumberFormatInfo.cs" />
     <Compile Include="System\Globalization\NumberStyles.cs" />
     <Compile Include="System\Globalization\TextInfo.cs" />
-    <Compile Include="System\Globalization\TextInfo.Win32.cs" />
     <Compile Include="System\Globalization\TimeSpanStyles.cs" />
     <Compile Include="System\Globalization\UnicodeCategory.cs" />
     <Compile Include="System\Guid.cs" />
@@ -471,6 +466,24 @@
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
+
+  <!-- Windows is default build -->
+  <ItemGroup Condition="'$(OSGroup)' != 'Linux'">
+      <Compile Include="System\Globalization\CultureInfo.Win32.cs" />
+      <Compile Include="System\Globalization\CompareInfo.Win32.cs" />
+      <Compile Include="System\Globalization\CultureData.Win32.cs" />
+      <Compile Include="System\Globalization\TextInfo.Win32.cs" />
+      <Compile Include="System\Globalization\CalendarData.Win32.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(OSGroup)' == 'Linux'">
+      <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
+      <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
+      <Compile Include="System\Globalization\CultureData.Dummy.cs" />
+      <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
+      <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+</ItemGroup>
+
   <ItemGroup>
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.Events.cs" />
@@ -500,7 +513,7 @@
         <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <PropertyGroup>

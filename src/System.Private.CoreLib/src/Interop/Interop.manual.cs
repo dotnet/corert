@@ -998,6 +998,7 @@ internal partial class Interop
     // declare the specialized callback context type, deriving from the CallbackContext type that MCG expects the class library to implement.  
     internal partial class mincore_private
     {
+#pragma warning disable 649
         internal class LParamCallbackContext : CallbackContext
         {
             // Put any user data to pass to the callback here.  The user code being called back will get the instance of this class that was passed to the API originally.

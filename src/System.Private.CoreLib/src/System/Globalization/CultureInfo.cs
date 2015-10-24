@@ -69,13 +69,13 @@ namespace System.Globalization
 
         // Names are confusing.  Here are 3 names we have:
         //
-        //  new CultureInfo()   m_name        m_nonSortName   m_sortName
+        //  new CultureInfo()   m_name         _nonSortName    _sortName
         //      en-US           en-US           en-US           en-US
         //      de-de_phoneb    de-DE_phoneb    de-DE           de-DE_phoneb
         //      fj-fj (custom)  fj-FJ           fj-FJ           en-US (if specified sort is en-US)
-        //      en              en              
+        //      en              en
         //
-        // Note that in Silverlight we ask the OS for the text and sort behavior, so the 
+        // Note that in Silverlight we ask the OS for the text and sort behavior, so the
         // textinfo and compareinfo names are the same as the name
 
         // Note that the name used to be serialized for Everett; it is now serialized
@@ -164,6 +164,12 @@ namespace System.Globalization
                     SR.ArgumentNull_String);
             }
 
+#if CORERT
+            // CORERT-TODO CultureInfo
+            m_cultureData = s_InvariantCultureInfo.m_cultureData;
+            m_name = _sortName = _nonSortName = name;
+            m_isInherited = false;
+#else
             // Get our data providing record
             this.m_cultureData = CultureData.GetCultureData(name, useUserOverride);
 
@@ -173,6 +179,7 @@ namespace System.Globalization
 
             this.m_name = this.m_cultureData.CultureName;
             this.m_isInherited = (this.GetType() != typeof(System.Globalization.CultureInfo));
+#endif // CORERT
         }
 
 
@@ -212,7 +219,7 @@ namespace System.Globalization
 
         internal static bool VerifyCultureName(String cultureName, bool throwException)
         {
-            // This function is used by ResourceManager.GetResourceFileName(). 
+            // This function is used by ResourceManager.GetResourceFileName().
             // ResourceManager searches for resource using CultureInfo.Name,
             // so we should check against CultureInfo.Name.
 
@@ -271,7 +278,7 @@ namespace System.Globalization
             {
 #if CORERT
                 // CORERT-TODO CultureInfo
-                return null;
+                return CultureInfo.InvariantCulture;
 #else
                 CultureInfo ci = GetUserDefaultCultureCacheOverride();
                 if (ci != null)
@@ -290,7 +297,7 @@ namespace System.Globalization
                     return ci;
                 }
 
-                // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static 
+                // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
                 // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
                 if (s_userDefaultCulture == null)
                 {
@@ -324,6 +331,10 @@ namespace System.Globalization
         {
             get
             {
+#if CORERT
+                // CORERT-TODO CultureInfo
+                return CultureInfo.InvariantCulture;
+#else
                 CultureInfo ci = GetUserDefaultCultureCacheOverride();
                 if (ci != null)
                 {
@@ -341,7 +352,7 @@ namespace System.Globalization
                     return ci;
                 }
 
-                // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static 
+                // if s_userDefaultCulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
                 // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
                 if (s_userDefaultCulture == null)
                 {
@@ -350,6 +361,7 @@ namespace System.Globalization
 
                 Contract.Assert(s_userDefaultCulture != null);
                 return s_userDefaultCulture;
+#endif // CORERT
             }
 
             set
@@ -378,7 +390,7 @@ namespace System.Globalization
             [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
-                // If you add pre-conditions to this method, check to see if you also need to 
+                // If you add pre-conditions to this method, check to see if you also need to
                 // add them to Thread.CurrentCulture.set.
 
                 s_DefaultThreadCurrentCulture = value;
@@ -394,7 +406,7 @@ namespace System.Globalization
                 //If they're trying to use a Culture with a name that we can't use in resource lookup,
                 //don't even let them set it on the thread.
 
-                // If you add more pre-conditions to this method, check to see if you also need to 
+                // If you add more pre-conditions to this method, check to see if you also need to
                 // add them to Thread.CurrentUICulture.set.
 
                 if (value != null)
