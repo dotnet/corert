@@ -18,7 +18,6 @@
 #include "slist.h"
 #include "holder.h"
 #include "Crst.h"
-#include "InstanceStore.h"
 #include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "gcrhinterface.h"

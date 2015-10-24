@@ -63,7 +63,7 @@ bool RestrictedCallouts::RegisterGcCallout(GcRestrictedCalloutKind eKind, void *
         RhFailFast();
     }
 
-    GcRestrictedCallout * pCallout = new GcRestrictedCallout();
+    GcRestrictedCallout * pCallout = new (nothrow) GcRestrictedCallout();
     if (pCallout == NULL)
         return false;
 
@@ -123,7 +123,7 @@ void RestrictedCallouts::UnregisterGcCallout(GcRestrictedCalloutKind eKind, void
 // success, false if insufficient memory was available for the registration.
 bool RestrictedCallouts::RegisterRefCountedHandleCallback(void * pCalloutMethod, EEType * pTypeFilter)
 {
-    HandleTableRestrictedCallout * pCallout = new HandleTableRestrictedCallout();
+    HandleTableRestrictedCallout * pCallout = new (nothrow) HandleTableRestrictedCallout();
     if (pCallout == NULL)
         return false;
 

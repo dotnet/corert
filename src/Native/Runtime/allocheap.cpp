@@ -97,7 +97,7 @@ bool AllocHeap::Init(
     }
 #endif // FEATURE_RWX_MEMORY
 
-    BlockListElem *pBlock = new BlockListElem(pbInitialMem, cbInitialMemReserve);
+    BlockListElem *pBlock = new (nothrow) BlockListElem(pbInitialMem, cbInitialMemReserve);
     if (pBlock == NULL)
         return false;
     m_blockList.PushHead(pBlock);
@@ -287,7 +287,7 @@ bool AllocHeap::_AllocNewBlock(UIntNative cbMem)
     if (pbMem == NULL)
         return false;
 
-    BlockListElem *pBlockListElem = new BlockListElem(pbMem, cbMem);
+    BlockListElem *pBlockListElem = new (nothrow) BlockListElem(pbMem, cbMem);
     if (pBlockListElem == NULL)
     {
         PalVirtualFree(pbMem, 0, MEM_RELEASE);
@@ -362,13 +362,13 @@ bool AllocHeap::_CommitFromCurBlock(UIntNative cbMem)
 }
 
 //-------------------------------------------------------------------------------------------------
-void * __cdecl operator new(UIntNative n, AllocHeap * alloc)
+void * __cdecl operator new(size_t n, AllocHeap * alloc)
 {
     return alloc->Alloc(n);
 }
 
 //-------------------------------------------------------------------------------------------------
-void * __cdecl operator new[](UIntNative n, AllocHeap * alloc)
+void * __cdecl operator new[](size_t n, AllocHeap * alloc)
 {
     return alloc->Alloc(n);
 }

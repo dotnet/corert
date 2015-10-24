@@ -6,6 +6,15 @@
 #ifndef __COMMON_TYPES_H__
 #define __COMMON_TYPES_H__
 
+#include <cstdint>
+#include <cstdlib>
+#include <new>
+
+using std::nothrow;
+using std::size_t;
+using std::uintptr_t;
+using std::intptr_t;
+
 //
 // These type names are chosen to match the C# types
 //
@@ -17,13 +26,8 @@ typedef unsigned char       UInt8;
 typedef unsigned short      UInt16;
 typedef unsigned int        UInt32;
 typedef unsigned __int64    UInt64;
-#if defined(TARGET_X64)
-typedef signed __int64      IntNative;  // intentional deviation from C# IntPtr
-typedef unsigned __int64    UIntNative; // intentional deviation from C# UIntPtr
-#else
-typedef __w64 signed int    IntNative;  // intentional deviation from C# IntPtr
-typedef __w64 unsigned int  UIntNative; // intentional deviation from C# UIntPtr
-#endif
+typedef intptr_t            IntNative;  // intentional deviation from C# IntPtr
+typedef uintptr_t           UIntNative; // intentional deviation from C# UIntPtr
 typedef wchar_t             WCHAR;
 typedef void *              HANDLE;
 
@@ -35,10 +39,11 @@ typedef UInt32              UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, 
 #define UInt32_FALSE        0
 #define UInt32_TRUE         1
 
-#ifndef GCENV_INCLUDED
-#define UNREFERENCED_PARAMETER(P)          (P)
-#endif // GCENV_INCLUDED
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(P)          (void)(P)
+#endif // UNREFERENCED_PARAMETER
 
+#undef NULL
 #define NULL 0
 
 #define UInt16_MAX          ((UInt16)0xffffU)

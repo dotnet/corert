@@ -125,6 +125,8 @@ class SHash : public TRAITS
 
     class KeyIndex;
     friend class KeyIndex;
+    class Iterator;
+    class KeyIterator;
 
   public:
     // explicitly declare local typedefs for these traits types, otherwise 
@@ -133,9 +135,6 @@ class SHash : public TRAITS
     typedef typename TRAITS::PTR_element_t PTR_element_t;
     typedef typename TRAITS::key_t key_t;
     typedef typename TRAITS::count_t count_t;
-
-    class Iterator;
-    class KeyIterator;
 
     // Constructor/destructor.  SHash tables always start out empty, with no
     // allocation overhead.  Call Reallocate to prime with an initial size if
@@ -350,7 +349,7 @@ private:
         void First()
         {
             if (m_index < m_tableSize)
-                if (IsNull(m_table[m_index]) || IsDeleted(m_table[m_index]))
+                if (TRAITS::IsNull(m_table[m_index]) || TRAITS::IsDeleted(m_table[m_index]))
                     Next();
         }
 
@@ -364,7 +363,7 @@ private:
                 m_index++;
                 if (m_index >= m_tableSize)
                     break;
-                if (!IsNull(m_table[m_index]) && !IsDeleted(m_table[m_index]))
+                if (!TRAITS::IsNull(m_table[m_index]) && !TRAITS::IsDeleted(m_table[m_index]))
                     break;
             }
         }
@@ -417,14 +416,14 @@ private:
                 m_key = key;
                 count_t hash = Hash(key);
 
-                m_index = hash % m_tableSize;
+                TRAITS::m_index = hash % m_tableSize;
                 m_increment = (hash % (m_tableSize-1)) + 1;
 
                 // Find first valid element
-                if (IsNull(m_table[m_index]))
-                    m_index = m_tableSize;
-                else if (IsDeleted(m_table[m_index])
-                        || !Equals(m_key, GetKey(m_table[m_index])))
+                if (IsNull(m_table[TRAITS::m_index]))
+                    TRAITS::m_index = m_tableSize;
+                else if (IsDeleted(m_table[TRAITS::m_index])
+                        || !Equals(m_key, GetKey(m_table[TRAITS::m_index])))
                     Next();
             }
         }
@@ -433,18 +432,18 @@ private:
         {
             while (true)
             {
-                m_index += m_increment;
-                if (m_index >= m_tableSize)
-                    m_index -= m_tableSize;
+                TRAITS::m_index += m_increment;
+                if (TRAITS::m_index >= m_tableSize)
+                    TRAITS::m_index -= m_tableSize;
 
-                if (IsNull(m_table[m_index]))
+                if (IsNull(m_table[TRAITS::m_index]))
                 {
-                    m_index = m_tableSize;
+                    TRAITS::m_index = m_tableSize;
                     break;
                 }
 
-                if (!IsDeleted(m_table[m_index])
-                        && Equals(m_key, GetKey(m_table[m_index])))
+                if (!IsDeleted(m_table[TRAITS::m_index])
+                        && Equals(m_key, GetKey(m_table[TRAITS::m_index])))
                 {
                     break;
                 }

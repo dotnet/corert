@@ -793,4 +793,4 @@ inline EEType * EEType::GetArrayBaseType()
 }
 #endif
 
-#endif __eetype_inl__
+#endif // __eetype_inl__

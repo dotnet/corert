@@ -28,6 +28,8 @@ public:
     void SuppressRelease() { m_held = false; }
     TYPE Extract() { m_held = false; return GetValue(); }
 
+    HolderNoDefaultValue(HolderNoDefaultValue && other) = default;
+
 protected:
     TYPE    m_value;
     bool    m_held;
@@ -39,13 +41,15 @@ private:
 };
 
 // -----------------------------------------------------------------------------------------------------------
-template <typename TYPE, void (*ACQUIRE_FUNC)(TYPE), void (*RELEASE_FUNC)(TYPE), UIntNative DEFAULTVALUE = 0>
+template <typename TYPE, void (*ACQUIRE_FUNC)(TYPE), void (*RELEASE_FUNC)(TYPE), TYPE DEFAULTVALUE = nullptr>
 class Holder : public HolderNoDefaultValue<TYPE, ACQUIRE_FUNC, RELEASE_FUNC>
 {
     typedef HolderNoDefaultValue<TYPE, ACQUIRE_FUNC, RELEASE_FUNC> MY_PARENT;
 public:
     Holder() : MY_PARENT(DEFAULTVALUE, false) {}
     Holder(TYPE value, bool fTake = true) : MY_PARENT(value, fTake) {}
+
+    Holder(Holder && other) = default;
 
 private:
     // No one should be copying around holder types.
@@ -54,7 +58,7 @@ private:
 };
 
 // -----------------------------------------------------------------------------------------------------------
-template <typename TYPE, void (*ACQUIRE_FUNC)(TYPE), void (*RELEASE_FUNC)(TYPE), UIntNative DEFAULTVALUE = 0>
+template <typename TYPE, void (*ACQUIRE_FUNC)(TYPE), void (*RELEASE_FUNC)(TYPE), TYPE DEFAULTVALUE = nullptr>
 class Wrapper : public Holder<TYPE, ACQUIRE_FUNC, RELEASE_FUNC, DEFAULTVALUE>
 {
     typedef Holder<TYPE, ACQUIRE_FUNC, RELEASE_FUNC, DEFAULTVALUE> MY_PARENT;
@@ -62,18 +66,19 @@ class Wrapper : public Holder<TYPE, ACQUIRE_FUNC, RELEASE_FUNC, DEFAULTVALUE>
 public:
     Wrapper() : MY_PARENT() {}
     Wrapper(TYPE value, bool fTake = true) : MY_PARENT(value, fTake) {}
+    Wrapper(Wrapper && other) = default;
 
     FORCEINLINE TYPE& operator=(TYPE const & value)
     {
-        Release();
-        m_value = value;
-        Acquire();
-        return m_value;
+        MY_PARENT::Release();
+        MY_PARENT::m_value = value;
+        MY_PARENT::Acquire();
+        return MY_PARENT::m_value;
     }
 
-    FORCEINLINE const TYPE &operator->() { return m_value; }
-    FORCEINLINE const TYPE &operator*() { return m_value; }
-    FORCEINLINE operator TYPE() { return m_value; }
+    FORCEINLINE const TYPE &operator->() { return MY_PARENT::m_value; }
+    FORCEINLINE const TYPE &operator*() { return MY_PARENT::m_value; }
+    FORCEINLINE operator TYPE() { return MY_PARENT::m_value; }
 
 private:
     // No one should be copying around wrapper types.
@@ -97,9 +102,9 @@ FORCEINLINE void Delete(TYPE *value)
 // -----------------------------------------------------------------------------------------------------------
 template <typename TYPE,
           typename PTR_TYPE = TYPE *,
-          void (*ACQUIRE_FUNC)(PTR_TYPE) = DoNothing<typename PTR_TYPE>,
+          void (*ACQUIRE_FUNC)(PTR_TYPE) = DoNothing<PTR_TYPE>,
           void (*RELEASE_FUNC)(PTR_TYPE) = Delete<TYPE>,
-          PTR_TYPE NULL_VAL = 0,
+          PTR_TYPE NULL_VAL = nullptr,
           typename BASE = Wrapper<PTR_TYPE, ACQUIRE_FUNC, RELEASE_FUNC, NULL_VAL> >
 class NewHolder : public BASE
 {
@@ -117,7 +122,7 @@ public:
 //-----------------------------------------------------------------------------
 // NewArrayHolder : New []'ed pointer holder
 //  {
-//      NewArrayHolder<Foo> foo = new Foo [30];
+//      NewArrayHolder<Foo> foo = new (nothrow) Foo [30];
 //  } // delete [] foo on out of scope
 //-----------------------------------------------------------------------------
 
@@ -130,9 +135,9 @@ FORCEINLINE void DeleteArray(TYPE *value)
 
 template <typename TYPE,
           typename PTR_TYPE = TYPE *,
-          void (*ACQUIRE_FUNC)(PTR_TYPE) = DoNothing<typename PTR_TYPE>,
+          void (*ACQUIRE_FUNC)(PTR_TYPE) = DoNothing<PTR_TYPE>,
           void (*RELEASE_FUNC)(PTR_TYPE) = DeleteArray<TYPE>,
-          PTR_TYPE NULL_VAL = 0,
+          PTR_TYPE NULL_VAL = nullptr,
           typename BASE = Wrapper<PTR_TYPE, ACQUIRE_FUNC, RELEASE_FUNC, NULL_VAL> >
 class NewArrayHolder : public BASE
 {
@@ -159,7 +164,7 @@ template <typename TYPE,
           typename PTR_TYPE = TYPE *,
           void (*ACQUIRE_FUNC)(PTR_TYPE) = DoNothing<PTR_TYPE>,
           void (*RELEASE_FUNC)(PTR_TYPE) = Destroy<TYPE>,
-          PTR_TYPE NULL_VAL = 0,
+          PTR_TYPE NULL_VAL = nullptr,
           typename BASE = Wrapper<PTR_TYPE, ACQUIRE_FUNC, RELEASE_FUNC, NULL_VAL> >
 class CreateHolder : public BASE
 {

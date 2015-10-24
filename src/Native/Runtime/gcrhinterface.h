@@ -31,7 +31,7 @@ struct alloc_context;
 class MethodInfo;
 struct REGDISPLAY;
 class Thread;
-enum GCRefKind;
+enum GCRefKind : unsigned char;
 class ICodeManager;
 class EEType;
 
@@ -199,7 +199,7 @@ private:
     // The EEType for the last allocation.  This value is used inside of the GC allocator
     // to emit allocation ETW events with type information.  We set this value unconditionally to avoid
     // race conditions where ETW is enabled after the value is set.
-    __declspec(thread) static EEType * tls_pLastAllocationEEType;
+    DECLSPEC_THREAD static EEType * tls_pLastAllocationEEType;
 };
 
 #endif // __GCRHINTERFACE_INCLUDED

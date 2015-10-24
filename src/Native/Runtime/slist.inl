@@ -99,11 +99,11 @@ void SList<T, Traits>::PushHeadInterlocked(
 
     while (true)
     {
-        *GetNextPtr(pItem) = *reinterpret_cast<T * volatile *>(&m_pHead);
+        *Traits::GetNextPtr(pItem) = *reinterpret_cast<T * volatile *>(&m_pHead);
         if (PalInterlockedCompareExchangePointer(
                 reinterpret_cast<void * volatile *>(&m_pHead),
                 reinterpret_cast<void *>(pItem),
-                reinterpret_cast<void *>(*GetNextPtr(pItem))) == reinterpret_cast<void *>(*GetNextPtr(pItem)))
+                reinterpret_cast<void *>(*Traits::GetNextPtr(pItem))) == reinterpret_cast<void *>(*Traits::GetNextPtr(pItem)))
         {
             break;
         }

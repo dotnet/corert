@@ -111,8 +111,8 @@ inline UInt32 PalGetLastError()
     return GetLastError();
 }
 
-extern "C" void * __stdcall GetProcAddress(HANDLE, char *);
-inline void * PalGetProcAddress(HANDLE arg1, char * arg2)
+extern "C" void * __stdcall GetProcAddress(HANDLE, const char *);
+inline void * PalGetProcAddress(HANDLE arg1, const char * arg2)
 {
     return GetProcAddress(arg1, arg2);
 }
@@ -160,8 +160,8 @@ inline void PalLeaveCriticalSection(CRITICAL_SECTION * arg1)
     LeaveCriticalSection(arg1);
 }
 
-extern "C" HANDLE __stdcall LoadLibraryExW(WCHAR *, HANDLE, UInt32);
-inline HANDLE PalLoadLibraryExW(WCHAR * arg1, HANDLE arg2, UInt32 arg3)
+extern "C" HANDLE __stdcall LoadLibraryExW(const WCHAR *, HANDLE, UInt32);
+inline HANDLE PalLoadLibraryExW(const WCHAR * arg1, HANDLE arg2, UInt32 arg3)
 {
     return LoadLibraryExW(arg1, arg2, arg3);
 }

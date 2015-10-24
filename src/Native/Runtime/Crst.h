@@ -29,7 +29,6 @@ private:
 enum CrstType
 {
     CrstHandleTable,
-    CrstInstanceStore,
     CrstThreadStore,
     CrstDispatchCache,
     CrstAllocHeap,

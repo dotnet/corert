@@ -80,7 +80,7 @@ public:
 
 private:
 
-    UInt32 ReadConfigValue(_In_z_ WCHAR *wszName);
+    UInt32 ReadConfigValue(_In_z_ const WCHAR *wszName);
 
     enum RhConfigValue
     {
@@ -96,7 +96,7 @@ private:
 #define CONFIG_FILE_MAXLEN RCV_Count * sizeof(ConfigPair) + 2000  
 
 private:
-    _Ret_maybenull_z_ WCHAR* RhConfig::GetConfigPath();
+    _Ret_maybenull_z_ WCHAR* GetConfigPath();
 
     //Parses one line of rhconfig.ini and populates values in the passed in configPair
     //returns: true if the parsing was successful, false if the parsing failed. 
@@ -113,7 +113,7 @@ private:
     //lazily reads the file so if the file is not yet read, it will read it on first called
     //if the file is not avaliable, or unreadable zero will always be returned
     //cchOuputBuffer is the maximum number of characters to write to outputBuffer
-    UInt32 GetIniVariable(_In_z_ WCHAR* configName, _Out_writes_all_(cchBuff) WCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer);
+    UInt32 GetIniVariable(_In_z_ const WCHAR* configName, _Out_writes_all_(cchBuff) WCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer);
 
     static bool priv_isspace(char c)
     {

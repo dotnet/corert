@@ -24,7 +24,7 @@ struct GCEnumContext
     GCEnumCallback pCallback;
 };
 
-enum GCRefKind
+enum GCRefKind : unsigned char
 { 
     GCRK_Scalar     = 0x00,
     GCRK_Object     = 0x01,

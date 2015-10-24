@@ -116,6 +116,7 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     }
 }
 
+#if 0
 void CLREventStatic::CreateManualEvent(bool bInitialState) 
 { 
     // TODO: Implement
@@ -197,6 +198,7 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
 
     return result;
 }
+#endif // 0
 
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
 {
@@ -331,6 +333,7 @@ int32_t g_TrapReturningThreads;
 
 bool g_fFinalizerRunOnShutDown;
 
+#if 0
 #ifdef _MSC_VER
 __declspec(thread)
 #else
@@ -364,12 +367,13 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pThread->m_pNext = g_pThreadList;
     g_pThreadList = pThread;
 }
-
+#endif // 0
 void DestroyThread(Thread * pThread)
 {
     // TODO: Implement
 }
 
+#if 0 
 void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
 {
     GCHeap::GetGCHeap()->SetGCInProgress(TRUE);
@@ -426,6 +430,8 @@ bool IsGCSpecialThread()
     // TODO: Implement for background GC
     return false;
 }
+
+#endif // 0
 
 bool PalHasCapability(PalCapability capability)
 {

@@ -52,17 +52,17 @@
 EXTERN_C UInt32_BOOL g_fGcStressStarted;
 
 Module::Module(ModuleHeader *pModuleHeader) : 
-    m_pModuleHeader(pModuleHeader),
     m_pNext(),
-    m_MethodList(),
     m_pbDeltaShortcutTable(NULL),
+    m_pModuleHeader(pModuleHeader),
+    m_MethodList(),
     m_fFinalizerInitComplete(false)
 {
 }
 
 Module * Module::Create(SimpleModuleHeader *pModuleHeader)
 {
-    NewHolder<Module> pNewModule = new Module(nullptr);
+    NewHolder<Module> pNewModule = new (nothrow) Module(nullptr);
     if (NULL == pNewModule)
         return NULL;
 
@@ -87,7 +87,7 @@ Module * Module::Create(ModuleHeader *pModuleHeader)
     // mode (or just fail the module creation).
     ASSERT(pModuleHeader->Version == ModuleHeader::CURRENT_VERSION);
 
-    NewHolder<Module> pNewModule = new Module(pModuleHeader);
+    NewHolder<Module> pNewModule = new (nothrow) Module(pModuleHeader);
     if (NULL == pNewModule)
         return NULL;
 
@@ -155,7 +155,7 @@ Module * Module::Create(ModuleHeader *pModuleHeader)
     UInt32 nMethods = pNewModule->m_MethodList.GetNumMethodsDEBUG();
 
     UInt32 nIndirCells = pNewModule->m_pModuleHeader->CountOfLoopIndirCells;
-    UIntNative * pShadowBuffer = new UIntNative[nIndirCells];
+    UIntNative * pShadowBuffer = new (nothrow) UIntNative[nIndirCells];
     UIntNative * pIndirCells = (UIntNative *)pNewModule->m_pModuleHeader->GetLoopIndirCells();
     memcpy(pShadowBuffer, pIndirCells, nIndirCells * sizeof(UIntNative));
 
@@ -636,6 +636,8 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
     case EH_CLAUSE_FILTER:
         pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
         pEHClauseOut->m_filterOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        break;
+    case EH_CLAUSE_FAIL_FAST:
         break;
     }
 
@@ -1226,7 +1228,7 @@ BlobHeader * Module::GetReadOnlyBlobs(UInt32 * pcbBlobs)
 }
 
 Module::GenericInstanceDescEnumerator::GenericInstanceDescEnumerator(Module * pModule, GenericInstanceDescKind gidKind)
-    : m_pModule(pModule), m_pCurrent(NULL), m_iCurrent(0), m_nCount(0), m_iSection(0), m_gidEnumKind(gidKind)
+    : m_pModule(pModule), m_pCurrent(NULL), m_gidEnumKind(gidKind), m_iCurrent(0), m_nCount(0), m_iSection(0)
 {
 }
 

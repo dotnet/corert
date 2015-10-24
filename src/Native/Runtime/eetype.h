@@ -58,7 +58,7 @@ class EEInterfaceInfoMap
 
   public:
     EEInterfaceInfoMap(EEInterfaceInfoMap const & other)
-        : m_pMap(m_pMap), m_cMap(m_cMap)
+        : m_pMap(NULL), m_cMap(0)
     {
         UNREFERENCED_PARAMETER(other);
     }

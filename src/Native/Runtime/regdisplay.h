@@ -24,7 +24,7 @@ struct REGDISPLAY
     PTR_UIntNative pR13;
     PTR_UIntNative pR14;
     PTR_UIntNative pR15;
-#endif TARGET_AMD64
+#endif // TARGET_AMD64
 
     UIntNative   SP;
     PTR_PCODE    pIP;
@@ -35,7 +35,7 @@ struct REGDISPLAY
                               // these need to be unwound during a stack walk
                               // for EH, but not adjusted, so we only need
                               // their values, not their addresses
-#endif TARGET_AMD64
+#endif // TARGET_AMD64
 
     inline PCODE GetIP() { return IP; }
     inline PTR_PCODE GetAddrOfIP() { return pIP; }

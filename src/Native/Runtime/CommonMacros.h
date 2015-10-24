@@ -189,3 +189,10 @@ bool inline FitsInI4(__int64 val)
 #ifndef GCENV_INCLUDED
 #define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
 #endif // GCENV_INCLUDED
+
+#ifdef __llvm__
+#define DECLSPEC_THREAD __thread
+#else // __llvm__
+#define DECLSPEC_THREAD __declspec(thread)
+#endif // !__llvm__
+
