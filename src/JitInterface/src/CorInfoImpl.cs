@@ -301,7 +301,7 @@ namespace Internal.JitInterface
                 case IntrinsicMethodKind.RuntimeHelpersInitializeArray:
                     return CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray;
                 default:
-                    throw new NotImplementedException();
+                    return CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal;
             }
         }
 
@@ -346,9 +346,8 @@ namespace Internal.JitInterface
                 // TODO: if (pMD->IsSynchronized())
                 //    result |= CORINFO_FLG_SYNCH;
 
-                // TODO: intrinsics other than InitializeArray - many require extra work
-                if (ecmaMethod.IsIntrinsic && ecmaMethod.Name == "InitializeArray")
-                    result |= CorInfoFlag.CORINFO_FLG_NOGCCHECK | CorInfoFlag.CORINFO_FLG_INTRINSIC;
+                if (ecmaMethod.IsIntrinsic)
+                    result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
 
                 if ((attribs & MethodAttributes.Virtual) != 0)
                     result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
@@ -1012,7 +1011,10 @@ namespace Internal.JitInterface
         void* getArrayInitializationData(IntPtr _this, CORINFO_FIELD_STRUCT_* field, uint size)
         {
             var fd = HandleToObject(field);
-            if (!fd.HasRva)
+
+            // Check for invalid arguments passed to InitializeArray intrinsic
+            if (!fd.HasRva ||
+                size > fd.FieldType.GetElementSize())
             {
                 return null;
             }
