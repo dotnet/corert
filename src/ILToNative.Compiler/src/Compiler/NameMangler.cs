@@ -272,9 +272,6 @@ namespace ILToNative
 
         ImmutableDictionary<FieldDesc, string> _mangledFieldNames = ImmutableDictionary<FieldDesc, string>.Empty;
 
-        //
-        // Mangled field names are really only useful to identify RVA mapped fields.
-        //
         public string GetMangledFieldName(FieldDesc field)
         {
             string mangledName;
