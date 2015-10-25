@@ -269,5 +269,71 @@ namespace ILToNative
 
             return mangledName;
         }
+
+        ImmutableDictionary<FieldDesc, string> _mangledFieldNames = ImmutableDictionary<FieldDesc, string>.Empty;
+
+        public string GetMangledFieldName(FieldDesc field)
+        {
+            string mangledName;
+            if (_mangledFieldNames.TryGetValue(field, out mangledName))
+                return mangledName;
+
+            return ComputeMangledFieldName(field);
+        }
+
+        private string ComputeMangledFieldName(FieldDesc field)
+        {
+            string prependTypeName = null;
+            if (!_compilation.IsCppCodeGen)
+                prependTypeName = GetMangledTypeName(field.OwningType);
+
+            if (field is EcmaField)
+            {
+                var deduplicator = new HashSet<string>();
+
+                // Add consistent names for all fields of the type, independent on the order in which
+                // they are compiled
+                lock (this)
+                {
+                    foreach (var f in field.OwningType.GetFields())
+                    {
+                        string name = SanitizeName(f.Name);
+
+                        if (deduplicator.Contains(name))
+                        {
+                            string nameWithIndex;
+                            for (int index = 1; ; index++)
+                            {
+                                nameWithIndex = name + "_" + index.ToString(CultureInfo.InvariantCulture);
+                                if (!deduplicator.Contains(nameWithIndex))
+                                    break;
+                            }
+                            name = nameWithIndex;
+                        }
+                        deduplicator.Add(name);
+
+                        if (prependTypeName != null)
+                            name = prependTypeName + "__" + name;
+
+                        _mangledFieldNames = _mangledFieldNames.Add(f, name);
+                    }
+                }
+
+                return _mangledFieldNames[field];
+            }
+
+
+            string mangledName = SanitizeName(field.Name);
+
+            if (prependTypeName != null)
+                mangledName = prependTypeName + "__" + mangledName;
+
+            lock (this)
+            {
+                _mangledFieldNames = _mangledFieldNames.Add(field, mangledName);
+            }
+
+            return mangledName;
+        }
     }
 }

@@ -235,14 +235,14 @@ namespace ILToNative.CppCodeGen
 
         public string GetCppFieldName(FieldDesc field)
         {
-            return _compilation.NameMangler.SanitizeName(field.Name);
+            return _compilation.NameMangler.GetMangledFieldName(field);
         }
 
         public string GetCppStaticFieldName(FieldDesc field)
         {
             TypeDesc type = field.OwningType;
             string typeName = GetCppTypeName(type);
-            return typeName.Replace("::", "__") + "__" + _compilation.NameMangler.SanitizeName(field.Name);
+            return typeName.Replace("::", "__") + "__" + _compilation.NameMangler.GetMangledFieldName(field);
         }
 
         enum SpecialMethodKind

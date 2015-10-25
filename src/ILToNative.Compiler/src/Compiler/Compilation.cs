@@ -402,6 +402,12 @@ namespace ILToNative
                             {
                                 targetNode = _nodeFactory.NecessaryTypeSymbol((TypeDesc)target);
                             }
+                            else if (target is RvaFieldData)
+                            {
+                                var rvaFieldData = (RvaFieldData)target;
+                                targetNode = _nodeFactory.ReadOnlyDataBlob(rvaFieldData.MangledName,
+                                    rvaFieldData.Data, _typeSystemContext.Target.PointerSize);
+                            }
                             else
                             {
                                 // TODO:
@@ -594,5 +600,19 @@ namespace ILToNative
             return info;
         }
 
+        Dictionary<FieldDesc, RvaFieldData> _rvaFieldDatas = new Dictionary<FieldDesc, RvaFieldData>();
+
+        /// <summary>
+        /// Gets an object representing the static data for RVA mapped fields from the PE image.
+        /// </summary>
+        public object GetFieldRvaData(FieldDesc field)
+        {
+            RvaFieldData result;
+            if (!_rvaFieldDatas.TryGetValue(field, out result))
+            {
+                _rvaFieldDatas.Add(field, result = new RvaFieldData(this, field));
+            }
+            return result;
+        }
     }
 }
