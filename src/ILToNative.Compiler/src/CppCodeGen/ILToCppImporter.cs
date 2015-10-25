@@ -711,12 +711,7 @@ namespace Internal.IL
                     if (owningType.IsString)
                     {
                         // String constructors actually look like regular method calls
-                        MethodSignatureBuilder builder = new MethodSignatureBuilder(method.Signature);
-                        builder.Flags = MethodSignatureFlags.Static;
-                        builder.ReturnType = owningType;
-                        method = owningType.GetMethod("Ctor", builder.ToSignature());
-                        if (method == null)
-                            throw new NotImplementedException();
+                        method = IntrinsicMethods.GetStringInitializer(method);
                         opcode = ILOpcode.call;
                     }
                     else if (owningType.IsArray)
