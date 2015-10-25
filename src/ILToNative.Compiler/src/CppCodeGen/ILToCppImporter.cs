@@ -671,7 +671,7 @@ namespace Internal.IL
         {
             bool callViaSlot = false;
             bool delegateInvoke = false;
-            bool staticShuffleThunk = false;
+            DelegateInfo delegateInfo = null;
             bool mdArrayCreate = false;
 
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
@@ -725,7 +725,8 @@ namespace Internal.IL
                     }
                     else if (owningType.IsDelegate)
                     {
-                        method = GetDelegateCtor(owningType, ref _stack[_stackTop - 1].Value, out staticShuffleThunk);
+                        delegateInfo = _compilation.GetDelegateCtor((MethodDesc)_stack[_stackTop - 1].Value.Aux);
+                        method = delegateInfo.Ctor;
                     }
                 }
                 else
@@ -807,9 +808,17 @@ namespace Internal.IL
                     Append("::__getMethodTable())");
                     Finish();
 
-                    if (staticShuffleThunk)
+                    if (delegateInfo != null && delegateInfo.ShuffleThunk != null)
                     {
                         _stack[_stackTop - 2].Value.Name = temp;
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.Append("(intptr_t)&");
+                        sb.Append(_writer.GetCppTypeName(delegateInfo.ShuffleThunk.OwningType));
+                        sb.Append("::");
+                        sb.Append(_writer.GetCppMethodName(delegateInfo.ShuffleThunk));
+
+                        Push(StackValueKind.NativeInt, new Value(sb.ToString()), null);
                     }
                 }
             }
@@ -903,36 +912,6 @@ namespace Internal.IL
             if (temp != null)
                 Push(retKind, new Value(temp), retType);
             Finish();
-        }
-
-        MethodDesc GetDelegateCtor(TypeDesc delegateType, ref Value fnptrValue, out bool staticShuffleThunk)
-        {
-            MethodDesc target = (MethodDesc)fnptrValue.Aux;
-
-            staticShuffleThunk = false;
-
-            // TODO: Delegates to static methods
-            if (target.Signature.IsStatic)
-            {
-                MethodDesc shuffleThunk = new DelegateShuffleThunk(target);
-
-                StringBuilder sb = new StringBuilder();
-                sb.Append("(intptr_t)&");
-                sb.Append(_writer.GetCppTypeName(shuffleThunk.OwningType));
-                sb.Append("::");
-                sb.Append(_writer.GetCppMethodName(shuffleThunk));
-                fnptrValue.Name = sb.ToString();
-
-                _compilation.AddMethod(shuffleThunk);
-
-                staticShuffleThunk = true;
-            }
-
-            // TODO: Delegates on valuetypes
-            if (target.OwningType.IsValueType)
-                throw new NotImplementedException();
-
-            return delegateType.BaseType.BaseType.GetMethod("InitializeClosedInstance", null);
         }
 
         void ImportLdFtn(int token, ILOpcode opCode)
