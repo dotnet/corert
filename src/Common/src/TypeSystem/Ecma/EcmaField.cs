@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.IO;
 
 using Internal.TypeSystem;
 
@@ -139,14 +140,20 @@ namespace Internal.TypeSystem.Ecma
                     var customAttribute = this.MetadataReader.GetCustomAttribute(customAttributeHandle);
                     var constructorHandle = customAttribute.Constructor;
 
-                    var constructor = Module.GetMethod(constructorHandle);
-                    var type = constructor.OwningType;
-
-                    switch (type.Name)
+                    try
                     {
-                        case "System.ThreadStaticAttribute":
-                            flags |= FieldFlags.ThreadStatic;
-                            break;
+                        var constructor = Module.GetMethod(constructorHandle);
+                        var type = constructor.OwningType;
+
+                        switch (type.Name)
+                        {
+                            case "System.ThreadStaticAttribute":
+                                flags |= FieldFlags.ThreadStatic;
+                                break;
+                        }
+                    }
+                    catch (FileNotFoundException)
+                    {
                     }
                 }
 
