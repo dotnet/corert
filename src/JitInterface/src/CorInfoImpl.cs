@@ -886,8 +886,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        _compilation.AddType(type);
-                        _compilation.MarkAsConstructed(type);
+                        Debug.Assert(type is DefType);
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
@@ -895,17 +894,14 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        var arrayType = type.Context.GetArrayType(type);
-                        _compilation.AddType(arrayType);
-                        _compilation.MarkAsConstructed(arrayType);
+                        Debug.Assert(type.IsSzArray);
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewArr1, arrayType));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        _compilation.AddType(type);
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
                     }
@@ -913,7 +909,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        _compilation.AddType(type);
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
@@ -921,18 +916,15 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
+
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR:
                     {
-                        var type = HandleToObject(pResolvedToken.hClass);
-                        _compilation.AddType(type);
                         var method = HandleToObject(pResolvedToken.hMethod);
-                        _compilation.AddMethod(method);
 
-                        DelegateInfo delegateInfo = (DelegateInfo)_compilation.GetDelegateCtor(method);
-                        _compilation.AddMethod(delegateInfo.Ctor);
+                        DelegateInfo delegateInfo = _compilation.GetDelegateCtor(method);
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
                     }
@@ -1143,9 +1135,6 @@ namespace Internal.JitInterface
                 {
                     throw new NotSupportedException();
                 }
-
-                // Make sure to include the type in the compilation
-                _compilation.AddType(field.OwningType);
 
                 fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
                 pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
@@ -1597,7 +1586,6 @@ namespace Internal.JitInterface
 
             if (((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && method.IsVirtual)
             {
-                _compilation.AddVirtualSlot(method);
                 pResult.codePointerOrStubLookup.constLookup.addr = 
                     (void *)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.VirtualCall, method));
 
@@ -1619,7 +1607,6 @@ namespace Internal.JitInterface
                     pResult.codePointerOrStubLookup.constLookup.addr = pResolvedToken.hMethod;
                 }
             }
-
 
             // TODO: Generics
             // pResult.instParamLookup
