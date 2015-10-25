@@ -27,6 +27,48 @@
     </AssemblyMetadata>
   </ItemGroup>
 
+  <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
+  <PropertyGroup>
+    <OSGroup Condition="'$(OSGroup)'==''">$(__BuildOS)</OSGroup>
+    <Platform Condition="'$(Platform)'==''">$(__BuildArch)</Platform>
+    <Configuration Condition="'$(Configuration)'==''">$(__BuildType)</Configuration>
+  </PropertyGroup>
+
+  <!-- 
+  Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
+  Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
+  if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
+  OSX_[Debug|Release] and Linux_[Debug|Release] configurations.  We do this so that we place all the output under
+  a single binary folder and can have a similar experience between the command line and Visual Studio.
+  
+  Since now have multiple *Debug and *Release configurations, ConfigurationGroup is set to Debug for any of the
+  debug configurations, and to Release for any of the release configurations.
+  -->
+
+  <!-- Set default Configuration and Platform -->
+  <PropertyGroup>
+    <Platform Condition="'$(Platform)'==''">AnyCPU</Platform>
+
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">$(Configuration)</ConfigurationGroup>
+
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
+    <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
+  </PropertyGroup>
+
+  <!-- Initialize the binplace-specific BuildOS, BuildType, BuildConfig from what we have computed by now -->
+  <PropertyGroup>
+    <BinDirOSGroup Condition="'$(BinDirOSGroup)'==''">$(OSGroup)</BinDirOSGroup>
+    <BinDirConfiguration Condition="'$(BinDirConfiguration)'==''">$(ConfigurationGroup)</BinDirConfiguration>
+    <BinDirPlatform Condition="'$(BinDirPlatform)'==''">$(Platform)</BinDirPlatform>
+    <BinDirPlatform Condition="'$(BinDirPlatform)'=='AnyCPU' or '$(BinDirPlatform)'=='amd64'">x64</BinDirPlatform> 
+  </PropertyGroup>
+
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
@@ -48,7 +90,7 @@
 
   <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
-    <OSPlatformConfig>$(__BuildOS).$(__BuildArch).$(__BuildType)</OSPlatformConfig>
+    <OSPlatformConfig>$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)</OSPlatformConfig>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(ProductBinDir)</BaseOutputPath>
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\</OutputPath>
@@ -159,33 +201,6 @@
       Second, we aren't yet building pdbs, which the nuspecs specify.
     -->
     <SkipBuildPackages>true</SkipBuildPackages>
-  </PropertyGroup>
-
-  <!-- 
-  Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
-  Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
-  if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
-  OSX_[Debug|Release] and Linux_[Debug|Release] configurations.  We do this so that we place all the output under
-  a single binary folder and can have a similar experience between the command line and Visual Studio.
-  
-  Since now have multiple *Debug and *Release configurations, ConfigurationGroup is set to Debug for any of the
-  debug configurations, and to Release for any of the release configurations.
-  -->
-
-  <!-- Set default Configuration and Platform -->
-  <PropertyGroup>
-    <Platform Condition="'$(Platform)'==''">AnyCPU</Platform>
-
-    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
-    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">$(Configuration)</ConfigurationGroup>
-
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Windows'))">Windows_NT</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('Linux'))">Linux</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('OSX'))">OSX</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'=='' and $(Configuration.StartsWith('FreeBSD'))">FreeBSD</OSGroup>
-    <OSGroup Condition="'$(OSGroup)'==''">Windows_NT</OSGroup>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
