@@ -27,7 +27,7 @@ namespace Internal.IL
                 // TODO: Workaround: we should special case methods with Intrinsic attribute, but since
                 //       CoreLib source is still not in the repo, we have to work with what we have, which is
                 //       an MCG attribute on the type itself...
-                if (((EcmaType)method.OwningType).HasCustomAttribute("System.Runtime.InteropServices.McgIntrinsicsAttribute"))
+                if (((EcmaType)method.OwningType).HasCustomAttribute("System.Runtime.InteropServices", "McgIntrinsicsAttribute"))
                 {
                     if (method.Name == "Call")
                     {

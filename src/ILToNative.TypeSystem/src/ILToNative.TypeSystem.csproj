@@ -72,7 +72,12 @@
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
       <Link>Ecma\EcmaType.MethodImpls.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\MetadataExtensions.cs">
+      <Link>Ecma\MetadataExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs">
+      <Link>Ecma\IMetadataStringDecoderProvider.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>
     </Compile>

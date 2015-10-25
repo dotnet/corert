@@ -405,26 +405,10 @@ namespace Internal.TypeSystem.Ecma
             return _metadataReader.GetUserString(userStringHandle);
         }
 
-        internal bool HasCustomAttribute(CustomAttributeHandleCollection customAttributes, string customAttributeName)
+        public bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            foreach (var attributeHandle in customAttributes)
-            {
-                var customAttribute = _metadataReader.GetCustomAttribute(attributeHandle);
-                var constructorHandle = customAttribute.Constructor;
-
-                var constructor = GetMethod(constructorHandle);
-                var type = constructor.OwningType;
-
-                if (type.Name == customAttributeName)
-                    return true;
-            }
-
-            return false;
-        }
-
-        public bool HasCustomAttribute(string customAttributeName)
-        {
-            return HasCustomAttribute(_assemblyDefinition.GetCustomAttributes(), customAttributeName);
+            return _metadataReader.HasCustomAttribute(_assemblyDefinition.GetCustomAttributes(),
+                attributeNamespace, attributeName);
         }
 
         public override string ToString()
