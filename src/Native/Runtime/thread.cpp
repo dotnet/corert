@@ -948,7 +948,8 @@ bool Thread::IsDetached()
 
 void Thread::SetDetached()
 {
-    ASSERT(!IsStateSet(TSF_Detached));
+    // https://github.com/dotnet/corert/issues/114
+    // ASSERT(!IsStateSet(TSF_Detached));
     SetState(TSF_Detached);
 }
 
