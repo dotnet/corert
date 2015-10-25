@@ -20,6 +20,8 @@
     "System.Reflection.Metadata": "1.0.22"
   },
   "frameworks": {
-    "dotnet": {}
+    "dotnet": {
+      "imports": "portable-net452"
+    }
   }
 }
