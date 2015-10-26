@@ -1542,8 +1542,16 @@ namespace Internal.JitInterface
             }
             else
             {
-                _compilation.AddMethod(method);
-                pResult.codePointerOrStubLookup.constLookup.addr = pResolvedToken.hMethod;
+                if (method.IsConstructor && method.OwningType.IsString)
+                {
+                    // Calling a string constructor doesn't call the actual constructor.
+                    var initMethod = IntrinsicMethods.GetStringInitializer(method);
+                    pResult.codePointerOrStubLookup.constLookup.addr = ObjectToHandle(initMethod);
+                }
+                else
+                {
+                    pResult.codePointerOrStubLookup.constLookup.addr = pResolvedToken.hMethod;
+                }
             }
 
 

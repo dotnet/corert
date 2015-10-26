@@ -711,13 +711,18 @@ namespace Internal.IL
                     if (owningType.IsString)
                     {
                         // String constructors actually look like regular method calls
-                        MethodSignatureBuilder builder = new MethodSignatureBuilder(method.Signature);
-                        builder.Flags = MethodSignatureFlags.Static;
-                        builder.ReturnType = owningType;
-                        method = owningType.GetMethod("Ctor", builder.ToSignature());
-                        if (method == null)
-                            throw new NotImplementedException();
+                        method = IntrinsicMethods.GetStringInitializer(method);
                         opcode = ILOpcode.call;
+
+                        // WORKAROUND: the static method expects an extra arg
+                        // Annoyingly, it needs to be before all the others
+                        if (_stackTop >= _stack.Length)
+                            Array.Resize(ref _stack, 2 * _stackTop + 3);
+                        for (int i = _stackTop - 1; i > _stackTop - method.Signature.Length; i--)
+                            _stack[i + 1] = _stack[i];
+                        _stackTop++;
+                        _stack[_stackTop - method.Signature.Length] =
+                            new StackValue { Kind = StackValueKind.ObjRef, Value = new Value("0") };
                     }
                     else if (owningType.IsArray)
                     {

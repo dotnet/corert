@@ -278,7 +278,7 @@ namespace System.Globalization
             {
 #if CORERT
                 // CORERT-TODO CultureInfo                
-                // https://github.com/dotnet/corert/issues/116
+                // https://github.com/dotnet/corert/issues/126
                 return null; // return CultureInfo.InvariantCulture;
 #else
                 CultureInfo ci = GetUserDefaultCultureCacheOverride();

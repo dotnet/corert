@@ -127,7 +127,7 @@ namespace System
 #if CORERT
         public extern String(char[] value);   // CtorCharArray
 
-        private static String Ctor(char[] value)
+        private static String Ctor(object unusedThis, char[] value)
 #else
         [RuntimeImport(".", "CtorCharArray")]
         public extern String(char[] value);   // CtorCharArray
@@ -157,7 +157,7 @@ namespace System
 #if CORERT
         public extern String(char[] value, int startIndex, int length);   // CtorCharArrayStartLength
 
-        private static String Ctor(char[] value, int startIndex, int length)
+        private static String Ctor(object unusedThis, char[] value, int startIndex, int length)
 #else
         [RuntimeImport(".", "CtorCharArrayStartLength")]
         public extern String(char[] value, int startIndex, int length);   // CtorCharArrayStartLength
@@ -202,7 +202,7 @@ namespace System
 #if CORERT
         unsafe public extern String(char* value);   // CtorCharPtr
 
-        private static unsafe String Ctor(char* ptr)
+        private static unsafe String Ctor(object unusedThis, char* ptr)
 #else
         [RuntimeImport(".", "CtorCharPtr")]
         unsafe public extern String(char* value);   // CtorCharPtr
@@ -242,7 +242,7 @@ namespace System
 #if CORERT
         unsafe public extern String(char* value, int startIndex, int length);   // CtorCharPtrStartLength
 
-        private static unsafe String Ctor(char* ptr, int startIndex, int length)
+        private static unsafe String Ctor(object unusedThis, char* ptr, int startIndex, int length)
 #else
         [RuntimeImport(".", "CtorCharPtrStartLength")]
         unsafe public extern String(char* value, int startIndex, int length);   // CtorCharPtrStartLength
@@ -290,7 +290,7 @@ namespace System
 #if CORERT
         public extern String(char c, int count);                          // CtorCharCount
 
-        private static String Ctor(char c, int count)
+        private static String Ctor(object unusedThis, char c, int count)
 #else
         [RuntimeImport(".", "CtorCharCount")]
         public extern String(char c, int count);                          // CtorCharCount
