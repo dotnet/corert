@@ -292,28 +292,11 @@ namespace ILToNative
 
                 if (_options.DgmlLog != null)
                 {
-                    // I'd like to write the below, but IlToNative build environment results in a runtime use of the facade
-                    // for System.IO.FileSystem, but the implementation for System.IO.FileSystem.Primitives. This results
-                    // in the ctor call failing to bind at runtime, so I'm resorting to reflection to make this call.
-                    //
-                    // using (FileStream dgmlOutput = new FileStream(_options.DgmlLog, FileMode.Create))
-                    FileStream dgmlOutput = null;
-                    foreach (var ci in System.Reflection.IntrospectionExtensions.GetTypeInfo(typeof(FileStream)).DeclaredConstructors)
-                    {
-                        if (ci.GetParameters().Length != 2)
-                            continue;
-                        if (ci.GetParameters()[0].ParameterType.Name != "String")
-                            continue;
-                        if (ci.GetParameters()[1].ParameterType.Name != "FileMode")
-                            continue;
-                        dgmlOutput = (FileStream)ci.Invoke(new object[] { _options.DgmlLog, FileMode.Create });
-                        break;
-                    }
+                    using (FileStream dgmlOutput = new FileStream(_options.DgmlLog, FileMode.Create))
                     {
                         DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                        dgmlOutput.Flush();
                     }
-                    dgmlOutput.Flush();
-                    dgmlOutput.Dispose();
                 }
             }
             else
