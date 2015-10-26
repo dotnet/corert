@@ -37,10 +37,16 @@ namespace ILToNative
             Debug.Assert(constructorMethod.IsConstructor);
             Debug.Assert(constructorMethod.OwningType.IsString);
 
-            MethodSignatureBuilder builder = new MethodSignatureBuilder(constructorMethod.Signature);
-            builder.Flags = MethodSignatureFlags.Static;
-            builder.ReturnType = constructorMethod.OwningType;
-            MethodDesc result = constructorMethod.OwningType.GetMethod("Ctor", builder.ToSignature());
+            // There's an extra (useless) Object as the first arg to match RyuJIT expectations.
+            var parameters = new TypeDesc[constructorMethod.Signature.Length + 1];
+            parameters[0] = constructorMethod.Context.GetWellKnownType(WellKnownType.Object);
+            for (int i = 0; i < constructorMethod.Signature.Length; i++)
+                parameters[i + 1] = constructorMethod.Signature[i];
+
+            MethodSignature sig = new MethodSignature(
+                MethodSignatureFlags.Static, 0, constructorMethod.OwningType, parameters);
+
+            MethodDesc result = constructorMethod.OwningType.GetMethod("Ctor", sig);
 
             // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
             if (result == null)
