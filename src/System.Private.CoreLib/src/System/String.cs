@@ -3194,6 +3194,7 @@ namespace System
             return count;
         }
 
+#if !CORERT
         // This method give you access raw access to a unpinned (i.e. don't hand out via interop) 
         // string data to do efficent string indexing and substring operations.
         internal StringPointer GetStringPointer(int startIndex = 0)
@@ -3227,6 +3228,7 @@ namespace System
                 }
             }
         }
+#endif
 
         //
         // IConvertible implementation
