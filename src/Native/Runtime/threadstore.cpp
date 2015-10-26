@@ -460,12 +460,14 @@ Thread * ThreadStore::GetCurrentThreadIfAvailable()
 }
 #endif // !DACCESS_COMPILE
 
+#ifndef FEATURE_DECLSPEC_THREAD
 // Keep a global variable in the target process which contains
 // the address of _tls_index.  This is the breadcrumb needed
 // by DAC to read _tls_index since we don't control the 
 // declaration of _tls_index directly.
 EXTERN_C UInt32 _tls_index;
 GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
+#endif // !FEATURE_DECLSPEC_THREAD
 
 #ifndef DACCESS_COMPILE
 // We must prevent the linker from removing the unused global variable 
@@ -506,6 +508,7 @@ PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
 
     return (PTR_Thread)(pOurTls + OFFSETOF__TLS__tls_CurrentThread);
 }
+
 #endif
 
 #ifndef DACCESS_COMPILE

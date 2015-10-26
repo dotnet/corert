@@ -316,8 +316,6 @@ ClrVirtualProtect(
 
 MethodTable * g_pFreeObjectMethodTable;
 
-EEConfig * g_pConfig;
-
 GCSystemInfo g_SystemInfo;
 
 void InitializeSystemInfo()

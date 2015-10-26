@@ -4,6 +4,7 @@ set(COMMON_RUNTIME_SOURCES
 #    AsmOffsetsVerify.cpp
     assert.cpp
     Crst.cpp
+    DebugEventSource.cpp
     dllmain.cpp
     eetype.cpp
     EHHelpers.cpp
@@ -48,16 +49,18 @@ set(COMMON_RUNTIME_SOURCES
 )
 
 if(WIN32)
+  include_directories(windows)
   list(APPEND COMMON_RUNTIME_SOURCES
-    DebugEventSource.cpp
-    ../gc/env/gcenv.windows.cpp
-    PalRedhawkCommon.cpp
-    PalRedhawkMinWin.cpp
+    ../gc/env/gcenv.windows.cpp    
+    windows/PalRedhawkCommon.cpp
+    windows/PalRedhawkMinWin.cpp
   )
 else()
   include_directories(unix)
   list(APPEND COMMON_RUNTIME_SOURCES
-    ../gc/env/gcenv.unix.cpp
+    ../gc/env/gcenv.unix.cpp    
+    unix/PalRedhawkCommon.cpp
+    unix/PalRedhawkUnix.cpp
   )
 endif()
 
@@ -119,6 +122,8 @@ if(WIN32)
   add_compile_options(/fp:precise)
   add_compile_options(/EHsc)
 else()
+  add_definitions(-DPAL_STDCPP_COMPAT)
+  add_definitions(-DNO_UI_ASSERT)
   add_compile_options(-Wno-format)
   add_compile_options(-Wno-unused-variable)
   add_compile_options(-Wno-unused-private-field)
@@ -130,6 +135,10 @@ else()
   add_compile_options(-Wno-undefined-inline)
   add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-self-assign)
+
+  include(unix/configure.cmake)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 endif()
 
 convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})

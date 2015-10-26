@@ -35,8 +35,12 @@
 
 #ifndef DACCESS_COMPILE
 
+#ifdef _MSC_VER
 extern "C" void _ReadWriteBarrier(void);
 #pragma intrinsic(_ReadWriteBarrier)
+#else // _MSC_VER
+#define _ReadWriteBarrier() __asm__ volatile("" : : : "memory")
+#endif // _MSC_VER
 #endif //!DACCESS_COMPILE
 
 PTR_VOID Thread::GetTransitionFrame()
