@@ -575,26 +575,13 @@ namespace ILToNative
         }
 
         Dictionary<MethodDesc, DelegateInfo> _delegateInfos = new Dictionary<MethodDesc, DelegateInfo>();
-        public Object GetDelegateCtor(MethodDesc target)
+        public DelegateInfo GetDelegateCtor(MethodDesc target)
         {
             DelegateInfo info;
 
             if (!_delegateInfos.TryGetValue(target, out info))
             {
-                DelegateShuffleThunk shuffleThunk = null;
-                if (target.Signature.IsStatic)
-                {
-                    shuffleThunk = new DelegateShuffleThunk(target);
-                    AddMethod(shuffleThunk);
-                }
-
-                // TODO: Delegates on valuetypes
-                if (target.OwningType.IsValueType)
-                    throw new NotImplementedException();
-
-                MethodDesc ctor = _typeSystemContext.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType.GetMethod("InitializeClosedInstance", null);
-
-                _delegateInfos.Add(target, info = new DelegateInfo(target, ctor, shuffleThunk));
+                _delegateInfos.Add(target, info = new DelegateInfo(this, target));
             }
 
             return info;

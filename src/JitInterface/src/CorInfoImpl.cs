@@ -740,6 +740,64 @@ namespace Internal.JitInterface
         uint getClassAlignmentRequirement(IntPtr _this, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fDoubleAlignHint)
         { throw new NotImplementedException(); }
 
+        int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
+        {
+            int result = 0;
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                CorInfoGCType gcType = CorInfoGCType.TYPE_GC_NONE;
+
+                var fieldType = field.FieldType;
+                if (fieldType.IsValueType)
+                {
+                    if (!((MetadataType)fieldType).ContainsPointers)
+                        continue;
+
+                    gcType = CorInfoGCType.TYPE_GC_OTHER;
+                }
+                else if (fieldType.HasBaseType)
+                {
+                    gcType = CorInfoGCType.TYPE_GC_REF;
+                }
+                else if (fieldType.IsByRef)
+                {
+                    gcType = CorInfoGCType.TYPE_GC_BYREF;
+                }
+                else
+                {
+                    continue;
+                }
+
+                Debug.Assert(field.Offset % PointerSize == 0);
+                byte* fieldGcPtrs = gcPtrs + field.Offset / PointerSize;
+
+                if (gcType == CorInfoGCType.TYPE_GC_OTHER)
+                {
+                    result += GatherClassGCLayout(fieldType, fieldGcPtrs);
+                }
+                else
+                {
+                    // Ensure that if we have multiple fields with the same offset, 
+                    // that we don't double count the data in the gc layout.
+                    if (*fieldGcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
+                    {
+                        *fieldGcPtrs = (byte)gcType;
+                        result++;
+                    }
+                    else
+                    {
+                        Debug.Assert(*fieldGcPtrs == (byte)gcType);
+                    }
+                }
+            }
+
+            return result;
+        }
+
         uint getClassGClayout(IntPtr _this, CORINFO_CLASS_STRUCT_* cls, byte* gcPtrs)
         {
             uint result = 0;
@@ -758,7 +816,7 @@ namespace Internal.JitInterface
 
             if (type.ContainsPointers)
             {
-                throw new NotImplementedException();
+                result = (uint)GatherClassGCLayout(type, gcPtrs);
             }
             return result;
         }

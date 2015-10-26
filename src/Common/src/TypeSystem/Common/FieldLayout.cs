@@ -648,23 +648,21 @@ namespace Internal.TypeSystem
                     continue;
 
                 TypeDesc fieldType = field.FieldType;
-                switch (fieldType.Category)
+                if (fieldType.IsValueType)
                 {
-                    // case TypeFlags.SzArray?
-                    case TypeFlags.Array:
-                    case TypeFlags.Class:
-                    // case TypeFlags.MethodGenericParameter?
-                    case TypeFlags.GenericParameter:
-                    case TypeFlags.ByRef:
-                        _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
-                        return;
-                    case TypeFlags.ValueType:
-                        if (((MetadataType)fieldType).ContainsPointers)
-                        {
-                            _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
-                            return;
-                        }
+                    if (fieldType.IsPrimitive)
+                        continue;
+
+                    if (((MetadataType)fieldType).ContainsPointers)
+                    {
+                        flagsToAdd |= FieldLayoutFlags.ContainsPointers;
                         break;
+                    }
+                }
+                else if (fieldType.HasBaseType || fieldType.IsByRef)
+                {
+                    flagsToAdd |= FieldLayoutFlags.ContainsPointers;
+                    break;
                 }
             }
 
