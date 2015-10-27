@@ -286,7 +286,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public virtual MetadataType BaseType
+        public virtual DefType BaseType
         {
             get
             {

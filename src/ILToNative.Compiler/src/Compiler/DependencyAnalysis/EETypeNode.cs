@@ -217,7 +217,7 @@ namespace ILToNative.DependencyAnalysis
                 {
                     MethodDesc declMethod = virtualSlots[i];
 
-                    MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestDefType());
+                    MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
 
                     if (!implMethod.IsAbstract)
                         objData.EmitPointerReloc(context.MethodEntrypoint(implMethod));

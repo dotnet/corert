@@ -187,7 +187,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, MetadataType currentType)
+        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType)
         {
             string name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
@@ -216,7 +216,7 @@ namespace Internal.TypeSystem
                     return nameSigOverride;
                 }
 
-                currentType = currentType.BaseType; 
+                currentType = currentType.MetadataBaseType; 
             }
 
             return null;
@@ -230,7 +230,7 @@ namespace Internal.TypeSystem
             if (method == null)
                 return method;
 
-            MetadataType currentType = method.OwningType.BaseType;
+            DefType currentType = method.OwningType.BaseType;
 
             // Loop until a newslot method is found
             while ((currentType != null) && !method.IsNewSlot)
@@ -249,7 +249,7 @@ namespace Internal.TypeSystem
             return method;
         }
 
-        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, MetadataType currentType)
+        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, DefType currentType)
         {
             MethodDesc foundMethod = FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType);
             if (foundMethod != null)
@@ -281,7 +281,7 @@ namespace Internal.TypeSystem
             }
 
             MethodDesc nameSigMatchMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(unificationGroup.DefiningMethod, currentType);
-            MetadataType baseType = currentType.BaseType;
+            MetadataType baseType = currentType.MetadataBaseType;
 
             // Unless the current type has a name/sig match for the group, look to the base type to define the unification group further
             if ((nameSigMatchMethod == null) && (baseType != null))
@@ -383,7 +383,7 @@ namespace Internal.TypeSystem
 
             // If interface is explicitly defined on a type, search for a name/sig match.
             bool foundExplicitInterface = IsInterfaceExplicitlyImplementedOnType(currentType, interfaceType);
-            MetadataType baseType = currentType.BaseType;
+            MetadataType baseType = currentType.MetadataBaseType;
 
             if (foundExplicitInterface)
             {
@@ -448,7 +448,7 @@ namespace Internal.TypeSystem
                 if (currentTypeInterfaceResolution != null)
                     return currentTypeInterfaceResolution;
 
-                currentType = currentType.BaseType;
+                currentType = currentType.MetadataBaseType;
             }
         }
 
@@ -466,7 +466,7 @@ namespace Internal.TypeSystem
                     return FindSlotDefiningMethodForVirtualMethod(nameSigOverride);
                 }
 
-                currentType = currentType.BaseType;
+                currentType = currentType.MetadataBaseType;
             }
         }
 
@@ -491,7 +491,7 @@ namespace Internal.TypeSystem
                         }
                     }
 
-                    type = type.BaseType;
+                    type = type.MetadataBaseType;
                 } while (type != null);
             }
         }

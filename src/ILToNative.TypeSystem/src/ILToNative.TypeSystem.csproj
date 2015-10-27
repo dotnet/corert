@@ -20,14 +20,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\TypeSystem\CodeGen\MethodDesc.CodeGen.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\AlignmentHelper.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\AlignmentHelper.cs">
+      <Link>Utilities\AlignmentHelper.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\ByRefType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\FieldForInstantiatedType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.FieldLayout.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\FieldLayout.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedMethod.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.FieldLayout.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MethodForInstantiatedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\ParameterizedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\PointerType.cs" />
@@ -40,19 +45,40 @@
     <Compile Include="$(CommonPath)\TypeSystem\Common\TypeSystemContext.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\TypeSystemHelpers.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\WellKnownType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MethodDesc.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\VirtualFunctionResolution.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.MethodImpls.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaField.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaGenericParameter.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaMethod.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaModule.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaSignatureParser.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\DefType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\DefType.FieldLayout.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaField.cs">
+      <Link>Ecma\EcmaField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaGenericParameter.cs">
+      <Link>Ecma\EcmaGenericParameter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaMethod.cs">
+      <Link>Ecma\EcmaMethod.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaModule.cs">
+      <Link>Ecma\EcmaModule.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaSignatureParser.cs">
+      <Link>Ecma\EcmaSignatureParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.cs">
+      <Link>Ecma\EcmaType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
+      <Link>Ecma\EcmaType.MethodImpls.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs" />
-    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Utilities\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\NoMetadata\NoMetadataType.cs">
+      <Link>NoMetadata\NoMetadataType.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
