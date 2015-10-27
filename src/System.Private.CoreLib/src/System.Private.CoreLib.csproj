@@ -62,9 +62,12 @@
 
   <PropertyGroup>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
-    <!-- TODO: @tarekgh Define this for CoreRT / 64-bit builds only -->
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;WIN64</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\SR.Core.cs">
       <Link>Resources\Common</Link>
@@ -482,7 +485,7 @@
       <Compile Include="System\Globalization\CultureData.Dummy.cs" />
       <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
       <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
-</ItemGroup>
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />

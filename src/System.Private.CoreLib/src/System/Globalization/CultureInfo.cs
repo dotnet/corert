@@ -166,7 +166,14 @@ namespace System.Globalization
 
 #if CORERT
             // CORERT-TODO CultureInfo
-            m_cultureData = s_InvariantCultureInfo.m_cultureData;
+            if (s_InvariantCultureInfo == null)
+            {
+                m_cultureData = CultureData.GetCultureData("", useUserOverride);
+            }
+            else
+            {
+                m_cultureData = s_InvariantCultureInfo.m_cultureData;
+            }
             m_name = _sortName = _nonSortName = name;
             m_isInherited = false;
 #else
@@ -278,8 +285,7 @@ namespace System.Globalization
             {
 #if CORERT
                 // CORERT-TODO CultureInfo                
-                // https://github.com/dotnet/corert/issues/126
-                return null; // return CultureInfo.InvariantCulture;
+                return CultureInfo.InvariantCulture;
 #else
                 CultureInfo ci = GetUserDefaultCultureCacheOverride();
                 if (ci != null)
