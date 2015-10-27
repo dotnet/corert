@@ -31,7 +31,7 @@
       TODO: For now, we will generate Nuget packages only for Windows.
   -->
 
-  <Target Name="BuildNuGetPackages" Condition="'$(BuildNugetPackage)' != 'false' and '$(OSGroup)' == 'Windows_NT'" AfterTargets="RenameILToNative">
+  <Target Name="BuildNuGetPackages" Condition="'$(BuildNugetPackage)' != 'false'" AfterTargets="RenameILToNative">
     <MakeDir Directories="$(ProductPackageDir)" Condition="!Exists('$(ProductPackageDir)')" />
     <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(ProductPackageDir)" />
     <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
