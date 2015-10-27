@@ -380,6 +380,8 @@ namespace System.Globalization
                 char ch = *p;
                 char* next;
 
+                char* dig = number.digits;
+
                 while (true)
                 {
                     // Eat whitespace unless we've found a sign which isn't followed by a currency symbol.
@@ -433,7 +435,7 @@ namespace System.Globalization
                                 if (bigNumber)
                                     sb.Append(ch);
                                 else
-                                    number.digits[digCount++] = ch;
+                                    dig[digCount++] = ch;
                                 if (ch != '0' || parseDecimal)
                                 {
                                     digEnd = digCount;
@@ -471,7 +473,7 @@ namespace System.Globalization
                 if (bigNumber)
                     sb.Append('\0');
                 else
-                    number.digits[digEnd] = '\0';
+                    dig[digEnd] = '\0';
                 if ((state & StateDigits) != 0)
                 {
                     if ((ch == 'E' || ch == 'e') && ((options & NumberStyles.AllowExponent) != 0))
@@ -1125,29 +1127,31 @@ namespace System.Globalization
             [SecurityCritical]
             private static unsafe void RoundNumber(ref NumberBuffer number, int pos)
             {
+                char* dig = number.digits;
+
                 int i = 0;
-                while (i < pos && number.digits[i] != 0)
+                while (i < pos && dig[i] != 0)
                     i++;
 
-                if (i == pos && number.digits[i] >= '5')
+                if (i == pos && dig[i] >= '5')
                 {
-                    while (i > 0 && number.digits[i - 1] == '9')
+                    while (i > 0 && dig[i - 1] == '9')
                         i--;
 
                     if (i > 0)
                     {
-                        number.digits[i - 1]++;
+                        dig[i - 1]++;
                     }
                     else
                     {
                         number.scale++;
-                        number.digits[0] = '1';
+                        dig[0] = '1';
                         i = 1;
                     }
                 }
                 else
                 {
-                    while (i > 0 && number.digits[i - 1] == '0')
+                    while (i > 0 && dig[i - 1] == '0')
                         i--;
                 }
                 if (i == 0)
@@ -1155,7 +1159,7 @@ namespace System.Globalization
                     number.scale = 0;
                     number.sign = false;
                 }
-                number.digits[i] = '\0';
+                dig[i] = '\0';
             }
 
             [SecurityCritical]
@@ -1213,7 +1217,7 @@ namespace System.Globalization
 
                 int section;
                 int src;
-                char* dig;
+                char* dig = number.digits;
                 char ch;
 
                 section = FindSection(format, number.digits[0] == 0 ? 2 : number.sign ? 1 : 0);
@@ -1304,12 +1308,12 @@ namespace System.Globalization
                             thousandSeps = true;
                     }
 
-                    if (number.digits[0] != 0)
+                    if (dig[0] != 0)
                     {
                         number.scale += scaleAdjust;
                         int pos = scientific ? digitCount : number.scale + digitCount - decimalPos;
                         RoundNumber(ref number, pos);
-                        if (number.digits[0] == 0)
+                        if (dig[0] == 0)
                         {
                             src = FindSection(format, 2);
                             if (src != section)
@@ -1341,7 +1345,6 @@ namespace System.Globalization
                     adjust = number.scale - decimalPos;
                 }
                 src = section;
-                dig = number.digits;
 
                 // Adjust can be negative, so we make this an int instead of an unsigned int.
                 // Adjust represents the number of characters over the formatting eg. format string is "0000" and you are trying to
@@ -1526,7 +1529,7 @@ namespace System.Globalization
                                         if (i > 10)
                                             i = 10;
 
-                                        int exp = number.digits[0] == 0 ? 0 : number.scale - decimalPos;
+                                        int exp = dig[0] == 0 ? 0 : number.scale - decimalPos;
                                         FormatExponent(sb, info, exp, ch, i, positiveSign);
                                         scientific = false;
                                     }

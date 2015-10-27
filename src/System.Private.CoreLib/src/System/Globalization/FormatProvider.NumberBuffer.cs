@@ -65,11 +65,19 @@ namespace System.Globalization
                     get
                     {
                         // This is only safe if the caller allocated the NumberBuffer on the stack or pinned it.
+
+#if CORERT
+                        unsafe
+                        {
+                            fixed (char* p = &_char01)
+                                return p;
+                        }
+#else
                         // using the ManagedPointer instead of fixed allows the compiler to inline this property 
                         // and thus make it more efficient.
-
                         System.Runtime.CompilerServices.ByReference<char> mp = System.Runtime.CompilerServices.ByReference<char>.FromRef(ref _char01);
                         return (char*)System.Runtime.CompilerServices.ByReference<char>.ToPointer(mp);
+#endif
                     }
                 }
             }

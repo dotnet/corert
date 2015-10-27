@@ -27,6 +27,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Struct)]
     public sealed class StackOnlyAttribute : Attribute { }
 
+#if !CORERT
     // This is a dummy class to be replaced by the compiler with a in T
     // It has to be a dummy class to avoid complicated type substitution
     // and other complications in the compiler.
@@ -98,4 +99,5 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         private static extern bool PointerEquals(ByReference<T> value1, ByReference<T> value2);
     }
+#endif
 }
