@@ -16,17 +16,44 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets metadata that controls instance layout of this type.
+        /// </summary>
         public abstract ClassLayoutMetadata GetClassLayout();
 
+        /// <summary>
+        /// If true, the type layout is dictated by the explicit layout rules provided.
+        /// Corresponds to the definition of explicitlayout semantic defined in the ECMA-335 specification.
+        /// </summary>
         public abstract bool IsExplicitLayout { get; }
 
+        /// <summary>
+        /// If true, the order of the fields needs to be preserved. Corresponds to the definition
+        /// of sequentiallayout semantic defined in the ECMA-335 specification.
+        /// </summary>
         public abstract bool IsSequentialLayout { get; }
 
+        /// <summary>
+        /// If true, the type initializer of this type has a relaxed semantic. Corresponds
+        /// to the definition of beforefieldinit semantic defined in the ECMA-335 specification.
+        /// </summary>
         public abstract bool IsBeforeFieldInit { get; }
 
+        /// <summary>
+        /// If true, this is the special &lt;Module&gt; type that contains the definitions
+        /// of global fields and methods in the module.
+        /// </summary>
         public abstract bool IsModuleType { get; }
 
+        /// <summary>
+        /// Same as <see cref="TypeDesc.BaseType"/>, but the result is a MetadataType (avoids casting).
+        /// </summary>
         public abstract MetadataType MetadataBaseType { get; }
+
+        /// <summary>
+        /// If true, the type cannot be used as a base type of any other type.
+        /// </summary>
+        public abstract bool IsSealed { get; }
     }
 
     public struct ClassLayoutMetadata

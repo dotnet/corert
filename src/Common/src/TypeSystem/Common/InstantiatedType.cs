@@ -263,6 +263,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsSealed
+        {
+            get
+            {
+                return _typeDef.IsSealed;
+            }
+        }
+
         public override bool IsModuleType { get { return false; } }
     }
 }
