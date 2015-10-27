@@ -121,6 +121,14 @@ namespace ILToNative
                     case JitHelperId.NewMultiDimArr:
                         return "RhNewMDArray";
 
+                    case JitHelperId.Stelem_Ref:
+                        return "__stelem_ref";
+                    case JitHelperId.Ldelema_Ref:
+                        return "__ldelema_ref";
+
+                    case JitHelperId.MemCpy:
+                        return "memcpy";
+
                     default:
                         // TODO: Uncomment once all helpers are implemented
                         // throw new NotImplementedException();

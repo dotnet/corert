@@ -140,6 +140,18 @@ extern "C" void WriteBarrier(Object ** dst, Object * ref)
     ErectWriteBarrier(dst, ref);
 }
 
+extern "C" void __stelem_ref(System::Array * pArray, unsigned idx, Object * val)
+{
+    // TODO: Range checks, writer barrier, etc.
+    ((Object **)(pArray->GetArrayData()))[idx] = val;
+}
+
+extern "C" void* __ldelema_ref(System::Array * pArray, unsigned idx, MethodTable * type)
+{
+    // TODO: Range checks, etc.
+    return &(((Object **)(pArray->GetArrayData()))[idx]);
+}
+
 extern "C" void __throw_exception(void * pEx)
 {
     // TODO: Exception throwing
