@@ -324,6 +324,16 @@ extern "C" intptr_t RhHandleAllocDependent(Object* pPrimary, Object* pSecondary)
     return (intptr_t)CreateDependentHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pPrimary, pSecondary);
 }
 
+extern "C" void RhGetNonArrayBaseType()
+{
+    throw 42;
+}
+
+extern "C" void RhGetEETypeClassification()
+{
+    throw 42;
+}
+
 extern "C" void RhpUniversalTransition()
 {
     throw 42;
