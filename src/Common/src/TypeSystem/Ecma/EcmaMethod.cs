@@ -137,14 +137,20 @@ namespace Internal.TypeSystem.Ecma
                     var customAttribute = this.MetadataReader.GetCustomAttribute(customAttributeHandle);
                     var constructorHandle = customAttribute.Constructor;
 
-                    var constructor = Module.GetMethod(constructorHandle);
-                    var type = constructor.OwningType;
-
-                    switch (type.Name)
+                    try
                     {
-                        case "System.Runtime.CompilerServices.IntrinsicAttribute":
-                            flags |= MethodFlags.Intrinsic;
-                            break;
+                        var constructor = Module.GetMethod(constructorHandle);
+                        var type = constructor.OwningType;
+
+                        switch (type.Name)
+                        {
+                            case "System.Runtime.CompilerServices.IntrinsicAttribute":
+                                flags |= MethodFlags.Intrinsic;
+                                break;
+                        }
+                    }
+                    catch (FileNotFoundException)
+                    {
                     }
                 }
 

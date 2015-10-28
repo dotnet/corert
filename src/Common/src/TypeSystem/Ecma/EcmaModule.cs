@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -412,11 +413,17 @@ namespace Internal.TypeSystem.Ecma
                 var customAttribute = _metadataReader.GetCustomAttribute(attributeHandle);
                 var constructorHandle = customAttribute.Constructor;
 
-                var constructor = GetMethod(constructorHandle);
-                var type = constructor.OwningType;
+                try
+                {
+                    var constructor = GetMethod(constructorHandle);
+                    var type = constructor.OwningType;
 
-                if (type.Name == customAttributeName)
-                    return true;
+                    if (type.Name == customAttributeName)
+                        return true;
+                }
+                catch (FileNotFoundException)
+                {
+                }
             }
 
             return false;
