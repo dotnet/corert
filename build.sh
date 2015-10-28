@@ -19,7 +19,7 @@ setup_dirs()
 {
     echo Setting up directories for build
 
-    mkdir -p "$__BinDir"
+    mkdir -p "$__ProductBinDir"
     mkdir -p "$__IntermediatesDir"
 }
 
@@ -28,7 +28,7 @@ setup_dirs()
 clean()
 {
     echo "Cleaning previous output for the selected configuration"
-    rm -rf "$__BinDir"
+    rm -rf "$__ProductBinDir"
     rm -rf "$__IntermediatesDir"
 }
 
@@ -104,7 +104,7 @@ prepare_native_build()
 {
     # Specify path to be set for CMAKE_INSTALL_PREFIX.
     # This is where all built CoreClr libraries will copied to.
-    export __CMakeBinDir="$__BinDir"
+    export __CMakeBinDir="$__ProductBinDir"
 
     # Configure environment if we are doing a verbose build
     if [ $__VerboseBuild == 1 ]; then
@@ -117,7 +117,8 @@ build_managed_corert()
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.log
 
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:OSGroup=$__BuildOS /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) "$@"
+    # TODO: Renable running tests
+    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) "$@"
     BUILDERRORLEVEL=$?
 
     echo
@@ -165,7 +166,6 @@ build_native_corert()
     fi
 
     echo "CoreRT native components successfully built."
-    echo "Product binaries are available at $__BinDir"
 }
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
@@ -178,9 +178,16 @@ __rootbinpath="$__scriptpath/bin"
 __msbuildpackageid="Microsoft.Build.Mono.Debug"
 __msbuildpackageversion="14.1.0.0-prerelease"
 __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MSBuild.exe
+__ToolNugetRuntimeId=ubuntu.14.04-x64
+__TestNugetRuntimeId=ubuntu.14.04-x64
 __BuildArch=x64
-__buildmanaged=false
-__buildnative=false
+__buildmanaged=true
+__buildnative=true
+
+# Workaround to enable nuget package restoration work successully on Mono
+export TZ=UTC 
+export MONO_THREADS_PER_CPU=2000
+
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case $OSName in
@@ -190,10 +197,14 @@ case $OSName in
 
     Darwin)
         __BuildOS=OSX
+        __ToolNugetRuntimeId=osx.10.10-x64
+        __TestNugetRuntimeId=osx.10.10-x64
         ;;
 
     FreeBSD)
         __BuildOS=FreeBSD
+        __ToolNugetRuntimeId=osx.10.10-x64
+        __TestNugetRuntimeId=osx.10.10-x64
         ;;
 
     *)
@@ -286,8 +297,8 @@ if [ "$__buildmanaged" = false -a "$__buildnative" = false ]; then
 fi
 
 # Set the remaining variables based upon the determined build configuration
-__IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/Native"
-__BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/Native"
+__IntermediatesDir="$__rootbinpath/obj/Product/$__BuildOS.$__BuildArch.$__BuildType"
+__ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
 # Make the directories necessary for build if they don't exist
 
@@ -297,6 +308,28 @@ if [ $__CleanBuild == 1 ]; then
 fi
 
 setup_dirs
+
+if $__buildnative; then
+
+    # Check prereqs.
+
+    check_native_prereqs
+
+    # Prepare the system
+
+    prepare_native_build
+
+    # Build the corert native components.
+
+    build_native_corert
+
+    # Build complete
+fi
+
+# If native build failed, exit with the status code of the managed build
+if [ $BUILDERRORLEVEL != 0 ]; then
+    exit $BUILDERRORLEVEL
+fi
 
 if $__buildmanaged; then
 
@@ -320,21 +353,6 @@ if [ $BUILDERRORLEVEL != 0 ]; then
     exit $BUILDERRORLEVEL
 fi
 
-if $__buildnative; then
-
-    # Check prereqs.
-
-    check_native_prereqs
-
-    # Prepare the system
-
-    prepare_native_build
-
-    # Build the corert native components.
-
-    build_native_corert
-
-    # Build complete
-fi
+echo "Product binaries are available at $__ProductBinDir"
 
 exit $BUILDERRORLEVEL

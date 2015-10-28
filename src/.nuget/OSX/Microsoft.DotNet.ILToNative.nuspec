@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Microsoft.DotNet.ILToNative</id>
+    <version>1.0.0-prerelease</version>
+    <title>Microsoft .NET ILToNative Toolchain</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=329770</licenseUrl>
+    <projectUrl>https://github.com/dotnet/corert</projectUrl>
+    <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>Provides the toolchain to compile managed code to native.</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright &#169; Microsoft Corporation</copyright>
+    <dependencies>
+        <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
+        <dependency id="Microsoft.NETCore.Console" version="1.0.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="../ILToNative.dll" target="ILToNative.dll" />
+    <file src="../ILToNative.Compiler.dll" target="ILToNative.Compiler.dll" />
+    <file src="../ILToNative.DependencyAnalysisFramework.dll" target="ILToNative.DependencyAnalysisFramework.dll" />
+    <file src="../ILToNative.TypeSystem.dll" target="ILToNative.TypeSystem.dll" />
+    <file src="../lib/libRuntime.a" target="sdk/libRuntime.a" />
+    <file src="../System.Private.Corelib.dll" target="sdk/System.Private.Corelib.dll" />
+    <file src="../ToolRuntime/*.dll" />
+    <file src="../ToolRuntime/*.dylib" />
+    <file src="../ToolRuntime/coreconsole" target="ILToNative" />
+    <file src="../../../../packages/Microsoft.DiaSymReader/1.0.6/lib/portable-net45+win8/Microsoft.DiaSymReader.dll" />
+  </files>
+</package>
