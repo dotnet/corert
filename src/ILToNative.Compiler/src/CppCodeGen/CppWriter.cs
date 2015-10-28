@@ -154,7 +154,7 @@ namespace ILToNative.CppCodeGen
 
                     if (parameterNames != null)
                     {
-                        sb.Append(parameterNames[i]);
+                        sb.Append(SanitizeCppVarName(parameterNames[i]));
                     }
                     else
                     {
@@ -203,7 +203,7 @@ namespace ILToNative.CppCodeGen
             {
                 if (parameterNames != null)
                 {
-                    sb.Append(parameterNames[i]);
+                    sb.Append(SanitizeCppVarName(parameterNames[i]));
                 }
                 else
                 {
@@ -243,6 +243,15 @@ namespace ILToNative.CppCodeGen
             TypeDesc type = field.OwningType;
             string typeName = GetCppTypeName(type);
             return typeName.Replace("::", "__") + "__" + _compilation.NameMangler.GetMangledFieldName(field);
+        }
+
+        public string SanitizeCppVarName(string varName)
+        {
+            // TODO: name mangling robustness
+            if (varName == "errno") // some names collide with CRT headers
+                varName += "_";
+
+            return varName;
         }
 
         enum SpecialMethodKind
