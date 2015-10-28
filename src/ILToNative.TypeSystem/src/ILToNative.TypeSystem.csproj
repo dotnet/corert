@@ -19,7 +19,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\TypeSystem\Codegen\MethodDesc.CodeGen.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\CodeGen\MethodDesc.CodeGen.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>

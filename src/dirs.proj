@@ -27,8 +27,7 @@
   </Target>
 
   <!-- 
-      Generate Microsoft.Dotnet.CoreRT nuget package and associated development package 
-      TODO: For now, we will generate Nuget packages only for Windows.
+      Generate Microsoft.Dotnet.CoreRT nuget package and associated development package
   -->
 
   <Target Name="BuildNuGetPackages" Condition="'$(BuildNugetPackage)' != 'false'" AfterTargets="RenameILToNative">
