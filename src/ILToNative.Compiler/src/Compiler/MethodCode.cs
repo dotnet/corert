@@ -18,6 +18,12 @@ namespace ILToNative
         public Relocation[] Relocs;
     }
 
+    class BlockRelativeTarget
+    {
+        public sbyte Block;
+        public int Offset;
+    }
+
     struct Relocation
     {
         public ushort RelocType;

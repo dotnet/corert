@@ -1810,7 +1810,23 @@ namespace Internal.JitInterface
             Debug.Assert(locationBlock >= 0);
             reloc.Block = (sbyte)locationBlock;
 
-            reloc.Target = HandleToObject((IntPtr)target);
+            int targetOffset;
+            int targetBlock = findKnownBlock(target, out targetOffset);
+            if (targetBlock < 0)
+            {
+                // Reloc points to something outside of the generated blocks
+                reloc.Target = HandleToObject((IntPtr)target);
+            }
+            else
+            {
+                // Target is relative to one of the blocks
+                reloc.Target = new BlockRelativeTarget
+                {
+                    Block = (sbyte)targetBlock,
+                    Offset = targetOffset
+                };
+            }
+
             reloc.Delta = addlDelta;
 
             if (_relocs == null)
