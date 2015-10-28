@@ -354,7 +354,7 @@ namespace Internal.IL
 
             if (_parameterIndexToNameMap != null && argument && _parameterIndexToNameMap.ContainsKey(index))
             {
-                return _parameterIndexToNameMap[index];
+                return _writer.SanitizeCppVarName(_parameterIndexToNameMap[index]);
             }
 
             return (argument ? "_a" : "_l") + index.ToString();

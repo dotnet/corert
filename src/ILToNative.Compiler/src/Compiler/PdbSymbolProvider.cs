@@ -132,10 +132,11 @@ namespace ILToNative
             int urlLength;
             ThrowExceptionForHR(doc.GetUrl(0, out urlLength, null));
 
+            // urlLength includes terminating '\0'
             char[] urlBuffer = new char[urlLength];
             ThrowExceptionForHR(doc.GetUrl(urlLength, out urlLength, urlBuffer));
 
-            url = new string(urlBuffer, 0, urlLength);
+            url = new string(urlBuffer, 0, urlLength - 1);
             _urlCache.Add(doc, url);
             return url;
         }
@@ -185,13 +186,14 @@ namespace ILToNative
                 int nameLength;
                 ThrowExceptionForHR(local.GetName(0, out nameLength, null));
 
+                // nameLength includes terminating '\0'
                 char[] nameBuffer = new char[nameLength];
                 ThrowExceptionForHR(local.GetName(nameLength, out nameLength, nameBuffer));
 
                 int attributes;
                 ThrowExceptionForHR(local.GetAttributes(out attributes));
 
-                variables.Add(new LocalVariable() { Slot = slot, Name = new String(nameBuffer, 0, nameLength), CompilerGenerated = (attributes & 0x1) != 0 });
+                variables.Add(new LocalVariable() { Slot = slot, Name = new String(nameBuffer, 0, nameLength - 1), CompilerGenerated = (attributes & 0x1) != 0 });
             }
 
             int childrenCount;
