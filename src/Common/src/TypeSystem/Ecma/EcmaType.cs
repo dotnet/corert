@@ -444,5 +444,13 @@ namespace Internal.TypeSystem.Ecma
                 return Module.GetGlobalModuleType() == this;
             }
         }
+
+        public override bool IsSealed
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.Sealed) != 0;
+            }
+        }
     }
 }

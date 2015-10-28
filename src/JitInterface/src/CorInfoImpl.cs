@@ -680,22 +680,20 @@ namespace Internal.JitInterface
                 // if (type.IsUnsafeValueType)
                 //    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
             }
-
-            // TODO
-            // if (type.ContainsPointers)
-            //    result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
-
+            
             if (type.IsDelegate)
                 result |= CorInfoFlag.CORINFO_FLG_DELEGATE;
 
-            var ecmaType = type.GetTypeDefinition() as EcmaType;
-            if (ecmaType != null)
+            var metadataType = type as MetadataType;
+            if (metadataType != null)
             {
-                var attr = ecmaType.Attributes;
-                if ((attr & TypeAttributes.BeforeFieldInit) != 0)
+                if (metadataType.ContainsPointers)
+                    result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
+
+                if (metadataType.IsBeforeFieldInit)
                     result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
 
-                if ((attr & TypeAttributes.Sealed) != 0)
+                if (metadataType.IsSealed)
                     result |= CorInfoFlag.CORINFO_FLG_FINAL;
             }
 
@@ -887,7 +885,11 @@ namespace Internal.JitInterface
         }
 
         CorInfoHelpFunc getUnBoxHelper(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        {
+            var type = HandleToObject(cls);
+
+            return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
+        }
 
         void getReadyToRunHelper(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
