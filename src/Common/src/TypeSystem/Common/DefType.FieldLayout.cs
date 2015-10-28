@@ -72,6 +72,24 @@ namespace Internal.TypeSystem
         {
             get;
         }
+
+        /// <summary>
+        /// How many bytes must be allocated to represent the (potentially GC visible) thread static
+        /// fields of this type.
+        /// </summary>
+        public abstract int ThreadStaticFieldSize
+        {
+            get;
+        }
+
+        /// <summary>
+        /// What is the alignment required for allocating the (potentially GC visible) thread static
+        /// fields of this type.
+        /// </summary>
+        public abstract int ThreadStaticFieldAlignment
+        {
+            get;
+        }
     }
 
 }

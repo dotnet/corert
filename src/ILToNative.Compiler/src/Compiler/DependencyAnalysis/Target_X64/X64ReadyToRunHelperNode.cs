@@ -96,6 +96,10 @@ namespace ILToNative.DependencyAnalysis
                     }
                     break;
 
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    encoder.EmitINT3();
+                    break;
+
                 case ReadyToRunHelperId.GetGCStaticBase:
                     if (!((MetadataType)Helper.Target).HasStaticConstructor)
                     {

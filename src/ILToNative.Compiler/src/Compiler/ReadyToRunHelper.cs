@@ -20,6 +20,7 @@ namespace ILToNative
         CastClass,
         GetNonGCStaticBase,
         GetGCStaticBase,
+        GetThreadStaticBase,
         DelegateCtor,
     }
 
@@ -58,6 +59,8 @@ namespace ILToNative
                         return "__GetNonGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.GetGCStaticBase:
                         return "__GetGCStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
+                    case ReadyToRunHelperId.GetThreadStaticBase:
+                        return "__GetThreadStaticBase_" + _compilation.NameMangler.GetMangledTypeName((TypeDesc)this.Target);
                     case ReadyToRunHelperId.DelegateCtor:
                         return "__DelegateCtor_" + _compilation.NameMangler.GetMangledMethodName(((DelegateInfo)this.Target).Target);
                     default:

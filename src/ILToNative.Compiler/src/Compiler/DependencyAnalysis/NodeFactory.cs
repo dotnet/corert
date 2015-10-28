@@ -81,6 +81,11 @@ namespace ILToNative.DependencyAnalysis
                 return new GCStaticsNode(type, this);
             });
 
+            _threadStatics = new NodeCache<MetadataType, ThreadStaticsNode>((MetadataType type) =>
+            {
+                return new ThreadStaticsNode(type, this);
+            });
+
             _GCStaticEETypes = new NodeCache<bool[], GCStaticEETypeNode>((bool[] gcdesc) =>
             {
                 return new GCStaticEETypeNode(gcdesc, this);
@@ -164,6 +169,13 @@ namespace ILToNative.DependencyAnalysis
         public GCStaticsNode TypeGCStaticsSymbol(MetadataType type)
         {
             return _GCStatics.GetOrAdd(type);
+        }
+
+        private NodeCache<MetadataType, ThreadStaticsNode> _threadStatics;
+
+        public ThreadStaticsNode TypeThreadStaticsSymbol(MetadataType type)
+        {
+            return _threadStatics.GetOrAdd(type);
         }
 
         class BoolArrayEqualityComparer : IEqualityComparer<bool[]>
@@ -285,6 +297,7 @@ namespace ILToNative.DependencyAnalysis
         }
 
         public ArrayOfEmbeddedDataNode GCStaticsRegion = new ArrayOfEmbeddedDataNode("__GCStaticRegionStart", "__GCStaticRegionEnd", null);
+        public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode("__ThreadStaticRegionStart", "__ThreadStaticRegionEnd", null);
         public ArrayOfEmbeddedDataNode StringTable = new ArrayOfEmbeddedDataNode("__str_fixup", "__str_fixup_end", null);
 
         public Dictionary<TypeDesc, List<MethodDesc>> VirtualSlots = new Dictionary<TypeDesc, List<MethodDesc>>();
@@ -294,6 +307,7 @@ namespace ILToNative.DependencyAnalysis
         public void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
         {
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
+            graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(StringTable, "StringTable is always generated");
         }
     }

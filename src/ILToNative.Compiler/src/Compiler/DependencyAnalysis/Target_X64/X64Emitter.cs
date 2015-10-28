@@ -39,6 +39,11 @@ namespace ILToNative.DependencyAnalysis.X64
             EmitRel32RelocFor1ByteOpcode(symbol);
         }
 
+        public void EmitINT3()
+        {
+            Builder.EmitByte(0xCC);
+        }
+
         public void EmitJmpToAddrMode(ref AddrMode addrMode)
         {
             EmitIndirInstruction(0xFF, 0x4, ref addrMode);
