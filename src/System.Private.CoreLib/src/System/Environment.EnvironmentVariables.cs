@@ -15,29 +15,10 @@ using System.Collections;
 
 namespace System
 {
+
     public static partial class Environment
     {
         private const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value
-
-        public static String ExpandEnvironmentVariables(String name)
-        {
-            if (name == null)
-                throw new ArgumentNullException("name");
-
-            // Environment variable accessors are not approved modern API.
-            // Behave as if no variables are defined in this case.
-            return name;
-        }
-
-        public static String GetEnvironmentVariable(String variable)
-        {
-            if (variable == null)
-                throw new ArgumentNullException("variable");
-
-            // Environment variable accessors are not approved modern API.
-            // Behave as if the variable was not found in this case.
-            return null;
-        }
 
         public static IDictionary GetEnvironmentVariables()
         {
