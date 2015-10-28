@@ -128,5 +128,20 @@ namespace Sequential
         Struct0 MyStruct0;
         bool MyBool;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class ClassDoubleBool
+    {
+        double double1;
+        bool bool1;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class ClassBoolDoubleBool
+    {
+        bool bool1;
+        double double1;
+        bool bool2;
+    }
 }
 

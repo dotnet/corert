@@ -29,8 +29,9 @@ namespace Internal.TypeSystem
         ThreadSafeFlags _fieldLayoutFlags;
 
         int _instanceFieldSize;
-        int _instanceByteCount;
         int _instanceFieldAlignment;
+        int _instanceByteCountUnaligned;
+        int _instanceByteAlignment;
 
         // Information about various static blocks is rare, so we keep it out of line.
         StaticBlockInfo _staticBlockInfo;
@@ -71,7 +72,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override int InstanceByteCount
+        public override int InstanceByteCountUnaligned
         {
             get
             {
@@ -79,7 +80,19 @@ namespace Internal.TypeSystem
                 {
                     ComputeInstanceFieldLayout();
                 }
-                return _instanceByteCount;
+                return _instanceByteCountUnaligned;
+            }
+        }
+
+        public override int InstanceByteAlignment
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
+                {
+                    ComputeInstanceFieldLayout();
+                }
+                return _instanceByteAlignment;
             }
         }
 
@@ -161,7 +174,8 @@ namespace Internal.TypeSystem
 
             _instanceFieldSize = computedLayout.FieldSize;
             _instanceFieldAlignment = computedLayout.FieldAlignment;
-            _instanceByteCount = computedLayout.ByteCount;
+            _instanceByteCountUnaligned = computedLayout.ByteCountUnaligned;
+            _instanceByteAlignment = computedLayout.ByteCountAlignment;
 
             if (computedLayout.Offsets != null)
             {
