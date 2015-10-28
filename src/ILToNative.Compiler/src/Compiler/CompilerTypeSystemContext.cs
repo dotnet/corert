@@ -60,6 +60,8 @@ namespace ILToNative
 
         EcmaModule _systemModule;
 
+        MetadataFieldLayout _metadataFieldLayout = new CompilerMetadataFieldLayout();
+
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
         class ModuleData
@@ -163,6 +165,11 @@ namespace ILToNative
             _moduleData.Add(module, moduleData);
 
             return module;
+        }
+
+        public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
+        {
+            return _metadataFieldLayout;
         }
 
         //

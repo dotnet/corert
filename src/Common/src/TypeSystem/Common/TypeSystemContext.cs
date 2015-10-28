@@ -482,5 +482,11 @@ namespace Internal.TypeSystem
 
             return signatureVariable;
         }
+
+        /// <summary>
+        /// Abstraction to allow the type system context to affect the field layout
+        /// algorithm used by types to lay themselves out.
+        /// </summary>
+        public abstract FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type);
     }
 }

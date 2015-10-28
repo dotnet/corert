@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
+    <Compile Include="TestMetadataFieldLayout.cs" />
     <Compile Include="VirtualFunctionOverrideTests.cs" />
     <Compile Include="InstanceFieldLayoutTests.cs" />
     <Compile Include="StaticFieldLayoutTests.cs" />
