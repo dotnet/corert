@@ -346,6 +346,16 @@ namespace ILToNative
                         };
                     }
 
+                    // TODO: ROData
+                    if (methodCode.Relocs != null && methodCode.Relocs.Any(r => r.Target is BlockRelativeTarget))
+                    {
+                        Log.WriteLine("Reloc to ROData block (" + method + ")");
+                        methodCode = new MethodCode
+                        {
+                            Code = new byte[] { 0xCC }
+                        };
+                    }
+
                     ObjectDataBuilder objData = new ObjectDataBuilder();
                     objData.Alignment = _nodeFactory.Target.MinimumFunctionAlignment;
                     objData.EmitBytes(methodCode.Code);
