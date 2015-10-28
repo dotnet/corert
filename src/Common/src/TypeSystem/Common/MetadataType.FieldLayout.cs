@@ -131,6 +131,30 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override int ThreadStaticFieldSize
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _staticBlockInfo == null ? 0 : _staticBlockInfo.ThreadStatics.Size;
+            }
+        }
+
+        public override int ThreadStaticFieldAlignment
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                {
+                    ComputeStaticFieldLayout();
+                }
+                return _staticBlockInfo == null ? 0 : _staticBlockInfo.ThreadStatics.LargestAlignment;
+            }
+        }
+
         internal void ComputeInstanceFieldLayout()
         {
             var computedLayout = FieldLayoutAlgorithm.ComputeInstanceFieldLayout(this);

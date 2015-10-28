@@ -1167,7 +1167,7 @@ namespace Internal.JitInterface
                 ReadyToRunHelperId helperId;
                 if (field.IsThreadStatic)
                 {
-                    throw new NotImplementedException();
+                    helperId = ReadyToRunHelperId.GetThreadStaticBase;
                 }
                 else if (field.HasGCStaticBase)
                 {
