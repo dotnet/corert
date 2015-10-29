@@ -130,21 +130,21 @@ namespace Internal.TypeSystem.Ecma
             // a separate cache that might not be accessed very frequently.
             if ((mask & MethodFlags.AttributeMetadataCache) != 0)
             {
-                var methodDefinition = this.MetadataReader.GetMethodDefinition(_handle);
+                var metadataReader = this.MetadataReader;
+                var methodDefinition = metadataReader.GetMethodDefinition(_handle);
 
-                foreach (var customAttributeHandle in methodDefinition.GetCustomAttributes())
+                foreach (var attributeHandle in methodDefinition.GetCustomAttributes())
                 {
-                    var customAttribute = this.MetadataReader.GetCustomAttribute(customAttributeHandle);
-                    var constructorHandle = customAttribute.Constructor;
+                    StringHandle namespaceHandle, nameHandle;
+                    if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
+                        continue;
 
-                    var constructor = Module.GetMethod(constructorHandle);
-                    var type = constructor.OwningType;
-
-                    switch (type.Name)
+                    if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
                     {
-                        case "System.Runtime.CompilerServices.IntrinsicAttribute":
+                        if (metadataReader.StringComparer.Equals(nameHandle, "IntrinsicAttribute"))
+                        {
                             flags |= MethodFlags.Intrinsic;
-                            break;
+                        }
                     }
                 }
 
@@ -261,9 +261,10 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public bool HasCustomAttribute(string customAttributeName)
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return Module.HasCustomAttribute(MetadataReader.GetMethodDefinition(_handle).GetCustomAttributes(), customAttributeName);
+            return MetadataReader.HasCustomAttribute(MetadataReader.GetMethodDefinition(_handle).GetCustomAttributes(),
+                attributeNamespace, attributeName);
         }
 
         public override string ToString()

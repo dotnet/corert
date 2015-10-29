@@ -66,6 +66,8 @@ namespace Internal.TypeSystem
             get;
         }
 
+        public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
+
         public virtual FieldDesc GetTypicalFieldDefinition()
         {
             return this;

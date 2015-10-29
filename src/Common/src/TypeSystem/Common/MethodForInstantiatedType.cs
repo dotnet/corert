@@ -91,6 +91,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return _typicalMethodDef.HasCustomAttribute(attributeNamespace, attributeName);
+        }
+
         public override MethodDesc GetTypicalMethodDefinition()
         {
             return _typicalMethodDef;

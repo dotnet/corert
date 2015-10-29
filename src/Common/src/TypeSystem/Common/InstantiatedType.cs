@@ -271,6 +271,17 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsModuleType { get { return false; } }
+        public override bool IsModuleType
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
+        }
     }
 }

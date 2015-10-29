@@ -270,17 +270,17 @@ namespace ILToNative.CppCodeGen
                 {
                     return SpecialMethodKind.PInvoke;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.RuntimeImportAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
                     _compilation.Log.WriteLine("RuntimeImport: " + method.ToString());
                     return SpecialMethodKind.RuntimeImport;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.CompilerServices.IntrinsicAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
                 {
                     _compilation.Log.WriteLine("Intrinsic: " + method.ToString());
                     return SpecialMethodKind.Intrinsic;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.InteropServices.NativeCallableAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
                 {
                     _compilation.Log.WriteLine("NativeCallable: " + method.ToString());
                     // TODO: add reverse pinvoke callout

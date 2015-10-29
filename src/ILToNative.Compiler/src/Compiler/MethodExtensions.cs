@@ -3,6 +3,8 @@
 
 using System;
 
+using System.Reflection.Metadata;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -18,11 +20,9 @@ namespace ILToNative
 
     static class MethodExtensions
     {
-        const string RuntimeImportAttributeName = "System.Runtime.RuntimeImportAttribute";
-
         public static bool IsRuntimeImport(this EcmaMethod This)
         {
-            return This.HasCustomAttribute(RuntimeImportAttributeName);
+            return This.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute");
         }
 
         public static string GetRuntimeImportEntryPointName(this EcmaMethod This)
@@ -30,14 +30,25 @@ namespace ILToNative
             var metadataReader = This.MetadataReader;
             foreach (var attributeHandle in metadataReader.GetMethodDefinition(This.Handle).GetCustomAttributes())
             {
-                var customAttribute = metadataReader.GetCustomAttribute(attributeHandle);
-                var constructorHandle = customAttribute.Constructor;
-
-                var constructor = This.Module.GetMethod(constructorHandle);
-                var type = constructor.OwningType;
-
-                if (type.Name == RuntimeImportAttributeName)
+                EntityHandle attributeType, attributeCtor;
+                if (!metadataReader.GetAttributeTypeAndConstructor(attributeHandle,
+                    out attributeType, out attributeCtor))
                 {
+                    continue;
+                }
+
+                StringHandle namespaceHandle, nameHandle;
+                if (!metadataReader.GetAttributeTypeNamespaceAndName(attributeType, 
+                   out namespaceHandle, out nameHandle))
+                {
+                    continue;
+                }
+
+                if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime")
+                    && metadataReader.StringComparer.Equals(nameHandle, "RuntimeImportAttribute"))
+                {
+                    var constructor = This.Module.GetMethod(attributeCtor);
+
                     if (constructor.Signature.Length != 1 && constructor.Signature.Length != 2)
                         throw new BadImageFormatException();
 
@@ -45,7 +56,7 @@ namespace ILToNative
                         if (constructor.Signature[i] != This.Context.GetWellKnownType(WellKnownType.String))
                             throw new BadImageFormatException();
 
-                    var attributeBlob = metadataReader.GetBlobReader(customAttribute.Value);
+                    var attributeBlob = metadataReader.GetBlobReader(metadataReader.GetCustomAttribute(attributeHandle).Value);
                     if (attributeBlob.ReadInt16() != 1)
                         throw new BadImageFormatException();
 
@@ -68,15 +79,15 @@ namespace ILToNative
                 {
                     return SpecialMethodKind.PInvoke;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.RuntimeImportAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
                     return SpecialMethodKind.RuntimeImport;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.CompilerServices.IntrinsicAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
                 {
                     return SpecialMethodKind.Intrinsic;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.InteropServices.NativeCallableAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
                 {
                     // TODO: add reverse pinvoke callout
                     throw new NotImplementedException();

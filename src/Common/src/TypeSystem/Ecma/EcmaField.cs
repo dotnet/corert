@@ -132,21 +132,21 @@ namespace Internal.TypeSystem.Ecma
             // a separate cache that might not be accessed very frequently.
             if ((mask & FieldFlags.AttributeMetadataCache) != 0)
             {
-                var fieldDefinition = this.MetadataReader.GetFieldDefinition(_handle);
+                var metadataReader = this.MetadataReader;
+                var fieldDefinition = metadataReader.GetFieldDefinition(_handle);
 
-                foreach (var customAttributeHandle in fieldDefinition.GetCustomAttributes())
+                foreach (var attributeHandle in fieldDefinition.GetCustomAttributes())
                 {
-                    var customAttribute = this.MetadataReader.GetCustomAttribute(customAttributeHandle);
-                    var constructorHandle = customAttribute.Constructor;
+                    StringHandle namespaceHandle, nameHandle;
+                    if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
+                        continue;
 
-                    var constructor = Module.GetMethod(constructorHandle);
-                    var type = constructor.OwningType;
-
-                    switch (type.Name)
+                    if (metadataReader.StringComparer.Equals(namespaceHandle, "System"))
                     {
-                        case "System.ThreadStaticAttribute":
+                        if (metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute"))
+                        {
                             flags |= FieldFlags.ThreadStatic;
-                            break;
+                        } 
                     }
                 }
 
@@ -235,9 +235,10 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public bool HasCustomAttribute(string customAttributeName)
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return Module.HasCustomAttribute(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(), customAttributeName);
+            return MetadataReader.HasCustomAttribute(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(), 
+                attributeNamespace, attributeName);
         }
 
         public override string ToString()

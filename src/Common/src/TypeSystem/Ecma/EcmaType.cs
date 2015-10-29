@@ -356,9 +356,10 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public bool HasCustomAttribute(string customAttributeName)
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return this.Module.HasCustomAttribute(_typeDefinition.GetCustomAttributes(), customAttributeName);
+            return MetadataReader.HasCustomAttribute(_typeDefinition.GetCustomAttributes(),
+                attributeNamespace, attributeName);
         }
 
         public override string ToString()
