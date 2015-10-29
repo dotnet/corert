@@ -67,6 +67,12 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Wno-invalid-offsetof)
     add_compile_options(-Wno-null-arithmetic)
 
+    if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        # Apple Clang 7+ is strict about unused typedefs warnings by default.
+        # To keep things consistent, flag the warning to be ignored.
+        add_compile_options(-Wno-unused-local-typedef)
+    endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
     # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
     add_compile_options(-fms-extensions )
 
