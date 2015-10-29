@@ -36,7 +36,26 @@ namespace Internal.TypeSystem
         /// <summary>
         /// The number of bytes required when allocating this type on this GC heap
         /// </summary>
-        public abstract int InstanceByteCount
+        public int InstanceByteCount
+        {
+            get
+            {
+                return AlignmentHelper.AlignUp(InstanceByteCountUnaligned, InstanceByteAlignment);
+            }
+        }
+
+        /// <summary>
+        /// The number of bytes used by the instance fields of this type and its parent types without padding at the end for alignment/gc.
+        /// </summary>
+        public abstract int InstanceByteCountUnaligned
+        {
+            get;
+        }
+
+        /// <summary>
+        /// The alignment required for instances of this type on the GC heap
+        /// </summary>
+        public abstract int InstanceByteAlignment
         {
             get;
         }

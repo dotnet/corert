@@ -9,7 +9,9 @@ namespace Internal.TypeSystem
     public enum TargetArchitecture
     {
         Unknown,
+        ARM,
         X64,
+        X86,
     }
 
     public class TargetDetails
@@ -27,6 +29,9 @@ namespace Internal.TypeSystem
                 {
                     case TargetArchitecture.X64:
                         return 8;
+                    case TargetArchitecture.ARM:
+                    case TargetArchitecture.X86:
+                        return 4;
                     default:
                         throw new NotImplementedException();
                 }
@@ -96,6 +101,30 @@ namespace Internal.TypeSystem
         {
             // Size == Alignment for all platforms.
             return GetWellKnownTypeSize(type);
+        }
+
+        /// <summary>
+        /// Given an alignment of the fields of a type, determine the alignment that is necessary for allocating the object on the GC heap
+        /// </summary>
+        /// <returns></returns>
+        public int GetObjectAlignment(int fieldAlignment)
+        {
+            switch (Architecture)
+            {
+                case TargetArchitecture.ARM:
+                    // ARM supports two alignments for objects on the GC heap (4 byte and 8 byte)
+                    if (fieldAlignment <= 4)
+                        return 4;
+                    else
+                        return 8;
+                case TargetArchitecture.X64:
+                    return 8;
+                case TargetArchitecture.X86:
+                    return 4;
+                default:
+                    throw new NotImplementedException();
+            }
+
         }
     }
 }

@@ -84,17 +84,18 @@ namespace Internal.TypeSystem
                     throw new TypeLoadException();
                 }
 
-                int byteCount;
+                SizeAndAlignment instanceByteSizeAndAlignment;
                 var sizeAndAlignment = ComputeInstanceSize(
                     type,
                     type.Context.Target.GetWellKnownTypeSize(type),
                     type.Context.Target.GetWellKnownTypeAlignment(type),
-                    out byteCount
+                    out instanceByteSizeAndAlignment
                     );
 
                 ComputedInstanceFieldLayout result = new ComputedInstanceFieldLayout
                 {
-                    ByteCount = byteCount,
+                    ByteCountUnaligned = instanceByteSizeAndAlignment.Size,
+                    ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
                     FieldAlignment = sizeAndAlignment.Alignment,
                     FieldSize = sizeAndAlignment.Size,
                     PackValue = type.Context.Target.DefaultPackingSize
@@ -301,12 +302,13 @@ namespace Internal.TypeSystem
                 instanceSize = layoutMetadata.Size;
             }
 
-            int instanceByteCount;
-            var instanceSizeAndAlignment = ComputeInstanceSize(_type, instanceSize, largestAlignmentRequired, out instanceByteCount);
+            SizeAndAlignment instanceByteSizeAndAlignment;
+            var instanceSizeAndAlignment = ComputeInstanceSize(_type, instanceSize, largestAlignmentRequired, out instanceByteSizeAndAlignment);
 
             _computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             _computedLayout.FieldSize = instanceSizeAndAlignment.Size;
-            _computedLayout.ByteCount = instanceByteCount;            
+            _computedLayout.ByteCountUnaligned = instanceByteSizeAndAlignment.Size;
+            _computedLayout.ByteCountAlignment = instanceByteSizeAndAlignment.Alignment;
             _computedLayout.Offsets = offsets;
         }
 
@@ -344,12 +346,13 @@ namespace Internal.TypeSystem
                 cumulativeInstanceFieldPos = Math.Max(cumulativeInstanceFieldPos, layoutMetadata.Size);
             }
 
-            int instanceByteCount;
-            var instanceSizeAndAlignment = ComputeInstanceSize(_type, cumulativeInstanceFieldPos, largestAlignmentRequirement, out instanceByteCount);
+            SizeAndAlignment instanceByteSizeAndAlignment;
+            var instanceSizeAndAlignment = ComputeInstanceSize(_type, cumulativeInstanceFieldPos, largestAlignmentRequirement, out instanceByteSizeAndAlignment);
 
             _computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             _computedLayout.FieldSize = instanceSizeAndAlignment.Size;
-            _computedLayout.ByteCount = instanceByteCount;
+            _computedLayout.ByteCountUnaligned = instanceByteSizeAndAlignment.Size;
+            _computedLayout.ByteCountAlignment = instanceByteSizeAndAlignment.Alignment;
             _computedLayout.Offsets = offsets;
         }
 
@@ -359,20 +362,7 @@ namespace Internal.TypeSystem
 
             if (!type.IsValueType && type.HasBaseType)
             {
-                cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type.BaseType);
-
-                foreach (var field in type.BaseType.GetFields())
-                {
-                    if (field.IsStatic)
-                        continue;
-
-                    // We can pass zero as packing size because we don't care about the alignment part
-                    SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, 0);
-                    int fieldEnd = checked(field.Offset + sizeAndAlignment.Size);
-
-                    if (fieldEnd > cumulativeInstanceFieldPos)
-                        cumulativeInstanceFieldPos = fieldEnd;
-                }
+                cumulativeInstanceFieldPos = type.BaseType.InstanceByteCountUnaligned;
             }
 
             return cumulativeInstanceFieldPos;
@@ -392,6 +382,9 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
+                    // This could use InstanceFieldSize/Alignment (and those results should match what's here)
+                    // but, its more efficient to just assume pointer size instead of fulling processing
+                    // the instance field layout of fieldType here.
                     result.Size = fieldType.Context.Target.PointerSize;
                     result.Alignment = fieldType.Context.Target.PointerSize;
                 }
@@ -425,11 +418,9 @@ namespace Internal.TypeSystem
                 return layoutMetadata.PackingSize;
         }
 
-        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, int count, int alignment, out int byteCount)
+        private static SizeAndAlignment ComputeInstanceSize(MetadataType type, int count, int alignment, out SizeAndAlignment byteCount)
         {
             SizeAndAlignment result;
-
-            count = AlignmentHelper.AlignUp(count, alignment);
 
             int targetPointerSize = type.Context.Target.PointerSize;
 
@@ -441,6 +432,7 @@ namespace Internal.TypeSystem
 
             if (type.IsValueType)
             {
+                count = AlignmentHelper.AlignUp(count, alignment);
                 result.Size = count;
                 result.Alignment = alignment;
             }
@@ -448,11 +440,17 @@ namespace Internal.TypeSystem
             {
                 result.Size = targetPointerSize;
                 result.Alignment = targetPointerSize;
+                if (type.HasBaseType)
+                    alignment = Math.Max(alignment, type.BaseType.InstanceByteAlignment);
             }
 
-            // Size all objects on pointer boundaries because the GC requires it if any fields are object refs
-            count = AlignmentHelper.AlignUp(count, targetPointerSize);
-            byteCount = count;
+            // Determine the alignment needed by the type when allocated
+            // This is target specific, and not just pointer sized due to 
+            // 8 byte alignment requirements on ARM for longs and doubles
+            alignment = type.Context.Target.GetObjectAlignment(alignment);
+
+            byteCount.Size = count;
+            byteCount.Alignment = alignment;
 
             return result;
         }
@@ -469,7 +467,8 @@ namespace Internal.TypeSystem
         public int PackValue;
         public int FieldSize;
         public int FieldAlignment;
-        public int ByteCount;
+        public int ByteCountUnaligned;
+        public int ByteCountAlignment;
         public FieldAndOffset[] Offsets;
     }
 
