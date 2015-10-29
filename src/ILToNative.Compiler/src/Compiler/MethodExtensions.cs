@@ -79,15 +79,15 @@ namespace ILToNative
                 {
                     return SpecialMethodKind.PInvoke;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
                     return SpecialMethodKind.RuntimeImport;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
                 {
                     return SpecialMethodKind.Intrinsic;
                 }
-                else if (((EcmaMethod)method).HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
+                else if (method.HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
                 {
                     // TODO: add reverse pinvoke callout
                     throw new NotImplementedException();

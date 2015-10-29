@@ -356,7 +356,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return MetadataReader.HasCustomAttribute(_typeDefinition.GetCustomAttributes(),
                 attributeNamespace, attributeName);

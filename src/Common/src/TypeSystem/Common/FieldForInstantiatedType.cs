@@ -80,6 +80,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return _fieldDef.HasCustomAttribute(attributeNamespace, attributeName);
+        }
+
         public override FieldDesc GetTypicalFieldDefinition()
         {
             return _fieldDef;

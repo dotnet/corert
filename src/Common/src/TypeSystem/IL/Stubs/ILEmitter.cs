@@ -239,5 +239,10 @@ namespace Internal.IL.Stubs
     public abstract class ILStubMethod : MethodDesc
     {
         public abstract MethodIL EmitIL();
+
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return false;
+        }
     }
 }

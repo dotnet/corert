@@ -262,6 +262,11 @@ namespace Internal.TypeSystem
             return this;
         }
 
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return false;
+        }
+
         // Strips both type and method instantiation. E.g C<int>.m<string> -> C<T>.m<U>
         public override MethodDesc GetTypicalMethodDefinition()
         {

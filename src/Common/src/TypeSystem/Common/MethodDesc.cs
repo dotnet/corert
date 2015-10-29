@@ -291,6 +291,8 @@ namespace Internal.TypeSystem
             }
         }
 
+        public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
+
         // Strips method instantiation. E.g C<int>.m<string> -> C<int>.m<U>
         public virtual MethodDesc GetMethodDefinition()
         {

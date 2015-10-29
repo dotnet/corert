@@ -54,6 +54,11 @@ namespace Internal.TypeSystem
         /// If true, the type cannot be used as a base type of any other type.
         /// </summary>
         public abstract bool IsSealed { get; }
+
+        /// <summary>
+        /// Returns true if the type has given custom attribute.
+        /// </summary>
+        public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
     }
 
     public struct ClassLayoutMetadata
