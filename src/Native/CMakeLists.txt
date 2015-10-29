@@ -66,6 +66,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Wno-null-conversion)
     add_compile_options(-Wno-invalid-offsetof)
     add_compile_options(-Wno-null-arithmetic)
+    add_compile_options(-Wno-unused-local-typedef)
 
     # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
     add_compile_options(-fms-extensions )
