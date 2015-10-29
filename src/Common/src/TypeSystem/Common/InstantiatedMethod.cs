@@ -7,6 +7,9 @@ using System.Text;
 
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Represents an instantiation of a generic method
+    /// </summary>
     public sealed class InstantiatedMethod : MethodDesc
     {
         MethodDesc _methodDef;
@@ -14,6 +17,11 @@ namespace Internal.TypeSystem
 
         MethodSignature _signature;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="methodDef">Uninstantiated method</param>
+        /// <param name="instantiation">Generic arguments for the method</param>
         internal InstantiatedMethod(MethodDesc methodDef, Instantiation instantiation)
         {
             Debug.Assert(!(methodDef is InstantiatedMethod));
@@ -39,11 +47,17 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Instantiates type over the generic arguments of this method
+        /// </summary>
         TypeDesc Instantiate(TypeDesc type)
         {
             return type.InstantiateSignature(new Instantiation(), _instantiation);
         }
 
+        /// <summary>
+        /// Returns a signature with parameters specialized to this instantiation
+        /// </summary>
         public override MethodSignature Signature
         {
             get

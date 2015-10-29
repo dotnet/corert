@@ -7,6 +7,9 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Contains logic for computing field layout based on metadata
+    /// </summary>
     public struct FieldLayoutAlgorithm
     {
         private MetadataType _type;
@@ -21,6 +24,9 @@ namespace Internal.TypeSystem
             _numInstanceFields = numInstanceFields;
         }
 
+        /// <summary>
+        /// Computes instance field layout based on metadata
+        /// </summary>
         public static ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type)
         {
             // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
@@ -173,6 +179,9 @@ namespace Internal.TypeSystem
         }
         #endregion
 
+        /// <summary>
+        /// Computes static field layout based on metadata
+        /// </summary>
         public static unsafe ComputedStaticFieldLayout ComputeStaticFieldLayout(MetadataType type)
         {
             int numStaticFields = 0;
@@ -464,27 +473,61 @@ namespace Internal.TypeSystem
         }
     }
 
+    /// <summary>
+    /// Represents the instance field layout for a type
+    /// </summary>
     public struct ComputedInstanceFieldLayout
     {
+        /// <summary>
+        /// Pack size set on the defining type
+        /// </summary>
         public int PackValue;
         public int FieldSize;
+
+        /// <summary>
+        /// Computed alignment to use in field layout
+        /// </summary>
         public int FieldAlignment;
+
+        /// <summary>
+        /// Computed byte count of the type including alignment
+        /// </summary>
         public int ByteCount;
+
+        /// <summary>
+        /// Offset information for all instance fields
+        /// </summary>
         public FieldAndOffset[] Offsets;
     }
 
+    /// <summary>
+    /// Descriptor for memory needed by a statics block 
+    /// </summary>
     public struct StaticsBlock
     {
+        /// <summary>
+        /// Size of the block
+        /// </summary>
         public int Size;
+
+        /// <summary>
+        /// Largest alignment value of any field in the statics block
+        /// </summary>
         public int LargestAlignment;
     }
 
+    /// <summary>
+    /// Represents the static field layout for a type
+    /// </summary>
     public struct ComputedStaticFieldLayout
     {
         public StaticsBlock NonGcStatics;
         public StaticsBlock GcStatics;
         public StaticsBlock ThreadStatics;
 
+        /// <summary>
+        /// Offset information for all static fields
+        /// </summary>
         public FieldAndOffset[] Offsets;
     }
 }

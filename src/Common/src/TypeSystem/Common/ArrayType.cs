@@ -7,10 +7,17 @@ using System.Threading;
 
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Represents an array of elementType (either szArray or array [multidimensional]) 
+    /// </summary>
     public sealed class ArrayType : ParameterizedType
     {
         int _rank; // -1 for regular single dimensional arrays, > 0 for multidimensional arrays
 
+        /// <summary>
+        /// Constructs an array type
+        /// </summary>
+        /// <param name="rank">-1 for regular single dimensional arrays, &gt; 0 for multidimensional arrays</param>
         internal ArrayType(TypeDesc elementType, int rank)
             : base(elementType)
         {
@@ -39,6 +46,9 @@ namespace Internal.TypeSystem
         //     }
         // }
 
+        /// <summary>
+        /// Returns the type of the array's elements
+        /// </summary>
         public TypeDesc ElementType
         {
             get
@@ -49,6 +59,9 @@ namespace Internal.TypeSystem
 
         internal MethodDesc[] _methods;
 
+        /// <summary>
+        /// True for single-dimensional (not 1-d multidimensional) arrays
+        /// </summary>
         public new bool IsSzArray
         {
             get
@@ -57,6 +70,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Returns the array's rank. This can be 1 for either szArrays or for 1-d multidimensional arrays
+        /// </summary>
         public int Rank
         {
             get
@@ -135,6 +151,9 @@ namespace Internal.TypeSystem
         }
     }
 
+    /// <summary>
+    /// Represents categories of the special methods the type system represents as being on arrays
+    /// </summary>
     public enum ArrayMethodKind
     {
         Get,
@@ -143,6 +162,9 @@ namespace Internal.TypeSystem
         Ctor
     }
 
+    /// <summary>
+    /// Represents the Ctor, Get, Set, and Address methods on arrays that are not represented in metadata
+    /// </summary>
     public class ArrayMethod : MethodDesc
     {
         ArrayType _owningType;
@@ -170,6 +192,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Returns the category of array method this method corresponds to
+        /// </summary>
         public ArrayMethodKind Kind
         {
             get
@@ -256,13 +281,19 @@ namespace Internal.TypeSystem
             }
         }
 
-        // Strips method instantiation. E.g C<int>.m<string> -> C<int>.m<U>
+        /// <summary>
+        /// Strips method instantiation. E.g C&lt;int&gt;.m&lt;string&gt; returns C&lt;int&gt;.m&lt;U&gt;
+        /// </summary>
+        /// <returns></returns>
         public override MethodDesc GetMethodDefinition()
         {
             return this;
         }
-
-        // Strips both type and method instantiation. E.g C<int>.m<string> -> C<T>.m<U>
+        
+        /// <summary>
+        /// Strips both type and method instantiation.E.g C&lt;int&gt;.m&lt;string&gt; returns C&lt;T&gt;.m&lt;U&gt;
+        /// </summary>
+        /// <returns></returns>
         public override MethodDesc GetTypicalMethodDefinition()
         {
             return this;

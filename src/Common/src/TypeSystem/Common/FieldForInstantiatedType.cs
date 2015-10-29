@@ -5,11 +5,22 @@ using System;
 
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Descibes a field on an instantiated type
+    /// </summary>
     public sealed class FieldForInstantiatedType : FieldDesc
     {
+        /// <summary>
+        /// The field on the uninstantiated type
+        /// </summary>
         FieldDesc _fieldDef;
         InstantiatedType _instantiatedType;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="fieldDef">FieldDesc for the field on an uninstantiated type</param>
+        /// <param name="instantiatedType">Instantiated type this field is a member of</param>
         internal FieldForInstantiatedType(FieldDesc fieldDef, InstantiatedType instantiatedType)
         {
             _fieldDef = fieldDef;
@@ -40,6 +51,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Returns the instantiated type of this field
+        /// </summary>
         public override TypeDesc FieldType
         {
             get

@@ -12,6 +12,9 @@ namespace Internal.TypeSystem
     {
         private int _offset = FieldAndOffset.InvalidOffset;
 
+        /// <summary>
+        /// Offset from the beginning of the type
+        /// </summary>
         public int Offset
         {
             get
@@ -49,6 +52,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Intended for use by field layout engines only
+        /// </summary>
         internal void InitializeOffset(int offset)
         {
             Debug.Assert(_offset == FieldAndOffset.InvalidOffset || _offset == offset);

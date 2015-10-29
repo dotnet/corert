@@ -7,7 +7,8 @@ namespace Internal.TypeSystem
 {
     /// <summary>
     /// Type that is logically equivalent to a type which is defined by a TypeDef
-    /// record in an ECMA 335 metadata stream.
+    /// record in an ECMA 335 metadata stream. Base class for class/struct/interface etc,
+    /// but not array/pointer etc.
     /// </summary>
     public abstract partial class DefType : TypeDesc
     {
