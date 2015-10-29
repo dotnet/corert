@@ -33,6 +33,7 @@
     <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.FieldLayout.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataFieldLayout.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MethodForInstantiatedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\ParameterizedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\PointerType.cs" />

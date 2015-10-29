@@ -55,6 +55,8 @@ namespace TypeSystemTests
 
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
+        MetadataFieldLayout _metadataFieldLayout = new TestMetadataFieldLayout();
+
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch))
         {
@@ -100,6 +102,11 @@ namespace TypeSystemTests
         public override object ResolveAssembly(System.Reflection.AssemblyName name)
         {
             return GetModuleForSimpleName(name.Name);
+        }
+
+        public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
+        {
+            return _metadataFieldLayout;
         }
     }
 }

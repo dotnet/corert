@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
     // An implementation of the FieldLayout functionality that should be suitable for all types
     // that have Metadata available.
 
-    public partial class MetadataType
+    public abstract partial class MetadataType : DefType
     {
         private class FieldLayoutFlags
         {
@@ -96,7 +96,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override int NonGCStaticFieldSize
+    public override int NonGCStaticFieldSize
         {
             get
             {
@@ -170,7 +170,7 @@ namespace Internal.TypeSystem
 
         internal void ComputeInstanceFieldLayout()
         {
-            var computedLayout = FieldLayoutAlgorithm.ComputeInstanceFieldLayout(this);
+            var computedLayout = this.Context.GetLayoutAlgorithmForType(this).ComputeInstanceFieldLayout(this);
 
             _instanceFieldSize = computedLayout.FieldSize;
             _instanceFieldAlignment = computedLayout.FieldAlignment;
@@ -191,7 +191,7 @@ namespace Internal.TypeSystem
 
         internal void ComputeStaticFieldLayout()
         {
-            var computedStaticLayout = FieldLayoutAlgorithm.ComputeStaticFieldLayout(this);
+            var computedStaticLayout = this.Context.GetLayoutAlgorithmForType(this).ComputeStaticFieldLayout(this);
 
             if (computedStaticLayout.Offsets != null)
             {
@@ -225,28 +225,9 @@ namespace Internal.TypeSystem
                 return;
             }
 
-            foreach (var field in GetFields())
+            if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsPointers(this))
             {
-                if (field.IsStatic)
-                    continue;
-
-                TypeDesc fieldType = field.FieldType;
-                if (fieldType.IsValueType)
-                {
-                    if (fieldType.IsPrimitive)
-                        continue;
-
-                    if (((MetadataType)fieldType).ContainsPointers)
-                    {
-                        flagsToAdd |= FieldLayoutFlags.ContainsPointers;
-                        break;
-                    }
-                }
-                else if (fieldType is DefType || fieldType is ArrayType || fieldType.IsByRef)
-                {
-                    flagsToAdd |= FieldLayoutFlags.ContainsPointers;
-                    break;
-                }
+                flagsToAdd |= FieldLayoutFlags.ContainsPointers;
             }
 
             _fieldLayoutFlags.AddFlags(flagsToAdd);
