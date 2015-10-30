@@ -1090,8 +1090,44 @@ namespace Internal.JitInterface
 
     };
 
+    // System V struct passing
+    // The Classification types are described in the ABI spec at http://www.x86-64.org/documentation/abi.pdf
+    public enum SystemVClassificationType : byte
+    {
+        SystemVClassificationTypeUnknown            = 0,
+        SystemVClassificationTypeStruct             = 1,
+        SystemVClassificationTypeNoClass            = 2,
+        SystemVClassificationTypeMemory             = 3,
+        SystemVClassificationTypeInteger            = 4,
+        SystemVClassificationTypeIntegerReference   = 5,
+        SystemVClassificationTypeSSE                = 6,
+        // SystemVClassificationTypeSSEUp           = Unused, // Not supported by the CLR.
+        // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
+        // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
+        // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
+        SystemVClassificationTypeMAX = 7,
+    };
+
     public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     {
+        public byte _passedInRegisters;
+        // Whether the struct is passable/passed (this includes struct returning) in registers.
+        public bool passedInRegisters { get { return _passedInRegisters != 0; } set { _passedInRegisters = value ? (byte)1 : (byte)0; } }
+
+        // Number of eightbytes for this struct.
+        public byte eightByteCount;
+
+        // The eightbytes type classification.
+        public SystemVClassificationType eightByteClassifications0;
+        public SystemVClassificationType eightByteClassifications1;
+
+        // The size of the eightbytes (an eightbyte could include padding. This represents the no padding size of the eightbyte).
+        public byte eightByteSizes0;
+        public byte eightByteSizes1;
+
+        // The start offset of the eightbytes (in bytes).
+        public byte eightByteOffsets0;
+        public byte eightByteOffsets1;
     };
 
     // DEBUGGER DATQA
