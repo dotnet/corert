@@ -183,3 +183,6 @@ exit /b 1
 
 :AfterILToNativeBuild
 
+pushd "%__ProjectDir%\tests"
+call "runtest.cmd" %__BuildType% %__BuildArch%
+popd

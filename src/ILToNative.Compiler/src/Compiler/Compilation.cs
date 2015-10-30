@@ -288,7 +288,7 @@ namespace ILToNative
 
                 _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
                 var nodes = _dependencyGraph.MarkedNodeList;
-                AsmWriter.EmitAsm(Out, nodes, _nodeFactory);
+                AsmWriter.EmitAsm(Out, nodes, rootNode, _nodeFactory);
 
                 if (_options.DgmlLog != null)
                 {

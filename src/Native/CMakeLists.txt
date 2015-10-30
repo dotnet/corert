@@ -67,6 +67,8 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Wno-invalid-offsetof)
     add_compile_options(-Wno-null-arithmetic)
 
+    # Disable strict warning on unused functions.
+    add_compile_options(-Wno-unused-function)
     if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # Apple Clang 7+ is strict about unused typedefs warnings by default.
         # To keep things consistent, flag the warning to be ignored.
@@ -120,3 +122,4 @@ if(WIN32)
   add_subdirectory(gc)
 endif()
 add_subdirectory(Runtime)
+add_subdirectory(Bootstrap)

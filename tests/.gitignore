@@ -1,0 +1,3 @@
+**/*.S
+**/*.compiled.exe
+**/*.obj

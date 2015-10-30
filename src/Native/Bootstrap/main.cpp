@@ -386,7 +386,7 @@ extern "C" void RhpThrowHwEx()
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
 
-extern "C" int repro_Program__Main();
+extern "C" int __managed__Main();
 
 extern "C" void __str_fixup();
 extern "C" void __str_fixup_end();
@@ -437,11 +437,11 @@ int main(int argc, char * argv[]) {
     if (__strings_fixup() != 0) return -1;
     if (__statics_fixup() != 0) return -1;
 
-    repro_Program__Main();
+    int retval = __managed__Main();
 
     __reverse_pinvoke_return(&frame);
     __shutdown_runtime();
-    return 0;
+    return retval;
 }
 
 #endif
