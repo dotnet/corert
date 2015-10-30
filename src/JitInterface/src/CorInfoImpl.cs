@@ -22,14 +22,8 @@ namespace Internal.JitInterface
     {
         IntPtr _comp;
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        extern static IntPtr LoadLibraryEx(string s, IntPtr handle, int flags);
-
-        [DllImport("kernel32.dll")]
-        extern static IntPtr GetProcAddress(IntPtr handle, string s);
-
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        delegate IntPtr _getJIT();
+        [DllImport("protojit")]
+        extern static IntPtr getJit();
 
         IntPtr _jit;
 
@@ -47,15 +41,7 @@ namespace Internal.JitInterface
 
             _comp = CreateUnmanagedInstance();
 
-            string clrjitPath = AppContext.BaseDirectory + "\\protojit.dll";
-            IntPtr jit = LoadLibraryEx(clrjitPath, new IntPtr(0), 0x1300);
-
-            IntPtr proc = GetProcAddress(jit, "getJit");
-            if (proc == new IntPtr(0))
-                throw new Exception("JIT initialization failed");
-
-            var getJIT = Marshal.GetDelegateForFunctionPointer<_getJIT>(proc);
-            _jit = getJIT();
+            _jit = getJit();
 
             _compile = Marshal.GetDelegateForFunctionPointer<_compileMethod>(**((IntPtr**)_jit));
         }
@@ -1360,8 +1346,34 @@ namespace Internal.JitInterface
 
         byte* findNameOfToken(IntPtr _this, CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException(); }
+
         bool getSystemVAmd64PassStructInRegisterDescriptor(IntPtr _this, CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
-        { throw new NotImplementedException(); }
+        {
+            TypeDesc type = HandleToObject(structHnd);
+
+            if (type.IsValueType)
+            {
+                // TODO: actually implement
+                // https://github.com/dotnet/corert/issues/158
+                if (type.GetElementSize() <= 8)
+                {
+                    structPassInRegDescPtr->passedInRegisters = true;
+                    structPassInRegDescPtr->eightByteCount = 1;
+                    structPassInRegDescPtr->eightByteClassifications0 = SystemVClassificationType.SystemVClassificationTypeInteger;
+                    structPassInRegDescPtr->eightByteSizes0 = (byte)type.GetElementSize();
+                    structPassInRegDescPtr->eightByteOffsets0 = 0;
+                }
+                else
+                    structPassInRegDescPtr->passedInRegisters = false;
+            }
+            else
+            {
+                structPassInRegDescPtr->passedInRegisters = false;
+            }
+
+            return true;
+        }
+
         int getIntConfigValue(IntPtr _this, String name, int defaultValue)
         { throw new NotImplementedException(); }
         short* getStringConfigValue(IntPtr _this, String name)

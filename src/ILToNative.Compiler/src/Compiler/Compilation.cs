@@ -315,6 +315,37 @@ namespace ILToNative
             }
         }
 
+        
+        private struct TypeAndMethod
+        {
+            public string TypeName;
+            public string MethodName;
+            public TypeAndMethod(string typeName, string methodName)
+            {
+                TypeName = typeName;
+                MethodName = methodName;
+            }
+        }
+
+        // List of methods that are known to throw an exception during compilation.
+        // On Windows it's fine to throw it because we have a catchall block.
+        // On Linux, throwing a managed exception to native code will bring down the process.
+        // https://github.com/dotnet/corert/issues/162
+        private HashSet<TypeAndMethod> _skipJitList = new HashSet<TypeAndMethod>
+        {
+            new TypeAndMethod("System.SR", "GetResourceString"),
+            new TypeAndMethod("System.Text.StringBuilder", "AppendFormatHelper"),
+            new TypeAndMethod("System.Collections.Concurrent.ConcurrentUnifier`2", "GetOrAdd"),
+            new TypeAndMethod("System.Environment", "get_NewLine"), // causes segfault
+            new TypeAndMethod("System.Globalization.NumberFormatInfo", "GetInstance"),
+            new TypeAndMethod("System.Collections.Concurrent.ConcurrentUnifierW`2", "GetOrAdd"),
+            new TypeAndMethod("System.Collections.Generic.LowLevelDictionary`2", "Find"),
+            new TypeAndMethod("System.Collections.Generic.LowLevelDictionary`2", "GetBucket"),
+            new TypeAndMethod("System.Globalization.CalendarData", ".ctor"), // segfault
+            new TypeAndMethod("System.Globalization.CalendarData", "GetCalendars"), // segfault
+            new TypeAndMethod("System.Collections.Generic.ArraySortHelper`1", "InternalBinarySearch"),
+        };
+
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
@@ -333,17 +364,29 @@ namespace ILToNative
                         return;
 
                     MethodCode methodCode;
-                    try
+
+                    if (_skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
                     {
-                        methodCode = _corInfo.CompileMethod(method);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.WriteLine(e.Message + " (" + method + ")");
+                        Log.WriteLine("SkipJIT: " + method);
                         methodCode = new MethodCode
                         {
                             Code = new byte[] { 0xCC }
                         };
+                    }
+                    else
+                    {
+                        try
+                        {
+                            methodCode = _corInfo.CompileMethod(method);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.WriteLine(e.Message + " (" + method + ")");
+                            methodCode = new MethodCode
+                            {
+                                Code = new byte[] { 0xCC }
+                            };
+                        }
                     }
 
                     // TODO: ROData
