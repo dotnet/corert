@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "reproNative", "reproNative.vcxproj", "{ECB5D162-A31B-45FF-87C7-2E92BD445F5A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Runtime", "..\..\..\bin\obj\Windows_NT.x64.Debug\Runtime\Runtime.vcxproj", "{82CD69C7-FA29-45D3-A87C-2FCA61CE7613}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Runtime", "..\..\..\bin\obj\Windows_NT.x64.Debug\Runtime\Full\Runtime.vcxproj", "{82CD69C7-FA29-45D3-A87C-2FCA61CE7613}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
