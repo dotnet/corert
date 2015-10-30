@@ -28,6 +28,7 @@
     <file src="..\ILToNative.TypeSystem.dll" target="ILToNative.TypeSystem.dll" />
     <file src="..\ILToNative.TypeSystem.pdb" target="pdb\ILToNative.TypeSystem.pdb" />
     <file src="..\lib\Runtime.lib" target="sdk\Runtime.lib" />
+    <file src="..\lib\PortableRuntime.lib" target="sdk\PortableRuntime.lib" />
     <file src="..\System.Private.Corelib.dll" target="sdk\System.Private.Corelib.dll" />
     <file src="..\System.Private.Corelib.pdb" target="pdb\System.Private.Corelib.pdb" />
     <file src="..\toolruntime\*.dll" />

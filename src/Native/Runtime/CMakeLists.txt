@@ -1,11 +1,4 @@
-project(Runtime)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-include_directories(../gc)
-include_directories(../gc/env)
-
-set(SOURCES
+set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
     AsmOffsets.cpp
 #    AsmOffsetsVerify.cpp
@@ -52,20 +45,19 @@ set(SOURCES
     ../gc/handletablecore.cpp
     ../gc/handletablescan.cpp
     ../gc/objecthandle.cpp
-    ../gc/env/common.cpp    
 )
 
 if(WIN32)
-  list(APPEND SOURCES
+  list(APPEND COMMON_RUNTIME_SOURCES
     DebugEventSource.cpp
-    ../gc/env/gcenv.windows.cpp    
+    ../gc/env/gcenv.windows.cpp
     PalRedhawkCommon.cpp
     PalRedhawkMinWin.cpp
   )
 else()
   include_directories(unix)
-  list(APPEND SOURCES
-    ../gc/env/gcenv.unix.cpp    
+  list(APPEND COMMON_RUNTIME_SOURCES
+    ../gc/env/gcenv.unix.cpp
   )
 endif()
 
@@ -140,7 +132,7 @@ else()
   add_compile_options(-Wno-self-assign)
 endif()
 
-add_library(Runtime STATIC ${SOURCES})
+convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 
-# Install the static Runtime library
-install (TARGETS Runtime DESTINATION lib)
+add_subdirectory(Full)
+add_subdirectory(Portable)
