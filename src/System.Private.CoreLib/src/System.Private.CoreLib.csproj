@@ -219,7 +219,7 @@
     <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
-    <Compile Include="System\Environment.EnvironmentVariables.cs" />
+    <Compile Include="System\Environment.EnvironmentVariables.cs" />    
     <Compile Include="System\EventArgs.cs" />
     <Compile Include="System\EventHandler.cs" />
     <Compile Include="System\FormatException.cs" />
@@ -477,6 +477,11 @@
       <Compile Include="System\Globalization\CultureData.Win32.cs" />
       <Compile Include="System\Globalization\TextInfo.Win32.cs" />
       <Compile Include="System\Globalization\CalendarData.Win32.cs" />
+
+      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.EnvironmentVariables.UWP.cs" />
+      <!-- For CoreRT we have a different implementation -->
+      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.EnvironmentVariables.Win32.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(OSGroup)' == 'Linux'">
@@ -485,6 +490,9 @@
       <Compile Include="System\Globalization\CultureData.Dummy.cs" />
       <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
       <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+      <!-- For CoreRT we have a different implementation -->
+      <Compile Include="System\Environment.EnvironmentVariables.Unix.cs" />
+      <Compile Include="..\..\Common\src\Interop\Unix\libc\Interop.Environment.cs" />
   </ItemGroup>
 
   <ItemGroup>
