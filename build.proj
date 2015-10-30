@@ -32,9 +32,9 @@
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
   <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
 
-  <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
+  <!-- Override clean from dir.traversal.targets and just remove the full BinDir unless build.[cmd|sh] has already done the cleaning -->
   <Target Name="Clean">
-    <RemoveDir Directories="$(ObjDir)" />
+    <RemoveDir Condition="'$(CleanedTheBuild)' != '1'" Directories="$(ObjDir)" />
   </Target>
 
 </Project>

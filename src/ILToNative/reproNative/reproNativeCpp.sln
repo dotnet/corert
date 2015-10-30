@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "reproNativeCpp", "reproNati
 		{82CD69C7-FA29-45D3-A87C-2FCA61CE7613} = {82CD69C7-FA29-45D3-A87C-2FCA61CE7613}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Runtime", "..\..\..\bin\obj\Windows_NT.x64.Debug\Runtime\Portable\PortableRuntime.vcxproj", "{82CD69C7-FA29-45D3-A87C-2FCA61CE7613}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Runtime", "..\..\..\bin\obj\Native\Windows_NT.x64\Runtime\Portable\PortableRuntime.vcxproj", "{82CD69C7-FA29-45D3-A87C-2FCA61CE7613}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

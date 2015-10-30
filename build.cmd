@@ -48,7 +48,7 @@ echo.
 
 :: Set the remaining variables based upon the determined build configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\Native\%__BuildOS%.%__BuildArch%\
 
 :: Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -60,7 +60,7 @@ echo Doing a clean build
 echo.
 
 :: MSBuild projects would need a rebuild
-set __MSBCleanBuildArgs=/t:rebuild
+set __MSBCleanBuildArgs=/t:rebuild /p:CleanedTheBuild=1
 
 :: Cleanup the previous output for the selected configuration
 if exist "%__BinDir%" rd /s /q "%__BinDir%"
