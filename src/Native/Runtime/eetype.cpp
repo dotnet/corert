@@ -18,6 +18,8 @@
 #include "PalRedhawk.h"
 #endif
 
+#include "CommonMacros.inl"
+
 #pragma warning(disable:4127) // C4127: conditional expression is constant
 
 // Validate an EEType extracted from an object.
@@ -146,4 +148,31 @@ bool EEType::Validate(bool assertOnFail /* default: true */)
 #undef REPORT_FAILURE
 
     return true;
+}
+
+//-----------------------------------------------------------------------------------------------------------
+EEType::Kinds EEType::get_Kind()
+{
+	return (Kinds)(m_usFlags & (UInt16)EETypeKindMask);
+}
+
+//-----------------------------------------------------------------------------------------------------------
+EEType * EEType::get_CanonicalEEType()
+{
+	// cloned EETypes must always refer to types in other modules
+	ASSERT(IsCloned());
+	ASSERT(IsRelatedTypeViaIAT());
+
+	return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppCanonicalTypeViaIAT));
+}
+
+//-----------------------------------------------------------------------------------------------------------
+EEType * EEType::get_RelatedParameterType()
+{
+	ASSERT(IsParameterizedType());
+
+	if (IsRelatedTypeViaIAT())
+		return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppRelatedParameterTypeViaIAT));
+	else
+		return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pRelatedParameterType));
 }

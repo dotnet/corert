@@ -92,12 +92,6 @@ inline void EEType::set_SealedVirtualSlot(PTR_Code pValue, UInt16 slotNumber)
 #endif // !BINDER && !DACCESS_COMPILE
 
 //-----------------------------------------------------------------------------------------------------------
-inline EEType::Kinds EEType::get_Kind()
-{
-    return (Kinds)(m_usFlags & (UInt16)EETypeKindMask);
-}
-
-//-----------------------------------------------------------------------------------------------------------
 inline EEType * EEType::get_BaseType()
 {
 #ifdef DACCESS_COMPILE
@@ -194,27 +188,6 @@ inline EEInterfaceInfoMap EEType::GetInterfaceMap()
 
     return EEInterfaceInfoMap(reinterpret_cast<EEInterfaceInfo *>((UInt8*)this + cbInterfaceMapOffset),
                               GetNumInterfaces());
-}
-
-//-----------------------------------------------------------------------------------------------------------
-inline EEType * EEType::get_CanonicalEEType()
-{
-    // cloned EETypes must always refer to types in other modules
-    ASSERT(IsCloned());
-    ASSERT(IsRelatedTypeViaIAT());
-
-    return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppCanonicalTypeViaIAT));
-}
-
-//-----------------------------------------------------------------------------------------------------------
-inline EEType * EEType::get_RelatedParameterType()
-{
-    ASSERT(IsParameterizedType());
-
-    if (IsRelatedTypeViaIAT())
-        return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppRelatedParameterTypeViaIAT));
-    else
-        return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pRelatedParameterType));
 }
 
 #ifdef DACCESS_COMPILE
