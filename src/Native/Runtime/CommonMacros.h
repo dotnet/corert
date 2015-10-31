@@ -186,9 +186,10 @@ bool inline FitsInI4(__int64 val)
 {
     return val == (__int64)(__int32)val;
 }
-#ifndef GCENV_INCLUDED
-#define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
-#endif // GCENV_INCLUDED
+
+#ifndef C_ASSERT
+#define C_ASSERT(e) static_assert(e, #e)
+#endif // C_ASSERT
 
 #ifdef __llvm__
 #define DECLSPEC_THREAD __thread
