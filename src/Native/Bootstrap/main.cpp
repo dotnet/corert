@@ -388,6 +388,76 @@ SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */
 
 extern "C" int __managed__Main();
 
+namespace AsmDataFormat
+{
+    typedef uint8_t byte;
+    typedef uint32_t UInt32;
+
+    static UInt32 ReadUInt32(byte **ppStream)
+    {
+        UInt32 result = *(UInt32*)(*ppStream); // Assumes little endian and unaligned access
+        *ppStream += 4;
+        return result;
+    }
+    static int DecodeUnsigned(byte** ppStream, byte* pStreamEnd, UInt32 *pValue)
+    {
+        if (*ppStream >= pStreamEnd)
+            return -1;
+
+        UInt32 value = 0;
+        UInt32 val = **ppStream;
+        if ((val & 1) == 0)
+        {
+            value = (val >> 1);
+            *ppStream += 1;
+        }
+        else if ((val & 2) == 0)
+        {
+            if (*ppStream + 1 >= pStreamEnd)
+                return -1;
+
+            value = (val >> 2) |
+                (((UInt32)*(*ppStream + 1)) << 6);
+            *ppStream += 2;
+        }
+        else if ((val & 4) == 0)
+        {
+            if (*ppStream + 2 >= pStreamEnd)
+                return -1;
+
+            value = (val >> 3) |
+                (((UInt32)*(*ppStream + 1)) << 5) |
+                (((UInt32)*(*ppStream + 2)) << 13);
+            *ppStream += 3;
+        }
+        else if ((val & 8) == 0)
+        {
+            if (*ppStream + 3 >= pStreamEnd)
+                return -1;
+
+            value = (val >> 4) |
+                (((UInt32)*(*ppStream + 1)) << 4) |
+                (((UInt32)*(*ppStream + 2)) << 12) |
+                (((UInt32)*(*ppStream + 3)) << 20);
+            *ppStream += 4;
+        }
+        else if ((val & 16) == 0)
+        {
+            if (*ppStream + 4 >= pStreamEnd)
+                return -1;
+            *ppStream += 1;
+            value = ReadUInt32(ppStream);
+        }
+        else
+        {
+            return -1;
+        }
+
+        *pValue = value;
+        return 0;
+    }
+}
+
 extern "C" void __str_fixup();
 extern "C" void __str_fixup_end();
 int __strings_fixup()
