@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem
@@ -9,6 +10,7 @@ namespace Internal.TypeSystem
     [Flags]
     public enum MethodSignatureFlags
     {
+        None = 0x0000,
         Static = 0x0001,
         // TODO: Generic, etc.
     }
@@ -26,6 +28,8 @@ namespace Internal.TypeSystem
             _genericParameterCount = genericParameterCount;
             _returnType = returnType;
             _parameters = parameters;
+
+            Debug.Assert(parameters != null, "Parameters must not be null");
         }
 
         public MethodSignatureFlags Flags
