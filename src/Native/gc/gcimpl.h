@@ -137,8 +137,6 @@ public:
     int GetNumberOfHeaps ();
     void HideAllocContext(alloc_context*);
     void RevealAllocContext(alloc_context*);
-   
-    static BOOL IsLargeObject(MethodTable *mt);
 
     BOOL IsObjectInFixedHeap(Object *pObj);
 

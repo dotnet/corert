@@ -117,52 +117,52 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
 }
 
 #if 0
-void CLREventStatic::CreateManualEvent(bool bInitialState) 
-{ 
+void CLREventStatic::CreateManualEvent(bool bInitialState)
+{
     // TODO: Implement
     m_fInitialized = true;
 }
 
-void CLREventStatic::CreateAutoEvent(bool bInitialState) 
-{ 
+void CLREventStatic::CreateAutoEvent(bool bInitialState)
+{
     // TODO: Implement
     m_fInitialized = true;
 }
 
-void CLREventStatic::CreateOSManualEvent(bool bInitialState) 
-{ 
+void CLREventStatic::CreateOSManualEvent(bool bInitialState)
+{
     CreateManualEvent(bInitialState);
 }
 
-void CLREventStatic::CreateOSAutoEvent (bool bInitialState) 
-{ 
+void CLREventStatic::CreateOSAutoEvent (bool bInitialState)
+{
     CreateAutoEvent(bInitialState);
 }
 
-void CLREventStatic::CloseEvent() 
-{ 
+void CLREventStatic::CloseEvent()
+{
     if (m_fInitialized)
-    { 
+    {
         // TODO: Implement
         m_fInitialized = false;
     }
 }
 
-bool CLREventStatic::IsValid() const 
-{ 
+bool CLREventStatic::IsValid() const
+{
     return m_fInitialized; 
 }
 
-bool CLREventStatic::Set() 
-{ 
+bool CLREventStatic::Set()
+{
     if (!m_fInitialized)
         return false;
     // TODO: Implement
     return true; 
 }
 
-bool CLREventStatic::Reset() 
-{ 
+bool CLREventStatic::Reset()
+{
     if (!m_fInitialized)
         return false;
     // TODO: Implement
