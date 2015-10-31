@@ -334,6 +334,7 @@ namespace ILToNative
         private HashSet<TypeAndMethod> _skipJitList = new HashSet<TypeAndMethod>
         {
             new TypeAndMethod("System.SR", "GetResourceString"),
+#if false
             new TypeAndMethod("System.Text.StringBuilder", "AppendFormatHelper"),
             new TypeAndMethod("System.Collections.Concurrent.ConcurrentUnifier`2", "GetOrAdd"),
             new TypeAndMethod("System.Environment", "get_NewLine"), // causes segfault
@@ -344,6 +345,7 @@ namespace ILToNative
             new TypeAndMethod("System.Globalization.CalendarData", ".ctor"), // segfault
             new TypeAndMethod("System.Globalization.CalendarData", "GetCalendars"), // segfault
             new TypeAndMethod("System.Collections.Generic.ArraySortHelper`1", "InternalBinarySearch"),
+#endif
         };
 
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
