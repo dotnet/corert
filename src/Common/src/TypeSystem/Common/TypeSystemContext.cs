@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     {
         public TypeSystemContext()
         {
-            Target = new TargetDetails(TargetArchitecture.Unknown);
+            Target = new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown);
         }
 
         public TypeSystemContext(TargetDetails target)

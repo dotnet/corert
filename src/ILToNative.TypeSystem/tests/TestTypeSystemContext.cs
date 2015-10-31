@@ -58,7 +58,7 @@ namespace TypeSystemTests
         MetadataFieldLayout _metadataFieldLayout = new TestMetadataFieldLayout();
 
         public TestTypeSystemContext(TargetArchitecture arch)
-            : base(new TargetDetails(arch))
+            : base(new TargetDetails(arch, TargetOS.Unknown))
         {
         }
 
