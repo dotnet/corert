@@ -138,6 +138,11 @@ DEFINE_UNCHECKED_WRITE_BARRIER macro REFREG, EXPORT_REG_NAME
 ;; - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpAssignRef&EXPORT_REG_NAME&, _TEXT
 
+    ;; Export the canonical write barrier under unqualified name as well
+    ifidni <REFREG>, <RDX>
+    ALTERNATE_ENTRY RhpAssignRef
+    endif
+
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
     mov     qword ptr [rcx], REFREG
@@ -147,9 +152,8 @@ LEAF_ENTRY RhpAssignRef&EXPORT_REG_NAME&, _TEXT
 LEAF_END RhpAssignRef&EXPORT_REG_NAME&, _TEXT
 endm
 
-;; One day we might require write barriers for all the possible argument registers but for now MDIL only
-;; specifies one unqualified write barrier instruction and Bartok generates code that assumes the input
-;; register is EDX.
+;; One day we might have write barriers for all the possible argument registers but for now we have
+;; just one write barrier that assumes the input register is RDX.
 DEFINE_UNCHECKED_WRITE_BARRIER RDX, EDX
 
 ;;
@@ -213,7 +217,10 @@ DEFINE_CHECKED_WRITE_BARRIER macro REFREG, EXPORT_REG_NAME
 ;; - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpCheckedAssignRef&EXPORT_REG_NAME&, _TEXT
 
-
+    ;; Export the canonical write barrier under unqualified name as well
+    ifidni <REFREG>, <RDX>
+    ALTERNATE_ENTRY RhpCheckedAssignRef
+    endif
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
@@ -224,9 +231,8 @@ LEAF_ENTRY RhpCheckedAssignRef&EXPORT_REG_NAME&, _TEXT
 LEAF_END RhpCheckedAssignRef&EXPORT_REG_NAME&, _TEXT
 endm
 
-;; One day we might require write barriers for all the possible argument registers but for now MDIL only
-;; specifies one unqualified write barrier instruction and Bartok generates code that assumes the input
-;; register is EDX.
+;; One day we might have write barriers for all the possible argument registers but for now we have
+;; just one write barrier that assumes the input register is RDX.
 DEFINE_CHECKED_WRITE_BARRIER RDX, EDX
 
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:

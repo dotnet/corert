@@ -7,7 +7,9 @@ include_directories(..)
 include_directories(../../gc)
 include_directories(../../gc/env)
 
-add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${SOURCES})
+add_definitions(-DUSE_PORTABLE_HELPERS)
+
+add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES})
 
 # Install the static Runtime library
 install (TARGETS PortableRuntime DESTINATION lib)

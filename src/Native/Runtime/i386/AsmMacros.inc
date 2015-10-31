@@ -171,7 +171,6 @@ THREADSTORE__ATTACHCURRENTTHREAD            equ ?AttachCurrentThread@ThreadStore
 RhpPInvokeWaitEx                            equ @RhpPInvokeWaitEx@4
 RhpPInvokeReturnWaitEx                      equ @RhpPInvokeReturnWaitEx@4
 RhpTrapThreads                              equ _RhpTrapThreads
-CANUNLOADMODULE                             equ @CanUnloadModule@4
 RhpPublishObject                            equ @RhpPublishObject@8
 
 ifdef FEATURE_GC_STRESS
@@ -189,7 +188,6 @@ EXTERN PALDEBUGBREAK                            : PROC
 EXTERN RhpPInvokeWaitEx                         : PROC
 EXTERN RhpPInvokeReturnWaitEx                   : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
-EXTERN CANUNLOADMODULE                          : PROC
 EXTERN RhpPublishObject                         : PROC
 EXTERN RhpCalculateStackTraceWorker             : PROC
 ifdef FEATURE_CLR_EH

@@ -108,38 +108,6 @@ extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
     return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
 }
 
-#if defined(_WIN64)
-// Card byte shift is different on 64bit.
-#define card_byte_shift     11
-#else
-#define card_byte_shift     10
-#endif
-
-#define card_byte(addr) (((size_t)(addr)) >> card_byte_shift)
-
-inline void ErectWriteBarrier(Object ** dst, Object * ref)
-{
-    // if the dst is outside of the heap (unboxed value classes) then we
-    //      simply exit
-    if (((BYTE*)dst < g_lowest_address) || ((BYTE*)dst >= g_highest_address))
-        return;
-
-    if ((BYTE*)ref >= g_ephemeral_low && (BYTE*)ref < g_ephemeral_high)
-    {
-        // volatile is used here to prevent fetch of g_card_table from being reordered 
-        // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
-        BYTE* pCardByte = (BYTE *)*(volatile BYTE **)(&g_card_table) + card_byte((BYTE *)dst);
-        if (*pCardByte != 0xFF)
-            *pCardByte = 0xFF;
-    }
-}
-
-extern "C" void WriteBarrier(Object ** dst, Object * ref)
-{
-    *dst = ref;
-    ErectWriteBarrier(dst, ref);
-}
-
 extern "C" void __stelem_ref(System::Array * pArray, unsigned idx, Object * val)
 {
     // TODO: Range checks, writer barrier, etc.
@@ -338,38 +306,6 @@ extern "C" void RhpUniversalTransition()
 {
     throw 42;
 }
-extern "C" void RhpAssignRefEDX()
-{
-    throw 42;
-}
-extern "C" void RhpCheckedAssignRefEDX()
-{
-    throw 42;
-}
-extern "C" void RhpCheckedLockCmpXchgAVLocation()
-{
-    throw 42;
-}
-extern "C" void RhpCheckedXchgAVLocation()
-{
-    throw 42;
-}
-extern "C" void RhpCopyMultibyteDestAVLocation()
-{
-    throw 42;
-}
-extern "C" void RhpCopyMultibyteSrcAVLocation()
-{
-    throw 42;
-}
-extern "C" void RhpCopyMultibyteNoGCRefsDestAVLocation()
-{
-    throw 42;
-}
-extern "C" void RhpCopyMultibyteNoGCRefsSrcAVLocation()
-{
-    throw 42;
-}
 extern "C" void RhpFailFastForPInvokeExceptionPreemp()
 {
     throw 42;
@@ -382,6 +318,34 @@ extern "C" void RhpThrowHwEx()
 {
     throw 42;
 }
+
+extern "C" void RhExceptionHandling_FailedAllocation()
+{
+    throw 42;
+}
+extern "C" void RhpCalculateStackTraceWorker()
+{
+    throw 42;
+}
+extern "C" void RhThrowHwEx()
+{
+    throw 42;
+}
+extern "C" void RhThrowEx()
+{
+    throw 42;
+}
+extern "C" void RhRethrow()
+{
+    throw 42;
+}
+
+#ifdef CPPCODEGEN
+extern "C" void RhpBulkWriteBarrier()
+{
+    throw 42;
+}
+#endif
 
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };

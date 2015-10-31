@@ -26,8 +26,6 @@
 #error unknown architecture
 #endif
 
-#if !defined(USE_PORTABLE_HELPERS) // no asm helpers to keep in sync with
-
 //
 // NOTE: the offsets MUST be in hex notation WITHOUT the 0x prefix
 // 
@@ -168,4 +166,3 @@ ASM_OFFSET(  10,   10,   18, CallDescrData, pFloatArgumentRegisters)
 ASM_OFFSET(  14,   14,   20, CallDescrData, pTarget)
 ASM_OFFSET(  18,   18,   28, CallDescrData, pReturnBuffer)
 #endif
-#endif // !defined(USE_PORTABLE_HELPERS)

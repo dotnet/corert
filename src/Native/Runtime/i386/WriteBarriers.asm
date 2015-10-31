@@ -103,6 +103,11 @@ DEFINE_WRITE_BARRIER macro DESTREG, REFREG
 ;; location is in one of the other general registers determined by the value of REFREG.
 FASTCALL_FUNC RhpAssignRef&REFREG&, 0
 
+    ;; Export the canonical write barrier under unqualified name as well
+    ifidni <REFREG>, <EDX>
+    ALTERNATE_ENTRY RhpAssignRef
+    endif
+
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
     mov     dword ptr [DESTREG], REFREG
@@ -193,6 +198,11 @@ DEFINE_CHECKED_WRITE_BARRIER macro DESTREG, REFREG
 ;; - Function "UnwindWriteBarrierToCaller" assumes the stack contains just the pushed return address
 FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 0
 
+    ;; Export the canonical write barrier under unqualified name as well
+    ifidni <REFREG>, <EDX>
+    ALTERNATE_ENTRY RhpCheckedAssignRef
+    endif
+
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
     ;; and the card table update we may perform below.
     mov     dword ptr [DESTREG], REFREG
@@ -203,10 +213,8 @@ FASTCALL_ENDFUNC
 
 endm
 
-;; One day we might require write barriers for all the possible argument registers but for now MDIL only
-;; specifies one unqualified write barrier instruction and Bartok generates code that assumes the input
-;; register is EDX. MDIL also doesn't distinguish between checked and unchecked barriers so we always have to
-;; use the checked kind.
+;; One day we might have write barriers for all the possible argument registers but for now we have
+;; just one write barrier that assumes the input register is EDX.
 DEFINE_CHECKED_WRITE_BARRIER ECX, EDX
 DEFINE_WRITE_BARRIER ECX, EDX
 

@@ -109,8 +109,10 @@ namespace ILToNative
                         return "__range_check_fail";
 
                     case JitHelperId.WriteBarrier:
+                        return "RhpAssignRef";
+
                     case JitHelperId.CheckedWriteBarrier:
-                        return "WriteBarrier";
+                        return "RhpCheckedAssignRef";
 
                     case JitHelperId.Throw:
                         return "__throw_exception";
