@@ -492,7 +492,8 @@
       <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
       <!-- For CoreRT we have a different implementation -->
       <Compile Include="System\Environment.EnvironmentVariables.Unix.cs" />
-      <Compile Include="..\..\Common\src\Interop\Unix\libc\Interop.Environment.cs" />
+      <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" />
+      <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.StringHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

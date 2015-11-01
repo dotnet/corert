@@ -129,3 +129,8 @@ if(WIN32)
 endif()
 add_subdirectory(Runtime)
 add_subdirectory(Bootstrap)
+
+# We don't need the PAL on Windows.
+if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+  add_subdirectory(System.Private.CoreLib.Native)
+endif()
