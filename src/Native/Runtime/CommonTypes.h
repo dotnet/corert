@@ -6,6 +6,7 @@
 #ifndef __COMMON_TYPES_H__
 #define __COMMON_TYPES_H__
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <new>
@@ -42,9 +43,6 @@ typedef UInt32              UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, 
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 #endif // UNREFERENCED_PARAMETER
-
-#undef NULL
-#define NULL 0
 
 #define UInt16_MAX          ((UInt16)0xffffU)
 #define UInt16_MIN          ((UInt16)0x0000U)

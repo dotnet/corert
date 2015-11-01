@@ -18,6 +18,7 @@
 //
 
 #include <sal.h>
+#include <stdarg.h>
 
 #ifndef PAL_REDHAWK_INCLUDED
 #define PAL_REDHAWK_INCLUDED
@@ -828,7 +829,6 @@ EXTERN_C void __emit(const unsigned __int32 opcode);
 //
 // Export PAL blessed versions of *printf functions we use (mostly debug only).
 //
-typedef char * va_list;
 REDHAWK_PALIMPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...);
 REDHAWK_PALIMPORT void __cdecl PalFlushStdout();
 
@@ -848,42 +848,6 @@ REDHAWK_PALIMPORT int __cdecl PalVSprintf(_Out_writes_z_(cchBuffer) char * szBuf
 // only. If this finds broader use we can consider moving them to a more global location.
 #define ALLOW_CONSTANT_EXPR_BEGIN __pragma(warning(push)) __pragma(warning(disable:4127))
 #define ALLOW_CONSTANT_EXPR_END __pragma(warning(pop))
-
-// Inline a definition for the only varargs related functionality we need, va_start, in order to avoid
-// including any CRT header file at all. It's pretty simple for x86 (especially since we're only supporting
-// printf-like varargs). If and when we need to support other platforms (where it gets more complex) we can
-// revisit whether we need this functionality at all or whether we could move the asbtraction boundary to put
-// all the vararg related code inside the PAL (we only use this for debugging purposes currently).
-#ifdef _X86_ 
-#define va_start(_va_list, _format) \
-    ALLOW_CONSTANT_EXPR_BEGIN \
-    do { _va_list = (va_list)&(_format) + sizeof(char*); } while (false) \
-    ALLOW_CONSTANT_EXPR_END
-
-#define _INTSIZEOF(n)   ( (sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1) )
-#define va_arg(ap, t)   ( *(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t)) )
-
-#elif defined(_AMD64_)
-EXTERN_C void __cdecl __va_start(va_list *, ...);
-#pragma intrinsic(__va_start)
-#define va_start(_va_list, _format) __va_start(&_va_list, _format)
-#define va_arg(ap, t)   \
-    ( ( sizeof(t) > sizeof(__int64) || ( sizeof(t) & (sizeof(t) - 1) ) != 0 ) \
-        ? **(t **)( ( ap += sizeof(__int64) ) - sizeof(__int64) ) \
-        :  *(t  *)( ( ap += sizeof(__int64) ) - sizeof(__int64) ) )
-
-#elif defined(_ARM_)
-#define _VA_ALIGN       4
-#define _SLOTSIZEOF(t)  ( (sizeof(t) + _VA_ALIGN - 1) & ~(_VA_ALIGN - 1) )
-#define _APALIGN(t,ap)  ( ((va_list)0 - (ap)) & (__alignof(t) - 1) )
-#define va_start(_va_list, _format) \
-    ALLOW_CONSTANT_EXPR_BEGIN \
-    do { _va_list = (va_list)&_format + _SLOTSIZEOF(_format); } while (false) \
-    ALLOW_CONSTANT_EXPR_END
-#define va_arg(ap,t)    (*(t *)((ap += _SLOTSIZEOF(t) + _APALIGN(t,ap)) \
-                             - _SLOTSIZEOF(t)))
-#endif // !_X86_
-
 
 REDHAWK_PALIMPORT UInt32_BOOL __stdcall PalGlobalMemoryStatusEx(_Out_ PAL_MEMORY_STATUS* pBuffer);
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* __stdcall PalVirtualAlloc(_In_opt_ void* pAddress, UIntNative size, UInt32 allocationType, UInt32 protect);

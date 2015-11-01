@@ -31,11 +31,6 @@ using namespace std;
 class MethodTable;
 class Object;
 
-template <typename T>
-class Array
-{
-};
-
 int __initialize_runtime();
 void __shutdown_runtime();
 

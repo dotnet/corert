@@ -358,7 +358,7 @@ void ThreadStressLog::LogMsg ( UInt32 facility, int cArgs, const char* format, v
         msg->args[i] = data;
     }
 
-    ASSERT(IsValid() && threadId == GetCurrentThreadId ());
+    ASSERT(IsValid() && threadId == PalGetCurrentThreadId ());
 }
 
 

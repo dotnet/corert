@@ -62,6 +62,11 @@ public:
 #endif // FEATURE_BARTOK
 #endif // FEATURE_STRUCTALIGN
     UInt32_BOOL SanityCheck() { return ((EEType*)this)->Validate(); }
+    // TODO: remove this method after the __isinst_class is gone
+    MethodTable* GetParent()
+    {
+        return (MethodTable*)((EEType*)this)->get_BaseType();
+    }
 };
 
 class EEConfig

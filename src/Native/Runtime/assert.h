@@ -41,6 +41,10 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define assert(expr) ASSERT(expr)
 
+#define PORTABILITY_ASSERT(message) \
+    ASSERT_UNCONDITIONALLY(message); \
+    ASSUME(0); \
+
 #define UNREACHABLE() \
     ASSERT_UNCONDITIONALLY("UNREACHABLE"); \
     ASSUME(0); \
