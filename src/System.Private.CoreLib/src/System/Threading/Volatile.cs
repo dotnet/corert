@@ -117,25 +117,25 @@ namespace System.Threading
 
         public static Int64 Read(ref Int64 location)
         {
-#if WIN32
-            return Interlocked.CompareExchange(ref location, 0, 0);
-#else
+#if BIT64
             fixed (Int64* p = &location)
             {
                 return (Int64)Read(ref *(IntPtr*)p);
             }
+#else
+            return Interlocked.CompareExchange(ref location, 0, 0);
 #endif
         }
 
         public static void Write(ref Int64 location, Int64 value)
         {
-#if WIN32
-            Interlocked.Exchange(ref location, value);
-#else
+#if BIT64
             fixed (Int64* p = &location)
             {
                 Write(ref *(IntPtr*)p, (IntPtr)value);
             }
+#else
+            Interlocked.Exchange(ref location, value);
 #endif
         }
         #endregion

@@ -65,7 +65,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;WIN64</DefineConstants>
+    <DefineConstants>CORERT;BIT64</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

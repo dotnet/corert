@@ -91,7 +91,7 @@ namespace System
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
     public sealed class String : IComparable, IEnumerable, IEnumerable<char>, IComparable<String>, IEquatable<String>, IConvertible
     {
-#if WIN64
+#if BIT64
         private const int POINTER_SIZE = 8;
 #else
         private const int POINTER_SIZE = 4;
@@ -543,13 +543,13 @@ namespace System
         {
             int count = (countA < countB) ? countA : countB;
 
-#if WIN64
+#if BIT64
             long diff = (long)((byte*)strAChars - (byte*)strBChars);
 #else
             int diff = (int)((byte*)strAChars - (byte*)strBChars);
 #endif
 
-#if WIN64
+#if BIT64
             int alignmentA = (int)((long)strAChars) & (sizeof(IntPtr) - 1);
             int alignmentB = (int)((long)strBChars) & (sizeof(IntPtr) - 1);
 
@@ -628,9 +628,9 @@ namespace System
                 }
             }
             else
-#endif // WIN64
+#endif // BIT64
             {
-#if WIN64
+#if BIT64
                 if (Math.Abs(alignmentA - alignmentB) == 4)
                 {
                     if ((alignmentA == 2) || (alignmentB == 2))
@@ -643,7 +643,7 @@ namespace System
                         count -= 1;
                     }
                 }
-#endif // WIN64
+#endif // BIT64
 
                 // Loop comparing a DWORD at a time.
                 while ((count -= 2) >= 0)
@@ -696,8 +696,8 @@ namespace System
                 char* b = bp;
 
                 // unroll the loop
-#if AMD64
-                // for AMD64 bit platform we unroll by 12 and
+#if BIT64
+                // for 64-bit platforms we unroll by 12 and
                 // check 3 qword at a time. This is less code
                 // than the 32 bit case and is shorter
                 // pathlength
@@ -1102,14 +1102,26 @@ namespace System
             {
                 fixed (char* src = this)
                 {
-#if WIN32
-                    int hash1 = (5381 << 16) + 5381;
-#else
+#if BIT64
                     int hash1 = 5381;
+#else
+                    int hash1 = (5381 << 16) + 5381;
 #endif
                     int hash2 = hash1;
 
-#if WIN32
+#if BIT64
+                    int c;
+                    char* s = src;
+                    while ((c = s[0]) != 0)
+                    {
+                        hash1 = ((hash1 << 5) + hash1) ^ c;
+                        c = s[1];
+                        if (c == 0)
+                            break;
+                        hash2 = ((hash2 << 5) + hash2) ^ c;
+                        s += 2;
+                    }
+#else
                     // 32bit machines.
                     int* pint = (int*)src;
                     int len = this.Length;
@@ -1123,18 +1135,6 @@ namespace System
                         hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ pint[1];
                         pint += 2;
                         len -= 4;
-                    }
-#else
-                    int c;
-                    char* s = src;
-                    while ((c = s[0]) != 0)
-                    {
-                        hash1 = ((hash1 << 5) + hash1) ^ c;
-                        c = s[1];
-                        if (c == 0)
-                            break;
-                        hash2 = ((hash2 << 5) + hash2) ^ c;
-                        s += 2;
                     }
 #endif
                     return hash1 + (hash2 * 1566083941);

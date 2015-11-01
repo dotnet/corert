@@ -171,11 +171,11 @@ namespace System
         // C# may optimize away the pinned local, producing incorrect results.
         static internal unsafe byte* GetAddrOfPinnedArrayFromEETypeField(IntPtr* ppEEType)
         {
-#if WIN32
-            return (byte*)ppEEType + sizeof(EETypePtr) + sizeof(int);
-#else
+#if BIT64
             // on 64-bit there is an extra 4 byte padding before the array data starts
             return (byte*)ppEEType + sizeof(EETypePtr) + (2 * sizeof(int));
+#else
+            return (byte*)ppEEType + sizeof(EETypePtr) + sizeof(int);
 #endif
         }
 

@@ -38,10 +38,10 @@ namespace System
         [NonVersionable]
         public unsafe UIntPtr(ulong value)
         {
-#if WIN32
-            _value = (void*)checked((uint)value);
-#else
+#if BIT64
             _value = (void*)value;
+#else
+            _value = (void*)checked((uint)value);
 #endif
         }
 
@@ -64,10 +64,10 @@ namespace System
         [NonVersionable]
         public unsafe uint ToUInt32()
         {
-#if WIN32
-            return (uint)_value;
-#else
+#if BIT64
             return checked((uint)_value);
+#else
+            return (uint)_value;
 #endif
         }
 
@@ -112,10 +112,10 @@ namespace System
         [NonVersionable]
         public unsafe static explicit operator uint (UIntPtr value)
         {
-#if WIN32
-            return (uint)value._value;
-#else
+#if BIT64
             return checked((uint)value._value);
+#else
+            return (uint)value._value;
 #endif
         }
 
@@ -146,20 +146,20 @@ namespace System
             [NonVersionable]
             get
             {
-#if WIN32
-                return 4;
-#else
+#if BIT64
                 return 8;
+#else
+                return 4;
 #endif
             }
         }
 
         public unsafe override String ToString()
         {
-#if WIN32
-            return ((uint)_value).ToString(FormatProvider.InvariantCulture);
-#else
+#if BIT64
             return ((ulong)_value).ToString(FormatProvider.InvariantCulture);
+#else
+            return ((uint)_value).ToString(FormatProvider.InvariantCulture);
 #endif
         }
 
@@ -188,10 +188,10 @@ namespace System
         [NonVersionable]
         public static UIntPtr operator +(UIntPtr pointer, int offset)
         {
-#if WIN32
-            return new UIntPtr(pointer.ToUInt32() + (uint)offset);
-#else
+#if BIT64
             return new UIntPtr(pointer.ToUInt64() + (ulong)offset);
+#else
+            return new UIntPtr(pointer.ToUInt32() + (uint)offset);
 #endif
         }
 
@@ -205,10 +205,10 @@ namespace System
         [NonVersionable]
         public static UIntPtr operator -(UIntPtr pointer, int offset)
         {
-#if WIN32
-            return new UIntPtr(pointer.ToUInt32() - (uint)offset);
-#else
+#if BIT64
             return new UIntPtr(pointer.ToUInt64() - (ulong)offset);
+#else
+            return new UIntPtr(pointer.ToUInt32() - (uint)offset);
 #endif
         }
     }

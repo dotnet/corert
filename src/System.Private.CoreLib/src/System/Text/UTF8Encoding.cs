@@ -648,7 +648,7 @@ namespace System.Text
                     byteCount++;
                 }
 
-#if WIN64
+#if BIT64
                 // check for overflow
                 if (byteCount < 0)
                 {
@@ -684,7 +684,7 @@ namespace System.Text
                     break;
                 }
 
-#if WIN64
+#if BIT64
                 // make sure that we won't get a silent overflow inside the fast loop
                 // (Fall out to slow loop if we have this many characters)
                 availableChars &= 0x0FFFFFFF;
@@ -823,7 +823,7 @@ namespace System.Text
                 ch = 0;
             }
 
-#if WIN64
+#if BIT64
             // check for overflow
             if (byteCount < 0)
             {

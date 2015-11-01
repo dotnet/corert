@@ -118,7 +118,7 @@ namespace Internal.Runtime.CompilerServices
         public static unsafe bool IsGenericMethodPointer(IntPtr functionPointer)
         {
             // Check the low bit to find out what kind of function pointer we have here.
-#if WIN64
+#if BIT64
             if ((functionPointer.ToInt64() & c_genericFunctionPointerOffset) == c_genericFunctionPointerOffset)
 #else
             if ((functionPointer.ToInt32() & c_genericFunctionPointerOffset) == c_genericFunctionPointerOffset)

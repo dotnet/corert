@@ -322,10 +322,10 @@ namespace System
 
         public unsafe IntPtr(long value)
         {
-#if WIN32
-            m_value = (void*)checked((int)value);
-#else
+#if BIT64
             m_value = (void*)value;
+#else
+            m_value = (void*)checked((int)value);
 #endif
         }
 
@@ -350,10 +350,10 @@ namespace System
 
         public unsafe static explicit operator long (IntPtr value)
         {
-#if WIN32
-            return (long)(int)value.m_value;
-#else
+#if BIT64
             return (long)value.m_value;
+#else
+            return (long)(int)value.m_value;
 #endif
         }
 

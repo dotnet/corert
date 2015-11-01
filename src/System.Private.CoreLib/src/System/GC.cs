@@ -145,7 +145,7 @@ namespace System
 
         // Support for AddMemoryPressure and RemoveMemoryPressure below.
         private const uint PressureCount = 4;
-#if WIN64
+#if BIT64
         private const uint MinGCMemoryPressureBudget = 4 * 1024 * 1024;
 #else
         private const uint MinGCMemoryPressureBudget = 3 * 1024 * 1024;
@@ -226,7 +226,7 @@ namespace System
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-#if !WIN64
+#if !BIT64
             if (bytesAllocated > Int32.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("bytesAllocated",
@@ -296,7 +296,7 @@ namespace System
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-#if !WIN64
+#if !BIT64
             if (bytesAllocated > Int32.MaxValue)
             {
                 throw new ArgumentOutOfRangeException("bytesAllocated",
