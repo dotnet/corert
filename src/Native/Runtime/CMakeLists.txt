@@ -154,9 +154,10 @@ else()
   add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-self-assign)
 
+  add_compile_options(-Qunused-arguments)
+
   include(unix/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 endif()
 
 set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR})
