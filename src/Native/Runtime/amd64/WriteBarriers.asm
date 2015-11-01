@@ -14,7 +14,7 @@ include AsmMacros.inc
 ;; (INVALIDGCVALUE) which disables the check for that location. Since the shadow heap is only validated at GC
 ;; time and these write barrier operations are atomic wrt to GCs this is sufficient to guarantee that the
 ;; shadow heap contains only valid copies of real heap values or INVALIDGCVALUE.
-ifdef WRITE_BARRIER_CHECK  
+ifdef WRITE_BARRIER_CHECK
 
 g_GCShadow      TEXTEQU <?g_GCShadow@@3PEAEEA>
 g_GCShadowEnd   TEXTEQU <?g_GCShadowEnd@@3PEAEEA>
@@ -23,13 +23,13 @@ INVALIDGCVALUE  EQU 0CCCCCCCDh
 EXTERN  g_GCShadow : QWORD
 EXTERN  g_GCShadowEnd : QWORD
 
-UPDATE_GC_SHADOW macro BASENAME, REFREG
+UPDATE_GC_SHADOW macro BASENAME, REFREG, DESTREG
 
     ;; If g_GCShadow is 0, don't perform the check.
     cmp     g_GCShadow, 0
     je      &BASENAME&_UpdateShadowHeap_Done_&REFREG&
 
-    ;; Save rcx since we're about to modify it (and we need the original value both within the macro and
+    ;; Save DESTREG since we're about to modify it (and we need the original value both within the macro and
     ;; once we exit the macro). Note that this is naughty since we're altering the stack pointer outside of
     ;; the prolog inside a method without a frame. But given that this is only debug code and generally we
     ;; shouldn't be walking the stack at this point it seems preferable to recoding the all the barrier
@@ -38,27 +38,27 @@ UPDATE_GC_SHADOW macro BASENAME, REFREG
     ;; barrier case, so we don't have any more scratch registers to play with (and doing so would only make
     ;; things harder if at a later stage we want to allow multiple barrier versions based on the input
     ;; registers).
-    push    rcx
+    push    DESTREG
 
-    ;; Transform rcx into the equivalent address in the shadow heap.
-    sub     rcx, G_LOWEST_ADDRESS
+    ;; Transform DESTREG into the equivalent address in the shadow heap.
+    sub     DESTREG, G_LOWEST_ADDRESS
     jb      &BASENAME&_UpdateShadowHeap_PopThenDone_&REFREG&
-    add     rcx, [g_GCShadow]
-    cmp     rcx, [g_GCShadowEnd]
+    add     DESTREG, [g_GCShadow]
+    cmp     DESTREG, [g_GCShadowEnd]
     ja      &BASENAME&_UpdateShadowHeap_PopThenDone_&REFREG&
 
     ;; Update the shadow heap.
-    mov     [rcx], REFREG
+    mov     [DESTREG], REFREG
 
     ;; Now check that the real heap location still contains the value we just wrote into the shadow heap. This
     ;; read must be strongly ordered wrt to the previous write to prevent race conditions. We also need to
-    ;; recover the old value of rcx for the comparison so use an xchg instruction (which has an implicit lock
+    ;; recover the old value of DESTREG for the comparison so use an xchg instruction (which has an implicit lock
     ;; prefix).
-    xchg    [rsp], rcx
-    cmp     [rcx], REFREG
+    xchg    [rsp], DESTREG
+    cmp     [DESTREG], REFREG
     jne     &BASENAME&_UpdateShadowHeap_Invalidate_&REFREG&
 
-    ;; The original rcx value is now restored but the stack has a value (the shadow version of the
+    ;; The original DESTREG value is now restored but the stack has a value (the shadow version of the
     ;; location) pushed. Need to discard this push before we are done.
     add     rsp, 8
     jmp     &BASENAME&_UpdateShadowHeap_Done_&REFREG&
@@ -67,22 +67,22 @@ UPDATE_GC_SHADOW macro BASENAME, REFREG
     ;; Someone went and updated the real heap. We need to invalidate the shadow location since we can't
     ;; guarantee whose shadow update won.
 
-    ;; Retrieve shadow location from the stack and restore original rcx to the stack. This is an
+    ;; Retrieve shadow location from the stack and restore original DESTREG to the stack. This is an
     ;; additional memory barrier we don't require but it's on the rare path and x86 doesn't have an xchg
     ;; variant that doesn't implicitly specify the lock prefix.
-    xchg    [rsp], rcx
-    mov     qword ptr [rcx], INVALIDGCVALUE
+    xchg    [rsp], DESTREG
+    mov     qword ptr [DESTREG], INVALIDGCVALUE
 
 &BASENAME&_UpdateShadowHeap_PopThenDone_&REFREG&:
-    ;; Restore original rcx value from the stack.
-    pop     rcx
+    ;; Restore original DESTREG value from the stack.
+    pop     DESTREG
 
 &BASENAME&_UpdateShadowHeap_Done_&REFREG&:
 endm
 
 else ; WRITE_BARRIER_CHECK
 
-UPDATE_GC_SHADOW macro BASENAME, REFREG
+UPDATE_GC_SHADOW macro BASENAME, REFREG, DESTREG
 endm
 
 endif ; WRITE_BARRIER_CHECK
@@ -95,7 +95,7 @@ DEFINE_UNCHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG
 
     ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     ;; we're in a debug build and write barrier checking has been enabled).
-    UPDATE_GC_SHADOW BASENAME, REFREG
+    UPDATE_GC_SHADOW BASENAME, REFREG, rcx
 
     ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
     ;; (since the object won't be collected or moved by an ephemeral collection).
@@ -172,33 +172,7 @@ DEFINE_CHECKED_WRITE_BARRIER_CORE macro BASENAME, REFREG
     cmp     rcx, [g_highest_address]
     jae     &BASENAME&_NoBarrierRequired_&REFREG&
 
-    ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
-    ;; we're in a debug build and write barrier checking has been enabled).
-    UPDATE_GC_SHADOW BASENAME, REFREG
-
-    ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
-    ;; (since the object won't be collected or moved by an ephemeral collection).
-    cmp     REFREG, [g_ephemeral_low]
-    jb      &BASENAME&_NoBarrierRequired_&REFREG&
-    cmp     REFREG, [g_ephemeral_high]
-    jae     &BASENAME&_NoBarrierRequired_&REFREG&
-
-    ;; We have a location on the GC heap being updated with a reference to an ephemeral object so we must
-    ;; track this write. The location address is translated into an offset in the card table bitmap. We set
-    ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
-    ;; the byte if it hasn't already been done since writes are expensive and impact scaling.
-    shr     rcx, 11
-    add     rcx, [g_card_table]
-    cmp     byte ptr [rcx], 0FFh
-    jne     &BASENAME&_UpdateCardTable_&REFREG&
-
-&BASENAME&_NoBarrierRequired_&REFREG&:
-    ret
-
-;; We get here if it's necessary to update the card table.
-&BASENAME&_UpdateCardTable_&REFREG&:
-    mov     byte ptr [rcx], 0FFh
-    ret
+    DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
 
 endm
 
@@ -413,5 +387,59 @@ NoBarrierRequired:
     ret
 
 LEAF_END RhpBulkWriteBarrier, _TEXT
+
+;;
+;; RhpByRefAssignRef simulates movs instruction for object references.
+;;
+;; On entry:
+;;      rdi: address of ref-field (assigned to)
+;;      rsi: address of the data (source)
+;;      rcx: be trashed
+;;
+;; On exit:
+;;      rdi, rsi are incremented by 8, 
+;;      rcx: trashed
+;;
+LEAF_ENTRY RhpByRefAssignRef, _TEXT
+    mov     rcx, [rsi]
+    mov     [rdi], rcx
+
+    ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
+    ;; we're in a debug build and write barrier checking has been enabled).
+    UPDATE_GC_SHADOW BASENAME, rcx, rdi
+
+    ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
+    ;; (since the object won't be collected or moved by an ephemeral collection).
+    cmp     rcx, [g_ephemeral_low]
+    jb      RhpByRefAssignRef_NotInHeap
+    cmp     rcx, [g_ephemeral_high]
+    jae     RhpByRefAssignRef_NotInHeap
+
+    ;; move current rdi value into rcx and then increment the pointers
+    mov     rcx, rdi
+    add     rsi, 8h
+    add     rdi, 8h
+
+    ;; We have a location on the GC heap being updated with a reference to an ephemeral object so we must
+    ;; track this write. The location address is translated into an offset in the card table bitmap. We set
+    ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
+    ;; the byte if it hasn't already been done since writes are expensive and impact scaling.
+    shr     rcx, 11
+    add     rcx, [g_card_table]
+    cmp     byte ptr [rcx], 0FFh
+    jne     RhpByRefAssignRef_UpdateCardTable
+    ret
+
+;; We get here if it's necessary to update the card table.
+RhpByRefAssignRef_UpdateCardTable:
+    mov     byte ptr [rcx], 0FFh
+    ret
+
+RhpByRefAssignRef_NotInHeap:
+    ; Increment the pointers before leaving
+    add     rdi, 8h
+    add     rsi, 8h
+    ret
+LEAF_END RhpByRefAssignRef, _TEXT
 
     end

@@ -114,6 +114,9 @@ namespace ILToNative
                     case JitHelperId.CheckedWriteBarrier:
                         return "RhpCheckedAssignRef";
 
+                    case JitHelperId.ByRefWriteBarrier:
+                        return "RhpByRefAssignRef";
+
                     case JitHelperId.Throw:
                         return "__throw_exception";
 
