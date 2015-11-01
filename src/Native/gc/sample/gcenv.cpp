@@ -110,7 +110,7 @@ Thread * ThreadStore::GetThreadList(Thread * pThread)
     return pThread->m_pNext;
 }
 
-void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
+void ThreadStore::AttachCurrentThread()
 {
     // TODO: Locks
 
@@ -199,7 +199,7 @@ bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
 // does not acquire thread store lock
 void GCToEEInterface::AttachCurrentThread()
 {
-    ThreadStore::AttachCurrentThread(false);
+    ThreadStore::AttachCurrentThread();
 }
 
 Thread * GCToEEInterface::GetThreadList(Thread * pThread)

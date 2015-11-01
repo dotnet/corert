@@ -74,7 +74,7 @@ Object * AllocateObject(MethodTable * pMT)
             return NULL;
     }
 
-    pObject->SetMethodTable(pMT);
+    pObject->RawSetMethodTable(pMT);
 
     return pObject;
 }
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     //
     // Initialize current thread
     //
-    ThreadStore::AttachCurrentThread(false);
+    ThreadStore::AttachCurrentThread();
 
     //
     // Create a Methodtable with GCDesc

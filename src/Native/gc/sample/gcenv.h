@@ -78,7 +78,7 @@ class ThreadStore
 public:
     static Thread * GetThreadList(Thread * pThread);
 
-    static void AttachCurrentThread(bool fAcquireThreadStoreLock);
+    static void AttachCurrentThread();
 };
 
 // -----------------------------------------------------------------------------------------------------------

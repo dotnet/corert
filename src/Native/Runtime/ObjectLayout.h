@@ -64,13 +64,13 @@ public:
     //
     MethodTable * RawGetMethodTable() const
     {
-        return (MethodTable*)m_pEEType;
+        return (MethodTable*)get_EEType();
+    }
+    MethodTable * GetGCSafeMethodTable() const
+    {
+        return (MethodTable *)get_SafeEEType();
     }
     void RawSetMethodTable(MethodTable * pMT)
-    {
-        m_pEEType = (EEType *)pMT;
-    }
-    void SetMethodTable(MethodTable * pMT)
     {
         m_pEEType = (EEType *)pMT;
     }

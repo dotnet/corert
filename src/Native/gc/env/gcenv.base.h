@@ -855,6 +855,8 @@ public:
         UNSUPPORTED_GCLogEnabled,
         UNSUPPORTED_GCLogFile,
         UNSUPPORTED_GCLogFileSize,
+        UNSUPPORTED_GCConfigLogEnabled,
+        UNSUPPORTED_GCConfigLogFile,
         UNSUPPORTED_BGCSpinCount,
         UNSUPPORTED_BGCSpin,
         EXTERNAL_GCStressStart,
@@ -863,7 +865,10 @@ public:
         Config_COUNT
     };
 
-    static DWORD GetConfigValue(CLRConfigTypes eType)
+    typedef CLRConfigTypes ConfigDWORDInfo;
+    typedef CLRConfigTypes ConfigStringInfo;
+
+    static DWORD GetConfigValue(ConfigDWORDInfo eType)
     {
         switch (eType)
         {
@@ -891,7 +896,7 @@ public:
         }
     }
 
-    static HRESULT GetConfigValue(CLRConfigTypes eType, PWSTR * outVal) 
+    static HRESULT GetConfigValue(ConfigStringInfo eType, PWSTR * outVal)
     { 
         *outVal = NULL; 
         return 0; 
