@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices
 
         public static int GetElementSize(this Array array)
         {
-            return array.ElementSize;
+            return array.EETypePtr.ComponentSize;
         }
 
         public static unsafe IntPtr GetAddrOfPinnedArrayFromEETypeField(this Array array)
@@ -205,7 +205,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe void Memcpy(IntPtr destination, IntPtr source, int bytesToCopy)
         {
-            RuntimeImports.memmove((byte*)destination, (byte*)source, bytesToCopy);
+            Buffer.Memmove((byte*)destination, (byte*)source, (uint)bytesToCopy);
         }
 
         public static bool RuntimeRegisterGcCalloutForGCStart(IntPtr pCalloutMethod)

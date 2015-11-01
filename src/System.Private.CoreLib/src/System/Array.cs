@@ -13,6 +13,12 @@ using System.Diagnostics.Contracts;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.NonPortable;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 
@@ -382,12 +388,12 @@ namespace System
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             EETypePtr sourceElementEEType = sourceArray.ElementEEType;
-            int sourceElementSize = sourceArray.ElementSize;
+            nuint sourceElementSize = sourceArray.ElementSize;
 
             fixed (IntPtr* pSourceArray = &sourceArray.m_pEEType)
             {
                 byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pSourceArray)
-                                            + (sourceIndex * sourceElementSize);
+                                            + (nuint)sourceIndex * sourceElementSize;
 
                 for (int i = 0; i < length; i++)
                 {
@@ -407,13 +413,13 @@ namespace System
                 throw new ArrayTypeMismatchException();
 
             EETypePtr destinationElementEEType = destinationArray.ElementEEType;
-            int destinationElementSize = destinationArray.ElementSize;
+            nuint destinationElementSize = destinationArray.ElementSize;
             bool isNullable = RuntimeImports.RhIsNullable(destinationElementEEType);
 
             fixed (IntPtr* pDestinationArray = &destinationArray.m_pEEType)
             {
                 byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pDestinationArray)
-                                            + (destinationIndex * destinationElementSize);
+                                            + (nuint)destinationIndex * destinationElementSize;
 
                 for (int i = 0; i < length; i++)
                 {
@@ -459,13 +465,13 @@ namespace System
 
             fixed (IntPtr* pDstArray = &destinationArray.m_pEEType, pSrcArray = &sourceArray.m_pEEType)
             {
-                int cbElementSize = sourceArray.ElementSize;
-                byte* pSourceElement = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + (sourceIndex * cbElementSize);
-                byte* pDestinationElement = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + (destinationIndex * cbElementSize);
+                nuint cbElementSize = sourceArray.ElementSize;
+                byte* pSourceElement = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + (nuint)sourceIndex * cbElementSize;
+                byte* pDestinationElement = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + (nuint)destinationIndex * cbElementSize;
                 if (reverseCopy)
                 {
-                    pSourceElement += length * cbElementSize;
-                    pDestinationElement += length * cbElementSize;
+                    pSourceElement += (nuint)length * cbElementSize;
+                    pDestinationElement += (nuint)length * cbElementSize;
                 }
 
                 for (int i = 0; i < length; i++)
@@ -506,13 +512,13 @@ namespace System
             Debug.Assert(destinationArray.ElementEEType.IsValueType && !destinationArray.ElementEEType.HasPointers);
 
             // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
-            int elementSize = sourceArray.ElementSize;
+            nuint elementSize = sourceArray.ElementSize;
             fixed (IntPtr* pSrcArray = &sourceArray.m_pEEType, pDstArray = &destinationArray.m_pEEType)
             {
-                byte* pSrcElements = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + sourceIndex * elementSize;
-                byte* pDstElements = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + destinationIndex * elementSize;
-                int cbCopy = elementSize * length;
-                RuntimeImports.memmove(pDstElements, pSrcElements, cbCopy);
+                byte* pSrcElements = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + (nuint)sourceIndex * elementSize;
+                byte* pDstElements = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + (nuint)destinationIndex * elementSize;
+                nuint cbCopy = elementSize * (nuint)length;
+                Buffer.Memmove(pDstElements, pSrcElements, cbCopy);
             }
         }
 
@@ -524,13 +530,13 @@ namespace System
             RuntimeImports.RhCorElementType sourceElementType = sourceArray.EETypePtr.ArrayElementType.CorElementType;
             RuntimeImports.RhCorElementType destElementType = destinationArray.EETypePtr.ArrayElementType.CorElementType;
 
-            int srcElementSize = sourceArray.ElementSize;
-            int destElementSize = destinationArray.ElementSize;
+            nuint srcElementSize = sourceArray.ElementSize;
+            nuint destElementSize = destinationArray.ElementSize;
 
             fixed (IntPtr* pSrcArray = &sourceArray.m_pEEType, pDstArray = &destinationArray.m_pEEType)
             {
-                byte* srcData = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + sourceIndex * srcElementSize;
-                byte* data = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + destinationIndex * destElementSize;
+                byte* srcData = Array.GetAddrOfPinnedArrayFromEETypeField(pSrcArray) + (nuint)sourceIndex * srcElementSize;
+                byte* data = Array.GetAddrOfPinnedArrayFromEETypeField(pDstArray) + (nuint)destinationIndex * destElementSize;
 
                 for (int i = 0; i < length; i++, srcData += srcElementSize, data += destElementSize)
                 {
@@ -782,16 +788,16 @@ namespace System
                 throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
             if (length < 0)
                 throw new ArgumentOutOfRangeException("length", SR.Arg_CopyOutOfRange);
-            if (startIndex + length > destination.Length)
+            if ((uint)startIndex + (uint)length > (uint)destination.Length)
                 throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
 
-            int bytesToCopy = checked(length * destination.ElementSize);
-            int startOffset = checked(startIndex * destination.ElementSize);
+            nuint bytesToCopy = (nuint)length * destination.ElementSize;
+            nuint startOffset = (nuint)startIndex * destination.ElementSize;
 
             fixed (IntPtr* destinationEEType = &destination.m_pEEType)
             {
                 byte* destinationData = Array.GetAddrOfPinnedArrayFromEETypeField(destinationEEType) + startOffset;
-                RuntimeImports.memmove(destinationData, (byte*)source, bytesToCopy);
+                Buffer.Memmove(destinationData, (byte*)source, bytesToCopy);
             }
         }
 
@@ -815,17 +821,17 @@ namespace System
                 throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
             if (length < 0)
                 throw new ArgumentOutOfRangeException("length", SR.Arg_CopyOutOfRange);
-            if (startIndex + length > source.Length)
+            if ((uint)startIndex + (uint)length > (uint)source.Length)
                 throw new ArgumentOutOfRangeException("startIndex", SR.Arg_CopyOutOfRange);
             Contract.EndContractBlock();
 
-            int bytesToCopy = checked(length * source.ElementSize);
-            int startOffset = checked(startIndex * source.ElementSize);
+            nuint bytesToCopy = (nuint)length * source.ElementSize;
+            nuint startOffset = (nuint)startIndex * source.ElementSize;
 
             fixed (IntPtr* sourceEEType = &source.m_pEEType)
             {
                 byte* sourceData = Array.GetAddrOfPinnedArrayFromEETypeField(sourceEEType) + startOffset;
-                RuntimeImports.memmove((byte*)destination, sourceData, bytesToCopy);
+                Buffer.Memmove((byte*)destination, sourceData, bytesToCopy);
             }
         }
 
@@ -2116,10 +2122,10 @@ namespace System
                 if (index < 0 || index >= Length)
                     throw new IndexOutOfRangeException();
 
-                int elementSize = ElementSize;
+                nuint elementSize = ElementSize;
                 fixed (IntPtr* pThisArray = &m_pEEType)
                 {
-                    byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (index * elementSize);
+                    byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (nuint)index * elementSize;
                     return RuntimeImports.RhBox(pElementEEType, pElement);
                 }
             }
@@ -2165,10 +2171,10 @@ namespace System
                 value = InvokeUtils.CheckArgument(value, pElementEEType, InvokeUtils.CheckArgumentSemantics.ArraySet);
                 Debug.Assert(value == null || RuntimeImports.AreTypesAssignable(value.EETypePtr, pElementEEType));
 
-                int elementSize = ElementSize;
+                nuint elementSize = ElementSize;
                 fixed (IntPtr* pThisArray = &m_pEEType)
                 {
-                    byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (index * elementSize);
+                    byte* pElement = Array.GetAddrOfPinnedArrayFromEETypeField(pThisArray) + (nuint)index * elementSize;
                     RuntimeImports.RhUnbox(value, pElement, pElementEEType);
                 }
             }
@@ -2224,12 +2230,11 @@ namespace System
         //
         // Return storage size of an individual element in bytes.
         //
-        internal int ElementSize
+        internal nuint ElementSize
         {
             get
             {
-                ushort elementSize = EETypePtr.ComponentSize;
-                return elementSize;
+                return EETypePtr.ComponentSize;
             }
         }
 

@@ -7,6 +7,12 @@ using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     public static class Buffer
@@ -30,9 +36,8 @@ namespace System
 
             RuntimeImports.RhCorElementTypeInfo srcCorElementTypeInfo = src.ElementEEType.CorElementTypeInfo;
 
-            // Should use UIntPtr rather than ulong but UIntPtr doesn't support the operations we need.
-            ulong uSrcLen = ((ulong)(src.Length)) << srcCorElementTypeInfo.Log2OfSize;
-            ulong uDstLen = uSrcLen;
+            nuint uSrcLen = ((nuint)src.Length) << srcCorElementTypeInfo.Log2OfSize;
+            nuint uDstLen = uSrcLen;
 
             if (!srcCorElementTypeInfo.IsPrimitive)
                 throw new ArgumentException(SR.Arg_MustBePrimArray, "src");
@@ -42,7 +47,7 @@ namespace System
                 RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
                 if (!dstCorElementTypeInfo.IsPrimitive)
                     throw new ArgumentException(SR.Arg_MustBePrimArray, "dst");
-                uDstLen = ((ulong)(dst.Length)) << dstCorElementTypeInfo.Log2OfSize;
+                uDstLen = ((nuint)dst.Length) << dstCorElementTypeInfo.Log2OfSize;
             }
 
             if (srcOffset < 0)
@@ -52,13 +57,13 @@ namespace System
             if (count < 0)
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_MustBeNonNegInt32, "count");
 
-            ulong uCount = (ulong)count;
-            if (uSrcLen < ((ulong)srcOffset) + uCount)
+            nuint uCount = (nuint)count;
+            if (uSrcLen < ((nuint)srcOffset) + uCount)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (uDstLen < ((ulong)dstOffset) + uCount)
+            if (uDstLen < ((nuint)dstOffset) + uCount)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            if (count == 0)
+            if (uCount == 0)
                 return;
 
             fixed (IntPtr* pSrcObj = &src.m_pEEType, pDstObj = &dst.m_pEEType)
@@ -66,7 +71,7 @@ namespace System
                 byte* pSrc = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pSrcObj) + srcOffset;
                 byte* pDst = (byte*)Array.GetAddrOfPinnedArrayFromEETypeField(pDstObj) + dstOffset;
 
-                RuntimeImports.memmove(pDst, pSrc, count);
+                Buffer.Memmove(pDst, pSrc, uCount);
             }
         }
 #endif
@@ -166,7 +171,7 @@ namespace System
 
         private static unsafe int _ByteLength(Array array)
         {
-            return array.Length * array.EETypePtr.ComponentSize;
+            return checked(array.Length * array.EETypePtr.ComponentSize);
         }
 
         public static unsafe byte GetByte(Array array, int index)
@@ -222,11 +227,8 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException("sourceBytesToCopy");
             }
-#if BIT64
-            Memmove((byte*)destination, (byte*)source, checked((ulong)sourceBytesToCopy));
-#else
-            Memmove((byte*)destination, (byte*)source, checked((uint)sourceBytesToCopy));
-#endif // BIT64
+
+            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
         // The attributes on this method are chosen for best JIT performance. 
@@ -240,36 +242,20 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException("sourceBytesToCopy");
             }
-#if BIT64
-            Memmove((byte*)destination, (byte*)source, sourceBytesToCopy);
-#else
-            Memmove((byte*)destination, (byte*)source, checked((uint)sourceBytesToCopy));
-#endif // BIT64
+
+            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
-        // This method has different signature for x64 and other platforms and is done for performance reasons.
         [System.Security.SecurityCritical]
-#if BIT64
-        internal unsafe static void Memmove(byte* dest, byte* src, ulong len)
-#else
-        internal unsafe static void Memmove(byte* dest, byte* src, uint len)
-#endif
+        internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping and the copy needs to be performed backwards
             // This check can produce false positives for lengths greater than Int32.MaxInt. It is fine because we want to use PInvoke path for the large lengths anyway.
-#if BIT64
-            if ((ulong)dest - (ulong)src < len)
+            if ((nuint)dest - (nuint)src < len)
             {
                 _Memmove(dest, src, len);
                 return;
             }
-#else
-            if (((uint)dest - (uint)src) < len)
-            {
-                _Memmove(dest, src, len);
-                return;
-            }
-#endif
 
             // TODO-CORERT: re-enable this once we can handle the relocs for JIT code for large switch blocks
 #if !CORERT
@@ -436,11 +422,7 @@ namespace System
             }
 #endif
 
-#if BIT64
-            ulong count = len / 16;
-#else
-            uint count = len / 16;
-#endif
+            nuint count = len / 16;
             while (count > 0)
             {
 #if BIT64
@@ -488,11 +470,7 @@ namespace System
         // with P/Invoke prolog/epilog.
         [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-#if BIT64
-        private unsafe static void _Memmove(byte* dest, byte* src, ulong len)
-#else
-        private unsafe static void _Memmove(byte* dest, byte* src, uint len)
-#endif
+        private unsafe static void _Memmove(byte* dest, byte* src, nuint len)
         {
             RuntimeImports.memmove(dest, src, len);
         }

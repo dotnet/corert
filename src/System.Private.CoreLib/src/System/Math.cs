@@ -36,22 +36,19 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Acos(double d)
         {
-            double result = RuntimeImports.acos(d);
-            return result;
+            return RuntimeImports.acos(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Asin(double d)
         {
-            double result = RuntimeImports.asin(d);
-            return result;
+            return RuntimeImports.asin(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Atan(double d)
         {
-            double result = RuntimeImports.atan(d);
-            return result;
+            return RuntimeImports.atan(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -59,8 +56,7 @@ namespace System
         {
             if (Double.IsInfinity(x) && Double.IsInfinity(y))
                 return Double.NaN;
-            double result = RuntimeImports.atan2(y, x);
-            return result;
+            return RuntimeImports.atan2(y, x);
         }
 
         public static Decimal Ceiling(Decimal d)
@@ -71,24 +67,19 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Ceiling(double a)
         {
-            double result = RuntimeImports.ceil(a);
-            return result;
+            return RuntimeImports.ceil(a);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Cos(double d)
         {
-            double result = RuntimeImports.cos(d);
-            return result;
+            return RuntimeImports.cos(d);
         }
-
-
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Cosh(double value)
         {
-            double result = RuntimeImports.cosh(value);
-            return result;
+            return RuntimeImports.cosh(value);
         }
 
         public static Decimal Floor(Decimal d)
@@ -99,8 +90,7 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Floor(double d)
         {
-            double result = RuntimeImports.floor(d);
-            return result;
+            return RuntimeImports.floor(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -138,29 +128,25 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Sin(double a)
         {
-            double result = RuntimeImports.sin(a);
-            return result;
+            return RuntimeImports.sin(a);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Tan(double a)
         {
-            double result = RuntimeImports.tan(a);
-            return result;
+            return RuntimeImports.tan(a);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Sinh(double value)
         {
-            double result = RuntimeImports.sinh(value);
-            return result;
+            return RuntimeImports.sinh(value);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Tanh(double value)
         {
-            double result = RuntimeImports.tanh(value);
-            return result;
+            return RuntimeImports.tanh(value);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -253,22 +239,19 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Sqrt(double d)
         {
-            double result = RuntimeImports.sqrt(d);
-            return result;
+            return RuntimeImports.sqrt(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Log(double d)
         {
-            double result = RuntimeImports.log(d);
-            return result;
+            return RuntimeImports.log(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static double Log10(double d)
         {
-            double result = RuntimeImports.log10(d);
-            return result;
+            return RuntimeImports.log10(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -280,8 +263,7 @@ namespace System
                     return +0.0;
                 return d;
             }
-            double result = RuntimeImports.exp(d);
-            return result;
+            return RuntimeImports.exp(d);
         }
 
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -304,8 +286,7 @@ namespace System
                 }
             }
 
-            double result = RuntimeImports.pow(x, y);
-            return result;
+            return RuntimeImports.pow(x, y);
         }
 
 
