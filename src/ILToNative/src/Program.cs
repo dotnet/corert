@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -141,7 +142,21 @@ namespace ILToNative
             if (_outputPath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
-            _compilerTypeSystemContext = new CompilerTypeSystemContext(new TargetDetails(TargetArchitecture.X64));
+            TargetOS targetOS;
+#if FXCORE
+            // We could offer this as a command line option, but then we also need to
+            // load a different RyuJIT, so this is a future nice to have...
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                targetOS = TargetOS.Windows;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                targetOS = TargetOS.Linux;
+            else
+                throw new NotImplementedException();
+#else
+            targetOS = TargetOS.Windows;
+#endif
+
+            _compilerTypeSystemContext = new CompilerTypeSystemContext(new TargetDetails(TargetArchitecture.X64, targetOS));
             _compilerTypeSystemContext.InputFilePaths = _inputFilePaths;
             _compilerTypeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 

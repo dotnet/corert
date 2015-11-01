@@ -11,9 +11,11 @@ namespace ILToNative.DependencyAnalysis.X64
         public X64Emitter(NodeFactory factory)
         {
             Builder = new ObjectDataBuilder(factory);
+            TargetRegister = new TargetRegisterMap(factory.Target.OperatingSystem);
         }
 
         public ObjectDataBuilder Builder;
+        public TargetRegisterMap TargetRegister;
 
         // Assembly stub creation api. TBD, actually make this general purpose
         public void EmitMOV(Register regDst, ref AddrMode memory)

@@ -6,6 +6,9 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Specifies the target CPU architecture.
+    /// </summary>
     public enum TargetArchitecture
     {
         Unknown,
@@ -14,13 +17,43 @@ namespace Internal.TypeSystem
         X86,
     }
 
+    /// <summary>
+    /// Specifies the target ABI.
+    /// </summary>
+    public enum TargetOS
+    {
+        Unknown,
+        Windows,
+        Linux,
+        OSX,
+        FreeBSD,
+    }
+
+    /// <summary>
+    /// Represents various details about the compilation target that affect
+    /// layout, padding, allocations, or ABI.
+    /// </summary>
     public class TargetDetails
     {
+        /// <summary>
+        /// Gets the target CPU architecture.
+        /// </summary>
         public TargetArchitecture Architecture
         {
             get; private set;
         }
 
+        /// <summary>
+        /// Gets the target ABI.
+        /// </summary>
+        public TargetOS OperatingSystem
+        {
+            get; private set;
+        }
+
+        /// <summary>
+        /// Gets the size of a pointer for the target of the compilation.
+        /// </summary>
         public int PointerSize
         {
             get
@@ -38,6 +71,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the default field packing size.
+        /// </summary>
         public int DefaultPackingSize
         {
             get
@@ -47,6 +83,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the minimum required method alignment.
+        /// </summary>
         public int MinimumFunctionAlignment
         {
             get
@@ -56,11 +95,15 @@ namespace Internal.TypeSystem
             }
         }
 
-        public TargetDetails(TargetArchitecture architecture)
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS)
         {
             Architecture = architecture;
+            OperatingSystem = targetOS;
         }
 
+        /// <summary>
+        /// Retrieves the size of a well known type.
+        /// </summary>
         public int GetWellKnownTypeSize(MetadataType type)
         {
             switch (type.Category)
@@ -97,6 +140,9 @@ namespace Internal.TypeSystem
             throw new InvalidOperationException();
         }
 
+        /// <summary>
+        /// Retrieves the alignment required by a well known type.
+        /// </summary>
         public int GetWellKnownTypeAlignment(MetadataType type)
         {
             // Size == Alignment for all platforms.
