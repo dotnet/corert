@@ -613,7 +613,7 @@ namespace System.Runtime
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
         internal static unsafe extern void _ecvt_s(byte* buffer, int sizeInBytes, double value, int count, int* dec, int* sign);
 
-#if WIN64
+#if BIT64
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
         internal static unsafe extern void memmove(byte* dmem, byte* smem, ulong size);
 #else
@@ -749,7 +749,7 @@ namespace System.Runtime
             private ushort _widenMask;
 
 
-#if WIN64
+#if BIT64
             const byte log2PointerSize = 3;
 #else
             private const byte log2PointerSize = 2;

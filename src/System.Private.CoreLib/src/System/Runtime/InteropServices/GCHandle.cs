@@ -91,10 +91,10 @@ namespace System.Runtime.InteropServices
             // Free the handle if it hasn't already been freed.
             if (handle != default(IntPtr) && Interlocked.CompareExchange(ref _handle, default(IntPtr), handle) == handle)
             {
-#if WIN32
-                RuntimeImports.RhHandleFree((IntPtr)(((int)handle) & ~1));
-#else
+#if BIT64
                 RuntimeImports.RhHandleFree((IntPtr)(((long)handle) & ~1L));
+#else
+                RuntimeImports.RhHandleFree((IntPtr)(((int)handle) & ~1));
 #endif
             }
             else
@@ -250,28 +250,28 @@ namespace System.Runtime.InteropServices
 
         internal IntPtr GetHandleValue()
         {
-#if WIN32
-            return new IntPtr(((int)_handle) & ~1);
-#else
+#if BIT64
             return new IntPtr(((long)_handle) & ~1L);
+#else
+            return new IntPtr(((int)_handle) & ~1);
 #endif
         }
 
         internal bool IsPinned()
         {
-#if WIN32
-            return (((int)_handle) & 1) != 0;
-#else
+#if BIT64
             return (((long)_handle) & 1) != 0;
+#else
+            return (((int)_handle) & 1) != 0;
 #endif
         }
 
         internal void SetIsPinned()
         {
-#if WIN32
-            _handle = new IntPtr(((int)_handle) | 1);
-#else
+#if BIT64
             _handle = new IntPtr(((long)_handle) | 1L);
+#else
+            _handle = new IntPtr(((int)_handle) | 1);
 #endif
         }
 

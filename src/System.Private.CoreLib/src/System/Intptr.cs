@@ -31,10 +31,10 @@ namespace System
         [NonVersionable]
         public unsafe IntPtr(int value)
         {
-#if WIN32
-            _value = (void *)value;
-#else
+#if BIT64
             _value = (void*)(long)value;
+#else
+            _value = (void*)value;
 #endif
         }
 
@@ -42,10 +42,10 @@ namespace System
         [NonVersionable]
         public unsafe IntPtr(long value)
         {
-#if WIN32
-            _value = (void *)checked((int)value);
-#else
+#if BIT64
             _value = (void*)value;
+#else
+            _value = (void*)checked((int)value);
 #endif
         }
 
@@ -70,11 +70,11 @@ namespace System
         [NonVersionable]
         public unsafe int ToInt32()
         {
-#if WIN32
-            return (int)_value;
-#else
+#if BIT64
             long l = (long)_value;
             return checked((int)l);
+#else
+            return (int)_value;
 #endif
         }
 
@@ -82,10 +82,10 @@ namespace System
         [NonVersionable]
         public unsafe long ToInt64()
         {
-#if WIN32
-            return (long)(int)_value;
-#else
+#if BIT64
             return (long)_value;
+#else
+            return (long)(int)_value;
 #endif
         }
 
@@ -124,11 +124,11 @@ namespace System
         [NonVersionable]
         public unsafe static explicit operator int (IntPtr value)
         {
-#if WIN32
-            return (int)value._value;
-#else
+#if BIT64
             long l = (long)value._value;
             return checked((int)l);
+#else
+            return (int)value._value;
 #endif
         }
 
@@ -136,10 +136,10 @@ namespace System
         [NonVersionable]
         public unsafe static explicit operator long (IntPtr value)
         {
-#if WIN32
-            return (long)(int)value._value;
-#else
+#if BIT64
             return (long)value._value;
+#else
+            return (long)(int)value._value;
 #endif
         }
 
@@ -172,10 +172,10 @@ namespace System
         [NonVersionable]
         public unsafe static IntPtr operator +(IntPtr pointer, int offset)
         {
-#if WIN32
-            return new IntPtr((int)pointer._value + offset);
-#else
+#if BIT64
             return new IntPtr((long)pointer._value + offset);
+#else
+            return new IntPtr((int)pointer._value + offset);
 #endif
         }
 
@@ -189,10 +189,10 @@ namespace System
         [NonVersionable]
         public unsafe static IntPtr operator -(IntPtr pointer, int offset)
         {
-#if WIN32
-            return new IntPtr((int)pointer._value - offset);
-#else
+#if BIT64
             return new IntPtr((long)pointer._value - offset);
+#else
+            return new IntPtr((int)pointer._value - offset);
 #endif
         }
 
@@ -202,29 +202,29 @@ namespace System
             [NonVersionable]
             get
             {
-#if WIN32
-                return 4;
-#else
+#if BIT64
                 return 8;
+#else
+                return 4;
 #endif
             }
         }
 
         public unsafe override String ToString()
         {
-#if WIN32
-            return ((int)_value).ToString(FormatProvider.InvariantCulture);
-#else
+#if BIT64
             return ((long)_value).ToString(FormatProvider.InvariantCulture);
+#else
+            return ((int)_value).ToString(FormatProvider.InvariantCulture);
 #endif
         }
 
         public unsafe String ToString(String format)
         {
-#if WIN32
-            return ((int)_value).ToString(format, FormatProvider.InvariantCulture);
-#else
+#if BIT64
             return ((long)_value).ToString(format, FormatProvider.InvariantCulture);
+#else
+            return ((int)_value).ToString(format, FormatProvider.InvariantCulture);
 #endif
         }
 
