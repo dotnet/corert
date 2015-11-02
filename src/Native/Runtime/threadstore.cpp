@@ -470,6 +470,7 @@ GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
 #endif // !FEATURE_DECLSPEC_THREAD
 
 #ifndef DACCESS_COMPILE
+#ifndef FEATURE_DECLSPEC_THREAD
 // We must prevent the linker from removing the unused global variable 
 // that DAC will be looking at to find _tls_index.
 #ifdef _WIN64
@@ -477,6 +478,7 @@ GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
 #else
 #pragma comment(linker, "/INCLUDE:?p_tls_index@@3PAIA")
 #endif
+#endif // !FEATURE_DECLSPEC_THREAD
 
 #else
 #if defined(_WIN64)
