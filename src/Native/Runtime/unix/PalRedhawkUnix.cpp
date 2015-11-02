@@ -55,6 +55,11 @@
 #include <mach/mach_port.h>
 #endif // __APPLE__
 
+#if HAVE_MACH_ABSOLUTE_TIME
+#include <mach/mach_time.h>
+static mach_timebase_info_data_t s_TimebaseInfo;
+#endif
+
 #ifdef USE_PORTABLE_HELPERS
 #define assert(expr) ASSERT(expr)
 #endif
@@ -416,6 +421,15 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     if (!PalQueryProcessorTopology())
         return false;
 
+#if HAVE_MACH_ABSOLUTE_TIME
+    kern_return_t machRet;
+    if ((machRet = mach_timebase_info(&s_TimebaseInfo)) != KERN_SUCCESS)
+    {
+        ASSERT_UNCONDITIONALLY("mach_timebase_info() failed\n");
+        return false;
+    }
+#endif
+
     return true;
 }
 
@@ -574,9 +588,72 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartFinalizerThread(_In_ Backgr
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE) != NULL;
 }
 
+static const int tccSecondsToMilliSeconds = 1000;
+static const int tccSecondsToMicroSeconds = 1000000;
+static const int tccMilliSecondsToMicroSeconds = 1000;
+static const int tccMilliSecondsToNanoSeconds = 1000000;
+
+// Returns a 64-bit tick count with a millisecond resolution. It tries its best
+// to return monotonically increasing counts and avoid being affected by changes
+// to the system clock (either due to drift or due to explicit changes to system
+// time).
+REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
+{
+    UInt64 retval = 0;
+
+#if HAVE_CLOCK_MONOTONIC
+    {
+        struct timespec ts;
+        if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+        {
+            ASSERT_UNCONDITIONALLY("clock_gettime(CLOCK_MONOTONIC) failed\n");
+            goto EXIT;
+        }
+        retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
+    }
+#elif HAVE_MACH_ABSOLUTE_TIME
+    {
+        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
+        if (s_TimebaseInfo.denom == 0)
+        {
+            ASSERT_UNCONDITIONALLY("s_TimebaseInfo is uninitialized.\n");
+            goto EXIT;
+        }
+        retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMilliSecondsToNanoSeconds;
+    }
+#elif HAVE_GETHRTIME
+    {
+        retval = (UInt64)(gethrtime() / tccMilliSecondsToNanoSeconds);
+    }
+#elif HAVE_READ_REAL_TIME
+    {
+        timebasestruct_t tb;
+        read_real_time(&tb, TIMEBASE_SZ);
+        if (time_base_to_time(&tb, TIMEBASE_SZ) != 0)
+        {
+            ASSERT_UNCONDITIONALLY("time_base_to_time() failed; errno is %d (%s)\n");
+            goto EXIT;
+        }
+        retval = (tb.tb_high * tccSecondsToMilliSeconds)+(tb.tb_low / tccMilliSecondsToNanoSeconds);
+    }
+#else
+    {
+        struct timeval tv;    
+        if (gettimeofday(&tv, NULL) == -1)
+        {
+            ASSERT_UNCONDITIONALLY("gettimeofday() failed; errno is %d (%s)\n");
+            goto EXIT;
+        }
+        retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
+    }
+#endif // HAVE_CLOCK_MONOTONIC 
+EXIT:    
+    return retval;    
+}
+
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetTickCount()
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    return (uint32_t)GetTickCount64();
 }
 
 #if 0
@@ -594,17 +671,19 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ wchar_t pFileName,
 REDHAWK_PALEXPORT _Success_(return == 0)
 uint32_t REDHAWK_PALAPI PalGetWriteWatch(_In_ uint32_t flags, _In_ void* pBaseAddress, _In_ size_t regionSize, _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, _Inout_opt_ uintptr_t* pCount, _Out_opt_ uint32_t* pGranularity)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // There is no write watching feature available on Unix other than a possibility to emulate 
+    // it using read only pages and page fault handler. 
+    *pAddresses = NULL;
+    *pCount = 0;
+    // Return non-zero value as an indicator of failure
+    return 1;
 }
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, size_t regionSize)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateLowMemoryNotification()
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // There is no write watching feature available on Unix.
+    // Return non-zero value as an indicator of failure. 
+    return 1;
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
@@ -1322,11 +1401,16 @@ extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UI
 
 typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
 
+extern "C" void PalRegisterThreadExitCallback(PFLS_CALLBACK_FUNCTION callback)
+{
+
+}
+
 extern "C" UInt32 FlsAlloc(PFLS_CALLBACK_FUNCTION arg1)
 {
     // UNIXTODO: The FLS stuff needs to be abstracted, the only usage of the FLS is to get a callback
     // when a thread is terminating.
-    return 1;
+    return 0;
 }
 
 __thread void* flsValue;
@@ -1357,18 +1441,6 @@ extern "C" UInt32_BOOL IsDebuggerPresent()
 {
     // UNIXTODO: Implement this function
     return UInt32_FALSE;
-}
-
-extern "C" HANDLE LoadLibraryExW(const WCHAR * arg1, HANDLE arg2, UInt32 arg3)
-{
-    // Refactor assert.h to not to use it explicitly
-    PORTABILITY_ASSERT("UNIXTODO: Remove this function");
-}
-
-extern "C" void* GetProcAddress(HANDLE arg1, const char * arg2)
-{
-    // Refactor assert.h to not to use it explicitly
-    PORTABILITY_ASSERT("UNIXTODO: Remove this function");
 }
 
 extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)
