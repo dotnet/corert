@@ -562,7 +562,7 @@ inline void EEType::set_RelatedParameterType(EEType * pParameterType)
         // Do we need a alignment for value types?
         (pMT->IsValueTypeOrEnum() &&
             (pMT->GetClass()->GetAlignmentRequirement() != POINTER_SIZE)) ||
-#ifdef TARGET_THUMB2
+#ifdef TARGET_ARM
         // Do we need a rare flags field for a class or structure that requires 64-bit alignment on ARM?
         (pMT->GetClass()->GetAlignmentRequirement() > 4) ||
         (pMT->IsArray() && pElementMT->IsValueTypeOrEnum() && (pElementMT->GetClass()->GetAlignmentRequirement() > 4)) ||

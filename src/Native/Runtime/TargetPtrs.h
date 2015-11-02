@@ -12,7 +12,7 @@
 typedef UInt64 UIntTarget;
 #elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
-#elif defined(TARGET_THUMB2)
+#elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
@@ -82,7 +82,7 @@ typedef TargetPtr<struct StaticGcDesc>          TgtPTR_StaticGcDesc;
 typedef UInt64 UIntTarget;
 #elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
-#elif defined(TARGET_THUMB2)
+#elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
@@ -107,7 +107,7 @@ typedef SPTR(struct StaticGcDesc) PTR_StaticGcDesc;
 typedef UInt64 UIntTarget;
 #elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
-#elif defined(TARGET_THUMB2)
+#elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
