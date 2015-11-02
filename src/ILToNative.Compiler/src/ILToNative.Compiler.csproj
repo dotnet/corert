@@ -54,6 +54,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />

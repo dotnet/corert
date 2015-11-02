@@ -71,12 +71,17 @@ copy /y  %NUPKG_PATH% %NUPKG_UNPACK_DIR% > nul
 echo.
 if "%CORERT_EXT_PATH%"=="" set CORERT_EXT_PATH=..\..\corert.external
 if "%PROTOJIT_PATH%"=="" set PROTOJIT_PATH=%CORERT_EXT_PATH%\Compiler\protojit.dll
+if "%OBJWRITER_PATH%"=="" set OBJWRITER_PATH=%CORERT_EXT_PATH%\Compiler\objwriter.dll
 if not exist "%PROTOJIT_PATH%" goto :NoCoreRTExt
+if not exist "%OBJWRITER_PATH%" goto :NoCoreRTExt
 if not exist "%CLANG_EXE%" goto :NoClang
 if not exist "%TOOLCHAIN_DIR%\ILToNative.exe" goto :NoILToNative
 
 echo Installing JIT from "%PROTOJIT_PATH%" to "%TOOLCHAIN_DIR%"
 copy /y "%PROTOJIT_PATH%" "%TOOLCHAIN_DIR%" > nul
+
+echo Installing Object Writer from "%OBJWRITER_PATH%" to "%TOOLCHAIN_DIR%"
+copy /y "%OBJWRITER_PATH%" "%TOOLCHAIN_DIR%" > nul
 
 setlocal enabledelayedexpansion
 set __VSProductVersion=140
@@ -110,6 +115,7 @@ goto :eof
 
 :NoCoreRTExt
     echo corert.external path not found %CORERT_EXT_PATH%, aborting test run.
+    echo set environment variable CORERT_EXT_PATH to the latest corert external path.
     goto :eof
 
 :NoNuPkg
@@ -134,10 +140,8 @@ goto :eof
 
     echo.
     echo Compiling ILToNative !SOURCE_FILE!.exe
-    %TOOLCHAIN_DIR%\ILToNative.exe -in !SOURCE_FILE!.exe -r %CORERT_EXT_PATH%\Runtime\*.dll -out !SOURCE_FILE!.S -r %TOOLCHAIN_DIR%\sdk\System.Private.Corelib.dll
+    %TOOLCHAIN_DIR%\ILToNative.exe -in !SOURCE_FILE!.exe -r %CORERT_EXT_PATH%\Runtime\*.dll -out !SOURCE_FILE!.obj -r %TOOLCHAIN_DIR%\sdk\System.Private.Corelib.dll
     endlocal
-
-    "%CLANG_EXE%" -c !SOURCE_FILE!.S -o !SOURCE_FILE!.obj
 
     link.exe  /ERRORREPORT:PROMPT !SOURCE_FILE!.obj /OUT:"!SOURCE_FILE!.compiled.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"!SOURCE_FILE!.lib" /MACHINE:X64 ..\bin\Product\%__BuildStr%\lib\Runtime.lib ..\bin\Product\%__BuildStr%\lib\reproNative.lib %MSVCRT_LIB% 
 
