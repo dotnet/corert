@@ -88,10 +88,6 @@ namespace ILToNative
                     _options.NoLineNumbers = true;
                     break;
 
-                case "asm":
-                    _options.EmitAsm = true;
-                    break;
-
                 default:
                     throw new CommandLineException("Unrecognized option: " + parser.GetCurrentOption());
                 }
@@ -126,7 +122,7 @@ namespace ILToNative
             Compilation compilation = new Compilation(_compilerTypeSystemContext, _options);
             compilation.Log = Console.Out;
             compilation.OutputPath = _outputPath;
-            if (_options.EmitAsm || _options.IsCppCodeGen)
+            if (_options.IsCppCodeGen)
             {
                 // Don't set Out when using object writer which is handled by LLVM.
                 compilation.Out = new StreamWriter(File.Create(_outputPath));

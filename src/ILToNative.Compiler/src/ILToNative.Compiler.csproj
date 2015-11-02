@@ -40,7 +40,6 @@
     <Compile Include="Compiler\DependencyAnalysis\StringDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\AsmWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
