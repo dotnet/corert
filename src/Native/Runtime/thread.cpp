@@ -404,8 +404,6 @@ void Thread::Destroy()
     // so that we can validate, in our DLL_THREAD_DETACH handler, that the thread was already destroyed at that
     // point.
     SetDetached();
-
-    // @TODO: !FEATURE_DECLSPEC_THREAD: delete TLS buffer
 }
 
 void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)

@@ -45,10 +45,6 @@ HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance);
 bool RtuInitializeVSD();
 #endif
 
-#ifndef FEATURE_DECLSPEC_THREAD
-EXTERN_C UInt32 _tls_index;
-#endif // FEATURE_DECLSPEC_THREAD
-
 UInt32 _fls_index = FLS_OUT_OF_INDEXES;
 
 
@@ -95,25 +91,6 @@ bool InitDLL(HANDLE hPalInstance)
     if (NULL == hRuntimeInstance)
         return false;
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
-
-#ifdef FEATURE_DECLSPEC_THREAD
-#if !defined(MODERN_OS) && !defined(APP_LOCAL_RUNTIME)
-    OSVERSIONINFOEXW osvi;
-    osvi.dwOSVersionInfoSize = sizeof(osvi);
-    if (!PalGetVersionExW(&osvi))
-        return false;
-
-    if (osvi.dwMajorVersion < 6)
-    {
-        ASSERT_MSG(osvi.dwMajorVersion >= 6, "NT version 6 or greater is required.  (i.e. Vista or Server 2008)");
-        return false;
-    }
-#endif // !MODERN_OS && !APP_LOCAL_RUNTIME
-#else
-    _tls_index = PalTlsAlloc();
-    if (_tls_index > TLS_NUM_INLINE_SLOTS)
-        return false;
-#endif // FEATURE_DECLSPEC_THREAD
 
     _fls_index = PalFlsAlloc(FiberDetach);
     if (_fls_index == FLS_OUT_OF_INDEXES)

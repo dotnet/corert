@@ -132,14 +132,9 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     // we want to avoid at construction time because the loader lock is held then.
     Thread * pAttachingThread = RawGetCurrentThread();
 
-#ifndef FEATURE_DECLSPEC_THREAD
-    if (pAttachingThread == NULL)
-        pAttachingThread = (Thread *)CreateCurrentThreadBuffer();
-#else
     // On CHK build, validate that our GetThread assembly implementation matches the C++ implementation using
     // TLS.
     CreateCurrentThreadBuffer();
-#endif
 
     ASSERT(_fls_index != FLS_OUT_OF_INDEXES);
     Thread* pThreadFromCurrentFiber = (Thread*)PalFlsGetValue(_fls_index);
@@ -203,10 +198,6 @@ void ThreadStore::DetachCurrentThreadIfHomeFiber()
 
     // The thread may not have been initialized because it may never have run managed code before.
     Thread * pDetachingThread = RawGetCurrentThread();
-#ifndef FEATURE_DECLSPEC_THREAD
-    if (NULL == pDetachingThread)
-        return;
-#endif // FEATURE_DECLSPEC_THREAD
 
     ASSERT(_fls_index != FLS_OUT_OF_INDEXES);
     Thread* pThreadFromCurrentFiber = (Thread*)PalFlsGetValue(_fls_index);
@@ -365,7 +356,7 @@ void ThreadStore::WaitForSuspendComplete()
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
 EXTERN_C Thread * FASTCALL RhpGetThread();
-#ifdef FEATURE_DECLSPEC_THREAD
+
 DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 { 
     { 0 },                              // m_rgbAllocContextBuffer
@@ -381,61 +372,23 @@ DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     0,                                  // m_pStackHigh
     0,                                  // m_uPalThreadId
 };
-#else // FEATURE_DECLSPEC_THREAD
-EXTERN_C UInt32 _tls_index;
-
-struct TlsSectionStruct
-{
-    TlsSectionStruct()
-    {
-        // The codegen for __declspec(thread) has two indirections and we'd like to maintain that here, so
-        // we use the slack space in this structure as a place to simluate the ThreadLocalStoragePointer of
-        // the TEB.
-        ThreadLocalStoragePointer = this;
-    }
-
-    void *          ThreadLocalStoragePointer;  // simulate __declspec(thread)
-    UInt32          padding;                    // make the offset of tls_CurrentThread match between mechanisms
-    ThreadBuffer    tls_CurrentThread;
-};
-#endif // FEATURE_DECLSPEC_THREAD
 
 // static
 void * ThreadStore::CreateCurrentThreadBuffer()
 {
-    void * pvBuffer;
+    void * pvBuffer = &tls_CurrentThread;
 
-#ifdef FEATURE_DECLSPEC_THREAD
-
-    pvBuffer = &tls_CurrentThread;
-
-#else // FEATURE_DECLSPEC_THREAD
-
-    ASSERT(_tls_index < 64);
-    ASSERT(NULL == PalTlsGetValue(_tls_index));
-
-    TlsSectionStruct * pTlsBlock = new (nothrow) TlsSectionStruct();
-    ASSERT(NULL != pTlsBlock);   // we require NT6's __declspec(thread) support for reliability
-
-    PalTlsSetValue(_tls_index, pTlsBlock);
-
-    pvBuffer = &pTlsBlock->tls_CurrentThread;
-
-#endif // FEATURE_DECLSPEC_THREAD
 #if !defined(USE_PORTABLE_HELPERS) // No assembly routine defined to verify against.
     ASSERT(RhpGetThread() == pvBuffer);
 #endif // !defined(USE_PORTABLE_HELPERS)
+
     return pvBuffer;
 }
 
 // static
 Thread * ThreadStore::RawGetCurrentThread()
 {
-#ifdef FEATURE_DECLSPEC_THREAD
     return (Thread *) &tls_CurrentThread;
-#else
-    return RhpGetThread();
-#endif
 }
 
 // static
@@ -460,27 +413,8 @@ Thread * ThreadStore::GetCurrentThreadIfAvailable()
 }
 #endif // !DACCESS_COMPILE
 
-#ifndef FEATURE_DECLSPEC_THREAD
-// Keep a global variable in the target process which contains
-// the address of _tls_index.  This is the breadcrumb needed
-// by DAC to read _tls_index since we don't control the 
-// declaration of _tls_index directly.
-EXTERN_C UInt32 _tls_index;
-GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
-#endif // !FEATURE_DECLSPEC_THREAD
+#ifdef DACCESS_COMPILE
 
-#ifndef DACCESS_COMPILE
-#ifndef FEATURE_DECLSPEC_THREAD
-// We must prevent the linker from removing the unused global variable 
-// that DAC will be looking at to find _tls_index.
-#ifdef _WIN64
-#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PEAIEA")
-#else
-#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PAIA")
-#endif
-#endif // !FEATURE_DECLSPEC_THREAD
-
-#else
 #if defined(_WIN64)
 #define OFFSETOF__TLS__tls_CurrentThread            0x20
 #elif defined(_ARM_)
@@ -511,7 +445,7 @@ PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
     return (PTR_Thread)(pOurTls + OFFSETOF__TLS__tls_CurrentThread);
 }
 
-#endif
+#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize);

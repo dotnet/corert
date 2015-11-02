@@ -209,8 +209,6 @@ PUBLIC Name
         endm
 
 
-ifdef FEATURE_DECLSPEC_THREAD
-
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
@@ -237,18 +235,6 @@ endif
     add         destReg, OFFSETOF__TLS__tls_CurrentThread
 
 endm
-
-else ;; FEATURE_DECLSPEC_THREAD
-
-;;
-;; TlsAlloc version
-;;
-INLINE_GETTHREAD macro destReg, trashReg
-    ;; NYI
-    int 3
-endm
-
-endif ;; FEATURE_DECLSPEC_THREAD
 
 INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2
         ;;
