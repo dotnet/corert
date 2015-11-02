@@ -26,6 +26,7 @@ namespace ILToNative
         public bool NoLineNumbers;
         public string DgmlLog;
         public bool FullLog;
+        public bool EmitAsm;
     }
 
     public partial class Compilation
@@ -70,6 +71,12 @@ namespace ILToNative
         }
 
         public TextWriter Log
+        {
+            get;
+            set;
+        }
+
+        public string OutputPath
         {
             get;
             set;
@@ -288,7 +295,14 @@ namespace ILToNative
 
                 _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
                 var nodes = _dependencyGraph.MarkedNodeList;
-                AsmWriter.EmitAsm(Out, nodes, rootNode, _nodeFactory);
+                if (_options.EmitAsm)
+                {
+                    AsmWriter.EmitAsm(Out, nodes, rootNode, _nodeFactory);
+                }
+                else
+                {
+                    ObjectWriter.EmitObject(OutputPath, nodes, rootNode, _nodeFactory);
+                }
 
                 if (_options.DgmlLog != null)
                 {

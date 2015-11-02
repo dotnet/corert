@@ -75,8 +75,8 @@ namespace ILToNative.DependencyAnalysis
                     // TODO: Remove if and when entry point is directly emitted.
                     if (node == mainMethodNode)
                     {
-                        output.WriteLine(".global __managed__Main");
-                        output.WriteLine("__managed__Main:");
+                        output.WriteLine(".global {0}", ObjectWriter.MainEntryNodeName);
+                        output.WriteLine("{0}:", ObjectWriter.MainEntryNodeName);
                     }
                 }
             }
