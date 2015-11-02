@@ -222,18 +222,10 @@ namespace ILToNative.DependencyAnalysis
             return _readOnlyDataBlobs.GetOrAdd(new Tuple<string, byte[], int>(name, blobData, alignment));
         }
 
-        private BlobNode _writeBarrierHelper = new BlobNode("WriteBarrierWorkaround", "text", new byte[] { 0x48, 0x89, 0x11, 0xC3 }, 16);
         private NodeCache<string, ExternSymbolNode> _externSymbols;
 
         public ISymbolNode ExternSymbol(string name)
         {
-            // We can't call the real C++ WriteBarrier implementation because that one expects
-            // a register spill zone. JIT doesn't generate a spill zone before the call.
-            if (name == "WriteBarrier")
-            {
-                return _writeBarrierHelper;
-            }
-
             return _externSymbols.GetOrAdd(name);
         }
 

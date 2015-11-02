@@ -404,7 +404,6 @@ EXTERN PALDEBUGBREAK                            : PROC
 EXTERN RhpPInvokeWaitEx                         : PROC
 EXTERN RhpPInvokeReturnWaitEx                   : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
-EXTERN CanUnloadModule                          : PROC
 EXTERN RhpPublishObject                         : PROC
 EXTERN RhpCalculateStackTraceWorker             : PROC
 ifdef FEATURE_CLR_EH

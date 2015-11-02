@@ -237,6 +237,11 @@ WriteBarrierFunctionAvLocation SETS "RhpCheckedAssignRefAvLocation":cc:"$REFREG"
 
         EXPORT $WriteBarrierFunction
 $WriteBarrierFunction
+    
+        ;; Export the canonical write barrier under unqualified name as well
+        IF "$REFREG" == "R1"
+        ALTERNATE_ENTRY RhpCheckedAssignRef
+        ENDIF
 
         ;; Use the GC write barrier as a convenient place to implement the managed memory model for ARM. The
         ;; intent is that writes to the target object ($REFREG) will be visible across all CPUs before the
@@ -277,6 +282,11 @@ $WriteBarrierFunction
 WriteBarrierFunction SETS "RhpAssignRef":cc:"$REFREG"
 WriteBarrierFunctionAvLocation SETS "RhpAssignRefAvLocation":cc:"$REFREG"
 
+        ;; Export the canonical write barrier under unqualified name as well
+        IF "$REFREG" == "R1"
+        ALTERNATE_ENTRY RhpAssignRef
+        ENDIF
+
         EXPORT $WriteBarrierFunction
 $WriteBarrierFunction
 
@@ -302,11 +312,8 @@ $WriteBarrierFunction
 
     MEND
 
-;; One day we might require write barriers for all the possible argument registers but for now MDIL only
-;; specifies one unqualified write barrier instruction and Bartok generates code that assumes the input
-;; register is R3. MDIL also doesn't distinguish between checked and unchecked barriers so we always have to
-;; use the checked kind (we don't define a macro for unchecked, but it's similar to the above without the
-;; range checks against G_LOWEST_ADDRESS and G_HIGHEST_ADDRESS).
+;; One day we might have write barriers for all the possible argument registers but for now we have
+;; just one write barrier that assumes the input registers is R1.
         DEFINE_CHECKED_WRITE_BARRIER R0, R1
 
         DEFINE_UNCHECKED_WRITE_BARRIER R0, R1

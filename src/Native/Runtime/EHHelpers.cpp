@@ -333,18 +333,11 @@ EXTERN_C void* RhpRethrow2   = NULL;
 #endif // FEATURE_CLR_EH
 
 #if defined(_AMD64_) || defined(_X86_)
-EXTERN_C void  __fastcall RhpAssignRefEDX();
-EXTERN_C void  __fastcall RhpCheckedAssignRefEDX();
-#define RhpAssignRefAvLocationEDX RhpAssignRefEDX
-#define RhpCheckedAssignRefAvLocationEDX RhpCheckedAssignRefEDX
-#define APPEND_REG1_TO_NAME(name) name##EDX
-#elif defined(_ARM_)
-EXTERN_C void  __fastcall RhpAssignRefAvLocationR1();
-EXTERN_C void  __fastcall RhpCheckedAssignRefAvLocationR1();
-#define APPEND_REG1_TO_NAME(name) name##R1
-#else
-#error "Unknown Architecture"
+#define RhpAssignRefAVLocation RhpAssignRef
+#define RhpCheckedAssignRefAVLocation RhpCheckedAssignRef
 #endif
+EXTERN_C void * RhpAssignRefAVLocation();
+EXTERN_C void * RhpCheckedAssignRefAVLocation();
 EXTERN_C void * RhpCheckedLockCmpXchgAVLocation;
 EXTERN_C void * RhpCheckedXchgAVLocation;
 EXTERN_C void * RhpCopyMultibyteDestAVLocation;
@@ -354,10 +347,11 @@ EXTERN_C void * RhpCopyMultibyteNoGCRefsSrcAVLocation;
 
 static bool InWriteBarrierHelper(UIntNative faultingIP)
 {
+#ifndef USE_PORTABLE_HELPERS
     static UIntNative writeBarrierAVLocations[] = 
     {
-        (UIntNative)&APPEND_REG1_TO_NAME(RhpAssignRefAvLocation),
-        (UIntNative)&APPEND_REG1_TO_NAME(RhpCheckedAssignRefAvLocation),
+        (UIntNative)&RhpAssignRefAVLocation,
+        (UIntNative)&RhpCheckedAssignRefAVLocation,
         (UIntNative)&RhpCheckedLockCmpXchgAVLocation,
         (UIntNative)&RhpCheckedXchgAVLocation,
         (UIntNative)&RhpCopyMultibyteDestAVLocation,
@@ -372,6 +366,8 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
         if (writeBarrierAVLocations[i] == faultingIP)
             return true;
     }
+#endif // USE_PORTABLE_HELPERS
+
     return false;
 }
 

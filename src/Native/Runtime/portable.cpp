@@ -267,15 +267,57 @@ COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
+// TODO: The C++ write barrier helpers colide with assembly definitions in full runtime. Re-enable
+// once this file is built for portable runtime only.
+#if 0
+
 //
 // Write barriers
 //
 
-// WriteBarriers.asm
-COOP_PINVOKE_HELPER(void, RhpBulkWriteBarrier, (void* pMemStart, UInt32 cbMemSize))
+#ifdef BIT64
+// Card byte shift is different on 64bit.
+#define card_byte_shift     11
+#else
+#define card_byte_shift     10
+#endif
+
+#define card_byte(addr) (((size_t)(addr)) >> card_byte_shift)
+
+COOP_PINVOKE_HELPER(void, RhpAssignRef, (Object ** dst, Object * ref))
 {
-    ASSERT_UNCONDITIONALLY("NYI");
+    *dst = ref;
+
+    if ((uint8_t*)ref >= g_ephemeral_low && (uint8_t*)ref < g_ephemeral_high)
+    {
+        // volatile is used here to prevent fetch of g_card_table from being reordered 
+        // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
+        uint8_t * pCardByte = (uint8_t *)*(volatile uint8_t **)(&g_card_table) + card_byte((uint8_t *)dst);
+        if (*pCardByte != 0xFF)
+            *pCardByte = 0xFF;
+    }
 }
+
+COOP_PINVOKE_HELPER(void, RhpCheckedAssignRef, (Object ** dst, Object * ref))
+{
+    *dst = ref;
+
+    // if the dst is outside of the heap (unboxed value classes) then we
+    //      simply exit
+    if (((uint8_t*)dst < g_lowest_address) || ((uint8_t*)dst >= g_highest_address))
+        return;
+
+    if ((uint8_t*)ref >= g_ephemeral_low && (uint8_t*)ref < g_ephemeral_high)
+    {
+        // volatile is used here to prevent fetch of g_card_table from being reordered 
+        // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
+        uint8_t* pCardByte = (uint8_t *)*(volatile uint8_t **)(&g_card_table) + card_byte((uint8_t *)dst);
+        if (*pCardByte != 0xFF)
+            *pCardByte = 0xFF;
+    }
+}
+
+#endif
 
 //
 // type cast stuff from TypeCast.cs

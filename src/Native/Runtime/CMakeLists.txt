@@ -1,7 +1,5 @@
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
-    AsmOffsets.cpp
-#    AsmOffsetsVerify.cpp
     assert.cpp
     Crst.cpp
     DebugEventSource.cpp
@@ -48,22 +46,48 @@ set(COMMON_RUNTIME_SOURCES
     ../gc/objecthandle.cpp
 )
 
+set(FULL_RUNTIME_SOURCES
+    # AsmOffsetsVerify.cpp
+)
+
+set(PORTABLE_RUNTIME_SOURCES
+)
+
 if(WIN32)
+
   include_directories(windows)
+
   list(APPEND COMMON_RUNTIME_SOURCES
     ../gc/env/gcenv.windows.cpp    
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
   )
+
+  if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    set(ARCH_SOURCES_DIR amd64)
+    set(ASM_SUFFIX asm)
+  endif()
+
 else()
+
   include_directories(unix)
+
   list(APPEND COMMON_RUNTIME_SOURCES
     ../gc/env/gcenv.unix.cpp    
     unix/PalRedhawkCommon.cpp
     unix/PalRedhawkUnix.cpp
   )
+
+  if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+    set(ARCH_SOURCES_DIR amd64)
+    set(ASM_SUFFIX s)
+  endif()
+
 endif()
 
+set(RUNTIME_SOURCES_ARCH_ASM
+  ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
+)
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-D_TARGET_AMD64_=1)
   add_definitions(-D_AMD64_)
@@ -92,20 +116,15 @@ add_definitions(-DAPP_LOCAL_RUNTIME)
 add_definitions(-DFEATURE_BACKGROUND_GC)
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CLR_EH)
-add_definitions(-DFEATURE_COFF_OUTPUT)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
 add_definitions(-DFEATURE_CUSTOM_IMPORTS)
 add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_options($<$<CONFIG:Debug>:-DFEATURE_GC_STRESS>)
-add_definitions(-DFEATURE_NUTC)
 add_definitions(-DFEATURE_PROFILING)
 add_definitions(-DFEATURE_REDHAWK)
 add_definitions(-DFEATURE_SHARED_GENERICS)
-add_definitions(-DMODERN_OS)
-add_definitions(-DUSE_PORTABLE_HELPERS)
 add_definitions(-DVERIFY_HEAP)
 
-add_definitions(-DRTU_PORTABLE)
 add_definitions(-D_LIB)
 
 if(WIN32)
@@ -135,12 +154,20 @@ else()
   add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-self-assign)
 
+  add_compile_options(-Qunused-arguments)
+
   include(unix/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 endif()
 
+set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
+
+convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
+convert_to_absolute_path(PORTABLE_RUNTIME_SOURCES ${PORTABLE_RUNTIME_SOURCES})
+
+convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 
 add_subdirectory(Full)
 add_subdirectory(Portable)

@@ -242,7 +242,6 @@ $Name
         SETALIAS G_EPHEMERAL_HIGH, g_ephemeral_high
         SETALIAS G_CARD_TABLE, g_card_table
         SETALIAS THREADSTORE__ATTACHCURRENTTHREAD, ?AttachCurrentThread@ThreadStore@@SAXXZ
-        SETALIAS CANUNLOADMODULE, CanUnloadModule
         SETALIAS G_FREE_OBJECT_EETYPE, ?g_pFreeObjectMethodTable@@3PAVMethodTable@@A
 #ifdef FEATURE_GC_STRESS
         SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPAUPAL_LIMITED_CONTEXT@@@Z
@@ -258,7 +257,6 @@ $Name
         EXTERN RhpPInvokeWaitEx
         EXTERN RhpPInvokeReturnWaitEx
         EXTERN RhExceptionHandling_FailedAllocation
-        EXTERN $CANUNLOADMODULE
         EXTERN RhpPublishObject
         EXTERN RhpCalculateStackTraceWorker
 
