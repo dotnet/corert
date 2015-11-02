@@ -26,8 +26,6 @@ decoratedName label proc
 PUBLIC decoratedName
         endm
 
-ifdef FEATURE_DECLSPEC_THREAD
-
 __tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
@@ -42,24 +40,6 @@ INLINE_GETTHREAD macro destReg, trashReg
     mov         destReg, [trashReg + destReg * 4]
     add         destReg, OFFSETOF__TLS__tls_CurrentThread
 endm
-
-else ;; FEATURE_DECLSPEC_THREAD
-
-;;
-;; TlsAlloc version
-;;
-INLINE_GETTHREAD macro destReg, trashReg
-    ASSUME fs : NOTHING
-    EXTERN __tls_index : DWORD
-    EXTERN __tls_array : DWORD
-
-    mov         destReg, [__tls_index]
-    mov         trashReg, fs:[__tls_array + destReg * 4]
-    mov         destReg, [trashReg]
-    add         destReg, OFFSETOF__TLS__tls_CurrentThread
-endm
-
-endif ;; FEATURE_DECLSPEC_THREAD
 
 
 INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2
