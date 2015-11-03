@@ -1,12 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+
 namespace System.Threading
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Runtime.CompilerServices;
-
     public static class Interlocked
     {
         #region CompareExchange

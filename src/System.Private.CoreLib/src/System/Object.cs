@@ -13,6 +13,8 @@
 
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+
 using Internal.Reflection.Core.NonPortable;
 
 namespace System
