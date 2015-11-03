@@ -11,10 +11,9 @@
 **
 ===========================================================*/
 
-using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -156,31 +155,37 @@ namespace System
             return IsNaN(temp) && IsNaN(m_value);
         }
 
+        [NonVersionable]
         public static bool operator ==(Double left, Double right)
         {
             return left == right;
         }
 
+        [NonVersionable]
         public static bool operator !=(Double left, Double right)
         {
             return left != right;
         }
 
+        [NonVersionable]
         public static bool operator <(Double left, Double right)
         {
             return left < right;
         }
 
+        [NonVersionable]
         public static bool operator >(Double left, Double right)
         {
             return left > right;
         }
 
+        [NonVersionable]
         public static bool operator <=(Double left, Double right)
         {
             return left <= right;
         }
 
+        [NonVersionable]
         public static bool operator >=(Double left, Double right)
         {
             return left >= right;

@@ -11,9 +11,9 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -69,6 +69,7 @@ namespace System
             return _value == ((Byte)obj)._value;
         }
 
+        [NonVersionable]
         public bool Equals(Byte obj)
         {
             return _value == obj;
