@@ -119,7 +119,6 @@
     <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
     <Compile Include="Internal\Reflection\MetadataTransformedAttribute.cs" />
-    <Compile Include="Interop\Interop.msvcrt.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />

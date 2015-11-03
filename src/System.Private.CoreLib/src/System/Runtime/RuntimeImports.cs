@@ -621,10 +621,6 @@ namespace System.Runtime
         internal static unsafe extern void memmove(byte* dmem, byte* smem, uint size);
 #endif
 
-        // Moves memory from smem to dmem. Size must be a positive value.
-        [Intrinsic]
-        internal static unsafe extern void memmove(byte* dmem, byte* smem, int size);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpArrayCopy")]
         internal static extern bool TryArrayCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length);
