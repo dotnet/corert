@@ -68,5 +68,18 @@ namespace System.Collections.Generic
                 return _items[index];
             }
         }
+
+        public bool Contains(T t)
+        {
+            for (int i = 0; i < _count; i++)
+            {
+                if (_items[i].Equals(t))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

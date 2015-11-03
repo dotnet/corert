@@ -37,7 +37,7 @@ namespace System
     public struct Nullable<T> where T : struct { }
     
     public sealed class String { }
-    public abstract class Array { }
+    public abstract class Array : System.Collections.IList { }
     public abstract class Delegate { }
     public abstract class MulticastDelegate : Delegate { }
 
@@ -46,6 +46,22 @@ namespace System
     public struct RuntimeFieldHandle { }
 
     public class Attribute { }
+
+    public class Array<T> : Array, System.Collections.Generic.IList<T> { }
+}
+
+namespace System.Collections
+{
+    interface IList
+    { }
+}
+
+namespace System.Collections.Generic
+{
+    interface IList<T>
+    {
+
+    }
 }
 
 namespace System.Runtime.InteropServices

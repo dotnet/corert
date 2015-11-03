@@ -111,9 +111,7 @@ namespace Internal.TypeSystem
 
         private static bool IsInterfaceImplementedOnType(MetadataType type, MetadataType interfaceType)
         {
-            // TODO! This function is the same as IsInterfaceExplicitlyImplementedOnType which isn't quite right.
-            // Fix the concept of implemented/explictly implemented interfaces and make these methods right.
-            foreach (TypeDesc iface in type.ImplementedInterfaces)
+            foreach (TypeDesc iface in type.RuntimeInterfaces)
             {
                 if (iface == interfaceType)
                     return true;
@@ -151,9 +149,7 @@ namespace Internal.TypeSystem
 
         private static bool IsInterfaceExplicitlyImplementedOnType(MetadataType type, MetadataType interfaceType)
         {
-            // TODO! This function is the same as IsInterfaceImplementedOnType which isn't quite right.
-            // Fix the concept of implemented/explictly implemented interfaces and make these methods right.
-            foreach (TypeDesc iface in type.ImplementedInterfaces)
+            foreach (TypeDesc iface in type.ExplicitlyImplementedInterfaces)
             {
                 if (iface == interfaceType)
                     return true;

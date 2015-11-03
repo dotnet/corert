@@ -78,44 +78,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        TypeDesc[] _implementedInterfaces = null;
-
-        TypeDesc[] InitializeImplementedInterfaces()
-        {
-            TypeDesc[] uninstInterfaces = _typeDef.ImplementedInterfaces;
-            TypeDesc[] instInterfaces = null;
-
-            for (int i = 0; i<uninstInterfaces.Length; i++)
-            {
-                TypeDesc uninst = uninstInterfaces[i];
-                TypeDesc inst = uninst.InstantiateSignature(_instantiation, new Instantiation());
-                if (inst != uninst)
-                {
-                    if (instInterfaces == null)
-                    {
-                        instInterfaces = new TypeDesc[uninstInterfaces.Length];
-                        for (int j = 0; j<uninstInterfaces.Length; j++)
-                        {
-                            instInterfaces[j] = uninstInterfaces[j];
-                        }
-                    }
-                    instInterfaces[i] = inst;
-                }
-            }
-
-            return (_implementedInterfaces = (instInterfaces != null) ? instInterfaces : uninstInterfaces);
-        }
-
-        public override TypeDesc[] ImplementedInterfaces
-        {
-            get
-            {
-                if (_implementedInterfaces == null)
-                    return InitializeImplementedInterfaces();
-                return _implementedInterfaces;
-            }
-        }
-
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
@@ -215,6 +177,34 @@ namespace Internal.TypeSystem
             }
 
             return (clone == null) ? this : _typeDef.Context.GetInstantiatedType(_typeDef, new Instantiation(clone));
+        }
+
+        /// <summary>
+        /// Instantiate an array of TypeDescs over typeInstantiation and methodInstantiation
+        /// </summary>
+        public static T[] InstantiateTypeArray<T>(T[] uninstantiatedTypes, Instantiation typeInstantiation, Instantiation methodInstantiation) where T : TypeDesc
+        {
+            T[] clone = null;
+
+            for (int i = 0; i < uninstantiatedTypes.Length; i++)
+            {
+                T uninst = uninstantiatedTypes[i];
+                TypeDesc inst = uninst.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (inst != uninst)
+                {
+                    if (clone == null)
+                    {
+                        clone = new T[uninstantiatedTypes.Length];
+                        for (int j = 0; j < clone.Length; j++)
+                        {
+                            clone[j] = uninstantiatedTypes[j];
+                        }
+                    }
+                    clone[i] = (T)inst;
+                }
+            }
+
+            return clone != null ? clone : uninstantiatedTypes;
         }
 
         // Strips instantiation. E.g C<int> -> C<T>

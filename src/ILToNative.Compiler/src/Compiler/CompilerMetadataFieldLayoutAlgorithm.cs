@@ -6,9 +6,9 @@ using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
-namespace TypeSystemTests
+namespace ILToNative
 {
-    class TestMetadataFieldLayout : MetadataFieldLayout
+    class CompilerMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
     {
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {

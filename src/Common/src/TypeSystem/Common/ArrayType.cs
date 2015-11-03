@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace Internal.TypeSystem
 {
-    public sealed class ArrayType : ParameterizedType
+    public sealed partial class ArrayType : ParameterizedType
     {
         int _rank; // -1 for regular single dimensional arrays, > 0 for multidimensional arrays
 

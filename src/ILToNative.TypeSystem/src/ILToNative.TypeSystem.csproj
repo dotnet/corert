@@ -24,16 +24,21 @@
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\ByRefType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\FieldForInstantiatedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.FieldLayout.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldLayout.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldLayoutAlgorithm.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedMethod.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedType.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedType.Interfaces.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.FieldLayout.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataFieldLayout.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.Interfaces.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\MethodForInstantiatedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\ParameterizedType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\PointerType.cs" />
@@ -50,8 +55,10 @@
     <Compile Include="$(CommonPath)\TypeSystem\Common\VirtualFunctionResolution.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.MethodImpls.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.Interfaces.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\DefType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\DefType.FieldLayout.cs" />
+    <Compile Include="$(CommonPath)\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaField.cs">
       <Link>Ecma\EcmaField.cs</Link>
     </Compile>
@@ -72,6 +79,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
       <Link>Ecma\EcmaType.MethodImpls.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.Interfaces.cs">
+      <Link>Ecma\EcmaType.Interfaces.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\MetadataExtensions.cs">
       <Link>Ecma\MetadataExtensions.cs</Link>

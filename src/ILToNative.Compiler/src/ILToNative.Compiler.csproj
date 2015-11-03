@@ -31,7 +31,7 @@
   <ItemGroup>
     <Compile Include="Compiler\AsmStringWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
-    <Compile Include="Compiler\CompilerMetadataFieldLayout.cs" />
+    <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />

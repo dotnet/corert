@@ -302,14 +302,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public virtual TypeDesc[] ImplementedInterfaces
-        {
-            get
-            {
-                return TypeDesc.EmptyTypes;
-            }
-        }
-
         public virtual TypeDesc UnderlyingType // For enums
         {
             get
