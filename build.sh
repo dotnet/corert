@@ -181,7 +181,7 @@ __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MS
 __ToolNugetRuntimeId=ubuntu.14.04-x64
 __TestNugetRuntimeId=ubuntu.14.04-x64
 __BuildArch=x64
-__buildmanaged=false
+__buildmanaged=true
 __buildnative=true
 
 # Workaround to enable nuget package restoration work successully on Mono
