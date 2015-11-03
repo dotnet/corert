@@ -81,11 +81,7 @@ namespace System
     // eagerly constructed to avoid the cost of defered ctors. I can't imagine any app that doesn't use string
     //
     [ComVisible(true)]
-#if !CORERT
-    [StructLayout(LayoutKind.Explicit)]
-#else
     [StructLayout(LayoutKind.Sequential)]
-#endif
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
     public sealed class String : IComparable, IEnumerable, IEnumerable<char>, IComparable<String>, IEquatable<String>, IConvertible
     {
@@ -95,25 +91,18 @@ namespace System
         private const int POINTER_SIZE = 4;
 #endif
         //                                        m_pEEType    + _stringLength
-        private const int STRING_LENGTH_OFFSET = POINTER_SIZE;
         internal const int FIRST_CHAR_OFFSET = POINTER_SIZE + sizeof(int);
 
         // CS0169: The private field '{blah}' is never used
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 169, 649
 
-        // CORERT porting note: offset is if'd out because it's bogus. These were needed for Bartok
-        // compatibility years ago and NUTC has a corresponding workaround for this in the field layout code.
-        // We should remove the if'd out code on the .NET Native side too and remove the workaround in NUTC.
 #if !CORERT
         [Bound]
-        [FieldOffset(STRING_LENGTH_OFFSET)]
 #endif
         private int _stringLength;
-#if !CORERT
-        [FieldOffset(FIRST_CHAR_OFFSET)]
-#endif
         private char _firstChar;
+
 #pragma warning restore
 
 // String constructors
