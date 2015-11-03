@@ -10,12 +10,6 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field)]
     internal sealed class IntrinsicAttribute : Attribute { }
 
-    // At the moment, we don't inline anything across modules other than Object..ctor,
-    // so this attribute is only for use in a Class Library.  If we ever broaden this,
-    // we will want to make this a public attribute.
-    [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Property | AttributeTargets.Method)]
-    internal sealed class NonVersionableAttribute : Attribute { }
-
 #if !CORERT
     [AttributeUsage(AttributeTargets.Field)]
     internal sealed class BoundAttribute : Attribute { }

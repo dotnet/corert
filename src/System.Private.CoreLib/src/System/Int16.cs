@@ -11,9 +11,9 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -62,6 +62,7 @@ namespace System
             return m_value == ((Int16)obj).m_value;
         }
 
+        [NonVersionable]
         public bool Equals(Int16 obj)
         {
             return m_value == obj;

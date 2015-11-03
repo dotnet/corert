@@ -12,9 +12,8 @@
 ===========================================================*/
 
 using System.Globalization;
-using System;
-using System.Runtime;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -73,6 +72,7 @@ namespace System
             return _value == ((UInt32)obj)._value;
         }
 
+        [NonVersionable]
         public bool Equals(UInt32 obj)
         {
             return _value == obj;

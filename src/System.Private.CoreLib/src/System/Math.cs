@@ -10,7 +10,6 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -425,44 +424,52 @@ namespace System
         **Returns the larger of val1 and val2
         ============================================================================*/
         [CLSCompliant(false)]
+        [NonVersionable]
         public static sbyte Max(sbyte val1, sbyte val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static byte Max(byte val1, byte val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static short Max(short val1, short val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
+        [NonVersionable]
         public static ushort Max(ushort val1, ushort val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static int Max(int val1, int val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
+        [NonVersionable]
         public static uint Max(uint val1, uint val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static long Max(long val1, long val2)
         {
             return (val1 >= val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
+        [NonVersionable]
         public static ulong Max(ulong val1, ulong val2)
         {
             return (val1 >= val2) ? val1 : val2;
@@ -499,44 +506,52 @@ namespace System
         **Returns the smaller of val1 and val2.
         ============================================================================*/
         [CLSCompliant(false)]
+        [NonVersionable]
         public static sbyte Min(sbyte val1, sbyte val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static byte Min(byte val1, byte val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static short Min(short val1, short val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
+        [NonVersionable]
         public static ushort Min(ushort val1, ushort val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static int Min(int val1, int val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
+        [NonVersionable]
         public static uint Min(uint val1, uint val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [NonVersionable]
         public static long Min(long val1, long val2)
         {
             return (val1 <= val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
+        [NonVersionable]
         public static ulong Min(ulong val1, ulong val2)
         {
             return (val1 <= val2) ? val1 : val2;

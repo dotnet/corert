@@ -9,18 +9,16 @@
 ===========================================================*/
 
 using System.Text;
-using System;
 using System.Runtime;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 using System.Security;
-using Microsoft.Win32;
 
 namespace System
 {

@@ -2,8 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
-using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 
 namespace System
@@ -56,6 +56,7 @@ namespace System
             return _value == ((SByte)obj)._value;
         }
 
+        [NonVersionable]
         public bool Equals(SByte obj)
         {
             return _value == obj;

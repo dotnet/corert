@@ -1,17 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System.Runtime.CompilerServices;
+
 namespace System.Threading
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-    using System.Runtime.CompilerServices;
-
     public static class Interlocked
     {
         #region CompareExchange
 
-        [NonVersionable]
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
@@ -28,7 +25,6 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         internal static uint CompareExchange(ref uint location1, uint value, uint comparand)
         {
@@ -45,7 +41,6 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
@@ -62,7 +57,6 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
@@ -79,7 +73,6 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         public static float CompareExchange(ref float location1, float value, float comparand)
         {
@@ -96,7 +89,6 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         public static double CompareExchange(ref double location1, double value, double comparand)
         {
@@ -113,7 +105,6 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
@@ -130,13 +121,11 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         public static object CompareExchange(ref object location1, object value, object comparand)
         {
             return CompareExchange<object>(ref location1, value, comparand);
         }
 
-        [NonVersionable]
         [Intrinsic]
         internal static extern T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class;
 
@@ -144,7 +133,6 @@ namespace System.Threading
 
 #region Exchange
 
-        [NonVersionable]
         [Intrinsic]
         public static int Exchange(ref int location1, int value)
         {
@@ -161,7 +149,6 @@ namespace System.Threading
         }
 
 #if X86
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Exchange(ref long location1, long value)
         {
@@ -175,7 +162,6 @@ namespace System.Threading
             return oldValue;
         }
 #else
-        [NonVersionable]
         [Intrinsic]
         public static long Exchange(ref long location1, long value)
         {
@@ -192,7 +178,6 @@ namespace System.Threading
         }
 #endif
 
-        [NonVersionable]
         [Intrinsic]
         public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
         {
@@ -208,7 +193,6 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         public static float Exchange(ref float location1, float value)
         {
@@ -225,7 +209,6 @@ namespace System.Threading
         }
 
 #if X86
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Exchange(ref double location1, double value)
         {
@@ -239,7 +222,6 @@ namespace System.Threading
             return oldValue;
         }
 #else
-        [NonVersionable]
         [Intrinsic]
         public static double Exchange(ref double location1, double value)
         {
@@ -256,7 +238,6 @@ namespace System.Threading
         }
 #endif
 
-        [NonVersionable]
         [Intrinsic]
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
@@ -272,11 +253,9 @@ namespace System.Threading
 #endif
         }
 
-        [NonVersionable]
         [Intrinsic]
         internal static extern T Exchange<T>(IntPtr location1, T value) where T : class;
 
-        [NonVersionable]
         public static object Exchange(ref object location1, object value)
         {
             return Exchange<object>(ref location1, value);
@@ -286,7 +265,6 @@ namespace System.Threading
 
         #region Increment
 
-        [NonVersionable]
         [Intrinsic]
         public static int Increment(ref int location)
         {
@@ -296,7 +274,6 @@ namespace System.Threading
         }
 
 #if X86
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Increment(ref long location)
         {
@@ -310,7 +287,6 @@ namespace System.Threading
             return oldValue + 1;
         }
 #else
-        [NonVersionable]
         [Intrinsic]
         public static long Increment(ref long location)
         {
@@ -324,7 +300,6 @@ namespace System.Threading
 
         #region Decrement
 
-        [NonVersionable]
         [Intrinsic]
         public static int Decrement(ref int location)
         {
@@ -334,7 +309,6 @@ namespace System.Threading
         }
 
 #if X86
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Decrement(ref long location)
         {
@@ -348,7 +322,6 @@ namespace System.Threading
             return oldValue - 1;
         }
 #else
-        [NonVersionable]
         [Intrinsic]
         public static long Decrement(ref long location)
         {
@@ -362,7 +335,6 @@ namespace System.Threading
 
         #region Add
 
-        [NonVersionable]
         [Intrinsic]
         public static int Add(ref int location1, int value)
         {
@@ -372,7 +344,6 @@ namespace System.Threading
         }
 
 #if X86
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Add(ref long location1, long value)
         {
@@ -386,7 +357,6 @@ namespace System.Threading
             return oldValue + value;
         }
 #else
-        [NonVersionable]
         [Intrinsic]
         public static long Add(ref long location1, long value)
         {
@@ -399,7 +369,6 @@ namespace System.Threading
         #endregion
 
         #region MemoryBarrier
-        [NonVersionable]
         [Intrinsic]
         public static void MemoryBarrier()
         {
@@ -414,7 +383,6 @@ namespace System.Threading
         #endregion
 
         #region Read
-        [NonVersionable]
         public static long Read(ref long location)
         {
             return Interlocked.CompareExchange(ref location, 0, 0);
