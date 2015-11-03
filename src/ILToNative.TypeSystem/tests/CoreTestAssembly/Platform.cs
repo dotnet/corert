@@ -8,12 +8,13 @@ namespace System
     // Dummy core types to allow us compiling this assembly as a core library so that the type
     // system tests don't have a dependency on a real core library.
 
-    // We might need to bring in some extra things (Interface lists? Virtual methods on Object?),
+    // We might need to bring in some extra things (Interface lists? Other virtual methods on Object?),
     // but let's postpone that until actually needed.
     
     public class Object
     {
         internal IntPtr m_pEEType;
+        public virtual string ToString() { return null; }
     }
 
     public struct Void { }

@@ -56,7 +56,7 @@ namespace Internal.TypeSystem
         /// <returns></returns>
         private MethodImplRecord[] InstantiateMethodImpls(MethodImplRecord[] uninstMethodImpls)
         {
-            if (uninstMethodImpls.Length == 0)
+            if (uninstMethodImpls == null || uninstMethodImpls.Length == 0)
                 return uninstMethodImpls;
 
             MethodImplRecord[] instMethodImpls = new MethodImplRecord[uninstMethodImpls.Length];

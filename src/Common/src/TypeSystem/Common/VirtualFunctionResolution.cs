@@ -71,39 +71,14 @@ namespace Internal.TypeSystem
         /// <returns>The override of the virtual method that should be called</returns>
         public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, MetadataType objectType)
         {
-            // Workaround for https://github.com/dotnet/corert/issues/48
-#if true
-            string name = targetMethod.Name;
-            MethodSignature sig = targetMethod.Signature;
 
-            TypeDesc t = objectType;
-            while (t != null)
-            {
-                MethodDesc implMethod = t.GetMethod(name, sig);
-                if (implMethod != null)
-                    return implMethod;
-                t = t.BaseType;
-            }
-
-            t = objectType;
-            while (t != null)
-            {
-                MethodDesc implMethod = t.GetMethod(name, null);
-                if (implMethod != null)
-                    return implMethod;
-                t = t.BaseType;
-            }
-
-            Debug.Assert(false);
-            return null;
-#else
             // Step 1, convert objectType to uninstantiated form
-            TypeDesc uninstantiatedType = objectType;
+            MetadataType uninstantiatedType = objectType;
             MethodDesc initialTargetMethod = targetMethod;
             InstantiatedType initialInstantiatedType = objectType as InstantiatedType;
             if (initialInstantiatedType != null)
             {
-                uninstantiatedType = initialInstantiatedType.GetTypeDefinition();
+                uninstantiatedType = (MetadataType)initialInstantiatedType.GetTypeDefinition();
             }
 
             // Step 2, convert targetMethod to method in type hierarchy of uninstantiated form
@@ -115,10 +90,10 @@ namespace Internal.TypeSystem
 
             // Step 3, find unification group of target method
             UnificationGroup group = new UnificationGroup(FindSlotDefiningMethodForVirtualMethod(targetMethod));
-            FindBaseUnificationGroup(objectType, group);
+            FindBaseUnificationGroup(uninstantiatedType, group);
 
             // Step 4, name/sig match virtual function resolve
-            MethodDesc resolutionTarget = FindNameSigOverrideForVirtualMethod(group.DefiningMethod, objectType);
+            MethodDesc resolutionTarget = FindNameSigOverrideForVirtualMethod(group.DefiningMethod, uninstantiatedType);
 
             // Step 5, convert resolution target from uninstantiated form target to objecttype target,
             // and instantiate as appropriate
@@ -132,7 +107,6 @@ namespace Internal.TypeSystem
             }
 
             return resolutionTarget;
-#endif
         }
 
         private static bool IsInterfaceImplementedOnType(MetadataType type, MetadataType interfaceType)

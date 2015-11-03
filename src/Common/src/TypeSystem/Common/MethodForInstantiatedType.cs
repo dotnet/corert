@@ -111,8 +111,7 @@ namespace Internal.TypeSystem
 
         public override string ToString()
         {
-            // TODO: Append instantiation
-            return _typicalMethodDef.ToString();
+            return OwningType.ToString() + "." + Name;
         }
 
     }

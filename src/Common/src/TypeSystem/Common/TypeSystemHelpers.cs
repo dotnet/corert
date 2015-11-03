@@ -80,24 +80,43 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        static public MethodDesc FindMethodOnTypeWithMatchingTypicalMethod(this TypeDesc typeExamine, MethodDesc method)
+        /// <summary>
+        /// Returns method as defined on a non-generic base class or on a base
+        /// instantiation.
+        /// For example, If Foo&lt;T&gt; : Bar&lt;T&gt; and overrides method M,
+        /// if method is Bar&lt;string&gt;.M(), then this returns Bar&lt;T&gt;.M()
+        /// but if Foo : Bar&lt;string&gt;, then this returns Bar&lt;string&gt;.M()
+        /// </summary>
+        /// <param name="typeExamine">A potentially derived type</param>
+        /// <param name="method">A base class's virtual method</param>
+        static public MethodDesc FindMethodOnTypeWithMatchingTypicalMethod(this TypeDesc targetType, MethodDesc method)
         {
-            TypeDesc typicalTypeInHierarchyOfTargetMethod = method.GetTypicalMethodDefinition().OwningType;
-            TypeDesc typeInHierarchyOfTypeExamine = typeExamine;
+            // If method is nongeneric and on a nongeneric type, then it is the matching method
+            if (!method.HasInstantiation && !method.OwningType.HasInstantiation)
+            {
+                return method;
+            }
+
+            // Since method is an instantiation that may or may not be the same as typeExamine's hierarchy,
+            // find a matching base class on an open type and then work from the instantiation in typeExamine's
+            // hierarchy
+            TypeDesc typicalTypeOfTargetMethod = method.GetTypicalMethodDefinition().OwningType;
+            TypeDesc targetOrBase = targetType;
             do
             {
-                TypeDesc typicalTypeInHierarchyOfTypeExamine = typeInHierarchyOfTypeExamine;
-                if (typicalTypeInHierarchyOfTypeExamine is InstantiatedType)
+                TypeDesc openTargetOrBase = targetOrBase;
+                if (openTargetOrBase is InstantiatedType)
                 {
-                    typicalTypeInHierarchyOfTypeExamine = typicalTypeInHierarchyOfTypeExamine.GetTypeDefinition();
+                    openTargetOrBase = openTargetOrBase.GetTypeDefinition();
                 }
-                if (typicalTypeInHierarchyOfTypeExamine == typicalTypeInHierarchyOfTargetMethod)
+                if (openTargetOrBase == typicalTypeOfTargetMethod)
                 {
-                    // set targetMethod to method on 
-                    return typeInHierarchyOfTypeExamine.FindMethodOnTypeWithMatchingTypicalMethod(method);
+                    // Found an open match. Now find an equivalent method on the original target typeOrBase
+                    MethodDesc matchingMethod = targetOrBase.FindMethodOnExactTypeWithMatchingTypicalMethod(method);
+                    return matchingMethod;
                 }
-                typeInHierarchyOfTypeExamine = typeInHierarchyOfTypeExamine.BaseType;
-            } while (typeInHierarchyOfTypeExamine != null);
+                targetOrBase = targetOrBase.BaseType;
+            } while (targetOrBase != null);
 
             Debug.Assert(false, "method has no related type in the type hierarchy of type");
             return null;
