@@ -173,35 +173,6 @@ namespace ILToNative
             return _ilProvider.GetMethodIL(method);
         }
 
-        void CompileMethod(MethodDesc method)
-        {
-            string methodName = method.ToString();
-            Log.Write("Compiling " + methodName);
-
-            SpecialMethodKind kind = method.DetectSpecialMethodKind();
-            Log.WriteLine(", kind: " + kind.ToString());
-
-            if (kind == SpecialMethodKind.Unknown || kind == SpecialMethodKind.Intrinsic)
-            {
-                var methodIL = _ilProvider.GetMethodIL(method);
-                if (methodIL == null)
-                    return;
-
-                try
-                {
-                    var methodCode = _corInfo.CompileMethod(method);
-
-                    GetRegisteredMethod(method).MethodCode = methodCode;
-                }
-                catch (Exception e)
-                {
-                    Log.WriteLine(e.Message + " (" + method + ")");
-
-                    GetRegisteredMethod(method).MethodCode = new MethodCode();
-                }
-            }
-        }
-
         void CompileMethods()
         {
             var pendingMethods = _methodsThatNeedsCompilation;
@@ -209,14 +180,7 @@ namespace ILToNative
 
             foreach (MethodDesc method in pendingMethods)
             {
-                if (_options.IsCppCodeGen)
-                {
-                    _cppWriter.CompileMethod(method);
-                }
-                else
-                {
-                    CompileMethod(method);
-                }
+                _cppWriter.CompileMethod(method);
            }
         }
 
@@ -361,117 +325,111 @@ namespace ILToNative
             {
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
                 string methodName = method.ToString();
-                Log.Write("Compiling " + methodName);
+                Log.WriteLine("Compiling " + methodName);
 
-                SpecialMethodKind kind = method.DetectSpecialMethodKind();
-                Log.WriteLine(", kind: " + kind.ToString());
+                var methodIL = _ilProvider.GetMethodIL(method);
+                if (methodIL == null)
+                    return;
 
-                if (kind == SpecialMethodKind.Unknown || kind == SpecialMethodKind.Intrinsic)
+                MethodCode methodCode;
+
+                if (_skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
                 {
-                    var methodIL = _ilProvider.GetMethodIL(method);
-                    if (methodIL == null)
-                        return;
-
-                    MethodCode methodCode;
-
-                    if (_skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
+                    Log.WriteLine("SkipJIT: " + method);
+                    methodCode = new MethodCode
                     {
-                        Log.WriteLine("SkipJIT: " + method);
-                        methodCode = new MethodCode
-                        {
-                            Code = new byte[] { 0xCC }
-                        };
-                    }
-                    else
-                    {
-                        try
-                        {
-                            methodCode = _corInfo.CompileMethod(method);
-                        }
-                        catch (Exception e)
-                        {
-                            Log.WriteLine(e.Message + " (" + method + ")");
-                            methodCode = new MethodCode
-                            {
-                                Code = new byte[] { 0xCC }
-                            };
-                        }
-                    }
-
-                    // TODO: ROData
-                    if (methodCode.Relocs != null && methodCode.Relocs.Any(r => r.Target is BlockRelativeTarget))
-                    {
-                        Log.WriteLine("Reloc to ROData block (" + method + ")");
-                        methodCode = new MethodCode
-                        {
-                            Code = new byte[] { 0xCC }
-                        };
-                    }
-
-                    ObjectDataBuilder objData = new ObjectDataBuilder();
-                    objData.Alignment = _nodeFactory.Target.MinimumFunctionAlignment;
-                    objData.EmitBytes(methodCode.Code);
-                    objData.DefinedSymbols.Add(methodCodeNodeNeedingCode);
-
-                    if (methodCode.Relocs != null)
-                    {
-                        for (int i = 0; i < methodCode.Relocs.Length; i++)
-                        {
-                            // Relocs with delta not yet supported
-                            if (methodCode.Relocs[i].Delta != 0)
-                                throw new NotImplementedException();
-
-                            int offset = methodCode.Relocs[i].Offset;
-                            RelocType relocType = (RelocType)methodCode.Relocs[i].RelocType;
-                            int instructionLength = 1;
-                            ISymbolNode targetNode;
-
-                            object target = methodCode.Relocs[i].Target;
-                            if (target is MethodDesc)
-                            {
-                                targetNode = _nodeFactory.MethodEntrypoint((MethodDesc)target);
-                            }
-                            else if (target is ReadyToRunHelper)
-                            {
-                                targetNode = _nodeFactory.ReadyToRunHelper((ReadyToRunHelper)target);
-                            }
-                            else if (target is JitHelper)
-                            {
-                                targetNode = _nodeFactory.ExternSymbol(((JitHelper)target).MangledName);
-                            }
-                            else if (target is string)
-                            {
-                                targetNode = _nodeFactory.StringIndirection((string)target);
-                            }
-                            else if (target is TypeDesc)
-                            {
-                                targetNode = _nodeFactory.NecessaryTypeSymbol((TypeDesc)target);
-                            }
-                            else if (target is RvaFieldData)
-                            {
-                                var rvaFieldData = (RvaFieldData)target;
-                                targetNode = _nodeFactory.ReadOnlyDataBlob(rvaFieldData.MangledName,
-                                    rvaFieldData.Data, _typeSystemContext.Target.PointerSize);
-                            }
-                            else
-                            {
-                                // TODO:
-                                throw new NotImplementedException();
-                            }
-
-                            objData.AddRelocAtOffset(targetNode, relocType, offset, instructionLength);
-                        }
-                    }
-                    // TODO: ColdCode
-                    if (methodCode.ColdCode != null)
-                        throw new NotImplementedException();
-
-                    // TODO: ROData
-                    if (methodCode.ROData != null)
-                        throw new NotImplementedException();
-
-                    methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());
+                        Code = new byte[] { 0xCC }
+                    };
                 }
+                else
+                {
+                    try
+                    {
+                        methodCode = _corInfo.CompileMethod(method);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.WriteLine(e.Message + " (" + method + ")");
+                        methodCode = new MethodCode
+                        {
+                            Code = new byte[] { 0xCC }
+                        };
+                    }
+                }
+
+                // TODO: ROData
+                if (methodCode.Relocs != null && methodCode.Relocs.Any(r => r.Target is BlockRelativeTarget))
+                {
+                    Log.WriteLine("Reloc to ROData block (" + method + ")");
+                    methodCode = new MethodCode
+                    {
+                        Code = new byte[] { 0xCC }
+                    };
+                }
+
+                ObjectDataBuilder objData = new ObjectDataBuilder();
+                objData.Alignment = _nodeFactory.Target.MinimumFunctionAlignment;
+                objData.EmitBytes(methodCode.Code);
+                objData.DefinedSymbols.Add(methodCodeNodeNeedingCode);
+
+                if (methodCode.Relocs != null)
+                {
+                    for (int i = 0; i < methodCode.Relocs.Length; i++)
+                    {
+                        // Relocs with delta not yet supported
+                        if (methodCode.Relocs[i].Delta != 0)
+                            throw new NotImplementedException();
+
+                        int offset = methodCode.Relocs[i].Offset;
+                        RelocType relocType = (RelocType)methodCode.Relocs[i].RelocType;
+                        int instructionLength = 1;
+                        ISymbolNode targetNode;
+
+                        object target = methodCode.Relocs[i].Target;
+                        if (target is MethodDesc)
+                        {
+                            targetNode = _nodeFactory.MethodEntrypoint((MethodDesc)target);
+                        }
+                        else if (target is ReadyToRunHelper)
+                        {
+                            targetNode = _nodeFactory.ReadyToRunHelper((ReadyToRunHelper)target);
+                        }
+                        else if (target is JitHelper)
+                        {
+                            targetNode = _nodeFactory.ExternSymbol(((JitHelper)target).MangledName);
+                        }
+                        else if (target is string)
+                        {
+                            targetNode = _nodeFactory.StringIndirection((string)target);
+                        }
+                        else if (target is TypeDesc)
+                        {
+                            targetNode = _nodeFactory.NecessaryTypeSymbol((TypeDesc)target);
+                        }
+                        else if (target is RvaFieldData)
+                        {
+                            var rvaFieldData = (RvaFieldData)target;
+                            targetNode = _nodeFactory.ReadOnlyDataBlob(rvaFieldData.MangledName,
+                                rvaFieldData.Data, _typeSystemContext.Target.PointerSize);
+                        }
+                        else
+                        {
+                            // TODO:
+                            throw new NotImplementedException();
+                        }
+
+                        objData.AddRelocAtOffset(targetNode, relocType, offset, instructionLength);
+                    }
+                }
+                // TODO: ColdCode
+                if (methodCode.ColdCode != null)
+                    throw new NotImplementedException();
+
+                // TODO: ROData
+                if (methodCode.ROData != null)
+                    throw new NotImplementedException();
+
+                methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());
             }
         }
 
