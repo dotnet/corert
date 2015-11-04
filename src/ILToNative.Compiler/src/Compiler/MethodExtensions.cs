@@ -14,17 +14,11 @@ namespace ILToNative
     {
         Unknown,
         PInvoke,
-        RuntimeImport,
-        Intrinsic
+        RuntimeImport
     };
 
     static class MethodExtensions
     {
-        public static bool IsRuntimeImport(this EcmaMethod This)
-        {
-            return This.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute");
-        }
-
         public static string GetRuntimeImportEntryPointName(this EcmaMethod This)
         {
             var metadataReader = This.MetadataReader;
@@ -82,10 +76,6 @@ namespace ILToNative
                 else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
                     return SpecialMethodKind.RuntimeImport;
-                }
-                else if (method.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
-                {
-                    return SpecialMethodKind.Intrinsic;
                 }
                 else if (method.HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
                 {

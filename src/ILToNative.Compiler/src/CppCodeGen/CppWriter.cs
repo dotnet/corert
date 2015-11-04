@@ -258,8 +258,7 @@ namespace ILToNative.CppCodeGen
         {
             Unknown,
             PInvoke,
-            RuntimeImport,
-            Intrinsic
+            RuntimeImport
         };
 
         SpecialMethodKind DetectSpecialMethodKind(MethodDesc method)
@@ -274,11 +273,6 @@ namespace ILToNative.CppCodeGen
                 {
                     _compilation.Log.WriteLine("RuntimeImport: " + method.ToString());
                     return SpecialMethodKind.RuntimeImport;
-                }
-                else if (method.HasCustomAttribute("System.Runtime.CompilerServices", "IntrinsicAttribute"))
-                {
-                    _compilation.Log.WriteLine("Intrinsic: " + method.ToString());
-                    return SpecialMethodKind.Intrinsic;
                 }
                 else if (method.HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
                 {
@@ -297,7 +291,6 @@ namespace ILToNative.CppCodeGen
             {
                 case SpecialMethodKind.PInvoke:
                 case SpecialMethodKind.RuntimeImport:
-                case SpecialMethodKind.Intrinsic:
                     {
                         EcmaMethod ecmaMethod = (EcmaMethod)method;
 
@@ -341,7 +334,7 @@ namespace ILToNative.CppCodeGen
 
             SpecialMethodKind kind = DetectSpecialMethodKind(method);
 
-            if (kind != SpecialMethodKind.Unknown && kind != SpecialMethodKind.Intrinsic)
+            if (kind != SpecialMethodKind.Unknown)
             {
                 string specialMethodCode = CompileSpecialMethod(method, kind);
                 _compilation.GetRegisteredMethod(method).MethodCode = specialMethodCode;
@@ -350,11 +343,7 @@ namespace ILToNative.CppCodeGen
 
             var methodIL = _compilation.GetMethodIL(method);
             if (methodIL == null)
-            {
-                string specialMethodCode = CompileSpecialMethod(method, kind);
-                _compilation.GetRegisteredMethod(method).MethodCode = specialMethodCode;
                 return;
-            }
 
             string methodCode;
             try
