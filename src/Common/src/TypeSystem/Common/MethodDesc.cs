@@ -123,7 +123,7 @@ namespace Internal.TypeSystem
                 {
                     if (parameters == null)
                     {
-                        // Copy the all _parameters array to parameters.
+                        // Copy all entries of_parameters to parameters.
                         parameters = new TypeDesc[_parameters.Length];
                         Array.Copy(_parameters, 0, parameters, 0, _parameters.Length);
                     }

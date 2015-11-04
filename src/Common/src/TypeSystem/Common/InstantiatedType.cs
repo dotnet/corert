@@ -165,8 +165,7 @@ namespace Internal.TypeSystem
             {
                 if (meth.Name == name)
                 {
-                    Instantiation noInstantiation = new Instantiation();
-                    MethodDesc result = meth.InstantiateSignature(Instantiation, noInstantiation);
+                    MethodDesc result = meth.InstantiateSignature(Instantiation, new Instantiation());
                     if (result.Signature.Equals(signature.InstantiateSignature(Instantiation, new Instantiation())))
                     {
                         return result;
