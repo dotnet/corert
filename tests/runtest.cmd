@@ -62,19 +62,53 @@ endlocal
 
 if not exist "%NUPKG_PATH%" goto :NoNuPkg
 
+set NUGET_FEED_URL="https://www.myget.org/F/schellap/auth/3e4f1dbe-f43a-45a8-b029-3ad4d25605ac/api/v2"
+
 echo.
-echo Installing nuget package from %NUPKG_PATH% into %NUPKG_INSTALL_DIR%
+echo Installing CoreRT external dependencies
+set CORERT_EXT_PACKAGE=Microsoft.DotNet.AppDep
+set CORERT_EXT_VERSION=1.0.0-prerelease
+%NUGET_PATH%\NuGet.exe install -Source %NUGET_FEED_URL% -OutputDir %NUPKG_INSTALL_DIR% -Version %CORERT_EXT_VERSION% %CORERT_EXT_PACKAGE% -prerelease
+
+echo.
+echo Installing ProtoJit from NuGet.
+set PROTOJIT_PACKAGE=Microsoft.DotNet.ProtoJit
+set PROTOJIT_VERSION=1.0.0-prerelease
+%NUGET_PATH%\NuGet.exe install -Source %NUGET_FEED_URL% -OutputDir %NUPKG_INSTALL_DIR% -Version %PROTOJIT_VERSION% %PROTOJIT_PACKAGE% -prerelease
+
+echo.
+echo Installing ObjectWriter from NuGet.
+set OBJWRITER_PACKAGE=Microsoft.DotNet.ObjectWriter
+set OBJWRITER_VERSION=1.0.0-prerelease
+%NUGET_PATH%\NuGet.exe install -Source %NUGET_FEED_URL% -OutputDir %NUPKG_INSTALL_DIR% -Version %OBJWRITER_VERSION% %OBJWRITER_PACKAGE% -prerelease
+
+echo.
+echo Installing ILToNative from %NUPKG_PATH% into %NUPKG_INSTALL_DIR%.
 echo ^<packages^>^<package id="%PACKAGE%" version="%VERSION%"/^>^</packages^> > %NUPKG_UNPACK_DIR%\packages.config
 copy /y  %NUPKG_PATH% %NUPKG_UNPACK_DIR% > nul
 %NUGET_PATH%\NuGet.exe install %NUPKG_UNPACK_DIR%\packages.config -Source %SCRIPT_DIR%%NUPKG_UNPACK_DIR% -OutputDir %NUPKG_INSTALL_DIR% -prerelease
 
 echo.
-if "%CORERT_EXT_PATH%"=="" set CORERT_EXT_PATH=..\..\corert.external
-if "%PROTOJIT_PATH%"=="" set PROTOJIT_PATH=%CORERT_EXT_PATH%\Compiler\protojit.dll
-if "%OBJWRITER_PATH%"=="" set OBJWRITER_PATH=%CORERT_EXT_PATH%\Compiler\objwriter.dll
+set CORERT_EXT_PATH=%NUPKG_INSTALL_DIR%\%CORERT_EXT_PACKAGE%.%CORERT_EXT_VERSION%
+set PROTOJIT_PATH=%NUPKG_INSTALL_DIR%\%PROTOJIT_PACKAGE%.%PROTOJIT_VERSION%
+set OBJWRITER_PATH=%NUPKG_INSTALL_DIR%\%OBJWRITER_PACKAGE%.%OBJWRITER_VERSION%
+
+if not exist "%CORERT_EXT_PATH%" set CORERT_EXT_PATH=..\..\corert.external
+
+if not exist "%PROTOJIT_PATH%" set PROTOJIT_PATH=%CORERT_EXT_PATH%\Compiler\protojit.dll
+if not exist "%PROTOJIT_PATH%" set PROTOJIT_PATH=%CORERT_EXT_PATH%\protojit.dll
+
+if not exist "%OBJWRITER_PATH%" set OBJWRITER_PATH=%CORERT_EXT_PATH%\Compiler\objwriter.dll
+if not exist "%OBJWRITER_PATH%" set OBJWRITER_PATH=%CORERT_EXT_PATH%\objwriter.dll
+
+set CORERT_EXT_RUNTIME=%CORERT_EXT_PATH%\Runtime
+if not exist "%CORERT_EXT_RUNTIME%" set CORERT_EXT_RUNTIME=%CORERT_EXT_PATH%
+
+if not exist "%CORERT_EXT_RUNTIME%" goto :NoCoreRTExt
 if not exist "%PROTOJIT_PATH%" goto :NoCoreRTExt
 if not exist "%OBJWRITER_PATH%" goto :NoCoreRTExt
-if not exist "%CLANG_EXE%" goto :NoClang
+rem if not exist "%CLANG_EXE%" goto :NoClang
+
 if not exist "%TOOLCHAIN_DIR%\ILToNative.exe" goto :NoILToNative
 
 echo Installing JIT from "%PROTOJIT_PATH%" to "%TOOLCHAIN_DIR%"
@@ -88,6 +122,7 @@ set __VSProductVersion=140
 set __VCBuildArch=x86_amd64
 call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 
+echo. > %BIN_DIR%\testResults.tmp
 set /a TOTAL_TESTS=0
 set /a PASSED_TESTS=0
 for /f "delims=" %%a in ('dir /s /aD /b *') do (
@@ -99,9 +134,23 @@ for /f "delims=" %%a in ('dir /s /aD /b *') do (
     )
 )
 
+set /a FAILED_TESTS=%TOTAL_TESTS%-%PASSED_TESTS%
 echo.
-echo TOTAL: %TOTAL_TESTS% PASSED: %PASSED_TESTS%
 
+echo ^<?xml version="1.0" encoding="utf-8"?^> > %BIN_DIR%\testResults.xml
+echo ^<assemblies^>  >> %BIN_DIR%\testResults.xml
+echo ^<assembly name="ILToNative" total="%TOTAL_TESTS%" passed="%PASSED_TESTS%" failed="%FAILED_TESTS%" skipped="0"^>  >> %BIN_DIR%\testResults.xml
+type %BIN_DIR%\testResults.tmp >> %BIN_DIR%\testResults.xml
+echo ^</assembly^>  >> %BIN_DIR%\testResults.xml
+echo ^</assemblies^>  >> %BIN_DIR%\testResults.xml
+
+echo.
+set "OUTSTR=TOTAL: %TOTAL_TESTS% PASSED: %PASSED_TESTS%"
+if %TOTAL_TESTS% EQU %PASSED_TESTS% (
+    powershell -Command Write-Host "%OUTSTR%" -foreground "Black" -background "Green"
+) else ( 
+    powershell -Command Write-Host "%OUTSTR%" -foreground "White" -background "Red"
+)
 endlocal
 goto :eof
 
@@ -140,10 +189,10 @@ goto :eof
 
     echo.
     echo Compiling ILToNative !SOURCE_FILE!.exe
-    %TOOLCHAIN_DIR%\ILToNative.exe -in !SOURCE_FILE!.exe -r %CORERT_EXT_PATH%\Runtime\*.dll -out !SOURCE_FILE!.obj -r %TOOLCHAIN_DIR%\sdk\System.Private.Corelib.dll
+    %TOOLCHAIN_DIR%\ILToNative.exe -in !SOURCE_FILE!.exe -r %CORERT_EXT_RUNTIME%\*.dll -out !SOURCE_FILE!.obj -r %TOOLCHAIN_DIR%\sdk\System.Private.Corelib.dll > !SOURCE_FILE!.il2n.log
     endlocal
 
-    link.exe  /ERRORREPORT:PROMPT !SOURCE_FILE!.obj /OUT:"!SOURCE_FILE!.compiled.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"!SOURCE_FILE!.lib" /MACHINE:X64 ..\bin\Product\%__BuildStr%\lib\Runtime.lib ..\bin\Product\%__BuildStr%\lib\reproNative.lib %MSVCRT_LIB% 
+    link.exe  /ERRORREPORT:PROMPT !SOURCE_FILE!.obj /OUT:"!SOURCE_FILE!.compiled.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"!SOURCE_FILE!.lib" /MACHINE:X64 ..\bin\Product\%__BuildStr%\lib\Runtime.lib ..\bin\Product\%__BuildStr%\lib\reproNative.lib %MSVCRT_LIB% > !SOURCE_FILE!.link.log
 
     echo.
     echo Running test !SOURCE_FILENAME!
@@ -151,4 +200,11 @@ goto :eof
     call !SOURCE_FILE!.cmd
     IF "%ERRORLEVEL%"=="0" (
         set /a PASSED_TESTS=%PASSED_TESTS%+1
+        echo ^<test name="!SOURCE_FILE!" type="Program" method="Main" result="Pass" /^> >> %BIN_DIR%\testResults.tmp
+    ) ELSE (
+        echo ^<test name="!SOURCE_FILE!" type="Program" method="Main" result="Fail"^> >> %BIN_DIR%\testResults.tmp
+        echo ^<failure exception-type="Exit code: %ERRORLEVEL%" ^> >> %BIN_DIR%\testResults.tmp
+        echo     ^<message^>See !SOURCE_FILE!.*.log ^</message^> >> %BIN_DIR%\testResults.tmp
+        echo ^</failure^> >> %BIN_DIR%\testResults.tmp
+        echo ^</test^> >> %BIN_DIR%\testResults.tmp
     )
