@@ -95,12 +95,6 @@
     <ClCompile Include="..\..\Native\Bootstrap\main.cpp" />
     <ClCompile Include="..\..\Native\Bootstrap\platform.windows.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="repro.s" Condition="Exists('repro.s')" >
-      <Command>"C:\Program Files\LLVM\bin\clang.exe" -c %(FullPath) -o repro.obj</Command>
-      <Outputs>repro.obj</Outputs>
-    </CustomBuild>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
