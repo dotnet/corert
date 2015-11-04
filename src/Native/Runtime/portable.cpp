@@ -200,6 +200,11 @@ COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, int rank, .
     return pObject;
 }
 
+COOP_PINVOKE_HELPER(void, RhBox, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
 COOP_PINVOKE_HELPER(void, RhpNewFast, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");

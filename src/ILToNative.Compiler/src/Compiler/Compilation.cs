@@ -286,7 +286,6 @@ namespace ILToNative
             }
         }
 
-        
         private struct TypeAndMethod
         {
             public string TypeName;
@@ -352,32 +351,30 @@ namespace ILToNative
                     }
                 }
 
-                // TODO: ROData
-                if (methodCode.Relocs != null && methodCode.Relocs.Any(r => r.Target is BlockRelativeTarget))
-                {
-                    Log.WriteLine("Reloc to ROData block (" + method + ")");
-                    methodCode = new MethodCode
-                    {
-                        Code = new byte[] { 0xCC }
-                    };
-                }
-
                 ObjectDataBuilder objData = new ObjectDataBuilder();
                 objData.Alignment = _nodeFactory.Target.MinimumFunctionAlignment;
                 objData.EmitBytes(methodCode.Code);
                 objData.DefinedSymbols.Add(methodCodeNodeNeedingCode);
 
+                BlobNode readOnlyDataBlob = null;
+                if (methodCode.ROData != null)
+                {
+                    readOnlyDataBlob = _nodeFactory.ReadOnlyDataBlob(
+                        "__readonlydata_" + _nameMangler.GetMangledMethodName(method),
+                        methodCode.ROData, methodCode.RODataAlignment);
+                }
+
                 if (methodCode.Relocs != null)
                 {
                     for (int i = 0; i < methodCode.Relocs.Length; i++)
                     {
-                        // Relocs with delta not yet supported
-                        if (methodCode.Relocs[i].Delta != 0)
+                        // TODO: Arbitrary relocs
+                        if (methodCode.Relocs[i].Block != 0)
                             throw new NotImplementedException();
 
                         int offset = methodCode.Relocs[i].Offset;
+                        int delta = methodCode.Relocs[i].Delta;
                         RelocType relocType = (RelocType)methodCode.Relocs[i].RelocType;
-                        int instructionLength = 1;
                         ISymbolNode targetNode;
 
                         object target = methodCode.Relocs[i].Target;
@@ -407,21 +404,25 @@ namespace ILToNative
                             targetNode = _nodeFactory.ReadOnlyDataBlob(rvaFieldData.MangledName,
                                 rvaFieldData.Data, _typeSystemContext.Target.PointerSize);
                         }
+                        else if (target is BlockRelativeTarget)
+                        {
+                            var blockRelativeTarget = (BlockRelativeTarget)target;
+                            // TODO: Arbitrary block relative relocs
+                            if (blockRelativeTarget.Block != 2)
+                                throw new NotImplementedException();
+                            targetNode = readOnlyDataBlob;
+                        }
                         else
                         {
                             // TODO:
                             throw new NotImplementedException();
                         }
 
-                        objData.AddRelocAtOffset(targetNode, relocType, offset, instructionLength);
+                        objData.AddRelocAtOffset(targetNode, relocType, offset, delta);
                     }
                 }
                 // TODO: ColdCode
                 if (methodCode.ColdCode != null)
-                    throw new NotImplementedException();
-
-                // TODO: ROData
-                if (methodCode.ROData != null)
                     throw new NotImplementedException();
 
                 methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());

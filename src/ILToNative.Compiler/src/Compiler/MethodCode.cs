@@ -13,6 +13,8 @@ namespace ILToNative
     {
         public byte[] Code;
         public byte[] ColdCode;
+
+        public int RODataAlignment;
         public byte[] ROData;
 
         public Relocation[] Relocs;

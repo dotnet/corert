@@ -19,7 +19,6 @@ namespace ILToNative.DependencyAnalysis
         public RelocType RelocType;
         public int Offset;
         public ISymbolNode Target;
-        public short Delta; // Currently unused
-        public byte InstructionLength; // Temporary. Used to make emission as an assembly file straightforward. Remove when asmwriter removed.
+        public int Delta;
     }
 }

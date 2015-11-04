@@ -91,20 +91,19 @@ namespace ILToNative.DependencyAnalysis
             _data.ZeroExtend(numBytes);
         }
 
-        public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int instructionLength)
+        public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int delta = 0)
         {
             Relocation symbolReloc = new Relocation();
             symbolReloc.Target = symbol;
             symbolReloc.RelocType = relocType;
             symbolReloc.Offset = offset;
-            symbolReloc.Delta = 0;
-            symbolReloc.InstructionLength = (byte)instructionLength;
+            symbolReloc.Delta = delta;
             _relocs.Add(symbolReloc);
         }
 
-        public void EmitReloc(ISymbolNode symbol, RelocType relocType, int instructionLength)
+        public void EmitReloc(ISymbolNode symbol, RelocType relocType)
         {
-            AddRelocAtOffset(symbol, relocType, _data.Count, instructionLength);
+            AddRelocAtOffset(symbol, relocType, _data.Count);
 
             // And add space for the reloc
             switch (relocType)
@@ -124,7 +123,7 @@ namespace ILToNative.DependencyAnalysis
         {
             if (_target.PointerSize == 8)
             {
-                EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64, 0);
+                EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {
