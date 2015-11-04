@@ -145,7 +145,8 @@ namespace Internal.TypeSystem.Ecma
                     {
                         if (metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute"))
                         {
-                            flags |= FieldFlags.ThreadStatic;
+                            // TODO: Thread statics
+                            //flags |= FieldFlags.ThreadStatic;
                         } 
                     }
                 }

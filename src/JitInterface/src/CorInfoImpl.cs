@@ -1298,6 +1298,8 @@ namespace Internal.JitInterface
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
+
+            pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
         }
 
         [return: MarshalAs(UnmanagedType.LPWStr)]
