@@ -257,6 +257,9 @@ $WriteBarrierFunction
         ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between
         ;; here and the card table update we may perform below.
         ALTERNATE_ENTRY $WriteBarrierFunctionAvLocation
+        IF "$REFREG" == "R1"
+        ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+        ENDIF
         str     $REFREG, [$DESTREG]
 
         INSERT_CHECKED_WRITE_BARRIER_CORE $DESTREG, $REFREG
@@ -265,7 +268,7 @@ $WriteBarrierFunction
 
     MEND
 
-	
+
     MACRO
         ;; Define a helper with a name of the form RhpAssignRefR0 etc. The location to be updated is in
         ;; $DESTREG. The object reference that will be assigned into that location is in one of the other
@@ -304,6 +307,9 @@ $WriteBarrierFunction
         ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between
         ;; here and the card table update we may perform below.
         ALTERNATE_ENTRY $WriteBarrierFunctionAvLocation
+        IF "$REFREG" == "R1"
+        ALTERNATE_ENTRY RhpAssignRefAVLocation
+        ENDIF
         str     $REFREG, [$DESTREG]
 
         INSERT_UNCHECKED_WRITE_BARRIER_CORE $DESTREG, $REFREG

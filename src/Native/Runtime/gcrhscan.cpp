@@ -28,6 +28,7 @@
 #include "RuntimeInstance.h"
 #include "threadstore.h"
 
+
 // todo: remove this hack (brain-dead logging).
 #define PalPrintf __noop
 
@@ -38,7 +39,7 @@ SVAL_IMPL_INIT(LONG, CNameSpace, m_GcStructuresInvalidCnt, 1);
 VOLATILE(LONG) CNameSpace::m_GcStructuresInvalidCnt = 1;
 #endif //DACCESS_COMPILE
 
-BOOL CNameSpace::GetGcRuntimeStructuresValid ()
+bool CNameSpace::GetGcRuntimeStructuresValid ()
 {
     _ASSERTE ((LONG)m_GcStructuresInvalidCnt >= 0);
     return (LONG)m_GcStructuresInvalidCnt == 0;
@@ -55,9 +56,6 @@ VOID CNameSpace::GcStartDoWork()
  * Scan for dead weak pointers
  */
 
-typedef promote_func EnumGcRefCallbackFunc;
-typedef ScanContext  EnumGcRefScanContext;
-
 VOID CNameSpace::GcWeakPtrScan( EnumGcRefCallbackFunc* fn, int condemned, int max_gen, EnumGcRefScanContext* sc )
 {
     PalPrintf("CNameSpace::GcWeakPtrScan\n");
@@ -65,7 +63,7 @@ VOID CNameSpace::GcWeakPtrScan( EnumGcRefCallbackFunc* fn, int condemned, int ma
     Ref_ScanDependentHandlesForClearing(condemned, max_gen, sc, fn);
 }
 
-static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtraInfo, LPARAM lp1, LPARAM lp2)
+static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM * /*pExtraInfo*/, LPARAM /*lp1*/, LPARAM /*lp2*/)
 {
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Checking referent of Weak-", pObjRef, "to ", *pObjRef)));
 
@@ -82,7 +80,7 @@ static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM *pExtra
     }
 }
 
-VOID CNameSpace::GcWeakPtrScanBySingleThread( int condemned, int max_gen, EnumGcRefScanContext* sc )
+VOID CNameSpace::GcWeakPtrScanBySingleThread( int /*condemned*/, int /*max_gen*/, EnumGcRefScanContext* sc )
 {
     PalPrintf("CNameSpace::GcWeakPtrScanBySingleThread\n");
 #ifdef VERIFY_HEAP    
@@ -90,8 +88,7 @@ VOID CNameSpace::GcWeakPtrScanBySingleThread( int condemned, int max_gen, EnumGc
 #endif // VERIFY_HEAP
 }
 
-VOID CNameSpace::GcShortWeakPtrScan(EnumGcRefCallbackFunc* fn,  int condemned, int max_gen, 
-                                     EnumGcRefScanContext* sc)
+VOID CNameSpace::GcShortWeakPtrScan(EnumGcRefCallbackFunc* /*fn*/,  int condemned, int max_gen, EnumGcRefScanContext* sc)
 {
     PalPrintf("CNameSpace::GcShortWeakPtrScan\n");
     Ref_CheckAlive(condemned, max_gen, (LPARAM)sc);
@@ -108,8 +105,7 @@ void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
  * Scan all stack roots in this 'namespace'
  */
  
-VOID CNameSpace::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, 
-                             EnumGcRefScanContext * sc /*, GCHeap * Hp */)
+VOID CNameSpace::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, EnumGcRefScanContext * sc)
 {
     PalPrintf("CNameSpace::GcScanRoots\n");
 
@@ -165,8 +161,7 @@ VOID CNameSpace::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max
  */
 
 
-VOID CNameSpace::GcScanHandles (EnumGcRefCallbackFunc* fn,  int condemned, int max_gen, 
-                                EnumGcRefScanContext* sc)
+VOID CNameSpace::GcScanHandles (EnumGcRefCallbackFunc* fn,  int condemned, int max_gen, EnumGcRefScanContext* sc)
 {
     PalPrintf("CNameSpace::GcScanHandles\n");
 
@@ -424,7 +419,7 @@ bool CNameSpace::GcDhReScan(EnumGcRefScanContext* sc)
 // Sized refs support (not supported on Redhawk)
 //
 
-void CNameSpace::GcScanSizedRefs(EnumGcRefCallbackFunc* fn, int condemned, int max_gen, EnumGcRefScanContext* sc)
+void CNameSpace::GcScanSizedRefs(EnumGcRefCallbackFunc* /*fn*/, int /*condemned*/, int /*max_gen*/, EnumGcRefScanContext* /*sc*/)
 {
 }
 

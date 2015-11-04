@@ -2,15 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"
@@ -31,7 +26,6 @@
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
-#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 
@@ -188,7 +182,7 @@ void AppendInt64(char * pBuffer, UInt32* pLen, UInt64 value)
 }
 #endif // PROFILE_STARTUP
 
-bool UninitDLL(HANDLE hModDLL)
+bool UninitDLL(HANDLE /*hModDLL*/)
 {
 #ifdef PROFILE_STARTUP
     char buffer[1024];
@@ -215,7 +209,7 @@ bool UninitDLL(HANDLE hModDLL)
     return true;
 }
 
-void DllThreadAttach(HANDLE hPalInstance)
+void DllThreadAttach(HANDLE /*hPalInstance*/)
 {
     // We do not call ThreadStore::AttachThread from here because the loader lock is held.  Instead, the 
     // threads themselves will do this on their first reverse pinvoke.
@@ -237,7 +231,7 @@ void DllThreadDetach()
 void __stdcall FiberDetach(void* lpFlsData)
 {
     // Note: loader lock is *not* held here!
-
+    UNREFERENCED_PARAMETER(lpFlsData);
     ASSERT(lpFlsData == PalFlsGetValue(_fls_index));
 
     ThreadStore::DetachCurrentThreadIfHomeFiber();
@@ -319,7 +313,7 @@ HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance)
 // @TODO: Eventually we'll probably have a hosting API and explicit shutdown request. When that happens we'll
 // something more sophisticated here since we won't be able to rely on the OS cleaning up after us.
 //
-COOP_PINVOKE_HELPER(void, RhpShutdownHelper, (UInt32 uExitCode))
+COOP_PINVOKE_HELPER(void, RhpShutdownHelper, (UInt32 /*uExitCode*/))
 {
     // If the classlib has requested it perform a last pass of the finalizer thread.
     RedhawkGCInterface::ShutdownFinalization();

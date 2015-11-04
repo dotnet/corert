@@ -537,7 +537,7 @@
 
 //#include "switches.h"
 #include "safemath.h"
-#include "corerror.h"
+//#include "corerror.h"
 
 #ifdef TARGET_X64
 typedef UInt64 UIntTarget;
@@ -637,8 +637,8 @@ void DacNotImpl(void);
 void    DacError(HRESULT err);
 void __declspec(noreturn) DacError_NoRet(HRESULT err);
 TADDR   DacGlobalBase(void);
+HRESULT DacReadAll(TADDR addr, void* buffer, uint32_t size, bool throwEx);
 #ifdef DAC_CLR_ENVIRONMENT
-HRESULT DacReadAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx);
 HRESULT DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx);
 HRESULT DacAllocVirtual(TADDR addr, ULONG32 size,
                         ULONG32 typeFlags, ULONG32 protectFlags,
@@ -709,12 +709,12 @@ TADDR    DacGetTargetAddrForHostInteriorAddr(const void* ptr, bool throwEx);
 TADDR    DacGetTargetVtForHostVt(const void* vtHost, bool throwEx);
 wchar_t* DacGetVtNameW(TADDR targetVtable);
 
-#ifdef DAC_CLR_ENVIRONMENT
-
 // Report a region of memory to the debugger
 void    DacEnumMemoryRegion(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
 
-HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
+HRESULT DacWriteHostInstance(void * host, bool throwEx);
+
+#ifdef DAC_CLR_ENVIRONMENT
 
 // Occasionally it's necessary to allocate some host memory for
 // instance data that's created on the fly and so doesn't directly
@@ -2312,7 +2312,7 @@ inline Tgt dac_cast(Src src)
 //
 //----------------------------------------------------------------------------
 
-#ifndef GCENV_INCLUDED
+#if defined(DACCESS_COMPILE) || !defined(GCENV_INCLUDED)
 #define SPTR_DECL(type, var) _SPTR_DECL(type*, PTR_##type, var)
 #define SPTR_IMPL(type, cls, var) _SPTR_IMPL(type*, PTR_##type, cls, var)
 #define SPTR_IMPL_INIT(type, cls, var, init) _SPTR_IMPL_INIT(type*, PTR_##type, cls, var, init)
@@ -2321,7 +2321,7 @@ inline Tgt dac_cast(Src src)
 #define GPTR_DECL(type, var) _GPTR_DECL(type*, PTR_##type, var)
 #define GPTR_IMPL(type, var) _GPTR_IMPL(type*, PTR_##type, var)
 #define GPTR_IMPL_INIT(type, var, init) _GPTR_IMPL_INIT(type*, PTR_##type, var, init)
-#endif // GCENV_INCLUDED
+#endif // DACCESS_COMPILE || !GCENV_INCLUDED
 
 // If you want to marshal a single instance of an ArrayDPtr over to the host and
 // return a pointer to it, you can use this function.  However, this is unsafe because

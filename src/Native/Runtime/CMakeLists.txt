@@ -58,7 +58,6 @@ if(WIN32)
   include_directories(windows)
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    ../gc/env/gcenv.windows.cpp    
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
   )
@@ -98,6 +97,7 @@ add_compile_options($<$<CONFIG:Debug>:-DFEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_PROFILING)
 add_definitions(-DFEATURE_REDHAWK)
 add_definitions(-DVERIFY_HEAP)
+add_definitions(-DCORERT)
 
 add_definitions(-D_LIB)
 
@@ -114,7 +114,6 @@ if(WIN32)
   add_compile_options(/fp:precise)
   add_compile_options(/EHsc)
 else()
-  add_definitions(-DPAL_STDCPP_COMPAT)
   add_definitions(-DNO_UI_ASSERT)
 
   add_compile_options(-Wno-format)

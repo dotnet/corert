@@ -45,12 +45,6 @@ inline void PalExitProcess(UInt32 arg1)
     ExitProcess(arg1);
 }
 
-extern "C" UInt32 __stdcall FlsAlloc(PFLS_CALLBACK_FUNCTION);
-inline UInt32 PalFlsAlloc(PFLS_CALLBACK_FUNCTION arg1)
-{
-    return FlsAlloc(arg1);
-}
-
 extern "C" void * __stdcall FlsGetValue(UInt32);
 inline void * PalFlsGetValue(UInt32 arg1)
 {
@@ -227,6 +221,12 @@ inline UInt32 PalWaitForSingleObjectEx(HANDLE arg1, UInt32 arg2, UInt32_BOOL arg
 }
 
 #ifdef PAL_REDHAWK_INCLUDED
+extern "C" UInt32 __stdcall FlsAlloc(PFLS_CALLBACK_FUNCTION);
+inline UInt32 PalFlsAlloc(PFLS_CALLBACK_FUNCTION arg1)
+{
+    return FlsAlloc(arg1);
+}
+
 extern "C" void __stdcall GetNativeSystemInfo(SYSTEM_INFO *);
 inline void PalGetNativeSystemInfo(SYSTEM_INFO * arg1)
 {

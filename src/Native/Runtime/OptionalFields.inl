@@ -10,6 +10,7 @@
     return (UInt32)(1 + VarInt::WriteUnsigned(NULL, uiValue));
 }
 
+#ifndef DACCESS_COMPILE
 // Encode the given field type and integer into the buffer provided (which is guaranteed to have enough
 // space). Update the pointer into the buffer to point just past the newly encoded bytes. Note that any
 // processing of the value for use with out-of-line records has already been performed; we're given the raw
@@ -24,6 +25,7 @@
     // Have VarInt encode the value.
     *ppFields += VarInt::WriteUnsigned(*ppFields, uiValue);
 }
+
 
 #ifndef BINDER
 void OptionalFieldsRuntimeBuilder::Decode(OptionalFields * pOptionalFields)
@@ -93,4 +95,5 @@ UInt32 OptionalFieldsRuntimeBuilder::Encode(OptionalFields * pOptionalFields)
 
     return (UInt32)(pFields - (UInt8*)pOptionalFields);
 }
-#endif
+#endif // !BINDER
+#endif // !DACCESS_COMPILE

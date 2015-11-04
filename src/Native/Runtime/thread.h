@@ -166,21 +166,8 @@ public:
 #ifndef DACCESS_COMPILE
     void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);
 #else
-
     typedef void GcScanRootsCallbackFunc(PTR_RtuObjectRef ppObject, void* token, UInt32 flags);
     bool GcScanRoots(GcScanRootsCallbackFunc * pfnCallback, void * token, PTR_PAL_LIMITED_CONTEXT pInitialContext);
-
-    // Ideally we wouldn't need this wrapper, but PromoteCarefully needs access to the
-    // thread and a promotion field. We aren't assuming the user's token will have this data.
-    struct ScanCallbackData
-    {
-        Thread* thread_under_crawl;               // the thread being scanned
-        bool promotion;                           // are we emulating the GC promote phase or relocate phase?
-                                                  // different references are reported for each
-        void* token;                              // the callback data passed to GCScanRoots
-        GcScanRootsCallbackFunc* pfnUserCallback; // the callback passed in to GcScanRoots
-    };
-
 #endif
 
     bool                Hijack();
@@ -255,3 +242,40 @@ public:
     void ReversePInvoke(ReversePInvokeFrame * pFrame);
     void ReversePInvokeReturn(ReversePInvokeFrame * pFrame);
 };
+
+#ifndef GCENV_INCLUDED
+typedef DPTR(Object) PTR_Object;
+typedef DPTR(PTR_Object) PTR_PTR_Object;
+#endif // !GCENV_INCLUDED
+#ifdef DACCESS_COMPILE
+
+// The DAC uses DebuggerEnumGcRefContext in place of a GCCONTEXT when doing reference
+// enumeration. The GC passes through additional data in the ScanContext which the debugger
+// neither has nor needs. While we could refactor the GC code to make an interface
+// with less coupling, that might affect perf or make integration messier. Instead
+// we use some typedefs so DAC and runtime can get strong yet distinct types.
+
+
+// Ideally we wouldn't need this wrapper, but PromoteCarefully needs access to the
+// thread and a promotion field. We aren't assuming the user's token will have this data.
+struct DacScanCallbackData
+{
+    Thread* thread_under_crawl;               // the thread being scanned
+    bool promotion;                           // are we emulating the GC promote phase or relocate phase?
+                                              // different references are reported for each
+    void* token;                              // the callback data passed to GCScanRoots
+    void* pfnUserCallback;                    // the callback passed in to GcScanRoots
+};
+
+typedef DacScanCallbackData EnumGcRefScanContext;
+typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, UInt32 flags);
+
+#else // DACCESS_COMPILE
+#ifndef GCENV_INCLUDED
+struct ScanContext;
+typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
+#endif // !GCENV_INCLUDED
+typedef promote_func EnumGcRefCallbackFunc;
+typedef ScanContext  EnumGcRefScanContext;
+
+#endif // DACCESS_COMPILE

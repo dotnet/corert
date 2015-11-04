@@ -2,11 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
+#include "common.h"
 #include "CommonTypes.h"
-#include "daccess.h"
-#include "forward_declarations.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"

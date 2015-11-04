@@ -141,6 +141,7 @@ publish/
 # NuGet Packages
 *.nupkg
 **/packages/*
+/packages/*
 
 # Windows Azure Build Output
 csx/

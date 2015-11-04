@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
+#include "common.h"
 
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"
@@ -143,7 +143,7 @@ COOP_PINVOKE_HELPER(Array *, RhNewArray, (EEType * pArrayEEType, int numElements
     return pObject;
 }
 
-COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, int rank, ...))
+COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank, ...))
 {
     ASSERT_MSG(!pArrayEEType->RequiresAlign8(), "NYI");
 
@@ -156,7 +156,7 @@ COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, int rank, .
 
     int numElements = va_arg(argp, int);
 
-    for (Int32 i = 1; i < rank; i++)
+    for (UInt32 i = 1; i < rank; i++)
     {
         // TODO: Overflow checks
         numElements *= va_arg(argp, Int32);

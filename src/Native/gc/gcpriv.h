@@ -2866,7 +2866,7 @@ public:
     PER_HEAP
     DWORD* mark_array;
 #else
-    SPTR_DECL(DWORD, mark_array);
+    SPTR_DECL(uint32_t, mark_array);
 #endif //MULTIPLE_HEAPS
 #endif //MARK_ARRAY
 
@@ -3152,10 +3152,10 @@ protected:
     CLREvent gc_lh_block_event;
 
     PER_HEAP_ISOLATED
-    BOOL gc_can_use_concurrent;
+    bool gc_can_use_concurrent;
 
     PER_HEAP_ISOLATED
-    BOOL temp_disable_concurrent_p;
+    bool temp_disable_concurrent_p;
 
     PER_HEAP_ISOLATED
     BOOL do_ephemeral_gc_p;

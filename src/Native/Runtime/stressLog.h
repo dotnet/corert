@@ -344,9 +344,10 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    FORCEINLINE static bool StressLogOn(unsigned facility, unsigned level)
+    FORCEINLINE static bool StressLogOn(unsigned /*facility*/, unsigned level)
     {
     #if defined(DACCESS_COMPILE) 
+        UNREFERENCED_PARAMETER(level);
         return FALSE;
     #else
         // In Redhawk we have rationalized facility codes and have much
@@ -823,7 +824,8 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 
 #endif // STRESS_LOG
 
-#if !defined(STRESS_LOG) || defined (DACCESS_COMPILE)
+#ifndef GCENV_INCLUDED
+#if !defined(STRESS_LOG) || defined(DACCESS_COMPILE)
 #define STRESS_LOG_VA(msg)                                              do { } WHILE_0
 #define STRESS_LOG0(facility, level, msg)                               do { } WHILE_0
 #define STRESS_LOG1(facility, level, msg, data1)                        do { } WHILE_0
@@ -842,5 +844,6 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #define STRESS_LOG_GC_STACK                 do { } WHILE_0
 #define STRESS_LOG_RESERVE_MEM(numChunks)   do { } WHILE_0
 #endif // !STRESS_LOG || DACCESS_COMPILE
+#endif // !GCENV_INCLUDED
 
 #endif // StressLog_h 

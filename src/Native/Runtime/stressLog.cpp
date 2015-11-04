@@ -8,13 +8,11 @@
 // StressLog infrastructure
 // ---------------------------------------------------------------------------
 
-#include "rhcommon.h"
+#include "common.h"
 #ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
+#include <windows.h>
 #include "sospriv.h"
 #endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "PalRedhawkCommon.h"
@@ -36,8 +34,6 @@
 
 template<typename T> inline T VolatileLoad(T const * pt) { return *(T volatile const *)pt; }
 template<typename T> inline void VolatileStore(T* pt, T val) { *(T volatile *)pt = val; }
-#endif
-
 
 #ifdef STRESS_LOG
 
@@ -437,7 +433,7 @@ bool StressLog::Initialize()
             // avoid repeated calls into this function
             StressLogChunk * head = curThreadStressLog->chunkListHead;
             StressLogChunk * curChunk = head;
-            BOOL curPtrInitialized = FALSE;
+            bool curPtrInitialized = false;
             do
             {
                 if (!curChunk->IsValid ())
@@ -448,8 +444,8 @@ bool StressLog::Initialize()
                 if (!curPtrInitialized && curChunk == curThreadStressLog->curWriteChunk)
                 {
                     // adjust curPtr to the debugger's address space
-                    curThreadStressLog->curPtr = (StressMsg *)((BYTE *)curChunk + ((BYTE *)curThreadStressLog->curPtr - (BYTE *)PTR_HOST_TO_TADDR(curChunk)));
-                    curPtrInitialized = TRUE;
+                    curThreadStressLog->curPtr = (StressMsg *)((UInt8 *)curChunk + ((UInt8 *)curThreadStressLog->curPtr - (UInt8 *)PTR_HOST_TO_TADDR(curChunk)));
+                    curPtrInitialized = true;
                 }
                 
                 curChunk = curChunk->next;
@@ -458,7 +454,7 @@ bool StressLog::Initialize()
             if (!curPtrInitialized)
             {
                 delete curThreadStressLog;
-                return FALSE;
+                return false;
             }
 
             // adjust readPtr and curPtr if needed
@@ -466,7 +462,7 @@ bool StressLog::Initialize()
         }
         curThreadStressLog = curThreadStressLog->next;
     }
-    return TRUE;
+    return true;
 }
 
 void StressLog::ResetForRead()
@@ -561,6 +557,8 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
     }
 }
 
+typedef DPTR(SIZE_T) PTR_SIZE_T;
+
 // Can't refer to the types in sospriv.h because it drags in windows.h
 void StressLog::EnumStressLogMemRanges(/*STRESSLOGMEMRANGECALLBACK*/void* slmrcbWrapper, void *token)
 {
@@ -571,7 +569,7 @@ void StressLog::EnumStressLogMemRanges(/*STRESSLOGMEMRANGECALLBACK*/void* slmrcb
     //
 
     size_t ThreadStressLogAddr = *dac_cast<PTR_SIZE_T>(PTR_HOST_MEMBER_TADDR(StressLog, this, logs));
-    while(ThreadStressLogAddr != NULL) 
+    while (ThreadStressLogAddr != NULL) 
     {
         size_t ChunkListHeadAddr = *dac_cast<PTR_SIZE_T>(ThreadStressLogAddr + offsetof(ThreadStressLog, chunkListHead));
         size_t StressLogChunkAddr = ChunkListHeadAddr;

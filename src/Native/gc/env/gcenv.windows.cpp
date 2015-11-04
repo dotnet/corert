@@ -6,13 +6,22 @@
 //
 // Implementation of the GC environment
 //
-
 #include "common.h"
 
 #include "windows.h"
 
 #include "gcenv.h"
 #include "gc.h"
+
+#ifdef _X86_
+EXTERN_C long _InterlockedOr(long volatile *, long);
+#pragma intrinsic (_InterlockedOr)
+#define InterlockedOr _InterlockedOr
+
+EXTERN_C long _InterlockedAnd(long volatile *, long);
+#pragma intrinsic(_InterlockedAnd)
+#define InterlockedAnd _InterlockedAnd
+#endif // _X86_
 
 int32_t FastInterlockIncrement(int32_t volatile *lpAddend)
 {
@@ -51,12 +60,12 @@ void * _FastInterlockCompareExchangePointer(void * volatile *Destination, void *
 
 void FastInterlockOr(uint32_t volatile *p, uint32_t msk)
 {
-    InterlockedOr((LONG *)p, msk);
+    InterlockedOr((LONG volatile *)p, msk);
 }
 
 void FastInterlockAnd(uint32_t volatile *p, uint32_t msk)
 {
-    InterlockedAnd((LONG *)p, msk);
+    InterlockedAnd((LONG volatile *)p, msk);
 }
 
 
@@ -81,7 +90,7 @@ void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
 }
 
 
-void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
+void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
 {
     CONTRACTL
     {
@@ -90,16 +99,27 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     }
     CONTRACTL_END;
 
-    pMSEX->dwLength = sizeof(MEMORYSTATUSEX);
-    BOOL fRet = GlobalMemoryStatusEx(pMSEX);
+    MEMORYSTATUSEX memStatus;
+
+    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
+    BOOL fRet = GlobalMemoryStatusEx(&memStatus);
     _ASSERTE (fRet);
 
     // If the machine has more RAM than virtual address limit, let us cap it.
     // Our GC can never use more than virtual address limit.
-    if (pMSEX->ullAvailPhys > pMSEX->ullTotalVirtual)
+    if (memStatus.ullAvailPhys > memStatus.ullTotalVirtual)
     {
-        pMSEX->ullAvailPhys = pMSEX->ullAvailVirtual;
+        memStatus.ullAvailPhys = memStatus.ullAvailVirtual;
     }
+
+    // Convert Windows struct to abstract struct
+    pGCMemStatus->dwMemoryLoad              = memStatus.dwMemoryLoad           ;
+    pGCMemStatus->ullTotalPhys              = memStatus.ullTotalPhys           ;
+    pGCMemStatus->ullAvailPhys              = memStatus.ullAvailPhys           ;
+    pGCMemStatus->ullTotalPageFile          = memStatus.ullTotalPageFile       ;
+    pGCMemStatus->ullAvailPageFile          = memStatus.ullAvailPageFile       ;
+    pGCMemStatus->ullTotalVirtual           = memStatus.ullTotalVirtual        ;
+    pGCMemStatus->ullAvailVirtual           = memStatus.ullAvailVirtual        ;
 }
 
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
@@ -173,4 +193,35 @@ bool PalHasCapability(PalCapability capability)
     // TODO: Implement for background GC
     return false;
 }
+
+REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ LPCWSTR pFileName, uint32_t desiredAccess, uint32_t shareMode, _In_opt_ void* pSecurityAttributes, uint32_t creationDisposition, uint32_t flagsAndAttributes, HANDLE hTemplateFile)
+{
+    return INVALID_HANDLE_VALUE;
+}
+
+
+
+CLR_MUTEX_COOKIE ClrCreateMutex(CLR_MUTEX_ATTRIBUTES lpMutexAttributes, bool bInitialOwner, LPCWSTR lpName)
+{
+    _ASSERTE(!"ClrCreateMutex");
+    return NULL;
+}
+
+void ClrCloseMutex(CLR_MUTEX_COOKIE mutex)
+{
+    _ASSERTE(!"ClrCloseMutex");
+}
+
+bool ClrReleaseMutex(CLR_MUTEX_COOKIE mutex)
+{
+    _ASSERTE(!"ClrReleaseMutex");
+    return true;
+}
+
+uint32_t ClrWaitForMutex(CLR_MUTEX_COOKIE mutex, uint32_t dwMilliseconds, bool bAlertable)
+{
+    _ASSERTE(!"ClrWaitForMutex");
+    return WAIT_OBJECT_0;
+}
+
 

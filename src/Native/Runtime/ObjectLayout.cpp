@@ -6,15 +6,10 @@
 //
 // Implementations of functions dealing with object layout related types.
 //
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "assert.h"
 #include "RedhawkWarnings.h"
 #include "PalRedhawkCommon.h"
@@ -22,7 +17,6 @@
 #include "TargetPtrs.h"
 #include "eetype.h"
 #include "ObjectLayout.h"
-#endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 void Object::InitEEType(EEType * pEEType)

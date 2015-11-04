@@ -51,7 +51,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 if (CLR_CMAKE_PLATFORM_UNIX)
+    include_directories(inc/unix)
+
     add_definitions(-DPLATFORM_UNIX=1)
+    add_definitions(-DPAL_STDCPP_COMPAT)
 
     if(CLR_CMAKE_PLATFORM_LINUX)
         add_definitions(-D__LINUX__=1)

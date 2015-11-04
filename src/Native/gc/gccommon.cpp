@@ -22,7 +22,7 @@ SVAL_IMPL_INIT(DWORD,GCHeap,gcHeapType,GCHeap::GC_HEAP_INVALID);
 GPTR_IMPL(GCHeap,g_pGCHeap);
 
 /* global versions of the card table and brick table */ 
-GPTR_IMPL(DWORD,g_card_table);
+GPTR_IMPL(uint32_t,g_card_table);
 
 /* absolute bounds of the GC memory */
 GPTR_IMPL_INIT(BYTE,g_lowest_address,0);

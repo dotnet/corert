@@ -12,6 +12,12 @@
 // -----------------------------------------------------------------------------------------------------------
 // This version of holder does not have a default constructor.
 
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#define EQUALS_DEFAULT 
+#else
+#define EQUALS_DEFAULT = default
+#endif
+
 template <typename TYPE, void (*ACQUIRE_FUNC)(TYPE), void (*RELEASE_FUNC)(TYPE)>
 class HolderNoDefaultValue
 {
@@ -28,7 +34,7 @@ public:
     void SuppressRelease() { m_held = false; }
     TYPE Extract() { m_held = false; return GetValue(); }
 
-    HolderNoDefaultValue(HolderNoDefaultValue && other) = default;
+    HolderNoDefaultValue(HolderNoDefaultValue && other) EQUALS_DEFAULT;
 
 protected:
     TYPE    m_value;
@@ -49,7 +55,7 @@ public:
     Holder() : MY_PARENT(DEFAULTVALUE, false) {}
     Holder(TYPE value, bool fTake = true) : MY_PARENT(value, fTake) {}
 
-    Holder(Holder && other) = default;
+    Holder(Holder && other) EQUALS_DEFAULT;
 
 private:
     // No one should be copying around holder types.
@@ -66,7 +72,7 @@ class Wrapper : public Holder<TYPE, ACQUIRE_FUNC, RELEASE_FUNC, DEFAULTVALUE>
 public:
     Wrapper() : MY_PARENT() {}
     Wrapper(TYPE value, bool fTake = true) : MY_PARENT(value, fTake) {}
-    Wrapper(Wrapper && other) = default;
+    Wrapper(Wrapper && other) EQUALS_DEFAULT;
 
     FORCEINLINE TYPE& operator=(TYPE const & value)
     {
@@ -88,7 +94,7 @@ private:
 
 // -----------------------------------------------------------------------------------------------------------
 template <typename TYPE>
-FORCEINLINE void DoNothing(TYPE value)
+FORCEINLINE void DoNothing(TYPE /*value*/)
 {
 }
 

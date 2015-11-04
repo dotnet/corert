@@ -6,12 +6,7 @@
 //
 // Implementations of methods of OptionalFields which are used only at runtime (i.e. reading field values).
 //
-
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#else // DACCESS_COMPILE
-
+#include "common.h"
 #ifndef RHDUMP
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -23,8 +18,6 @@
 #include "eetype.h"
 #include "ObjectLayout.h"
 #include "varint.h"
-#endif
-
 #endif
 
 // Reads the field type from the current byte of the stream and indicates whether this represents the last

@@ -16,14 +16,11 @@
 #include "RuntimeInstance.h"
 #include "module.h"
 
+
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
 EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
 {
-#ifdef USE_PORTABLE_HELPERS
-    ASSERT(!"@TODO: FINALIZER THREAD NYI");
-    return FALSE;
-#else
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
     // the finalizer thread initiates as a result is not sufficient to remove the low memory condition the
@@ -39,8 +36,11 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
     // two second timeout expires.
     do
     {
-        HANDLE  lowMemEvent = pHeap->GetLowMemoryNotificationEvent();
-        HANDLE  rgWaitHandles[] = { pHeap->GetFinalizerEvent(), lowMemEvent };
+        HANDLE  lowMemEvent = NULL;
+#if 0 // TODO: hook up low memory notification
+        lowMemEvent = pHeap->GetLowMemoryNotificationEvent();
+#endif // 0
+        HANDLE  rgWaitHandles[] = { FinalizerThread::GetFinalizerEvent(), lowMemEvent };
         UInt32  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         UInt32  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
@@ -69,17 +69,12 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
             return FALSE;
         }
     } while (true);
-#endif
 }
 
 // Indicate that the current round of finalizations is complete.
 EXTERN_C REDHAWK_API void __cdecl RhpSignalFinalizationComplete()
 {
-#ifdef USE_PORTABLE_HELPERS
-    ASSERT(!"@TODO: FINALIZER THREAD NYI");
-#else
-    GCHeap::GetGCHeap()->SignalFinalizationDone(TRUE);
-#endif 
+    FinalizerThread::SignalFinalizationDone(TRUE);
 }
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION

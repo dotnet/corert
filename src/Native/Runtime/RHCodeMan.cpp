@@ -2,12 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -20,7 +15,6 @@
 #include "eetype.h"
 #include "ObjectLayout.h"
 #include "varint.h"
-#endif
 
 #include "gcinfo.h"
 #include "RHCodeMan.h"
@@ -597,6 +591,8 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     UInt32 epilogOffset = 0;
     UInt32 epilogSize = 0;
     ASSERT_OR_DAC_RETURN_FALSE(!GetEpilogOffset(pMethodInfo, codeOffset, &epilogOffset, &epilogSize));
+#else 
+    UNREFERENCED_PARAMETER(codeOffset);
 #endif
 
     bool ebpFrame = pInfoHeader->HasFramePointer();
@@ -792,7 +788,6 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 #endif // _ARM_
 
     void ** ppvResult;
-    UInt8 * RSP;
 
     UInt32 epilogOffset = 0;
     UInt32 epilogSize = 0;
@@ -818,6 +813,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
     ppvResult = (void **)((*pContext->pR11) + sizeof(void *));
     goto Finished;
 #else
+
     // We are in the body of the method, so just find the return address using the unwind info.
     if (pHeader->HasFramePointer())
     {
@@ -836,18 +832,20 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 #ifdef _AMD64_
         framePointerOffset = pHeader->GetFramePointerOffset();
 #endif
-        ppvResult = (void **) ((*pContext->pRbp) + sizeof(void *) - framePointerOffset);
+        ppvResult = (void **)((*pContext->pRbp) + sizeof(void *) - framePointerOffset);
         goto Finished;
     }
 
-    // We do not have a frame pointer, but we are also not in the prolog or epilog
+    {
+        // We do not have a frame pointer, but we are also not in the prolog or epilog
 
-    RSP = (UInt8 *)pContext->GetSP();
-    RSP += pHeader->GetFrameSize();
-    RSP += pHeader->GetPreservedRegsSaveSize();
+        UInt8 * RSP = (UInt8 *)pContext->GetSP();
+        RSP += pHeader->GetFrameSize();
+        RSP += pHeader->GetPreservedRegsSaveSize();
 
-    // RSP should point to the return address now.
-    ppvResult = (void**)RSP;
+        // RSP should point to the return address now.
+        ppvResult = (void**)RSP;
+    }
     goto Finished;
 #endif
 
@@ -928,6 +926,7 @@ bool EECodeManager::GetEpilogOffset(EEMethodInfo * pMethodInfo, UInt32 codeOffse
 void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHeader, REGDISPLAY * pContext,
                                                           UInt32 epilogOffset, UInt32 epilogSize)
 {
+    UNREFERENCED_PARAMETER(epilogSize);
     ASSERT(pInfoHeader->IsValidEpilogOffset(epilogOffset, epilogSize));
     UInt8 * pbCurrentIP   = (UInt8 *) pContext->GetIP();
     UInt8 * pbEpilogStart = pbCurrentIP - epilogOffset;
@@ -2063,7 +2062,7 @@ bool EECodeManager::VerifyEpilogBytes(GCInfoHeader * pInfoHeader, Code * pEpilog
 #endif
 }
 
-void EECodeManager::VerifyProlog(EEMethodInfo * pMethodInfo)
+void EECodeManager::VerifyProlog(EEMethodInfo * /*pMethodInfo*/)
 {
 }
 

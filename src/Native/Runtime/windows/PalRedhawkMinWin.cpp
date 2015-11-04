@@ -13,18 +13,21 @@
 // Since this code must include Windows headers to do its job we can't therefore safely include general
 // Redhawk header files.
 //
-
+#include "common.h"
 #include <banned.h>
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
 #include <evntprov.h>
-#include "CommonTypes.h"
-#include "daccess.h"
-#include <palredhawkcommon.h>
-#include <winternl.h>
-#include "CommonMacros.h"
-#include "assert.h"
+
+uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
+{
+    return EventWrite(arg1, arg2, arg3, arg4);
+}
+
+#define EVENT_PROVIDER_INCLUDED
+#include "gcenv.h"
+
 
 #ifdef USE_PORTABLE_HELPERS
 #define assert(expr) ASSERT(expr)
@@ -127,12 +130,12 @@ cleanup:
 #endif
 }
 
-REDHAWK_PALEXPORT BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, DWORD templateRva, SIZE_T templateSize, void** newThunksOut)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
     return (AllocateThunksFromTemplate(hTemplateModule, templateRva, templateSize, newThunksOut) == S_OK);
 }
 
-REDHAWK_PALEXPORT DWORD REDHAWK_PALAPI PalCompatibleWaitAny(BOOL alertable, DWORD timeout, ULONG handleCount, HANDLE* pHandles, BOOL allowReentrantWait)
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
     DWORD index;
     SetLastError(ERROR_SUCCESS); // recommended by MSDN.
@@ -152,23 +155,36 @@ REDHAWK_PALEXPORT DWORD REDHAWK_PALAPI PalCompatibleWaitAny(BOOL alertable, DWOR
     }
 }
 
-REDHAWK_PALEXPORT BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Inout_ MEMORYSTATUSEX* pBuffer)
+REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Out_ GCMemoryStatus* pGCMemStatus)
 {
-    assert(pBuffer->dwLength == sizeof(MEMORYSTATUSEX));
-    return GlobalMemoryStatusEx(pBuffer);
+    MEMORYSTATUSEX memStatus;
+    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
+
+    UInt32_BOOL result = GlobalMemoryStatusEx(&memStatus);
+
+    // Convert Windows struct to abstract struct
+    pGCMemStatus->dwMemoryLoad              = memStatus.dwMemoryLoad           ;
+    pGCMemStatus->ullTotalPhys              = memStatus.ullTotalPhys           ;
+    pGCMemStatus->ullAvailPhys              = memStatus.ullAvailPhys           ;
+    pGCMemStatus->ullTotalPageFile          = memStatus.ullTotalPageFile       ;
+    pGCMemStatus->ullAvailPageFile          = memStatus.ullAvailPageFile       ;
+    pGCMemStatus->ullTotalVirtual           = memStatus.ullTotalVirtual        ;
+    pGCMemStatus->ullAvailVirtual           = memStatus.ullAvailVirtual        ;
+
+    return result;
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(DWORD milliseconds)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(UInt32 milliseconds)
 {
     return Sleep(milliseconds);
 }
 
-REDHAWK_PALEXPORT BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread()
 {
     return SwitchToThread();
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateMutexW(_In_opt_ LPSECURITY_ATTRIBUTES pMutexAttributes, BOOL initialOwner, _In_opt_z_ LPCWSTR pName)
+REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateMutexW(_In_opt_ LPSECURITY_ATTRIBUTES pMutexAttributes, UInt32_BOOL initialOwner, _In_opt_z_ LPCWSTR pName)
 {
     return CreateMutexW(pMutexAttributes, initialOwner, pName);
 }
@@ -234,13 +250,12 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     return true;
 }
 
-typedef BOOL(__stdcall *HijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
 
-REDHAWK_PALEXPORT HRESULT REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext)
 {
     if (hThread == INVALID_HANDLE_VALUE)
     {
-        return E_INVALIDARG;
+        return (UInt32)E_INVALIDARG;
     }
 
     if (SuspendThread(hThread) == (DWORD)-1)
@@ -264,8 +279,6 @@ REDHAWK_PALEXPORT HRESULT REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackCa
     return result;
 }
 
-typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
-
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
     HANDLE hThread = CreateThread(
@@ -288,17 +301,17 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCa
     return hThread;
 }
 
-REDHAWK_PALEXPORT BOOL REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE) != NULL;
 }
 
-REDHAWK_PALEXPORT BOOL REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, TRUE) != NULL;
 }
 
-REDHAWK_PALEXPORT DWORD REDHAWK_PALAPI PalGetTickCount()
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetTickCount()
 {
 #pragma warning(push)
 #pragma warning(disable: 28159) // Consider GetTickCount64 instead
@@ -306,23 +319,36 @@ REDHAWK_PALEXPORT DWORD REDHAWK_PALAPI PalGetTickCount()
 #pragma warning(pop)
 }
 
-REDHAWK_PALEXPORT BOOL REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
 {
-    return EventEnabled(regHandle, eventDescriptor);
+    return !!EventEnabled(regHandle, eventDescriptor);
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ LPCWSTR pFileName, DWORD desiredAccess, DWORD shareMode, _In_opt_ LPSECURITY_ATTRIBUTES pSecurityAttributes, DWORD creationDisposition, DWORD flagsAndAttributes, HANDLE hTemplateFile)
+REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(
+    _In_z_ LPCWSTR pFileName, 
+    uint32_t desiredAccess, 
+    uint32_t shareMode, 
+    _In_opt_ void* pSecurityAttributes, 
+    uint32_t creationDisposition, 
+    uint32_t flagsAndAttributes, 
+    HANDLE hTemplateFile)
 {
-    return CreateFileW(pFileName, desiredAccess, shareMode, pSecurityAttributes, creationDisposition, flagsAndAttributes, hTemplateFile);
+    return CreateFileW(pFileName, desiredAccess, shareMode, (LPSECURITY_ATTRIBUTES)pSecurityAttributes, 
+                       creationDisposition, flagsAndAttributes, hTemplateFile);
 }
 
-REDHAWK_PALEXPORT _Success_(return == 0)
-UINT REDHAWK_PALAPI PalGetWriteWatch(_In_ DWORD flags, _In_ void* pBaseAddress, _In_ SIZE_T regionSize, _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, _Inout_opt_ ULONG_PTR* pCount, _Out_opt_ ULONG* pGranularity)
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetWriteWatch(
+    UInt32 flags, 
+    _In_ void* pBaseAddress, 
+    UIntNative regionSize, 
+    _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, 
+    _Inout_opt_ UIntNative* pCount, 
+    _Inout_opt_ UInt32* pGranularity)
 {
-    return GetWriteWatch(flags, pBaseAddress, regionSize, pAddresses, pCount, pGranularity);
+    return GetWriteWatch(flags, pBaseAddress, regionSize, pAddresses, (ULONG_PTR *)pCount, (LPDWORD)pGranularity);
 }
 
-REDHAWK_PALEXPORT UINT REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, SIZE_T regionSize)
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, UIntNative regionSize)
 {
     return ResetWriteWatch(pBaseAddress, regionSize);
 }
@@ -346,7 +372,7 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return (HANDLE)module;
 }
 
-REDHAWK_PALEXPORT PVOID REDHAWK_PALAPI PalAddVectoredExceptionHandler(ULONG firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
+REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(UInt32 firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
 {
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
 }
@@ -1208,7 +1234,7 @@ void PalDebugBreak()
 }
 
 // Functions called by the GC to obtain our cached values for number of logical processors and cache size.
-REDHAWK_PALEXPORT DWORD REDHAWK_PALAPI PalGetLogicalCpuCount()
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetLogicalCpuCount()
 {
     return g_cLogicalCpus;
 }
@@ -1219,14 +1245,14 @@ REDHAWK_PALEXPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL 
         : g_cbLargestOnDieCacheAdjusted;
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, SIZE_T size, DWORD allocationType, DWORD protect)
+REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, UIntNative size, UInt32 allocationType, UInt32 protect)
 {
     return VirtualAlloc(pAddress, size, allocationType, protect);
 }
 
 #pragma warning (push)
 #pragma warning (disable:28160) // warnings about invalid potential parameter combinations that would cause VirtualFree to fail - those are asserted for below
-REDHAWK_PALEXPORT BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, SIZE_T size, DWORD freeType)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, UIntNative size, UInt32 freeType)
 {
     assert(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
     assert((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
@@ -1244,4 +1270,97 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 
 
 
+//
+// Code seeded from gcenv.windows.cpp
+//
+
+
+#ifdef _X86_
+EXTERN_C long _InterlockedOr(long volatile *, long);
+#pragma intrinsic (_InterlockedOr)
+#define InterlockedOr _InterlockedOr
+
+EXTERN_C long _InterlockedAnd(long volatile *, long);
+#pragma intrinsic(_InterlockedAnd)
+#define InterlockedAnd _InterlockedAnd
+#endif // _X86_
+
+int32_t FastInterlockIncrement(int32_t volatile *lpAddend)
+{
+    return InterlockedIncrement((LONG *)lpAddend);
+}
+
+int32_t FastInterlockDecrement(int32_t volatile *lpAddend)
+{
+    return InterlockedDecrement((LONG *)lpAddend);
+}
+
+int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value)
+{
+    return InterlockedExchange((LONG *)Target, Value);
+}
+
+int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand)
+{
+    return InterlockedCompareExchange((LONG *)Destination, Exchange, Comperand);
+}
+
+int32_t FastInterlockExchangeAdd(int32_t volatile *Addend, int32_t Value)
+{
+    return InterlockedExchangeAdd((LONG *)Addend, Value);
+}
+
+void * _FastInterlockExchangePointer(void * volatile *Target, void * Value)
+{
+    return InterlockedExchangePointer(Target, Value);
+}
+
+void * _FastInterlockCompareExchangePointer(void * volatile *Destination, void * Exchange, void * Comperand)
+{
+    return InterlockedCompareExchangePointer(Destination, Exchange, Comperand);
+}
+
+void FastInterlockOr(uint32_t volatile *p, uint32_t msk)
+{
+    InterlockedOr((LONG volatile *)p, msk);
+}
+
+void FastInterlockAnd(uint32_t volatile *p, uint32_t msk)
+{
+    InterlockedAnd((LONG volatile *)p, msk);
+}
+
+
+void UnsafeInitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
+{
+    InitializeCriticalSection(lpCriticalSection);
+}
+
+void UnsafeEEEnterCriticalSection(CRITICAL_SECTION *lpCriticalSection)
+{
+    EnterCriticalSection(lpCriticalSection);
+}
+
+void UnsafeEELeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
+{
+    LeaveCriticalSection(lpCriticalSection);
+}
+
+void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
+{
+    DeleteCriticalSection(lpCriticalSection);
+}
+
+
+GCSystemInfo g_SystemInfo;
+
+void InitializeSystemInfo()
+{
+    SYSTEM_INFO systemInfo;
+    GetSystemInfo(&systemInfo);
+
+    g_SystemInfo.dwNumberOfProcessors = systemInfo.dwNumberOfProcessors;
+    g_SystemInfo.dwPageSize = systemInfo.dwPageSize;
+    g_SystemInfo.dwAllocationGranularity = systemInfo.dwAllocationGranularity;
+}
 

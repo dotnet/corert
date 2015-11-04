@@ -6,15 +6,10 @@
 //
 // RWLock.cpp -- adapted from CLR SimpleRWLock.cpp
 //
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"
@@ -31,7 +26,6 @@
 #include "RWLock.h"
 #include "threadstore.h"
 #include "RuntimeInstance.h"
-#endif // !DACCESS_COMPILE
 
 // Configurable constants used across our spin locks
 // Initialization here is necessary so that we have meaningful values before the runtime is started
