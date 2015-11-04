@@ -53,25 +53,22 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 if (CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-DPLATFORM_UNIX=1)
 
+    if(CLR_CMAKE_PLATFORM_LINUX)
+        add_definitions(-D__LINUX__=1)
+    endif()
+
     # All warnings that are not explicitly disabled are reported as errors
     add_compile_options(-Wall)
     add_compile_options(-Werror)
-
-    add_compile_options(-Wno-format-nonliteral)
-    add_compile_options(-Wno-missing-prototypes)
-    add_compile_options(-Wno-disabled-macro-expansion)
-    add_compile_options(-Wno-c++98-compat)
-    add_compile_options(-Wno-c++98-compat-pedantic)
-
-    add_compile_options(-Wno-null-conversion)
     add_compile_options(-Wno-invalid-offsetof)
     add_compile_options(-Wno-null-arithmetic)
+    add_compile_options(-Wno-null-conversion)
 
     # Disable strict warning on unused functions.
     add_compile_options(-Wno-unused-function)
 
     # The -fms-extensions enable the stuff like __if_exists, __declspec(uuid()), etc.
-    add_compile_options(-fms-extensions )
+    add_compile_options(-fms-extensions)
 
     add_compile_options(-fPIC)
 endif(CLR_CMAKE_PLATFORM_UNIX)
@@ -117,6 +114,30 @@ function(get_compile_definitions DefinitionName)
     endforeach()
     set(${DefinitionName} ${DEFINITIONS} PARENT_SCOPE)
 endfunction(get_compile_definitions)
+
+if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
+  add_definitions(-D_TARGET_AMD64_=1)
+  add_definitions(-D_AMD64_)
+  add_definitions(-DAMD64)
+  add_definitions(-DTARGET_X64)
+  add_definitions(-DTARGET_AMD64)
+  add_definitions(-D_WIN64=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
+  add_definitions(-D_TARGET_X86_=1)
+  add_definitions(-D_X86_)
+  add_definitions(-DTARGET_X86)
+  add_definitions(-D_WIN32=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
+  add_definitions(-D_TARGET_ARM_=1)
+  add_definitions(-D_ARM_)
+  add_definitions(-DTARGET_ARM)
+  add_definitions(-D_WIN32=1)
+elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  add_definitions(-D_TARGET_ARM64_=1)
+  add_definitions(-D_WIN64=1)
+else()
+  clr_unknown_arch()
+endif()
 
 # Set the passed in RetSources variable to the list of sources with added current source directory
 # to form absolute paths. 

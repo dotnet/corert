@@ -1518,7 +1518,7 @@ COOP_PINVOKE_HELPER(bool , RhCreateGenericInstanceDescForType, (EEType *        
         ASSERT(pTemplateGid != NULL && pTemplateGid->HasInstantiation() && pTemplateGid->HasVariance());
 
         pGenericVarianceFlags = new (nothrow) UInt32[arity];
-        if (pGenericVarianceFlags == NULL) return NULL;
+        if (pGenericVarianceFlags == NULL) return false;
 
         for (UInt32 i = 0; i < arity; i++)
             ((UInt32*)pGenericVarianceFlags)[i] = (UInt32)pTemplateGid->GetParameterVariance(i);

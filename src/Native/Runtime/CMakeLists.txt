@@ -74,7 +74,6 @@ else()
 
   list(APPEND COMMON_RUNTIME_SOURCES
     ../gc/env/gcenv.unix.cpp    
-    unix/PalRedhawkCommon.cpp
     unix/PalRedhawkUnix.cpp
   )
 
@@ -88,29 +87,6 @@ endif()
 set(RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
-if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
-  add_definitions(-D_TARGET_AMD64_=1)
-  add_definitions(-D_AMD64_)
-  add_definitions(-DAMD64)
-  add_definitions(-DTARGET_X64)
-  add_definitions(-DTARGET_AMD64)
-  add_definitions(-D_WIN64=1)
-elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
-  add_definitions(-D_TARGET_X86_=1)
-  add_definitions(-D_X86_)
-  add_definitions(-DTARGET_X86)
-  add_definitions(-D_WIN32=1)
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
-  add_definitions(-D_TARGET_ARM_=1)
-  add_definitions(-D_ARM_)
-  add_definitions(-DTARGET_ARM)
-  add_definitions(-D_WIN32=1)
-elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-  add_definitions(-D_TARGET_ARM64_=1)
-  add_definitions(-D_WIN64=1)
-else()
-  clr_unknown_arch()
-endif()
 
 add_definitions(-DAPP_LOCAL_RUNTIME)
 add_definitions(-DFEATURE_BACKGROUND_GC)
@@ -142,17 +118,17 @@ if(WIN32)
 else()
   add_definitions(-DPAL_STDCPP_COMPAT)
   add_definitions(-DNO_UI_ASSERT)
-  add_compile_options(-Wno-format)
-  add_compile_options(-Wno-unused-variable)
-  add_compile_options(-Wno-unused-private-field)
-  add_compile_options(-Wno-tautological-undefined-compare)
 
-  add_compile_options(-Wno-unknown-pragmas)
+  add_compile_options(-Wno-format)
   add_compile_options(-Wno-ignored-attributes)
-  add_compile_options(-Wno-unused-value)
-  add_compile_options(-Wno-undefined-inline)
-  add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-self-assign)
+  add_compile_options(-Wno-tautological-undefined-compare)
+  add_compile_options(-Wno-undefined-inline)
+  add_compile_options(-Wno-unknown-pragmas)
+  add_compile_options(-Wno-unused-function)
+  add_compile_options(-Wno-unused-private-field)
+  add_compile_options(-Wno-unused-value)
+  add_compile_options(-Wno-unused-variable)
 
   add_compile_options(-Qunused-arguments)
 
