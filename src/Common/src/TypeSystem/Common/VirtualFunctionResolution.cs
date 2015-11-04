@@ -259,7 +259,9 @@ namespace Internal.TypeSystem
         private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc methodToVerify, MethodDesc slotDefiningMethod)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
-            return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
+                // With generic types, methods get instantiated and thus one cannot use reference equality.
+            return slotDefiningMethodOfMethodToVerify.GetTypicalMethodDefinition() ==
+                   slotDefiningMethod.GetTypicalMethodDefinition();
         }
 
         private static void FindBaseUnificationGroup(MetadataType currentType, UnificationGroup unificationGroup)
