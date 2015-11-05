@@ -60,6 +60,9 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
                 }
             }
 
+            // This call performs test run checks for the CI.
+            Utilities.addXUnitDotNETResults(newJob, '**/testResults.xml')
+
             // This call performs remaining common job setup on the newly created job.
             // This is used most commonly for simple inner loop testing.
             // It does the following:
