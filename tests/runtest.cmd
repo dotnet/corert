@@ -27,7 +27,7 @@ exit /b 2
 set __BuildStr=%__BuildOS%.%__BuildArch%.%__BuildType%
 
 set SCRIPT_DIR=%~dp0
-set BIN_DIR=..\bin\tests
+set BIN_DIR=%SCRIPT_DIR%..\bin\tests
 set PACKAGE=toolchain.%__BuildOS%-%__BuildArch%.Microsoft.DotNet.ILToNative
 set VERSION=1.0.0-prerelease
 
@@ -40,8 +40,8 @@ if /i "%__BuildType%"=="Debug" (
 set NUPKG_UNPACK_DIR=%BIN_DIR%\package
 set NUPKG_INSTALL_DIR=%NUPKG_UNPACK_DIR%\install
 set TOOLCHAIN_DIR=%NUPKG_INSTALL_DIR%\%PACKAGE%.%VERSION%
-set NUPKG_PATH=..\bin\Product\%__BuildStr%\.nuget\%PACKAGE%.%VERSION%.nupkg
-set NUGET_PATH=..\packages
+set NUPKG_PATH=%SCRIPT_DIR%..\bin\Product\%__BuildStr%\.nuget\%PACKAGE%.%VERSION%.nupkg
+set NUGET_PATH=%SCRIPT_DIR%..\packages
 
 echo.
 echo -------------------------
@@ -80,7 +80,7 @@ echo.
 echo Installing ILToNative from %NUPKG_PATH% into %NUPKG_INSTALL_DIR%.
 echo ^<packages^>^<package id="%PACKAGE%" version="%VERSION%"/^>^</packages^> > %NUPKG_UNPACK_DIR%\packages.config
 copy /y  %NUPKG_PATH% %NUPKG_UNPACK_DIR% > nul
-%NUGET_PATH%\NuGet.exe install %NUPKG_UNPACK_DIR%\packages.config -Source %SCRIPT_DIR%%NUPKG_UNPACK_DIR% -OutputDir %NUPKG_INSTALL_DIR% -prerelease
+%NUGET_PATH%\NuGet.exe install %NUPKG_UNPACK_DIR%\packages.config -Source %NUPKG_UNPACK_DIR% -OutputDir %NUPKG_INSTALL_DIR% -prerelease
 
 echo.
 set CORERT_EXT_PATH=%NUPKG_INSTALL_DIR%\%CORERT_EXT_PACKAGE%.%CORERT_EXT_VERSION%
@@ -104,12 +104,6 @@ if not exist "%OBJWRITER_PATH%" goto :NoCoreRTExt
 
 if not exist "%TOOLCHAIN_DIR%\ILToNative.exe" goto :NoILToNative
 
-echo Installing JIT from "%PROTOJIT_PATH%" to "%TOOLCHAIN_DIR%"
-copy /y "%PROTOJIT_PATH%" "%TOOLCHAIN_DIR%" > nul
-
-echo Installing Object Writer from "%OBJWRITER_PATH%" to "%TOOLCHAIN_DIR%"
-copy /y "%OBJWRITER_PATH%" "%TOOLCHAIN_DIR%" > nul
-
 setlocal enabledelayedexpansion
 set __VSProductVersion=140
 set __VCBuildArch=x86_amd64
@@ -119,10 +113,10 @@ echo. > %BIN_DIR%\testResults.tmp
 set /a TOTAL_TESTS=0
 set /a PASSED_TESTS=0
 for /f "delims=" %%a in ('dir /s /aD /b *') do (
-    set SOURCE_FILE=%%a\%%~na
+    set SOURCE_FOLDER=%%a
     set SOURCE_FILENAME=%%~na
-    if exist "!SOURCE_FILE!.cs" (
-        call :CompileFile !SOURCE_FILE! !SOURCE_FILENAME!
+    if exist "!SOURCE_FOLDER!\!SOURCE_FILENAME!.cs" (
+        call :CompileFile !SOURCE_FOLDER! !SOURCE_FILENAME!
         set /a TOTAL_TESTS=!TOTAL_TESTS!+1
     )
 )
@@ -165,8 +159,9 @@ if %TOTAL_TESTS% EQU %PASSED_TESTS% (
 :CompileFile
     echo.
     echo Compiling directory %~1
-    set SOURCE_FILE=%~1
+    set SOURCE_FOLDER=%~1
     set SOURCE_FILENAME=%~2
+    set SOURCE_FILE=!SOURCE_FOLDER!\!SOURCE_FILENAME!
     if exist "!SOURCE_FILE!.S" del "!SOURCE_FILE!.S"
     if exist "!SOURCE_FILE!.compiled.exe" del "!SOURCE_FILE!.compiled.exe"
     if exist "!SOURCE_FILE!.obj" del "!SOURCE_FILE!.obj"
@@ -180,16 +175,15 @@ if %TOTAL_TESTS% EQU %PASSED_TESTS% (
 
     echo.
     echo Compiling ILToNative !SOURCE_FILE!.exe
-    %TOOLCHAIN_DIR%\ILToNative.exe -in !SOURCE_FILE!.exe -r %CORERT_EXT_RUNTIME%\*.dll -out !SOURCE_FILE!.obj -r %TOOLCHAIN_DIR%\sdk\System.Private.Corelib.dll > !SOURCE_FILE!.il2n.log
+    call %TOOLCHAIN_DIR%\dotnet-compile-native.bat %__BuildArch% %__BuildType% /mode protojit /appdepsdk %CORERT_EXT_PATH% /codegenpath %PROTOJIT_PATH% /objgenpath %OBJWRITER_PATH% /logpath %SOURCE_FOLDER% /linklibs %MSVCRT_LIB% /in !SOURCE_FILE!.exe /out !SOURCE_FILE!.compiled.exe
     endlocal
-
-    link.exe  /ERRORREPORT:PROMPT !SOURCE_FILE!.obj /OUT:"!SOURCE_FILE!.compiled.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"!SOURCE_FILE!.lib" /MACHINE:X64 ..\bin\Product\%__BuildStr%\lib\Runtime.lib ..\bin\Product\%__BuildStr%\lib\bootstrapper.lib %MSVCRT_LIB% > !SOURCE_FILE!.link.log
-
-    echo.
-    echo Running test !SOURCE_FILENAME!
-
-    call !SOURCE_FILE!.cmd
-    IF "%ERRORLEVEL%"=="0" (
+    IF "%ERRORLEVEL%" == "0" (
+        echo.
+        echo Running test !SOURCE_FILENAME!
+        call !SOURCE_FILE!.cmd
+    )
+    
+    IF "%ERRORLEVEL%" == "0" (
         set /a PASSED_TESTS=%PASSED_TESTS%+1
         echo ^<test name="!SOURCE_FILE!" type="Program" method="Main" result="Pass" /^> >> %BIN_DIR%\testResults.tmp
     ) ELSE (
