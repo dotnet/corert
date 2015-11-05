@@ -19,7 +19,7 @@ function(clr_unknown_arch)
 endfunction()
 
 if (CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
-    add_definitions(-DBIT64=1)
+    set(IS_64BIT_BUILD 1)
 elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
     add_definitions(-DBIT32=1)
     # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
@@ -90,6 +90,10 @@ elseif(WIN32)
         clr_unknown_arch()
     endif()
 endif()
+
+if(IS_64BIT_BUILD)
+    add_definitions(-DBIT64=1)
+endif(IS_64BIT_BUILD)
 
 if(WIN32)
     enable_language(ASM_MASM)

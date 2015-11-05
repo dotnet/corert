@@ -28,6 +28,7 @@
 #include <dlfcn.h>
 #include <dirent.h>
 #include <string.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/time.h>
@@ -609,14 +610,18 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartBackgroundWork(_In_ Backgro
     static const int NormalPriority = 0;
     static const int HighestPriority = -20;
 
+    // TODO: Figure out which scheduler to use, the default one doesn't seem to
+    // support per thread priorities.
+#if 0
     sched_param params;
     memset(&params, 0, sizeof(params));
+
     params.sched_priority = highPriority ? HighestPriority : NormalPriority;
 
     // Set the priority of the thread
     st = pthread_attr_setschedparam(&attrs, &params);
     ASSERT(st == 0);
-
+#endif
     // Create the thread as detached, that means not joinable
     st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     ASSERT(st == 0);
@@ -777,11 +782,11 @@ bool QueryCacheSize()
     // Process entries starting with "cpu" (cpu0, cpu1, ...) in the directory
     while (success && (cpuEntry = readdir(cpuDir)) != nullptr)
     {
-        if (strncmp(cpuEntry->d_name, "cpu", 3) == 0)
+        if ((strncmp(cpuEntry->d_name, "cpu", 3) == 0) && isdigit(cpuEntry->d_name[3]))
         {
             char cpuCachePath[64] = "/sys/devices/system/cpu/";
             strcat(cpuCachePath, cpuEntry->d_name);
-            strcat(cpuCachePath, "cache");
+            strcat(cpuCachePath, "/cache");
             DIR* cacheDir = opendir(cpuCachePath);
             if (cacheDir == nullptr)
             {
@@ -796,27 +801,31 @@ bool QueryCacheSize()
             // For all entries in the directory
             while ((cacheEntry = readdir(cacheDir)) != nullptr)
             {
-                cpuCachePath[cpuCacheBasePathLength] = '\0';
-                strcat(cpuCachePath, cpuEntry->d_name);
-                strcat(cpuCachePath, "/size");
-
-                int fd = open(cpuCachePath, O_RDONLY);
-                if (fd < 0)
+                if (strncmp(cacheEntry->d_name, "index", 5) == 0)
                 {
-                    success = false;
-                    break;
+                    cpuCachePath[cpuCacheBasePathLength] = '\0';
+                    strcat(cpuCachePath, cacheEntry->d_name);
+                    strcat(cpuCachePath, "/size");
+
+                    int fd = open(cpuCachePath, O_RDONLY);
+                    if (fd < 0)
+                    {
+                        success = false;
+                        break;
+                    }
+
+                    char cacheSizeStr[16];
+                    int bytesRead = read(fd, cacheSizeStr, sizeof(cacheSizeStr) - 1);
+                    cacheSizeStr[bytesRead] = '\0';
+
+                    // Parse the cache size that is formatted as a number followed by the K letter
+                    char* lastChar;
+                    int cacheSize = strtol(cacheSizeStr, &lastChar, 10) * 1024;
+                    ASSERT(*lastChar == 'K');
+                    g_cbLargestOnDieCache = max(g_cbLargestOnDieCache, cacheSize);
+
+                    close(fd);
                 }
-
-                char cacheSizeStr[16];
-                int bytesRead = read(fd, cacheSizeStr, sizeof(cacheSizeStr) - 1);
-                cacheSizeStr[bytesRead] = '\0';
-
-                // Parse the cache size that is formatted as a number followed by the K letter
-                ASSERT(cacheSizeStr[bytesRead - 1] == 'K');
-                int cacheSize = atoi(cacheSizeStr) * 1024;
-                g_cbLargestOnDieCache = max(g_cbLargestOnDieCache, cacheSize);
-
-                close(fd);
             }
 
             closedir(cacheDir);
@@ -964,16 +973,6 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 {
     static void* pBuffer;
     return _InterlockedExchangePointer(&pBuffer, pNewBuffer);
-}
-
-extern "C" UInt32 _InterlockedOr(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
-{
-    return __sync_fetch_and_or(pDst, iValue);
-}
-
-extern "C" UInt32 _InterlockedAnd(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
-{
-    return __sync_fetch_and_and(pDst, iValue);
 }
 
 extern "C" HANDLE GetCurrentProcess()
