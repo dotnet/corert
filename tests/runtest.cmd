@@ -20,7 +20,7 @@ goto Usage
 
 :Usage
 echo %0 [OS] [arch] [flavor]
-goto :eof
+exit /b 2
 
 :ArgsDone
 
@@ -143,24 +143,24 @@ echo.
 set "OUTSTR=TOTAL: %TOTAL_TESTS% PASSED: %PASSED_TESTS%"
 if %TOTAL_TESTS% EQU %PASSED_TESTS% (
     powershell -Command Write-Host "%OUTSTR%" -foreground "Black" -background "Green"
+    exit /b 0
 ) else ( 
     powershell -Command Write-Host "%OUTSTR%" -foreground "White" -background "Red"
+    exit /b 1
 )
-endlocal
-goto :eof
 
 :NoILToNative
     echo ILToNative.exe not found at %TOOLCHAIN_DIR%, aborting test run.
-    goto :eof
+    exit /b 3
 
 :NoCoreRTExt
     echo corert.external path not found %CORERT_EXT_PATH%, aborting test run.
     echo set environment variable CORERT_EXT_PATH to the latest corert external path.
-    goto :eof
+    exit /b 4
 
 :NoNuPkg
     echo No nupkg at "%NUPKG_PATH%"
-    goto :eof
+    exit /b 5
 
 :CompileFile
     echo.

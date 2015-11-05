@@ -792,7 +792,7 @@ REDHAWK_PALIMPORT UInt32 __stdcall PalHijack(HANDLE hThread, _In_ PalHijackCallb
 REDHAWK_PALIMPORT UInt32_BOOL __stdcall PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
 #endif
 
-inline void PalDebugBreak() { __debugbreak(); }
+void PalDebugBreak();
 
 REDHAWK_PALIMPORT UInt32 __stdcall PalGetLogicalCpuCount();
 REDHAWK_PALIMPORT size_t __stdcall PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize);
