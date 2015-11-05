@@ -183,7 +183,7 @@ goto :eof
     %TOOLCHAIN_DIR%\ILToNative.exe -in !SOURCE_FILE!.exe -r %CORERT_EXT_RUNTIME%\*.dll -out !SOURCE_FILE!.obj -r %TOOLCHAIN_DIR%\sdk\System.Private.Corelib.dll > !SOURCE_FILE!.il2n.log
     endlocal
 
-    link.exe  /ERRORREPORT:PROMPT !SOURCE_FILE!.obj /OUT:"!SOURCE_FILE!.compiled.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"!SOURCE_FILE!.lib" /MACHINE:X64 ..\bin\Product\%__BuildStr%\lib\Runtime.lib ..\bin\Product\%__BuildStr%\lib\reproNative.lib %MSVCRT_LIB% > !SOURCE_FILE!.link.log
+    link.exe  /ERRORREPORT:PROMPT !SOURCE_FILE!.obj /OUT:"!SOURCE_FILE!.compiled.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"!SOURCE_FILE!.lib" /MACHINE:X64 ..\bin\Product\%__BuildStr%\lib\Runtime.lib ..\bin\Product\%__BuildStr%\lib\bootstrapper.lib %MSVCRT_LIB% > !SOURCE_FILE!.link.log
 
     echo.
     echo Running test !SOURCE_FILENAME!

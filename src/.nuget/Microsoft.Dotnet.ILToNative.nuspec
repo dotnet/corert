@@ -15,7 +15,6 @@
     <copyright>Copyright &#169; Microsoft Corporation</copyright>
     <dependencies>
         <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
-        <dependency id="Microsoft.NETCore.Console" version="1.0.0" />
     </dependencies>
   </metadata>
   <files>
@@ -24,9 +23,13 @@
     <file src="..\ILToNative.DependencyAnalysisFramework.dll" target="ILToNative.DependencyAnalysisFramework.dll" />
     <file src="..\ILToNative.TypeSystem.dll" target="ILToNative.TypeSystem.dll" />
     <file src="..\lib\Runtime.lib" target="sdk\Runtime.lib" />
+    <file src="..\lib\PortableRuntime.lib" target="sdk\PortableRuntime.lib" />
+    <file src="..\lib\bootstrapper.lib" target="sdk\bootstrapper.lib" />
+    <file src="..\lib\bootstrappercpp.lib" target="sdk\bootstrappercpp.lib" />
     <file src="..\System.Private.Corelib.dll" target="sdk\System.Private.Corelib.dll" />
     <file src="..\toolruntime\*.dll" />
     <file src="..\toolruntime\coreconsole.exe" target="ILToNative.exe" />
     <file src="..\..\..\..\packages\Microsoft.DiaSymReader\1.0.6\lib\portable-net45+win8\Microsoft.DiaSymReader.dll" />
+    <file src="..\..\..\..\src\scripts\dotnet-compile-native.bat" />
   </files>
 </package>
