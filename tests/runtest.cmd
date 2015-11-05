@@ -31,12 +31,6 @@ set BIN_DIR=..\bin\tests
 set PACKAGE=Microsoft.DotNet.ILToNative
 set VERSION=1.0.0-prerelease
 
-if /i "%__BuildArch%"=="x86" (
-    set "CLANG_EXE=%PROGRAMFILES(x86)%\LLVM\bin\clang.exe"
-) else (
-    set "CLANG_EXE=%PROGRAMFILES%\LLVM\bin\clang.exe"
-)
-
 if /i "%__BuildType%"=="Debug" (
     set MSVCRT_LIB=msvcrtd.lib
 ) else (
@@ -107,7 +101,6 @@ if not exist "%CORERT_EXT_RUNTIME%" set CORERT_EXT_RUNTIME=%CORERT_EXT_PATH%
 if not exist "%CORERT_EXT_RUNTIME%" goto :NoCoreRTExt
 if not exist "%PROTOJIT_PATH%" goto :NoCoreRTExt
 if not exist "%OBJWRITER_PATH%" goto :NoCoreRTExt
-rem if not exist "%CLANG_EXE%" goto :NoClang
 
 if not exist "%TOOLCHAIN_DIR%\ILToNative.exe" goto :NoILToNative
 
@@ -156,10 +149,6 @@ goto :eof
 
 :NoILToNative
     echo ILToNative.exe not found at %TOOLCHAIN_DIR%, aborting test run.
-    goto :eof
-
-:NoClang
-    echo clang.exe not found "%CLANG_EXE%", aborting test run.
     goto :eof
 
 :NoCoreRTExt
