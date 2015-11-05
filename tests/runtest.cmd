@@ -133,7 +133,9 @@ echo.
 echo ^<?xml version="1.0" encoding="utf-8"?^> > %BIN_DIR%\testResults.xml
 echo ^<assemblies^>  >> %BIN_DIR%\testResults.xml
 echo ^<assembly name="ILToNative" total="%TOTAL_TESTS%" passed="%PASSED_TESTS%" failed="%FAILED_TESTS%" skipped="0"^>  >> %BIN_DIR%\testResults.xml
+echo ^<collection total="%TOTAL_TESTS%" passed="%PASSED_TESTS%" failed="%FAILED_TESTS%" skipped="0"^>  >> %BIN_DIR%\testResults.xml
 type %BIN_DIR%\testResults.tmp >> %BIN_DIR%\testResults.xml
+echo ^</collection^>  >> %BIN_DIR%\testResults.xml
 echo ^</assembly^>  >> %BIN_DIR%\testResults.xml
 echo ^</assemblies^>  >> %BIN_DIR%\testResults.xml
 
