@@ -203,7 +203,7 @@ namespace ILToNative.DependencyAnalysis
                                     throw new NotImplementedException();
                             }
                             // Emit symbol reference
-                            objectWriter.EmitSymbolRef(targetName, size, isPCRelative);
+                            objectWriter.EmitSymbolRef(targetName, size, isPCRelative, reloc.Delta);
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)

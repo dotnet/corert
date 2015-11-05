@@ -257,8 +257,6 @@ namespace System
                 return;
             }
 
-            // TODO-CORERT: re-enable this once we can handle the relocs for JIT code for large switch blocks
-#if !CORERT
             //
             // This is portable version of memcpy. It mirrors what the hand optimized assembly versions of memcpy typically do.
             //
@@ -392,7 +390,6 @@ namespace System
                 _Memmove(dest, src, len);
                 return;
             }
-#endif
 
             if (((int)dest & 3) != 0)
             {

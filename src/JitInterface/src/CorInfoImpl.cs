@@ -78,6 +78,8 @@ namespace Internal.JitInterface
                 {
                     Code = _code,
                     ColdCode = _coldCode,
+
+                    RODataAlignment = _roDataAlignment,
                     ROData = _roData,
 
                     Relocs = (_relocs != null) ? _relocs.ToArray() : null
@@ -118,7 +120,10 @@ namespace Internal.JitInterface
 
             _code = null;
             _coldCode = null;
+
+            _roDataAlignment = 0;
             _roData = null;
+
             _relocs = null;
         }
 
@@ -1689,6 +1694,8 @@ namespace Internal.JitInterface
 
         byte[] _code;
         byte[] _coldCode;
+
+        int _roDataAlignment;
         byte[] _roData;
 
         void allocMem(IntPtr _this, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
@@ -1699,7 +1706,22 @@ namespace Internal.JitInterface
                 coldCodeBlock = (void *)GetPin(_coldCode = new byte[coldCodeSize]);
 
             if (roDataSize != 0)
+            {
+                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+                {
+                    _roDataAlignment = 16;
+                }
+                else if (roDataSize < 8)
+                {
+                    _roDataAlignment = PointerSize;
+                }
+                else
+                {
+                    _roDataAlignment = 8;
+                }
+
                 roDataBlock = (void*)GetPin(_roData = new byte[roDataSize]);
+            }
         }
 
         void reserveUnwindInfo(IntPtr _this, [MarshalAs(UnmanagedType.Bool)]bool isFunclet, [MarshalAs(UnmanagedType.Bool)]bool isColdCode, uint unwindSize)

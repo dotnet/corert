@@ -32,13 +32,13 @@ namespace ILToNative.DependencyAnalysis.X64
             int regNumLowBitsShifted = regNumLowBits << 3;
             byte modRM = (byte)(regNumLowBitsShifted | 0x05);
             Builder.EmitByte(modRM);
-            EmitRel32RelocFor3ByteOpcode(symbol);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
         }
 
         public void EmitJMP(ISymbolNode symbol)
         {
             Builder.EmitByte(0xE9);
-            EmitRel32RelocFor1ByteOpcode(symbol);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
         }
 
         public void EmitINT3()
@@ -251,16 +251,6 @@ namespace ILToNative.DependencyAnalysis.X64
             if (addrMode.Size == AddrModeSize.Int16)
                 Builder.EmitByte(0x66);
             EmitIndirInstruction(opcode + ((((int)addrMode.Size) > 1) ? 1 : 0), dstReg, ref addrMode);
-        }
-
-        private void EmitRel32RelocFor1ByteOpcode(ISymbolNode symbol)
-        {
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32, 1);
-        }
-
-        private void EmitRel32RelocFor3ByteOpcode(ISymbolNode symbol)
-        {
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32, 3);
         }
     }
 }
