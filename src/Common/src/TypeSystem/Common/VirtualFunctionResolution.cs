@@ -241,7 +241,7 @@ namespace Internal.TypeSystem
         private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc methodToVerify, MethodDesc slotDefiningMethod)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
-            return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
+            return slotDefiningMethodOfMethodToVerify.GetTypicalMethodDefinition() == slotDefiningMethod.GetTypicalMethodDefinition();
         }
 
         private static void FindBaseUnificationGroup(MetadataType currentType, UnificationGroup unificationGroup)
