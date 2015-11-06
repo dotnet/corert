@@ -190,6 +190,8 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
+static const uint32_t INFINITE = 0xFFFFFFFF;
+
 extern "C" UInt32 __stdcall NtGetCurrentProcessorNumber();
 
 static uint32_t g_dwPALCapabilities;
@@ -264,30 +266,42 @@ public:
     uint32_t Wait(uint32_t milliseconds)
     {
         timespec endTime;
+
+        if (milliseconds != INFINITE)
+        {
 #if HAVE_CLOCK_MONOTONIC
-        clock_gettime(CLOCK_MONOTONIC, &endTime);
-        TimeSpecAdd(&endTime, milliseconds);
+            clock_gettime(CLOCK_MONOTONIC, &endTime);
+            TimeSpecAdd(&endTime, milliseconds);
 #else // HAVE_CLOCK_MONOTONIC
-        // TODO: fix this. The time of day can be changed by the user and then the timeout
-        // would change. So we will need to use pthread_cond_timedwait_relative_np and
-        // update the relative time each time pthread_cond_timedwait gets waked.
-        // on OSX and other systems that don't support the monotonic clock
-        timeval now;
-        gettimeofday(&now, NULL);
-        endTime.tv_sec = now.tv_sec;
-        endTime.tv_nsec = now.tv_usec * tccMicroSecondsToNanoSeconds;
-        TimeSpecAdd(&endTime, milliseconds);
+            // TODO: fix this. The time of day can be changed by the user and then the timeout
+            // would change. So we will need to use pthread_cond_timedwait_relative_np and
+            // update the relative time each time pthread_cond_timedwait gets waked.
+            // on OSX and other systems that don't support the monotonic clock
+            timeval now;
+            gettimeofday(&now, NULL);
+            endTime.tv_sec = now.tv_sec;
+            endTime.tv_nsec = now.tv_usec * tccMicroSecondsToNanoSeconds;
+            TimeSpecAdd(&endTime, milliseconds);
 #endif // HAVE_CLOCK_MONOTONIC
+        }
 
         int st = 0;
 
         pthread_mutex_lock(&m_mutex);
         while (!m_state)
         {
-            st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
+            if (milliseconds == INFINITE)
+            {
+                st = pthread_cond_wait(&m_condition, &m_mutex);
+            }
+            else
+            {
+                st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
+            }
+
             if (st != 0)
             {
-                // timed wait failed or timed out
+                // wait failed or timed out
                 break;
             }
 
@@ -348,6 +362,8 @@ public:
 
     uint32_t Wait(uint32_t milliseconds)
     {
+        // TODO: implement timed wait if needed
+        ASSERT(milliseconds == INFINITE);
         int st = pthread_mutex_lock(&m_mutex);
         return (st == 0) ? WAIT_OBJECT_0 : WAIT_FAILED;
     }
@@ -1081,6 +1097,11 @@ extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
+extern "C" void ExitProcess(UInt32 exitCode)
+{
+    exit(exitCode);
+}
+
 extern "C" UInt32_BOOL SetEvent(HANDLE event)
 {
     EventUnixHandle* unixHandle = (EventUnixHandle*)event;
@@ -1107,6 +1128,12 @@ extern "C" UInt32 GetEnvironmentVariableW(const wchar_t* pName, wchar_t* pBuffer
 extern "C" UInt16 RtlCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3, UInt32* arg4)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+}
+
+extern "C" HANDLE GetProcessHeap()
+{
+    // UNIXTODO: Consider using some special value?
+    return (HANDLE)1;
 }
 
 extern "C" void* HeapAlloc(HANDLE heap, UInt32 flags, UIntNative bytes)
