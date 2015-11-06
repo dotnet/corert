@@ -1294,10 +1294,19 @@ namespace Internal.JitInterface
         {
             pEEInfoOut = new CORINFO_EE_INFO();
 
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_EE_INFO* tmp = &pEEInfoOut)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_EE_INFO>());
+#endif
+
             int pointerSize = this.PointerSize;
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
+
+            pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
         }
 
         [return: MarshalAs(UnmanagedType.LPWStr)]

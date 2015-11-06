@@ -6,11 +6,12 @@
 
 int UTF8ToWideCharLen(char* bytes, int len)
 {
-    return strlen(bytes);
+    return len;
 }
 
 int UTF8ToWideChar(char* bytes, int len, unsigned short* buffer, int bufLen)
 {
-    return mbtowc((wchar_t*)buffer, bytes, bufLen);
+    for (int i = 0; i < len; i++)
+        buffer[i] = bytes[i];
+    return len;
 }
-

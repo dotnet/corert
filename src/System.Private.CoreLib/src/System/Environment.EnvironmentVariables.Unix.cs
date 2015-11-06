@@ -57,6 +57,11 @@ namespace System
             if (variable == null)
                 throw new ArgumentNullException("variable");
 
+            // CORERT-TODO: remove this Hello World workaround
+            // https://github.com/dotnet/corert/issues/213
+            if (variable == "LC_ALL" || variable == "LC_MESSAGES" || variable == "LANG")
+                return null;
+
             byte[] variableAsBytes = Interop.StringHelper.GetBytesFromUTF8string(variable);
             fixed (byte* pVar = variableAsBytes)
             {
