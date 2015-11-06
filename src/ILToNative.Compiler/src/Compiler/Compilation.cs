@@ -312,6 +312,7 @@ namespace ILToNative
             new TypeAndMethod("System.Collections.Generic.LowLevelDictionary`2", "GetBucket"),
             new TypeAndMethod("System.Collections.Generic.ArraySortHelper`1", "InternalBinarySearch"),
             new TypeAndMethod("System.RuntimeExceptionHelpers", "SerializeExceptionsForDump"),
+            new TypeAndMethod("System.InvokeUtils", "CheckArgument"),
         };
 
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
