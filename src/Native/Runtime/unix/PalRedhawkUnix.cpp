@@ -1184,12 +1184,6 @@ extern "C" Int32 _wcsicmp(const wchar_t *string1, const wchar_t *string2)
     return wcscasecmp(string1, string2);
 }
 
-// NOTE: this is needed by main.cpp of the compiled app
-int UTF8ToWideChar(char* bytes, int len, uint16_t* buffer, int bufLen)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
 REDHAWK_PALEXPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...)
 {
 #if defined(_DEBUG)
@@ -1305,4 +1299,9 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HAN
     // UNIXTODO: Implement this function!
     *pModuleNameOut = NULL;
     return 0;
+}
+
+void PalDebugBreak()
+{
+    __debugbreak();
 }
