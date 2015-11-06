@@ -68,8 +68,9 @@ namespace System.Diagnostics
         [DebuggerHidden]
         internal static void DebugBreak()
         {
-            // IMPORTANT: don’t add any code here
-            // This method intentionally left empty and we’ll inject the IL “break” instruction through IL transformer 
+            // IMPORTANT: This call will let us detect if  debug break is broken, and also
+            // gives double chances.
+            DebugBreak();
         }
     }
 }
