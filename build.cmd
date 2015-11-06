@@ -185,4 +185,6 @@ exit /b 1
 
 pushd "%__ProjectDir%\tests"
 call "runtest.cmd" %__BuildType% %__BuildArch%
+set TEST_EXIT_CODE=%ERRORLEVEL%
 popd
+exit /b %TEST_EXIT_CODE%
