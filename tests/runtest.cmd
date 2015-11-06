@@ -28,7 +28,7 @@ set __BuildStr=%__BuildOS%.%__BuildArch%.%__BuildType%
 
 set SCRIPT_DIR=%~dp0
 set BIN_DIR=..\bin\tests
-set PACKAGE=Microsoft.DotNet.ILToNative
+set PACKAGE=toolchain.%__BuildOS%-%__BuildArch%.Microsoft.DotNet.ILToNative
 set VERSION=1.0.0-prerelease
 
 if /i "%__BuildType%"=="Debug" (

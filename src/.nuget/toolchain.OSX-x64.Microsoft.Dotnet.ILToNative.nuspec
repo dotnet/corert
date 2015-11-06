@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Microsoft.DotNet.ILToNative</id>
+    <id>toolchain.OSX-x64.Microsoft.DotNet.ILToNative</id>
     <version>1.0.0-prerelease</version>
     <title>Microsoft .NET ILToNative Toolchain</title>
     <authors>Microsoft</authors>
@@ -28,7 +28,7 @@
     <file src="../lib/libbootstrappercpp.a" target="sdk/libbootstrappercpp.a" />
     <file src="../System.Private.Corelib.dll" target="sdk/System.Private.Corelib.dll" />
     <file src="../ToolRuntime/*.dll" />
-    <file src="../ToolRuntime/*.so" />
+    <file src="../ToolRuntime/*.dylib" />
     <file src="../ToolRuntime/coreconsole" target="ILToNative" />
     <file src="../../../../packages/Microsoft.DiaSymReader/1.0.6/lib/portable-net45+win8/Microsoft.DiaSymReader.dll" />
   </files>
