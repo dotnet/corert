@@ -60,7 +60,9 @@ namespace ILToNative
 
         EcmaModule _systemModule;
 
-        MetadataFieldLayout _metadataFieldLayout = new CompilerMetadataFieldLayout();
+        MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
+        MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
+        ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
@@ -169,7 +171,21 @@ namespace ILToNative
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
-            return _metadataFieldLayout;
+            return _metadataFieldLayoutAlgorithm;
+        }
+
+        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
+            {
+                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(_systemModule.GetType("System", "Array`1"));
+            }
+            return _arrayOfTRuntimeInterfacesAlgorithm;
+        }
+
+        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        {
+            return _metadataRuntimeInterfacesAlgorithm;
         }
 
         //

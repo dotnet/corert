@@ -488,5 +488,43 @@ namespace Internal.TypeSystem
         /// algorithm used by types to lay themselves out.
         /// </summary>
         public abstract FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type);
+
+        /// <summary>
+        /// Abstraction to allow the type system context to control the interfaces
+        /// algorithm used by types.
+        /// </summary>
+        public RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForType(TypeDesc type)
+        {
+            if (type is MetadataType)
+            {
+                return GetRuntimeInterfacesAlgorithmForMetadataType((MetadataType)type);
+            }
+            else if (type is ArrayType)
+            {
+                ArrayType arrType = (ArrayType)type;
+                if (arrType.IsSzArray && !arrType.ElementType.IsPointer)
+                {
+                    return GetRuntimeInterfacesAlgorithmForNonPointerArrayType((ArrayType)type);
+                }
+                else
+                {
+                    return BaseTypeRuntimeInterfacesAlgorithm.Instance;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Abstraction to allow the type system context to control the interfaces
+        /// algorithm used by metadata types.
+        /// </summary>
+        public abstract RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type);
+
+        /// <summary>
+        /// Abstraction to allow the type system context to control the interfaces
+        /// algorithm used by single dimensional array types.
+        /// </summary>
+        public abstract RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type);
     }
 }

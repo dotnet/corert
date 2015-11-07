@@ -26,7 +26,6 @@ namespace Internal.TypeSystem.Ecma
         string _name;
         TypeDesc[] _genericParameters;
         MetadataType _baseType;
-        TypeDesc[] _implementedInterfaces;
 
         internal EcmaType(EcmaModule module, TypeDefinitionHandle handle)
         {
@@ -147,35 +146,7 @@ namespace Internal.TypeSystem.Ecma
                 return _baseType;
             }
         }
-
-        private TypeDesc[] InitializeImplementedInterfaces()
-        {
-            var interfaceHandles = _typeDefinition.GetInterfaceImplementations();
-
-            int count = interfaceHandles.Count;
-            if (count == 0)
-                return (_implementedInterfaces = TypeDesc.EmptyTypes);
-
-            TypeDesc[] implementedInterfaces = new TypeDesc[count];
-            int i = 0;
-            foreach (var interfaceHandle in interfaceHandles)
-            {
-                var interfaceImplementation = this.MetadataReader.GetInterfaceImplementation(interfaceHandle);
-                implementedInterfaces[i++] = _module.GetType(interfaceImplementation.Interface);
-            }
-            return (_implementedInterfaces = implementedInterfaces);
-        }
-
-        public override TypeDesc[] ImplementedInterfaces
-        {
-            get
-            {
-                if (_implementedInterfaces == null)
-                    return InitializeImplementedInterfaces();
-                return _implementedInterfaces;
-            }
-        }
-
+        
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;

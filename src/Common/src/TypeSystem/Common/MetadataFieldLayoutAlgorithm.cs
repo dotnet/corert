@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
     /// MetadataFieldLayout algorithm which can be used to compute field layout
     /// for any MetadataType where all fields are available by calling GetFields.
     /// </summary>
-    public class MetadataFieldLayout : FieldLayoutAlgorithm
+    public class MetadataFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
         public override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(DefType defType)
         {

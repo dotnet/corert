@@ -55,7 +55,9 @@ namespace TypeSystemTests
 
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
-        MetadataFieldLayout _metadataFieldLayout = new TestMetadataFieldLayout();
+        MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
+        MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
+        ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown))
@@ -107,6 +109,20 @@ namespace TypeSystemTests
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
             return _metadataFieldLayout;
+        }
+
+        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
+            {
+                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(_systemModule.GetType("System", "Array`1"));
+            }
+            return _arrayOfTRuntimeInterfacesAlgorithm;
+        }
+
+        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        {
+            return _metadataRuntimeInterfacesAlgorithm;
         }
     }
 }
