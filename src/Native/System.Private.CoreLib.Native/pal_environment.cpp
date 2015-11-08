@@ -13,6 +13,15 @@ extern "C" int32_t GetEnvironmentVariable(const char* variable, char** result)
    {
        return 0;
    }
-   
-   return (int32_t)strlen(*result);
+
+   size_t resultSize = strlen(*result);
+
+   // Return -1 if the size overflows an integer so that we can throw on managed side
+   if ((size_t)(int32_t)resultSize != resultSize)
+   {
+       *result = NULL;
+       return -1;
+   }
+
+   return (int32_t)resultSize;
 }
