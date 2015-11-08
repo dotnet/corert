@@ -68,7 +68,13 @@ namespace System
                 IntPtr result;
                 int size = Interop.Sys.GetEnvironmentVariable(pVar, out result);
 
-                if (size > 0)
+                // The size can be -1 if the environment variable's size overflows an integer
+                if (size == -1)
+                {
+                    throw new OverflowException();
+                }
+
+                if (result != IntPtr.Zero)
                 {
                     return Encoding.UTF8.GetString((byte*)result, size);
                 }
