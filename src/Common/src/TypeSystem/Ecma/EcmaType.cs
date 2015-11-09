@@ -15,7 +15,7 @@ namespace Internal.TypeSystem.Ecma
     /// <summary>
     /// Override of MetadataType that uses actual Ecma335 metadata.
     /// </summary>
-    public sealed partial class EcmaType : MetadataType
+    public sealed partial class EcmaType : MetadataType, EcmaModule.IEntityHandleObject
     {
         EcmaModule _module;
         TypeDefinitionHandle _handle;
@@ -40,6 +40,14 @@ namespace Internal.TypeSystem.Ecma
             // Initialize name eagerly in debug builds for convenience
             this.ToString();
 #endif
+        }
+
+        EntityHandle EcmaModule.IEntityHandleObject.Handle
+        {
+            get
+            {
+                return _handle;
+            }
         }
 
         // TODO: Use stable hashcode based on the type name?

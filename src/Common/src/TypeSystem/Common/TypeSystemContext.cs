@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -11,14 +10,29 @@ namespace Internal.TypeSystem
 {
     public abstract class TypeSystemContext
     {
-        public TypeSystemContext()
+        public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown))
         {
-            Target = new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown);
         }
 
         public TypeSystemContext(TargetDetails target)
         {
             Target = target;
+
+            _instantiatedTypes = new InstantiatedTypeKey.InstantiatedTypeKeyHashtable();
+
+            _arrayTypes = new ArrayTypeKey.ArrayTypeKeyHashtable();
+
+            _byRefTypes = new ByRefHashtable();
+
+            _pointerTypes = new PointerHashtable();
+
+            _instantiatedMethods = new InstantiatedMethodKey.InstantiatedMethodKeyHashtable();
+
+            _methodForInstantiatedTypes = new MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable();
+
+            _fieldForInstantiatedTypes = new FieldForInstantiatedTypeKey.FieldForInstantiatedTypeKeyHashtable();
+
+            _signatureVariables = new SignatureVariableHashtable(this);
         }
 
         public TargetDetails Target
@@ -43,37 +57,16 @@ namespace Internal.TypeSystem
         // Array types
         //
 
-        ImmutableDictionary<TypeDesc, ArrayType> _arrayTypes = ImmutableDictionary<TypeDesc, ArrayType>.Empty;
-
         public TypeDesc GetArrayType(TypeDesc elementType)
         {
-            ArrayType existingArrayType;
-            if (_arrayTypes.TryGetValue(elementType, out existingArrayType))
-                return existingArrayType;
-
-            return CreateArrayType(elementType);
-        }
-
-        TypeDesc CreateArrayType(TypeDesc elementType)
-        {
-            ArrayType arrayType = new ArrayType(elementType, -1);
-
-            lock (this)
-            {
-                ArrayType existingArrayType;
-                if (_arrayTypes.TryGetValue(elementType, out existingArrayType))
-                    return existingArrayType;
-                _arrayTypes = _arrayTypes.Add(elementType, arrayType);
-            }
-
-            return arrayType;
+            return GetArrayType(elementType, -1);
         }
 
         //
         // MDArray types
         //
 
-        struct ArrayTypeKey : IEquatable<ArrayTypeKey>
+        struct ArrayTypeKey
         {
             TypeDesc _elementType;
             int _rank;
@@ -84,114 +77,145 @@ namespace Internal.TypeSystem
                 _rank = rank;
             }
 
-            public override int GetHashCode()
+            public TypeDesc ElementType
             {
-                return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(_elementType, _rank);
+                get
+                {
+                    return _elementType;
+                }
             }
 
-            public bool Equals(ArrayTypeKey other)
+            public int Rank
             {
-                if (_elementType != other._elementType)
-                    return false;
+                get
+                {
+                    return _rank;
+                }
+            }
 
-                if (_rank != other._rank)
-                    return false;
+            public class ArrayTypeKeyHashtable : LockFreeReaderHashtable<ArrayTypeKey, ArrayType>
+            {
+                protected override int GetKeyHashCode(ArrayTypeKey key)
+                {
+                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(key._elementType, key._rank);
+                }
 
-                return true;
+                protected override int GetValueHashCode(ArrayType value)
+                {
+                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(value.ElementType, value.IsSzArray ? -1 : value.Rank);
+                }
+
+                protected override bool CompareKeyToValue(ArrayTypeKey key, ArrayType value)
+                {
+                    if (key._elementType != value.ElementType)
+                        return false;
+
+                    if ((key._rank == -1) && value.IsSzArray)
+                        return true;
+
+                    return key._rank == value.Rank;
+                }
+
+                protected override bool CompareValueToValue(ArrayType value1, ArrayType value2)
+                {
+                    return (value1.ElementType == value2.ElementType) && (value1.Rank == value2.Rank) && value1.IsSzArray == value2.IsSzArray;
+                }
+
+                protected override ArrayType CreateValueFromKey(ArrayTypeKey key)
+                {
+                    return new ArrayType(key.ElementType, key.Rank);
+                }
             }
         }
 
-        ImmutableDictionary<ArrayTypeKey, ArrayType> _ArrayTypes = ImmutableDictionary<ArrayTypeKey, ArrayType>.Empty;
+        ArrayTypeKey.ArrayTypeKeyHashtable _arrayTypes;
 
         public TypeDesc GetArrayType(TypeDesc elementType, int rank)
         {
-            ArrayType existingArrayType;
-            if (_ArrayTypes.TryGetValue(new ArrayTypeKey(elementType, rank), out existingArrayType))
-                return existingArrayType;
-
-            return CreateArrayType(elementType, rank);
-        }
-
-        TypeDesc CreateArrayType(TypeDesc elementType, int rank)
-        {
-            ArrayType arrayType = new ArrayType(elementType, rank);
-
-            lock (this)
-            {
-                ArrayType existingArrayType;
-                if (_ArrayTypes.TryGetValue(new ArrayTypeKey(elementType, rank), out existingArrayType))
-                    return existingArrayType;
-                _ArrayTypes = _ArrayTypes.Add(new ArrayTypeKey(elementType, rank), arrayType);
-            }
-
-            return arrayType;
+            return _arrayTypes.GetOrCreateValue(new ArrayTypeKey(elementType, rank));
         }
 
         //
         // ByRef types
         //
+        public class ByRefHashtable : LockFreeReaderHashtable<TypeDesc, ByRefType>
+        {
+            protected override int GetKeyHashCode(TypeDesc key)
+            {
+                return key.GetHashCode();
+            }
 
-        ImmutableDictionary<TypeDesc, ByRefType> _byRefTypes = ImmutableDictionary<TypeDesc, ByRefType>.Empty;
+            protected override int GetValueHashCode(ByRefType value)
+            {
+                return value.ParameterType.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(TypeDesc key, ByRefType value)
+            {
+                return key == value.ParameterType;
+            }
+
+            protected override bool CompareValueToValue(ByRefType value1, ByRefType value2)
+            {
+                return value1.ParameterType == value2.ParameterType;
+            }
+
+            protected override ByRefType CreateValueFromKey(TypeDesc key)
+            {
+                return new ByRefType(key);
+            }
+        }
+
+        ByRefHashtable _byRefTypes;
 
         public TypeDesc GetByRefType(TypeDesc parameterType)
         {
-            ByRefType existingByRefType;
-            if (_byRefTypes.TryGetValue(parameterType, out existingByRefType))
-                return existingByRefType;
-
-            return CreateByRefType(parameterType);
-        }
-
-        TypeDesc CreateByRefType(TypeDesc parameterType)
-        {
-            ByRefType byRefType = new ByRefType(parameterType);
-            
-            lock (this)
-            {
-                ByRefType existingByRefType;
-                if (_byRefTypes.TryGetValue(parameterType, out existingByRefType))
-                    return existingByRefType;
-                _byRefTypes = _byRefTypes.Add(parameterType, byRefType);
-            }
-
-            return byRefType;
+            return _byRefTypes.GetOrCreateValue(parameterType);
         }
 
         //
         // Pointer types
         //
+        public class PointerHashtable : LockFreeReaderHashtable<TypeDesc, PointerType>
+        {
+            protected override int GetKeyHashCode(TypeDesc key)
+            {
+                return key.GetHashCode();
+            }
 
-        ImmutableDictionary<TypeDesc, PointerType> _pointerTypes = ImmutableDictionary<TypeDesc, PointerType>.Empty;
+            protected override int GetValueHashCode(PointerType value)
+            {
+                return value.ParameterType.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(TypeDesc key, PointerType value)
+            {
+                return key == value.ParameterType;
+            }
+
+            protected override bool CompareValueToValue(PointerType value1, PointerType value2)
+            {
+                return value1.ParameterType == value2.ParameterType;
+            }
+
+            protected override PointerType CreateValueFromKey(TypeDesc key)
+            {
+                return new PointerType(key);
+            }
+        }
+
+        PointerHashtable _pointerTypes;
 
         public TypeDesc GetPointerType(TypeDesc parameterType)
         {
-            PointerType existingPointerType;
-            if (_pointerTypes.TryGetValue(parameterType, out existingPointerType))
-                return existingPointerType;
-
-            return CreatePointerType(parameterType);
-        }
-
-        TypeDesc CreatePointerType(TypeDesc parameterType)
-        {
-            PointerType pointerType = new PointerType(parameterType);
-            
-            lock (this)
-            {
-                PointerType existingPointerType;
-                if (_pointerTypes.TryGetValue(parameterType, out existingPointerType))
-                    return existingPointerType;
-                _pointerTypes = _pointerTypes.Add(parameterType, pointerType);
-            }
-
-            return pointerType;
+            return _pointerTypes.GetOrCreateValue(parameterType);
         }
 
         //
         // Instantiated types
         //
 
-        struct InstantiatedTypeKey : IEquatable<InstantiatedTypeKey>
+        struct InstantiatedTypeKey
         {
             TypeDesc _typeDef;
             Instantiation _instantiation;
@@ -202,66 +226,92 @@ namespace Internal.TypeSystem
                 _instantiation = instantiation;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int _rotl(int value, int shift)
+            public TypeDesc TypeDef
             {
-                return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-            }
-
-            public override int GetHashCode()
-            {
-                return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_typeDef.GetHashCode(), _instantiation);
-            }
-
-            public bool Equals(InstantiatedTypeKey other)
-            {
-                if (_typeDef != other._typeDef)
-                    return false;
-
-                if (_instantiation.Length != other._instantiation.Length)
-                    return false;
-
-                for (int i = 0; i < _instantiation.Length; i++)
+                get
                 {
-                    if (_instantiation[i] != other._instantiation[i])
-                        return false;
+                    return _typeDef;
+                }
+            }
+
+            public Instantiation Instantiation
+            {
+                get
+                {
+                    return _instantiation;
+                }
+            }
+
+            public class InstantiatedTypeKeyHashtable : LockFreeReaderHashtable<InstantiatedTypeKey, InstantiatedType>
+            {
+                protected override int GetKeyHashCode(InstantiatedTypeKey key)
+                {
+                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(key._typeDef.GetHashCode(), key._instantiation);
                 }
 
-                return true;
+                protected override int GetValueHashCode(InstantiatedType value)
+                {
+                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(value.GetTypeDefinition().GetHashCode(), value.Instantiation);
+                }
+
+                protected override bool CompareKeyToValue(InstantiatedTypeKey key, InstantiatedType value)
+                {
+                    if (key._typeDef != value.GetTypeDefinition())
+                        return false;
+
+                    Instantiation valueInstantiation = value.Instantiation;
+
+                    if (key._instantiation.Length != valueInstantiation.Length)
+                        return false;
+
+                    for (int i = 0; i < key._instantiation.Length; i++)
+                    {
+                        if (key._instantiation[i] != valueInstantiation[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                protected override bool CompareValueToValue(InstantiatedType value1, InstantiatedType value2)
+                {
+                    if (value1.GetTypeDefinition() != value2.GetTypeDefinition())
+                        return false;
+
+                    Instantiation value1Instantiation = value1.Instantiation;
+                    Instantiation value2Instantiation = value2.Instantiation;
+
+                    if (value1Instantiation.Length != value2Instantiation.Length)
+                        return false;
+
+                    for (int i = 0; i < value1Instantiation.Length; i++)
+                    {
+                        if (value1Instantiation[i] != value2Instantiation[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                protected override InstantiatedType CreateValueFromKey(InstantiatedTypeKey key)
+                {
+                    return new InstantiatedType((MetadataType)key.TypeDef, key.Instantiation);
+                }
             }
         }
 
-        ImmutableDictionary<InstantiatedTypeKey, InstantiatedType> _instantiatedTypes = ImmutableDictionary<InstantiatedTypeKey, InstantiatedType>.Empty;
+        InstantiatedTypeKey.InstantiatedTypeKeyHashtable _instantiatedTypes;
 
         public InstantiatedType GetInstantiatedType(MetadataType typeDef, Instantiation instantiation)
         {
-            InstantiatedType existingInstantiatedType;
-            if (_instantiatedTypes.TryGetValue(new InstantiatedTypeKey(typeDef, instantiation), out existingInstantiatedType))
-                return existingInstantiatedType;
-
-            return CreateInstantiatedType(typeDef, instantiation);
-        }
-
-        InstantiatedType CreateInstantiatedType(MetadataType typeDef, Instantiation instantiation)
-        {
-            InstantiatedType instantiatedType = new InstantiatedType(typeDef, instantiation);
-
-            lock (this)
-            {
-                InstantiatedType existingInstantiatedType;
-                if (_instantiatedTypes.TryGetValue(new InstantiatedTypeKey(typeDef, instantiation), out existingInstantiatedType))
-                    return existingInstantiatedType;
-                _instantiatedTypes = _instantiatedTypes.Add(new InstantiatedTypeKey(typeDef, instantiation), instantiatedType);
-            }
-
-            return instantiatedType;
+            return _instantiatedTypes.GetOrCreateValue(new InstantiatedTypeKey(typeDef, instantiation));
         }
 
         //
         // Instantiated methods
         //
 
-        struct InstantiatedMethodKey : IEquatable<InstantiatedMethodKey>
+        struct InstantiatedMethodKey
         {
             MethodDesc _methodDef;
             Instantiation _instantiation;
@@ -272,62 +322,93 @@ namespace Internal.TypeSystem
                 _instantiation = instantiation;
             }
 
-            public override int GetHashCode()
+            public MethodDesc MethodDef
             {
-                return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_methodDef.GetHashCode(), _instantiation);
+                get
+                {
+                    return _methodDef;
+                }
             }
 
-            public bool Equals(InstantiatedMethodKey other)
+            public Instantiation Instantiation
             {
-                if (_methodDef != other._methodDef)
-                    return false;
-
-                if (_instantiation.Length != other._instantiation.Length)
-                    return false;
-
-                for (int i = 0; i < _instantiation.Length; i++)
+                get
                 {
-                    if (_instantiation[i] != other._instantiation[i])
-                        return false;
+                    return _instantiation;
+                }
+            }
+
+            public class InstantiatedMethodKeyHashtable : LockFreeReaderHashtable<InstantiatedMethodKey, InstantiatedMethod>
+            {
+                protected override int GetKeyHashCode(InstantiatedMethodKey key)
+                {
+                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(key._methodDef.GetHashCode(), key._instantiation);
                 }
 
-                return true;
+                protected override int GetValueHashCode(InstantiatedMethod value)
+                {
+                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(value.GetMethodDefinition().GetHashCode(), value.Instantiation);
+                }
+
+                protected override bool CompareKeyToValue(InstantiatedMethodKey key, InstantiatedMethod value)
+                {
+                    if (key._methodDef != value.GetMethodDefinition())
+                        return false;
+
+                    Instantiation valueInstantiation = value.Instantiation;
+
+                    if (key._instantiation.Length != valueInstantiation.Length)
+                        return false;
+
+                    for (int i = 0; i < key._instantiation.Length; i++)
+                    {
+                        if (key._instantiation[i] != valueInstantiation[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                protected override bool CompareValueToValue(InstantiatedMethod value1, InstantiatedMethod value2)
+                {
+                    if (value1.GetMethodDefinition() != value2.GetMethodDefinition())
+                        return false;
+
+                    Instantiation value1Instantiation = value1.Instantiation;
+                    Instantiation value2Instantiation = value2.Instantiation;
+
+                    if (value1Instantiation.Length != value2Instantiation.Length)
+                        return false;
+
+                    for (int i = 0; i < value1Instantiation.Length; i++)
+                    {
+                        if (value1Instantiation[i] != value2Instantiation[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+
+                protected override InstantiatedMethod CreateValueFromKey(InstantiatedMethodKey key)
+                {
+                    return new InstantiatedMethod(key.MethodDef, key.Instantiation);
+                }
             }
         }
 
-        ImmutableDictionary<InstantiatedMethodKey, InstantiatedMethod> _instantiatedMethods = ImmutableDictionary<InstantiatedMethodKey, InstantiatedMethod>.Empty;
+        InstantiatedMethodKey.InstantiatedMethodKeyHashtable _instantiatedMethods;
 
         public InstantiatedMethod GetInstantiatedMethod(MethodDesc methodDef, Instantiation instantiation)
         {
             Debug.Assert(!(methodDef is InstantiatedMethod));
-
-            InstantiatedMethod existingInstantiatedMethod;
-            if (_instantiatedMethods.TryGetValue(new InstantiatedMethodKey(methodDef, instantiation), out existingInstantiatedMethod))
-                return existingInstantiatedMethod;
-
-            return CreateInstantiatedMethod(methodDef, instantiation);
-        }
-
-        InstantiatedMethod CreateInstantiatedMethod(MethodDesc methodDef, Instantiation instantiation)
-        {
-            InstantiatedMethod instantiatedMethod = new InstantiatedMethod(methodDef, instantiation);
-
-            lock (this)
-            {
-                InstantiatedMethod existingInstantiatedMethod;
-                if (_instantiatedMethods.TryGetValue(new InstantiatedMethodKey(methodDef, instantiation), out existingInstantiatedMethod))
-                    return existingInstantiatedMethod;
-                _instantiatedMethods = _instantiatedMethods.Add(new InstantiatedMethodKey(methodDef, instantiation), instantiatedMethod);
-            }
-
-            return instantiatedMethod;
+            return _instantiatedMethods.GetOrCreateValue(new InstantiatedMethodKey(methodDef, instantiation));
         }
 
         //
         // Methods for instantiated type
         //
 
-        struct MethodForInstantiatedTypeKey : IEquatable<MethodForInstantiatedTypeKey>
+        struct MethodForInstantiatedTypeKey
         {
             MethodDesc _typicalMethodDef;
             InstantiatedType _instantiatedType;
@@ -338,57 +419,69 @@ namespace Internal.TypeSystem
                 _instantiatedType = instantiatedType;
             }
 
-            public override int GetHashCode()
+            public MethodDesc TypicalMethodDef
             {
-                return _typicalMethodDef.GetHashCode() ^ _instantiatedType.GetHashCode();
+                get
+                {
+                    return _typicalMethodDef;
+                }
             }
 
-            public bool Equals(MethodForInstantiatedTypeKey other)
+            public InstantiatedType InstantiatedType
             {
-                if (_typicalMethodDef != other._typicalMethodDef)
-                    return false;
+                get
+                {
+                    return _instantiatedType;
+                }
+            }
 
-                if (_instantiatedType != other._instantiatedType)
-                    return false;
+            public class MethodForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<MethodForInstantiatedTypeKey, MethodForInstantiatedType>
+            {
+                protected override int GetKeyHashCode(MethodForInstantiatedTypeKey key)
+                {
+                    return key._typicalMethodDef.GetHashCode() ^ key._instantiatedType.GetHashCode();
+                }
 
-                return true;
+                protected override int GetValueHashCode(MethodForInstantiatedType value)
+                {
+                    return value.GetTypicalMethodDefinition().GetHashCode() ^ value.OwningType.GetHashCode();
+                }
+
+                protected override bool CompareKeyToValue(MethodForInstantiatedTypeKey key, MethodForInstantiatedType value)
+                {
+                    if (key._typicalMethodDef != value.GetTypicalMethodDefinition())
+                        return false;
+
+                    return key._instantiatedType == value.OwningType;
+                }
+
+                protected override bool CompareValueToValue(MethodForInstantiatedType value1, MethodForInstantiatedType value2)
+                {
+                    return (value1.GetTypicalMethodDefinition() == value2.GetTypicalMethodDefinition()) && (value1.OwningType == value2.OwningType);
+                }
+
+                protected override MethodForInstantiatedType CreateValueFromKey(MethodForInstantiatedTypeKey key)
+                {
+                    return new MethodForInstantiatedType(key.TypicalMethodDef, key.InstantiatedType);
+                }
             }
         }
 
-        ImmutableDictionary<MethodForInstantiatedTypeKey, MethodForInstantiatedType> _methodForInstantiatedTypes = ImmutableDictionary<MethodForInstantiatedTypeKey, MethodForInstantiatedType>.Empty;
+        MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable _methodForInstantiatedTypes;
 
         public MethodDesc GetMethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
         {
             Debug.Assert(!(typicalMethodDef is MethodForInstantiatedType));
             Debug.Assert(!(typicalMethodDef is InstantiatedMethod));
 
-            MethodForInstantiatedType existingMethodForInstantiatedType;
-            if (_methodForInstantiatedTypes.TryGetValue(new MethodForInstantiatedTypeKey(typicalMethodDef, instantiatedType), out existingMethodForInstantiatedType))
-                return existingMethodForInstantiatedType;
-
-            return CreateMethodForInstantiatedType(typicalMethodDef, instantiatedType);
-        }
-
-        MethodDesc CreateMethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
-        {
-            MethodForInstantiatedType methodForInstantiatedType = new MethodForInstantiatedType(typicalMethodDef, instantiatedType);
-
-            lock (this)
-            {
-                MethodForInstantiatedType existingMethodForInstantiatedType;
-                if (_methodForInstantiatedTypes.TryGetValue(new MethodForInstantiatedTypeKey(typicalMethodDef, instantiatedType), out existingMethodForInstantiatedType))
-                    return existingMethodForInstantiatedType;
-                _methodForInstantiatedTypes = _methodForInstantiatedTypes.Add(new MethodForInstantiatedTypeKey(typicalMethodDef, instantiatedType), methodForInstantiatedType);
-            }
-
-            return methodForInstantiatedType;
+            return _methodForInstantiatedTypes.GetOrCreateValue(new MethodForInstantiatedTypeKey(typicalMethodDef, instantiatedType));
         }
 
         //
         // Fields for instantiated type
         //
 
-        struct FieldForInstantiatedTypeKey : IEquatable<FieldForInstantiatedTypeKey>
+        struct FieldForInstantiatedTypeKey
         {
             FieldDesc _fieldDef;
             InstantiatedType _instantiatedType;
@@ -399,53 +492,109 @@ namespace Internal.TypeSystem
                 _instantiatedType = instantiatedType;
             }
 
-            public override int GetHashCode()
+            public FieldDesc TypicalFieldDef
             {
-                return _fieldDef.GetHashCode() ^ _instantiatedType.GetHashCode();
+                get
+                {
+                    return _fieldDef;
+                }
             }
 
-            public bool Equals(FieldForInstantiatedTypeKey other)
+            public InstantiatedType InstantiatedType
             {
-                if (_fieldDef != other._fieldDef)
-                    return false;
+                get
+                {
+                    return _instantiatedType;
+                }
+            }
 
-                if (_instantiatedType != other._instantiatedType)
-                    return false;
+            public class FieldForInstantiatedTypeKeyHashtable : LockFreeReaderHashtable<FieldForInstantiatedTypeKey, FieldForInstantiatedType>
+            {
+                protected override int GetKeyHashCode(FieldForInstantiatedTypeKey key)
+                {
+                    return key._fieldDef.GetHashCode() ^ key._instantiatedType.GetHashCode();
+                }
 
-                return true;
+                protected override int GetValueHashCode(FieldForInstantiatedType value)
+                {
+                    return value.GetTypicalFieldDefinition().GetHashCode() ^ value.OwningType.GetHashCode();
+                }
+
+                protected override bool CompareKeyToValue(FieldForInstantiatedTypeKey key, FieldForInstantiatedType value)
+                {
+                    if (key._fieldDef != value.GetTypicalFieldDefinition())
+                        return false;
+
+                    return key._instantiatedType == value.OwningType;
+                }
+
+                protected override bool CompareValueToValue(FieldForInstantiatedType value1, FieldForInstantiatedType value2)
+                {
+                    return (value1.GetTypicalFieldDefinition() == value2.GetTypicalFieldDefinition()) && (value1.OwningType == value2.OwningType);
+                }
+
+                protected override FieldForInstantiatedType CreateValueFromKey(FieldForInstantiatedTypeKey key)
+                {
+                    return new FieldForInstantiatedType(key.TypicalFieldDef, key.InstantiatedType);
+                }
             }
         }
 
-        ImmutableDictionary<FieldForInstantiatedTypeKey, FieldForInstantiatedType> _fieldForInstantiatedTypes = ImmutableDictionary<FieldForInstantiatedTypeKey, FieldForInstantiatedType>.Empty;
+        FieldForInstantiatedTypeKey.FieldForInstantiatedTypeKeyHashtable _fieldForInstantiatedTypes;
 
         public FieldDesc GetFieldForInstantiatedType(FieldDesc fieldDef, InstantiatedType instantiatedType)
         {
-            FieldForInstantiatedType existingFieldForInstantiatedType;
-            if (_fieldForInstantiatedTypes.TryGetValue(new FieldForInstantiatedTypeKey(fieldDef, instantiatedType), out existingFieldForInstantiatedType))
-                return existingFieldForInstantiatedType;
-
-            return CreateFieldForInstantiatedType(fieldDef, instantiatedType);
-        }
-
-        FieldDesc CreateFieldForInstantiatedType(FieldDesc fieldDef, InstantiatedType instantiatedType)
-        {
-            FieldForInstantiatedType fieldForInstantiatedType = new FieldForInstantiatedType(fieldDef, instantiatedType);
-
-            lock (this)
-            {
-                FieldForInstantiatedType existingFieldForInstantiatedType;
-                if (_fieldForInstantiatedTypes.TryGetValue(new FieldForInstantiatedTypeKey(fieldDef, instantiatedType), out existingFieldForInstantiatedType))
-                    return existingFieldForInstantiatedType;
-                _fieldForInstantiatedTypes = _fieldForInstantiatedTypes.Add(new FieldForInstantiatedTypeKey(fieldDef, instantiatedType), fieldForInstantiatedType);
-            }
-
-            return fieldForInstantiatedType;
+            return _fieldForInstantiatedTypes.GetOrCreateValue(new FieldForInstantiatedTypeKey(fieldDef, instantiatedType));
         }
 
         //
         // Signature variables
         //
-        ImmutableDictionary<uint, TypeDesc> _signatureVariables = ImmutableDictionary<uint, TypeDesc>.Empty;
+        private class SignatureVariableHashtable : LockFreeReaderHashtable<uint, SignatureVariable>
+        {
+            TypeSystemContext _context;
+            public SignatureVariableHashtable(TypeSystemContext context)
+            {
+                _context = context;
+            }
+
+            protected override int GetKeyHashCode(uint key)
+            {
+                return (int)key;
+            }
+
+            protected override int GetValueHashCode(SignatureVariable value)
+            {
+                uint combinedIndex = value.IsMethodSignatureVariable ? ((uint)value.Index | 0x80000000) : (uint)value.Index;
+                return (int)combinedIndex;
+            }
+
+            protected override bool CompareKeyToValue(uint key, SignatureVariable value)
+            {
+                uint combinedIndex = value.IsMethodSignatureVariable ? ((uint)value.Index | 0x80000000) : (uint)value.Index;
+                return key == combinedIndex;
+            }
+
+            protected override bool CompareValueToValue(SignatureVariable value1, SignatureVariable value2)
+            {
+                uint combinedIndex1 = value1.IsMethodSignatureVariable ? ((uint)value1.Index | 0x80000000) : (uint)value1.Index;
+                uint combinedIndex2 = value2.IsMethodSignatureVariable ? ((uint)value2.Index | 0x80000000) : (uint)value2.Index;
+
+                return combinedIndex1 == combinedIndex2;
+            }
+
+            protected override SignatureVariable CreateValueFromKey(uint key)
+            {
+                bool method = ((key & 0x80000000) != 0);
+                int index = (int)(key & 0x7FFFFFFF);
+                if (method)
+                    return new SignatureMethodVariable(_context, index);
+                else
+                    return new SignatureTypeVariable(_context, index);
+            }
+        }
+
+        SignatureVariableHashtable _signatureVariables;
 
         public TypeDesc GetSignatureVariable(int index, bool method)
         {
@@ -453,34 +602,7 @@ namespace Internal.TypeSystem
                 throw new BadImageFormatException();
 
             uint combinedIndex = method ? ((uint)index | 0x80000000) : (uint)index;
-
-            TypeDesc existingSignatureVariable;
-            if (_signatureVariables.TryGetValue(combinedIndex, out existingSignatureVariable))
-                return existingSignatureVariable;
-
-            return CreateSignatureVariable(index, method);
-        }
-
-        TypeDesc CreateSignatureVariable(int index, bool method)
-        {
-            TypeDesc signatureVariable;
-            
-            if (method)
-                signatureVariable = new SignatureMethodVariable(this, index);
-            else
-                signatureVariable = new SignatureTypeVariable(this, index);
-
-            uint combinedIndex = method ? ((uint)index | 0x80000000) : (uint)index;
-            
-            lock (this)
-            {
-                TypeDesc existingSignatureVariable;
-                if (_signatureVariables.TryGetValue(combinedIndex, out existingSignatureVariable))
-                    return existingSignatureVariable;
-                _signatureVariables = _signatureVariables.Add(combinedIndex, signatureVariable);
-            }
-
-            return signatureVariable;
+            return _signatureVariables.GetOrCreateValue(combinedIndex);
         }
 
         /// <summary>

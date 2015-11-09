@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaMethod : MethodDesc
+    public sealed class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
     {
         static class MethodFlags
         {
@@ -43,6 +43,14 @@ namespace Internal.TypeSystem.Ecma
             // Initialize name eagerly in debug builds for convenience
             this.ToString();
 #endif
+        }
+
+        EntityHandle EcmaModule.IEntityHandleObject.Handle
+        {
+            get
+            {
+                return _handle;
+            }
         }
 
         public override TypeSystemContext Context

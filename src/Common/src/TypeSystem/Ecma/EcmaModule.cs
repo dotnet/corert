@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -22,7 +21,146 @@ namespace Internal.TypeSystem.Ecma
 
         AssemblyDefinition _assemblyDefinition;
 
-        ImmutableDictionary<EntityHandle, Object> _resolvedTokens = ImmutableDictionary.Create<EntityHandle, object>();
+        internal interface IEntityHandleObject
+        {
+            EntityHandle Handle
+            {
+                get;
+            }
+        }
+
+        private sealed class EcmaObjectLookupWrapper : IEntityHandleObject
+        {
+            private EntityHandle _handle;
+            private object _obj;
+
+            public EcmaObjectLookupWrapper(EntityHandle handle, object obj)
+            {
+                _obj = obj;
+                _handle = handle;
+            }
+
+            public EntityHandle Handle
+            {
+                get
+                {
+                    return _handle;
+                }
+            }
+
+            public object Object
+            {
+                get
+                {
+                    return _obj;
+                }
+            }
+        }
+
+        internal class EcmaObjectLookupHashtable : LockFreeReaderHashtable<EntityHandle, IEntityHandleObject>
+        {
+            EcmaModule _module;
+
+            public EcmaObjectLookupHashtable(EcmaModule module)
+            {
+                _module = module;
+            }
+
+            protected override int GetKeyHashCode(EntityHandle key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(IEntityHandleObject value)
+            {
+                return value.Handle.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(EntityHandle key, IEntityHandleObject value)
+            {
+                return key.Equals(value.Handle);
+            }
+
+            protected override bool CompareValueToValue(IEntityHandleObject value1, IEntityHandleObject value2)
+            {
+                if (Object.ReferenceEquals(value1, value2))
+                    return true;
+                else
+                    return value1.Handle.Equals(value2.Handle);
+            }
+
+            protected override IEntityHandleObject CreateValueFromKey(EntityHandle handle)
+            {
+                object item;
+                switch (handle.Kind)
+                {
+                    case HandleKind.TypeDefinition:
+                        item = new EcmaType(_module, (TypeDefinitionHandle)handle);
+                        break;
+
+                    case HandleKind.MethodDefinition:
+                        {
+                            MethodDefinitionHandle methodDefinitionHandle = (MethodDefinitionHandle)handle;
+                            TypeDefinitionHandle typeDefinitionHandle = _module._metadataReader.GetMethodDefinition(methodDefinitionHandle).GetDeclaringType();
+                            EcmaType type = (EcmaType)_module.GetObject(typeDefinitionHandle);
+                            item = new EcmaMethod(type, methodDefinitionHandle);
+                        }
+                        break;
+
+                    case HandleKind.FieldDefinition:
+                        {
+                            FieldDefinitionHandle fieldDefinitionHandle = (FieldDefinitionHandle)handle;
+                            TypeDefinitionHandle typeDefinitionHandle = _module._metadataReader.GetFieldDefinition(fieldDefinitionHandle).GetDeclaringType();
+                            EcmaType type = (EcmaType)_module.GetObject(typeDefinitionHandle);
+                            item = new EcmaField(type, fieldDefinitionHandle);
+                        }
+                        break;
+
+                    case HandleKind.TypeReference:
+                        item = _module.ResolveTypeReference((TypeReferenceHandle)handle);
+                        break;
+
+                    case HandleKind.MemberReference:
+                        item = _module.ResolveMemberReference((MemberReferenceHandle)handle);
+                        break;
+
+                    case HandleKind.AssemblyReference:
+                        item = _module.ResolveAssemblyReference((AssemblyReferenceHandle)handle);
+                        break;
+
+                    case HandleKind.TypeSpecification:
+                        item = _module.ResolveTypeSpecification((TypeSpecificationHandle)handle);
+                        break;
+
+                    case HandleKind.MethodSpecification:
+                        item = _module.ResolveMethodSpecification((MethodSpecificationHandle)handle);
+                        break;
+
+                    case HandleKind.ExportedType:
+                        item = _module.ResolveExportedType((ExportedTypeHandle)handle);
+                        break;
+
+                    // TODO: Resolve other tokens
+
+                    default:
+                        throw new BadImageFormatException("Unknown metadata token type");
+                }
+
+                switch (handle.Kind)
+                {
+                    case HandleKind.TypeDefinition:
+                    case HandleKind.MethodDefinition:
+                    case HandleKind.FieldDefinition:
+                        // type/method/field definitions directly correspond to their target item.
+                        return (IEntityHandleObject)item;
+                    default:
+                        // Everything else is some form of reference which cannot be self-describing
+                        return new EcmaObjectLookupWrapper(handle, item);
+                }
+            }
+        }
+
+        LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
 
         public EcmaModule(TypeSystemContext context, PEReader peReader)
         {
@@ -36,6 +174,8 @@ namespace Internal.TypeSystem.Ecma
                 (stringDecoderProvider != null) ? stringDecoderProvider.GetMetadataStringDecoder() : null);
 
             _assemblyDefinition = _metadataReader.GetAssemblyDefinition();
+
+            _resolvedTokens = new EcmaObjectLookupHashtable(this);
         }
 
         public EcmaModule(TypeSystemContext context, MetadataReader metadataReader)
@@ -152,79 +292,15 @@ namespace Internal.TypeSystem.Ecma
 
         public Object GetObject(EntityHandle handle)
         {
-            Object existingItem;
-            if (_resolvedTokens.TryGetValue(handle, out existingItem))
-                return existingItem;
-
-            return CreateObject(handle);
-        }
-
-        private Object CreateObject(EntityHandle handle)
-        {
-            Object item;
-            switch (handle.Kind)
+            IEntityHandleObject obj = _resolvedTokens.GetOrCreateValue(handle);
+            if (obj is EcmaObjectLookupWrapper)
             {
-            case HandleKind.TypeDefinition:
-                item = new EcmaType(this, (TypeDefinitionHandle)handle);
-                break;
-                
-            case HandleKind.MethodDefinition:
-                {
-                    MethodDefinitionHandle methodDefinitionHandle = (MethodDefinitionHandle)handle;
-                    TypeDefinitionHandle typeDefinitionHandle = _metadataReader.GetMethodDefinition(methodDefinitionHandle).GetDeclaringType();
-                    EcmaType type = (EcmaType)GetObject(typeDefinitionHandle);
-                    item = new EcmaMethod(type, methodDefinitionHandle);
-                }
-                break;
-
-            case HandleKind.FieldDefinition:
-                {
-                    FieldDefinitionHandle fieldDefinitionHandle = (FieldDefinitionHandle)handle;
-                    TypeDefinitionHandle typeDefinitionHandle = _metadataReader.GetFieldDefinition(fieldDefinitionHandle).GetDeclaringType();
-                    EcmaType type = (EcmaType)GetObject(typeDefinitionHandle);
-                    item = new EcmaField(type, fieldDefinitionHandle);
-                }
-                break;
-
-            case HandleKind.TypeReference:
-                item = ResolveTypeReference((TypeReferenceHandle)handle);
-                break;
-
-            case HandleKind.MemberReference:
-                item = ResolveMemberReference((MemberReferenceHandle)handle);
-                break;
-
-            case HandleKind.AssemblyReference:
-                item = ResolveAssemblyReference((AssemblyReferenceHandle)handle);
-                break;
-
-            case HandleKind.TypeSpecification:
-                item = ResolveTypeSpecification((TypeSpecificationHandle)handle);
-                break;
-
-            case HandleKind.MethodSpecification:
-                item = ResolveMethodSpecification((MethodSpecificationHandle)handle);
-                break;
-
-            case HandleKind.ExportedType:
-                item = ResolveExportedType((ExportedTypeHandle)handle);
-                break;
-
-            // TODO: Resolve other tokens
-
-            default:
-                throw new BadImageFormatException("Unknown metadata token type");
+                return ((EcmaObjectLookupWrapper)obj).Object;
             }
-
-            lock (this)
+            else
             {
-                Object existingItem;
-                if (_resolvedTokens.TryGetValue(handle, out existingItem))
-                    return existingItem;
-                _resolvedTokens = _resolvedTokens.Add(handle, item);
+                return obj;
             }
-
-            return item;
         }
 
         Object ResolveMethodSpecification(MethodSpecificationHandle handle)

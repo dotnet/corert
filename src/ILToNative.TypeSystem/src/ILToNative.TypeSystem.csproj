@@ -23,6 +23,9 @@
     <Compile Include="$(CommonPath)\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
+      <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayType.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="$(CommonPath)\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs" />
