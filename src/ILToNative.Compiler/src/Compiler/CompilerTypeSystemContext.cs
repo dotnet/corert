@@ -137,11 +137,6 @@ namespace ILToNative
             if (_modules.TryGetValue(simpleName, out existingModule))
                 return existingModule;
 
-            return CreateModuleForSimpleName(simpleName);
-        }
-
-        private EcmaModule CreateModuleForSimpleName(string simpleName)
-        {
             string filePath;
             if (!InputFilePaths.TryGetValue(simpleName, out filePath))
             {
@@ -156,17 +151,37 @@ namespace ILToNative
             if (!actualSimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase))
                 throw new FileNotFoundException("Assembly name does not match filename " + filePath);
 
+            AddModule(simpleName, filePath, module);
+
+            return module;
+        }
+
+        public EcmaModule GetModuleFromPath(string filePath)
+        {
+            EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(filePath)));
+
+            MetadataReader metadataReader = module.MetadataReader;
+            string simpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
+            if (_modules.ContainsKey(simpleName))
+                throw new FileNotFoundException("Module with same simple name already exists " + filePath);
+
+            AddModule(simpleName, filePath, module);
+
+            return module;
+        }
+
+        private void AddModule(string simpleName, string filePath, EcmaModule module)
+        {
             _modules.Add(simpleName, module);
 
-            ModuleData moduleData = new ModuleData() {
+            ModuleData moduleData = new ModuleData()
+            {
                 Path = filePath
             };
 
             InitializeSymbolReader(moduleData);
 
             _moduleData.Add(module, moduleData);
-
-            return module;
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
