@@ -26,6 +26,7 @@
     <file src="../lib/libPortableRuntime.a" target="sdk/libPortableRuntime.a" />
     <file src="../lib/libbootstrapper.a" target="sdk/libbootstrapper.a" />
     <file src="../lib/libbootstrappercpp.a" target="sdk/libbootstrappercpp.a" />
+    <file src="../lib/libSystem.Private.CoreLib.Native.a" target="sdk/libSystem.Private.CoreLib.Native.a" />
     <file src="../System.Private.Corelib.dll" target="sdk/System.Private.Corelib.dll" />
     <file src="../ToolRuntime/*.dll" />
     <file src="../ToolRuntime/*.dylib" />

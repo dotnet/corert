@@ -180,6 +180,6 @@ add_subdirectory(Runtime)
 add_subdirectory(Bootstrap)
 
 # We don't need the PAL on Windows.
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CLR_CMAKE_PLATFORM_UNIX)
   add_subdirectory(System.Private.CoreLib.Native)
 endif()
