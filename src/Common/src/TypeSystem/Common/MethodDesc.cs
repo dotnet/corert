@@ -295,6 +295,17 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating that this method cannot be overriden.
+        /// </summary>
+        public virtual bool IsFinal
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
         // Strips method instantiation. E.g C<int>.m<string> -> C<int>.m<U>

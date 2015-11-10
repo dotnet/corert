@@ -272,7 +272,17 @@ extern "C" uint8_t RhIsArray(MethodTable*)
     throw 42;
 }
 
+extern "C" int32_t RhGetEETypeHash(MethodTable*)
+{
+    throw 42;
+}
+
 extern "C" uint8_t RhTypeCast_AreTypesEquivalent(MethodTable*, MethodTable*)
+{
+    throw 42;
+}
+
+extern "C" uint8_t RhTypeCast_AreTypesAssignable(MethodTable*, MethodTable*)
 {
     throw 42;
 }
