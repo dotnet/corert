@@ -124,16 +124,8 @@ namespace System.Runtime.CompilerServices
         }
 
         // unchecked cast, performs no dynamic type checking
-        // CORERT-TODO: implement unchecked cast
-#if !CORERT
         [Intrinsic]
         internal static extern T UncheckedCast<T>(Object value) where T : class;
-#else
-        internal static T UncheckedCast<T>(Object value) where T : class
-        {
-            return (T)value;
-        }
-#endif
 
         [ThreadStatic]
         private static unsafe byte* t_sufficientStackLimit;

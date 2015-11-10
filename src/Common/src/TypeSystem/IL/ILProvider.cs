@@ -10,6 +10,8 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.IL.Stubs;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.IL
 {
     class ILProvider
@@ -18,6 +20,22 @@ namespace Internal.IL
 
         public ILProvider()
         {
+        }
+
+        private MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
+        {
+            // Provides method bodies for intrinsics recognized by the compiler.
+            // It can return null if it's not an intrinsic recognized by the compiler,
+            // but an intrinsic e.g. recognized by codegen.
+
+            Debug.Assert(method.IsIntrinsic);
+
+            if (method.Name == "UncheckedCast" && method.OwningType.Name == "System.Runtime.CompilerServices.RuntimeHelpers")
+            {
+                return new ILStubMethodIL(new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<TypeDesc>(), null);
+            }
+
+            return null;
         }
 
         public MethodIL GetMethodIL(MethodDesc method)
@@ -33,6 +51,13 @@ namespace Internal.IL
                     {
                         return CalliIntrinsic.EmitIL(method);
                     }
+                }
+
+                if (method.IsIntrinsic)
+                {
+                    MethodIL result = TryGetIntrinsicMethodIL(method);
+                    if (result != null)
+                        return result;
                 }
 
                 return EcmaMethodIL.Create((EcmaMethod)method);
