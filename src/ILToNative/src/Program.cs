@@ -99,7 +99,7 @@ namespace ILToNative
             EcmaModule mainModule = null;
             foreach (var inputFile in _inputFilePaths)
             {
-                EcmaModule module = _compilerTypeSystemContext.GetModuleForSimpleName(inputFile.Key);
+                EcmaModule module = _compilerTypeSystemContext.GetModuleFromPath(inputFile.Value);
                 if (module.PEReader.PEHeaders.IsExe)
                 {
                     if (mainModule != null)
