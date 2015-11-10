@@ -1538,12 +1538,28 @@ namespace Internal.JitInterface
             }
         }
 
-        void getLocationOfThisType(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context)
+        // Workaround for struct return marshaling bug on Windows.
+        // Delete once https://github.com/dotnet/corert/issues/162 is fixed
+        bool IsWindows()
         {
-            result->needsRuntimeLookup = false;
-            result->runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+            return Path.DirectorySeparatorChar == '\\';
+        }
+
+        void getLocationOfThisType_Windows(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context)
+        {
+            *result = getLocationOfThisType(_this, context);
+        }
+        // End of workaround
+
+        CORINFO_LOOKUP_KIND getLocationOfThisType(IntPtr _this, CORINFO_METHOD_STRUCT_* context)
+        {
+            CORINFO_LOOKUP_KIND result = new CORINFO_LOOKUP_KIND();
+            result.needsRuntimeLookup = false;
+            result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
 
             // TODO: shared generics
+
+            return result;
         }
 
         void* getPInvokeUnmanagedTarget(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
