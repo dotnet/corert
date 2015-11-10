@@ -10,6 +10,9 @@ set(SOURCES
 if(WIN32)
     list(APPEND SOURCES
         ../platform.windows.cpp)
+elseif(CLR_CMAKE_PLATFORM_UNIX)
+    list(APPEND SOURCES
+        ../platform.unix.cpp)
 endif()
 
 add_library(bootstrappercpp STATIC ${SOURCES})
