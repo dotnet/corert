@@ -400,7 +400,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 
 static const char* const WCharEncoding = "UTF-32LE";
 
-int UTF8ToWideChar(char* bytes, int len, uint16_t * buffer, int bufLen)
+int UTF8ToWideChar(char* bytes, int len, wchar_t* buffer, int bufLen)
 {
     iconv_t cd = iconv_open(WCharEncoding, "UTF-8");
     if (cd == (iconv_t)-1)
