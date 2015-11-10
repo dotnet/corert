@@ -5,7 +5,7 @@ set(NATIVE_SOURCES
 )
 
 add_library(System.Private.CoreLib.Native
-    SHARED
+    STATIC
     ${NATIVE_SOURCES}
 )
 
