@@ -82,7 +82,9 @@ namespace Internal.JitInterface
                     RODataAlignment = _roDataAlignment,
                     ROData = _roData,
 
-                    Relocs = (_relocs != null) ? _relocs.ToArray() : null
+                    Relocs = (_relocs != null) ? _relocs.ToArray() : null,
+
+                    FrameInfos = _frameInfos
                 };
             }
             finally
@@ -125,6 +127,10 @@ namespace Internal.JitInterface
             _roData = null;
 
             _relocs = null;
+
+            _numFrameInfos = 0;
+            _usedFrameInfos = 0;
+            _frameInfos = null;
         }
 
         Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -1723,6 +1729,10 @@ namespace Internal.JitInterface
         int _roDataAlignment;
         byte[] _roData;
 
+        int _numFrameInfos;
+        int _usedFrameInfos;
+        FrameInfo[] _frameInfos;
+
         void allocMem(IntPtr _this, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
             hotCodeBlock = (void *)GetPin(_code = new byte[hotCodeSize]);
@@ -1747,15 +1757,31 @@ namespace Internal.JitInterface
 
                 roDataBlock = (void*)GetPin(_roData = new byte[roDataSize]);
             }
+
+            if (_numFrameInfos > 0)
+            {
+                _frameInfos = new FrameInfo[_numFrameInfos];
+            }
         }
 
         void reserveUnwindInfo(IntPtr _this, [MarshalAs(UnmanagedType.Bool)]bool isFunclet, [MarshalAs(UnmanagedType.Bool)]bool isColdCode, uint unwindSize)
         {
+            _numFrameInfos++;
         }
 
         void allocUnwindInfo(IntPtr _this, byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
         {
-            // TODO: Unwind Info
+            FrameInfo frameInfo = new FrameInfo();
+            frameInfo.StartOffset = (int)startOffset;
+            frameInfo.EndOffset = (int)endOffset;
+            frameInfo.BlobData = new byte[unwindSize];
+            for (uint i = 0; i < unwindSize; i++)
+            {
+                frameInfo.BlobData[i] = pUnwindBlock[i];
+            }
+
+            Debug.Assert(_usedFrameInfos < _frameInfos.Length);
+            _frameInfos[_usedFrameInfos++] = frameInfo;
         }
 
         void* allocGCInfo(IntPtr _this, UIntPtr size)

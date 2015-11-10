@@ -18,6 +18,8 @@ namespace ILToNative
         public byte[] ROData;
 
         public Relocation[] Relocs;
+
+        public FrameInfo[] FrameInfos;
     }
 
     class BlockRelativeTarget
@@ -33,5 +35,12 @@ namespace ILToNative
         public int Offset;
         public Object Target;
         public int Delta;
+    }
+
+    public class FrameInfo
+    {
+        public int StartOffset;
+        public int EndOffset;
+        public byte[] BlobData;
     }
 }

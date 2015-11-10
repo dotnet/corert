@@ -73,7 +73,7 @@ set PROTOJIT_VERSION=1.0.0-prerelease
 echo.
 echo Installing ObjectWriter from NuGet.
 set OBJWRITER_PACKAGE=Microsoft.DotNet.ObjectWriter
-set OBJWRITER_VERSION=1.0.0-prerelease
+set OBJWRITER_VERSION=1.0.1-prerelease
 %NUGET_PATH%\NuGet.exe install -Source %NUGET_FEED_URL% -OutputDir %NUPKG_INSTALL_DIR% -Version %OBJWRITER_VERSION% %OBJWRITER_PACKAGE% -prerelease
 
 echo.

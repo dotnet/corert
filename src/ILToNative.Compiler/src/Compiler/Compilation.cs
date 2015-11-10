@@ -428,6 +428,8 @@ namespace ILToNative
                     throw new NotImplementedException();
 
                 methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());
+
+                methodCodeNodeNeedingCode.SetFrameInfos(methodCode.FrameInfos);
             }
         }
 

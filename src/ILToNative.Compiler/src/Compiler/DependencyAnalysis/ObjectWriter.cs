@@ -41,10 +41,10 @@ namespace ILToNative.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        static extern void EmitBlob(IntPtr objWriter, byte[] blob, int blobSize);
-        public void EmitBlob(byte[] blob, int blobSize)
+        static extern void EmitBlob(IntPtr objWriter, int blobSize, byte[] blob);
+        public void EmitBlob(int blobSize, byte[] blob)
         {
-            EmitBlob(_nativeObjectWriter, blob, blobSize);
+            EmitBlob(_nativeObjectWriter, blobSize, blob);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -62,10 +62,17 @@ namespace ILToNative.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        static extern void EmitSymbolRef(IntPtr objWriter, string symbolName, int Size, bool isPCRelative, int delta = 0);
+        static extern void EmitSymbolRef(IntPtr objWriter, string symbolName, int size, bool isPCRelative, int delta = 0);
         public void EmitSymbolRef(string symbolName, int size, bool isPCRelative, int delta = 0)
         {
             EmitSymbolRef(_nativeObjectWriter, symbolName, size, isPCRelative, delta);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        static extern void EmitFrameInfo(IntPtr objWriter, string frameName, int startOffset, int endOffset, int blobSize, byte[] blobData);
+        public void EmitFrameInfo(string frameName, int startOffset, int endOffset, int blobSize, byte[] blobData)
+        {
+            EmitFrameInfo(_nativeObjectWriter, frameName, startOffset, endOffset, blobSize, blobData);
         }
 
         // This is one to multiple mapping -- we might have multiple symbols at the give offset.
@@ -219,6 +226,24 @@ namespace ILToNative.DependencyAnalysis
 
                     // It is possible to have a symbol just after all of the data.
                     objectWriter.EmitSymbolDefinition(nodeContents.Data.Length);
+
+                    // Emit frame info for object code.
+                    if (node is ObjectNodeWithFrameInfo) {
+                        FrameInfo[] frameInfos = (node as ObjectNodeWithFrameInfo).GetFrameInfos();
+                        if (frameInfos != null)
+                        {
+                            // The first definition is the main method name
+                            string methodName = objectWriter._offsetToDefSymbol[0][0].MangledName;
+                            foreach (var frameInfo in frameInfos) {
+                                objectWriter.EmitFrameInfo(methodName,
+                                    frameInfo.StartOffset,
+                                    frameInfo.EndOffset,
+                                    frameInfo.BlobData.Length,
+                                    frameInfo.BlobData);
+                            }
+                            objectWriter.SwitchSection(currentSection);
+                        }
+                    }
                 }
 
             }
