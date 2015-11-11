@@ -110,7 +110,7 @@ if not exist "%__ObjgenPath%\objwriter.dll" (
 setlocal
 REM Setup the path to include the location of the codegenerator and binary file generator
 REM so that they can be located by the OS loader.
-set path=%path%;%__CodegenPath%;%__ObjgenPath%
+set path=%__CodegenPath%;%__ObjgenPath%;%path%
 echo Generating app obj file
 "%__ILToNative%\ILToNative.exe" %__Infile% -r "%__ILToNative%\sdk\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out %ObjFileName% > %__LogFilePath%\ILToNative.App.log
 endlocal
