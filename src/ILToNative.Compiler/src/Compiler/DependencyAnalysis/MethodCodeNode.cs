@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace ILToNative.DependencyAnalysis
 {
-    class MethodCodeNode : ObjectNode, ISymbolNode
+    class MethodCodeNode : ObjectNodeWithFrameInfo, ISymbolNode
     {
         MethodDesc _method;
         ObjectData _methodCode;
