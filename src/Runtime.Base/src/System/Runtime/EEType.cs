@@ -695,10 +695,10 @@ namespace System.Runtime
             {
                 if ((unchecked((uint)_interfaceType._pInterfaceEEType) & 1u) != 0)
                 {
-#if WIN32
-                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) & ~1u);
-#else
+#if BIT64
                     EEType** ppInterfaceEETypeViaIAT = (EEType**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) & ~1ul);
+#else
+                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) & ~1u);
 #endif
                     return *ppInterfaceEETypeViaIAT;
                 }

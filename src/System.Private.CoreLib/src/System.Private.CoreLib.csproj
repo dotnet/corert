@@ -9,16 +9,10 @@
     <AssemblyName>System.Private.CoreLib</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
+    <IsCoreAssembly>true</IsCoreAssembly>
   </PropertyGroup>
 
   <PropertyGroup>
-<!--
-	temporary workaround to exclude all references including mscorlib.dll
-    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)</_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths>$(_TargetFrameworkDirectories)</_FullFrameworkReferenceAssemblyPaths>
-    Condition="'$(IsProjectNLibrary)' != 'true'
--->
-    <IsCoreAssembly>true</IsCoreAssembly>
     <!--
       Need to avoid target platform being empty because that would drag in an mscorlib design-time
       facade into the references and break us.
@@ -29,15 +23,12 @@
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
     <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
     <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
+  </PropertyGroup>
 
-<!--
-    <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
-
-    <ExcludeVersioningImport>true</ExcludeVersioningImport>
-    <TargetingDefaultPlatform>true</TargetingDefaultPlatform>
-    <ExcludeFrameworkTargetingImport>true</ExcludeFrameworkTargetingImport>
-    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
--->
+  <PropertyGroup>
+    <!-- The properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
+         though still use the 'x64' output path -->
+    <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
@@ -65,7 +56,23 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;BIT64</DefineConstants>
+    <!-- TODO: For now, drop DEBUG define comming from central location - asserts compiled 
+         into DEBUG builds use interfaces that we are not able to handle yet -->
+    <!-- <DefineConstants>CORERT;$(DefineConstants)</DefineConstants> -->
+    <DefineConstants>CORERT</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)' == 'amd64'">
+    <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <DefineConstants>X86;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+    <DefineConstants>ARM;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
+    <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
