@@ -79,7 +79,7 @@ else()
 
   if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     set(ARCH_SOURCES_DIR amd64)
-    set(ASM_SUFFIX s)
+    set(ASM_SUFFIX S)
   endif()
 
 endif()
