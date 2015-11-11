@@ -52,7 +52,6 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, &ReturnFromCallDescrThunk);
 #endif
 
-#ifdef FEATURE_CLR_EH
 #ifdef TARGET_X86
 EXTERN_C void * RhpCallFunclet2;
 GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFunclet2Addr, &RhpCallFunclet2);
@@ -69,7 +68,6 @@ EXTERN_C void * RhpThrowHwEx2;
 GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowHwEx2Addr, &RhpThrowHwEx2);
 EXTERN_C void * RhpRethrow2;
 GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
-#endif
 #endif //!defined(USE_PORTABLE_HELPERS)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
@@ -455,7 +453,9 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
 // It's also used to disambiguate exceptionally- and non-exceptionally-invoked funclets.
 bool StackFrameIterator::HandleFuncletInvokeThunk()
 {
-#if defined(FEATURE_CLR_EH) && !defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
+#if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
+    return false;
+#else // defined(USE_PORTABLE_HELPERS)
 
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
@@ -568,12 +568,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from funclet invoke stub failed");
 
     return true;
-
-#else // FEATURE_CLR_EH
-
-    return false;
-
-#endif // FEATURE_CLR_EH
+#endif // defined(USE_PORTABLE_HELPERS)
 }
 
 #ifdef _AMD64_
@@ -694,7 +689,9 @@ bool StackFrameIterator::HandleThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(FEATURE_CLR_EH) && !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
+#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
+    return false;
+#else // defined(USE_PORTABLE_HELPERS)
     if (!EQUALS_CODE_ADDRESS(m_ControlPC, RhpThrowEx2) && 
         !EQUALS_CODE_ADDRESS(m_ControlPC, RhpThrowHwEx2) &&
         !EQUALS_CODE_ADDRESS(m_ControlPC, RhpRethrow2))
@@ -749,12 +746,7 @@ bool StackFrameIterator::HandleThrowSiteThunk()
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from throw site stub failed");
 
     return true;
-
-#else // FEATURE_CLR_EH
-
-    return false;
-
-#endif // FEATURE_CLR_EH
+#endif // defined(USE_PORTABLE_HELPERS)
 }
 
 // If our control PC indicates that we're in one of the thunks we use to make managed callouts from the
@@ -770,7 +762,9 @@ bool StackFrameIterator::HandleManagedCalloutThunk()
 
 bool StackFrameIterator::HandleManagedCalloutThunk(PTR_VOID controlPC, UIntNative framePointer)
 {
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of managed callout defined
+#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of managed callout defined
+    return false;
+#else // defined(USE_PORTABLE_HELPERS)
     if (EQUALS_CODE_ADDRESS(controlPC,ReturnFromManagedCallout2)
 
 #if defined(FEATURE_DYNAMIC_CODE)
@@ -829,9 +823,9 @@ bool StackFrameIterator::HandleManagedCalloutThunk(PTR_VOID controlPC, UIntNativ
         return true;
     }
 #endif
-#endif // !defined(USE_PORTABLE_HELPERS)
 
     return false;
+#endif // defined(USE_PORTABLE_HELPERS)
 }
 
 bool StackFrameIterator::IsValid()
@@ -1071,14 +1065,12 @@ bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
     }
 #endif
 
-#ifdef FEATURE_CLR_EH
     if (EQUALS_CODE_ADDRESS(pvAddress, RhpThrowEx2) ||
         EQUALS_CODE_ADDRESS(pvAddress, RhpThrowHwEx2) ||
         EQUALS_CODE_ADDRESS(pvAddress, RhpRethrow2))
     {
         return true;
     }
-#endif // FEATURE_CLR_EH
 #endif // !defined(USE_PORTABLE_HELPERS)
 
     return (NULL != GetRuntimeInstance()->FindCodeManagerByAddress(pvAddress));

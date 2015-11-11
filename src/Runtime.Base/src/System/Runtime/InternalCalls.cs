@@ -185,7 +185,6 @@ namespace System.Runtime
                                                                          EETypeRef** ppInstantiation,
                                                                          GenericVariance** ppVarianceInfo);
 
-#if FEATURE_CLR_EH
         //
         // StackFrameIterator
         //
@@ -211,7 +210,6 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName)]
         internal static extern unsafe void RhpSendExceptionEventToDebugger(ExceptionEventKind eventKind, byte* ip, UIntPtr sp);
-#endif // FEATURE_CLR_EH
 
         //
         // Miscellaneous helpers.
@@ -252,7 +250,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe IntPtr RhpGetNextFinalizerInitCallback();
 
-#if FEATURE_CLR_EH
         [RuntimeImport(Redhawk.BaseName, "RhpCallCatchFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
@@ -285,7 +282,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
-#endif // FEATURE_CLR_EH
 
 
         //------------------------------------------------------------------------------------------------------------
