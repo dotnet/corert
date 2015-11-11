@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#define FEATURE_CLR_EH 
-
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -46,31 +44,26 @@ namespace System.Runtime
 
         internal static void BeginFirstPass(Exception e, byte* faultingIP, UIntPtr faultingFrameSP)
         {
-#if FEATURE_CLR_EH
             s_cachedEventMask = InternalCalls.RhpGetRequestedExceptionEvents();
 
             if ((s_cachedEventMask & ExceptionEventKind.Thrown) == 0)
                 return;
 
             InternalCalls.RhpSendExceptionEventToDebugger(ExceptionEventKind.Thrown, faultingIP, faultingFrameSP);
-#endif // FEATURE_CLR_EH
         }
 
         internal static void FirstPassFrameEntered(Exception e, byte* enteredFrameIP, UIntPtr enteredFrameSP)
         {
-#if FEATURE_CLR_EH
             s_cachedEventMask = InternalCalls.RhpGetRequestedExceptionEvents();
 
             if ((s_cachedEventMask & ExceptionEventKind.FirstPassFrameEntered) == 0)
                 return;
 
             InternalCalls.RhpSendExceptionEventToDebugger(ExceptionEventKind.FirstPassFrameEntered, enteredFrameIP, enteredFrameSP);
-#endif // FEATURE_CLR_EH
         }
 
         internal static void EndFirstPass(Exception e, byte* handlerIP, UIntPtr handlingFrameSP)
         {
-#if FEATURE_CLR_EH
             if (handlerIP == null)
             {
                 if ((s_cachedEventMask & ExceptionEventKind.Unhandled) == 0)
@@ -83,7 +76,6 @@ namespace System.Runtime
                     return;
                 InternalCalls.RhpSendExceptionEventToDebugger(ExceptionEventKind.CatchHandlerFound, handlerIP, handlingFrameSP);
             }
-#endif // FEATURE_CLR_EH
         }
 
         internal static void BeginSecondPass()
@@ -206,7 +198,6 @@ namespace System.Runtime
         {
         }
 
-#if FEATURE_CLR_EH
 #if ARM
         const int c_IPAdjustForHardwareFault = 2;
 #else
@@ -269,7 +260,6 @@ namespace System.Runtime
             // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
             FailFast(reason, unhandledException);
         }
-#endif // FEATURE_CLR_EH
 
         private enum RhEHFrameType
         {
@@ -462,7 +452,6 @@ namespace System.Runtime
             }
         }
 
-#if FEATURE_CLR_EH
         private enum HwExceptionCode : uint
         {
             STATUS_REDHAWK_NULL_REFERENCE = 0x00000000u,
@@ -953,6 +942,5 @@ namespace System.Runtime
         {
             FailFastViaClasslib(RhFailFastReason.PN_UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);
         }
-#endif // FEATURE_CLR_EH
     } // static class EH
 }

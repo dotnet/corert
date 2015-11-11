@@ -406,11 +406,9 @@ EXTERN RhpPInvokeReturnWaitEx                   : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhpPublishObject                         : PROC
 EXTERN RhpCalculateStackTraceWorker             : PROC
-ifdef FEATURE_CLR_EH
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
-endif
 ifdef FEATURE_GC_STRESS
 EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC

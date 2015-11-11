@@ -815,7 +815,6 @@ namespace System.Runtime
             return false;
         }
 
-#if FEATURE_SHARED_GENERICS
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
@@ -841,7 +840,6 @@ namespace System.Runtime
             else
                 return CheckCastClass(obj, pvTargetType);
         }
-#endif
 
         // Returns true of the two types are equivalent primitive types. Used by array casts.
         static private unsafe bool ArePrimitveTypesEquivalentSize(EEType* pType1, EEType* pType2)

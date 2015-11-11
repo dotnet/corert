@@ -1,10 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#define FEATURE_CLR_EH
 using System.Runtime.InteropServices;
-
-#if FEATURE_CLR_EH
 
 namespace System.Runtime
 {
@@ -54,5 +51,3 @@ namespace System.Runtime
         }
     }
 }
-
-#endif // FEATURE_CLR_EH

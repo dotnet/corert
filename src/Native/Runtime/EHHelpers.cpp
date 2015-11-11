@@ -228,7 +228,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
 }
 
 
-#if defined(FEATURE_CLR_EH) && (defined(_AMD64_) || defined(_ARM_) || defined(_X86_))
+#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_)
 struct DISPATCHER_CONTEXT
 {
     UIntNative  ControlPc;
@@ -284,17 +284,12 @@ EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExcep
 #else
 EXTERN_C Int32 RhpPInvokeExceptionGuard()
 {
-#ifdef FEATURE_CLR_EH
     ASSERT_UNCONDITIONALLY("RhpPInvokeExceptionGuard NYI for this architecture!");
-#else
-    ASSERT_UNCONDITIONALLY("RhpPInvokeExceptionGuard NYI for this version of Redhawk!");
-#endif
     RhFailFast();
     return 0;
 }
-#endif // FEATURE_CLR_EH && (_AMD64_ || _ARM_)
+#endif
 
-#ifdef FEATURE_CLR_EH
 #if defined(_AMD64_) || defined(_ARM_) || defined(_X86_)
 EXTERN_C REDHAWK_API void __fastcall RhpThrowHwEx();
 #else
@@ -330,7 +325,6 @@ EXTERN_C void* RhpThrowEx2   = NULL;
 EXTERN_C void* RhpThrowHwEx2 = NULL;
 EXTERN_C void* RhpRethrow2   = NULL;
 #endif
-#endif // FEATURE_CLR_EH
 
 #if defined(_AMD64_) || defined(_X86_)
 #define RhpAssignRefAVLocation RhpAssignRef
@@ -393,7 +387,7 @@ static UIntNative UnwindWriteBarrierToCaller(_CONTEXT * pContext)
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 {
     UIntNative faultingIP = pExPtrs->ContextRecord->GetIP();
-#ifdef FEATURE_CLR_EH
+
     ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress((PTR_VOID)faultingIP);
     UIntNative faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
     if ((pCodeManager != NULL) || (faultCode == STATUS_ACCESS_VIOLATION && InWriteBarrierHelper(faultingIP)))
@@ -421,7 +415,6 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         return EXCEPTION_CONTINUE_EXECUTION;
     }
     else
-#endif // FEATURE_CLR_EH
     {
         static UInt8 *s_pbRuntimeModuleLower = NULL;
         static UInt8 *s_pbRuntimeModuleUpper = NULL;
@@ -446,11 +439,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         if (((UInt8*)faultingIP >= s_pbRuntimeModuleLower) && ((UInt8*)faultingIP < s_pbRuntimeModuleUpper))
         {
             // Generally any form of hardware exception within the runtime itself is considered a fatal error.
-            // Note this includes the managed code within the runtime. Eventually the range check above will
-            // have to get a little more complex to deal with A/Vs in runtime helpers that we want to
-            // translate into managed exceptions (e.g. null ref exceptions in the write barriers or interface
-            // invocation stubs). Until FEATURE_CLR_EH comes fully online this simpler range check is
-            // sufficient.
+            // Note this includes the managed code within the runtime.
             ASSERT_UNCONDITIONALLY("Hardware exception raised inside the runtime.");
             RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
         }

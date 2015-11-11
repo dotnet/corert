@@ -5,8 +5,6 @@
 
 include asmmacros.inc
 
-ifdef FEATURE_CLR_EH
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpThrowHwEx
@@ -690,7 +688,5 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
         ret
 
 NESTED_END RhpCallFilterFunclet, _TEXT
-
-endif
 
         end

@@ -56,10 +56,6 @@
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <DefineConstants>FEATURE_CLR_EH;FEATURE_SHARED_GENERICS;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
