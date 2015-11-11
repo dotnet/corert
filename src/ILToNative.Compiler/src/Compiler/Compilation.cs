@@ -313,6 +313,7 @@ namespace ILToNative
             new TypeAndMethod("System.Collections.Generic.ArraySortHelper`1", "InternalBinarySearch"),
             new TypeAndMethod("System.RuntimeExceptionHelpers", "SerializeExceptionsForDump"),
             new TypeAndMethod("System.InvokeUtils", "CheckArgument"),
+            new TypeAndMethod("System.Runtime.InteropServices.ExceptionHelpers", "GetMappingExceptionForHR"),
         };
 
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
