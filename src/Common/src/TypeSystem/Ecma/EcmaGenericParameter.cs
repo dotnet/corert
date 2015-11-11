@@ -9,6 +9,8 @@ using System.Threading;
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem.Ecma
 {
     public sealed class EcmaGenericParameter : TypeDesc
@@ -44,6 +46,20 @@ namespace Internal.TypeSystem.Ecma
             flags |= TypeFlags.GenericParameter;
 
             return flags;
+        }
+
+        public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+            if (parameter.Parent.Kind == HandleKind.MethodDefinition)
+            {
+                return methodInstantiation[parameter.Index];
+            }
+            else
+            {
+                Debug.Assert(parameter.Parent.Kind == HandleKind.TypeDefinition);
+                return typeInstantiation[parameter.Index];
+            }
         }
 
 #if CCIGLUE

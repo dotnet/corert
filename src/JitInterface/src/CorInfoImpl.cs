@@ -1578,31 +1578,134 @@ namespace Internal.JitInterface
 
         void getCallInfo(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult)
         {
-            // TODO: Constrained calls
-            if (pConstrainedResolvedToken != null)
-                throw new NotImplementedException();
-
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_CALL_INFO* tmp = &pResult)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
+#endif
             MethodDesc method = HandleToObject(pResolvedToken.hMethod);
 
+            // Spec says that a callvirt lookup ignores static methods. Since static methods
+            // can't have the exact same signature as instance methods, a lookup that found
+            // a static method would have never found an instance method.
+            if (method.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
+            {
+                throw new BadImageFormatException();
+            }
+
+            TypeDesc exactType = HandleToObject(pResolvedToken.hClass);
+
+            TypeDesc constrainedType = null;
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && pConstrainedResolvedToken != null)
+            {
+                constrainedType = HandleToObject(pConstrainedResolvedToken->hClass);
+            }
+
+            bool resolvedConstraint = false;
+            bool forceUseRuntimeLookup = false;
+
+            MethodDesc methodAfterConstraintResolution = method;
+            if (constrainedType == null)
+            {
+                pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
+            }
+            else
+            {
+                // We have a "constrained." call.  Try a partial resolve of the constraint call.  Note that this
+                // will not necessarily resolve the call exactly, since we might be compiling
+                // shared generic code - it may just resolve it to a candidate suitable for
+                // JIT compilation, and require a runtime lookup for the actual code pointer
+                // to call.
+
+                MethodDesc directMethod = constrainedType.GetClosestMetadataType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                if (directMethod != null)
+                {
+                    // Either
+                    //    1. no constraint resolution at compile time (!directMethod)
+                    // OR 2. no code sharing lookup in call
+                    // OR 3. we have have resolved to an instantiating stub
+
+                    methodAfterConstraintResolution = directMethod;
+
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    resolvedConstraint = true;
+                    pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
+
+                    exactType = constrainedType;
+                }
+                else if (constrainedType.IsValueType)
+                {
+                    pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS;
+                }
+                else
+                {
+                    pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS;
+                }
+            }
+
+            MethodDesc targetMethod = methodAfterConstraintResolution;
+
+            //
+            // Determine whether to perform direct call
+            //
+
+            bool directCall = false;
+            bool resolvedCallVirt = false;
+
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            {
+                // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
+                directCall = true;
+            }
+            else if (targetMethod.Signature.IsStatic)
+            {
+                // Static methods are always direct calls
+                directCall = true;
+            }
+            else if (targetMethod.OwningType.IsInterface)
+            {
+                // Force all interface calls to be interpreted as if they are virtual.
+                directCall = false;
+            }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
+            {
+                directCall = true;
+            }
+            else
+            {
+                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.GetClosestMetadataType().IsSealed)
+                {
+                    resolvedCallVirt = true;
+                    directCall = true;
+                }
+            }
+
             // TODO: Interface methods
-            if (method.IsVirtual && method.OwningType.IsInterface)
+            if (targetMethod.IsVirtual && targetMethod.OwningType.IsInterface)
                 throw new NotImplementedException();
 
-            pResult.hMethod = pResolvedToken.hMethod;
-            pResult.methodFlags = getMethodAttribsInternal(method);
+            pResult.hMethod = ObjectToHandle(targetMethod);
+            pResult.methodFlags = getMethodAttribsInternal(targetMethod);
 
-            pResult.classFlags = getClassAttribsInternal(method.OwningType);
+            pResult.classFlags = getClassAttribsInternal(targetMethod.OwningType);
 
-            Get_CORINFO_SIG_INFO(method.Signature, out pResult.sig);
+            Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.sig);
 
-            pResult.verMethodFlags = pResult.methodFlags;
-            pResult.verSig = pResult.sig;
+            // Get the required verification information in case it is needed by the verifier later
+            if (pResult.hMethod != pResolvedToken.hMethod)
+            {
+                pResult.verMethodFlags = getMethodAttribsInternal(targetMethod);
+                Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.verSig);
+            }
+            else
+            {
+                pResult.verMethodFlags = pResult.methodFlags;
+                pResult.verSig = pResult.sig;
+            }
 
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
-            // TODO: Constraint calls
-            pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
-            
             pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
             pResult._nullInstanceCheck = (uint)(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) ? 1 : 0);
 
@@ -1614,10 +1717,10 @@ namespace Internal.JitInterface
             // TODO: CORINFO_CALL_CODE_POINTER
             pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-            if (((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && method.IsVirtual)
+            if (!directCall)
             {
                 pResult.codePointerOrStubLookup.constLookup.addr = 
-                    (void *)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.VirtualCall, method));
+                    (void *)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
 
                 if ((pResult.methodFlags & (uint)CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE) != 0)
                 {
@@ -1626,16 +1729,18 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (method.IsConstructor && method.OwningType.IsString)
+                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    var initMethod = IntrinsicMethods.GetStringInitializer(method);
+                    var initMethod = IntrinsicMethods.GetStringInitializer(targetMethod);
                     pResult.codePointerOrStubLookup.constLookup.addr = ObjectToHandle(initMethod);
                 }
                 else
                 {
-                    pResult.codePointerOrStubLookup.constLookup.addr = pResolvedToken.hMethod;
+                    pResult.codePointerOrStubLookup.constLookup.addr = pResult.hMethod;
                 }
+
+                pResult.nullInstanceCheck = resolvedCallVirt;
             }
 
             // TODO: Generics

@@ -20,6 +20,7 @@ namespace Internal.TypeSystem.Ecma
             public const int Virtual                = 0x0002;
             public const int NewSlot                = 0x0004;
             public const int Abstract               = 0x0008;
+            public const int Final                  = 0x0010;
 
             public const int AttributeMetadataCache = 0x0100;
             public const int Intrinsic            = 0x0200;
@@ -123,6 +124,9 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodAttributes & MethodAttributes.Abstract) != 0)
                     flags |= MethodFlags.Abstract;
 
+                if ((methodAttributes & MethodAttributes.Final) != 0)
+                    flags |= MethodFlags.Final;
+
                 flags |= MethodFlags.BasicMetadataCache;
             }
 
@@ -190,6 +194,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsFinal
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Final) & MethodFlags.Final) != 0;
+            }
+        }
+        
         public override bool IsIntrinsic
         {
             get

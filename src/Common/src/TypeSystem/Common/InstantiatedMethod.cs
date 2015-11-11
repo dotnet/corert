@@ -96,6 +96,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsFinal
+        {
+            get
+            {
+                return _methodDef.IsFinal;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _methodDef.HasCustomAttribute(attributeNamespace, attributeName);
