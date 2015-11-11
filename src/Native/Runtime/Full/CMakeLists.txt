@@ -12,9 +12,25 @@ add_definitions(-DUSE_PORTABLE_HELPERS)
 
 add_library(Runtime STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM})
 
+# Get the current list of definitions
+get_compile_definitions(DEFINITIONS)
+
+set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../../Runtime.Base/src/AsmOffsets.cspp)
+
+add_custom_command(
+    # The AsmOffsets.cs is consumed later by the managed build
+    TARGET Runtime
+    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} -E "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
+    DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
+)
+
 if (WIN32)
-    # Get the current list of definitions
-    get_compile_definitions(DEFINITIONS)
+    add_custom_command(
+        # The AsmOffsets.inc will be built in the pre-build phase of the Runtime build
+        TARGET Runtime PRE_BUILD
+        COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} -EP "${RUNTIME_DIR}/AsmOffsets.cpp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+        DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
+    )
 
     # Extract the definitions for the ASM code. Since there is a bug in the cmake that prevents us from
     # using the generator expressions, we split the definitions into lists based on the configuration.
@@ -36,12 +52,6 @@ if (WIN32)
         string(TOUPPER ${CONFIG} CONFIG)
         set_property(SOURCE ${RUNTIME_SOURCES_ARCH_ASM} PROPERTY COMPILE_DEFINITIONS_${CONFIG} ${ASM_DEFINITIONS_${CONFIG}})
     endforeach()
-
-    add_custom_command(
-        # The AsmOffsets.inc will be built in the pre-build phase of the Runtime build
-        TARGET Runtime PRE_BUILD
-        COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} /EP "${RUNTIME_DIR}/AsmOffsets.cpp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
-    )
 endif()
 
 # Install the static Runtime library
