@@ -297,7 +297,7 @@ if [ "$__buildmanaged" = false -a "$__buildnative" = false ]; then
 fi
 
 # Set the remaining variables based upon the determined build configuration
-__IntermediatesDir="$__rootbinpath/obj/Product/$__BuildOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__BuildType"
 __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
 # Make the directories necessary for build if they don't exist
