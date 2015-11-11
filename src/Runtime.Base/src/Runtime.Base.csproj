@@ -95,9 +95,9 @@
     <Compile Include="System\Exception.cs" />
     <Compile Include="System\FlagsAttribute.cs" />
     <Compile Include="System\GC.cs" />
-    <Compile Include="System\multicastdelegate.cs" />
+    <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\ParamArrayAttribute.cs" />
-    <Compile Include="System\primitives.cs" />
+    <Compile Include="System\Primitives.cs" />
     <Compile Include="System\RuntimeHandles.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\String.cs" />
@@ -112,7 +112,7 @@
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\InternalCalls.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
-    <Compile Include="System\Runtime\Runtimeexports.cs" />
+    <Compile Include="System\Runtime\RuntimeExports.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\StackFrameIterator.cs" />
     <Compile Include="System\Runtime\TypeCast.cs" />
@@ -128,7 +128,7 @@
     <Compile Include="System\Runtime\InteropServices\CharSet.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
-    <Compile Include="System\Runtime\interopservices\GCHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\LayoutKind.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\OutAttribute.cs" />
@@ -136,7 +136,7 @@
     <Compile Include="RhBaseName.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform)\Runtime\Full\AsmOffsets.cs" />
+    <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
