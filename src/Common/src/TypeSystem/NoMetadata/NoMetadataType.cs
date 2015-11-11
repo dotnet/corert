@@ -2,12 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Reflection.Metadata;
-using System.Threading;
-using Debug = System.Diagnostics.Debug;
-
 using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.NoMetadata
