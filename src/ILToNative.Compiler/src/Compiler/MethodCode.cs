@@ -2,10 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ILToNative
 {
@@ -20,6 +16,7 @@ namespace ILToNative
         public Relocation[] Relocs;
 
         public FrameInfo[] FrameInfos;
+        public DebugLocInfo[] DebugLocInfos;
     }
 
     class BlockRelativeTarget
@@ -42,5 +39,21 @@ namespace ILToNative
         public int StartOffset;
         public int EndOffset;
         public byte[] BlobData;
+    }
+
+    public struct DebugLocInfo
+    {
+        public int NativeOffset;
+        public string FileName;
+        public int LineNumber;
+        public int ColNumber;
+
+        public DebugLocInfo(int nativeOffset, string fileName, int lineNumber, int colNumber = 0)
+        {
+            NativeOffset = nativeOffset;
+            FileName = fileName;
+            LineNumber = lineNumber;
+            ColNumber = colNumber;
+        }
     }
 }

@@ -430,7 +430,8 @@ namespace ILToNative
 
                 methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());
 
-                methodCodeNodeNeedingCode.SetFrameInfos(methodCode.FrameInfos);
+                methodCodeNodeNeedingCode.InitializeFrameInfos(methodCode.FrameInfos);
+                methodCodeNodeNeedingCode.InitializeDebugLocInfos(methodCode.DebugLocInfos);
             }
         }
 

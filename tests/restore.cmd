@@ -13,7 +13,7 @@ set CoreRT_AppDepSdkVer=1.0.0-prerelease
 set CoreRT_ProtoJitPkg=Microsoft.DotNet.ProtoJit
 set CoreRT_ProtoJitVer=1.0.0-prerelease
 set CoreRT_ObjWriterPkg=Microsoft.DotNet.ObjectWriter
-set CoreRT_ObjWriterVer=1.0.1-prerelease
+set CoreRT_ObjWriterVer=1.0.2-prerelease
 
 setlocal EnableExtensions
 set __ScriptDir=%~dp0

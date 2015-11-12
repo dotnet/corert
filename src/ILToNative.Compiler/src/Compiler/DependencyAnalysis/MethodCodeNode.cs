@@ -7,10 +7,12 @@ using Internal.TypeSystem;
 
 namespace ILToNative.DependencyAnalysis
 {
-    class MethodCodeNode : ObjectNodeWithFrameInfo, ISymbolNode
+    class MethodCodeNode : ObjectNode, INodeWithFrameInfo, INodeWithDebugInfo, ISymbolNode
     {
         MethodDesc _method;
         ObjectData _methodCode;
+        FrameInfo[] _frameInfos;
+        DebugLocInfo[] _debugLocInfos;
 
         public MethodCodeNode(MethodDesc method)
         {
@@ -71,6 +73,34 @@ namespace ILToNative.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             return _methodCode;
+        }
+
+        public FrameInfo[] FrameInfos
+        {
+            get
+            {
+                return _frameInfos;
+            }
+        }
+
+        public void InitializeFrameInfos(FrameInfo[] frameInfos)
+        {
+            Debug.Assert(_frameInfos == null);
+            _frameInfos = frameInfos;
+        }
+
+        public DebugLocInfo[] DebugLocInfos
+        {
+            get
+            {
+                return _debugLocInfos;
+            }
+        }
+
+        public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
+        {
+            Debug.Assert(_debugLocInfos == null);
+            _debugLocInfos = debugLocInfos;
         }
     }
 }
