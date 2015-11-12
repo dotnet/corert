@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem
 {
-    public abstract class TypeSystemContext
+    public abstract partial class TypeSystemContext
     {
         public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown))
         {

@@ -13,7 +13,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaGenericParameter : TypeDesc
+    public sealed partial class EcmaGenericParameter : TypeDesc
     {
         EcmaModule _module;
         GenericParameterHandle _handle;

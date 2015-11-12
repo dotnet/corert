@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Internal.TypeSystem
 {
-    public sealed class InstantiatedMethod : MethodDesc
+    public sealed partial class InstantiatedMethod : MethodDesc
     {
         MethodDesc _methodDef;
         Instantiation _instantiation;

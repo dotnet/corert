@@ -5,7 +5,7 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    public abstract class ParameterizedType : TypeDesc
+    public abstract partial class ParameterizedType : TypeDesc
     {
         TypeDesc _parameterType;
 

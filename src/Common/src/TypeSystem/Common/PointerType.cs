@@ -5,7 +5,7 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    public sealed class PointerType : ParameterizedType
+    public sealed partial class PointerType : ParameterizedType
     {
         internal PointerType(TypeDesc parameterType)
             : base(parameterType)
