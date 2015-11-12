@@ -5,7 +5,7 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    public abstract class SignatureVariable : TypeDesc
+    public abstract partial class SignatureVariable : TypeDesc
     {
         TypeSystemContext _context;
         int _index;
@@ -38,7 +38,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    public sealed class SignatureTypeVariable : SignatureVariable
+    public sealed partial class SignatureTypeVariable : SignatureVariable
     {
         internal SignatureTypeVariable(TypeSystemContext context, int index) : base(context, index)
         {
@@ -68,7 +68,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    public sealed class SignatureMethodVariable : SignatureVariable
+    public sealed partial class SignatureMethodVariable : SignatureVariable
     {
         internal SignatureMethodVariable(TypeSystemContext context, int index) : base(context, index)
         {

@@ -5,7 +5,7 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    public sealed class ByRefType : ParameterizedType
+    public sealed partial class ByRefType : ParameterizedType
     {
         internal ByRefType(TypeDesc parameter)
             : base(parameter)
