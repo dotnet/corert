@@ -41,26 +41,26 @@ namespace Internal.IL
             return _methodIL.GetInitLocals();
         }
 
-        public override TypeDesc[] GetLocals()
+        public override LocalVariableDefinition[] GetLocals()
         {
-            TypeDesc[] locals = _methodIL.GetLocals();
-            TypeDesc[] clone = null;
+            LocalVariableDefinition[] locals = _methodIL.GetLocals();
+            LocalVariableDefinition[] clone = null;
 
             for (int i = 0; i < locals.Length; i++)
             {
-                TypeDesc uninst = locals[i];
+                TypeDesc uninst = locals[i].Type;
                 TypeDesc inst  = uninst.InstantiateSignature(_typeInstantiation, _methodInstantiation);
                 if (uninst != inst)
                 {
                     if (clone == null)
                     {
-                        clone = new TypeDesc[locals.Length];
+                        clone = new LocalVariableDefinition[locals.Length];
                         for (int j = 0; j < clone.Length; j++)
                         {
                             clone[j] = locals[j];
                         }
                     }
-                    clone[i] = inst;
+                    clone[i] = new LocalVariableDefinition(inst, locals[i].IsPinned);
                 }
             }
 

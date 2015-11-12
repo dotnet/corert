@@ -126,10 +126,10 @@ namespace Internal.IL.Stubs
     class ILStubMethodIL : MethodIL
     {
         byte[] _ilBytes;
-        TypeDesc[] _locals;
+        LocalVariableDefinition[] _locals;
         Object[] _tokens;
 
-        public ILStubMethodIL(byte[] ilBytes, TypeDesc[] locals, Object[] tokens)
+        public ILStubMethodIL(byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens)
         {
             _ilBytes = ilBytes;
             _locals = locals;
@@ -152,7 +152,7 @@ namespace Internal.IL.Stubs
         {
             return true;
         }
-        public override TypeDesc[] GetLocals()
+        public override LocalVariableDefinition[] GetLocals()
         {
             return _locals;
         }
@@ -165,7 +165,7 @@ namespace Internal.IL.Stubs
     public class ILEmitter
     {
         ArrayBuilder<ILCodeStream> _codeStreams;
-        ArrayBuilder<TypeDesc> _locals;
+        ArrayBuilder<LocalVariableDefinition> _locals;
         ArrayBuilder<Object> _tokens;
 
         public ILEmitter()
@@ -210,10 +210,10 @@ namespace Internal.IL.Stubs
             return NewToken(value, 0x11000000);
         }
 
-        public int NewLocal(TypeDesc localType)
+        public int NewLocal(TypeDesc localType, bool isPinned = false)
         {
             int index = _locals.Count;
-            _locals.Add(localType);
+            _locals.Add(new LocalVariableDefinition(localType, isPinned));
             return index;
         }
 

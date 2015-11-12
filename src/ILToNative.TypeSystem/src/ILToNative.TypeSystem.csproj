@@ -98,6 +98,9 @@
     <Compile Include="$(CommonPath)\TypeSystem\NoMetadata\NoMetadataType.cs">
       <Link>NoMetadata\NoMetadataType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
+      <Link>LocalVariableDefinition.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />

@@ -32,7 +32,7 @@ namespace Internal.IL
 
             if (method.Name == "UncheckedCast" && method.OwningType.Name == "System.Runtime.CompilerServices.RuntimeHelpers")
             {
-                return new ILStubMethodIL(new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<TypeDesc>(), null);
+                return new ILStubMethodIL(new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
 
             return null;

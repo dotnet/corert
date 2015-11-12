@@ -91,7 +91,7 @@ namespace Internal.IL
         public abstract byte[] GetILBytes();
         public abstract int GetMaxStack();
         public abstract bool GetInitLocals();
-        public abstract TypeDesc[] GetLocals();
+        public abstract LocalVariableDefinition[] GetLocals();
         public abstract Object GetObject(int token);
         public abstract ILExceptionRegion[] GetExceptionRegions();
     }
