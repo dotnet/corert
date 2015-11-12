@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Threading</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{AD10E5A4-FBA5-4135-9BA4-008723F319B8}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SharedOpenSourcePath>$(FxOpenSourceRootPath)System.Threading\src</SharedOpenSourcePath>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|arm' ">
+    <PlatformTarget>arm</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|arm' ">
+    <PlatformTarget>arm</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+ 
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Helpers.cs" />
+    <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
+    <Compile Include="System\AggregateException.cs" />
+    <Compile Include="System\OperationCanceledException.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
+    <Compile Include="System\Runtime\CompilerServices\INotifyCompletion.cs" />
+    <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
+    <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
+    <Compile Include="System\Threading\AsyncLocal.cs" />
+    <Compile Include="System\Threading\CancellationToken.cs" />
+    <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
+    <Compile Include="System\Threading\CancellationTokenSource.cs" />
+    <Compile Include="System\Threading\ExecutionContext.cs" />
+    <Compile Include="System\Threading\PlatformHelper.cs" />
+    <Compile Include="System\Threading\LockRecursionException.cs" />
+    <Compile Include="System\Threading\ManualResetEventSlim.cs" />
+    <Compile Include="System\Threading\SemaphoreSlim.cs" />
+    <Compile Include="System\Threading\SendOrPostCallback.cs" />
+    <Compile Include="System\Threading\SpinLock.cs" />
+    <Compile Include="System\Threading\SynchronizationContext.cs" />
+    <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
+    <Compile Include="System\Threading\Tasks\DebugHelperRooter.cs" />
+    <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
+    <Compile Include="System\Threading\Tasks\future.cs" />
+    <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
+    <Compile Include="System\Threading\Tasks\ProducerConsumerQueues.cs" />
+    <Compile Include="System\Threading\Tasks\Task.cs" />
+    <Compile Include="System\Threading\Tasks\TaskCanceledException.cs" />
+    <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
+    <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
+    <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
+    <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
+    <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
+    <Compile Include="System\Threading\Tasks\TaskSchedulerException.cs" />
+    <Compile Include="System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
+    <Compile Include="System\Threading\Tasks\TPLETWProvider.cs" />
+    <Compile Include="System\Threading\ThreadLocal.cs" />
+    <Compile Include="System\Threading\ThreadPool.cs" />
+    <Compile Include="System\Threading\Timer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop._SYSTEM_INFO.cs">
+      <Link>Common\Interop\Interop._SYSTEM_INFO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop._MEMORY_BASIC_INFORMATION.cs">
+      <Link>Common\Interop\Interop._MEMORY_BASIC_INFORMATION.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
+      <Link>Common\Interop\Interop.GetNativeSystemInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
+      <Link>Common\Interop\Interop.QueryUnbiasedInterruptTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs">
+      <Link>Common\Interop\Interop.VirtualQuery.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <!-- Shared System.Threading source -->
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\LowLevelConcurrentQueue.cs">
+      <Link>System\Collections\Concurrent\LowLevelConcurrentQueue.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Threading\Progress.cs">
+      <Link>System\Progress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Threading\Barrier.cs">
+      <Link>System\Threading\Barrier.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Threading\CDSsyncETWBCLProvider.cs">
+      <Link>System\Threading\CDSsyncETWBCLProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Threading\CountdownEvent.cs">
+      <Link>System\Threading\CountdownEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Threading\ReaderWriterLockSlim.cs">
+      <Link>System\Threading\ReaderWriterLockSlim.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Threading\TimeoutHelper.cs">
+      <Link>System\Threading\TimeoutHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\__HResults.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
