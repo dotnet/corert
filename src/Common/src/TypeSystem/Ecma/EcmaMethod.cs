@@ -317,18 +317,41 @@ namespace Internal.TypeSystem.Ecma
             return _type.ToString() + "." + Name;
         }
 
-        public bool IsPInvoke()
+        public override bool IsPInvokeImpl
         {
-            return (((int)Attributes & (int)MethodAttributes.PinvokeImpl) != 0);
+            get
+            {
+                return (((int)Attributes & (int)MethodAttributes.PinvokeImpl) != 0);
+            }
         }
 
-        public string GetPInvokeImportName()
+        public override PInvokeMetadata GetPInvokeMethodImportMetadata()
         {
-            if (((int)Attributes & (int)MethodAttributes.PinvokeImpl) == 0)
-                return null;
+            if (!IsPInvokeImpl)
+                return default(PInvokeMetadata);
 
-            var metadataReader = MetadataReader;
-            return metadataReader.GetString(metadataReader.GetMethodDefinition(_handle).GetImport().Name);
+            MetadataReader metadataReader = MetadataReader;
+            MethodImport import = metadataReader.GetMethodDefinition(_handle).GetImport();
+            string name = metadataReader.GetString(import.Name);
+
+            CharSet charSet;
+            switch (import.Attributes & MethodImportAttributes.CharSetMask)
+            {
+                case MethodImportAttributes.CharSetAnsi:
+                    charSet = CharSet.Ansi;
+                    break;
+                case MethodImportAttributes.CharSetUnicode:
+                    charSet = CharSet.Unicode;
+                    break;
+                case MethodImportAttributes.CharSetAuto:
+                    charSet = CharSet.Auto;
+                    break;
+                default:
+                    charSet = CharSet.Unknown;
+                    break;
+            }
+
+            return new PInvokeMetadata(name, charSet);
         }
     }
 

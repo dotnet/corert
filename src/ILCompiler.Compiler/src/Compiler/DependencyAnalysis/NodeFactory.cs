@@ -244,7 +244,7 @@ namespace ILCompiler.DependencyAnalysis
             var kind = method.DetectSpecialMethodKind();
             if (kind == SpecialMethodKind.PInvoke)
             {
-                return _jumpStubs.GetOrAdd(ExternSymbol(((EcmaMethod)method).GetPInvokeImportName()));
+                return _jumpStubs.GetOrAdd(ExternSymbol(method.GetPInvokeMethodImportMetadata().Name));
             }
             else if (kind == SpecialMethodKind.RuntimeImport)
             {

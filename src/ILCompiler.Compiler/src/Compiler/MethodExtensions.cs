@@ -67,13 +67,14 @@ namespace ILCompiler
 
         public static SpecialMethodKind DetectSpecialMethodKind(this MethodDesc method)
         {
+            if (method.IsPInvokeImpl && !Internal.IL.Stubs.PInvokeMarshallingThunkEmitter.RequiresMarshalling(method))
+            {
+                return SpecialMethodKind.PInvoke;
+            }
+
             if (method is EcmaMethod)
             {
-                if (((EcmaMethod)method).IsPInvoke())
-                {
-                    return SpecialMethodKind.PInvoke;
-                }
-                else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
+                if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
                     return SpecialMethodKind.RuntimeImport;
                 }
