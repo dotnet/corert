@@ -101,6 +101,7 @@
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
+    <AotPackageReferencePath>$(IntermediateOutputRootPath)\CoreRTRef</AotPackageReferencePath>
 
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
 
