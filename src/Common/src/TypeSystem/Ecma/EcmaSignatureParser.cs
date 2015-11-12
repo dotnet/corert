@@ -92,8 +92,6 @@ namespace Internal.TypeSystem.Ecma
                     return ParseType().MakeByRefType();
                 case SignatureTypeCode.Pointer:
                     return _module.Context.GetPointerType(ParseType());
-                case SignatureTypeCode.Pinned: // TODO: Pinned types in local signatures!
-                    return ParseType();
                 case SignatureTypeCode.GenericTypeParameter:
                     return _module.Context.GetSignatureVariable(_reader.ReadCompressedInteger(), false);
                 case SignatureTypeCode.GenericMethodParameter:
@@ -186,28 +184,35 @@ namespace Internal.TypeSystem.Ecma
             return ParseType();
         }
 
-        public TypeDesc[] ParseLocalsSignature()
+        public LocalVariableDefinition[] ParseLocalsSignature()
         {
             if ((_reader.ReadByte() & 0xF) != 7) // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG - add it to SignatureCallingConvention?
                 throw new BadImageFormatException();
 
             int count = _reader.ReadCompressedInteger();
 
-            TypeDesc[] locals;
+            LocalVariableDefinition[] locals;
 
             if (count > 0)
             {
-                locals = new TypeDesc[count];
+                locals = new LocalVariableDefinition[count];
                 for (int i = 0; i < count; i++)
                 {
+                    bool isPinned = false;
+
                     SignatureTypeCode typeCode = ParseTypeCode();
-                    // TODO: Handle SignatureTypeCode.Pinned
-                    locals[i] = ParseType(typeCode);
+                    if (typeCode == SignatureTypeCode.Pinned)
+                    {
+                        isPinned = true;
+                        typeCode = ParseTypeCode();
+                    }
+
+                    locals[i] = new LocalVariableDefinition(ParseType(typeCode), isPinned);
                 }
             }
             else
             {
-                locals = TypeDesc.EmptyTypes;
+                locals = Array.Empty<LocalVariableDefinition>();
             }
             return locals;
         }

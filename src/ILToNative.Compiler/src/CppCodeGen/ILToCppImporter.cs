@@ -43,7 +43,7 @@ namespace Internal.IL
 
         MethodIL _methodIL;
         byte[] _ilBytes;
-        TypeDesc[] _locals;
+        LocalVariableDefinition[] _locals;
 
         struct SequencePoint
         {
@@ -376,7 +376,7 @@ namespace Internal.IL
             }
             else
             {
-               return _locals[index];
+               return _locals[index].Type;
             }
         }
 
@@ -446,12 +446,12 @@ namespace Internal.IL
             bool initLocals = _methodIL.GetInitLocals();
             for (int i = 0; i < _locals.Length; i++)
             {
-                Append(_writer.GetCppSignatureTypeName(_locals[i]));
+                Append(_writer.GetCppSignatureTypeName(_locals[i].Type));
                 Append(" ");
                 Append(GetVarName(i, false));
                 if (initLocals)
                 {
-                    TypeDesc localType = _locals[i];
+                    TypeDesc localType = _locals[i].Type;
                     if (localType.IsValueType && !localType.IsPrimitive && !localType.IsEnum)
                     {
                         Finish();

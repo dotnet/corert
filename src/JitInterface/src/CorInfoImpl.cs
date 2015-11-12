@@ -226,7 +226,7 @@ namespace Internal.JitInterface
             // }
         }
 
-        void Get_CORINFO_SIG_INFO(TypeDesc[] locals, out CORINFO_SIG_INFO sig)
+        void Get_CORINFO_SIG_INFO(LocalVariableDefinition[] locals, out CORINFO_SIG_INFO sig)
         {
             sig.callConv = CorInfoCallConv.CORINFO_CALLCONV_DEFAULT;
             sig._retType = (byte)CorInfoType.CORINFO_TYPE_VOID;
@@ -1248,11 +1248,12 @@ namespace Internal.JitInterface
             }
             else
             {
-                TypeDesc type = ((TypeDesc[])sigObj)[index];
-
-                // TODO: Pinning
+                LocalVariableDefinition[] locals = (LocalVariableDefinition[])sigObj;
+                TypeDesc type = locals[index].Type;
+                
                 CorInfoType corInfoType = asCorInfoType(type, out vcTypeRet);
-                return (CorInfoTypeWithMod)corInfoType;
+
+                return (CorInfoTypeWithMod)corInfoType | (locals[index].IsPinned ? CorInfoTypeWithMod.CORINFO_TYPE_MOD_PINNED : 0);
             }
         }
 
