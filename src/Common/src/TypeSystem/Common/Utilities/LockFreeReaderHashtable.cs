@@ -226,10 +226,13 @@ namespace Internal.TypeSystem
         /// Note that the key is not specified as it is implicit in the value. This function is thread-safe
         /// through the use of locking.
         /// </summary>
-        /// <param name="value">Value to attempt to add to the hashtable</param>
+        /// <param name="value">Value to attempt to add to the hashtable, must not be null</param>
         /// <returns>newly added value, or a value which was already present in the hashtable which is equal to it.</returns>
         public TValue AddOrGetExisting(TValue value)
         {
+            if (value == null)
+                throw new ArgumentNullException();
+
             lock(this)
             {
                 // Check to see if adding this value may require a resize. If so, expand
@@ -312,6 +315,82 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Determine if this collection contains a value associated with a key. This function is thread-safe, and wait-free.
+        /// </summary>
+        public bool Contains(TKey key)
+        {
+            TValue dummyExistingValue;
+            return TryGetValue(key, out dummyExistingValue);
+        }
+
+        /// <summary>
+        /// Enumerator type for the LockFreeReaderHashtable
+        /// This is threadsafe, but is not garaunteed to avoid torn state.
+        /// In particular, the enumerator may report some newly added values
+        /// but not others. All values in the hashtable as of enumerator
+        /// creation will always be enumerated.
+        /// </summary>
+        public struct Enumerator
+        {
+            private TValue[] _hashtableContentsToEnumerate;
+            private int _index;
+            private TValue _current;
+
+            /// <summary>
+            /// Use this to get an enumerable collection from a LockFreeReaderHashtable. 
+            /// Used instead of a GetEnumerator method on the LockFreeReaderHashtable to 
+            /// reduce excess type creation. (By moving the method here, the generic dictionary for
+            /// LockFreeReaderHashtable does not need to contain a reference to the
+            /// enumerator type.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Enumerator Get(LockFreeReaderHashtable<TKey, TValue> hashtable)
+            {
+                return new Enumerator(hashtable);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Enumerator GetEnumerator()
+            {
+                return this;
+            }
+
+            internal Enumerator(LockFreeReaderHashtable<TKey, TValue> hashtable)
+            {
+                _hashtableContentsToEnumerate = hashtable._hashtable;
+                _index = 0;
+                _current = default(TValue);
+            }
+
+            public bool MoveNext()
+            {
+                if ((_hashtableContentsToEnumerate != null) && (_index < _hashtableContentsToEnumerate.Length))
+                {
+                    for (;_index < _hashtableContentsToEnumerate.Length; _index++)
+                    {
+                        if (_hashtableContentsToEnumerate[_index] != null)
+                        {
+                            _current = _hashtableContentsToEnumerate[_index];
+                            _index++;
+                            return true;
+                        }
+                    }
+                }
+
+                _current = default(TValue);
+                return false;
+            }
+
+            public TValue Current
+            {
+                get
+                {
+                    return _current;
+                }
+            }
+        }
+
+        /// <summary>
         /// Given a key, compute a hash code. This function must be thread safe.
         /// </summary>
         protected abstract int GetKeyHashCode(TKey key);
@@ -336,7 +415,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Create a new value from a key. Must be threadsafe. Value may or may not be added
-        /// to collection.
+        /// to collection. Return value must not be null.
         /// </summary>
         protected abstract TValue CreateValueFromKey(TKey key);
     }
