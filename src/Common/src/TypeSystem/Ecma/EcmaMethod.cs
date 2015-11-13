@@ -21,6 +21,8 @@ namespace Internal.TypeSystem.Ecma
             public const int NewSlot                = 0x0004;
             public const int Abstract               = 0x0008;
             public const int Final                  = 0x0010;
+            public const int NoInlining             = 0x0020;
+            public const int AggressiveInlining     = 0x0040;
 
             public const int AttributeMetadataCache = 0x0100;
             public const int Intrinsic            = 0x0200;
@@ -122,6 +124,7 @@ namespace Internal.TypeSystem.Ecma
             if ((mask & MethodFlags.BasicMetadataCache) != 0)
             {
                 var methodAttributes = Attributes;
+                var methodImplAttributes = ImplAttributes;
 
                 if ((methodAttributes & MethodAttributes.Virtual) != 0)
                     flags |= MethodFlags.Virtual;
@@ -134,6 +137,12 @@ namespace Internal.TypeSystem.Ecma
 
                 if ((methodAttributes & MethodAttributes.Final) != 0)
                     flags |= MethodFlags.Final;
+
+                if ((methodImplAttributes & MethodImplAttributes.NoInlining) != 0)
+                    flags |= MethodFlags.NoInlining;
+
+                if ((methodImplAttributes & MethodImplAttributes.AggressiveInlining) != 0)
+                    flags |= MethodFlags.AggressiveInlining;
 
                 flags |= MethodFlags.BasicMetadataCache;
             }
@@ -209,7 +218,23 @@ namespace Internal.TypeSystem.Ecma
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Final) & MethodFlags.Final) != 0;
             }
         }
-        
+
+        public override bool IsNoInlining
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.NoInlining) & MethodFlags.NoInlining) != 0;
+            }
+        }
+
+        public override bool IsAggressiveInlining
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.AggressiveInlining) & MethodFlags.AggressiveInlining) != 0;
+            }
+        }
+
         public override bool IsIntrinsic
         {
             get
