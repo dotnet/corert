@@ -113,9 +113,14 @@
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
     
+    <!-- Platform agnostic parent NuSpec -->
+    <NuSpecSrcs Include="$(SourceDir).nuget\Microsoft.DotNet.ILToNative.nuspec" />
+    <NuPkgRuntimeJson Include="$(SourceDir).nuget\runtime.json" />
+
     <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.nuspec" />
     <NuSpecSrcs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(SourceDir).nuget\toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.Development.nuspec" />
 
+    <NuSpecs Include="$(ProductPackageDir)Microsoft.DotNet.ILToNative.nuspec" />
     <NuSpecs Include="$(ProductPackageDir)toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.nuspec" />
     <NuSpecs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(ProductPackageDir)toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.Development.nuspec" />
   </ItemGroup>
