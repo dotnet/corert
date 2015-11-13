@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>toolchain.Linux-x64.Microsoft.DotNet.ILCompiler</id>
+    <id>toolchain.osx.10.10-x64.Microsoft.DotNet.ILCompiler</id>
     <version>1.0.0-prerelease</version>
     <title>Microsoft .NET Native Toolchain</title>
     <authors>Microsoft</authors>
@@ -45,11 +45,11 @@
     <file src="../ILCompiler.Compiler.dll" target="runtimes/any/lib/dotnet/ILCompiler.Compiler.dll" />
     <file src="../ILCompiler.DependencyAnalysisFramework.dll" target="runtimes/any/lib/dotnet/ILCompiler.DependencyAnalysisFramework.dll" />
     <file src="../ILCompiler.TypeSystem.dll" target="runtimes/any/lib/dotnet/ILCompiler.TypeSystem.dll" />
-    <file src="../lib/libRuntime.a" target="runtimes/Linux-x64/native/sdk/libRuntime.a" />
-    <file src="../lib/libPortableRuntime.a" target="runtimes/Linux-x64/native/sdk/libPortableRuntime.a" />
-    <file src="../lib/libbootstrapper.a" target="runtimes/Linux-x64/native/sdk/libbootstrapper.a" />
-    <file src="../lib/libbootstrappercpp.a" target="runtimes/Linux-x64/native/sdk/libbootstrappercpp.a" />
-    <file src="../lib/libSystem.Private.CoreLib.Native.a" target="runtimes/Linux-x64/native/sdk/libSystem.Private.CoreLib.Native.a" />
-    <file src="../System.Private.Corelib.dll" target="runtimes/Linux-x64/native/sdk/System.Private.Corelib.dll" />
+    <file src="../lib/libRuntime.a" target="runtimes/osx.10.10-x64/native/sdk/libRuntime.a" />
+    <file src="../lib/libPortableRuntime.a" target="runtimes/osx.10.10-x64/native/sdk/libPortableRuntime.a" />
+    <file src="../lib/libbootstrapper.a" target="runtimes/osx.10.10-x64/native/sdk/libbootstrapper.a" />
+    <file src="../lib/libbootstrappercpp.a" target="runtimes/osx.10.10-x64/native/sdk/libbootstrappercpp.a" />
+    <file src="../lib/libSystem.Private.CoreLib.Native.a" target="runtimes/osx.10.10-x64/native/sdk/libSystem.Private.CoreLib.Native.a" />
+    <file src="../System.Private.Corelib.dll" target="runtimes/osx.10.10-x64/native/sdk/System.Private.Corelib.dll" />
   </files>
 </package>

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>toolchain.Windows_NT-x64.Microsoft.DotNet.ILCompiler.Development</id>
+    <id>toolchain.win7-x64.Microsoft.DotNet.ILCompiler.Development</id>
     <version>1.0.0-prerelease</version>
     <title>Microsoft .NET Native Toolchain - Development Version</title>
     <authors>Microsoft</authors>
