@@ -7,18 +7,33 @@ using System.Collections.Generic;
 using Internal.IL;
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.IL.Stubs
 {
     public class ILCodeStream
     {
-        static readonly byte[] s_empty = new byte[0];
+        private struct LabelAndOffset
+        {
+            public readonly ILCodeLabel Label;
+            public readonly int Offset;
+            public LabelAndOffset(ILCodeLabel label, int offset)
+            {
+                Label = label;
+                Offset = offset;
+            }
+        }
 
         internal byte[] _instructions;
         internal int _length;
+        internal int _startOffsetForLinking;
+
+        private ArrayBuilder<LabelAndOffset> _offsetsNeedingPatching;
 
         internal ILCodeStream()
         {
-            _instructions = s_empty;
+            _instructions = Array.Empty<byte>();
+            _startOffsetForLinking = -1;
         }
 
         private void EmitByte(byte b)
@@ -104,6 +119,20 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public void EmitLdLoca(int index)
+        {
+            if (index < 0x100)
+            {
+                Emit(ILOpcode.ldloca_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.ldloca);
+                EmitUInt16((ushort)index);
+            }
+        }
+
         public void EmitStLoc(int index)
         {
             if (index < 4)
@@ -119,6 +148,44 @@ namespace Internal.IL.Stubs
             {
                 Emit(ILOpcode.stloc);
                 EmitUInt16((ushort)index);
+            }
+        }
+
+        public void Emit(ILOpcode opcode, ILCodeLabel label)
+        {
+            Debug.Assert(opcode == ILOpcode.br || opcode == ILOpcode.brfalse ||
+                opcode == ILOpcode.brtrue || opcode == ILOpcode.beq ||
+                opcode == ILOpcode.bge || opcode == ILOpcode.bgt ||
+                opcode == ILOpcode.ble || opcode == ILOpcode.blt ||
+                opcode == ILOpcode.bne_un || opcode == ILOpcode.bge_un ||
+                opcode == ILOpcode.bgt_un || opcode == ILOpcode.ble_un ||
+                opcode == ILOpcode.blt_un || opcode == ILOpcode.leave);
+
+            Emit(opcode);
+            _offsetsNeedingPatching.Add(new LabelAndOffset(label, _length));
+            EmitUInt32(0);
+        }
+
+        public void EmitLabel(ILCodeLabel label)
+        {
+            label.Place(this, _length);
+        }
+
+        internal void PatchLabels()
+        {
+            for (int i = 0; i < _offsetsNeedingPatching.Count; i++)
+            {
+                LabelAndOffset patch = _offsetsNeedingPatching[i];
+
+                Debug.Assert(patch.Label.IsPlaced);
+                Debug.Assert(_startOffsetForLinking > -1);
+
+                int value = patch.Label.AbsoluteOffset - _startOffsetForLinking - patch.Offset - 4;
+                int offset = patch.Offset;
+                _instructions[offset] = (byte)value;
+                _instructions[offset + 1] = (byte)(value >> 8);
+                _instructions[offset + 2] = (byte)(value >> 16);
+                _instructions[offset + 3] = (byte)(value >> 24);
             }
         }
     }
@@ -146,7 +213,7 @@ namespace Internal.IL.Stubs
         }
         public override ILExceptionRegion[] GetExceptionRegions()
         {
-            return new ILExceptionRegion[0]; // TODO: Array.Empty<ILExceptionRegion>()
+            return Array.Empty<ILExceptionRegion>();
         }
         public override bool GetInitLocals()
         {
@@ -159,6 +226,41 @@ namespace Internal.IL.Stubs
         public override Object GetObject(int token)
         {
             return _tokens[(token & 0xFFFFFF) - 1];
+        }
+    }
+
+    public class ILCodeLabel
+    {
+        private ILCodeStream _codeStream;
+        private int _offsetWithinCodeStream;
+
+        internal bool IsPlaced
+        {
+            get
+            {
+                return _codeStream != null;
+            }
+        }
+
+        internal int AbsoluteOffset
+        {
+            get
+            {
+                Debug.Assert(IsPlaced);
+                Debug.Assert(_codeStream._startOffsetForLinking >= 0);
+                return _codeStream._startOffsetForLinking + _offsetWithinCodeStream;
+            }
+        }
+
+        internal ILCodeLabel()
+        {
+        }
+
+        internal void Place(ILCodeStream codeStream, int offsetWithinCodeStream)
+        {
+            Debug.Assert(!IsPlaced);
+            _codeStream = codeStream;
+            _offsetWithinCodeStream = offsetWithinCodeStream;
         }
     }
 
@@ -217,17 +319,28 @@ namespace Internal.IL.Stubs
             return index;
         }
 
+        public ILCodeLabel NewCodeLabel()
+        {
+            var newLabel = new ILCodeLabel();
+            return newLabel;
+        }
+
         public MethodIL Link()
         {
             int totalLength = 0;
             for (int i = 0; i < _codeStreams.Count; i++)
-                totalLength += _codeStreams[i]._length;
+            {
+                ILCodeStream ilCodeStream = _codeStreams[i];
+                ilCodeStream._startOffsetForLinking = totalLength;
+                totalLength += ilCodeStream._length;
+            }
 
             byte[] ilInstructions = new byte[totalLength];
             int copiedLength = 0;
             for (int i = 0; i < _codeStreams.Count; i++)
             {
                 ILCodeStream ilCodeStream = _codeStreams[i];
+                ilCodeStream.PatchLabels();
                 Array.Copy(ilCodeStream._instructions, 0, ilInstructions, copiedLength, ilCodeStream._length);
                 copiedLength += ilCodeStream._length;
             }
