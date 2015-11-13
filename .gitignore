@@ -46,6 +46,7 @@ dlldata.c
 *_p.c
 *_i.h
 *.ilk
+*.idb
 *.meta
 *.obj
 *.pch
@@ -77,6 +78,7 @@ ipch/
 *.opensdf
 *.sdf
 *.cachefile
+*.opendb
 
 # Visual Studio profiler
 *.psess
