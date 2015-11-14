@@ -18,8 +18,21 @@ namespace ILToNative.DependencyAnalysis
     /// </summary>
     class ObjectWriter : IDisposable
     {
+        // This is used to look up file id for the given file name.
+        // This is a global table across nodes.
+        Dictionary<string, int> _debugFileToId = new Dictionary<string, int>();
+
+        // This is used to look up DebugLocInfo for the given native offset.
+        // This is for individual node and should be flushed once node is emitted.
+        Dictionary<int, DebugLocInfo> _offsetToDebugLoc = new Dictionary<int, DebugLocInfo>();
+
+        // This is one to multiple mapping -- we might have multiple symbols at the give offset.
+        // We preserved the original order of ISymbolNode[].
+        Dictionary<int, List<ISymbolNode>> _offsetToDefSymbol = new Dictionary<int, List<ISymbolNode>>();
+
         public const string MainEntryNodeName = "__managed__Main";
         const string NativeObjectWriterFileName = "objwriter";
+
         [DllImport(NativeObjectWriterFileName)]
         static extern IntPtr InitObjWriter(string objectFilePath);
 
@@ -69,15 +82,104 @@ namespace ILToNative.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        static extern void EmitFrameInfo(IntPtr objWriter, string frameName, int startOffset, int endOffset, int blobSize, byte[] blobData);
-        public void EmitFrameInfo(string frameName, int startOffset, int endOffset, int blobSize, byte[] blobData)
+        static extern void EmitFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData);
+        public void EmitFrameInfo(string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData)
         {
-            EmitFrameInfo(_nativeObjectWriter, frameName, startOffset, endOffset, blobSize, blobData);
+            EmitFrameInfo(_nativeObjectWriter, methodName, startOffset, endOffset, blobSize, blobData);
         }
 
-        // This is one to multiple mapping -- we might have multiple symbols at the give offset.
-        // We preserved the original order of ISymbolNode[].
-        Dictionary<int, List<ISymbolNode>> _offsetToDefSymbol = new Dictionary<int, List<ISymbolNode>>();
+        [DllImport(NativeObjectWriterFileName)]
+        static extern void EmitDebugFileInfo(IntPtr objWriter, int fileInfoSize, string[] fileInfos);
+        public void EmitDebugFileInfo(int fileInfoSize, string[] fileInfos)
+        {
+            EmitDebugFileInfo(_nativeObjectWriter, fileInfoSize, fileInfos);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        static extern void EmitDebugLoc(IntPtr objWriter, int nativeOffset, int fileId, int linueNumber, int colNumber);
+        public void EmitDebugLoc(int nativeOffset, int fileId,  int linueNumber, int colNumber)
+        {
+            EmitDebugLoc(_nativeObjectWriter, nativeOffset, fileId, linueNumber, colNumber);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        static extern void FlushDebugLocs(IntPtr objWriter, string methodName, int methodSize);
+        public void FlushDebugLocs(string methodName, int methodSize)
+        {
+            // No interest if there is no debug location emission/map before.
+            if (_offsetToDebugLoc.Count == 0)
+            {
+                return;
+            }
+            FlushDebugLocs(_nativeObjectWriter, methodName, methodSize);
+
+            // Ensure clean up the map for the next node.
+            _offsetToDebugLoc.Clear();
+        }
+
+        public string[] BuildFileInfoMap(IEnumerable<DependencyNode> nodes)
+        {
+            List<string> debugFileInfos = new List<string>();
+            _debugFileToId.Clear();
+            foreach (DependencyNode node in nodes)
+            {
+                if (node is INodeWithDebugInfo)
+                {
+                    DebugLocInfo[] debugLocInfos = ((INodeWithDebugInfo)node).DebugLocInfos;
+                    if (debugLocInfos != null)
+                    {
+                        foreach(DebugLocInfo debugLocInfo in debugLocInfos)
+                        {
+                            string fileName = debugLocInfo.FileName;
+                            if (!_debugFileToId.ContainsKey(fileName))
+                            {
+                                _debugFileToId.Add(fileName, debugFileInfos.Count);
+                                debugFileInfos.Add(fileName);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return debugFileInfos.Count > 0 ? debugFileInfos.ToArray() : null;
+        }
+
+        public void BuildDebugLocInfoMap(ObjectNode node)
+        {
+            // No interest if file map is no built before.
+            if (_debugFileToId.Count == 0)
+            {
+                return;
+            }
+
+            // No interest if it's not a debug node.
+            if (!(node is INodeWithDebugInfo))
+            {
+                return;
+            }
+
+            DebugLocInfo[] locs = (node as INodeWithDebugInfo).DebugLocInfos;
+            if (locs != null)
+            {
+                foreach (var loc in locs)
+                {
+                    _offsetToDebugLoc.Add(loc.NativeOffset, loc);
+                }
+            }
+        }
+
+        public void EmitDebugLocInfo(int offset)
+        {
+            DebugLocInfo loc;
+            if (_offsetToDebugLoc.TryGetValue(offset, out loc)) {
+                Debug.Assert(_debugFileToId.Count > 0);
+                EmitDebugLoc(offset,
+                    _debugFileToId[loc.FileName],
+                    loc.LineNumber,
+                    loc.ColNumber);
+            }
+        }
+
         public void BuildSymbolDefinitionMap(ISymbolNode[] definedSymbols)
         {
             _offsetToDefSymbol.Clear();
@@ -143,6 +245,13 @@ namespace ILToNative.DependencyAnalysis
             {
                 string currentSection = "";
 
+                // Build file info map.
+                string[] debugFileInfos = objectWriter.BuildFileInfoMap(nodes);
+                if (debugFileInfos != null)
+                {
+                    objectWriter.EmitDebugFileInfo(debugFileInfos.Length, debugFileInfos);
+                }
+
                 foreach (DependencyNode depNode in nodes)
                 {
                     ObjectNode node = depNode as ObjectNode;
@@ -179,10 +288,16 @@ namespace ILToNative.DependencyAnalysis
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(nodeContents.DefinedSymbols);
 
+                    // Build debug location map
+                    objectWriter.BuildDebugLocInfoMap(node);
+
                     for (int i = 0; i < nodeContents.Data.Length; i++)
                     {
                         // Emit symbol definitions if necessary
                         objectWriter.EmitSymbolDefinition(i);
+
+                        // Emit debug loc info if needed.
+                        objectWriter.EmitDebugLocInfo(i);
 
                         if (i == nextRelocOffset)
                         {
@@ -227,25 +342,28 @@ namespace ILToNative.DependencyAnalysis
                     // It is possible to have a symbol just after all of the data.
                     objectWriter.EmitSymbolDefinition(nodeContents.Data.Length);
 
+                    // The first definition is the main node name
+                    string nodeName = objectWriter._offsetToDefSymbol[0][0].MangledName;
                     // Emit frame info for object code.
-                    if (node is ObjectNodeWithFrameInfo) {
-                        FrameInfo[] frameInfos = (node as ObjectNodeWithFrameInfo).GetFrameInfos();
+                    if (node is INodeWithFrameInfo)
+                    {
+                        FrameInfo[] frameInfos = ((INodeWithFrameInfo) node).FrameInfos;
                         if (frameInfos != null)
                         {
-                            // The first definition is the main method name
-                            string methodName = objectWriter._offsetToDefSymbol[0][0].MangledName;
-                            foreach (var frameInfo in frameInfos) {
-                                objectWriter.EmitFrameInfo(methodName,
+                            foreach (var frameInfo in frameInfos)
+                            {
+                                objectWriter.EmitFrameInfo(nodeName,
                                     frameInfo.StartOffset,
                                     frameInfo.EndOffset,
                                     frameInfo.BlobData.Length,
                                     frameInfo.BlobData);
                             }
-                            objectWriter.SwitchSection(currentSection);
                         }
                     }
-                }
 
+                    objectWriter.FlushDebugLocs(nodeName, nodeContents.Data.Length);
+                    objectWriter.SwitchSection(currentSection);
+                }
             }
         }
     }

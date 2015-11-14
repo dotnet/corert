@@ -54,6 +54,12 @@ namespace Internal.JitInterface
             }
         }
 
+        struct SequencePoint
+        {
+            public string Document;
+            public int LineNumber;
+        }
+
         public MethodCode CompileMethod(MethodDesc method)
         {
             try
@@ -65,7 +71,23 @@ namespace Internal.JitInterface
                     CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
                     CorJitFlag.CORJIT_FLG_READYTORUN |
                     CorJitFlag.CORJIT_FLG_RELOC |
+                    CorJitFlag.CORJIT_FLG_DEBUG_INFO |
                     CorJitFlag.CORJIT_FLG_PREJIT);
+
+                if (!_compilation.Options.NoLineNumbers)
+                {
+                    CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
+                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
+                    if (ilSequencePoints != null)
+                    {
+                        Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
+                        foreach (var point in ilSequencePoints)
+                        {
+                            sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
+                        }
+                        _sequencePoints = sequencePoints;
+                    }
+                }
 
                 IntPtr nativeEntry;
                 uint codeSize;
@@ -84,7 +106,8 @@ namespace Internal.JitInterface
 
                     Relocs = (_relocs != null) ? _relocs.ToArray() : null,
 
-                    FrameInfos = _frameInfos
+                    FrameInfos = _frameInfos,
+                    DebugLocInfos = _debugLocInfos
                 };
             }
             finally
@@ -131,6 +154,9 @@ namespace Internal.JitInterface
             _numFrameInfos = 0;
             _usedFrameInfos = 0;
             _frameInfos = null;
+
+            _sequencePoints = null;
+            _debugLocInfos = null;
         }
 
         Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -1198,10 +1224,49 @@ namespace Internal.JitInterface
             pILOffsets = null;
             *implicitBoundaries = BoundaryTypes.DEFAULT_BOUNDARIES;
         }
+
+        // Create a DebugLocInfo which is a table from native offset to sourece line.
+        // using native to il offset (pMap) and il to source line (_sequencePoints).
         void setBoundaries(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
-            // TODO: Debugging
+            Debug.Assert(_debugLocInfos == null);
+            // No interest if sequencePoints is not populated before.
+            if (_sequencePoints == null)
+            {
+                return;
+            }
+
+            List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
+            for (int i = 0; i < cMap; i++)
+            {
+                SequencePoint s;
+                if (_sequencePoints.TryGetValue((int)pMap[i].ilOffset, out s))
+                {
+                    Debug.Assert(!string.IsNullOrEmpty(s.Document));
+                    int nativeOffset = (int)pMap[i].nativeOffset;
+                    DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
+
+                    // We often miss line number at 0 offset, which prevents debugger from
+                    // stepping into callee.
+                    // Synthesize a location info at 0 offset assuming line number is minus one
+                    // from the first entry.
+                    if (debugLocInfos.Count == 0 && nativeOffset != 0)
+                    {
+                        DebugLocInfo firstLoc = loc;
+                        firstLoc.NativeOffset = 0;
+                        firstLoc.LineNumber--;
+                        debugLocInfos.Add(firstLoc);
+                    }
+
+                    debugLocInfos.Add(loc);
+                }
+            }
+
+            if (debugLocInfos.Count > 0) {
+                _debugLocInfos = debugLocInfos.ToArray();
+            }
         }
+
         void getVars(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref uint cVars, ILVarInfo** vars, [MarshalAs(UnmanagedType.U1)] ref bool extendOthers)
         {
             // TODO: Debugging
@@ -1838,6 +1903,9 @@ namespace Internal.JitInterface
         int _numFrameInfos;
         int _usedFrameInfos;
         FrameInfo[] _frameInfos;
+
+        Dictionary<int, SequencePoint> _sequencePoints;
+        DebugLocInfo[] _debugLocInfos;
 
         void allocMem(IntPtr _this, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
