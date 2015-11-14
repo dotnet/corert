@@ -32,6 +32,7 @@
 
   <Target Name="BuildNuGetPackages" Condition="'$(BuildNugetPackage)' != 'false'" AfterTargets="RenameILToNative">
     <MakeDir Directories="$(ProductPackageDir)" Condition="!Exists('$(ProductPackageDir)')" />
+    <Copy SourceFiles="@(NuPkgRuntimeJson)" DestinationFolder="$(ProductPackageDir)" />
     <Copy SourceFiles="@(NuSpecSrcs)" DestinationFolder="$(ProductPackageDir)" />
     <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
   </Target>

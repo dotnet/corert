@@ -1,0 +1,20 @@
+{
+  "runtimes": {
+    "win7-x64": {
+      "Microsoft.DotNet.ILToNative": {
+        "toolchain.Windows_NT-x64.Microsoft.DotNet.ILToNative": "1.0.0-prerelease"
+      }
+    },
+    "linux-x64": {
+      "Microsoft.DotNet.ILToNative": {
+        "toolchain.Linux-x64.Microsoft.DotNet.ILToNative": "1.0.0-prerelease"
+      }
+    },
+    "osx.10.10-x64": {
+      "Microsoft.DotNet.ILToNative": {
+        "toolchain.OSX-x64.Microsoft.DotNet.ILToNative": "1.0.0-prerelease"
+      }
+    }
+  }
+}
+
