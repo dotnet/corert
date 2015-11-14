@@ -329,29 +329,31 @@ namespace ILCompiler
                     return;
 
                 MethodCode methodCode;
-
-                if (_skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
+                try
                 {
-                    Log.WriteLine("SkipJIT: " + method);
+                    if (_skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
+                    {
+                        throw new NotImplementedException("SkipJIT");
+                    }
+
+                    methodCode = _corInfo.CompileMethod(method);
+
+                    if (methodCode.Relocs != null)
+                    {
+                        if (methodCode.Relocs.Any(r => r.Target is FieldDesc))
+                        {
+                            // We only support FieldDesc for InitializeArray intrinsic right now.
+                            throw new NotImplementedException("RuntimeFieldHandle is not implemented");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.WriteLine(e.Message + " (" + method + ")");
                     methodCode = new MethodCode
                     {
                         Code = new byte[] { 0xCC }
                     };
-                }
-                else
-                {
-                    try
-                    {
-                        methodCode = _corInfo.CompileMethod(method);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.WriteLine(e.Message + " (" + method + ")");
-                        methodCode = new MethodCode
-                        {
-                            Code = new byte[] { 0xCC }
-                        };
-                    }
                 }
 
                 ObjectDataBuilder objData = new ObjectDataBuilder();

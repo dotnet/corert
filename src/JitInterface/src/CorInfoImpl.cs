@@ -1351,8 +1351,7 @@ namespace Internal.JitInterface
 
         int FilterException(IntPtr _this, _EXCEPTION_POINTERS* pExceptionPointers)
         {
-            Debug.Assert(false);
-            throw new NotImplementedException();
+            return 0; // EXCEPTION_CONTINUE_SEARCH
         }
 
         void HandleException(IntPtr _this, _EXCEPTION_POINTERS* pExceptionPointers)
