@@ -356,80 +356,62 @@ namespace Internal.JitInterface
         {
             CorInfoFlag result = 0;
 
-            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
-            if (ecmaMethod != null)
+            // CORINFO_FLG_PROTECTED - verification only
+
+            if (method.Signature.IsStatic)
+                result |= CorInfoFlag.CORINFO_FLG_STATIC;
+
+            // TODO: if (pMD->IsSynchronized())
+            //    result |= CORINFO_FLG_SYNCH;
+
+            if (method.IsIntrinsic)
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
+            if (method.IsVirtual)
+                result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
+            if (method.IsAbstract)
+                result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
+            if (method.IsConstructor || method.IsStaticConstructor)
+                result |= CorInfoFlag.CORINFO_FLG_CONSTRUCTOR;
+
+            //
+            // See if we need to embed a .cctor call at the head of the
+            // method body.
+            //
+
+            var owningType = method.OwningType;
+            var owningMetadataType = owningType as MetadataType;
+
+            // method or class might have the final bit
+            if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
+                result |= CorInfoFlag.CORINFO_FLG_FINAL;
+
+            // TODO: Generics
+            // if (pMD->IsSharedByGenericInstantiations())
+            //     result |= CORINFO_FLG_SHAREDINST;
+
+            // TODO: PInvoke
+            // if ((attribs & MethodAttributes.PinvokeImpl) != 0)
+            //    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+
+            // TODO: Cache inlining hits
+            // Check for an inlining directive.
+
+            if (method.IsNoInlining)
             {
-                var attribs = ecmaMethod.Attributes;
-
-                // CORINFO_FLG_PROTECTED - verification only
-
-                if ((attribs & MethodAttributes.Static) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_STATIC;
-
-                // TODO: if (pMD->IsSynchronized())
-                //    result |= CORINFO_FLG_SYNCH;
-
-                if (ecmaMethod.IsIntrinsic)
-                    result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
-
-                if ((attribs & MethodAttributes.Virtual) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
-                if ((attribs & MethodAttributes.Abstract) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
-                if ((attribs & MethodAttributes.SpecialName) != 0)
-                {
-                    string name = method.Name;
-                    if (name == ".ctor" || name == ".cctor")
-                        result |= CorInfoFlag.CORINFO_FLG_CONSTRUCTOR;
-                }
-
-                //
-                // See if we need to embed a .cctor call at the head of the
-                // method body.
-                //
-
-                var owningType = method.OwningType;
-
-                var typeAttribs = ((EcmaType)owningType.GetTypeDefinition()).Attributes;
-
-                // method or class might have the final bit
-                if ((attribs & MethodAttributes.Final) != 0 || (typeAttribs & TypeAttributes.Sealed) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
-
-                // TODO: Generics
-                // if (pMD->IsSharedByGenericInstantiations())
-                //     result |= CORINFO_FLG_SHAREDINST;
-
-                // TODO: PInvoke
-                // if ((attribs & MethodAttributes.PinvokeImpl) != 0)
-                //    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                // TODO: Cache inlining hits
-                // Check for an inlining directive.
-
-                var implAttribs = ecmaMethod.ImplAttributes;
-                if ((implAttribs & MethodImplAttributes.NoInlining) != 0)
-                {
-                    /* Function marked as not inlineable */
-                    result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
-                }
-                else if ((implAttribs & MethodImplAttributes.AggressiveInlining) != 0)
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-                }
-
-                if (owningType.IsDelegate)
-                {
-                    if (method.Name == "Invoke")
-                        // This is now used to emit efficient invoke code for any delegate invoke,
-                        // including multicast.
-                        result |= CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE;
-                }
+                /* Function marked as not inlineable */
+                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
-            else
+            else if (method.IsAggressiveInlining)
             {
-                if (method.Signature.IsStatic)
-                    result |= CorInfoFlag.CORINFO_FLG_STATIC;
+                result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
+            }
+
+            if (owningType.IsDelegate)
+            {
+                if (method.Name == "Invoke")
+                    // This is now used to emit efficient invoke code for any delegate invoke,
+                    // including multicast.
+                    result |= CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE;
             }
 
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;

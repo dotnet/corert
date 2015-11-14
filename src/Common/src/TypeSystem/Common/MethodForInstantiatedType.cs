@@ -5,7 +5,7 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    public sealed class MethodForInstantiatedType : MethodDesc
+    public sealed partial class MethodForInstantiatedType : MethodDesc
     {
         MethodDesc _typicalMethodDef;
         InstantiatedType _instantiatedType;

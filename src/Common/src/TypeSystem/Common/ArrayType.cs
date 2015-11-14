@@ -30,15 +30,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        // TODO: Implement
-        // public override TypeDesc[] ImplementedInterfaces
-        // {
-        //     get
-        //     {
-        //         ...
-        //     }
-        // }
-
         public TypeDesc ElementType
         {
             get
