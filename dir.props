@@ -113,11 +113,11 @@
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
     
-    <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.nuspec" />
-    <NuSpecSrcs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(SourceDir).nuget\toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.Development.nuspec" />
+    <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILCompiler.nuspec" />
+    <NuSpecSrcs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(SourceDir).nuget\toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
 
-    <NuSpecs Include="$(ProductPackageDir)toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.nuspec" />
-    <NuSpecs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(ProductPackageDir)toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILToNative.Development.nuspec" />
+    <NuSpecs Include="$(ProductPackageDir)toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILCompiler.nuspec" />
+    <NuSpecs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(ProductPackageDir)toolchain.$(BinDirOSGroup)-$(BinDirPlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
   </ItemGroup>
 
   <!-- Common nuget properties -->

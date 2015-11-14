@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{13BB3788-C3EB-4046-8105-A95F8AE49404}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler.Compiler</RootNamespace>
+    <AssemblyName>ILCompiler.Compiler</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <CLSCompliant>false</CLSCompliant>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ExcludeResourcesImport>true</ExcludeResourcesImport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj">
+      <Project>{dac23e9f-f826-4577-ae7a-0849ff83280c}</Project>
+      <Name>ILCompiler.DependencyAnalysisFramework</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
+      <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
+      <Name>ILCompiler.TypeSystem</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Compiler\AsmStringWriter.cs" />
+    <Compile Include="Compiler\Compilation.cs" />
+    <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="Compiler\DelegateInfo.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StringDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StringIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\BlobNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\INodeWithFrameInfo.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\JitHelper.cs" />
+    <Compile Include="Compiler\MemoryHelper.cs" />
+    <Compile Include="Compiler\MethodCode.cs" />
+    <Compile Include="Compiler\MethodExtensions.cs" />
+    <Compile Include="Compiler\NameMangler.cs" />
+    <Compile Include="Compiler\PdbSymbolProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunHelper.cs" />
+    <Compile Include="Compiler\RegisteredField.cs" />
+    <Compile Include="Compiler\RegisteredMethod.cs" />
+    <Compile Include="Compiler\RegisteredType.cs" />
+    <Compile Include="Compiler\RvaFieldData.cs" />
+    <Compile Include="Compiler\IntrinsicMethods.cs" />
+    <Compile Include="CppCodeGen\CppWriter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\EcmaMethodIL.cs">
+      <Link>IL\EcmaMethodIL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILOpcode.cs">
+      <Link>IL\ILOpcode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILProvider.cs">
+      <Link>IL\ILProvider.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\InstantiatedMethodIL.cs">
+      <Link>IL\InstantiatedMethodIL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\MethodIL.cs">
+      <Link>IL\MethodIL.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\MethodILDebugView.cs">
+      <Link>IL\MethodILDebugView.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILDisassember.cs">
+      <Link>IL\ILDisassember.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\ILImporter.cs">
+      <Link>IL\ILImporter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ArrayMethodILEmitter.cs">
+      <Link>IL\Stubs\ArrayMethodILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\CalliIntrinsic.cs">
+      <Link>IL\Stubs\CalliIntrinsic.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\DelegateThunks.cs">
+      <Link>IL\Stubs\DelegateThunks.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ILEmitter.cs">
+      <Link>IL\Stubs\ILEmitter.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
+      <Link>JitInterface\CorInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoHelpFunc.cs">
+      <Link>JitInterface\CorInfoHelpFunc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
+      <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
+      <Link>JitInterface\CorInfoTypes.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CppCodeGen\ILToCppImporter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

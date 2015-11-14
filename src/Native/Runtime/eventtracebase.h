@@ -352,15 +352,15 @@ namespace ETW
                 ModuleRangeDCStart=                 0x00002000,
                 ModuleRangeDCEnd=                   0x00004000,
                 ModuleRangeLoadPrivate=             0x00008000,
-                MethodDCStartILToNativeMap=         0x00010000,
-                MethodDCEndILToNativeMap=           0x00020000,
-                JitMethodILToNativeMap=             0x00040000,
+                MethodDCStartILCompilerMap=         0x00010000,
+                MethodDCEndILCompilerMap=           0x00020000,
+                JitMethodILCompilerMap=             0x00040000,
                 TypeUnload=                         0x00080000,
                 
                 // Helpers
                 ModuleRangeEnabledAny = ModuleRangeLoad | ModuleRangeDCStart | ModuleRangeDCEnd | ModuleRangeLoadPrivate,
-                JitMethodLoadOrDCStartAny = JitMethodLoad | JitMethodDCStart | MethodDCStartILToNativeMap,
-                JitMethodUnloadOrDCEndAny = JitMethodUnload | JitMethodDCEnd | MethodDCEndILToNativeMap,
+                JitMethodLoadOrDCStartAny = JitMethodLoad | JitMethodDCStart | MethodDCStartILCompilerMap,
+                JitMethodUnloadOrDCEndAny = JitMethodUnload | JitMethodDCEnd | MethodDCEndILCompilerMap,
             }EnumerationOptions;
         }EnumerationStructs;
 
@@ -480,7 +480,7 @@ namespace ETW
         static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
         static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
 #ifndef WINXP_AND_WIN2K3_BUILD_SUPPORT
-        static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, ReJITID rejitID);
+        static VOID SendMethodILCompilerMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, ReJITID rejitID);
 #endif // WINXP_AND_WIN2K3_BUILD_SUPPORT
         static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0);
         static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
