@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.IL;
 
-using ILToNative;
+using ILCompiler;
 
 namespace Internal.JitInterface
 {
@@ -226,7 +226,7 @@ namespace Internal.JitInterface
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, out sig.retTypeClass);
             sig._retType = (byte)corInfoRetType;
-            sig.retTypeSigClass = sig.retTypeClass; // The difference between the two is not relevant for ILToNative
+            sig.retTypeSigClass = sig.retTypeClass; // The difference between the two is not relevant for ILCompiler
 
             sig.flags = 0;    // used by IL stubs code
 

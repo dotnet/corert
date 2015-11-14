@@ -1,0 +1,273 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.IO;
+using System.Linq;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
+
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+using Internal.IL;
+
+namespace ILCompiler
+{
+    public class CompilerTypeSystemContext : TypeSystemContext
+    {
+        static readonly string[] s_wellKnownTypeNames = new string[] {
+            "Void",
+            "Boolean",
+            "Char",
+            "SByte",
+            "Byte",
+            "Int16",
+            "UInt16",
+            "Int32",
+            "UInt32",
+            "Int64",
+            "UInt64",
+            "IntPtr",
+            "UIntPtr",
+            "Single",
+            "Double",
+
+            "ValueType",
+            "Enum",
+            "Nullable`1",
+
+            "Object",
+            "String",
+            "Array",
+            "MulticastDelegate",
+
+            "RuntimeTypeHandle",
+            "RuntimeMethodHandle",
+            "RuntimeFieldHandle",
+        };
+
+        static readonly string[][] s_wellKnownEntrypointNames = new string[][] {
+            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnGCStaticBase" },
+            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnNonGCStaticBase" }
+        };
+
+        MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
+
+        MethodDesc[] _wellKnownEntrypoints = new MethodDesc[s_wellKnownEntrypointNames.Length];
+
+        EcmaModule _systemModule;
+
+        MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
+        MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
+        ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+
+        Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
+
+        class ModuleData
+        {
+            public string Path;
+            public Microsoft.DiaSymReader.ISymUnmanagedReader PdbReader;
+        }
+        Dictionary<EcmaModule, ModuleData> _moduleData = new Dictionary<EcmaModule, ModuleData>();
+
+        public CompilerTypeSystemContext(TargetDetails details)
+            : base(details)
+        {
+        }
+
+        public IDictionary<string, string> InputFilePaths
+        {
+            get;
+            set;
+        }
+
+        public IDictionary<string, string> ReferenceFilePaths
+        {
+            get;
+            set;
+        }
+
+        public void SetSystemModule(EcmaModule systemModule)
+        {
+            _systemModule = systemModule;
+
+            // Sanity check the name table
+            Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == "MulticastDelegate");
+
+            // Initialize all well known types - it will save us from checking the name for each loaded type
+            for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
+            {
+                MetadataType type = _systemModule.GetType("System", s_wellKnownTypeNames[typeIndex]);
+                type.SetWellKnownType((WellKnownType)(typeIndex + 1));
+                _wellKnownTypes[typeIndex] = type;
+            }
+
+            // Initialize all well known entrypoints
+            for (int entrypointIndex = 0; entrypointIndex < _wellKnownEntrypoints.Length; entrypointIndex++)
+            {
+                MetadataType type = _systemModule.GetType(
+                    s_wellKnownEntrypointNames[entrypointIndex][0],
+                    s_wellKnownEntrypointNames[entrypointIndex][1]);
+                MethodDesc method = type.GetMethod(s_wellKnownEntrypointNames[entrypointIndex][2], null);
+                _wellKnownEntrypoints[entrypointIndex] = method;
+            }
+        }
+
+        public override MetadataType GetWellKnownType(WellKnownType wellKnownType)
+        {
+            return _wellKnownTypes[(int)wellKnownType - 1];
+        }
+
+        public MethodDesc GetWellKnownEntryPoint(WellKnownEntrypoint entryPoint)
+        {
+            return _wellKnownEntrypoints[(int)entryPoint - 1];
+        }
+
+        public override object ResolveAssembly(System.Reflection.AssemblyName name)
+        {
+            return GetModuleForSimpleName(name.Name);
+        }
+
+        public EcmaModule GetModuleForSimpleName(string simpleName)
+        {
+            EcmaModule existingModule;
+            if (_modules.TryGetValue(simpleName, out existingModule))
+                return existingModule;
+
+            string filePath;
+            if (!InputFilePaths.TryGetValue(simpleName, out filePath))
+            {
+                if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
+                    throw new FileNotFoundException("Assembly not found: " + simpleName);
+            }
+
+            EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(filePath)));
+
+            MetadataReader metadataReader = module.MetadataReader;
+            string actualSimpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
+            if (!actualSimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase))
+                throw new FileNotFoundException("Assembly name does not match filename " + filePath);
+
+            AddModule(simpleName, filePath, module);
+
+            return module;
+        }
+
+        public EcmaModule GetModuleFromPath(string filePath)
+        {
+            EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(filePath)));
+
+            MetadataReader metadataReader = module.MetadataReader;
+            string simpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
+            if (_modules.ContainsKey(simpleName))
+                throw new FileNotFoundException("Module with same simple name already exists " + filePath);
+
+            AddModule(simpleName, filePath, module);
+
+            return module;
+        }
+
+        private void AddModule(string simpleName, string filePath, EcmaModule module)
+        {
+            _modules.Add(simpleName, module);
+
+            ModuleData moduleData = new ModuleData()
+            {
+                Path = filePath
+            };
+
+            InitializeSymbolReader(moduleData);
+
+            _moduleData.Add(module, moduleData);
+        }
+
+        public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
+        {
+            return _metadataFieldLayoutAlgorithm;
+        }
+
+        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
+            {
+                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(_systemModule.GetType("System", "Array`1"));
+            }
+            return _arrayOfTRuntimeInterfacesAlgorithm;
+        }
+
+        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        {
+            return _metadataRuntimeInterfacesAlgorithm;
+        }
+
+        //
+        // Symbols
+        //
+
+        PdbSymbolProvider _pdbSymbolProvider;
+
+        private void InitializeSymbolReader(ModuleData moduleData)
+        {
+            if (_pdbSymbolProvider == null)
+                _pdbSymbolProvider = new PdbSymbolProvider();
+
+            moduleData.PdbReader = _pdbSymbolProvider.GetSymbolReaderForFile(moduleData.Path);
+       }
+
+        public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodDesc method)
+        {
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            if (ecmaMethod == null)
+                return null;
+
+            ModuleData moduleData = _moduleData[ecmaMethod.Module];
+            if (moduleData.PdbReader == null)
+                return null;
+
+            return _pdbSymbolProvider.GetSequencePointsForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+        }
+
+        public IEnumerable<LocalVariable> GetLocalVariableNamesForMethod(MethodDesc method)
+        {
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            if (ecmaMethod == null)
+                return null;
+
+            ModuleData moduleData = _moduleData[ecmaMethod.Module];
+            if (moduleData.PdbReader == null)
+                return null;
+
+            return _pdbSymbolProvider.GetLocalVariableNamesForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+        }
+
+        public IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
+        {
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            if (ecmaMethod == null)
+                yield break;
+
+            ParameterHandleCollection parameters = ecmaMethod.MetadataReader.GetMethodDefinition(ecmaMethod.Handle).GetParameters();
+
+            if (!ecmaMethod.Signature.IsStatic)
+            {
+                yield return "_this";
+            }
+
+            foreach (var parameterHandle in parameters)
+            {
+                Parameter p = ecmaMethod.MetadataReader.GetParameter(parameterHandle);
+                yield return ecmaMethod.MetadataReader.GetString(p.Name);
+            }
+        }
+    }
+
+    public enum WellKnownEntrypoint
+    {
+        Unknown,
+        EnsureClassConstructorRunAndReturnGCStaticBase,
+        EnsureClassConstructorRunAndReturnNonGCStaticBase,
+    }
+}

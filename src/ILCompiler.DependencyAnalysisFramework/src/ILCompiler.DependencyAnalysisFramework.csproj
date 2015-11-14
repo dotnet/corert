@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DAC23E9F-F826-4577-AE7A-0849FF83280C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ILCompiler.DependencyAnalysisFramework</RootNamespace>
+    <AssemblyName>ILCompiler.DependencyAnalysisFramework</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <ExcludeResourcesImport>true</ExcludeResourcesImport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ComputedStaticDependencyNode.cs" />
+    <Compile Include="DependencyAnalyzer.cs" />
+    <Compile Include="DependencyAnalyzerBase.cs" />
+    <Compile Include="DependencyNode.cs" />
+    <Compile Include="DependencyNodeCore.cs" />
+    <Compile Include="DgmlWriter.cs" />
+    <Compile Include="FirstMarkLogStrategy.cs" />
+    <Compile Include="FullGraphLogStrategy.cs" />
+    <Compile Include="IDependencyAnalyzerLogEdgeVisitor.cs" />
+    <Compile Include="IDependencyAnalyzerLogNodeVisitor.cs" />
+    <Compile Include="IDependencyAnalysisMarkStrategy.cs" />
+    <Compile Include="NoLogStrategy.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

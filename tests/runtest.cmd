@@ -83,7 +83,7 @@ set /a __FailedTests=%__TotalTests%-%__PassedTests%
 
 echo ^<?xml version="1.0" encoding="utf-8"?^> > %__BinDir%\testResults.xml
 echo ^<assemblies^>  >> %__BinDir%\testResults.xml
-echo ^<assembly name="ILToNative" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__BinDir%\testResults.xml
+echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__BinDir%\testResults.xml
 echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__BinDir%\testResults.xml
 type %__BinDir%\testResults.tmp >> %__BinDir%\testResults.xml
 echo ^</collection^>  >> %__BinDir%\testResults.xml
@@ -126,7 +126,7 @@ if "%__StatusPassed%"=="1" (
     csc.exe /nologo /noconfig /unsafe+ /nowarn:1701,1702,2008 /langversion:5 /nostdlib+ /errorreport:prompt /warn:4 /define:TRACE;DEBUG;SIGNED /errorendlocation /preferreduilang:en-US /reference:..\packages\System.Collections\4.0.0\ref\dotnet\System.Collections.dll /reference:..\packages\System.Console\4.0.0-beta-23419\ref\dotnet\System.Console.dll /reference:..\packages\System.Diagnostics.Debug\4.0.0\ref\dotnet\System.Diagnostics.Debug.dll /reference:..\packages\System.Globalization\4.0.0\ref\dotnet\System.Globalization.dll /reference:..\packages\System.IO\4.0.10\ref\dotnet\System.IO.dll /reference:..\packages\System.IO.FileSystem\4.0.0\ref\dotnet\System.IO.FileSystem.dll /reference:..\packages\System.IO.FileSystem.Primitives\4.0.0\ref\dotnet\System.IO.FileSystem.Primitives.dll /reference:..\packages\System.Reflection\4.0.0\ref\dotnet\System.Reflection.dll /reference:..\packages\System.Reflection.Extensions\4.0.0\ref\dotnet\System.Reflection.Extensions.dll /reference:..\packages\System.Reflection.Primitives\4.0.0\ref\dotnet\System.Reflection.Primitives.dll /reference:..\packages\System.Resources.ResourceManager\4.0.0\ref\dotnet\System.Resources.ResourceManager.dll /reference:..\packages\System.Runtime\4.0.20\ref\dotnet\System.Runtime.dll /reference:..\packages\System.Runtime.Extensions\4.0.10\ref\dotnet\System.Runtime.Extensions.dll /reference:..\packages\System.Runtime.Handles\4.0.0\ref\dotnet\System.Runtime.Handles.dll /reference:..\packages\System.Runtime.InteropServices\4.0.10\ref\dotnet\System.Runtime.InteropServices.dll /reference:..\packages\System.Text.Encoding\4.0.0\ref\dotnet\System.Text.Encoding.dll /reference:..\packages\System.Text.Encoding.Extensions\4.0.0\ref\dotnet\System.Text.Encoding.Extensions.dll /reference:..\packages\System.Threading\4.0.0\ref\dotnet\System.Threading.dll /reference:..\packages\System.Threading.Overlapped\4.0.0\ref\dotnet\System.Threading.Overlapped.dll /reference:..\packages\System.Threading.Tasks\4.0.10\ref\dotnet\System.Threading.Tasks.dll /debug+ /debug:full /filealign:512 /optimize- /out:!__SourceFile!.exe /target:exe /warnaserror+ /utf8output !__SourceFile!.cs
 
     echo.
-    echo Compiling ILToNative !__SourceFile!.exe
+    echo Compiling ILCompiler !__SourceFile!.exe
     call !CoreRT_ToolchainDir!\dotnet-compile-native.bat %__BuildArch% %__BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_ProtoJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in !__SourceFile!.exe /out !__SourceFile!.compiled.exe
     endlocal
 
@@ -173,8 +173,8 @@ if "%__StatusPassed%"=="1" (
     )
 
     echo.
-    powershell -Command Write-Host "set CLRCustomTestLauncher=%CoreRT_TestRoot%ILToNative.cmd" -foreground "cyan"
-    set CLRCustomTestLauncher=%CoreRT_TestRoot%ILToNative.cmd
+    powershell -Command Write-Host "set CLRCustomTestLauncher=%CoreRT_TestRoot%ILCompiler.cmd" -foreground "cyan"
+    set CLRCustomTestLauncher=%CoreRT_TestRoot%ILCompiler.cmd
 
     set CORE_ROOT=%CoreRT_TestExtRepo%\bin\Product\%__BuildStr%
     pushd %CoreRT_TestExtRepo%\tests

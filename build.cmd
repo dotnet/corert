@@ -169,19 +169,19 @@ set Platform=
 
 :: Set the environment for the managed build
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
-echo Commencing build of ILToNative for %__BuildOS%.%__BuildArch%.%__BuildType%
+echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-set "__ILToNativeBuildLog=%__LogsDir%\ILToNative_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__ILToNativeBuildLog%"
+set "__ILCompilerBuildLog=%__LogsDir%\ILCompiler_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+%_msbuildexe% "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__ILCompilerBuildLog%"
 IF NOT ERRORLEVEL 1 (
-  findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__ILToNativeBuildLog%"
-  goto AfterILToNativeBuild
+  findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__ILCompilerBuildLog%"
+  goto AfterILCompilerBuild
 )
-echo ILToNative build failed. Refer !__ILToNativeBuildLog! for details.
+echo ILCompiler build failed. Refer !__ILCompilerBuildLog! for details.
 exit /b 1
 
 
-:AfterILToNativeBuild
+:AfterILCompilerBuild
 
 pushd "%__ProjectDir%\tests"
 call "runtest.cmd" %__BuildType% %__BuildArch%
