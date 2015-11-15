@@ -349,11 +349,28 @@ namespace ILCompiler
                 }
                 catch (Exception e)
                 {
-                    Log.WriteLine(e.Message + " (" + method + ")");
-                    methodCode = new MethodCode
-                    {
-                        Code = new byte[] { 0xCC }
-                    };
+                    Log.WriteLine("*** " + e.Message + " (" + method + ")");
+
+                    // Call the __not_yet_implemented method
+                    DependencyAnalysis.X64.X64Emitter emit = new DependencyAnalysis.X64.X64Emitter(_nodeFactory);
+                    emit.Builder.RequireAlignment(_nodeFactory.Target.MinimumFunctionAlignment);
+                    emit.Builder.DefinedSymbols.Add(methodCodeNodeNeedingCode);
+
+                    emit.EmitLEAQ(emit.TargetRegister.Arg0, _nodeFactory.StringIndirection(method.ToString()));
+                    DependencyAnalysis.X64.AddrMode loadFromArg0 =
+                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg0, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
+                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
+                    emit.EmitMOV(emit.TargetRegister.Arg0, ref loadFromArg0);
+
+                    emit.EmitLEAQ(emit.TargetRegister.Arg1, _nodeFactory.StringIndirection(e.Message));
+                    DependencyAnalysis.X64.AddrMode loadFromArg1 =
+                        new DependencyAnalysis.X64.AddrMode(emit.TargetRegister.Arg1, null, 0, 0, DependencyAnalysis.X64.AddrModeSize.Int64);
+                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
+                    emit.EmitMOV(emit.TargetRegister.Arg1, ref loadFromArg1);
+
+                    emit.EmitJMP(_nodeFactory.ExternSymbol("__not_yet_implemented"));
+                    methodCodeNodeNeedingCode.SetCode(emit.Builder.ToObjectData());
+                    continue;
                 }
 
                 ObjectDataBuilder objData = new ObjectDataBuilder();
