@@ -168,7 +168,7 @@ if "%__StatusPassed%"=="1" (
     if not "%CoreRT_BuildExtRepo%" == "false" (
         pushd %CoreRT_TestExtRepo%
         call build.cmd %CoreRT_BuildArch% %CoreRT_BuildType%
-        if not !ErrorLevel!=="0" ((call :Fail "%CoreRT_TestExtRepo% build failed") & popd & exit /b -1)
+        if not !ErrorLevel!==0 ((call :Fail "%CoreRT_TestExtRepo% build failed") & popd & exit /b -1)
         popd
     )
 
