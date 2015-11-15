@@ -173,8 +173,8 @@ if "%__StatusPassed%"=="1" (
     )
 
     echo.
-    powershell -Command Write-Host "set CLRCustomTestLauncher=%CoreRT_TestRoot%ILCompiler.cmd" -foreground "cyan"
-    set CLRCustomTestLauncher=%CoreRT_TestRoot%ILCompiler.cmd
+    powershell -Command Write-Host "set CLRCustomTestLauncher=%CoreRT_TestRoot%ilc.cmd" -foreground "cyan"
+    set CLRCustomTestLauncher=%CoreRT_TestRoot%ilc.cmd
 
     set CORE_ROOT=%CoreRT_TestExtRepo%\bin\Product\%__BuildStr%
     pushd %CoreRT_TestExtRepo%\tests
