@@ -1228,6 +1228,7 @@ namespace Internal.JitInterface
                     int nativeOffset = (int)pMap[i].nativeOffset;
                     DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
 
+                    // https://github.com/dotnet/corert/issues/270
                     // We often miss line number at 0 offset, which prevents debugger from
                     // stepping into callee.
                     // Synthesize a location info at 0 offset assuming line number is minus one
