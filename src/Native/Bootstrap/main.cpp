@@ -8,6 +8,8 @@
 #include "gc.h"
 #include "objecthandle.h"
 
+#include <stdlib.h> 
+
 #pragma warning(disable:4297)
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
@@ -118,6 +120,15 @@ extern "C" void* __ldelema_ref(System::Array * pArray, unsigned idx, MethodTable
 {
     // TODO: Range checks, etc.
     return &(((Object **)(pArray->GetArrayData()))[idx]);
+}
+
+extern "C" void __not_yet_implemented(System::String * pMethodName, System::String * pMessage)
+{
+    printf("ILCompiler failed generating code for this method; execution cannot continue.\n");
+    printf("This is likely because of a feature that is not yet implemented in the compiler.\n");
+    wprintf(L"Method: %ls\n", (wchar_t*)((char*)(pMethodName)+12));
+    wprintf(L"Reason: %ls\n", (wchar_t*)((char*)(pMessage)+12));
+    exit(-1);
 }
 
 extern "C" void __throw_exception(void * pEx)

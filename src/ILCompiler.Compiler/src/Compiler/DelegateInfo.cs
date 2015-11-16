@@ -16,9 +16,13 @@ namespace ILCompiler
 
             var systemDelegate = compilation.TypeSystemContext.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
 
+            // TODO: delegates on virtuals
+            if (target.IsVirtual && !target.IsFinal)
+                throw new NotImplementedException("Delegate to virtual");
+
             // TODO: Delegates on valuetypes
             if (target.OwningType.IsValueType)
-                throw new NotImplementedException();
+                throw new NotImplementedException("Delegate to valuetype");
 
             if (target.Signature.IsStatic)
             {
