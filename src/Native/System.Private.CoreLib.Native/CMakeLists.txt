@@ -2,6 +2,7 @@ project(System.Private.CoreLib.Native)
 
 set(NATIVE_SOURCES
     pal_environment.cpp
+    pal_memory.cpp
 )
 
 add_library(System.Private.CoreLib.Native
