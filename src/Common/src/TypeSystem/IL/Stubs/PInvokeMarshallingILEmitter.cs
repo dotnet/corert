@@ -17,55 +17,24 @@ namespace Internal.IL.Stubs
     /// (this compiler doesn't provide that), and b) offer a hand in some very simple marshalling
     /// situations (but support for this part might go away as the product matures).
     /// </summary>
-    public sealed class PInvokeMarshallingILEmitter : ILEmitter
+    public struct PInvokeMarshallingILEmitter
     {
         MethodDesc _targetMethod;
-        MethodDesc _nativeTargetMethod;
         PInvokeMetadata _importMetadata;
 
-        public PInvokeMarshallingILEmitter(MethodDesc targetMethod)
+        ILEmitter _emitter;
+        ILCodeStream _marshallingCodeStream;
+
+        private PInvokeMarshallingILEmitter(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
             Debug.Assert(RequiresMarshalling(targetMethod));
 
             _targetMethod = targetMethod;
             _importMetadata = targetMethod.GetPInvokeMethodMetadata();
-        }
 
-        /// <summary>
-        /// Gets the synthetic native PInvoke target method. This method represents the real PInvoke target
-        /// that doesn't require any marshalling because all arguments are simple types.
-        /// </summary>
-        private MethodDesc NativeTargetMethod
-        {
-            get
-            {
-                if (_nativeTargetMethod == null)
-                {
-                    // Map all types in the target method signature to native types that don't require marshalling.
-                    TypeDesc[] nativeParameters = new TypeDesc[_targetMethod.Signature.Length];
-                    for (int i = 0; i < nativeParameters.Length; i++)
-                    {
-                        nativeParameters[i] = ManagedTypeToNativeType(_targetMethod.Signature[i]);
-                        Debug.Assert(nativeParameters[i] != null);
-                    }
-
-                    TypeDesc nativeReturnType = _targetMethod.Signature.ReturnType.IsVoid ?
-                        _targetMethod.Signature.ReturnType :
-                        ManagedTypeToNativeType(_targetMethod.Signature.ReturnType);
-                    Debug.Assert(nativeReturnType != null);
-
-                    MethodSignature nativeSignature = new MethodSignature(_targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameters);
-
-                    // Create the synthetic pinvokeimpl method.
-                    _nativeTargetMethod = new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSignature, _importMetadata);
-
-                    // The native target method better not require another marshalling...
-                    Debug.Assert(!RequiresMarshalling(_nativeTargetMethod));
-                }
-
-                return _nativeTargetMethod;
-            }
+            _emitter = null;
+            _marshallingCodeStream = null;
         }
 
         /// <summary>
@@ -78,7 +47,8 @@ namespace Internal.IL.Stubs
             // TODO: true if there are any custom marshalling rules on the parameters
             // TODO: true if SetLastError is true
 
-            if (!IsSimpleType(method.Signature.ReturnType) && !method.Signature.ReturnType.IsVoid)
+            TypeDesc returnType = method.Signature.ReturnType;
+            if (!IsSimpleType(returnType) && !returnType.IsVoid)
                 return true;
 
             for (int i = 0; i < method.Signature.Length; i++)
@@ -135,8 +105,10 @@ namespace Internal.IL.Stubs
                     if (field.IsStatic)
                         continue;
 
+                    TypeDesc fieldType = field.FieldType;
+
                     // TODO: we should also reject fields that specify custom marshalling
-                    if (!IsSimpleType(field.FieldType) && !IsBlittableStruct(field.FieldType))
+                    if (!IsSimpleType(fieldType) && !IsBlittableStruct(fieldType))
                         return false;
                 }
                 return true;
@@ -145,129 +117,110 @@ namespace Internal.IL.Stubs
             return false;
         }
 
-        private static TypeDesc ManagedTypeToNativeType(TypeDesc type)
-        {
-            if (IsSimpleType(type))
-            {
-                return type.UnderlyingType;
-            }
-
-            // Arrays and byrefs to simple and blittable types can be marshalled as pointers
-            if (type.IsSzArray || type.IsByRef)
-            {
-                ParameterizedType parametrizedType = (ParameterizedType)type;
-                if (IsSimpleType(parametrizedType.ParameterType) || IsBlittableStruct(parametrizedType.ParameterType))
-                {
-                    return parametrizedType.ParameterType.UnderlyingType.MakePointerType();
-                }
-                else
-                {
-                    return null;
-                }
-            }
-
-            if (type.IsString)
-            {
-                return type.Context.GetWellKnownType(WellKnownType.Byte).MakePointerType();
-            }
-
-            return null;
-        }
-
         /// <summary>
         /// Marshals an array. Expects the array referene on the stack. Pushes a pinned
         /// managed reference to the first element on the stack or null if the array was
         /// null or empty.
         /// </summary>
-        private void EmitArrayMarshalling(ILCodeStream codeStream, ArrayType arrayType)
+        /// <returns>Type the array was marshalled into.</returns>
+        private TypeDesc EmitArrayMarshalling(ArrayType arrayType)
         {
             Debug.Assert(arrayType.IsSzArray);
-            int vPinnedFirstElement = NewLocal(arrayType.ParameterType.MakeByRefType(), true);
-            int vArray = NewLocal(arrayType);
-            ILCodeLabel lNullArray = NewCodeLabel();
+
+            if (!IsSimpleType(arrayType.ParameterType) && !IsBlittableStruct(arrayType.ParameterType))
+                throw new NotSupportedException();
+
+            int vPinnedFirstElement = _emitter.NewLocal(arrayType.ParameterType.MakeByRefType(), true);
+            int vArray = _emitter.NewLocal(arrayType);
+            ILCodeLabel lNullArray = _emitter.NewCodeLabel();
             
             // Check for null array, or 0 element array.
-            codeStream.Emit(ILOpcode.dup);
-            codeStream.EmitStLoc(vArray);
-            codeStream.Emit(ILOpcode.brfalse, lNullArray);
-            codeStream.EmitLdLoc(vArray);
-            codeStream.Emit(ILOpcode.ldlen);
-            codeStream.Emit(ILOpcode.conv_i4);
-            codeStream.Emit(ILOpcode.brfalse, lNullArray);
+            _marshallingCodeStream.Emit(ILOpcode.dup);
+            _marshallingCodeStream.EmitStLoc(vArray);
+            _marshallingCodeStream.Emit(ILOpcode.brfalse, lNullArray);
+            _marshallingCodeStream.EmitLdLoc(vArray);
+            _marshallingCodeStream.Emit(ILOpcode.ldlen);
+            _marshallingCodeStream.Emit(ILOpcode.conv_i4);
+            _marshallingCodeStream.Emit(ILOpcode.brfalse, lNullArray);
 
             // Array has elements.
-            codeStream.EmitLdLoc(vArray);
-            codeStream.EmitLdc(0);
-            codeStream.Emit(ILOpcode.ldelema, NewToken(arrayType.ElementType));
-            codeStream.EmitStLoc(vPinnedFirstElement);
+            _marshallingCodeStream.EmitLdLoc(vArray);
+            _marshallingCodeStream.EmitLdc(0);
+            _marshallingCodeStream.Emit(ILOpcode.ldelema, _emitter.NewToken(arrayType.ElementType));
+            _marshallingCodeStream.EmitStLoc(vPinnedFirstElement);
 
             // Fall through. If array didn't have elements, vPinnedFirstElement is zeroinit.
-            codeStream.EmitLabel(lNullArray);
-            codeStream.EmitLdLoc(vPinnedFirstElement);
+            _marshallingCodeStream.EmitLabel(lNullArray);
+            _marshallingCodeStream.EmitLdLoc(vPinnedFirstElement);
+
+            return arrayType.Context.GetWellKnownType(WellKnownType.IntPtr);
         }
 
         /// <summary>
         /// Marshals a ByRef. Expects the ByRef on the stack. Pushes a pinned
         /// unmanaged pointer to the stack.
         /// </summary>
-        private void EmitByRefMarshalling(ILCodeStream codeStream, TypeDesc byRefType)
+        /// <returns>Type the ByRef was marshalled into.</returns>
+        private TypeDesc EmitByRefMarshalling(ByRefType byRefType)
         {
-            Debug.Assert(byRefType.IsByRef);
-            int vPinnedByRef = NewLocal(byRefType, true);
-            codeStream.EmitStLoc(vPinnedByRef);
-            codeStream.EmitLdLoc(vPinnedByRef);
-            codeStream.Emit(ILOpcode.conv_i);
+            if (!IsSimpleType(byRefType.ParameterType) && !IsBlittableStruct(byRefType.ParameterType))
+                throw new NotSupportedException();
+
+            int vPinnedByRef = _emitter.NewLocal(byRefType, true);
+            _marshallingCodeStream.EmitStLoc(vPinnedByRef);
+            _marshallingCodeStream.EmitLdLoc(vPinnedByRef);
+            _marshallingCodeStream.Emit(ILOpcode.conv_i);
+
+            return byRefType.Context.GetWellKnownType(WellKnownType.IntPtr);
         }
 
         /// <summary>
         /// Marshals a string. Expects the string referene on the stack. Pushes a pointer
         /// to the stack that is safe to pass out to native code.
         /// </summary>
-        private void EmitStringMarshalling(ILCodeStream codeStream)
+        /// <returns>The type the string was marshalled into.</returns>
+        private TypeDesc EmitStringMarshalling()
         {
-            CharSet charset = _importMetadata.CharSet;
+            PInvokeAttributes charset = _importMetadata.Attributes & PInvokeAttributes.CharSetMask;
 
             TypeSystemContext context = _targetMethod.Context;
 
-            if (charset == CharSet.Unknown)
+            if (charset == 0)
             {
                 // ECMA-335 II.10.1.5 - Default value is Ansi.
-                charset = CharSet.Ansi;
+                charset = PInvokeAttributes.CharSetAnsi;
             }
 
-            if (charset == CharSet.Auto)
+            if (charset == PInvokeAttributes.CharSetAuto)
             {
-                if (context.Target.OperatingSystem == TargetOS.Windows)
-                    charset = CharSet.Unicode;
-                else
-                    charset = CharSet.Ansi;
+                charset = PInvokeAttributes.CharSetUnicode;
             }
 
             TypeDesc stringType = context.GetWellKnownType(WellKnownType.String);
 
-            if (charset == CharSet.Unicode)
+            if (charset == PInvokeAttributes.CharSetUnicode)
             {
                 //
                 // Unicode marshalling. Pin the string and push a pointer to the first character on the stack.
                 //
 
-                int vPinnedString = NewLocal(stringType, true);
-                ILCodeLabel lNullString = NewCodeLabel();
+                int vPinnedString = _emitter.NewLocal(stringType, true);
+                ILCodeLabel lNullString = _emitter.NewCodeLabel();
 
-                codeStream.EmitStLoc(vPinnedString);
-                codeStream.EmitLdLoc(vPinnedString);
+                _marshallingCodeStream.EmitStLoc(vPinnedString);
+                _marshallingCodeStream.EmitLdLoc(vPinnedString);
 
-                codeStream.Emit(ILOpcode.conv_i);
-                codeStream.Emit(ILOpcode.dup);
+                _marshallingCodeStream.Emit(ILOpcode.conv_i);
+                _marshallingCodeStream.Emit(ILOpcode.dup);
 
                 // Marshalling a null string?
-                codeStream.Emit(ILOpcode.brfalse, lNullString);
+                _marshallingCodeStream.Emit(ILOpcode.brfalse, lNullString);
 
                 // TODO: find a safe, non-awkward way to get to OffsetToStringData
-                codeStream.EmitLdc(context.Target.PointerSize + 4);
-                codeStream.Emit(ILOpcode.add);
+                _marshallingCodeStream.EmitLdc(context.Target.PointerSize + 4);
+                _marshallingCodeStream.Emit(ILOpcode.add);
 
-                codeStream.EmitLabel(lNullString);
+                _marshallingCodeStream.EmitLabel(lNullString);
             }
             else
             {
@@ -281,144 +234,172 @@ namespace Internal.IL.Stubs
                 MethodDesc getLengthMethod = stringType.GetMethod("get_Length", null);
                 MethodDesc getCharsMethod = stringType.GetMethod("get_Chars", null);
 
-                ILCodeLabel lStart = NewCodeLabel();
-                ILCodeLabel lNext = NewCodeLabel();
-                ILCodeLabel lNullString = NewCodeLabel();
-                ILCodeLabel lDone = NewCodeLabel();
+                ILCodeLabel lStart = _emitter.NewCodeLabel();
+                ILCodeLabel lNext = _emitter.NewCodeLabel();
+                ILCodeLabel lNullString = _emitter.NewCodeLabel();
+                ILCodeLabel lDone = _emitter.NewCodeLabel();
 
                 // Check for the simple case: string is null
-                int vStringToMarshal = NewLocal(stringType);
-                codeStream.EmitStLoc(vStringToMarshal);
-                codeStream.EmitLdLoc(vStringToMarshal);
-                codeStream.Emit(ILOpcode.brfalse, lNullString);
+                int vStringToMarshal = _emitter.NewLocal(stringType);
+                _marshallingCodeStream.EmitStLoc(vStringToMarshal);
+                _marshallingCodeStream.EmitLdLoc(vStringToMarshal);
+                _marshallingCodeStream.Emit(ILOpcode.brfalse, lNullString);
 
                 // TODO: figure out how to reference a helper from here and call the helper instead...
 
                 // byte[] byteArray = new byte[stringToMarshal.Length + 1];
-                codeStream.EmitLdLoc(vStringToMarshal);
-                codeStream.Emit(ILOpcode.call, NewToken(getLengthMethod));
-                codeStream.EmitLdc(1);
-                codeStream.Emit(ILOpcode.add);
-                codeStream.Emit(ILOpcode.newarr, NewToken(byteType));
-                int vByteArray = NewLocal(byteArrayType);
-                codeStream.EmitStLoc(vByteArray);
+                _marshallingCodeStream.EmitLdLoc(vStringToMarshal);
+                _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(getLengthMethod));
+                _marshallingCodeStream.EmitLdc(1);
+                _marshallingCodeStream.Emit(ILOpcode.add);
+                _marshallingCodeStream.Emit(ILOpcode.newarr, _emitter.NewToken(byteType));
+                int vByteArray = _emitter.NewLocal(byteArrayType);
+                _marshallingCodeStream.EmitStLoc(vByteArray);
 
                 // for (int i = 0; i < byteArray.Length - 1; i++)
                 //     byteArray[i] = (byte)stringToMarshal[i];
-                int vIterator = NewLocal(context.GetWellKnownType(WellKnownType.Int32));
-                codeStream.Emit(ILOpcode.ldc_i4_0);
-                codeStream.EmitStLoc(vIterator);
-                codeStream.Emit(ILOpcode.br, lStart);
-                codeStream.EmitLabel(lNext);
-                codeStream.EmitLdLoc(vByteArray);
-                codeStream.EmitLdLoc(vIterator);
-                codeStream.EmitLdLoc(vStringToMarshal);
-                codeStream.EmitLdLoc(vIterator);
-                codeStream.Emit(ILOpcode.call, NewToken(getCharsMethod));
-                codeStream.Emit(ILOpcode.conv_u1);
-                codeStream.Emit(ILOpcode.stelem_i1);
-                codeStream.EmitLdLoc(vIterator);
-                codeStream.EmitLdc(1);
-                codeStream.Emit(ILOpcode.add);
-                codeStream.EmitStLoc(vIterator);
-                codeStream.EmitLabel(lStart);
-                codeStream.EmitLdLoc(vIterator);
-                codeStream.EmitLdLoc(vByteArray);
-                codeStream.Emit(ILOpcode.ldlen);
-                codeStream.Emit(ILOpcode.conv_i4);
-                codeStream.EmitLdc(1);
-                codeStream.Emit(ILOpcode.sub);
-                codeStream.Emit(ILOpcode.blt, lNext);
-                codeStream.EmitLdLoc(vByteArray);
+                int vIterator = _emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
+                _marshallingCodeStream.Emit(ILOpcode.ldc_i4_0);
+                _marshallingCodeStream.EmitStLoc(vIterator);
+                _marshallingCodeStream.Emit(ILOpcode.br, lStart);
+                _marshallingCodeStream.EmitLabel(lNext);
+                _marshallingCodeStream.EmitLdLoc(vByteArray);
+                _marshallingCodeStream.EmitLdLoc(vIterator);
+                _marshallingCodeStream.EmitLdLoc(vStringToMarshal);
+                _marshallingCodeStream.EmitLdLoc(vIterator);
+                _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(getCharsMethod));
+                _marshallingCodeStream.Emit(ILOpcode.conv_u1);
+                _marshallingCodeStream.Emit(ILOpcode.stelem_i1);
+                _marshallingCodeStream.EmitLdLoc(vIterator);
+                _marshallingCodeStream.EmitLdc(1);
+                _marshallingCodeStream.Emit(ILOpcode.add);
+                _marshallingCodeStream.EmitStLoc(vIterator);
+                _marshallingCodeStream.EmitLabel(lStart);
+                _marshallingCodeStream.EmitLdLoc(vIterator);
+                _marshallingCodeStream.EmitLdLoc(vByteArray);
+                _marshallingCodeStream.Emit(ILOpcode.ldlen);
+                _marshallingCodeStream.Emit(ILOpcode.conv_i4);
+                _marshallingCodeStream.EmitLdc(1);
+                _marshallingCodeStream.Emit(ILOpcode.sub);
+                _marshallingCodeStream.Emit(ILOpcode.blt, lNext);
+                _marshallingCodeStream.EmitLdLoc(vByteArray);
 
                 // Pin first element and load the byref on the stack.
-                codeStream.EmitLdc(0);
-                codeStream.Emit(ILOpcode.ldelema, NewToken(byteType));
-                int vPinnedFirstElement = NewLocal(byteArrayType.MakeByRefType(), true);
-                codeStream.EmitStLoc(vPinnedFirstElement);
-                codeStream.EmitLdLoc(vPinnedFirstElement);
-                codeStream.Emit(ILOpcode.conv_i);
-                codeStream.Emit(ILOpcode.br, lDone);
+                _marshallingCodeStream.EmitLdc(0);
+                _marshallingCodeStream.Emit(ILOpcode.ldelema, _emitter.NewToken(byteType));
+                int vPinnedFirstElement = _emitter.NewLocal(byteArrayType.MakeByRefType(), true);
+                _marshallingCodeStream.EmitStLoc(vPinnedFirstElement);
+                _marshallingCodeStream.EmitLdLoc(vPinnedFirstElement);
+                _marshallingCodeStream.Emit(ILOpcode.conv_i);
+                _marshallingCodeStream.Emit(ILOpcode.br, lDone);
 
-                codeStream.EmitLabel(lNullString);
-                codeStream.Emit(ILOpcode.ldnull);
-                codeStream.Emit(ILOpcode.conv_i);
+                _marshallingCodeStream.EmitLabel(lNullString);
+                _marshallingCodeStream.Emit(ILOpcode.ldnull);
+                _marshallingCodeStream.Emit(ILOpcode.conv_i);
 
-                codeStream.EmitLabel(lDone);
+                _marshallingCodeStream.EmitLabel(lDone);
             }
+
+            return _targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr);
         }
 
         public MethodIL EmitIL()
         {
-            var codeStream = NewCodeStream();
+            // We have two code streams - one is used to convert each argument into a native type
+            // and store that into the local. The other is used to load each previously generated local
+            // and call the actual target native method.
+            _emitter = new ILEmitter();
+            _marshallingCodeStream = _emitter.NewCodeStream();
+            ILCodeStream callsiteSetupCodeStream = _emitter.NewCodeStream();
 
-            // Quick check to see if the signature is something we can support. If the signature
-            // is unsupported, the generated method body won't actually do the PInvoke.
+            // TODO: throw if SetLastError is true
+            // TODO: throw if there's custom marshalling
+            TypeDesc nativeReturnType = _targetMethod.Signature.ReturnType;
+            if (!IsSimpleType(nativeReturnType) && !nativeReturnType.IsVoid)
+                throw new NotSupportedException();
 
-            // TODO: need to reject parameters with custom marshalling
-            bool isSupportedSignature = IsSimpleType(_targetMethod.Signature.ReturnType) ||
-                _targetMethod.Signature.ReturnType.IsVoid;
-            // TODO: we don't actually support signatures that set last error
-            //isSupportedSignature &= !_importMetadata.SetLastError;
-            if (isSupportedSignature)
+            TypeDesc[] nativeParameterTypes = new TypeDesc[_targetMethod.Signature.Length];
+
+            //
+            // Convert each argument to something we can pass to native and store it in a local.
+            // Then load the local in the second code stream.
+            //
+            for (int i = 0; i < _targetMethod.Signature.Length; i++)
             {
-                for (int i = 0; i < _targetMethod.Signature.Length; i++)
+                // TODO: throw if there's custom marshalling
+                TypeDesc parameterType = _targetMethod.Signature[i];
+
+                _marshallingCodeStream.EmitLdArg(i);
+
+                TypeDesc nativeType;
+                if (parameterType.IsSzArray)
                 {
-                    if (ManagedTypeToNativeType(_targetMethod.Signature[i]) == null)
-                    {
-                        isSupportedSignature = false;
-                        break;
-                    }
+                    nativeType = EmitArrayMarshalling((ArrayType)parameterType);
                 }
+                else if (parameterType.IsByRef)
+                {
+                    nativeType = EmitByRefMarshalling((ByRefType)parameterType);
+                }
+                else if (parameterType.IsString)
+                {
+                    nativeType = EmitStringMarshalling();
+                }
+                else
+                {
+                    if (!IsSimpleType(parameterType))
+                        throw new NotSupportedException();
+
+                    nativeType = parameterType;
+                }
+
+                nativeParameterTypes[i] = nativeType;
+
+                int vMarshalledTypeTemp = _emitter.NewLocal(nativeType);
+                _marshallingCodeStream.EmitStLoc(vMarshalledTypeTemp);
+
+                callsiteSetupCodeStream.EmitLdLoc(vMarshalledTypeTemp);
             }
 
-            if (!isSupportedSignature)
+            MethodSignature nativeSig = new MethodSignature(
+                _targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
+            MethodDesc nativeMethod =
+                new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, _importMetadata);
+
+            // Call the native method
+            callsiteSetupCodeStream.Emit(ILOpcode.call, _emitter.NewToken(nativeMethod));
+            callsiteSetupCodeStream.Emit(ILOpcode.ret);
+
+            return _emitter.Link();
+        }
+
+        public static MethodIL EmitIL(MethodDesc method)
+        {
+            if (!RequiresMarshalling(method))
+                return null;
+
+            try
             {
-                // Signature is not supported. Do not call the unmanaged method because that would
-                // just result in potentially difficult to debug situations.
-                
-                // TODO: find a way to emit a warning
-                codeStream.Emit(ILOpcode.ldnull);
+                return new PInvokeMarshallingILEmitter(method).EmitIL();
+            }
+            catch (NotSupportedException)
+            {
+                ILEmitter emitter = new ILEmitter();
+                string message = "Method '" + method.ToString() +
+                    "' requires non-trivial marshalling that is not yet supported by this compiler.";
+
+                TypeSystemContext context = method.Context;
+                MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
+                    new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
+                MethodDesc exceptionCtor = method.Context.GetWellKnownType(WellKnownType.Exception).GetMethod(".ctor", ctorSignature);
+
+                ILCodeStream codeStream = emitter.NewCodeStream();
+                codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
+                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
                 codeStream.Emit(ILOpcode.throw_);
                 codeStream.Emit(ILOpcode.ret);
+
+                return emitter.Link();
             }
-            else
-            {
-                //
-                // Convert each argument to something we can pass to native and push it on the stack.
-                //
-
-                for (int i = 0; i < _targetMethod.Signature.Length; i++)
-                {
-                    TypeDesc parameterType = _targetMethod.Signature[i];
-
-                    codeStream.EmitLdArg(i);
-
-                    if (parameterType.IsSzArray)
-                    {
-                        EmitArrayMarshalling(codeStream, (ArrayType)parameterType);
-                    }
-                    else if (parameterType.IsByRef)
-                    {
-                        EmitByRefMarshalling(codeStream, parameterType);
-                    }
-                    else if (parameterType.IsString)
-                    {
-                        EmitStringMarshalling(codeStream);
-                    }
-                    else
-                    {
-                        Debug.Assert(IsSimpleType(parameterType));
-                    }
-                }
-
-                // Call the native method
-                codeStream.Emit(ILOpcode.call, NewToken(NativeTargetMethod));
-
-                codeStream.Emit(ILOpcode.ret);
-            }
-
-            return Link();
         }
     }
 

@@ -29,12 +29,28 @@ namespace Internal.TypeSystem
         }
     }
 
-    public enum CharSet
+    [Flags]
+    public enum PInvokeAttributes : short
     {
-        Unknown,
-        Auto,
-        Ansi,
-        Unicode,
+        None = 0,
+        ExactSpelling = 1,
+        CharSetAnsi = 2,
+        CharSetUnicode = 4,
+        CharSetAuto = 6,
+        CharSetMask = 6,
+        BestFitMappingEnable = 16,
+        BestFitMappingDisable = 32,
+        BestFitMappingMask = 48,
+        SetLastError = 64,
+        CallingConventionWinApi = 256,
+        CallingConventionCDecl = 512,
+        CallingConventionStdCall = 768,
+        CallingConventionThisCall = 1024,
+        CallingConventionFastCall = 1280,
+        CallingConventionMask = 1792,
+        ThrowOnUnmappableCharEnable = 4096,
+        ThrowOnUnmappableCharDisable = 8192,
+        ThrowOnUnmappableCharMask = 12288
     }
 
     /// <summary>
@@ -44,12 +60,12 @@ namespace Internal.TypeSystem
     {
         public readonly string Name;
 
-        public readonly CharSet CharSet;
+        public readonly PInvokeAttributes Attributes;
 
-        public PInvokeMetadata(string name, CharSet charSet)
+        public PInvokeMetadata(string name, PInvokeAttributes attributes)
         {
             Name = name;
-            CharSet = charSet;
+            Attributes = attributes;
         }
     }
 
