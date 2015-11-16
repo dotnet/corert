@@ -119,8 +119,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public string[] BuildFileInfoMap(IEnumerable<DependencyNode> nodes)
         {
-            List<string> debugFileInfos = new List<string>();
-            _debugFileToId.Clear();
+            ArrayBuilder<string> debugFileInfos = new ArrayBuilder<string>();
             foreach (DependencyNode node in nodes)
             {
                 if (node is INodeWithDebugInfo)
