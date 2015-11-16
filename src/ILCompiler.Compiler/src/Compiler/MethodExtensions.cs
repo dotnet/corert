@@ -67,7 +67,7 @@ namespace ILCompiler
 
         public static SpecialMethodKind DetectSpecialMethodKind(this MethodDesc method)
         {
-            if (method.IsPInvokeImpl && !Internal.IL.Stubs.PInvokeMarshallingThunkEmitter.RequiresMarshalling(method))
+            if (method.IsPInvoke && !Internal.IL.Stubs.PInvokeMarshallingILEmitter.RequiresMarshalling(method))
             {
                 return SpecialMethodKind.PInvoke;
             }

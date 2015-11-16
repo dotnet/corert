@@ -17,19 +17,19 @@ namespace Internal.IL.Stubs
     /// (this compiler doesn't provide that), and b) offer a hand in some very simple marshalling
     /// situations (but support for this part might go away as the product matures).
     /// </summary>
-    public sealed class PInvokeMarshallingThunkEmitter : ILEmitter
+    public sealed class PInvokeMarshallingILEmitter : ILEmitter
     {
         MethodDesc _targetMethod;
         MethodDesc _nativeTargetMethod;
         PInvokeMetadata _importMetadata;
 
-        public PInvokeMarshallingThunkEmitter(MethodDesc targetMethod)
+        public PInvokeMarshallingILEmitter(MethodDesc targetMethod)
         {
-            Debug.Assert(targetMethod.IsPInvokeImpl);
+            Debug.Assert(targetMethod.IsPInvoke);
             Debug.Assert(RequiresMarshalling(targetMethod));
 
             _targetMethod = targetMethod;
-            _importMetadata = targetMethod.GetPInvokeMethodImportMetadata();
+            _importMetadata = targetMethod.GetPInvokeMethodMetadata();
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Internal.IL.Stubs
         /// </summary>
         public static bool RequiresMarshalling(MethodDesc method)
         {
-            Debug.Assert(method.IsPInvokeImpl);
+            Debug.Assert(method.IsPInvoke);
 
             // TODO: true if there are any custom marshalling rules on the parameters
             // TODO: true if SetLastError is true
@@ -477,7 +477,7 @@ namespace Internal.IL.Stubs
             return false;
         }
 
-        public override bool IsPInvokeImpl
+        public override bool IsPInvoke
         {
             get
             {
@@ -485,7 +485,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override PInvokeMetadata GetPInvokeMethodImportMetadata()
+        public override PInvokeMetadata GetPInvokeMethodMetadata()
         {
             return _methodMetadata;
         }

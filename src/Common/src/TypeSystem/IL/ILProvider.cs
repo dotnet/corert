@@ -60,9 +60,9 @@ namespace Internal.IL
                         return result;
                 }
 
-                if (method.IsPInvokeImpl && PInvokeMarshallingThunkEmitter.RequiresMarshalling(method))
+                if (method.IsPInvoke && PInvokeMarshallingILEmitter.RequiresMarshalling(method))
                 {
-                    return new PInvokeMarshallingThunkEmitter(method).EmitIL();
+                    return new PInvokeMarshallingILEmitter(method).EmitIL();
                 }
 
                 return EcmaMethodIL.Create((EcmaMethod)method);

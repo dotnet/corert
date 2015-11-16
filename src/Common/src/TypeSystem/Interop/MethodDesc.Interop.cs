@@ -10,9 +10,9 @@ namespace Internal.TypeSystem
     {
         /// <summary>
         /// Gets a value indicating whether this method is a (native unmanaged) platform invoke.
-        /// Use <see cref="GetPInvokeMethodImportMetadata"/> to retrieve the platform invoke detail information.
+        /// Use <see cref="GetPInvokeMethodMetadata"/> to retrieve the platform invoke detail information.
         /// </summary>
-        public virtual bool IsPInvokeImpl
+        public virtual bool IsPInvoke
         {
             get
             {
@@ -21,9 +21,9 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// If <see cref="IsPInvokeImpl"/> is true, retrieves the metadata related to the platform invoke.
+        /// If <see cref="IsPInvoke"/> is true, retrieves the metadata related to the platform invoke.
         /// </summary>
-        public virtual PInvokeMetadata GetPInvokeMethodImportMetadata()
+        public virtual PInvokeMetadata GetPInvokeMethodMetadata()
         {
             return default(PInvokeMetadata);
         }

@@ -317,7 +317,7 @@ namespace Internal.TypeSystem.Ecma
             return _type.ToString() + "." + Name;
         }
 
-        public override bool IsPInvokeImpl
+        public override bool IsPInvoke
         {
             get
             {
@@ -325,9 +325,9 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override PInvokeMetadata GetPInvokeMethodImportMetadata()
+        public override PInvokeMetadata GetPInvokeMethodMetadata()
         {
-            if (!IsPInvokeImpl)
+            if (!IsPInvoke)
                 return default(PInvokeMetadata);
 
             MetadataReader metadataReader = MetadataReader;
