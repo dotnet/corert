@@ -1,0 +1,21 @@
+project(jitinterface)
+
+set(NATIVE_SOURCES
+    jitinterface.cpp
+    jitwrapper.cpp
+    corinfoexception.cpp
+)
+
+if (WIN32)
+    list(APPEND NATIVE_SOURCES jitinterface.def)
+endif ()
+
+add_library(jitinterface
+    SHARED
+    ${NATIVE_SOURCES}
+)
+
+install (TARGETS jitinterface DESTINATION .)
+if(WIN32)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/jitinterface.pdb DESTINATION .)
+endif(WIN32)

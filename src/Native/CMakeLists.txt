@@ -162,6 +162,9 @@ if(WIN32)
         add_definitions(-D_WIN64=1)
     endif()
     add_compile_options($<$<CONFIG:Debug>:-DDEBUG>)
+    add_compile_options(/Zi) # enable debugging information
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS") #shrink pdb size
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
 else(WIN32)
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
@@ -183,6 +186,7 @@ if(WIN32)
 endif()
 add_subdirectory(Runtime)
 add_subdirectory(Bootstrap)
+add_subdirectory(jitinterface)
 
 # We don't need the PAL on Windows.
 if(CLR_CMAKE_PLATFORM_UNIX)

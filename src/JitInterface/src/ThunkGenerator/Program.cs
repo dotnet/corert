@@ -42,7 +42,7 @@ namespace Thunkerator
             }
             ThunkTypeName = typenames[0].Canonicalize();
 
-            if (typenames.Length > 1)
+            if (typenames.Length > 1 && !string.IsNullOrWhiteSpace(typenames[1]))
             {
                 ManagedTypeName = typenames[1].Canonicalize();
             }
@@ -83,6 +83,18 @@ namespace Thunkerator
     {
         public FunctionDecl(string line, Dictionary<string, TypeReplacement> ThunkReturnTypes, Dictionary<string, TypeReplacement> ThunkTypes)
         {
+            if (line.Contains("[ManualNativeWrapper]"))
+            {
+                ManualNativeWrapper = true;
+                line = line.Replace("[ManualNativeWrapper]", string.Empty);
+            }
+
+            if (line.Contains("[ReturnAsParm]"))
+            {
+                ReturnAsParm = true;
+                line = line.Replace("[ReturnAsParm]", string.Empty);
+            }
+
             int indexOfOpenParen = line.IndexOf('(');
             int indexOfCloseParen = line.IndexOf(')');
             string returnTypeAndFunctionName = line.Substring(0, indexOfOpenParen).Canonicalize();
@@ -120,6 +132,8 @@ namespace Thunkerator
         public readonly string FunctionName;
         public readonly TypeReplacement ReturnType;
         public readonly Parameter[] Parameters;
+        public readonly bool ManualNativeWrapper = false;
+        public readonly bool ReturnAsParm = false;
     }
 
     class Program
@@ -257,18 +271,113 @@ namespace Internal.JitInterface
             {
                 tr.WriteLine("        [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]");
 
-                string returnType = decl.ReturnType.ManagedTypeName;
+                string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.ManagedTypeName;
                 int marshalAs = returnType.LastIndexOf(']');
                 string returnTypeWithDelegate = returnType.Insert((marshalAs != -1) ? (marshalAs + 1) : 0, "delegate ");
 
-                tr.Write("        " + returnTypeWithDelegate + " " + "_" + decl.FunctionName + "(");
+                tr.Write("        " + returnTypeWithDelegate + " " + "_" + decl.FunctionName + "_wrapper" + "(");
                 tr.Write("IntPtr _this");
+                tr.Write(", out IntPtr exception");
+                if (decl.ReturnAsParm)
+                {
+                    tr.Write(", out " + decl.ReturnType.ManagedTypeName + " _return");
+                }
                 foreach (Parameter param in decl.Parameters)
                 {
                     tr.Write(", ");
                     tr.Write(param.Type.ManagedTypeName + " " + param.Name);
                 }
                 tr.WriteLine(");");
+            }
+            tr.WriteLine();
+
+            foreach (FunctionDecl decl in functionData)
+            {
+                string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.ManagedTypeName;
+                int marshalAs = returnType.LastIndexOf(']');
+                string returnTypeWithDelegate = returnType.Insert((marshalAs != -1) ? (marshalAs + 1) : 0, "public virtual ");
+
+                tr.Write("        " + returnTypeWithDelegate + " " + decl.FunctionName + "_wrapper" + "(");
+                tr.Write("IntPtr _this");
+                tr.Write(", out IntPtr exception");
+                if (decl.ReturnAsParm)
+                {
+                    tr.Write(", out " + decl.ReturnType.ManagedTypeName + " _return");
+                }
+                foreach (Parameter param in decl.Parameters)
+                {
+                    tr.Write(", ");
+                    tr.Write(param.Type.ManagedTypeName + " " + param.Name);
+                }
+                tr.Write(@")
+        {
+            exception = IntPtr.Zero;
+            try
+            {
+");
+                bool isVoid = decl.ReturnAsParm || decl.ReturnType.ManagedTypeName == "void";
+                tr.Write("                " + (isVoid ? "" : "return ") + decl.FunctionName + "(");
+                bool isFirst = true;
+                if (decl.ReturnAsParm)
+                {
+                    tr.Write("out _return");
+                    isFirst = false;
+                }
+                foreach (Parameter param in decl.Parameters)
+                {
+                    if (isFirst)
+                    {
+                        isFirst = false;
+                    }
+                    else
+                    {
+                        tr.Write(", ");
+                    }
+
+                    if (param.Type.ManagedTypeName.Contains("ref "))
+                    {
+                        tr.Write("ref ");
+                    }
+                    tr.Write(param.Name);
+                }
+                tr.WriteLine(");");
+                if (isVoid)
+                {
+                    tr.Write("                return;");
+                }
+                tr.Write(@"
+            }
+            catch (Exception ex)
+            {
+                exception = AllocException(ex);
+            }
+");
+                if (!isVoid)
+                {
+                    tr.Write("            return ");
+                    string retunTypeWithoutMarshalAs = marshalAs == -1 ? returnType : returnType.Substring(marshalAs + 1);
+                    switch (retunTypeWithoutMarshalAs)
+                    {
+                        case "bool":
+                            tr.Write("false");
+                            break;
+
+                        case "string":
+                            tr.Write("null");
+                            break;
+
+                        default:
+                            tr.Write("(" + retunTypeWithoutMarshalAs + ")0");
+                            break;
+                    }
+                    tr.WriteLine(";");
+                }
+                else if (decl.ReturnAsParm)
+                {
+                    tr.WriteLine("            _return = new " + decl.ReturnType.ManagedTypeName + "();");
+                }
+                tr.WriteLine("        }");
+                tr.WriteLine();
             }
             tr.WriteLine();
 
@@ -286,7 +395,7 @@ namespace Internal.JitInterface
             int index = 0;
             foreach (FunctionDecl decl in functionData)
             {
-                tr.WriteLine("            var d" + index + " = new _" + decl.FunctionName + "(" + decl.FunctionName + ");");
+                tr.WriteLine("            var d" + index + " = new _" + decl.FunctionName + "_wrapper(" + decl.FunctionName + "_wrapper);");
                 tr.WriteLine("            vtable[" + index + "] = Marshal.GetFunctionPointerForDelegate(d" + index + ");");
                 tr.WriteLine("            keepalive[" + index + "] = d" + index + ";");
                 index++;
@@ -302,6 +411,103 @@ namespace Internal.JitInterface
 ");
         }
 
+        static void WriteNativeWrapperInterface(TextWriter tw, IEnumerable<FunctionDecl> functionData)
+        {
+            tw.Write(@"
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+// DO NOT EDIT THIS FILE! It IS AUTOGENERATED
+#include <stdarg.h>
+#include <stdlib.h>
+#include ""corinfoexception.h""
+
+struct CORINFO_LOOKUP_KIND;
+
+class IJitInterface
+{
+public:
+");
+
+            foreach (FunctionDecl decl in functionData)
+            {
+                string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.NativeTypeName;
+                tw.Write("    virtual " + returnType + " " + decl.FunctionName + "(CorInfoException** ppException");
+                if (decl.ReturnAsParm)
+                {
+                    tw.Write(", " + decl.ReturnType.NativeTypeName + "* _return");
+                }
+                foreach (Parameter param in decl.Parameters)
+                {
+                    tw.Write(", ");
+                    tw.Write(param.Type.NativeTypeName + " " + param.Name);
+                }
+                tw.WriteLine(") = 0;");
+            }
+
+            tw.Write(@"
+};
+
+class JitInterfaceWrapper
+{
+public:
+");
+
+            foreach (FunctionDecl decl in functionData)
+            {
+                tw.Write("    virtual " + decl.ReturnType.NativeTypeName + " " + decl.FunctionName + "(");
+                bool isFirst = true;
+                foreach (Parameter param in decl.Parameters)
+                {
+                    if (isFirst)
+                    {
+                        isFirst = false;
+                    }
+                    else
+                    {
+                        tw.Write(", ");
+                    }
+                    tw.Write(param.Type.NativeTypeName + " " + param.Name);
+                }
+                tw.Write(')');
+
+                if (decl.ManualNativeWrapper)
+                {
+                    tw.WriteLine(';');
+                    continue;
+                }
+                tw.Write(@"
+    {
+        CorInfoException* pException = nullptr;
+        ");
+                if (decl.ReturnType.NativeTypeName != "void")
+                {
+                    tw.Write(decl.ReturnType.NativeTypeName + " _ret = ");
+                }
+                tw.Write("_pCorInfo->" + decl.FunctionName + "(&pException");
+                foreach (Parameter param in decl.Parameters)
+                {
+                    tw.Write(", " + param.Name);
+                }
+                tw.Write(@");
+        if (pException != nullptr)
+        {
+            throw pException;
+        }
+");
+                if (decl.ReturnType.NativeTypeName != "void")
+                {
+                    tw.WriteLine("        return _ret;");
+                }
+                tw.WriteLine("    }");
+            }
+
+            tw.Write(@"
+    IJitInterface *_pCorInfo;
+};
+");
+        }
+
         static void Main(string[] args)
         {
             IEnumerable<FunctionDecl> functions = ParseInput(new StreamReader(args[0]));
@@ -309,6 +515,11 @@ namespace Internal.JitInterface
             {
                 Console.WriteLine("Generating {0}", args[1]);
                 WriteManagedThunkInterface(tw, functions);
+            }
+            using (TextWriter tw = new StreamWriter(args[2]))
+            {
+                Console.WriteLine("Generating {0}", args[2]);
+                WriteNativeWrapperInterface(tw, functions);
             }
         }
     }

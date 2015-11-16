@@ -46,6 +46,13 @@
                 <Text><![CDATA[        <file src="../%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
 
+            <ILCompilerNativeFiles Include="jitinterface.dll" Condition="'$(OSGroup)'=='Windows_NT'" />
+            <ILCompilerNativeFiles Include="jitinterface.so" Condition="'$(OSGroup)'=='Linux'" />
+            <ILCompilerNativeFiles Include="jitinterface.dylib" Condition="'$(OSGroup)'=='OSX'" />
+            <ILCompilerBinPlace Include="@(ILCompilerNativeFiles)">
+                <Text><![CDATA[        <file src="../%(Identity)" target="runtimes/$(NuPkgRid)/native/lib/dotnet/%(Identity)" /> ]]></Text>
+            </ILCompilerBinPlace>
+
             <!-- IL.Compiler.SDK target files -->
             <ILCompilerSdkFiles Include="Runtime" />
             <ILCompilerSdkFiles Include="PortableRuntime" />

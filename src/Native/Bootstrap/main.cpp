@@ -495,6 +495,14 @@ int __statics_fixup()
     return 0;
 }
 
+#ifdef PLATFORM_UNIX
+// Placeholder of functions not yet implemented on Unix
+extern "C" void CoCreateGuid() { }
+extern "C" void CoGetApartmentType() { }
+extern "C" void CreateEventExW() { }
+extern "C" void GetNativeSystemInfo() { }
+#endif
+
 int main(int argc, char * argv[]) {
     if (__initialize_runtime() != 0) return -1;
     __register_module(&__module);
