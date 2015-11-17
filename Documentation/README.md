@@ -4,12 +4,14 @@ CoreRT is A .NET Core runtime optimized for AoT (Ahead of Time Compilation) scen
 
 This repo also contains the .NET Native toolchain, which allows for compiling .NET Core apps into native binaries.
 
-To get an idea for all the pieces of this system, see [the high-level engineering plan](High-level-engineering-plan.md).
+This project is in early stages of its development.  [The high-level engineering plan](High-level-engineering-plan.md) lists major parts that needs to come together for it to become a complete .NET Core runtime.
 
-## Relevant Docs for Contributing
+## Contributing
 
-- [Prerequisites](Pre-requisites-for-Building.md)
-- [How to build and run from the Command Line](How-to-build-and-run-ILCompiler-in-Console-Shell-prompt.md)
-- [How to build and run from Visual Studio](How-to-build-and-run-ILCompiler-in-Visual-Studio-2015.md)
-- [How to run tests](How-to-Run-Tests.md)
-- [NuGet Dependencies Required](Nuget-Dependencies-for-the-Toolchain.md)
+*We follow the same [Contribution Guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/contributing.md) as CoreFX.*
+
+- [Prerequisites](prerequisites-for-building.md)
+- [How to build and run from the Command Line](how-to-build-and-run-ilcompiler-in-console-shell-prompt.md)
+- [How to build and run from Visual Studio](how-to-build-and-run-ilcompiler-in-visual-studio-2015.md)
+- [How to run tests](how-to-run-tests.md)
+- [NuGet Dependencies Required](nuget-dependencies-for-the-toolchain.md)
