@@ -455,8 +455,8 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         bool canTailCall(IntPtr _this, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix)
         {
-            // TODO: tail call
-            return false;
+            // No restrictions on tailcalls
+            return true;
         }
 
         void reportTailCallDecision(IntPtr _this, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
@@ -1318,9 +1318,8 @@ namespace Internal.JitInterface
             }
             else
             {
-                TypeDesc type = methodSig[index];
-
-                // TODO: Pinning
+                LocalVariableDefinition[] locals = (LocalVariableDefinition[])sigObj;
+                TypeDesc type = locals[index].Type;
                 return ObjectToHandle(type);
             }
         }
@@ -2064,9 +2063,12 @@ namespace Internal.JitInterface
 
         ushort getRelocTypeHint(IntPtr _this, void* target)
         {
-            // TODO: Hint to use REL32
-            return 0xFFFF;
+            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
+                return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_REL32;
+
+            return UInt16.MaxValue;
         }
+
         void getModuleNativeEntryPointRange(IntPtr _this, ref void* pStart, ref void* pEnd)
         { throw new NotImplementedException("getModuleNativeEntryPointRange"); }
 
