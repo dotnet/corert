@@ -110,6 +110,8 @@ namespace Internal.TypeSystem.Ecma
                     }
                 case SignatureTypeCode.TypedReference:
                     throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+                case SignatureTypeCode.FunctionPointer:
+                    throw new PlatformNotSupportedException("Function pointer types are not supported in .NET Core");
                 default:
                     throw new BadImageFormatException();
             }
