@@ -60,6 +60,11 @@ namespace Internal.IL
                         return result;
                 }
 
+                if (method.IsPInvoke)
+                {
+                    return PInvokeMarshallingILEmitter.EmitIL(method);
+                }
+
                 return EcmaMethodIL.Create((EcmaMethod)method);
             }
             else

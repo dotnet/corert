@@ -254,36 +254,6 @@ namespace ILCompiler.CppCodeGen
             return varName;
         }
 
-        enum SpecialMethodKind
-        {
-            Unknown,
-            PInvoke,
-            RuntimeImport
-        };
-
-        SpecialMethodKind DetectSpecialMethodKind(MethodDesc method)
-        {
-            if (method is EcmaMethod)
-            {
-                if (((EcmaMethod)method).IsPInvoke())
-                {
-                    return SpecialMethodKind.PInvoke;
-                }
-                else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
-                {
-                    _compilation.Log.WriteLine("RuntimeImport: " + method.ToString());
-                    return SpecialMethodKind.RuntimeImport;
-                }
-                else if (method.HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
-                {
-                    _compilation.Log.WriteLine("NativeCallable: " + method.ToString());
-                    // TODO: add reverse pinvoke callout
-                    throw new NotImplementedException();
-                }
-            }
-            return SpecialMethodKind.Unknown;
-        }
-
         string CompileSpecialMethod(MethodDesc method, SpecialMethodKind kind)
         {
             StringBuilder builder = new StringBuilder();
@@ -292,13 +262,13 @@ namespace ILCompiler.CppCodeGen
                 case SpecialMethodKind.PInvoke:
                 case SpecialMethodKind.RuntimeImport:
                     {
-                        EcmaMethod ecmaMethod = (EcmaMethod)method;
+                        EcmaMethod ecmaMethod = method as EcmaMethod;
 
                         string importName = kind == SpecialMethodKind.PInvoke ?
-                            ecmaMethod.GetPInvokeImportName() : ecmaMethod.GetRuntimeImportEntryPointName();
+                            method.GetPInvokeMethodMetadata().Name : ecmaMethod.GetRuntimeImportEntryPointName();
 
                         if (importName == null)
-                            importName = ecmaMethod.Name;
+                            importName = method.Name;
 
                         // TODO: hacky special-case
                         if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
@@ -332,7 +302,7 @@ namespace ILCompiler.CppCodeGen
         {
             _compilation.Log.WriteLine("Compiling " + method.ToString());
 
-            SpecialMethodKind kind = DetectSpecialMethodKind(method);
+            SpecialMethodKind kind = method.DetectSpecialMethodKind();
 
             if (kind != SpecialMethodKind.Unknown)
             {

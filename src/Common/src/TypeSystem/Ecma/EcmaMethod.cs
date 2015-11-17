@@ -317,18 +317,29 @@ namespace Internal.TypeSystem.Ecma
             return _type.ToString() + "." + Name;
         }
 
-        public bool IsPInvoke()
+        public override bool IsPInvoke
         {
-            return (((int)Attributes & (int)MethodAttributes.PinvokeImpl) != 0);
+            get
+            {
+                return (((int)Attributes & (int)MethodAttributes.PinvokeImpl) != 0);
+            }
         }
 
-        public string GetPInvokeImportName()
+        public override PInvokeMetadata GetPInvokeMethodMetadata()
         {
-            if (((int)Attributes & (int)MethodAttributes.PinvokeImpl) == 0)
-                return null;
+            if (!IsPInvoke)
+                return default(PInvokeMetadata);
 
-            var metadataReader = MetadataReader;
-            return metadataReader.GetString(metadataReader.GetMethodDefinition(_handle).GetImport().Name);
+            MetadataReader metadataReader = MetadataReader;
+            MethodImport import = metadataReader.GetMethodDefinition(_handle).GetImport();
+            string name = metadataReader.GetString(import.Name);
+
+            // Spot check the enums match
+            Debug.Assert((int)MethodImportAttributes.CallingConventionStdCall == (int)PInvokeAttributes.CallingConventionStdCall);
+            Debug.Assert((int)MethodImportAttributes.CharSetAuto == (int)PInvokeAttributes.CharSetAuto);
+            Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
+
+            return new PInvokeMetadata(name, (PInvokeAttributes)import.Attributes);
         }
     }
 

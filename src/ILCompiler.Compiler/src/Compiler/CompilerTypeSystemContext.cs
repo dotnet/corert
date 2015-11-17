@@ -47,6 +47,8 @@ namespace ILCompiler
             "RuntimeTypeHandle",
             "RuntimeMethodHandle",
             "RuntimeFieldHandle",
+
+            "Exception",
         };
 
         static readonly string[][] s_wellKnownEntrypointNames = new string[][] {
