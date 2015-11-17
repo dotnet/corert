@@ -14,7 +14,7 @@ namespace System.Runtime
     // We choose this name to avoid clashing with any future public class with the name Finalizer. 
     public static class __Finalizer
     {
-        private static bool s_fHaveNewClasslibs = false;
+        private static bool s_fHaveNewClasslibs /* = false */;
 
         [NativeCallable(EntryPoint = "ProcessFinalizers", CallingConvention = CallingConvention.Cdecl)]
         public static void ProcessFinalizers()

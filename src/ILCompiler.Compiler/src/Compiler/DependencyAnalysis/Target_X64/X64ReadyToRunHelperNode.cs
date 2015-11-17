@@ -92,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
                         // We need to trigger the cctor before returning the base
                         encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol((MetadataType)Helper.Target));
                         encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.TypeNonGCStaticsSymbol((MetadataType)Helper.Target));
-                        encoder.EmitJMP(factory.WellKnownEntrypoint(WellKnownEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
+                        encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
                     }
                     break;
 
@@ -117,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis
                         AddrMode loadFromRdx = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
                         encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromRdx);
                         encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromRdx);
-                        encoder.EmitJMP(factory.WellKnownEntrypoint(WellKnownEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
+                        encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
                     }
                     break;
 

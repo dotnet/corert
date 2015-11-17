@@ -87,7 +87,13 @@ namespace System.Runtime
 
     public unsafe static class EH
     {
-        internal static UIntPtr c_maxSP = new UIntPtr(unchecked((void*)(ulong)-1L));
+        internal static UIntPtr MaxSP
+        {
+            get
+            {
+                return new UIntPtr(unchecked((void*)(ulong)-1L));
+            }
+        }
 
         private enum RhEHClauseKind
         {
@@ -122,8 +128,8 @@ namespace System.Runtime
                         (codeOffset < _tryEndOffset));
             }
         }
-        [StructLayout(LayoutKind.Explicit, Size = AsmOffsets.SIZEOF__EHEnum)]
 
+        [StructLayout(LayoutKind.Explicit, Size = AsmOffsets.SIZEOF__EHEnum)]
         private struct EHEnum
         {
             [FieldOffset(0)]
@@ -199,7 +205,7 @@ namespace System.Runtime
         }
 
 #if ARM
-        const int c_IPAdjustForHardwareFault = 2;
+        private const int c_IPAdjustForHardwareFault = 2;
 #else
         private const int c_IPAdjustForHardwareFault = 1;
 #endif
@@ -420,6 +426,7 @@ namespace System.Runtime
             BinderIntrinsics.TailCall_RhpThrowEx(e);
         }
 
+#if !CORERT
         private static OutOfMemoryException s_theOOMException = new OutOfMemoryException();
 
         // Rtm exports GetRuntimeException for the few cases where we have a helper that throws an exception
@@ -451,6 +458,7 @@ namespace System.Runtime
                     return null;
             }
         }
+#endif
 
         private enum HwExceptionCode : uint
         {
@@ -654,7 +662,7 @@ namespace System.Runtime
             // First pass
             //
             // ------------------------------------------------
-            UIntPtr handlingFrameSP = c_maxSP;
+            UIntPtr handlingFrameSP = MaxSP;
             byte* pCatchHandler = null;
             uint catchingTryRegionIdx = MaxTryRegionIdx;
 
@@ -763,7 +771,7 @@ namespace System.Runtime
         [System.Diagnostics.Conditional("DEBUG")]
         private static void DebugVerifyHandlingFrame(UIntPtr handlingFrameSP)
         {
-            Debug.Assert(handlingFrameSP != c_maxSP, "Handling frame must have an SP value");
+            Debug.Assert(handlingFrameSP != MaxSP, "Handling frame must have an SP value");
             Debug.Assert(((UIntPtr*)handlingFrameSP) > &handlingFrameSP,
                 "Handling frame must have a valid stack frame pointer");
         }

@@ -72,18 +72,11 @@ namespace ILCompiler
                 return SpecialMethodKind.PInvoke;
             }
 
-            if (method is EcmaMethod)
+            if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
-                if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
-                {
-                    return SpecialMethodKind.RuntimeImport;
-                }
-                else if (method.HasCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute"))
-                {
-                    // TODO: add reverse pinvoke callout
-                    throw new NotImplementedException();
-                }
+                return SpecialMethodKind.RuntimeImport;
             }
+
             return SpecialMethodKind.Unknown;
         }
     }

@@ -230,7 +230,6 @@ namespace ILCompiler
             {
                 _nodeFactory = new NodeFactory(this._typeSystemContext);
                 NodeFactory.NameMangler = NameMangler;
-                var rootNode = _nodeFactory.MethodEntrypoint(_mainMethod);
 
                 // Choose which dependency graph implementation to use based on the amount of logging requested.
                 if (_options.DgmlLog == null)
@@ -251,15 +250,17 @@ namespace ILCompiler
                         _dependencyGraph = new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
                     }
                 }
-                
+
                 _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
-                _dependencyGraph.AddRoot(rootNode, "Main method");
-                AddWellKnownTypes(_dependencyGraph);
+
+                AddWellKnownTypes();
+                AddCompilationRoots();
 
                 _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
                 var nodes = _dependencyGraph.MarkedNodeList;
 
-                ObjectWriter.EmitObject(OutputPath, nodes, rootNode, _nodeFactory);
+                var mainMethodNode = (_mainMethod != null) ? _nodeFactory.MethodEntrypoint(_mainMethod) : null;
+                ObjectWriter.EmitObject(OutputPath, nodes, mainMethodNode, _nodeFactory);
 
                 if (_options.DgmlLog != null)
                 {
@@ -272,8 +273,8 @@ namespace ILCompiler
             }
             else
             {
-                AddMethod(mainMethod);
                 AddWellKnownTypes();
+                AddCompilationRoots();
 
                 while (_methodsThatNeedsCompilation != null)
                 {
@@ -283,6 +284,37 @@ namespace ILCompiler
                 }
 
                 _cppWriter.OutputCode();
+            }
+        }
+
+        private void AddCompilationRoots()
+        {
+            if (_mainMethod != null)
+                AddCompilationRoot(_mainMethod, "Main method");
+
+            foreach (var inputFile in _typeSystemContext.InputFilePaths)
+            {
+                var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
+                foreach (var type in module.GetAllTypes())
+                {
+                    foreach (var method in type.GetMethods())
+                    {
+                        if (method.HasCustomAttribute("System.Runtime", "RuntimeExportAttribute"))
+                            AddCompilationRoot(method, "Runtime export");
+                    }
+                }
+            }
+        }
+
+        private void AddCompilationRoot(MethodDesc method, string reason)
+        {
+            if (_dependencyGraph != null)
+            {
+                _dependencyGraph.AddRoot(_nodeFactory.MethodEntrypoint(method), reason);
+            }
+            else
+            {
+                AddMethod(method);
             }
         }
 
@@ -457,14 +489,16 @@ namespace ILCompiler
         private void AddWellKnownTypes()
         {
             var stringType = TypeSystemContext.GetWellKnownType(WellKnownType.String);
-            AddType(stringType);
-            MarkAsConstructed(stringType);
-        }
 
-        private void AddWellKnownTypes(DependencyAnalyzerBase<NodeFactory> analyzer)
-        {
-            var stringType = TypeSystemContext.GetWellKnownType(WellKnownType.String);
-            analyzer.AddRoot(_nodeFactory.ConstructedTypeSymbol(stringType), "String type is always generated");
+            if (_dependencyGraph != null)
+            {
+                _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(stringType), "String type is always generated");
+            }
+            else
+            {
+                AddType(stringType);
+                MarkAsConstructed(stringType);
+            }
         }
 
         public void AddMethod(MethodDesc method)
