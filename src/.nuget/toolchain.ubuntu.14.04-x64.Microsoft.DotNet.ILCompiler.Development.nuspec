@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>toolchain.win7-x64.Microsoft.DotNet.ILCompiler.Development</id>
+    <id>toolchain.ubuntu.14.04-x64.Microsoft.DotNet.ILCompiler.Development</id>
     <version>1.0.0-prerelease</version>
     <title>Microsoft .NET Native Toolchain - Development Version</title>
     <authors>Microsoft</authors>
@@ -41,23 +41,19 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="..\ilc.dll" target="ilc.dll" />
-    <file src="..\ilc.pdb" target="pdb\ilc.pdb" />
-    <file src="..\ILCompiler.Compiler.dll" target="ILCompiler.Compiler.dll" />
-    <file src="..\ILCompiler.Compiler.pdb" target="pdb\ILCompiler.Compiler.pdb" />
-    <file src="..\ILCompiler.DependencyAnalysisFramework.dll" target="ILCompiler.DependencyAnalysisFramework.dll" />
-    <file src="..\ILCompiler.DependencyAnalysisFramework.pdb" target="pdb\ILCompiler.DependencyAnalysisFramework.pdb" />
-    <file src="..\ILCompiler.TypeSystem.dll" target="ILCompiler.TypeSystem.dll" />
-    <file src="..\ILCompiler.TypeSystem.pdb" target="pdb\ILCompiler.TypeSystem.pdb" />
-    <file src="..\lib\Runtime.lib" target="sdk\Runtime.lib" />
-    <file src="..\lib\PortableRuntime.lib" target="sdk\PortableRuntime.lib" />
-    <file src="..\lib\bootstrapper.lib" target="sdk\bootstrapper.lib" />
-    <file src="..\lib\bootstrappercpp.lib" target="sdk\bootstrappercpp.lib" />
-    <file src="..\System.Private.Corelib.dll" target="sdk\System.Private.Corelib.dll" />
-    <file src="..\System.Private.Corelib.pdb" target="pdb\System.Private.Corelib.pdb" />
-    <file src="..\toolruntime\*.dll" />
-    <file src="..\toolruntime\coreconsole.exe" target="ilc.exe" />
-    <file src="..\..\..\..\packages\Microsoft.DiaSymReader\1.0.6\lib\portable-net45+win8\Microsoft.DiaSymReader.dll" />
-    <file src="..\..\..\..\src\scripts\dotnet-compile-native.bat" />
+      <file src="../ilc.dll" target="ilc.dll" />
+      <file src="../ILCompiler.Compiler.dll" target="ILCompiler.Compiler.dll" />
+      <file src="../ILCompiler.DependencyAnalysisFramework.dll" target="ILCompiler.DependencyAnalysisFramework.dll" />
+      <file src="../ILCompiler.TypeSystem.dll" target="ILCompiler.TypeSystem.dll" />
+      <file src="../lib/libRuntime.a" target="sdk/libRuntime.a" />
+      <file src="../lib/libPortableRuntime.a" target="sdk/libPortableRuntime.a" />
+      <file src="../lib/libbootstrapper.a" target="sdk/libbootstrapper.a" />
+      <file src="../lib/libbootstrappercpp.a" target="sdk/libbootstrappercpp.a" />
+      <file src="../lib/libSystem.Private.CoreLib.Native.a" target="sdk/libSystem.Private.CoreLib.Native.a" />
+      <file src="../System.Private.Corelib.dll" target="sdk/System.Private.Corelib.dll" />
+      <file src="../ToolRuntime/*.dll" />
+      <file src="../ToolRuntime/*.so" />
+      <file src="../ToolRuntime/corerun" target="ilc" />
+      <file src="../../../../packages/Microsoft.DiaSymReader/1.0.6/lib/portable-net45+win8/Microsoft.DiaSymReader.dll" />
   </files>
 </package>
