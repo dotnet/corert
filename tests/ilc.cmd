@@ -32,13 +32,13 @@ set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 
 if not exist "%CoreRT_ToolchainDir%\dotnet-compile-native.bat" ((call :Fail "Toolchain not installed correctly at CoreRT_ToolchainDir") & exit /b -1)
 
-if "%CoreRT_TestCompileMode%"=="" ((call :Fail "Test compile mode not set in CoreRT_TestCompileMode: Specify cpp/protojit") & exit /b -1)
+if "%CoreRT_TestCompileMode%"=="" ((call :Fail "Test compile mode not set in CoreRT_TestCompileMode: Specify cpp/ryujit") & exit /b -1)
 
 set "__CompileLogPath=%__SourceFolder%"
 
 REM ** Invoke ILCompiler to compile. Set CORE_ROOT to empty so, ILCompiler's corerun doesn't load dependencies from there.
 set CORE_ROOT=
-call %CoreRT_ToolchainDir%\dotnet-compile-native.bat %CoreRT_BuildArch% %CoreRT_BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_ProtoJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in %__SourceFile% /out %__SourceFile%.compiled.exe
+call %CoreRT_ToolchainDir%\dotnet-compile-native.bat %CoreRT_BuildArch% %CoreRT_BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_RyuJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in %__SourceFile% /out %__SourceFile%.compiled.exe
 
 REM ** Fail if we did not generate obj file
 if exist "%__SourceFile%.compiled.exe" (

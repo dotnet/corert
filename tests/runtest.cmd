@@ -5,7 +5,7 @@ set CoreRT_BuildArch=x64
 set CoreRT_BuildType=Debug
 set CoreRT_BuildOS=Windows_NT
 set CoreRT_TestRun=true
-set CoreRT_TestCompileMode=protojit
+set CoreRT_TestCompileMode=ryujit
 set CoreRT_TestExtRepo=
 set CoreRT_BuildExtRepo=
 
@@ -29,7 +29,7 @@ goto :Usage
 
 :Usage
 echo %0 [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
-echo     /mode         : Compilation mode. Specify cpp/protojit. Default: protojit
+echo     /mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit
 echo     /runtest      : Should just compile or run compiled bianry? Specify: true/false. Default: true.
 echo     /extrepo      : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
 echo     /buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
@@ -51,7 +51,7 @@ if not "%ErrorLevel%"=="100" (((call :Fail "Preptests failed... cannot continue"
 
 REM ** Validate the paths needed to run tests
 if not exist "%CoreRT_AppDepSdkDir%" ((call :Fail "AppDep SDK not installed at %CoreRT_AppDepSdkDir%") & exit /b -1)
-if not exist "%CoreRT_ProtoJitDir%"  ((call :Fail "ProtoJIT not installed at %CoreRT_ProtoJitDir%") & exit /b -1)
+if not exist "%CoreRT_RyuJitDir%"  ((call :Fail "RyuJIT not installed at %CoreRT_RyuJitDir%") & exit /b -1)
 if not exist "%CoreRT_ObjWriterDir%" ((call :Fail "ObjWriter not installed at %ObjWriterDir%") & exit /b -1)
 if not exist "%CoreRT_ToolchainDir%\dotnet-compile-native.bat" ((call :Fail "dotnet-compile-native.bat not found in %CoreRT_ToolchainDir%") & exit /b -1)
 
@@ -127,7 +127,7 @@ if "%__StatusPassed%"=="1" (
 
     echo.
     echo Compiling ILCompiler !__SourceFile!.exe
-    call !CoreRT_ToolchainDir!\dotnet-compile-native.bat %__BuildArch% %__BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_ProtoJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in !__SourceFile!.exe /out !__SourceFile!.compiled.exe
+    call !CoreRT_ToolchainDir!\dotnet-compile-native.bat %__BuildArch% %__BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_RyuJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in !__SourceFile!.exe /out !__SourceFile!.compiled.exe
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%

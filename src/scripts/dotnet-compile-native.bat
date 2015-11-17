@@ -4,7 +4,7 @@ setlocal EnableDelayedExpansion
 REM
 REM Script to compile a MSIL assembly to native code. 
 REM 
-REM Supported code-generators: CPPCODEGEN, ProtoJIT
+REM Supported code-generators: CPPCODEGEN, RyuJIT
 REM
 
 if "%VS140COMNTOOLS%" == "" (
@@ -84,12 +84,12 @@ set Assembly=%AssemblyFileName%%AssemblyExt%
 
 REM Validate the code-generation mode
 if /i "%__CompileMode%" == "cpp" goto :ModeCPP
-if /i "%__CompileMode%" == "protojit" goto :ModeProtoJIT
+if /i "%__CompileMode%" == "ryujit" goto :ModeRyuJIT
 echo Please specify a valid compilation mode.
 goto :InvalidArgs
 
-:ModeProtoJIT
-REM *** ProtoJIT Codegen ***
+:ModeRyuJIT
+REM *** RyuJIT Codegen ***
 REM Generate the obj file for the MSIL assembly
 
 set ObjFileName=%__Infile%.obj
@@ -188,7 +188,7 @@ goto :eof
 :InvalidArgs
 echo Invalid command line
 echo.
-echo Usage: dotnet-compile-native arch buildType /in path-to-MSIL-assembly /out path-to-native executable /appdepsdk path to contents of Microsoft.DotNet.AppDep nuget package [/mode cpp|protojit /codegenpath path to contents of Microsoft.DotNet.ProtoJit package /objgenpath path to contents of Microsoft.DotNet.ObjWriter package] [/logpath path to drop logfiles in]
+echo Usage: dotnet-compile-native arch buildType /in path-to-MSIL-assembly /out path-to-native executable /appdepsdk path to contents of Microsoft.DotNet.AppDep nuget package [/mode cpp|ryujit /codegenpath path to contents of Microsoft.DotNet.RyuJit package /objgenpath path to contents of Microsoft.DotNet.ObjWriter package] [/logpath path to drop logfiles in]
 
 :FailedExit
 exit /B 1
