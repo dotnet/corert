@@ -133,16 +133,5 @@ namespace Internal.NativeFormat
             }
             return (hashcode + _rotl(hashcode, 15));
         }
-
-        public static int ComputeGenericInstanceHashCode(int genericDefinitionHashCode, Internal.TypeSystem.Instantiation genericTypeArguments)
-        {
-            int hashcode = genericDefinitionHashCode;
-            for (int i = 0; i < genericTypeArguments.Length; i++)
-            {
-                int argumentHashCode = genericTypeArguments[i].GetHashCode();
-                hashcode = (hashcode + _rotl(hashcode, 13)) ^ argumentHashCode;
-            }
-            return (hashcode + _rotl(hashcode, 15));
-        }
     }
 }

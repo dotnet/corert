@@ -246,12 +246,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(InstantiatedTypeKey key)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(key._typeDef.GetHashCode(), key._instantiation);
+                    return key._instantiation.ComputeGenericInstanceHashCode(key._typeDef.GetHashCode());
                 }
 
                 protected override int GetValueHashCode(InstantiatedType value)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(value.GetTypeDefinition().GetHashCode(), value.Instantiation);
+                    return value.Instantiation.ComputeGenericInstanceHashCode(value.GetTypeDefinition().GetHashCode());
                 }
 
                 protected override bool CompareKeyToValue(InstantiatedTypeKey key, InstantiatedType value)
@@ -342,12 +342,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(InstantiatedMethodKey key)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(key._methodDef.GetHashCode(), key._instantiation);
+                    return key._instantiation.ComputeGenericInstanceHashCode(key._methodDef.GetHashCode());
                 }
 
                 protected override int GetValueHashCode(InstantiatedMethod value)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(value.GetMethodDefinition().GetHashCode(), value.Instantiation);
+                    return value.Instantiation.ComputeGenericInstanceHashCode(value.GetMethodDefinition().GetHashCode());
                 }
 
                 protected override bool CompareKeyToValue(InstantiatedMethodKey key, InstantiatedMethod value)

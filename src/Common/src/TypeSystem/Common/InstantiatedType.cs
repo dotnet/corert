@@ -29,7 +29,7 @@ namespace Internal.TypeSystem
         public override int GetHashCode()
         {
             if (_hashCode == 0)
-                _hashCode = Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_typeDef.GetHashCode(), _instantiation);
+                _hashCode = _instantiation.ComputeGenericInstanceHashCode(_typeDef.GetHashCode());
             return _hashCode;
         }
 
