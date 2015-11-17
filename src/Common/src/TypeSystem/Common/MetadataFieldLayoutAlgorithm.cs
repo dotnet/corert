@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Linq;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -96,8 +95,26 @@ namespace Internal.TypeSystem
 
                 if (numInstanceFields > 0)
                 {
+                    FieldDesc instanceField = null;
+                    foreach (FieldDesc field in type.GetFields())
+                    {
+                        if(!field.IsStatic)
+                        {
+#if DEBUG
+                            Debug.Assert(instanceField == null, "Unexpected extra instance field");
+#endif // DEBUG
+                            instanceField = field;
+
+#if !DEBUG
+                            break;
+#endif // !DEBUG
+                        }
+                    }
+
+                    Debug.Assert(instanceField != null, "Null instance field");
+
                     result.Offsets = new FieldAndOffset[] {
-                        new FieldAndOffset(type.GetFields().Single(f => !f.IsStatic), 0)
+                        new FieldAndOffset(instanceField, 0)
                     };
                 }
 
