@@ -113,6 +113,8 @@ namespace Internal.IL
 
             _typeSystemContext = method.Context;
 
+            _msvc = (_typeSystemContext.Target.OperatingSystem == TargetOS.Windows);
+
             if (!_methodSignature.IsStatic)
                 _thisType = method.OwningType;
 
@@ -260,7 +262,7 @@ namespace Internal.IL
             return _stack[--_stackTop];
         }
 
-        public static bool Msvc = true;
+        private bool _msvc;
 
         string GetStackValueKindCPPTypeName(StackValueKind kind, TypeDesc type = null)
         {
@@ -514,7 +516,7 @@ namespace Internal.IL
                     _builder.AppendLine("__endFinally" + i.ToString() + ": switch(__finallyReturn" + i.ToString() + ") {");
                     for (int j = 1; j <= r.ReturnLabels; j++)
                         _builder.AppendLine("case " + j.ToString() + ": goto __returnFromFinally" + i.ToString() + "_" + j.ToString() + ";");
-                    _builder.AppendLine("default: " + (Msvc ? "__assume(0)" : "__builtin_unreachable()") + "; }");
+                    _builder.AppendLine("default: " + (_msvc ? "__assume(0)" : "__builtin_unreachable()") + "; }");
                 }
             }
 
@@ -948,9 +950,9 @@ namespace Internal.IL
             if (kind == StackValueKind.Int64)
             {
                 if (value == Int64.MinValue)
-                    val = "(int64_t)(0x8000000000000000" + (Msvc ? "i64" : "LL") + ")";
+                    val = "(int64_t)(0x8000000000000000" + (_msvc ? "i64" : "LL") + ")";
                 else
-                    val = value.ToString() + (Msvc ? "i64" : "LL");
+                    val = value.ToString() + (_msvc ? "i64" : "LL");
             }
             else
             {
