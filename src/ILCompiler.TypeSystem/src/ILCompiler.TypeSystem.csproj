@@ -92,6 +92,9 @@
     <Compile Include="$(CommonPath)\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs">
       <Link>Ecma\IMetadataStringDecoderProvider.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
+      <Link>Ecma\CachingMetadataStringDecoder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
       <Link>MethodDesc.Interop.cs</Link>
     </Compile>

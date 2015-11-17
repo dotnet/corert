@@ -16,7 +16,7 @@ using Internal.IL;
 
 namespace ILCompiler
 {
-    public class CompilerTypeSystemContext : TypeSystemContext
+    public class CompilerTypeSystemContext : TypeSystemContext, IMetadataStringDecoderProvider
     {
         static readonly string[] s_wellKnownTypeNames = new string[] {
             "Void",
@@ -65,6 +65,8 @@ namespace ILCompiler
         MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+
+        MetadataStringDecoder _metadataStringDecoder;
 
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
@@ -203,6 +205,13 @@ namespace ILCompiler
         public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
+        }
+
+        MetadataStringDecoder IMetadataStringDecoderProvider.GetMetadataStringDecoder()
+        {
+            if (_metadataStringDecoder == null)
+                _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
+            return _metadataStringDecoder;
         }
 
         //
