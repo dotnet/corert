@@ -22,7 +22,7 @@ namespace Internal.JitInterface
     {
         IntPtr _comp;
 
-        [DllImport("protojit")]
+        [DllImport("ryujit")]
         extern static IntPtr getJit();
 
         IntPtr _jit;

@@ -8,11 +8,11 @@ if not defined CoreRT_BuildType ((call :Fail "Set CoreRT_BuildType to Debug or R
 
 set CoreRT_ToolchainPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.ILCompiler.Development
 set CoreRT_ToolchainVer=1.0.0-prerelease
-set CoreRT_AppDepSdkPkg=Microsoft.DotNet.AppDep
+set CoreRT_AppDepSdkPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.AppDep
 set CoreRT_AppDepSdkVer=1.0.0-prerelease
-set CoreRT_ProtoJitPkg=Microsoft.DotNet.ProtoJit
-set CoreRT_ProtoJitVer=1.0.0-prerelease
-set CoreRT_ObjWriterPkg=Microsoft.DotNet.ObjectWriter
+set CoreRT_RyuJitPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.RyuJit
+set CoreRT_RyuJitVer=1.0.0-prerelease
+set CoreRT_ObjWriterPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.ObjectWriter
 set CoreRT_ObjWriterVer=1.0.2-prerelease
 
 setlocal EnableExtensions
@@ -47,17 +47,17 @@ mkdir %__NuPkgInstallDir%
 if not exist %__NuPkgInstallDir% ((call :Fail "Could not make install dir") & exit /b -1)
 
 REM ** Install packages from NuGet
-set __NuGetFeedUrl="https://www.myget.org/F/schellap/auth/3e4f1dbe-f43a-45a8-b029-3ad4d25605ac/api/v2"
+set __NuGetFeedUrl="https://www.myget.org/F/dotnet/auth/3e4f1dbe-f43a-45a8-b029-3ad4d25605ac/api/v2"
 
 REM ** Install AppDep SDK
 echo.
 echo Installing CoreRT external dependencies
 %__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_AppDepSdkVer% %CoreRT_AppDepSdkPkg% -prerelease %__NuGetOptions%
 
-REM ** Install ProtoJit
+REM ** Install RyuJit
 echo.
-echo Installing ProtoJit from NuGet
-%__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_ProtoJitVer% %CoreRT_ProtoJitPkg% -prerelease %__NuGetOptions%
+echo Installing RyuJit from NuGet
+%__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_RyuJitVer% %CoreRT_RyuJitPkg% -prerelease %__NuGetOptions%
 
 REM ** Install ObjectWriter
 echo.
@@ -80,8 +80,8 @@ rmdir /s /q %__NuPkgUnpackDir%
 
 endlocal & (
   set CoreRT_AppDepSdkDir=%__NuPkgInstallDir%\%CoreRT_AppDepSdkPkg%.%CoreRT_AppDepSdkVer%
-  set CoreRT_ProtoJitDir=%__NuPkgInstallDir%\%CoreRT_ProtoJitPkg%.%CoreRT_ProtoJitVer%
-  set CoreRT_ObjWriterDir=%__NuPkgInstallDir%\%CoreRT_ObjWriterPkg%.%CoreRT_ObjWriterVer%
+  set CoreRT_RyuJitDir=%__NuPkgInstallDir%\%CoreRT_RyuJitPkg%.%CoreRT_RyuJitVer%\runtimes\win7-%CoreRT_BuildArch%\native
+  set CoreRT_ObjWriterDir=%__NuPkgInstallDir%\%CoreRT_ObjWriterPkg%.%CoreRT_ObjWriterVer%\runtimes\win7-%CoreRT_BuildArch%\native
   set CoreRT_ToolchainDir=%__NuPkgInstallDir%\%CoreRT_ToolchainPkg%.%CoreRT_ToolchainVer%
 )
 
