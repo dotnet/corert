@@ -4,7 +4,7 @@ This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of T
 
 ## Contributing
 
-*We follow the same [Contribution Guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/contributing.md) as CoreFX.*
+*We follow the [.NET Core Contribution Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md).*
 
 - [Prerequisites](prerequisites-for-building.md)
 - [How to build and run from the Command Line](how-to-build-and-run-ilcompiler-in-console-shell-prompt.md)
