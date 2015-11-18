@@ -1,6 +1,6 @@
 # Introduction to CoreRT Repo
 
-This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of Time) compilation scenarios. This project is in early stages of its development.  [The high-level engineering plan](High-level-engineering-plan.md) lists major parts that needs to come together for it to become a complete runtime for .NET Core.
+This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of Time) compilation scenarios. This project is in early stages of its development.  [The high-level engineering plan](high-level-engineering-plan.md) lists major parts that needs to come together for it to become a complete runtime for .NET Core.
 
 ## Contributing
 
