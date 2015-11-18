@@ -81,6 +81,7 @@
     <Compile Include="Compiler\RvaFieldData.cs" />
     <Compile Include="Compiler\IntrinsicMethods.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
+    <Compile Include="IL\HelperExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
