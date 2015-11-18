@@ -38,8 +38,7 @@ namespace Internal.TypeSystem.Ecma
         public CachingMetadataStringDecoder(int size)
             : base(System.Text.Encoding.UTF8)
         {
-            // Verify that the size is power of 2
-            Debug.Assert((size & (size - 1)) == 0);
+            Debug.Assert((size & (size - 1)) == 0, "The cache size must be power of 2");
 
             _table = new Entry[size];
         }
