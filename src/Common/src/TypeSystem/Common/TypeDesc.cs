@@ -127,6 +127,7 @@ namespace Internal.TypeSystem
                 case WellKnownType.Array:
                 case WellKnownType.MulticastDelegate:
                 case WellKnownType.Exception:
+                case WellKnownType.IndexOutOfRangeException:
                     flags = TypeFlags.Class;
                     break;
 

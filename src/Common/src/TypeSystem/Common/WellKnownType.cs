@@ -40,5 +40,6 @@ namespace Internal.TypeSystem
         RuntimeFieldHandle,
 
         Exception,
+        IndexOutOfRangeException,
     }
 }

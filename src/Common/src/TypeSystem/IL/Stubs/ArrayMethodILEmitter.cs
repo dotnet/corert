@@ -72,6 +72,8 @@ namespace Internal.IL.Stubs
 
             int pointerSize = _method.Context.Target.PointerSize;
 
+            var rangeExceptionLabel1 = NewCodeLabel();
+
             // TODO: type check
 
             for (int i = 0; i < _rank; i++)
@@ -85,13 +87,10 @@ namespace Internal.IL.Stubs
 
                 codeStream.EmitLdArg(i + 1);
 
-#if false
-                // TODO: generate IL to check bounds
                 // Compare with length
                 codeStream.Emit(ILOpcode.dup);
                 codeStream.EmitLdLoc(lengthLocalNum);
                 codeStream.Emit(ILOpcode.bge_un, rangeExceptionLabel1);
-#endif
 
                 // Add to the running total if we have one already
                 if (i > 0)
@@ -136,16 +135,19 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.ret);
 
-#if false
             codeStream.EmitLdc(0);
             codeStream.EmitLabel(rangeExceptionLabel1); // Assumes that there is one "int" pushed on the stack
             codeStream.Emit(ILOpcode.pop);
 
-            var tokIndexOutOfRangeCtorExcep = GetToken(GetException(kIndexOutOfRangeException).GetDefaultConstructor());
+            TypeDesc indexOutOfRangeException = _method.Context.GetWellKnownType(WellKnownType.IndexOutOfRangeException);
+            int tokIndexOutOfRangeCtorExcep = NewToken(indexOutOfRangeException.GetDefaultConstructor());
+#if false
             codeStream.EmitLabel(rangeExceptionLabel);
-            codeStream.Emit(ILOpcode.newobj, tokIndexOutOfRangeCtorExcep, 0);
+#endif
+            codeStream.Emit(ILOpcode.newobj, tokIndexOutOfRangeCtorExcep);
             codeStream.Emit(ILOpcode.throw_);
 
+#if false
             if (typeMismatchExceptionLabel != null)
             {
                 var tokTypeMismatchExcepCtor = GetToken(GetException(kArrayTypeMismatchException).GetDefaultConstructor());

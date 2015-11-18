@@ -49,6 +49,7 @@ namespace ILCompiler
             "RuntimeFieldHandle",
 
             "Exception",
+            "IndexOutOfRangeException",
         };
 
         MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
