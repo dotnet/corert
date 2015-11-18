@@ -21,7 +21,9 @@ This will result in the following:
 
 *Note: Currently, the managed components and tests are executed only for Windows Ubuntu/Mac OSX support is coming soon.*
 
-# Compiling to native code using what you built#
+# Compiling .NET Core Console application to native code using using the ILCompiler you built#
+
+**Note: These instructions are currently not working - fix coming ASAP!**
 
 1. Ensure that you have installed the .NET CLI tools from [here](https://github.com/dotnet/cli/). 
 2. In the folder where you have the source file to be compiled (e.g. *HelloWorld.cs*), ensure that corresponding *project.json* file also exists. Here is an example of the same:
