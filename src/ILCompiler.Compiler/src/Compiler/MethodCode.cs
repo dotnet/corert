@@ -23,19 +23,20 @@ namespace ILCompiler
     {
         public BlockType Block;
         public int Offset;
+    }
 
     /// <summary>
     /// Various type of block.
-    /// * <see cref="Unknown"/> Not a generated block.
-    /// * <see cref="Code"/>To represent code.
-    /// * <see cref="ColdCode"/>To represent cold code (i.e. code not called frequently).
-    /// * <see cref="ROData"/>Read-only data.
     /// </summary>
     public enum BlockType : sbyte
     {
+        /// <summary>Not a generated block.</summary>
         Unknown = -1,
+        /// <summary>Represent code.</summary>
         Code = 0,
+        /// <summary>Represent cold code (i.e. code not called frequently).</summary>
         ColdCode = 1,
+        /// <summary>Read-only data.</summary>
         ROData = 2
     }
 
