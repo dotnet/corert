@@ -114,18 +114,6 @@ set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" (set __VCBuildArch=x86)
 call "!VS%__VSProductVersion%COMNTOOLS!\..\..\VC\vcvarsall.bat" %__VCBuildArch%
 
-if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
-echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
-at VS install location of previous version. Workaround is to copy DIA SDK folder from VS install location ^
-of previous version to "%VSINSTALLDIR%" and then resume build.
-:: DIA SDK not included in Express editions
-echo Visual Studio 2013 Express does not include the DIA SDK. ^
-You need Visual Studio 2013+ (Community is free).
-echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
-exit /b 1
-
-:GenVSSolution
 :: Regenerate the VS solution
 pushd "%__IntermediatesDir%"
 call "%__SourceDir%\Native\gen-buildsys-win.bat" "%__ProjectDir%\src\Native" %__VSVersion% %__BuildArch% 
