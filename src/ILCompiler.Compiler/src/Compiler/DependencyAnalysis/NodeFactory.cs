@@ -254,10 +254,33 @@ namespace ILCompiler.DependencyAnalysis
             return _methodCode.GetOrAdd(method);
         }
 
-        public ISymbolNode WellKnownEntrypoint(WellKnownEntrypoint entrypoint)
+        static readonly string[][] s_helperEntrypointNames = new string[][] {
+            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnGCStaticBase" },
+            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnNonGCStaticBase" }
+        };
+
+        static ISymbolNode[] s_helperEntrypointSymbols;
+
+        public ISymbolNode HelperEntrypoint(HelperEntrypoint entrypoint)
         {
-            MethodDesc method = _context.GetWellKnownEntryPoint(entrypoint);
-            return MethodEntrypoint(method);
+            if (s_helperEntrypointSymbols == null)
+                s_helperEntrypointSymbols = new ISymbolNode[s_helperEntrypointNames.Length];
+
+            int index = (int)entrypoint;
+
+            ISymbolNode symbol = s_helperEntrypointSymbols[index];
+            if (symbol == null)
+            {
+                var entry = s_helperEntrypointNames[index];
+
+                var type = _context.SystemModule.GetType(entry[0], entry[1]);
+                var method = type.GetMethod(entry[2], null);
+
+                symbol = MethodEntrypoint(method);
+
+                s_helperEntrypointSymbols[index] = symbol;
+            }
+            return symbol;
         }
 
         private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;
@@ -302,5 +325,11 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(StringTable, "StringTable is always generated");
         }
+    }
+
+    public enum HelperEntrypoint
+    {
+        EnsureClassConstructorRunAndReturnGCStaticBase,
+        EnsureClassConstructorRunAndReturnNonGCStaticBase,
     }
 }

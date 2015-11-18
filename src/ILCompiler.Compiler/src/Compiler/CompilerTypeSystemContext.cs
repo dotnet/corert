@@ -51,14 +51,7 @@ namespace ILCompiler
             "Exception",
         };
 
-        static readonly string[][] s_wellKnownEntrypointNames = new string[][] {
-            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnGCStaticBase" },
-            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnNonGCStaticBase" }
-        };
-
         MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
-
-        MethodDesc[] _wellKnownEntrypoints = new MethodDesc[s_wellKnownEntrypointNames.Length];
 
         EcmaModule _systemModule;
 
@@ -94,6 +87,14 @@ namespace ILCompiler
             set;
         }
 
+        public EcmaModule SystemModule
+        {
+            get
+            {
+                return _systemModule;
+            }
+        }
+
         public void SetSystemModule(EcmaModule systemModule)
         {
             _systemModule = systemModule;
@@ -108,26 +109,11 @@ namespace ILCompiler
                 type.SetWellKnownType((WellKnownType)(typeIndex + 1));
                 _wellKnownTypes[typeIndex] = type;
             }
-
-            // Initialize all well known entrypoints
-            for (int entrypointIndex = 0; entrypointIndex < _wellKnownEntrypoints.Length; entrypointIndex++)
-            {
-                MetadataType type = _systemModule.GetType(
-                    s_wellKnownEntrypointNames[entrypointIndex][0],
-                    s_wellKnownEntrypointNames[entrypointIndex][1]);
-                MethodDesc method = type.GetMethod(s_wellKnownEntrypointNames[entrypointIndex][2], null);
-                _wellKnownEntrypoints[entrypointIndex] = method;
-            }
         }
 
         public override MetadataType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _wellKnownTypes[(int)wellKnownType - 1];
-        }
-
-        public MethodDesc GetWellKnownEntryPoint(WellKnownEntrypoint entryPoint)
-        {
-            return _wellKnownEntrypoints[(int)entryPoint - 1];
         }
 
         public override object ResolveAssembly(System.Reflection.AssemblyName name)
@@ -162,6 +148,13 @@ namespace ILCompiler
 
         public EcmaModule GetModuleFromPath(string filePath)
         {
+            // This method is not expected to be called frequently. Linear search is acceptable.
+            foreach (var entry in _moduleData)
+            {
+                if (entry.Value.Path == filePath)
+                    return entry.Key;
+            }
+
             EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(filePath)));
 
             MetadataReader metadataReader = module.MetadataReader;
@@ -273,12 +266,5 @@ namespace ILCompiler
                 yield return ecmaMethod.MetadataReader.GetString(p.Name);
             }
         }
-    }
-
-    public enum WellKnownEntrypoint
-    {
-        Unknown,
-        EnsureClassConstructorRunAndReturnGCStaticBase,
-        EnsureClassConstructorRunAndReturnNonGCStaticBase,
     }
 }

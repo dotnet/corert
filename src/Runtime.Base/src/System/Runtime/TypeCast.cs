@@ -845,34 +845,41 @@ namespace System.Runtime
         static private unsafe bool ArePrimitveTypesEquivalentSize(EEType* pType1, EEType* pType2)
         {
             CorElementType sourceCorType = pType1->CorElementType;
-            int sourcePrimitiveTypeEquivalenceSize = s_CorElementTypeIntegralSizeCompareArray[(int)sourceCorType];
+            int sourcePrimitiveTypeEquivalenceSize = GetIntegralTypeMatchSize(sourceCorType);
 
             // Quick check to see if the first type is even primitive.
             if (sourcePrimitiveTypeEquivalenceSize == 0)
                 return false;
+
             CorElementType targetCorType = pType2->CorElementType;
-            int targetPrimitiveTypeEquivalenceSize = s_CorElementTypeIntegralSizeCompareArray[(int)targetCorType];
+            int targetPrimitiveTypeEquivalenceSize = GetIntegralTypeMatchSize(targetCorType);
 
             return sourcePrimitiveTypeEquivalenceSize == targetPrimitiveTypeEquivalenceSize;
         }
 
-        private unsafe static int[] ComputeCorElementTypeIntegralSizeMatchArray()
+        private unsafe static int GetIntegralTypeMatchSize(CorElementType corType)
         {
-            int[] result = new int[(int)CorElementType.ELEMENT_TYPE_MAX];
-            result[(int)CorElementType.ELEMENT_TYPE_I1] = 1;
-            result[(int)CorElementType.ELEMENT_TYPE_U1] = 1;
-            result[(int)CorElementType.ELEMENT_TYPE_I2] = 2;
-            result[(int)CorElementType.ELEMENT_TYPE_U2] = 2;
-            result[(int)CorElementType.ELEMENT_TYPE_I4] = 4;
-            result[(int)CorElementType.ELEMENT_TYPE_U4] = 4;
-            result[(int)CorElementType.ELEMENT_TYPE_I8] = 8;
-            result[(int)CorElementType.ELEMENT_TYPE_U8] = 8;
-            result[(int)CorElementType.ELEMENT_TYPE_I] = sizeof(IntPtr);
-            result[(int)CorElementType.ELEMENT_TYPE_U] = sizeof(IntPtr);
-            return result;
+            switch (corType)
+            {
+                case CorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_U1:
+                    return 1;
+                case CorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_U2:
+                    return 2;
+                case CorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_U4:
+                    return 4;
+                case CorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_U8:
+                    return 8;
+                case CorElementType.ELEMENT_TYPE_I:
+                case CorElementType.ELEMENT_TYPE_U:
+                    return sizeof(IntPtr);
+                default:
+                    return 0;
+            }
         }
-
-        private static int[] s_CorElementTypeIntegralSizeCompareArray = ComputeCorElementTypeIntegralSizeMatchArray();
 
         // copied from CorHdr.h
         internal enum CorElementType : byte

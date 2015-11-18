@@ -24,6 +24,8 @@ namespace ILCompiler
         Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        string _systemModuleName = "System.Private.CoreLib";
+
         CompilationOptions _options;
 
         CompilerTypeSystemContext _compilerTypeSystemContext;
@@ -88,6 +90,10 @@ namespace ILCompiler
                     _options.NoLineNumbers = true;
                     break;
 
+                case "systemmodule":
+                    _systemModuleName = parser.GetStringValue();
+                    break;
+
                 default:
                     throw new CommandLineException("Unrecognized option: " + parser.GetCurrentOption());
                 }
@@ -112,12 +118,15 @@ namespace ILCompiler
 
         void SingleFileCompilation()
         {
-            EcmaModule entryPointModule = GetEntryPointModule();
-            if (entryPointModule == null)
-                throw new CommandLineException("No entrypoint module");
+            List<MethodDesc> rootMethods = new List<MethodDesc>();
+            MethodDesc entryPointMethod = null;
 
-            int entryPointToken = entryPointModule.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress;
-            MethodDesc entryPointMethod = entryPointModule.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
+            EcmaModule entryPointModule = GetEntryPointModule();
+            if (entryPointModule != null)
+            {
+                int entryPointToken = entryPointModule.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress;
+                entryPointMethod = entryPointModule.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
+            }
 
             Compilation compilation = new Compilation(_compilerTypeSystemContext, _options);
             compilation.Log = Console.Out;
@@ -165,7 +174,7 @@ namespace ILCompiler
             _compilerTypeSystemContext.InputFilePaths = _inputFilePaths;
             _compilerTypeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
-            _compilerTypeSystemContext.SetSystemModule(_compilerTypeSystemContext.GetModuleForSimpleName("System.Private.CoreLib"));
+            _compilerTypeSystemContext.SetSystemModule(_compilerTypeSystemContext.GetModuleForSimpleName(_systemModuleName));
 
             // For now, we can do single file compilation only
             // TODO: Multifile
