@@ -845,7 +845,7 @@ namespace ILCompiler.CppCodeGen
                 Out.WriteLine("__reverse_pinvoke_return(&frame);");
                 Out.WriteLine("__shutdown_runtime();");
 
-                if (voidReturn) Out.WriteLine(voidReturn ? "return 0;" : "return ret;");
+                Out.WriteLine(voidReturn ? "return 0;" : "return ret;");
                 Out.WriteLine("}");
             }
 

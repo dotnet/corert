@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>toolchain.osx.10.10-x64.Microsoft.DotNet.ILCompiler.Development</id>
-    <version>1.0.0-prerelease</version>
+    <version>1.0.2-prerelease-00001</version>
     <title>Microsoft .NET Native Toolchain - Development Version</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -29,7 +29,7 @@
       <file src="../lib/libSystem.Private.CoreLib.Native.a" target="libSystem.Private.CoreLib.Native.a" />
       <file src="../System.Private.Corelib.dll" target="System.Private.Corelib.dll" />
       <file src="../ToolRuntime/*.dll" />
-      <file src="../ToolRuntime/*.so" />
+      <file src="../ToolRuntime/*.dylib" />
       <file src="../ToolRuntime/corerun" target="corerun" />
       <file src="../../../../packages/Microsoft.DiaSymReader/1.0.6/lib/portable-net45+win8/Microsoft.DiaSymReader.dll" />
   </files>

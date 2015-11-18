@@ -376,13 +376,6 @@ extern "C" void RhRethrow()
     throw "RhRethrow";
 }
 
-#ifdef CPPCODEGEN
-extern "C" void RhpBulkWriteBarrier()
-{
-    throw 42;
-}
-#endif
-
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
 
