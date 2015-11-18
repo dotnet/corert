@@ -1,4 +1,4 @@
-_Please ensure that [pre-requisites](Pre-requisites-for-Building.md) are installed for a successful build of the repo._
+_Please ensure that [pre-requisites](prerequisites-for-building.md) are installed for a successful build of the repo._
 
 _Note_:
 

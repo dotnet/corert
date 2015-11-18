@@ -1,6 +1,6 @@
 ##Runtime
 
-- Build managed parts 
+- Build managed parts
 	- Build language source to IL
 	- Compile IL assembly with ILToNative
 - Unix
@@ -36,14 +36,14 @@
 ##Reflection
 
 - Produce compact metadata in the final binary
-- Produce mapping tables 
+- Produce mapping tables
 - Runtime consumption
 
 ##Interop
 
 - Move MCG [Marshaling Code Generator](http://blogs.msdn.com/b/dotnet/archive/2014/06/13/net-native-deep-dive-debugging-into-interop-code.aspx) to github
 - Package MCG as standalone tool
-- Integrate MCG with ILToNative toolchain 
+- Integrate MCG with ILToNative toolchain
 
 ##Framework
 
