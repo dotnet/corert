@@ -19,89 +19,89 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\TypeSystem\CodeGen\MethodDesc.CodeGen.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\AlignmentHelper.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\ByRefType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldForInstantiatedType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldDesc.FieldLayout.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\FieldLayoutAlgorithm.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedMethod.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\InstantiatedType.Interfaces.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.FieldLayout.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataType.Interfaces.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MethodForInstantiatedType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\ParameterizedType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\PointerType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\SignatureVariable.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TargetDetails.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\ThreadSafeFlags.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeCast.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeFlags.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeHashingAlgorithms.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeSystemContext.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeSystemHelpers.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\WellKnownType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\MethodDesc.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\VirtualFunctionResolution.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.MethodImpls.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\TypeDesc.Interfaces.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\DefType.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\DefType.FieldLayout.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs" />
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaField.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ArrayType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ByRefType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\FieldForInstantiatedType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\FieldDesc.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\FieldDesc.FieldLayout.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\FieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedMethod.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.Interfaces.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.FieldLayout.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.Interfaces.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodForInstantiatedType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ParameterizedType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\PointerType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\SignatureVariable.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TargetDetails.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ThreadSafeFlags.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeCast.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeFlags.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeHashingAlgorithms.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemContext.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemHelpers.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualFunctionResolution.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.MethodImpls.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.Interfaces.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.FieldLayout.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.cs">
       <Link>Ecma\EcmaField.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaGenericParameter.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.cs">
       <Link>Ecma\EcmaGenericParameter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaMethod.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaMethod.cs">
       <Link>Ecma\EcmaMethod.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaModule.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.cs">
       <Link>Ecma\EcmaModule.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaSignatureParser.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaSignatureParser.cs">
       <Link>Ecma\EcmaSignatureParser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.cs">
       <Link>Ecma\EcmaType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
       <Link>Ecma\EcmaType.MethodImpls.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\EcmaType.Interfaces.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaType.Interfaces.cs">
       <Link>Ecma\EcmaType.Interfaces.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\MetadataExtensions.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\MetadataExtensions.cs">
       <Link>Ecma\MetadataExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\IMetadataStringDecoderProvider.cs">
       <Link>Ecma\IMetadataStringDecoderProvider.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Ecma\CachingMetadataStringDecoder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
       <Link>MethodDesc.Interop.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\NoMetadata\NoMetadataType.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\NoMetadata\NoMetadataType.cs">
       <Link>NoMetadata\NoMetadataType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\InstantiatedMethod.CodeGen.cs">

@@ -83,45 +83,45 @@
     <Compile Include="CppCodeGen\CppWriter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\EcmaMethodIL.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\ILOpcode.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs">
       <Link>IL\ILOpcode.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\ILProvider.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILProvider.cs">
       <Link>IL\ILProvider.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\InstantiatedMethodIL.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
       <Link>IL\InstantiatedMethodIL.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\MethodIL.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\MethodILDebugView.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs">
       <Link>IL\MethodILDebugView.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\ILDisassember.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs">
       <Link>IL\ILDisassember.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\ILImporter.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ArrayMethodILEmitter.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ArrayMethodILEmitter.cs">
       <Link>IL\Stubs\ArrayMethodILEmitter.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\CalliIntrinsic.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliIntrinsic.cs">
       <Link>IL\Stubs\CalliIntrinsic.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\DelegateThunks.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\TypeSystem\IL\Stubs\ILEmitter.cs">
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
   </ItemGroup>
