@@ -6,7 +6,7 @@ During dotnet-compile-native, when using VS 2015 RTM,
 * LINK : fatal error LNK1101: incorrect MSPDB140.DLL version; recheck installation of this product
 
 If you are using VS 2015 Update 1, no action is needed.
-* Please use the workaround here: https://connect.microsoft.com/VisualStudio/feedback/details/1651822/incorrect-mspdb140-dll-version-picked-in-x86-x64-cross-tools-environment
+* Please use the workaround [here](https://connect.microsoft.com/VisualStudio/feedback/details/1651822/incorrect-mspdb140-dll-version-picked-in-x86-x64-cross-tools-environment).
 
 # Pre Checkin Tests
 
@@ -31,25 +31,25 @@ TOTAL: 3 PASSED: 3
 ```
 
 # External Tests
-Once you pull PR #217 and https://github.com/dotnet/coreclr/pull/1985 goes in, the flow for running CoreCLR tests is as follows:
+
+*Note: These are currently supported only on Windows and Ubuntu/Mac OSX support is coming soon.*
 
 ## Setup
 * Clone (or pull into) repo: dotnet/coreclr into coreclr
 * Clone (or pull into) repo: dotnet/corert into corert
 * Open a new command prompt:
-```
-cd corert
-build.cmd
-cd tests
-runtest.cmd /?
 
-runtest.cmd [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
-    /mode         : Compilation mode. Specify cpp/protojit. Default: protojit
-    /runtest      : Should just compile or run compiled bianry? Specify: true/false. Default: true.
-    /extrepo      : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
-    /buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
-    /nocache      : When restoring toolchain packages, obtain them from the feed not the cache.
-```
+> cd corert
+> build.cmd
+> cd tests
+> runtest.cmd /?
+> 
+> runtest.cmd [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
+> /mode : Compilation mode. Specify cpp/RyuJIT. Default: RyuJIT
+> /runtest  : Should just compile or run compiled bianry? Specify: true/false. Default: true.
+> /extrepo  : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
+> /buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
+> /nocache  : When restoring toolchain packages, obtain them from the feed not the cache.
 
 ## External Repo (CoreCLR Testing)
 **Test ILToNative compilation only**

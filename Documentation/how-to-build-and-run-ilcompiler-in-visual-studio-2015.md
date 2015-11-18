@@ -12,10 +12,10 @@ _Note_:
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r c:\corert.external\Runtime\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.obj`
+`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r <repo_root>\bin\tests\package\toolchain.<OS>-<Arch>.Microsoft.DotNet.App.1.0.0-prerelease\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.obj`
 
-  - Copy c:\corert.external\compiler\protojit.* to c:\corert\src\ILCompiler\desktop\bin\Debug
-  - Copy c:\corert.external\compiler\objwriter.* to c:\corert\src\ILCompiler\desktop\bin\Debug
+  - Copy ryujit.dll from `<repo_root>\bin\tests\package\toolchain.<OS>-<Arch>.Microsoft.DotNet.RyuJIT.*` to `c:\corert\src\ILCompiler\desktop\bin\Debug`
+  - Copy objectwriter.dll from `<repo_root>\bin\tests\package\toolchain.<OS>-<Arch>.Microsoft.DotNet.ObjectWriter.*` to `c:\corert\src\ILCompiler\desktop\bin\Debug`
   - Build & run using **F5**
     - This will run the compiler. The output is c:\corert\src\ILCompiler\reproNative\repro.obj file.
 
@@ -37,9 +37,9 @@ _Note_:
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r c:\corert.external\Runtime\*.dll -out C:\corert\src\ILCompiler\reproNative\repro.cpp -cpp`
+`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r <repo_root>\bin\tests\package\toolchain.<OS>-<Arch>.Microsoft.DotNet.App.1.0.0-prerelease\*.dlll -out C:\corert\src\ILCompiler\reproNative\repro.cpp -cpp`
 
-    - -nolinenumbers command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
+    - `-nolinenumbers` command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
 
   - Build & run using **F5**
     - This will run the compiler. The output is C:\corert\src\ILCompiler\reproNative\repro.cpp file.
@@ -50,21 +50,3 @@ _Note_:
 
   - Set breakpoint at repro::Program::Main in main.cpp
   - Build, run & step through as with any other C++ program
-
-### Using Microsoft.Dotnet.ILCompiler Nuget package
-
-Building the repo from commandline will produce two nuget packages under <repo_root>\bin\Product\<OS>.<Arch>.<Config>\.nuget that contain the ILCompiler Toolchain and all its dependencies:
-
-1. Microsoft.Dotnet.ILCompiler.1.0.0-prerelease
-2. Microsoft.Dotnet.ILCompiler.Development.1.0.0-prerelease
-
-The latter package contains PDBs, while the former does not.
-
-Once you have expanded the contents of a nuget package on your disk, you can invoke the ILCompiler from command-line. Assuming you are in the folder where the nuget package was expanded, execute the following to generate the CPPCodegen, as an example:
-
-`ilc <path to repro.exe> -r %CD%\sdk\System.Private.Corelib.dll -out <path to output cpp file> -cpp -r %AppDepSdk%\*.dll`
-
-### Using Nuget packages from MyGet
-
-To invoke ILC, its NuGet dependencies need to be resolved. Please see the topic on for NuGet package information:
-https://github.com/dotnet/corert/wiki/Nuget-Dependencies-for-the-Toolchain

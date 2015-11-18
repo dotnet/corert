@@ -1,7 +1,5 @@
 #NuGet dependencies to use ILC
 
-We will move to NuGet eventually, for now, the following packages are available from the myget feed URL:
-https://www.myget.org/F/dotnet/auth/3e4f1dbe-f43a-45a8-b029-3ad4d25605ac/api/v2
 
 ##Root redirection packages
 
