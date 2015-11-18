@@ -16,58 +16,51 @@ This will result in the following:
 - Build native and managed components of ILCompiler
 - Build tests
 - Restore dependent nuget packages into
-`<repo_root>\bin\tests\package\install`, including the ILCompiler package built
+`<repo_root>\bin\tests\package\install`, including the *Microsoft.DotNet.ILCompiler* package built
 - Run tests
 
-Note: Currently, the managed components and tests are executed only for Windows. Enabling them for Linux and Mac OSX is tracked by [GH Issue 146](https://github.com/dotnet/corert/issues/146).
+*Note: Currently, the managed components and tests are executed only for Windows Ubuntu/Mac OSX support is coming soon.*
 
-# Compiling MSIL to native code #
+# Compiling to native code using what you built#
 
-Ensure that you have built the MSIL version of the assembly targeted for .NET Core. The Compilation process involves using the **dotnet-compile-native** [CLI](https://github.com/dotnet/cli) command, with explicitly specifying the various arguments. The general form of the command is as follows:
+1. Ensure that you have installed the .NET CLI tools from [here](https://github.com/dotnet/cli/). 
+2. In the folder where you have the source file to be compiled (e.g. *HelloWorld.cs*), ensure that corresponding *project.json* file also exists. Here is an example of the same:
 
-    dotnet-compile-native <arch> <build type> [one or more options]
+>     {
+>     	"compilationOptions": {
+>     	"emitEntryPoint": true
+>     	},
+>     	"dependencies": {
+>     	"System.Console": "4.0.0-beta-23419",
+>     	"Microsoft.NETCore.Runtime": "1.0.1-beta-23419",
+>     	"Microsoft.NETCore.ConsoleHost": "1.0.0-beta-23419",
+>     	"Microsoft.NETCore.TestHost": "1.0.0-beta-23419"
+>     	},
+>     	"frameworks": {
+>     	"dnxcore50": {}
+>     	}
+>     }
 
-- **arch** is currently supported to be *x64*.
-- **Build Type** can be *Debug* or *Release*.
+3. Ensure that you have done a repo build per the instructions above.
+4. Extract the contents of `<repo_root>\bin\Product\<OS>.<arch>.<Config>\.nuget\toolchain.<OS>-<Arch>.Microsoft.DotNet.ILCompiler.Development.1.0.0-prerelease` to a folder (e.g. c:\ilc)
+5. Native executable will be dropped in `./bin/[configuration]/[framework]/native/[binary name]` folder.
 
-Here are the various options supported by the command - each option is space separated by its value:
+*Note: On Windows, please ensure you have VS 2015 installed to get the native toolset and work within a VS 2015 x64 Native Tools command prompt.*
 
-- **/in** *absolute path to MSIL assembly to be compiled*. Required.
-- **/out** *absolute path to the native executable to be generated*. Required.
-- **/mode** *the compilation mode and can be cpp (default) or protojit*. Optional.
-- **/appdepsdk** *absolute path to the folder where Microsoft.DotNet.AppDep package was restored*. Required.
-- **/codegenpath** *absolute path to the folder where Microsoft.DotNet.ProtoJit package was restored*. Specify only when mode is protojit.
-- **/objgenpath** *absolute path to the folder where Microsoft.DotNet.ObjectWriter package was restored*. Specify only when mode is protojit.
-- **/linklibs** *Additional import libraries to be specified to the platform linker. Multiple libraries should be enclosed within double-quotes and space separated.* Optional.
+## Using RyuJIT ##
 
+This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github.com/dotnet/coreclr), for compiling the application. From the shell/command prompt, issue the following commands to generate the native executable:
 
-## Using non-CPP codegenerator (e.g. ProtoJIT) ##
+    dotnet restore
+    dotnet compile --native --ilcpath c:\ilc
 
-Issue the following command to compile
-> *reporoot*\bin\tests\package\install\toolchain.Windows_NT-x64.Microsoft.DotNet.ILCompiler.Development.1.0.0-prerelease\dotnet-compile-native.bat **x64** **debug** **/appdepsdk** *reporoot*\bin\tests\package\install\Microsoft.DotNet.AppDep.1.0.0-prerelease **/mode** protojit **/objgenpath** *reporoot*\bin\tests\package\install\Microsoft.DotNet.ObjectWriter.1.0.0-prerelease **/codegenpath** *reporoot*\bin\tests\package\install\Microsoft.DotNet.ProtoJit.1.0.0-prerelease **/in** d:\gh\compile\app\repro.exe **/out** d:\gh\compile\app\rnjit.exe
-
-You will see the output below:
-
-    Generating app obj file
-    Generating native executable
-    Build successfully completed.
-
-    d:\GH\compile\app>rnjit.exe
-    Hello world
-
+In this approach, ILCompiler uses the platform specific linker to perform the final module linking.
 
 ## Using CPP codegenerator ##
 
+This approach uses platform specific C++ compiler and linker for compiling/linking the application. 
 
-Issue the following command to compile
-> *reporoot*\bin\tests\package\install\toolchain.Windows_NT-x64.Microsoft.DotNet.ILCompiler.Development.1.0.0-prerelease\dotnet-compile-native.bat **x64** **debug** **/appdepsdk** *reporoot*\bin\tests\package\install\Microsoft.DotNet.AppDep.1.0.0-prerelease **/mode** cpp **/in** d:\gh\compile\app\repro.exe **/out** d:\gh\compile\app\rncpp.exe
+From the shell/command prompt, issue the following commands to generate the native executable:
 
-You will see the output below:
-
-    Generating source file
-    Compiling application source files
-    Generating native executable
-    Build successfully completed.
-
-    d:\GH\compile\app>rncpp.exe
-    Hello world
+    dotnet restore
+    dotnet compile --native --cpp --ilcpath c:\ilc

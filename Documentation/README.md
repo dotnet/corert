@@ -1,10 +1,6 @@
-# Intro to CoreRT Repo
+# Introduction to CoreRT Repo
 
-CoreRT is A .NET Core runtime optimized for AoT (Ahead of Time Compilation) scenarios.  It is a minimal runtime to allow for things like Garbage Collection for .NET Native.
-
-This repo also contains the .NET Native toolchain, which allows for compiling .NET Core apps into native binaries.
-
-This project is in early stages of its development.  [The high-level engineering plan](High-level-engineering-plan.md) lists major parts that needs to come together for it to become a complete .NET Core runtime.
+This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of Time) compilation scenarios. This project is in early stages of its development.  [The high-level engineering plan](High-level-engineering-plan.md) lists major parts that needs to come together for it to become a complete runtime for .NET Core.
 
 ## Contributing
 
