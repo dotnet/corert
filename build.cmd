@@ -9,10 +9,6 @@ set __BuildOS=Windows_NT
 :: Default to highest Visual Studio version available
 set __VSVersion=vs2015
 
-:: Default to highest Visual Studio version available
-if defined VS120COMNTOOLS set __VSVersion=vs2013
-if defined VS140COMNTOOLS set __VSVersion=vs2015
-
 :: Set the various build properties here so that CMake and MSBuild can pick them up
 set "__ProjectDir=%~dp0"
 :: remove trailing slash
@@ -83,21 +79,19 @@ for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "&
 :CheckVS
 
 set __VSProductVersion=
-if /i "%__VSVersion%" == "vs2013" set __VSProductVersion=120
 if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
-
 
 :: Check presence of VS
 if defined VS%__VSProductVersion%COMNTOOLS goto CheckVSExistence
-echo Visual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo Visual Studio 2015 (Community is free) is a pre-requisite to build this repository.
+echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
 :CheckVSExistence
-:: Does VS 2013 or VS 2015 really exist?
+:: Does VS VS 2015 really exist?
 if exist "!VS%__VSProductVersion%COMNTOOLS!\..\IDE\devenv.exe" goto CheckMSBuild
-echo Visual Studio 2013+ (Community is free) is a pre-requisite to build this repository.
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo Visual Studio 2015 (Community is free) is a pre-requisite to build this repository.
+echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
 :CheckMSBuild
@@ -105,16 +99,9 @@ exit /b 1
 ::       The issue is that we extend the build with our own targets which
 ::       means that that rebuilding cannot successfully delete the task
 ::       assembly. 
-if /i "%__VSVersion%" =="vs2015" goto MSBuild14
-set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-goto :CheckMSBuild14
-:MSBuild14
 set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-:CheckMSBuild14
 if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
+if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1
 
 :: All set to commence the build
 
@@ -135,7 +122,7 @@ of previous version to "%VSINSTALLDIR%" and then resume build.
 :: DIA SDK not included in Express editions
 echo Visual Studio 2013 Express does not include the DIA SDK. ^
 You need Visual Studio 2013+ (Community is free).
-echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
+echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
 exit /b 1
 
 :GenVSSolution
