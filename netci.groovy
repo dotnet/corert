@@ -1,6 +1,5 @@
 // Import the utility functionality.
 import jobs.generation.Utilities;
-import jobs.generation.InternalUtilities;
 
 // Defines a the new of the repo, used elsewhere in the file
 def project = 'dotnet/corert' 
@@ -29,7 +28,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
             // the second parameter is the base name for the job, and the last parameter
             // is a boolean indicating whether the job will be a PR job.  If true, the
             // suffix _prtest will be appended.
-            def newJobName = InternalUtilities.getFullJobName(project, lowercaseConfiguration, isPR)+ '_' + os.toLowerCase()
+            def newJobName = Utilities.getFullJobName(project, lowercaseConfiguration, isPR)+ '_' + os.toLowerCase()
             def buildString = "";
 
             // Calculate the build commands
@@ -77,7 +76,7 @@ def osList = ['Ubuntu', 'OSX', 'Windows_NT']
             //   5. Adds standard parameters for PR and push jobs.
             //      These allow PR jobs to be used for simple private testing, for instance.
             // See the documentation for this function to see additional optional parameters.
-            InternalUtilities.simpleInnerLoopJobSetup(newJob, project, isPR, "${os} ${configuration}")
+            Utilities.simpleInnerLoopJobSetup(newJob, project, isPR, "${os} ${configuration}")
         }
     }
 }
