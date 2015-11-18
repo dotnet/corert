@@ -118,7 +118,6 @@ if "%__StatusPassed%"=="1" (
     call :DeleteFile "!__SourceFile!.exe"
 
     set __VSProductVersion=140
-    set __VCBuildArch=x86_amd64
     setlocal
     echo.
     echo Begin managed build of !__SourceFile!.cs

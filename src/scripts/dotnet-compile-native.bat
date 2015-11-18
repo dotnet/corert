@@ -67,10 +67,10 @@ if "%__CompileMode%" == "" (
 )
 
 REM Set path contain Runtime.lib/PortableRuntime.lib and System.Private.Corelib.dll
-set __LibPath=%__ILCompiler%\sdk
+set __LibPath=%__ILCompiler%
 
 REM Initialize environment to invoke native tools
-call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
+call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
 
 REM Extract the name of the MSIL file we are compiling
 set AssemblyFileName=
@@ -112,7 +112,7 @@ REM Setup the path to include the location of the codegenerator and binary file 
 REM so that they can be located by the OS loader.
 set path=%__CodegenPath%;%__ObjgenPath%;%path%
 echo Generating app obj file
-"%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\sdk\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out %ObjFileName% > %__LogFilePath%\ILCompiler.App.log
+"%__ILCompiler%\corerun.exe" "%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out %ObjFileName% > %__LogFilePath%\ILCompiler.App.log
 endlocal
 
 set EXITCode=%ERRORLEVEL%
@@ -139,7 +139,7 @@ call :DeleteFile "%__Outfile%"
 
 REM Generate the CPP file for the MSIL assembly
 echo Generating source file
-"%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\sdk\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out "%CPPFileName%" -cpp > %__LogFilePath%\ILCompiler.MSILToCpp.log
+"%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out "%CPPFileName%" -cpp > %__LogFilePath%\ILCompiler.MSILToCpp.log
 if ERRORLEVEL 1 (
 	echo Unable to generate CPP file.
 	goto :FailedExit
@@ -163,7 +163,7 @@ if "%__BuildType%" == "Release" (
 REM Now compile the CPP file to platform specific executable.
 
 echo Compiling application source files
-"%VCINSTALLDIR%\bin\x86_amd64\CL.exe" /c /I %__AppDepSdk%\CPPSdk\Windows_NT /I %__AppDepSdk%\CPPSdk\ %CPPDefines% /Fo"%ObjFileName%" /Gd /TP /wd4477 /errorReport:prompt %CPPFileName% > %__LogFilePath%\ILCompiler.App.log
+"CL.exe" /c /I %__AppDepSdk%\CPPSdk\Windows_NT /I %__AppDepSdk%\CPPSdk\ %CPPDefines% /Fo"%ObjFileName%" /Gd /TP /wd4477 /errorReport:prompt %CPPFileName% > %__LogFilePath%\ILCompiler.App.log
 if ERRORLEVEL 1 (
 	echo Unable to compile app source file.
 	goto :FailedExit
@@ -171,7 +171,7 @@ if ERRORLEVEL 1 (
 
 :LinkObj
 echo Generating native executable
-"%VCINSTALLDIR%\bin\x86_amd64\link.exe" /ERRORREPORT:PROMPT /OUT:"%__Outfile%" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib %libRuntime% %libBootstrapper% %__LinkLibs% /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /Debug /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT %LinkOpts% /MACHINE:%__BuildArch% "%ObjFileName%" > %__LogFilePath%\ILCompiler.Link.log
+"link.exe" /ERRORREPORT:PROMPT /OUT:"%__Outfile%" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib %libRuntime% %libBootstrapper% %__LinkLibs% /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /Debug /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT %LinkOpts% /MACHINE:%__BuildArch% "%ObjFileName%" > %__LogFilePath%\ILCompiler.Link.log
 if ERRORLEVEL 1 (
 	echo Unable to link native executable.
 	goto :FailedExit

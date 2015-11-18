@@ -19,21 +19,22 @@
   </metadata>
   <files>
     <file src="..\ilc.dll" target="ilc.dll" />
+    <file src="..\ilc.exe" target="ilc.exe" />
     <file src="..\ilc.pdb" target="pdb\ilc.pdb" />
     <file src="..\ILCompiler.Compiler.dll" target="ILCompiler.Compiler.dll" />
-    <file src="..\ILCompiler.Compiler.pdb" target="pdb\ILCompiler.Compiler.pdb" />
+    <file src="..\ILCompiler.Compiler.pdb" target="ILCompiler.Compiler.pdb" />
     <file src="..\ILCompiler.DependencyAnalysisFramework.dll" target="ILCompiler.DependencyAnalysisFramework.dll" />
-    <file src="..\ILCompiler.DependencyAnalysisFramework.pdb" target="pdb\ILCompiler.DependencyAnalysisFramework.pdb" />
+    <file src="..\ILCompiler.DependencyAnalysisFramework.pdb" target="ILCompiler.DependencyAnalysisFramework.pdb" />
     <file src="..\ILCompiler.TypeSystem.dll" target="ILCompiler.TypeSystem.dll" />
-    <file src="..\ILCompiler.TypeSystem.pdb" target="pdb\ILCompiler.TypeSystem.pdb" />
-    <file src="..\lib\Runtime.lib" target="sdk\Runtime.lib" />
-    <file src="..\lib\PortableRuntime.lib" target="sdk\PortableRuntime.lib" />
-    <file src="..\lib\bootstrapper.lib" target="sdk\bootstrapper.lib" />
-    <file src="..\lib\bootstrappercpp.lib" target="sdk\bootstrappercpp.lib" />
-    <file src="..\System.Private.Corelib.dll" target="sdk\System.Private.Corelib.dll" />
-    <file src="..\System.Private.Corelib.pdb" target="pdb\System.Private.Corelib.pdb" />
+    <file src="..\ILCompiler.TypeSystem.pdb" target="ILCompiler.TypeSystem.pdb" />
+    <file src="..\lib\Runtime.lib" target="Runtime.lib" />
+    <file src="..\lib\PortableRuntime.lib" target="PortableRuntime.lib" />
+    <file src="..\lib\bootstrapper.lib" target="bootstrapper.lib" />
+    <file src="..\lib\bootstrappercpp.lib" target="bootstrappercpp.lib" />
+    <file src="..\System.Private.Corelib.dll" target="System.Private.Corelib.dll" />
+    <file src="..\System.Private.Corelib.pdb" target="System.Private.Corelib.pdb" />
     <file src="..\toolruntime\*.dll" />
-    <file src="..\toolruntime\coreconsole.exe" target="ilc.exe" />
+    <file src="..\toolruntime\corerun.exe" target="corerun.exe" />
     <file src="..\..\..\..\packages\Microsoft.DiaSymReader\1.0.6\lib\portable-net45+win8\Microsoft.DiaSymReader.dll" />
     <file src="..\..\..\..\src\scripts\dotnet-compile-native.bat" />
   </files>
