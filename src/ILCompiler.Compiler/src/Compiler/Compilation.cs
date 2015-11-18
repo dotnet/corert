@@ -391,7 +391,7 @@ namespace ILCompiler
                     for (int i = 0; i < methodCode.Relocs.Length; i++)
                     {
                         // TODO: Arbitrary relocs
-                        if (methodCode.Relocs[i].Block != 0)
+                        if (methodCode.Relocs[i].Block != BlockType.Code)
                             throw new NotImplementedException();
 
                         int offset = methodCode.Relocs[i].Offset;
@@ -430,7 +430,7 @@ namespace ILCompiler
                         {
                             var blockRelativeTarget = (BlockRelativeTarget)target;
                             // TODO: Arbitrary block relative relocs
-                            if (blockRelativeTarget.Block != 2)
+                            if (blockRelativeTarget.Block != BlockType.ROData)
                                 throw new NotImplementedException();
                             targetNode = readOnlyDataBlob;
                         }

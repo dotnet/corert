@@ -21,14 +21,29 @@ namespace ILCompiler
 
     class BlockRelativeTarget
     {
-        public sbyte Block;
+        public BlockType Block;
         public int Offset;
+    }
+
+    /// <summary>
+    /// Various type of block.
+    /// </summary>
+    public enum BlockType : sbyte
+    {
+        /// <summary>Not a generated block.</summary>
+        Unknown = -1,
+        /// <summary>Represent code.</summary>
+        Code = 0,
+        /// <summary>Represent cold code (i.e. code not called frequently).</summary>
+        ColdCode = 1,
+        /// <summary>Read-only data.</summary>
+        ROData = 2
     }
 
     struct Relocation
     {
         public ushort RelocType;
-        public sbyte Block; // Code = 0, ColdCode = 1, ROData = 2
+        public BlockType Block;
         public int Offset;
         public Object Target;
         public int Delta;

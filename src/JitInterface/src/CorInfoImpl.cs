@@ -1989,14 +1989,14 @@ namespace Internal.JitInterface
 
         List<Relocation> _relocs;
 
-        int findKnownBlock(void *location, out int offset)
+        BlockType findKnownBlock(void *location, out int offset)
         {
             fixed (byte * pCode = _code)
             {
                 if (pCode <= (byte*)location && (byte*)location < pCode + _code.Length)
                 {
                     offset = (int)((byte*)location - pCode);
-                    return 0;
+                    return BlockType.Code;
                 }
             }
 
@@ -2007,7 +2007,7 @@ namespace Internal.JitInterface
                     if (pColdCode <= (byte*)location && (byte*)location < pColdCode + _coldCode.Length)
                     {
                         offset = (int)((byte*)location - pColdCode);
-                        return 1;
+                        return BlockType.ColdCode;
                     }
                 }
             }
@@ -2019,13 +2019,13 @@ namespace Internal.JitInterface
                     if (pROData <= (byte*)location && (byte*)location < pROData + _roData.Length)
                     {
                         offset = (int)((byte*)location - pROData);
-                        return 2;
+                        return BlockType.ROData;
                     }
                 }
             }
 
             offset = 0;
-            return -1;
+            return BlockType.Unknown;
         }
 
         void recordRelocation(IntPtr _this, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
@@ -2034,13 +2034,13 @@ namespace Internal.JitInterface
 
             reloc.RelocType = fRelocType;
 
-            int locationBlock = findKnownBlock(location, out reloc.Offset);
-            Debug.Assert(locationBlock >= 0);
-            reloc.Block = (sbyte)locationBlock;
+            BlockType locationBlock = findKnownBlock(location, out reloc.Offset);
+            Debug.Assert(locationBlock == BlockType.Code || locationBlock == BlockType.ColdCode || locationBlock == BlockType.ROData, "Known block");
+            reloc.Block = locationBlock;
 
             int targetOffset;
-            int targetBlock = findKnownBlock(target, out targetOffset);
-            if (targetBlock < 0)
+            BlockType targetBlock = findKnownBlock(target, out targetOffset);
+            if (targetBlock == BlockType.Unknown)
             {
                 // Reloc points to something outside of the generated blocks
                 reloc.Target = HandleToObject((IntPtr)target);
@@ -2050,7 +2050,7 @@ namespace Internal.JitInterface
                 // Target is relative to one of the blocks
                 reloc.Target = new BlockRelativeTarget
                 {
-                    Block = (sbyte)targetBlock,
+                    Block = targetBlock,
                     Offset = targetOffset
                 };
             }
