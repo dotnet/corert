@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>toolchain.osx.10.10-x64.Microsoft.DotNet.ILCompiler</id>
-    <version>1.0.0-prerelease</version>
+    <version>1.0.2-prerelease-00001</version>
     <title>Microsoft .NET Native Toolchain</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
@@ -15,6 +15,8 @@
     <copyright>Copyright &#169; Microsoft Corporation</copyright>
     <dependencies>
         <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
+        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.3-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.RyuJit" version="1.0.1-prerelease-00001" />
         <dependency id="System.AppContext" version="4.0.0" />
         <dependency id="System.Collections" version="4.0.10" />
         <dependency id="System.Collections.Concurrent" version="4.0.10" />

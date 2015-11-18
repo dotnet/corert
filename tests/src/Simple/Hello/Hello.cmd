@@ -1,7 +1,7 @@
 @echo off
 setlocal
 set ErrorCode=100
-for /f "usebackq delims=;" %%F in (`%~dp0\%~n0.compiled.exe`) do (
+for /f "usebackq delims=;" %%F in (`%~dp0\bin\Debug\dnxcore50\native\%~n0.exe`) do (
     if "%%F"=="Hello world" set ErrorCode=0
 )
 IF "%ErrorCode%"=="0" (

@@ -364,7 +364,7 @@ namespace ILCompiler
             {
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
                 string methodName = method.ToString();
-                Log.WriteLine("Compiling " + methodName);
+                Log.WriteLine("Compiling> " + methodName);
 
                 var methodIL = _ilProvider.GetMethodIL(method);
                 if (methodIL == null)

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>toolchain.osx.10.10-x64.Microsoft.DotNet.ILCompiler.Development</id>
-    <version>1.0.0-prerelease</version>
+    <version>1.0.2-prerelease-00001</version>
     <title>Microsoft .NET Native Toolchain - Development Version</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>

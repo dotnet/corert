@@ -40,9 +40,10 @@ exit /b 2
 
 setlocal EnableDelayedExpansion
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
-set __BinDir=%CoreRT_TestRoot%..\bin\tests
+set __TestBinDir=%CoreRT_TestRoot%..\bin\tests
+set __CliDir=%CoreRT_TestRoot%..\bin\tools\cli\bin
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
-set __NuPkgInstallDir=%__BinDir%\package
+set __NuPkgInstallDir=%__TestBinDir%\package
 set __BuiltNuPkgDir=%CoreRT_TestRoot%..\bin\Product\%__BuildStr%\.nuget
 
 set __PackageRestoreCmd=restore.cmd
@@ -66,7 +67,7 @@ if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrt.lib
 )
 
-echo. > %__BinDir%\testResults.tmp
+echo. > %__TestBinDir%\testResults.tmp
 
 set /a __TotalTests=0
 set /a __PassedTests=0
@@ -74,21 +75,21 @@ for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
-    if exist "!__SourceFolder!\!__SourceFileName!.cs" (
+    if exist "!__SourceFolder!\project.json" (
         call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
         set /a __TotalTests=!__TotalTests!+1
-    ) else (echo !__SourceFolder!\!__SourceFileName!)
+    )
 )
 set /a __FailedTests=%__TotalTests%-%__PassedTests%
 
-echo ^<?xml version="1.0" encoding="utf-8"?^> > %__BinDir%\testResults.xml
-echo ^<assemblies^>  >> %__BinDir%\testResults.xml
-echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__BinDir%\testResults.xml
-echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__BinDir%\testResults.xml
-type %__BinDir%\testResults.tmp >> %__BinDir%\testResults.xml
-echo ^</collection^>  >> %__BinDir%\testResults.xml
-echo ^</assembly^>  >> %__BinDir%\testResults.xml
-echo ^</assemblies^>  >> %__BinDir%\testResults.xml
+echo ^<?xml version="1.0" encoding="utf-8"?^> > %__TestBinDir%\testResults.xml
+echo ^<assemblies^>  >> %__TestBinDir%\testResults.xml
+echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__TestBinDir%\testResults.xml
+echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__TestBinDir%\testResults.xml
+type %__TestBinDir%\testResults.tmp >> %__TestBinDir%\testResults.xml
+echo ^</collection^>  >> %__TestBinDir%\testResults.xml
+echo ^</assembly^>  >> %__TestBinDir%\testResults.xml
+echo ^</assemblies^>  >> %__TestBinDir%\testResults.xml
 
 echo.
 set "__ConsoleOut=TOTAL: %__TotalTests% PASSED: %__PassedTests%"
@@ -110,23 +111,13 @@ if "%__StatusPassed%"=="1" (
     set __SourceFileName=%~2
     set __CompileLogPath=%~3
     if not exist "!__CompileLogPath!" (mkdir !__CompileLogPath!)
-    endlocal
     set __SourceFile=!__SourceFolder!\!__SourceFileName!
-    call :DeleteFile "!__SourceFile!.S"
-    call :DeleteFile "!__SourceFile!.compiled.exe"
-    call :DeleteFile "!__SourceFile!.obj"
-    call :DeleteFile "!__SourceFile!.exe"
 
-    set __VSProductVersion=140
     setlocal
-    echo.
-    echo Begin managed build of !__SourceFile!.cs
-    call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
-    csc.exe /nologo /noconfig /unsafe+ /nowarn:1701,1702,2008 /langversion:5 /nostdlib+ /errorreport:prompt /warn:4 /define:TRACE;DEBUG;SIGNED /errorendlocation /preferreduilang:en-US /reference:..\packages\System.Collections\4.0.0\ref\dotnet\System.Collections.dll /reference:..\packages\System.Console\4.0.0-beta-23419\ref\dotnet\System.Console.dll /reference:..\packages\System.Diagnostics.Debug\4.0.0\ref\dotnet\System.Diagnostics.Debug.dll /reference:..\packages\System.Globalization\4.0.0\ref\dotnet\System.Globalization.dll /reference:..\packages\System.IO\4.0.10\ref\dotnet\System.IO.dll /reference:..\packages\System.IO.FileSystem\4.0.0\ref\dotnet\System.IO.FileSystem.dll /reference:..\packages\System.IO.FileSystem.Primitives\4.0.0\ref\dotnet\System.IO.FileSystem.Primitives.dll /reference:..\packages\System.Reflection\4.0.0\ref\dotnet\System.Reflection.dll /reference:..\packages\System.Reflection.Extensions\4.0.0\ref\dotnet\System.Reflection.Extensions.dll /reference:..\packages\System.Reflection.Primitives\4.0.0\ref\dotnet\System.Reflection.Primitives.dll /reference:..\packages\System.Resources.ResourceManager\4.0.0\ref\dotnet\System.Resources.ResourceManager.dll /reference:..\packages\System.Runtime\4.0.20\ref\dotnet\System.Runtime.dll /reference:..\packages\System.Runtime.Extensions\4.0.10\ref\dotnet\System.Runtime.Extensions.dll /reference:..\packages\System.Runtime.Handles\4.0.0\ref\dotnet\System.Runtime.Handles.dll /reference:..\packages\System.Runtime.InteropServices\4.0.10\ref\dotnet\System.Runtime.InteropServices.dll /reference:..\packages\System.Text.Encoding\4.0.0\ref\dotnet\System.Text.Encoding.dll /reference:..\packages\System.Text.Encoding.Extensions\4.0.0\ref\dotnet\System.Text.Encoding.Extensions.dll /reference:..\packages\System.Threading\4.0.0\ref\dotnet\System.Threading.dll /reference:..\packages\System.Threading.Overlapped\4.0.0\ref\dotnet\System.Threading.Overlapped.dll /reference:..\packages\System.Threading.Tasks\4.0.10\ref\dotnet\System.Threading.Tasks.dll /debug+ /debug:full /filealign:512 /optimize- /out:!__SourceFile!.exe /target:exe /warnaserror+ /utf8output !__SourceFile!.cs
-
-    echo.
-    echo Compiling ILCompiler !__SourceFile!.exe
-    call !CoreRT_ToolchainDir!\dotnet-compile-native.bat %__BuildArch% %__BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_RyuJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in !__SourceFile!.exe /out !__SourceFile!.compiled.exe
+    
+    call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
+    %__CliDir%\dotnet restore %__SourceFolder%
+    %__CliDir%\dotnet compile --native --ilcpath %CoreRT_ToolchainDir% %__SourceFolder%
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
@@ -142,13 +133,13 @@ if "%__StatusPassed%"=="1" (
 :SkipTestRun
     if "%__SavedErrorLevel%"=="0" (
         set /a __PassedTests=%__PassedTests%+1
-        echo ^<test name="!__SourceFile!" type="Program" method="Main" result="Pass" /^> >> %__BinDir%\testResults.tmp
+        echo ^<test name="!__SourceFile!" type="Program" method="Main" result="Pass" /^> >> %__TestBinDir%\testResults.tmp
     ) ELSE (
-        echo ^<test name="!__SourceFile!" type="Program" method="Main" result="Fail"^> >> %__BinDir%\testResults.tmp
-        echo ^<failure exception-type="Exit code: %ERRORLEVEL%" ^> >> %__BinDir%\testResults.tmp
-        echo     ^<message^>See !__SourceFile!.*.log ^</message^> >> %__BinDir%\testResults.tmp
-        echo ^</failure^> >> %__BinDir%\testResults.tmp
-        echo ^</test^> >> %__BinDir%\testResults.tmp
+        echo ^<test name="!__SourceFile!" type="Program" method="Main" result="Fail"^> >> %__TestBinDir%\testResults.tmp
+        echo ^<failure exception-type="Exit code: %ERRORLEVEL%" ^> >> %__TestBinDir%\testResults.tmp
+        echo     ^<message^>See !__SourceFile!.*.log ^</message^> >> %__TestBinDir%\testResults.tmp
+        echo ^</failure^> >> %__TestBinDir%\testResults.tmp
+        echo ^</test^> >> %__TestBinDir%\testResults.tmp
     )
     goto :eof
 

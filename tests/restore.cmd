@@ -7,7 +7,7 @@ if not defined CoreRT_BuildArch ((call :Fail "Set CoreRT_BuildArch to x86/x64/ar
 if not defined CoreRT_BuildType ((call :Fail "Set CoreRT_BuildType to Debug or Release") & exit /b -1)
 
 set CoreRT_ToolchainPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.ILCompiler.Development
-set CoreRT_ToolchainVer=1.0.0-prerelease
+set CoreRT_ToolchainVer=1.0.2-prerelease-00001
 set CoreRT_AppDepSdkPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.AppDep
 set CoreRT_AppDepSdkVer=1.0.1-prerelease
 set CoreRT_RyuJitPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.RyuJit
