@@ -129,11 +129,11 @@
     <NuPkgRuntimeJson Include="$(SourceDir).nuget\runtime.json" />
 
     <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.nuspec" />
-    <NuSpecSrcs Condition="'$(OSGroup)' != 'OSX'" Include="$(SourceDir).nuget\toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
+    <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
 
     <NuSpecs Include="$(ProductPackageDir)Microsoft.DotNet.ILCompiler.nuspec" />
     <NuSpecs Include="$(ProductPackageDir)toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.nuspec" />
-    <NuSpecs Condition="'$(OSGroup)' != 'OSX'" Include="$(ProductPackageDir)toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
+    <NuSpecs Include="$(ProductPackageDir)toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
   </ItemGroup>
 
   <!-- Common nuget properties -->
