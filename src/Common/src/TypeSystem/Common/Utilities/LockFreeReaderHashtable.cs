@@ -123,7 +123,6 @@ namespace Internal.TypeSystem
         /// Create the LockFreeReaderHashtable. This hash table is designed for GetOrCreateValue
         /// to be a generally lock free api (unless an add is necessary)
         /// </summary>
-        /// <param name="comparer">Comparision and hash acquisition helper function</param>
         public LockFreeReaderHashtable()
         {
         }
