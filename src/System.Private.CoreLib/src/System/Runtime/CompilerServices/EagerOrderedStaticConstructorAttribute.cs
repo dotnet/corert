@@ -23,7 +23,7 @@ namespace System.Runtime.CompilerServices
     {
         // System.Private.TypeLoader  
         RuntimeTypeHandleEqualityComparer,
-        TypeLoaderEnvirnoment,
+        TypeLoaderEnvironment,
         SystemRuntimeTypeLoaderExports,
 
         // System.Private.CoreLib
@@ -33,6 +33,9 @@ namespace System.Runtime.CompilerServices
                            // should come before CompilerServicesClassConstructorRunnerCctor
         CompilerServicesClassConstructorRunnerCctor,
         CompilerServicesClassConstructorRunner,
+
+        // System.Private.Reflection.Execution
+        ReflectionExecution,
 
         // Interop
         InteropHeap,
