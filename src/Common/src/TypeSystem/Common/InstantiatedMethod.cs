@@ -9,10 +9,10 @@ namespace Internal.TypeSystem
 {
     public sealed partial class InstantiatedMethod : MethodDesc
     {
-        MethodDesc _methodDef;
-        Instantiation _instantiation;
+        private MethodDesc _methodDef;
+        private Instantiation _instantiation;
 
-        MethodSignature _signature;
+        private MethodSignature _signature;
 
         internal InstantiatedMethod(MethodDesc methodDef, Instantiation instantiation)
         {
@@ -39,7 +39,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        TypeDesc Instantiate(TypeDesc type)
+        private TypeDesc Instantiate(TypeDesc type)
         {
             return type.InstantiateSignature(new Instantiation(), _instantiation);
         }

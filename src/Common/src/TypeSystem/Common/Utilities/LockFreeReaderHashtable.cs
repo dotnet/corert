@@ -41,7 +41,7 @@ namespace Internal.TypeSystem
         /// hashtable should expand
         /// </summary>
         private int _count = 0;
-        
+
         /// <summary>
         /// _resizeCount represents the size at which the hashtable should resize.
         /// </summary>
@@ -98,7 +98,7 @@ namespace Internal.TypeSystem
                 return c;
             }
         }
-        
+
         /// <summary>
         /// Generate a somewhat independent hash value from another integer. This is used
         /// as part of a double hashing scheme. By being relatively prime with powers of 2
@@ -219,7 +219,7 @@ namespace Internal.TypeSystem
             _resizeCount = checked((newSize * _fillPercentageBeforeResize) / 100);
             SetCurrentHashtable(hashTableLocal);
         }
-        
+
         /// <summary>
         /// Add a value to the hashtable, or find a value which is already present in the hashtable.
         /// Note that the key is not specified as it is implicit in the value. This function is thread-safe
@@ -232,7 +232,7 @@ namespace Internal.TypeSystem
             if (value == null)
                 throw new ArgumentNullException();
 
-            lock(this)
+            lock (this)
             {
                 // Check to see if adding this value may require a resize. If so, expand
                 // the table now.
@@ -365,7 +365,7 @@ namespace Internal.TypeSystem
             {
                 if ((_hashtableContentsToEnumerate != null) && (_index < _hashtableContentsToEnumerate.Length))
                 {
-                    for (;_index < _hashtableContentsToEnumerate.Length; _index++)
+                    for (; _index < _hashtableContentsToEnumerate.Length; _index++)
                     {
                         if (_hashtableContentsToEnumerate[_index] != null)
                         {

@@ -29,49 +29,49 @@ namespace Internal.IL
         public bool CompilerGenerated;
     }
 
-    partial class ILImporter
+    internal partial class ILImporter
     {
-        Compilation _compilation;
-        CppWriter _writer;
+        private Compilation _compilation;
+        private CppWriter _writer;
 
-        TypeSystemContext _typeSystemContext;
+        private TypeSystemContext _typeSystemContext;
 
-        MethodDesc _method;
-        MethodSignature _methodSignature;
+        private MethodDesc _method;
+        private MethodSignature _methodSignature;
 
-        TypeDesc _thisType;
+        private TypeDesc _thisType;
 
-        MethodIL _methodIL;
-        byte[] _ilBytes;
-        LocalVariableDefinition[] _locals;
+        private MethodIL _methodIL;
+        private byte[] _ilBytes;
+        private LocalVariableDefinition[] _locals;
 
-        struct SequencePoint
+        private struct SequencePoint
         {
             public string Document;
             public int LineNumber;
         }
-        SequencePoint[] _sequencePoints;
-        Dictionary<int, LocalVariable> _localSlotToInfoMap;
-        Dictionary<int, string> _parameterIndexToNameMap;
+        private SequencePoint[] _sequencePoints;
+        private Dictionary<int, LocalVariable> _localSlotToInfoMap;
+        private Dictionary<int, string> _parameterIndexToNameMap;
 
-        class ExceptionRegion
+        private class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
             public int ReturnLabels;
         };
-        ExceptionRegion[] _exceptionRegions;
+        private ExceptionRegion[] _exceptionRegions;
 
-        class SpillSlot
+        private class SpillSlot
         {
             public StackValueKind Kind;
             public TypeDesc Type;
             public String Name;
         };
-        List<SpillSlot> _spillSlots;
+        private List<SpillSlot> _spillSlots;
 
         // TODO: Unify with verifier?
         [Flags]
-        enum Prefix
+        private enum Prefix
         {
             ReadOnly = 0x01,
             Unaligned = 0x02,
@@ -80,12 +80,12 @@ namespace Internal.IL
             Constrained = 0x10,
             No = 0x20,
         }
-        Prefix _pendingPrefix;
-        TypeDesc _constrained;
+        private Prefix _pendingPrefix;
+        private TypeDesc _constrained;
 
-        StringBuilder _builder = new StringBuilder();
+        private StringBuilder _builder = new StringBuilder();
 
-        class BasicBlock
+        private class BasicBlock
         {
             // Common fields
             public BasicBlock Next;
@@ -186,7 +186,7 @@ namespace Internal.IL
             _parameterIndexToNameMap = parameterIndexToNameMap;
         }
 
-        struct Value
+        private struct Value
         {
             public Value(String name)
             {
@@ -198,14 +198,14 @@ namespace Internal.IL
             public Object Aux;
         };
 
-        struct StackValue
+        private struct StackValue
         {
             public StackValueKind Kind;
             public TypeDesc Type;
             public Value Value;
         }
 
-        StackValueKind GetStackValueKind(TypeDesc type)
+        private StackValueKind GetStackValueKind(TypeDesc type)
         {
             switch (type.Category)
             {
@@ -245,26 +245,26 @@ namespace Internal.IL
             }
         }
 
-        void Push(StackValue value)
+        private void Push(StackValue value)
         {
             if (_stackTop >= _stack.Length)
                 Array.Resize(ref _stack, 2 * _stackTop + 3);
             _stack[_stackTop++] = value;
         }
 
-        void Push(StackValueKind kind, Value value, TypeDesc type = null)
+        private void Push(StackValueKind kind, Value value, TypeDesc type = null)
         {
             Push(new StackValue() { Kind = kind, Type = type, Value = value });
         }
 
-        StackValue Pop()
+        private StackValue Pop()
         {
             return _stack[--_stackTop];
         }
 
         private bool _msvc;
 
-        string GetStackValueKindCPPTypeName(StackValueKind kind, TypeDesc type = null)
+        private string GetStackValueKindCPPTypeName(StackValueKind kind, TypeDesc type = null)
         {
             switch (kind)
             {
@@ -279,13 +279,13 @@ namespace Internal.IL
             }
         }
 
-        int _currentTemp = 1;
-        string NewTempName()
+        private int _currentTemp = 1;
+        private string NewTempName()
         {
             return "_" + (_currentTemp++).ToString();
         }
 
-        void PushTemp(StackValueKind kind, TypeDesc type = null)
+        private void PushTemp(StackValueKind kind, TypeDesc type = null)
         {
             string temp = NewTempName();
 
@@ -297,7 +297,7 @@ namespace Internal.IL
             _builder.Append("=");
         }
 
-        void AppendCastIfNecessary(TypeDesc destType, StackValueKind srcType)
+        private void AppendCastIfNecessary(TypeDesc destType, StackValueKind srcType)
         {
             if (destType.IsValueType)
                 return;
@@ -306,11 +306,11 @@ namespace Internal.IL
             Append(")");
         }
 
-        void AppendCastIfNecessary(StackValueKind dstType, TypeDesc srcType)
+        private void AppendCastIfNecessary(StackValueKind dstType, TypeDesc srcType)
         {
             if (dstType == StackValueKind.ByRef)
             {
-                Append("("); 
+                Append("(");
                 Append(_writer.GetCppSignatureTypeName(srcType));
                 Append(")");
             }
@@ -321,7 +321,7 @@ namespace Internal.IL
             }
         }
 
-        Value NewSpillSlot(StackValueKind kind, TypeDesc type)
+        private Value NewSpillSlot(StackValueKind kind, TypeDesc type)
         {
             if (_spillSlots == null)
                 _spillSlots = new List<SpillSlot>();
@@ -336,18 +336,18 @@ namespace Internal.IL
             return new Value() { Name = spillSlot.Name };
         }
 
-        void Append(string s)
+        private void Append(string s)
         {
             _builder.Append(s);
         }
 
-        void Finish()
+        private void Finish()
         {
             // _builder.AppendLine(";");
             _builder.Append("; ");
         }
 
-        string GetVarName(int index, bool argument)
+        private string GetVarName(int index, bool argument)
         {
             if (_localSlotToInfoMap != null && !argument && _localSlotToInfoMap.ContainsKey(index) && !_localSlotToInfoMap[index].CompilerGenerated)
             {
@@ -362,7 +362,7 @@ namespace Internal.IL
             return (argument ? "_a" : "_l") + index.ToString();
         }
 
-        TypeDesc GetVarType(int index, bool argument)
+        private TypeDesc GetVarType(int index, bool argument)
         {
             if (argument)
             {
@@ -378,25 +378,25 @@ namespace Internal.IL
             }
             else
             {
-               return _locals[index].Type;
+                return _locals[index].Type;
             }
         }
 
-        TypeDesc GetWellKnownType(WellKnownType wellKnownType)
+        private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
         {
             return _typeSystemContext.GetWellKnownType(wellKnownType);
         }
 
-        TypeDesc ResolveTypeToken(int token)
+        private TypeDesc ResolveTypeToken(int token)
         {
             return (TypeDesc)_methodIL.GetObject(token);
         }
 
-        void MarkInstructionBoundary()
+        private void MarkInstructionBoundary()
         {
         }
 
-        void StartImportingInstruction()
+        private void StartImportingInstruction()
         {
             if (_sequencePoints == null)
                 return;
@@ -416,7 +416,7 @@ namespace Internal.IL
             _builder.AppendLine();
         }
 
-        void EndImportingInstruction()
+        private void EndImportingInstruction()
         {
             if (_sequencePoints == null)
                 _builder.AppendLine();
@@ -525,26 +525,26 @@ namespace Internal.IL
             return _builder.ToString();
         }
 
-        void StartImportingBasicBlock(BasicBlock basicBlock)
+        private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
         }
 
-        void EndImportingBasicBlock(BasicBlock basicBlock)
+        private void EndImportingBasicBlock(BasicBlock basicBlock)
         {
             basicBlock.Code = _builder.ToString();
             _builder.Clear();
         }
 
-        void ImportNop()
+        private void ImportNop()
         {
         }
 
-        void ImportBreak()
+        private void ImportBreak()
         {
             throw new NotImplementedException("Opcode: break");
         }
 
-        void ImportLoadVar(int index, bool argument)
+        private void ImportLoadVar(int index, bool argument)
         {
             string name = GetVarName(index, argument);
             string temp = NewTempName();
@@ -558,7 +558,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportStoreVar(int index, bool argument)
+        private void ImportStoreVar(int index, bool argument)
         {
             var value = Pop();
 
@@ -572,7 +572,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportAddressOfVar(int index, bool argument)
+        private void ImportAddressOfVar(int index, bool argument)
         {
             string name = GetVarName(index, argument);
             string temp = NewTempName();
@@ -587,22 +587,22 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportDup()
+        private void ImportDup()
         {
             Push(_stack[_stackTop - 1]);
         }
 
-        void ImportPop()
+        private void ImportPop()
         {
             Pop();
         }
 
-        void ImportJmp(int token)
+        private void ImportJmp(int token)
         {
             throw new NotImplementedException("Opcode: jmp");
         }
 
-        void ImportCasting(ILOpcode opcode, int token)
+        private void ImportCasting(ILOpcode opcode, int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
@@ -621,7 +621,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportIntrinsicCall(IntrinsicMethodKind intrinsicClassification)
+        private void ImportIntrinsicCall(IntrinsicMethodKind intrinsicClassification)
         {
             switch (intrinsicClassification)
             {
@@ -669,7 +669,7 @@ namespace Internal.IL
             }
         }
 
-        void ImportCall(ILOpcode opcode, int token)
+        private void ImportCall(ILOpcode opcode, int token)
         {
             bool callViaSlot = false;
             bool delegateInvoke = false;
@@ -921,7 +921,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportLdFtn(int token, ILOpcode opCode)
+        private void ImportLdFtn(int token, ILOpcode opCode)
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
 
@@ -939,12 +939,12 @@ namespace Internal.IL
             Append("::");
             Append(_writer.GetCppMethodName(method));
 
-            _stack[_stackTop-1].Value.Aux = method;
+            _stack[_stackTop - 1].Value.Aux = method;
 
             Finish();
         }
 
-        void ImportLoadInt(long value, StackValueKind kind)
+        private void ImportLoadInt(long value, StackValueKind kind)
         {
             string val;
             if (kind == StackValueKind.Int64)
@@ -965,19 +965,19 @@ namespace Internal.IL
             Push(kind, new Value(val));
         }
 
-        void ImportLoadFloat(double value)
+        private void ImportLoadFloat(double value)
         {
             // TODO: Handle infinity, NaN, etc.
             string val = value.ToString();
             Push(StackValueKind.Float, new Value(val));
         }
 
-        void ImportLoadNull()
+        private void ImportLoadNull()
         {
             Push(StackValueKind.ObjRef, new Value("0"));
         }
 
-        void ImportReturn()
+        private void ImportReturn()
         {
             var returnType = _methodSignature.ReturnType;
             if (returnType.IsVoid)
@@ -994,7 +994,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportFallthrough(BasicBlock next)
+        private void ImportFallthrough(BasicBlock next)
         {
             StackValue[] entryStack = next.EntryStack;
 
@@ -1041,7 +1041,7 @@ namespace Internal.IL
             MarkBasicBlock(next);
         }
 
-        void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
+        private void ImportSwitchJump(int jmpBase, int[] jmpDelta, BasicBlock fallthrough)
         {
             var op = Pop();
 
@@ -1067,7 +1067,7 @@ namespace Internal.IL
                 ImportFallthrough(fallthrough);
         }
 
-        void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
+        private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
             if (opcode != ILOpcode.br)
             {
@@ -1197,7 +1197,7 @@ namespace Internal.IL
                 ImportFallthrough(fallthrough);
         }
 
-        void ImportBinaryOperation(ILOpcode opcode)
+        private void ImportBinaryOperation(ILOpcode opcode)
         {
             var op1 = Pop();
             var op2 = Pop();
@@ -1216,9 +1216,9 @@ namespace Internal.IL
                 kind = op2.Kind;
                 type = op2.Type;
             }
-            
+
             // The one exception from the above rule
-            if ((kind == StackValueKind.ByRef) && 
+            if ((kind == StackValueKind.ByRef) &&
                     (opcode == ILOpcode.sub || opcode == ILOpcode.sub_ovf || opcode == ILOpcode.sub_ovf_un))
             {
                 kind = StackValueKind.NativeInt;
@@ -1242,7 +1242,7 @@ namespace Internal.IL
                 case ILOpcode.or: op = "|"; break;
                 case ILOpcode.xor: op = "^"; break;
 
-                    // TODO: Overflow checks
+                // TODO: Overflow checks
                 case ILOpcode.add_ovf: op = "+"; break;
                 case ILOpcode.add_ovf_un: op = "+"; unsigned = true; break;
                 case ILOpcode.sub_ovf: op = "-"; break;
@@ -1272,7 +1272,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportShiftOperation(ILOpcode opcode)
+        private void ImportShiftOperation(ILOpcode opcode)
         {
             var shiftAmount = Pop();
             var op = Pop();
@@ -1293,7 +1293,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportCompareOperation(ILOpcode opcode)
+        private void ImportCompareOperation(ILOpcode opcode)
         {
             var op1 = Pop();
             var op2 = Pop();
@@ -1332,7 +1332,7 @@ namespace Internal.IL
                             unsigned = true;
                     }
                     break;
-                case ILOpcode.clt_un: 
+                case ILOpcode.clt_un:
                     if (kind == StackValueKind.Float)
                     {
                         op = ">="; inverted = true;
@@ -1375,7 +1375,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
+        private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
             var op = Pop();
 
@@ -1389,7 +1389,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportLoadField(int token, bool isStatic)
+        private void ImportLoadField(int token, bool isStatic)
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
 
@@ -1439,7 +1439,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportAddressOfField(int token, bool isStatic)
+        private void ImportAddressOfField(int token, bool isStatic)
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
 
@@ -1491,7 +1491,7 @@ namespace Internal.IL
         }
 
 
-        void ImportStoreField(int token, bool isStatic)
+        private void ImportStoreField(int token, bool isStatic)
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
 
@@ -1546,12 +1546,12 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportLoadIndirect(int token)
+        private void ImportLoadIndirect(int token)
         {
             ImportLoadIndirect(ResolveTypeToken(token));
         }
 
-        void ImportLoadIndirect(TypeDesc type)
+        private void ImportLoadIndirect(TypeDesc type)
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
@@ -1568,12 +1568,12 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportStoreIndirect(int token)
+        private void ImportStoreIndirect(int token)
         {
             ImportStoreIndirect(ResolveTypeToken(token));
         }
 
-        void ImportStoreIndirect(TypeDesc type)
+        private void ImportStoreIndirect(TypeDesc type)
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
@@ -1594,7 +1594,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportThrow()
+        private void ImportThrow()
         {
             var obj = Pop();
 
@@ -1604,7 +1604,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportLoadString(int token)
+        private void ImportLoadString(int token)
         {
             string str = (string)_methodIL.GetObject(token);
 
@@ -1640,7 +1640,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportInitObj(int token)
+        private void ImportInitObj(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
@@ -1653,7 +1653,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportBox(int token)
+        private void ImportBox(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
@@ -1682,18 +1682,18 @@ namespace Internal.IL
             }
         }
 
-        static bool IsOffsetContained(int offset, int start, int length)
+        private static bool IsOffsetContained(int offset, int start, int length)
         {
             return start <= offset && offset < start + length;
         }
 
-        static string AddReturnLabel(ExceptionRegion r)
+        private static string AddReturnLabel(ExceptionRegion r)
         {
             r.ReturnLabels++;
             return r.ReturnLabels.ToString();
         }
 
-        void ImportLeave(BasicBlock target)
+        private void ImportLeave(BasicBlock target)
         {
             // Empty the stack
             _stackTop = 0;
@@ -1740,7 +1740,7 @@ namespace Internal.IL
             MarkBasicBlock(target);
         }
 
-        int FindNearestFinally(int offset)
+        private int FindNearestFinally(int offset)
         {
             int candidate = -1;
             for (int i = 0; i < _exceptionRegions.Length; i++)
@@ -1760,7 +1760,7 @@ namespace Internal.IL
             return candidate;
         }
 
-        void ImportEndFinally()
+        private void ImportEndFinally()
         {
             int finallyIndex = FindNearestFinally(_currentOffset - 1);
 
@@ -1769,7 +1769,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportNewArray(int token)
+        private void ImportNewArray(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
             TypeDesc arrayType = type.Context.GetArrayType(type);
@@ -1790,12 +1790,12 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportLoadElement(int token)
+        private void ImportLoadElement(int token)
         {
             ImportLoadElement(ResolveTypeToken(token));
         }
 
-        void ImportLoadElement(TypeDesc elementType)
+        private void ImportLoadElement(TypeDesc elementType)
         {
             // ldelem_ref
             if (elementType == null)
@@ -1826,12 +1826,12 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportStoreElement(int token)
+        private void ImportStoreElement(int token)
         {
             ImportStoreElement(ResolveTypeToken(token));
         }
 
-        void ImportStoreElement(TypeDesc elementType)
+        private void ImportStoreElement(TypeDesc elementType)
         {
             // stelem_ref
             if (elementType == null)
@@ -1840,7 +1840,7 @@ namespace Internal.IL
             var value = Pop();
             var index = Pop();
             var arrayPtr = Pop();
-            
+
             // Range check
             Append("__range_check(");
             Append(arrayPtr.Value.Name);
@@ -1867,7 +1867,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportAddressOfElement(int token)
+        private void ImportAddressOfElement(int token)
         {
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             var index = Pop();
@@ -1898,7 +1898,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportLoadLength()
+        private void ImportLoadLength()
         {
             var arrayPtr = Pop();
 
@@ -1911,7 +1911,7 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportUnaryOperation(ILOpcode opCode)
+        private void ImportUnaryOperation(ILOpcode opCode)
         {
             var argument = Pop();
 
@@ -1919,16 +1919,16 @@ namespace Internal.IL
 
             Append((opCode == ILOpcode.neg) ? "~" : "!");
             Append(argument.Value.Name);
-            
+
             Finish();
         }
 
-        void ImportCpOpj(int token)
+        private void ImportCpOpj(int token)
         {
             throw new NotImplementedException();
         }
 
-        void ImportUnbox(int token, ILOpcode opCode)
+        private void ImportUnbox(int token, ILOpcode opCode)
         {
             var type = ResolveTypeToken(token);
 
@@ -1970,22 +1970,22 @@ namespace Internal.IL
             Finish();
         }
 
-        void ImportRefAnyVal(int token)
+        private void ImportRefAnyVal(int token)
         {
             throw new NotImplementedException();
         }
 
-        void ImportCkFinite()
+        private void ImportCkFinite()
         {
             throw new NotImplementedException();
         }
 
-        void ImportMkRefAny(int token)
+        private void ImportMkRefAny(int token)
         {
             throw new NotImplementedException();
         }
 
-        void ImportLdToken(int token)
+        private void ImportLdToken(int token)
         {
             var ldtokenValue = _methodIL.GetObject(token);
             WellKnownType ldtokenKind;
@@ -2013,7 +2013,7 @@ namespace Internal.IL
             Push(value);
         }
 
-        void ImportLocalAlloc()
+        private void ImportLocalAlloc()
         {
             StackValue count = Pop();
 
@@ -2041,77 +2041,77 @@ namespace Internal.IL
             Push(StackValueKind.NativeInt, new Value(bufferName));
         }
 
-        void ImportEndFilter()
+        private void ImportEndFilter()
         {
             throw new NotImplementedException();
         }
 
-        void ImportCpBlk()
+        private void ImportCpBlk()
         {
             throw new NotImplementedException();
         }
 
-        void ImportInitBlk()
+        private void ImportInitBlk()
         {
             throw new NotImplementedException();
         }
 
-        void ImportRethrow()
+        private void ImportRethrow()
         {
             throw new NotImplementedException();
         }
 
-        void ImportSizeOf(int token)
+        private void ImportSizeOf(int token)
         {
             var type = ResolveTypeToken(token);
 
             Push(StackValueKind.Int32, new Value("sizeof(" + _writer.GetCppTypeName(type) + ")"));
         }
 
-        void ImportRefAnyType()
+        private void ImportRefAnyType()
         {
             throw new NotImplementedException();
         }
 
-        void ImportArgList()
+        private void ImportArgList()
         {
             throw new NotImplementedException();
         }
 
-        void ImportUnalignedPrefix(byte alignment)
+        private void ImportUnalignedPrefix(byte alignment)
         {
             throw new NotImplementedException();
         }
 
-        void ImportVolatilePrefix()
+        private void ImportVolatilePrefix()
         {
             // TODO:
             // throw new NotImplementedException();
         }
 
-        void ImportTailPrefix()
+        private void ImportTailPrefix()
         {
             throw new NotImplementedException();
         }
 
-        void ImportConstrainedPrefix(int token)
+        private void ImportConstrainedPrefix(int token)
         {
             _pendingPrefix |= Prefix.Constrained;
 
             _constrained = ResolveTypeToken(token);
         }
 
-        void ImportNoPrefix(byte mask)
+        private void ImportNoPrefix(byte mask)
         {
             throw new NotImplementedException();
         }
 
-        void ImportReadOnlyPrefix()
+        private void ImportReadOnlyPrefix()
         {
             throw new NotImplementedException();
         }
 
-        void TriggerCctor(TypeDesc type)
+        private void TriggerCctor(TypeDesc type)
         {
             // TODO: Before field init
 

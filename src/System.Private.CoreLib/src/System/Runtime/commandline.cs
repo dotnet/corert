@@ -65,7 +65,7 @@ namespace System.Runtime
                 inquote = false;
 
                 // loop on each argument
-                for (; ;)
+                for (;;)
                 {
                     if (*psrc != '\0')
                     {
@@ -103,7 +103,7 @@ namespace System.Runtime
         {
             int charIdx = 0;
             // loop through scanning one argument
-            for (; ;)
+            for (;;)
             {
                 bool copychar = true;
                 // Rules: 2N backslashes + " ==> N backslashes and begin/end quote

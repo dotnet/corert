@@ -7,8 +7,8 @@ namespace Internal.TypeSystem
 {
     public sealed class FieldForInstantiatedType : FieldDesc
     {
-        FieldDesc _fieldDef;
-        InstantiatedType _instantiatedType;
+        private FieldDesc _fieldDef;
+        private InstantiatedType _instantiatedType;
 
         internal FieldForInstantiatedType(FieldDesc fieldDef, InstantiatedType instantiatedType)
         {

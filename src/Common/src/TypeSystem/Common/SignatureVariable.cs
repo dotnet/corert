@@ -7,8 +7,8 @@ namespace Internal.TypeSystem
 {
     public abstract partial class SignatureVariable : TypeDesc
     {
-        TypeSystemContext _context;
-        int _index;
+        private TypeSystemContext _context;
+        private int _index;
 
         internal SignatureVariable(TypeSystemContext context, int index)
         {

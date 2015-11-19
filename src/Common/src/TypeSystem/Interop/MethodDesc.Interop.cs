@@ -68,5 +68,4 @@ namespace Internal.TypeSystem
             Attributes = attributes;
         }
     }
-
 }

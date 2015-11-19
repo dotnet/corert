@@ -17,9 +17,9 @@ namespace ILCompiler.DependencyAnalysis
     //
     // It is used to keep track of uses of virtual methods to ensure that the
     // vtables are properly constructed
-    class VirtualMethodUseNode : DependencyNodeCore<NodeFactory>
+    internal class VirtualMethodUseNode : DependencyNodeCore<NodeFactory>
     {
-        MethodDesc _decl;
+        private MethodDesc _decl;
 
         public VirtualMethodUseNode(MethodDesc decl)
         {
@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
             // For each virtual method use in the graph, ensure that our side
             // table of live virtual method slots is kept up to date.
 
-            MethodDesc virtualMethod = (MethodDesc)this._decl;
+            MethodDesc virtualMethod = (MethodDesc)_decl;
             TypeDesc typeOfVirtual = virtualMethod.OwningType;
 
             List<MethodDesc> virtualSlots;

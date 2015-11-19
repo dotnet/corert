@@ -7,7 +7,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class ParameterizedType : TypeDesc
     {
-        TypeDesc _parameterType;
+        private TypeDesc _parameterType;
 
         internal ParameterizedType(TypeDesc parameterType)
         {
@@ -24,8 +24,8 @@ namespace Internal.TypeSystem
 
         public override TypeSystemContext Context
         {
-            get 
-            { 
+            get
+            {
                 return _parameterType.Context;
             }
         }

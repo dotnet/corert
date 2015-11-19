@@ -8,9 +8,9 @@ namespace Internal.Runtime.CompilerHelpers
     /// <summary>
     /// These methods are targeted by the ArrayMethodILEmitter in the compiler.
     /// </summary>
-    static class ArrayMethodILHelpers
+    internal static class ArrayMethodILHelpers
     {
-        static void ThrowIndexOutOfRangeException()
+        private static void ThrowIndexOutOfRangeException()
         {
             throw new IndexOutOfRangeException();
         }

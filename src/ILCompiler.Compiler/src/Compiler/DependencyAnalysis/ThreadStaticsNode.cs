@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class ThreadStaticsNode : EmbeddedObjectNode, ISymbolNode
     {
-        MetadataType _type;
+        private MetadataType _type;
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
@@ -47,7 +47,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-
             return new DependencyListEntry[] { new DependencyListEntry(context.ThreadStaticsRegion, "ThreadStatics Region"),
                                                new DependencyListEntry(GetGCStaticEETypeNode(context), "ThreadStatic EEType")};
         }

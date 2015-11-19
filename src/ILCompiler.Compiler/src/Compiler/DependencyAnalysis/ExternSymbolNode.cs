@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class ExternSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
     {
-        string _name;
+        private string _name;
 
         public ExternSymbolNode(string name)
         {

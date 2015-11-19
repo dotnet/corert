@@ -37,7 +37,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        class UnificationGroup
+        private class UnificationGroup
         {
             private MethodDesc[] _members = Array.Empty<MethodDesc>();
             private int _memberCount = 0;
@@ -174,7 +174,6 @@ namespace Internal.TypeSystem
         /// <returns>The override of the virtual method that should be called</returns>
         public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, MetadataType objectType)
         {
-
             // Step 1, convert objectType to uninstantiated form
             MetadataType uninstantiatedType = objectType;
             MethodDesc initialTargetMethod = targetMethod;
@@ -307,7 +306,7 @@ namespace Internal.TypeSystem
                     return nameSigOverride;
                 }
 
-                currentType = currentType.MetadataBaseType; 
+                currentType = currentType.MetadataBaseType;
             }
 
             return null;

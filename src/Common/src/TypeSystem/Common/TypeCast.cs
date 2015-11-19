@@ -22,6 +22,5 @@ namespace Internal.TypeSystem
                     return false;
             }
         }
-
     }
 }

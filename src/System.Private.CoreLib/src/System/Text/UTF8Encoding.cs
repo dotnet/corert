@@ -489,7 +489,7 @@ namespace System.Text
                 }
             }
 
-            for (; ;)
+            for (;;)
             {
                 // SLOWLOOP: does all range checks, handles all special cases, but it is slow
                 if (pSrc >= pEnd)
@@ -904,7 +904,7 @@ namespace System.Text
                 }
             }
 
-            for (; ;)
+            for (;;)
             {
                 // SLOWLOOP: does all range checks, handles all special cases, but it is slow
 
@@ -1370,7 +1370,7 @@ namespace System.Text
                     "[UTF8Encoding.GetCharCount]Expected empty fallback buffer at start");
             }
 
-            for (; ;)
+            for (;;)
             {
                 // SLOWLOOP: does all range checks, handles all special cases, but it is slow
 
@@ -1801,7 +1801,7 @@ namespace System.Text
                     "[UTF8Encoding.GetChars]Expected empty fallback buffer at start");
             }
 
-            for (; ;)
+            for (;;)
             {
                 // SLOWLOOP: does all range checks, handles all special cases, but it is slow
 

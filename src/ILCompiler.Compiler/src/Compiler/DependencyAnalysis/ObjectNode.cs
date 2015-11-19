@@ -104,6 +104,5 @@ namespace ILCompiler.DependencyAnalysis
         {
             return null;
         }
-
     }
 }

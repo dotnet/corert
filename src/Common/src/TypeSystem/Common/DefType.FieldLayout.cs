@@ -110,5 +110,4 @@ namespace Internal.TypeSystem
             get;
         }
     }
-
 }

@@ -19,11 +19,11 @@ namespace Internal.IL.Stubs
     /// </summary>
     public struct PInvokeMarshallingILEmitter
     {
-        MethodDesc _targetMethod;
-        PInvokeMetadata _importMetadata;
+        private MethodDesc _targetMethod;
+        private PInvokeMetadata _importMetadata;
 
-        ILEmitter _emitter;
-        ILCodeStream _marshallingCodeStream;
+        private ILEmitter _emitter;
+        private ILCodeStream _marshallingCodeStream;
 
         private PInvokeMarshallingILEmitter(MethodDesc targetMethod)
         {
@@ -133,7 +133,7 @@ namespace Internal.IL.Stubs
             int vPinnedFirstElement = _emitter.NewLocal(arrayType.ParameterType.MakeByRefType(), true);
             int vArray = _emitter.NewLocal(arrayType);
             ILCodeLabel lNullArray = _emitter.NewCodeLabel();
-            
+
             // Check for null array, or 0 element array.
             _marshallingCodeStream.Emit(ILOpcode.dup);
             _marshallingCodeStream.EmitStLoc(vArray);
@@ -408,11 +408,11 @@ namespace Internal.IL.Stubs
     /// All parameters are simple types. There will be no code
     /// generated for this method.
     /// </summary>
-    sealed class PInvokeTargetNativeMethod : MethodDesc
+    internal sealed class PInvokeTargetNativeMethod : MethodDesc
     {
-        TypeDesc _owningType;
-        MethodSignature _signature;
-        PInvokeMetadata _methodMetadata;
+        private TypeDesc _owningType;
+        private MethodSignature _signature;
+        private PInvokeMetadata _methodMetadata;
 
         public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata)
         {

@@ -17,7 +17,7 @@ namespace ILCompiler
         RuntimeImport
     };
 
-    static class MethodExtensions
+    internal static class MethodExtensions
     {
         public static string GetRuntimeImportEntryPointName(this EcmaMethod This)
         {
@@ -32,7 +32,7 @@ namespace ILCompiler
                 }
 
                 StringHandle namespaceHandle, nameHandle;
-                if (!metadataReader.GetAttributeTypeNamespaceAndName(attributeType, 
+                if (!metadataReader.GetAttributeTypeNamespaceAndName(attributeType,
                    out namespaceHandle, out nameHandle))
                 {
                     continue;

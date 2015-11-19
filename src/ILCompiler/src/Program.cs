@@ -15,26 +15,26 @@ using Internal.CommandLine;
 
 namespace ILCompiler
 {
-    class Program
+    internal class Program
     {
-        bool _help;
+        private bool _help;
 
-        string _outputPath;
+        private string _outputPath;
 
-        Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        string _systemModuleName = "System.Private.CoreLib";
+        private string _systemModuleName = "System.Private.CoreLib";
 
-        CompilationOptions _options;
+        private CompilationOptions _options;
 
-        CompilerTypeSystemContext _compilerTypeSystemContext;
+        private CompilerTypeSystemContext _compilerTypeSystemContext;
 
-        Program()
+        private Program()
         {
         }
 
-        void Help()
+        private void Help()
         {
             Console.WriteLine("ILCompiler compiler version " + typeof(Program).GetTypeInfo().Assembly.GetName().Version.ToString());
             Console.WriteLine();
@@ -45,7 +45,7 @@ namespace ILCompiler
             Console.WriteLine("-reference   Reference metadata from the specified assembly (Short form: -r)");
         }
 
-        void ParseCommandLine(string[] args)
+        private void ParseCommandLine(string[] args)
         {
             var parser = new CommandLineParser(args);
 
@@ -54,53 +54,53 @@ namespace ILCompiler
             {
                 switch (option.ToLowerInvariant())
                 {
-                case "?":
-                case "help":
-                    _help = true;
-                    break;
+                    case "?":
+                    case "help":
+                        _help = true;
+                        break;
 
-                case "":
-                case "in":
-                    parser.AppendExpandedPaths(_inputFilePaths, true);
-                    break;
+                    case "":
+                    case "in":
+                        parser.AppendExpandedPaths(_inputFilePaths, true);
+                        break;
 
-                case "o":
-                case "out":
-                    _outputPath = parser.GetStringValue();
-                    break;
+                    case "o":
+                    case "out":
+                        _outputPath = parser.GetStringValue();
+                        break;
 
-                case "dgmllog":
-                    _options.DgmlLog = parser.GetStringValue();
-                    break;
-                   
-                case "fulllog":
-                    _options.FullLog = true;
-                    break;
+                    case "dgmllog":
+                        _options.DgmlLog = parser.GetStringValue();
+                        break;
 
-                case "r":
-                case "reference":
-                    parser.AppendExpandedPaths(_referenceFilePaths, false);
-                    break;
+                    case "fulllog":
+                        _options.FullLog = true;
+                        break;
 
-                case "cpp":
-                    _options.IsCppCodeGen = true;
-                    break;
+                    case "r":
+                    case "reference":
+                        parser.AppendExpandedPaths(_referenceFilePaths, false);
+                        break;
 
-                case "nolinenumbers":
-                    _options.NoLineNumbers = true;
-                    break;
+                    case "cpp":
+                        _options.IsCppCodeGen = true;
+                        break;
 
-                case "systemmodule":
-                    _systemModuleName = parser.GetStringValue();
-                    break;
+                    case "nolinenumbers":
+                        _options.NoLineNumbers = true;
+                        break;
 
-                default:
-                    throw new CommandLineException("Unrecognized option: " + parser.GetCurrentOption());
+                    case "systemmodule":
+                        _systemModuleName = parser.GetStringValue();
+                        break;
+
+                    default:
+                        throw new CommandLineException("Unrecognized option: " + parser.GetCurrentOption());
                 }
             }
         }
 
-        EcmaModule GetEntryPointModule()
+        private EcmaModule GetEntryPointModule()
         {
             EcmaModule mainModule = null;
             foreach (var inputFile in _inputFilePaths)
@@ -116,7 +116,7 @@ namespace ILCompiler
             return mainModule;
         }
 
-        void SingleFileCompilation()
+        private void SingleFileCompilation()
         {
             List<MethodDesc> rootMethods = new List<MethodDesc>();
             MethodDesc entryPointMethod = null;
@@ -140,7 +140,7 @@ namespace ILCompiler
             compilation.CompileSingleFile(entryPointMethod);
         }
 
-        int Run(string[] args)
+        private int Run(string[] args)
         {
             ParseCommandLine(args);
 
@@ -183,7 +183,7 @@ namespace ILCompiler
             return 0;
         }
 
-        static int Main(string[] args)
+        private static int Main(string[] args)
         {
 #if DEBUG
             return new Program().Run(args);

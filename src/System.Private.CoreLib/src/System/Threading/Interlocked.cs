@@ -129,9 +129,9 @@ namespace System.Threading
         [Intrinsic]
         internal static extern T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class;
 
-#endregion
+        #endregion
 
-#region Exchange
+        #region Exchange
 
         [Intrinsic]
         public static int Exchange(ref int location1, int value)

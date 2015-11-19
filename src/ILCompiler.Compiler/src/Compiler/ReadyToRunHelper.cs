@@ -26,7 +26,7 @@ namespace ILCompiler
 
     public class ReadyToRunHelper : IEquatable<ReadyToRunHelper>
     {
-        Compilation _compilation;
+        private Compilation _compilation;
 
         public ReadyToRunHelper(Compilation compilation, ReadyToRunHelperId id, Object target)
         {

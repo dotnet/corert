@@ -8,13 +8,13 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    enum IntrinsicMethodKind
+    internal enum IntrinsicMethodKind
     {
         None,
         RuntimeHelpersInitializeArray,
     }
 
-    class IntrinsicMethods
+    internal class IntrinsicMethods
     {
         public static IntrinsicMethodKind GetIntrinsicMethodClassification(MethodDesc method)
         {

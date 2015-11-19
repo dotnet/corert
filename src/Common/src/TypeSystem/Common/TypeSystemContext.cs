@@ -77,10 +77,10 @@ namespace Internal.TypeSystem
         // MDArray types
         //
 
-        struct ArrayTypeKey
+        private struct ArrayTypeKey
         {
-            TypeDesc _elementType;
-            int _rank;
+            private TypeDesc _elementType;
+            private int _rank;
 
             public ArrayTypeKey(TypeDesc elementType, int rank)
             {
@@ -139,7 +139,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        ArrayTypeKey.ArrayTypeKeyHashtable _arrayTypes;
+        private ArrayTypeKey.ArrayTypeKeyHashtable _arrayTypes;
 
         public TypeDesc GetArrayType(TypeDesc elementType, int rank)
         {
@@ -177,7 +177,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        ByRefHashtable _byRefTypes;
+        private ByRefHashtable _byRefTypes;
 
         public TypeDesc GetByRefType(TypeDesc parameterType)
         {
@@ -215,7 +215,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        PointerHashtable _pointerTypes;
+        private PointerHashtable _pointerTypes;
 
         public TypeDesc GetPointerType(TypeDesc parameterType)
         {
@@ -226,10 +226,10 @@ namespace Internal.TypeSystem
         // Instantiated types
         //
 
-        struct InstantiatedTypeKey
+        private struct InstantiatedTypeKey
         {
-            TypeDesc _typeDef;
-            Instantiation _instantiation;
+            private TypeDesc _typeDef;
+            private Instantiation _instantiation;
 
             public InstantiatedTypeKey(TypeDesc typeDef, Instantiation instantiation)
             {
@@ -311,7 +311,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        InstantiatedTypeKey.InstantiatedTypeKeyHashtable _instantiatedTypes;
+        private InstantiatedTypeKey.InstantiatedTypeKeyHashtable _instantiatedTypes;
 
         public InstantiatedType GetInstantiatedType(MetadataType typeDef, Instantiation instantiation)
         {
@@ -322,10 +322,10 @@ namespace Internal.TypeSystem
         // Instantiated methods
         //
 
-        struct InstantiatedMethodKey
+        private struct InstantiatedMethodKey
         {
-            MethodDesc _methodDef;
-            Instantiation _instantiation;
+            private MethodDesc _methodDef;
+            private Instantiation _instantiation;
 
             public InstantiatedMethodKey(MethodDesc methodDef, Instantiation instantiation)
             {
@@ -407,7 +407,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        InstantiatedMethodKey.InstantiatedMethodKeyHashtable _instantiatedMethods;
+        private InstantiatedMethodKey.InstantiatedMethodKeyHashtable _instantiatedMethods;
 
         public InstantiatedMethod GetInstantiatedMethod(MethodDesc methodDef, Instantiation instantiation)
         {
@@ -419,10 +419,10 @@ namespace Internal.TypeSystem
         // Methods for instantiated type
         //
 
-        struct MethodForInstantiatedTypeKey
+        private struct MethodForInstantiatedTypeKey
         {
-            MethodDesc _typicalMethodDef;
-            InstantiatedType _instantiatedType;
+            private MethodDesc _typicalMethodDef;
+            private InstantiatedType _instantiatedType;
 
             public MethodForInstantiatedTypeKey(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
             {
@@ -478,7 +478,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable _methodForInstantiatedTypes;
+        private MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable _methodForInstantiatedTypes;
 
         public MethodDesc GetMethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
         {
@@ -492,10 +492,10 @@ namespace Internal.TypeSystem
         // Fields for instantiated type
         //
 
-        struct FieldForInstantiatedTypeKey
+        private struct FieldForInstantiatedTypeKey
         {
-            FieldDesc _fieldDef;
-            InstantiatedType _instantiatedType;
+            private FieldDesc _fieldDef;
+            private InstantiatedType _instantiatedType;
 
             public FieldForInstantiatedTypeKey(FieldDesc fieldDef, InstantiatedType instantiatedType)
             {
@@ -551,7 +551,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        FieldForInstantiatedTypeKey.FieldForInstantiatedTypeKeyHashtable _fieldForInstantiatedTypes;
+        private FieldForInstantiatedTypeKey.FieldForInstantiatedTypeKeyHashtable _fieldForInstantiatedTypes;
 
         public FieldDesc GetFieldForInstantiatedType(FieldDesc fieldDef, InstantiatedType instantiatedType)
         {
@@ -563,7 +563,7 @@ namespace Internal.TypeSystem
         //
         private class SignatureVariableHashtable : LockFreeReaderHashtable<uint, SignatureVariable>
         {
-            TypeSystemContext _context;
+            private TypeSystemContext _context;
             public SignatureVariableHashtable(TypeSystemContext context)
             {
                 _context = context;
@@ -605,7 +605,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        SignatureVariableHashtable _signatureVariables;
+        private SignatureVariableHashtable _signatureVariables;
 
         public TypeDesc GetSignatureVariable(int index, bool method)
         {

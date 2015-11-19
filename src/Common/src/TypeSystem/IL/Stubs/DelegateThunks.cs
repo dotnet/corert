@@ -10,8 +10,8 @@ namespace Internal.IL.Stubs
 {
     public sealed class DelegateShuffleThunk : ILStubMethod
     {
-        MethodDesc _target;
-        MethodSignature _signature;
+        private MethodDesc _target;
+        private MethodSignature _signature;
 
         internal DelegateShuffleThunk(MethodDesc target)
         {

@@ -7,21 +7,11 @@ using System.Text;
 
 namespace Internal.JitInterface
 {
-// CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
-// These helpers can be called by native code which executes in the runtime.
-// Compilers can emit calls to these helpers.
-//
-// The signatures of the helpers are below (see RuntimeHelperArgumentCheck)
-//
-//  NOTE: CorInfoHelpFunc is closely related to MdilHelpFunc!!!
-//  
-//  - changing the order of jit helper ordinals works fine
-//  However:
-//  - adding a jit helpers requires usually the addition of a corresponding MdilHelper
-//  - removing a jit helper (or changing its arguments) should be done only sparingly
-//    and needs discussion with an "MDIL person".
-//  Please have a look also at the comment prepending the definition of MdilHelpFunc
-//
+    // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
+    // These helpers can be called by native code which executes in the runtime.
+    // Compilers can emit calls to these helpers.
+    //
+    // The signatures of the helpers are below (see RuntimeHelperArgumentCheck)
 
     public enum CorInfoHelpFunc
     {
@@ -73,9 +63,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
         CORINFO_HELP_STRCNS,            // create a new string literal
-    #if !RYUJIT_CTPBUILD
         CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
-    #endif
         /* Object model */
 
         CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized
@@ -94,7 +82,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHKCASTCLASS,
         CORINFO_HELP_CHKCASTANY,
         CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases 
-                                        // has been taken care of by the inlined check
+                                           // has been taken care of by the inlined check
 
         CORINFO_HELP_BOX,
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
@@ -113,9 +101,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
         CORINFO_HELP_OVERFLOW,          // throw an overflow exception
         CORINFO_HELP_THROWDIVZERO,      // throw a divide by zero exception
-    #if !RYUJIT_CTPBUILD
         CORINFO_HELP_THROWNULLREF,      // throw a null reference exception
-    #endif
 
         CORINFO_HELP_INTERNALTHROW,     // Support for really fast jit
         CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
@@ -253,9 +239,9 @@ namespace Internal.JitInterface
 
         // These helpers are required for MDIL backward compatibility only. They are not used by current JITed code.
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_OBSOLETE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
-    #if RYUJIT_CTPBUILD
+#if RYUJIT_CTPBUILD
         CORINFO_HELP_METHODDESC_TO_RUNTIMEMETHODHANDLE_MAYBENULL_OBSOLETE, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
-    #endif
+#endif
         CORINFO_HELP_METHODDESC_TO_RUNTIMEMETHODHANDLE_OBSOLETE, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
         CORINFO_HELP_FIELDDESC_TO_RUNTIMEFIELDHANDLE_OBSOLETE, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
 
@@ -267,7 +253,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
                                             //CORINFO_HELP_VIRTUAL_FUNC_PTR_LOG,  // look up a virtual method at run-time, with IBC logging
 
-    #if !RYUJIT_CTPBUILD
         // Not a real helpers. Instead of taking handle arguments, these helpers point to a small stub that loads the handle argument and calls the static helper.
         CORINFO_HELP_READYTORUN_NEW,
         CORINFO_HELP_READYTORUN_NEWARR_1,
@@ -276,9 +261,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_STATIC_BASE,
         CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
-    #endif
 
-    #if REDHAWK
+#if REDHAWK
         // these helpers are arbitrary since we don't have any relation to the actual CLR corinfo.h.
         CORINFO_HELP_PINVOKE,               // transition to preemptive mode for a pinvoke, frame in EAX
         CORINFO_HELP_PINVOKE_2,             // transition to preemptive mode for a pinvoke, frame in ESI / R10
@@ -317,7 +301,7 @@ namespace Internal.JitInterface
         // Bartok emits code with destination in ECX rather than EDX and only ever uses EDX as the reference
         // register. It also only ever specifies the checked version.
         CORINFO_HELP_CHECKED_ASSIGN_REF_EDX, // EDX hold GC ptr, want do a 'mov [ECX], EDX' and inform GC
-    #endif // REDHAWK
+#endif // REDHAWK
 
         CORINFO_HELP_EE_PRESTUB,            // Not real JIT helper. Used in native images.
 
@@ -336,7 +320,7 @@ namespace Internal.JitInterface
         // Keep platform-specific helpers at the end so that the ids for the platform neutral helpers stay same accross platforms
         //
 
-    #if TARGET_X86 || _HOST_X86_ || REDHAWK // _HOST_X86_ is for altjit
+#if TARGET_X86 || _HOST_X86_ || REDHAWK // _HOST_X86_ is for altjit
                                         // NOGC_WRITE_BARRIERS JIT helper calls
                                         // Unchecked versions EDX is required to point into GC heap
         CORINFO_HELP_ASSIGN_REF_EAX,    // EAX holds GC ptr, do a 'mov [EDX], EAX' and inform GC
@@ -352,7 +336,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHECKED_ASSIGN_REF_ESI,
         CORINFO_HELP_CHECKED_ASSIGN_REF_EDI,
         CORINFO_HELP_CHECKED_ASSIGN_REF_EBP,
-    #endif
+#endif
 
         CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR, // Return the reference to a counter to decide to take cloned path in debug stress.
         CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, // Print a message that a loop cloning optimization has occurred in debug mode.

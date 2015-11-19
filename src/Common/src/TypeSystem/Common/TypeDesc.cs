@@ -10,7 +10,7 @@ namespace Internal.TypeSystem
 {
     public struct Instantiation
     {
-        TypeDesc[] _genericParameters;
+        private TypeDesc[] _genericParameters;
 
         public Instantiation(TypeDesc[] genericParameters)
         {
@@ -63,8 +63,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public struct Enumerator
         {
-            TypeDesc[] _collection;
-            int _currentIndex;
+            private TypeDesc[] _collection;
+            private int _currentIndex;
 
             public Enumerator(TypeDesc[] collection)
             {
@@ -108,7 +108,7 @@ namespace Internal.TypeSystem
         }
 
         // The most frequently used type properties are cached here to avoid excesive virtual calls
-        TypeFlags _typeFlags;
+        private TypeFlags _typeFlags;
 
         public abstract TypeSystemContext Context
         {
@@ -188,7 +188,7 @@ namespace Internal.TypeSystem
         protected abstract TypeFlags ComputeTypeFlags(TypeFlags mask);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        TypeFlags InitializeTypeFlags(TypeFlags mask)
+        private TypeFlags InitializeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = ComputeTypeFlags(mask);
 

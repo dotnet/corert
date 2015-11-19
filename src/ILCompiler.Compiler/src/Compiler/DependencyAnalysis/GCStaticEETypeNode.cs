@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class GCStaticEETypeNode : ObjectNode, ISymbolNode
+    internal class GCStaticEETypeNode : ObjectNode, ISymbolNode
     {
-        int[] _runLengths; // First is offset to first gc field, second is length of gc static run, third is length of non-gc data, etc
-        int _targetPointerSize;
+        private int[] _runLengths; // First is offset to first gc field, second is length of gc static run, third is length of non-gc data, etc
+        private int _targetPointerSize;
 
         public GCStaticEETypeNode(bool[] gcDesc, NodeFactory factory)
         {

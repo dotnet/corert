@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using ILCompiler.DependencyAnalysis.X64;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -11,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public JumpStubNode(ISymbolNode target)
         {
-            this._target = target;
+            _target = target;
         }
 
         public override string MangledName

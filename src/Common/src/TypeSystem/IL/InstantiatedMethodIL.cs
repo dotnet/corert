@@ -9,9 +9,9 @@ namespace Internal.IL
 {
     public sealed class InstantiatedMethodIL : MethodIL
     {
-        MethodIL _methodIL;
-        Instantiation _typeInstantiation;
-        Instantiation _methodInstantiation;
+        private MethodIL _methodIL;
+        private Instantiation _typeInstantiation;
+        private Instantiation _methodInstantiation;
 
         public InstantiatedMethodIL(MethodIL methodIL, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
@@ -49,7 +49,7 @@ namespace Internal.IL
             for (int i = 0; i < locals.Length; i++)
             {
                 TypeDesc uninst = locals[i].Type;
-                TypeDesc inst  = uninst.InstantiateSignature(_typeInstantiation, _methodInstantiation);
+                TypeDesc inst = uninst.InstantiateSignature(_typeInstantiation, _methodInstantiation);
                 if (uninst != inst)
                 {
                     if (clone == null)

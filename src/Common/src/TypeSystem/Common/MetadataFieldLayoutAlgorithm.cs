@@ -98,7 +98,7 @@ namespace Internal.TypeSystem
                     FieldDesc instanceField = null;
                     foreach (FieldDesc field in type.GetFields())
                     {
-                        if(!field.IsStatic)
+                        if (!field.IsStatic)
                         {
                             Debug.Assert(instanceField == null, "Unexpected extra instance field");
                             instanceField = field;

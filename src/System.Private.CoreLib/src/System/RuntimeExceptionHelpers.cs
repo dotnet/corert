@@ -228,7 +228,7 @@ namespace System
         // fatal process shutdowns and it's only purpose is a reasonable-case effort to make a bad situation a little less bad.
         // Trying to use locks or other concurrent access apis would actually defeat the purpose of making FailFast as robust as possible.
         private static bool s_inFailFast;
-        
+
 #pragma warning disable 414 // field is assigned, but never used -- This is because C# doesn't realize that we
         //                                      copy the field into a buffer.
         /// <summary>
@@ -249,7 +249,7 @@ namespace System
                 _bufferByteCount = cbBuffer;
             }
         }
-        
+
         /// <summary>
         /// This header describes the contents of the serialized error report to DAC, which can deserialize it
         /// from a dump file or live debugging session.  This format is easier to change than the 

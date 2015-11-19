@@ -11,8 +11,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class NodeFactory
     {
-        TargetDetails _target;
-        CompilerTypeSystemContext _context;
+        private TargetDetails _target;
+        private CompilerTypeSystemContext _context;
 
         public NodeFactory(CompilerTypeSystemContext context)
         {
@@ -29,10 +29,10 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        struct NodeCache<TKey, TValue>
+        private struct NodeCache<TKey, TValue>
         {
-            Func<TKey, TValue> _creator;
-            Dictionary<TKey, TValue> _cache;
+            private Func<TKey, TValue> _creator;
+            private Dictionary<TKey, TValue> _cache;
 
             public NodeCache(Func<TKey, TValue> creator, IEqualityComparer<TKey> comparer)
             {
@@ -178,13 +178,13 @@ namespace ILCompiler.DependencyAnalysis
             return _threadStatics.GetOrAdd(type);
         }
 
-        class BoolArrayEqualityComparer : IEqualityComparer<bool[]>
+        private class BoolArrayEqualityComparer : IEqualityComparer<bool[]>
         {
             bool IEqualityComparer<bool[]>.Equals(bool[] x, bool[] y)
             {
                 if (x.Length != y.Length)
                     return false;
-                
+
                 for (int i = 0; i < x.Length; i++)
                 {
                     if (x[i] != y[i])
@@ -254,7 +254,7 @@ namespace ILCompiler.DependencyAnalysis
             return _methodCode.GetOrAdd(method);
         }
 
-        static readonly string[][] s_helperEntrypointNames = new string[][] {
+        private static readonly string[][] s_helperEntrypointNames = new string[][] {
             new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnNonGCStaticBase" }
         };

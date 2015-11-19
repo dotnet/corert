@@ -7,7 +7,6 @@
 
 /*============================================================
 **
-** Class:  System.__Canon
 **
 **
 ** Object is the class used for generating shared generics
@@ -54,12 +53,12 @@ namespace System
     internal class __Boxed<T> where T : struct
     {
         [System.Runtime.CompilerServices.DependencyReductionRoot]
-        __Boxed()
+        private __Boxed()
         {
             BoxedValue = default(T);
         }
 
         [FieldOffset(0)]
-        T BoxedValue;
+        private T BoxedValue;
     }
 }

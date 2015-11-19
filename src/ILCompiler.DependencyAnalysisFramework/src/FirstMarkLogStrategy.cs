@@ -45,9 +45,9 @@ namespace ILCompiler.DependencyAnalysisFramework
         private HashSet<string> _reasonStringOnlyNodes;
 
         bool IDependencyAnalysisMarkStrategy<DependencyContextType>.MarkNode(
-            DependencyNodeCore<DependencyContextType> node, 
-            DependencyNodeCore<DependencyContextType> reasonNode, 
-            DependencyNodeCore<DependencyContextType> reasonNode2, 
+            DependencyNodeCore<DependencyContextType> node,
+            DependencyNodeCore<DependencyContextType> reasonNode,
+            DependencyNodeCore<DependencyContextType> reasonNode2,
             string reason)
         {
             if (node.Marked)

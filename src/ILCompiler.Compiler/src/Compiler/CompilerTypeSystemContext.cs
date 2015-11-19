@@ -18,7 +18,7 @@ namespace ILCompiler
 {
     public class CompilerTypeSystemContext : TypeSystemContext, IMetadataStringDecoderProvider
     {
-        static readonly string[] s_wellKnownTypeNames = new string[] {
+        private static readonly string[] s_wellKnownTypeNames = new string[] {
             "Void",
             "Boolean",
             "Char",
@@ -51,22 +51,22 @@ namespace ILCompiler
             "Exception",
         };
 
-        MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
+        private MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
 
-        MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
-        MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
-        ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
+        private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
+        private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
 
-        MetadataStringDecoder _metadataStringDecoder;
+        private MetadataStringDecoder _metadataStringDecoder;
 
-        Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
-        class ModuleData
+        private class ModuleData
         {
             public string Path;
             public Microsoft.DiaSymReader.ISymUnmanagedReader PdbReader;
         }
-        Dictionary<EcmaModule, ModuleData> _moduleData = new Dictionary<EcmaModule, ModuleData>();
+        private Dictionary<EcmaModule, ModuleData> _moduleData = new Dictionary<EcmaModule, ModuleData>();
 
         public CompilerTypeSystemContext(TargetDetails details)
             : base(details)
@@ -201,7 +201,7 @@ namespace ILCompiler
         // Symbols
         //
 
-        PdbSymbolProvider _pdbSymbolProvider;
+        private PdbSymbolProvider _pdbSymbolProvider;
 
         private void InitializeSymbolReader(ModuleData moduleData)
         {
@@ -209,7 +209,7 @@ namespace ILCompiler
                 _pdbSymbolProvider = new PdbSymbolProvider();
 
             moduleData.PdbReader = _pdbSymbolProvider.GetSymbolReaderForFile(moduleData.Path);
-       }
+        }
 
         public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodDesc method)
         {

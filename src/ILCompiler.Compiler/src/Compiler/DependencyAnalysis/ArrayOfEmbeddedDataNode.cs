@@ -12,11 +12,11 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class ArrayOfEmbeddedDataNode : ObjectNode
     {
-        HashSet<EmbeddedObjectNode> _nestedNodes = new HashSet<EmbeddedObjectNode>();
-        List<EmbeddedObjectNode> _nestedNodesList = new List<EmbeddedObjectNode>();
-        ObjectAndOffsetSymbolNode _startSymbol;
-        ObjectAndOffsetSymbolNode _endSymbol;
-        IComparer<EmbeddedObjectNode> _sorter;
+        private HashSet<EmbeddedObjectNode> _nestedNodes = new HashSet<EmbeddedObjectNode>();
+        private List<EmbeddedObjectNode> _nestedNodesList = new List<EmbeddedObjectNode>();
+        private ObjectAndOffsetSymbolNode _startSymbol;
+        private ObjectAndOffsetSymbolNode _endSymbol;
+        private IComparer<EmbeddedObjectNode> _sorter;
 
         public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
         {

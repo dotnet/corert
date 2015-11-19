@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    class RegisteredField
+    internal class RegisteredField
     {
         public FieldDesc Field;
 

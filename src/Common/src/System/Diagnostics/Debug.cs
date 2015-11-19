@@ -32,7 +32,7 @@ namespace System.Diagnostics
             {
 #if CORERT
                 // CORERT-TODO
-                unsafe { *(int *)0 = 0; }
+                unsafe { *(int*)0 = 0; }
 #else
                 string stackTrace;
 

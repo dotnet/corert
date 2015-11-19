@@ -14,7 +14,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Open type to instantiate to get the interfaces associated with an array.
         /// </summary>
-        MetadataType _arrayOfTType;
+        private MetadataType _arrayOfTType;
 
         /// <summary>
         /// RuntimeInterfaces algorithm for for array types which are similar to a generic type

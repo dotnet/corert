@@ -5,10 +5,10 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class BlobNode : ObjectNode, ISymbolNode
     {
-        string _name;
-        string _section;
-        byte[] _data;
-        int _alignment;
+        private string _name;
+        private string _section;
+        private byte[] _data;
+        private int _alignment;
 
         public BlobNode(string name, string section, byte[] data, int alignment)
         {

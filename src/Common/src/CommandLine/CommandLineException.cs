@@ -5,7 +5,7 @@ using System;
 
 namespace Internal.CommandLine
 {
-    class CommandLineException : Exception
+    internal class CommandLineException : Exception
     {
         public CommandLineException(string message)
             : base(message)

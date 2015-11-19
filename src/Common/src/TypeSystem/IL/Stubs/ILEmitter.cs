@@ -190,11 +190,11 @@ namespace Internal.IL.Stubs
         }
     }
 
-    class ILStubMethodIL : MethodIL
+    internal class ILStubMethodIL : MethodIL
     {
-        byte[] _ilBytes;
-        LocalVariableDefinition[] _locals;
-        Object[] _tokens;
+        private byte[] _ilBytes;
+        private LocalVariableDefinition[] _locals;
+        private Object[] _tokens;
 
         public ILStubMethodIL(byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens)
         {
@@ -266,9 +266,9 @@ namespace Internal.IL.Stubs
 
     public class ILEmitter
     {
-        ArrayBuilder<ILCodeStream> _codeStreams;
-        ArrayBuilder<LocalVariableDefinition> _locals;
-        ArrayBuilder<Object> _tokens;
+        private ArrayBuilder<ILCodeStream> _codeStreams;
+        private ArrayBuilder<LocalVariableDefinition> _locals;
+        private ArrayBuilder<Object> _tokens;
 
         public ILEmitter()
         {

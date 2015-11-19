@@ -19,7 +19,7 @@ namespace Internal.JitInterface
     {
         internal static unsafe CORINFO_METHOD_STRUCT_* Construct(int i)
         {
-            return (CORINFO_METHOD_STRUCT_*)((i+1) << 4);
+            return (CORINFO_METHOD_STRUCT_*)((i + 1) << 4);
         }
 
         internal static unsafe int GetValue(CORINFO_METHOD_STRUCT_* val)
@@ -32,7 +32,7 @@ namespace Internal.JitInterface
     {
         internal static unsafe CORINFO_FIELD_STRUCT_* Construct(int i)
         {
-            return (CORINFO_FIELD_STRUCT_*)((i+1) << 4);
+            return (CORINFO_FIELD_STRUCT_*)((i + 1) << 4);
         }
         internal static unsafe int GetValue(CORINFO_FIELD_STRUCT_* val)
         {
@@ -44,7 +44,7 @@ namespace Internal.JitInterface
     {
         internal static unsafe CORINFO_CLASS_STRUCT_* Construct(int i)
         {
-            return (CORINFO_CLASS_STRUCT_*)((i+1) << 4);
+            return (CORINFO_CLASS_STRUCT_*)((i + 1) << 4);
         }
 
         internal static unsafe int GetValue(CORINFO_CLASS_STRUCT_* val)
@@ -61,7 +61,7 @@ namespace Internal.JitInterface
     {
         internal static unsafe CORINFO_MODULE_STRUCT_* Construct(int i)
         {
-            return (CORINFO_MODULE_STRUCT_*)((i+1) << 4);
+            return (CORINFO_MODULE_STRUCT_*)((i + 1) << 4);
         }
         internal static unsafe int GetValue(CORINFO_MODULE_STRUCT_* val)
         {
@@ -157,12 +157,12 @@ namespace Internal.JitInterface
         public mdToken token;
 
         public CorInfoType retType { get { return (CorInfoType)_retType; } set { _retType = (byte)value; } }
-        CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
-        bool hasThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_HASTHIS) != 0); }
-        bool hasExplicitThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-        uint totalILArgs() { return (uint)(numArgs + (hasThis() ? 1 : 0)); }
-        bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
-        bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
+        private CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
+        private bool hasThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_HASTHIS) != 0); }
+        private bool hasExplicitThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
+        private uint totalILArgs() { return (uint)(numArgs + (hasThis() ? 1 : 0)); }
+        private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
+        private bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
     };
 
     //----------------------------------------------------------------------------
@@ -412,10 +412,9 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
-
     }
 
-    enum CorInfoIntrinsics
+    internal enum CorInfoIntrinsics
     {
         CORINFO_INTRINSIC_Sin,
         CORINFO_INTRINSIC_Cos,
@@ -563,7 +562,7 @@ namespace Internal.JitInterface
 
     // these are the attribute flags for fields and methods (getMethodAttribs)
     [Flags]
-    enum CorInfoFlag : uint
+    internal enum CorInfoFlag : uint
     {
         //  CORINFO_FLG_UNUSED                = 0x00000001,
         //  CORINFO_FLG_UNUSED                = 0x00000002,
@@ -1030,7 +1029,6 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
-
     }
 
 
@@ -1087,7 +1085,6 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP fieldLookup;
-
     };
 
     // System V struct passing
@@ -1155,7 +1152,6 @@ namespace Internal.JitInterface
         CALL_SITE = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN = 0x08, // Indicates a epilog endpoint
         CALL_INSTRUCTION = 0x10  // The actual instruction of a call.
-
     };
 
     public struct OffsetMapping

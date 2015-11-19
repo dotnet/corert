@@ -7,10 +7,10 @@ namespace Internal.TypeSystem
 {
     public sealed partial class MethodForInstantiatedType : MethodDesc
     {
-        MethodDesc _typicalMethodDef;
-        InstantiatedType _instantiatedType;
+        private MethodDesc _typicalMethodDef;
+        private InstantiatedType _instantiatedType;
 
-        MethodSignature _signature;
+        private MethodSignature _signature;
 
         internal MethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
         {
@@ -34,7 +34,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        TypeDesc Instantiate(TypeDesc type)
+        private TypeDesc Instantiate(TypeDesc type)
         {
             return type.InstantiateSignature(_instantiatedType.Instantiation, new Instantiation());
         }
@@ -113,6 +113,5 @@ namespace Internal.TypeSystem
         {
             return OwningType.ToString() + "." + Name;
         }
-
     }
 }

@@ -436,7 +436,7 @@ namespace System
                     sdlProd1.Low32 = rgulDen[0];
                     sdlProd1.High32 = rgulDen[1];
 
-                    for (; ;)
+                    for (;;)
                     {
                         sdlQuo.Low32--;
                         sdlNum.int64 += sdlProd1.int64;
@@ -594,7 +594,7 @@ namespace System
                     ulSticky = 0;
                     sdlTmp.High32 = 0; // initialize remainder
 
-                    for (; ;)
+                    for (;;)
                     {
                         ulSticky |= sdlTmp.High32; // record remainder as sticky bit
 
@@ -1853,7 +1853,7 @@ namespace System
                     rgulQuo[2] = d1.High;
                     rgulRem[0] = Div96By32(rgulQuo, rgulDivisor[0]);
 
-                    for (; ;)
+                    for (;;)
                     {
                         if (rgulRem[0] == 0)
                         {
@@ -1989,7 +1989,7 @@ namespace System
                         rgulQuo[1] = Div96By64(new ArraySegment<uint>(rgulRem, 1, 3), sdlDivisor);
                         rgulQuo[0] = Div96By64(rgulRem, sdlDivisor);
 
-                        for (; ;)
+                        for (;;)
                         {
                             if ((rgulRem[0] | rgulRem[1]) == 0)
                             {
@@ -2064,7 +2064,7 @@ namespace System
                         rgulQuo[1] = 0;
                         rgulQuo[0] = Div128By96(rgulRem, rgulDivisor);
 
-                        for (; ;)
+                        for (;;)
                         {
                             if ((rgulRem[0] | rgulRem[1] | rgulRem[2]) == 0)
                             {

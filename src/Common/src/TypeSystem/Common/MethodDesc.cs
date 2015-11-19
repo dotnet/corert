@@ -39,7 +39,7 @@ namespace Internal.TypeSystem
                 return _flags;
             }
         }
-       
+
         public bool IsStatic
         {
             get
@@ -108,11 +108,11 @@ namespace Internal.TypeSystem
 
     public struct MethodSignatureBuilder
     {
-        MethodSignature _template;
-        MethodSignatureFlags _flags;
-        int _genericParameterCount;
-        TypeDesc _returnType;
-        TypeDesc[] _parameters;
+        private MethodSignature _template;
+        private MethodSignatureFlags _flags;
+        private int _genericParameterCount;
+        private TypeDesc _returnType;
+        private TypeDesc[] _parameters;
 
         public MethodSignatureBuilder(MethodSignature template)
         {
@@ -171,8 +171,8 @@ namespace Internal.TypeSystem
         public MethodSignature ToSignature()
         {
             if (_template == null ||
-                _flags != _template._flags || 
-                _genericParameterCount != _template._genericParameterCount || 
+                _flags != _template._flags ||
+                _genericParameterCount != _template._genericParameterCount ||
                 _returnType != _template._returnType ||
                 _parameters != _template._parameters)
             {
