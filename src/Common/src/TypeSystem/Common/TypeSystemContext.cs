@@ -40,10 +40,21 @@ namespace Internal.TypeSystem
             get; private set;
         }
 
+        public ModuleDesc SystemModule
+        {
+            get;
+            private set;
+        }
+
+        protected void InitializeSystemModule(ModuleDesc systemModule)
+        {
+            Debug.Assert(SystemModule == null);
+            SystemModule = systemModule;
+        }
+
         public abstract MetadataType GetWellKnownType(WellKnownType wellKnownType);
 
-        // TODO: Optional interface instead? Return ModuleDesc instead?
-        public virtual Object ResolveAssembly(AssemblyName name)
+        public virtual ModuleDesc ResolveAssembly(AssemblyName name)
         {
             return null;
         }

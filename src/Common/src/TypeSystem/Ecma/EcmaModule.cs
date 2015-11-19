@@ -12,10 +12,8 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaModule
+    public sealed class EcmaModule : ModuleDesc
     {
-        TypeSystemContext _context;
-
         PEReader _peReader;
         MetadataReader _metadataReader;
 
@@ -163,9 +161,8 @@ namespace Internal.TypeSystem.Ecma
         LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
 
         public EcmaModule(TypeSystemContext context, PEReader peReader)
+            : base(context)
         {
-            _context = context;
-
             _peReader = peReader;
 
             var stringDecoderProvider = context as IMetadataStringDecoderProvider;
@@ -179,18 +176,9 @@ namespace Internal.TypeSystem.Ecma
         }
 
         public EcmaModule(TypeSystemContext context, MetadataReader metadataReader)
+            : base(context)
         {
-            _context = context;
-
             _metadataReader = metadataReader;
-        }
-
-        public TypeSystemContext Context
-        {
-            get
-            {
-                return _context;
-            }
         }
 
         public PEReader PEReader
@@ -217,7 +205,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+        public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
         {
             var stringComparer = _metadataReader.StringComparer;
 
@@ -313,7 +301,7 @@ namespace Internal.TypeSystem.Ecma
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader);
 
             TypeDesc[] instantiation = parser.ParseMethodSpecSignature();
-            return _context.GetInstantiatedMethod(methodDef, new Instantiation(instantiation));
+            return Context.GetInstantiatedMethod(methodDef, new Instantiation(instantiation));
         }
 
         Object ResolveTypeSpecification(TypeSpecificationHandle handle)
@@ -406,7 +394,7 @@ namespace Internal.TypeSystem.Ecma
 
             // TODO: ContentType, Culture - depends on newer version of the System.Reflection contract
 
-            return _context.ResolveAssembly(an);
+            return Context.ResolveAssembly(an);
         }
 
         Object ResolveExportedType(ExportedTypeHandle handle)
