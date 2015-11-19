@@ -38,9 +38,9 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 if (_id.HasValue)
-                    return "__str_table_entry_" + _id.Value.ToString(CultureInfo.InvariantCulture);
+                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToString(CultureInfo.InvariantCulture);
                 else
-                    return "__str_table_entry_" + _data;
+                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _data;
             }
         }
 

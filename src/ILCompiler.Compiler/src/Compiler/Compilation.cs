@@ -228,8 +228,9 @@ namespace ILCompiler
 
             if (!_options.IsCppCodeGen)
             {
-                _nodeFactory = new NodeFactory(_typeSystemContext);
                 NodeFactory.NameMangler = NameMangler;
+
+                _nodeFactory = new NodeFactory(_typeSystemContext);
 
                 // Choose which dependency graph implementation to use based on the amount of logging requested.
                 if (_options.DgmlLog == null)
@@ -259,8 +260,7 @@ namespace ILCompiler
                 _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
                 var nodes = _dependencyGraph.MarkedNodeList;
 
-                var mainMethodNode = (_mainMethod != null) ? _nodeFactory.MethodEntrypoint(_mainMethod) : null;
-                ObjectWriter.EmitObject(OutputPath, nodes, mainMethodNode, _nodeFactory);
+                ObjectWriter.EmitObject(OutputPath, nodes, _nodeFactory);
 
                 if (_options.DgmlLog != null)
                 {
@@ -290,7 +290,11 @@ namespace ILCompiler
         private void AddCompilationRoots()
         {
             if (_mainMethod != null)
+            {
                 AddCompilationRoot(_mainMethod, "Main method");
+
+                _nodeFactory.NodeAliases.Add(_nodeFactory.MethodEntrypoint(_mainMethod), "__managed__Main");
+            }
 
             foreach (var inputFile in _typeSystemContext.InputFilePaths)
             {
@@ -300,7 +304,12 @@ namespace ILCompiler
                     foreach (var method in type.GetMethods())
                     {
                         if (method.HasCustomAttribute("System.Runtime", "RuntimeExportAttribute"))
+                        {
                             AddCompilationRoot(method, "Runtime export");
+
+                            string exportName = ((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeExportAttribute");
+                            _nodeFactory.NodeAliases.Add(_nodeFactory.MethodEntrypoint(method), exportName);
+                        }
                     }
                 }
             }
