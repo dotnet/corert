@@ -13,22 +13,25 @@ Install [Visual Studio 2015 RTM](https://www.visualstudio.com/en-us/products/vis
 
 Install basic dependency packages:
 
-> sudo apt-get install llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev
+```
+sudo apt-get install llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev
+```
 
 
 Next, install [Mono](http://www.mono-project.com/docs/getting-started/install/linux/#debian-ubuntu-and-derivatives). Specific steps are copied below:
 
-> sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-> 
-> echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
-> 
-> sudo apt-get update
+```
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list
+sudo apt-get update
+```
 
 Next, install the **mono-complete** and **referenceassemblies-pcl** packages using the commands below:
 
-> sudo apt-get install mono-complete
-> 
-> sudo apt-get install referenceassemblies-pcl
+```
+sudo apt-get install mono-complete
+sudo apt-get install referenceassemblies-pcl
+```
 
 # Mac OSX (10.10+)
 
