@@ -12,7 +12,7 @@ namespace Internal.IL
     {
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {
-            MetadataType helperType = ((CompilerTypeSystemContext)context).SystemModule.GetType("Internal.Runtime.CompilerHelpers", name, false);
+            MetadataType helperType = context.SystemModule.GetType("Internal.Runtime.CompilerHelpers", name, false);
             if (helperType == null)
             {
                 // TODO: throw the exception that means 'Core Library doesn't have a required thing in it'
