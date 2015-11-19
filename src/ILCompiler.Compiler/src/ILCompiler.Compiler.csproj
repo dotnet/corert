@@ -81,7 +81,6 @@
     <Compile Include="Compiler\RvaFieldData.cs" />
     <Compile Include="Compiler\IntrinsicMethods.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
-    <Compile Include="IL\HelperExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
@@ -91,6 +90,9 @@
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs">
       <Link>IL\ILOpcode.cs</Link>
