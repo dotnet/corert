@@ -13,6 +13,7 @@ namespace Internal.TypeSystem
     {
         Unknown,
         ARM,
+        ARM64,
         X64,
         X86,
     }
@@ -60,6 +61,7 @@ namespace Internal.TypeSystem
             {
                 switch (Architecture)
                 {
+                    case TargetArchitecture.ARM64:
                     case TargetArchitecture.X64:
                         return 8;
                     case TargetArchitecture.ARM:
