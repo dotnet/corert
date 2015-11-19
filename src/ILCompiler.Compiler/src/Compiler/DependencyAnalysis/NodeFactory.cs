@@ -259,16 +259,16 @@ namespace ILCompiler.DependencyAnalysis
             new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnNonGCStaticBase" }
         };
 
-        static ISymbolNode[] s_helperEntrypointSymbols;
+        private ISymbolNode[] _helperEntrypointSymbols;
 
         public ISymbolNode HelperEntrypoint(HelperEntrypoint entrypoint)
         {
-            if (s_helperEntrypointSymbols == null)
-                s_helperEntrypointSymbols = new ISymbolNode[s_helperEntrypointNames.Length];
+            if (_helperEntrypointSymbols == null)
+                _helperEntrypointSymbols = new ISymbolNode[s_helperEntrypointNames.Length];
 
             int index = (int)entrypoint;
 
-            ISymbolNode symbol = s_helperEntrypointSymbols[index];
+            ISymbolNode symbol = _helperEntrypointSymbols[index];
             if (symbol == null)
             {
                 var entry = s_helperEntrypointNames[index];
@@ -278,7 +278,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 symbol = MethodEntrypoint(method);
 
-                s_helperEntrypointSymbols[index] = symbol;
+                _helperEntrypointSymbols[index] = symbol;
             }
             return symbol;
         }
