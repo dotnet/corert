@@ -123,10 +123,18 @@ namespace Internal.TypeSystem
         // TODO: Substitutions, generics, modopts, ...
         public override MethodDesc GetMethod(string name, MethodSignature signature)
         {
-            MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature);
-            if (typicalMethodDef == null)
-                return null;
-            return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
+            foreach (var meth in _typeDef.GetMethods())
+            {
+                if (meth.Name == name)
+                {
+                    MethodDesc result = meth.InstantiateSignature(Instantiation, new Instantiation());
+                    if (result.Signature.Equals(signature.InstantiateSignature(Instantiation, new Instantiation())))
+                    {
+                        return result;
+                    }
+                }
+            }
+            return null;
         }
 
         public override MethodDesc GetStaticConstructor()
