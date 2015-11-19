@@ -23,6 +23,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
+      <Link>ModuleDesc.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>

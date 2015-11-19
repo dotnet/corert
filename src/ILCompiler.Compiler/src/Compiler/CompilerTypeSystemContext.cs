@@ -53,8 +53,6 @@ namespace ILCompiler
 
         MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
 
-        EcmaModule _systemModule;
-
         MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -87,17 +85,9 @@ namespace ILCompiler
             set;
         }
 
-        public EcmaModule SystemModule
-        {
-            get
-            {
-                return _systemModule;
-            }
-        }
-
         public void SetSystemModule(EcmaModule systemModule)
         {
-            _systemModule = systemModule;
+            InitializeSystemModule(systemModule);
 
             // Sanity check the name table
             Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == "MulticastDelegate");
@@ -105,7 +95,7 @@ namespace ILCompiler
             // Initialize all well known types - it will save us from checking the name for each loaded type
             for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
             {
-                MetadataType type = _systemModule.GetType("System", s_wellKnownTypeNames[typeIndex]);
+                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex]);
                 type.SetWellKnownType((WellKnownType)(typeIndex + 1));
                 _wellKnownTypes[typeIndex] = type;
             }
@@ -116,7 +106,7 @@ namespace ILCompiler
             return _wellKnownTypes[(int)wellKnownType - 1];
         }
 
-        public override object ResolveAssembly(System.Reflection.AssemblyName name)
+        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name)
         {
             return GetModuleForSimpleName(name.Name);
         }
@@ -190,7 +180,7 @@ namespace ILCompiler
         {
             if (_arrayOfTRuntimeInterfacesAlgorithm == null)
             {
-                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(_systemModule.GetType("System", "Array`1"));
+                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System", "Array`1"));
             }
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }

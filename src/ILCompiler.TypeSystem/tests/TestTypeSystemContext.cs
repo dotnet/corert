@@ -101,7 +101,7 @@ namespace TypeSystemTests
             return module;
         }
 
-        public override object ResolveAssembly(System.Reflection.AssemblyName name)
+        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name)
         {
             return GetModuleForSimpleName(name.Name);
         }
