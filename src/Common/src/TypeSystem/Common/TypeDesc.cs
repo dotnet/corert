@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
-
 using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem
@@ -43,12 +42,54 @@ namespace Internal.TypeSystem
             }
         }
 
-        public IEnumerable<TypeDesc> GetEnumerator()
+        /// <summary>
+        /// Combines the given generic definition's hash code with the hashes
+        /// of the generic parameters in this instantiation
+        /// </summary>
+        public int ComputeGenericInstanceHashCode(int genericDefinitionHashCode)
         {
-            return _genericParameters;
+            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(genericDefinitionHashCode, _genericParameters);
         }
 
         public static readonly Instantiation Empty = new Instantiation(TypeDesc.EmptyTypes);
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_genericParameters);
+        }
+
+        /// <summary>
+        /// Enumerator for iterating over the types in an instantiation
+        /// </summary>
+        public struct Enumerator
+        {
+            TypeDesc[] _collection;
+            int _currentIndex;
+
+            public Enumerator(TypeDesc[] collection)
+            {
+                _collection = collection;
+                _currentIndex = -1;
+            }
+
+            public TypeDesc Current
+            {
+                get
+                {
+                    return _collection[_currentIndex];
+                }
+            }
+
+            public bool MoveNext()
+            {
+                _currentIndex++;
+                if (_currentIndex >= _collection.Length)
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
     }
 
     public abstract partial class TypeDesc
@@ -299,14 +340,6 @@ namespace Internal.TypeSystem
             get
             {
                 return BaseType != null;
-            }
-        }
-
-        public virtual TypeDesc[] ImplementedInterfaces
-        {
-            get
-            {
-                return TypeDesc.EmptyTypes;
             }
         }
 

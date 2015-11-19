@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -58,6 +59,13 @@ namespace Internal.TypeSystem
             {
                 return type.Context.Target.PointerSize;
             }
+        }
+
+        static public MethodDesc GetDefaultConstructor(this TypeDesc type)
+        {
+            // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
+            var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), Array.Empty<TypeDesc>());
+            return type.GetMethod(".ctor", sig);
         }
 
         static private MethodDesc FindMethodOnExactTypeWithMatchingTypicalMethod(this TypeDesc type, MethodDesc method)
@@ -120,6 +128,91 @@ namespace Internal.TypeSystem
 
             Debug.Assert(false, "method has no related type in the type hierarchy of type");
             return null;
+        }
+
+        /// <summary>
+        /// Attempts to resolve constrained call to <paramref name="interfaceMethod"/> into a concrete non-unboxing
+        /// method on <paramref name="constrainedType"/>.
+        /// The ability to resolve constraint methods is affected by the degree of code sharing we are performing
+        /// for generic code.
+        /// </summary>
+        /// <returns>The resolved method or null if the constraint couldn't be resolved.</returns>
+        static public MethodDesc TryResolveConstraintMethodApprox(this MetadataType constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
+        {
+            forceRuntimeLookup = false;
+
+            // We can't resolve constraint calls effectively for reference types, and there's
+            // not a lot of perf. benefit in doing it anyway.
+            if (!constrainedType.IsValueType)
+            {
+                return null;
+            }
+
+            // Non-virtual methods called through constraints simply resolve to the specified method without constraint resolution.
+            if (!interfaceMethod.IsVirtual)
+            {
+                return null;
+            }
+
+            MetadataType canonMT = constrainedType;
+
+            MethodDesc method;
+
+            MethodDesc genInterfaceMethod = interfaceMethod.GetMethodDefinition();
+            if (genInterfaceMethod.OwningType.IsInterface)
+            {
+                // Sometimes (when compiling shared generic code)
+                // we don't have enough exact type information at JIT time
+                // even to decide whether we will be able to resolve to an unboxed entry point...
+                // To cope with this case we always go via the helper function if there's any
+                // chance of this happening by checking for all interfaces which might possibly
+                // be compatible with the call (verification will have ensured that
+                // at least one of them will be)
+
+                // Enumerate all potential interface instantiations
+
+                // TODO: this code assumes no shared generics
+                Debug.Assert(interfaceType == interfaceMethod.OwningType);
+
+                method = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod, constrainedType);
+            }
+            else if (genInterfaceMethod.IsVirtual)
+            {
+                method = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod, constrainedType);
+            }
+            else
+            {
+                // The method will be null if calling a non-virtual instance 
+                // methods on System.Object, i.e. when these are used as a constraint.
+                method = null;
+            }
+
+            if (method == null)
+            {
+                // Fall back to VSD
+                return null;
+            }
+
+            //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
+            // Only return a method if the value type itself declares the method, 
+            // otherwise we might get a method from Object or System.ValueType
+            if (!method.OwningType.IsValueType)
+            {
+                // Fall back to VSD
+                return null;
+            }
+
+            // We've resolved the method, ignoring its generic method arguments
+            // If the method is a generic method then go and get the instantiated descriptor
+            if (interfaceMethod.HasInstantiation)
+            {
+                method = method.InstantiateSignature(interfaceType.Instantiation, interfaceMethod.Instantiation);
+            }
+
+            Debug.Assert(method != null);
+            //assert(!pMD->IsUnboxingStub());
+
+            return method;
         }
     }
 }

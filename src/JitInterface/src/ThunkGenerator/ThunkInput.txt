@@ -277,8 +277,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE   handle, void                  **ppIndirection);
     CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE    handle, void                  **ppIndirection);
     void embedGenericHandle(CORINFO_RESOLVED_TOKEN *        pResolvedToken, BOOL fEmbedParent, CORINFO_GENERICHANDLE_RESULT *  pResult);
-; WORKAROUND: CLR doesn't marshal the return struct right, so explicitly list the pointer to it as the first parameter
-    void getLocationOfThisType(CORINFO_LOOKUP_KIND * result, CORINFO_METHOD_HANDLE context);
+    CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
     void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE   method, void                  **ppIndirection);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE   method, void                  **ppIndirection);
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void           ** ppIndirection);

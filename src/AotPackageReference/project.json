@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "Microsoft.NetCore.Platforms": "1.0.1-beta-23213",
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10",
+    "System.Diagnostics.Tracing": "4.0.20",
+    "System.Collections": "4.0.10",
+    "System.Resources.ResourceManager": "4.0.0",
+
+    "System.Threading.Tasks": "4.0.10",
+    "System.Text.Encoding.Extensions": "4.0.10",
+    "System.Runtime.InteropServices": "4.0.20",
+    "System.Private.Uri": "4.0.0",
+    "System.IO": "4.0.10",
+  },
+  "frameworks": {
+    "netcore50": {}
+  },
+  "runtimes" : {
+     "win8-aot": { }
+  }
+}

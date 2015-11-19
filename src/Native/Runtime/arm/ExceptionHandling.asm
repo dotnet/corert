@@ -7,8 +7,6 @@
 
         TEXTAREA
 
-#ifdef FEATURE_CLR_EH
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpThrowHwEx
@@ -585,7 +583,5 @@ SetSuccess
 
     NESTED_END RhpCallFilterFunclet
 
-
-#endif // FEATURE_CLR_EH
 
         end

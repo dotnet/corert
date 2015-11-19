@@ -257,7 +257,9 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
         delegate void _embedGenericHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.Bool)]bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
-        delegate void _getLocationOfThisType(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context);
+        delegate void _getLocationOfThisType_Windows(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context);
+        [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
+        delegate CORINFO_LOOKUP_KIND _getLocationOfThisType(IntPtr _this, CORINFO_METHOD_STRUCT_* context);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
         delegate void* _getPInvokeUnmanagedTarget(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
@@ -715,9 +717,18 @@ namespace Internal.JitInterface
             var d122 = new _embedGenericHandle(embedGenericHandle);
             vtable[122] = Marshal.GetFunctionPointerForDelegate(d122);
             keepalive[122] = d122;
-            var d123 = new _getLocationOfThisType(getLocationOfThisType);
-            vtable[123] = Marshal.GetFunctionPointerForDelegate(d123);
-            keepalive[123] = d123;
+            if (IsWindows())
+            {
+                var d123 = new _getLocationOfThisType_Windows(getLocationOfThisType_Windows);
+                vtable[123] = Marshal.GetFunctionPointerForDelegate(d123);
+                keepalive[123] = d123;
+            }
+            else
+            {
+                var d123 = new _getLocationOfThisType(getLocationOfThisType);
+                vtable[123] = Marshal.GetFunctionPointerForDelegate(d123);
+                keepalive[123] = d123;
+            }
             var d124 = new _getPInvokeUnmanagedTarget(getPInvokeUnmanagedTarget);
             vtable[124] = Marshal.GetFunctionPointerForDelegate(d124);
             keepalive[124] = d124;

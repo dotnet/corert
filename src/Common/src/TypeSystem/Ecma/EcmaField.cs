@@ -11,7 +11,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaField : FieldDesc
+    public sealed class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
     {
         static class FieldFlags
         {
@@ -43,6 +43,15 @@ namespace Internal.TypeSystem.Ecma
             this.ToString();
 #endif
         }
+
+        EntityHandle EcmaModule.IEntityHandleObject.Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        }
+
 
         public override TypeSystemContext Context
         {
@@ -145,7 +154,8 @@ namespace Internal.TypeSystem.Ecma
                     {
                         if (metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute"))
                         {
-                            flags |= FieldFlags.ThreadStatic;
+                            // TODO: Thread statics
+                            //flags |= FieldFlags.ThreadStatic;
                         } 
                     }
                 }

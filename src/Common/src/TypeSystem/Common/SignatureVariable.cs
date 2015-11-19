@@ -5,20 +5,23 @@ using System;
 
 namespace Internal.TypeSystem
 {
-    public sealed class SignatureTypeVariable : TypeDesc
+    public abstract partial class SignatureVariable : TypeDesc
     {
         TypeSystemContext _context;
         int _index;
 
-        internal SignatureTypeVariable(TypeSystemContext context, int index)
+        internal SignatureVariable(TypeSystemContext context, int index)
         {
             _context = context;
             _index = index;
         }
 
-        public override int GetHashCode()
+        public int Index
         {
-            return _index * 0x5498341 + 0x832424;
+            get
+            {
+                return _index;
+            }
         }
 
         public override TypeSystemContext Context
@@ -29,39 +32,29 @@ namespace Internal.TypeSystem
             }
         }
 
-        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        public abstract bool IsMethodSignatureVariable
         {
-            throw new NotImplementedException();
-        }
-
-        public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
-        {
-            return typeInstantiation.IsNull ? this : typeInstantiation[_index];
+            get;
         }
     }
 
-    public sealed class SignatureMethodVariable : TypeDesc
+    public sealed partial class SignatureTypeVariable : SignatureVariable
     {
-        TypeSystemContext _context;
-        int _index;
-
-        internal SignatureMethodVariable(TypeSystemContext context, int index)
+        internal SignatureTypeVariable(TypeSystemContext context, int index) : base(context, index)
         {
-            _context = context;
-            _index = index;
+        }
+
+        public override bool IsMethodSignatureVariable
+        {
+            get
+            {
+                return false;
+            }
         }
 
         public override int GetHashCode()
         {
-            return _index * 0x7822381 + 0x54872645;
-        }
-
-        public override TypeSystemContext Context
-        {
-            get
-            {
-                return _context;
-            }
+            return Index * 0x5498341 + 0x832424;
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
@@ -71,7 +64,37 @@ namespace Internal.TypeSystem
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            return methodInstantiation.IsNull ? this : methodInstantiation[_index];
+            return typeInstantiation.IsNull ? this : typeInstantiation[Index];
+        }
+    }
+
+    public sealed partial class SignatureMethodVariable : SignatureVariable
+    {
+        internal SignatureMethodVariable(TypeSystemContext context, int index) : base(context, index)
+        {
+        }
+
+        public override bool IsMethodSignatureVariable
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            return Index * 0x7822381 + 0x54872645;
+        }
+
+        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            return methodInstantiation.IsNull ? this : methodInstantiation[Index];
         }
     }
 }

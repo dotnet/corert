@@ -19,7 +19,7 @@ namespace Internal.IL
 
         // Cached values
         byte[] _ilBytes;
-        TypeDesc[] _locals;
+        LocalVariableDefinition[] _locals;
         ILExceptionRegion[] _ilExceptionRegions;
 
         static public EcmaMethodIL Create(EcmaMethod method)
@@ -73,7 +73,7 @@ namespace Internal.IL
             return _methodBody.MaxStack;
         }
 
-        public override TypeDesc[] GetLocals()
+        public override LocalVariableDefinition[] GetLocals()
         {
             if (_locals != null)
                 return _locals;
@@ -81,11 +81,11 @@ namespace Internal.IL
             var metadataReader = _module.MetadataReader;
             var localSignature = _methodBody.LocalSignature;
             if (localSignature.IsNil)
-                return TypeDesc.EmptyTypes;
+                return Array.Empty<LocalVariableDefinition>();
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetStandaloneSignature(localSignature).Signature);
 
             EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
-            TypeDesc[] locals = parser.ParseLocalsSignature();
+            LocalVariableDefinition[] locals = parser.ParseLocalsSignature();
             return (_locals = locals);
         }
 

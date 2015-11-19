@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23023.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.DependencyAnalysisFramework.Tests", "tests\ILCompiler.DependencyAnalysisFramework.Tests.csproj", "{90076B9B-918B-49DD-8ADE-E76426D60B4D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.DependencyAnalysisFramework", "src\ILCompiler.DependencyAnalysisFramework.csproj", "{DAC23E9F-F826-4577-AE7A-0849FF83280C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{90076B9B-918B-49DD-8ADE-E76426D60B4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90076B9B-918B-49DD-8ADE-E76426D60B4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90076B9B-918B-49DD-8ADE-E76426D60B4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90076B9B-918B-49DD-8ADE-E76426D60B4D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAC23E9F-F826-4577-AE7A-0849FF83280C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAC23E9F-F826-4577-AE7A-0849FF83280C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAC23E9F-F826-4577-AE7A-0849FF83280C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAC23E9F-F826-4577-AE7A-0849FF83280C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

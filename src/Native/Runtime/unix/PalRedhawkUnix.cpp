@@ -4,14 +4,7 @@
 //
 
 //
-// Implementation of the Redhawk Platform Abstraction Layer (PAL) library when MinWin is the platform. In this
-// case most or all of the import requirements which Redhawk has can be satisfied via a forwarding export to
-// some native MinWin library. Therefore most of the work is done in the .def file and there is very little
-// code here.
-//
-// Note that in general we don't want to assume that Windows and Redhawk global definitions can co-exist.
-// Since this code must include Windows headers to do its job we can't therefore safely include general
-// Redhawk header files.
+// Implementation of the Redhawk Platform Abstraction Layer (PAL) library when Unix is the platform. 
 //
 
 #include <banned.h>
@@ -24,12 +17,25 @@
 #include "CommonMacros.h"
 #include "assert.h"
 #include "config.h"
+#include "UnixHandle.h"
 
 #include <unistd.h>
 #include <sched.h>
 #include <sys/mman.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <iconv.h>
+#include <dlfcn.h>
+#include <dirent.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/time.h>
+
+#if !HAVE_SYSCONF && !HAVE_SYSCTL
+#error Neither sysconf nor sysctl is present on the current system
+#endif
 
 #if HAVE_SYSCTL
 #include <sys/sysctl.h>
@@ -55,6 +61,11 @@
 #include <mach/mach_port.h>
 #endif // __APPLE__
 
+#if HAVE_MACH_ABSOLUTE_TIME
+#include <mach/mach_time.h>
+static mach_timebase_info_data_t s_TimebaseInfo;
+#endif
+
 #ifdef USE_PORTABLE_HELPERS
 #define assert(expr) ASSERT(expr)
 #endif
@@ -76,8 +87,8 @@
 ///////////////////////////////
 struct MEMORYSTATUSEX
 {
-  uint32_t  dwLength;
-  uint32_t  dwMemoryLoad;
+  uint32_t dwLength;
+  uint32_t dwMemoryLoad;
   uint64_t ullTotalPhys;
   uint64_t ullAvailPhys;
   uint64_t ullTotalPageFile;
@@ -89,12 +100,6 @@ struct MEMORYSTATUSEX
 
 typedef void * LPSECURITY_ATTRIBUTES;
 
-enum MEMORY_RESOURCE_NOTIFICATION_TYPE
-{
-    LowMemoryResourceNotification,
-    HighMemoryResourceNotification
-};
-
 enum LOGICAL_PROCESSOR_RELATIONSHIP
 {
     RelationProcessorCore,
@@ -102,8 +107,6 @@ enum LOGICAL_PROCESSOR_RELATIONSHIP
     RelationCache,
     RelationProcessorPackage
 };
-
-#define LTP_PC_SMT 0x1
 
 enum PROCESSOR_CACHE_TYPE
 {
@@ -141,229 +144,9 @@ struct SYSTEM_LOGICAL_PROCESSOR_INFORMATION
     };
 };
 
-
-#ifdef _AMD64_
-
-typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
-    UInt16  ControlWord;
-    UInt16  StatusWord;
-    UInt8   TagWord;
-    UInt8   Reserved1;
-    UInt16  ErrorOpcode;
-    UInt32  ErrorOffset;
-    UInt16  ErrorSelector;
-    UInt16  Reserved2;
-    UInt32  DataOffset;
-    UInt16  DataSelector;
-    UInt16  Reserved3;
-    UInt32  MxCsr;
-    UInt32  MxCsr_Mask;
-    Fp128   FloatRegisters[8];
-#if defined(_WIN64)
-    Fp128   XmmRegisters[16];
-    UInt8   Reserved4[96];
-#else
-    Fp128   XmmRegisters[8];
-    UInt8   Reserved4[220];
-    UInt32  Cr0NpxState;
-#endif
-} XSAVE_FORMAT, *PXSAVE_FORMAT;
-
-
-typedef XSAVE_FORMAT XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
-
-typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
-    UInt64 P1Home;
-    UInt64 P2Home;
-    UInt64 P3Home;
-    UInt64 P4Home;
-    UInt64 P5Home;
-    UInt64 P6Home;
-    UInt32 ContextFlags;
-    UInt32 MxCsr;
-    UInt16 SegCs;
-    UInt16 SegDs;
-    UInt16 SegEs;
-    UInt16 SegFs;
-    UInt16 SegGs;
-    UInt16 SegSs;
-    UInt32 EFlags;
-    UInt64 Dr0;
-    UInt64 Dr1;
-    UInt64 Dr2;
-    UInt64 Dr3;
-    UInt64 Dr6;
-    UInt64 Dr7;
-    UInt64 Rax;
-    UInt64 Rcx;
-    UInt64 Rdx;
-    UInt64 Rbx;
-    UInt64 Rsp;
-    UInt64 Rbp;
-    UInt64 Rsi;
-    UInt64 Rdi;
-    UInt64 R8;
-    UInt64 R9;
-    UInt64 R10;
-    UInt64 R11;
-    UInt64 R12;
-    UInt64 R13;
-    UInt64 R14;
-    UInt64 R15;
-    UInt64 Rip;
-    union {
-        XMM_SAVE_AREA32 FltSave;
-        struct {
-            Fp128 Header[2];
-            Fp128 Legacy[8];
-            Fp128 Xmm0;
-            Fp128 Xmm1;
-            Fp128 Xmm2;
-            Fp128 Xmm3;
-            Fp128 Xmm4;
-            Fp128 Xmm5;
-            Fp128 Xmm6;
-            Fp128 Xmm7;
-            Fp128 Xmm8;
-            Fp128 Xmm9;
-            Fp128 Xmm10;
-            Fp128 Xmm11;
-            Fp128 Xmm12;
-            Fp128 Xmm13;
-            Fp128 Xmm14;
-            Fp128 Xmm15;
-        } DUMMYSTRUCTNAME;
-    } DUMMYUNIONNAME;
-    Fp128 VectorRegister[26];
-    UInt64 VectorControl;
-    UInt64 DebugControl;
-    UInt64 LastBranchToRip;
-    UInt64 LastBranchFromRip;
-    UInt64 LastExceptionToRip;
-    UInt64 LastExceptionFromRip;
-
-    void SetIP(UIntNative ip) { Rip = ip; }
-    void SetSP(UIntNative sp) { Rsp = sp; }
-    void SetArg0Reg(UIntNative val) { Rcx = val; }
-    void SetArg1Reg(UIntNative val) { Rdx = val; }
-    UIntNative GetIP() { return Rip; }
-    UIntNative GetSP() { return Rsp; }
-} CONTEXT, *PCONTEXT;
-#elif defined(_ARM_)
-
-#define ARM_MAX_BREAKPOINTS     8
-#define ARM_MAX_WATCHPOINTS     1
-
-typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
-    UInt32 ContextFlags;
-    UInt32 R0;
-    UInt32 R1;
-    UInt32 R2;
-    UInt32 R3;
-    UInt32 R4;
-    UInt32 R5;
-    UInt32 R6;
-    UInt32 R7;
-    UInt32 R8;
-    UInt32 R9;
-    UInt32 R10;
-    UInt32 R11;
-    UInt32 R12;
-    UInt32 Sp;
-    UInt32 Lr;
-    UInt32 Pc;
-    UInt32 Cpsr;
-    UInt32 Fpscr;
-    UInt32 Padding;
-    union {
-        Fp128  Q[16];
-        UInt64 D[32];
-        UInt32 S[32];
-    } DUMMYUNIONNAME;
-    UInt32 Bvr[ARM_MAX_BREAKPOINTS];
-    UInt32 Bcr[ARM_MAX_BREAKPOINTS];
-    UInt32 Wvr[ARM_MAX_WATCHPOINTS];
-    UInt32 Wcr[ARM_MAX_WATCHPOINTS];
-    UInt32 Padding2[2];
-
-    void SetIP(UIntNative ip) { Pc = ip; }
-    void SetArg0Reg(UIntNative val) { R0 = val; }
-    void SetArg1Reg(UIntNative val) { R1 = val; }
-    UIntNative GetIP() { return Pc; }
-    UIntNative GetLR() { return Lr; }
-} CONTEXT, *PCONTEXT;
-
-#elif defined(_X86_)
-#define SIZE_OF_80387_REGISTERS      80
-#define MAXIMUM_SUPPORTED_EXTENSION  512
-
-typedef struct _FLOATING_SAVE_AREA {
-    UInt32 ControlWord;
-    UInt32 StatusWord;
-    UInt32 TagWord;
-    UInt32 ErrorOffset;
-    UInt32 ErrorSelector;
-    UInt32 DataOffset;
-    UInt32 DataSelector;
-    UInt8  RegisterArea[SIZE_OF_80387_REGISTERS];
-    UInt32 Cr0NpxState;
-} FLOATING_SAVE_AREA;
-
-#include "pshpack4.h"
-typedef struct _CONTEXT {
-    UInt32 ContextFlags;
-    UInt32 Dr0;
-    UInt32 Dr1;
-    UInt32 Dr2;
-    UInt32 Dr3;
-    UInt32 Dr6;
-    UInt32 Dr7;
-    FLOATING_SAVE_AREA FloatSave;
-    UInt32 SegGs;
-    UInt32 SegFs;
-    UInt32 SegEs;
-    UInt32 SegDs;
-    UInt32 Edi;
-    UInt32 Esi;
-    UInt32 Ebx;
-    UInt32 Edx;
-    UInt32 Ecx;
-    UInt32 Eax;
-    UInt32 Ebp;
-    UInt32 Eip;
-    UInt32 SegCs;
-    UInt32 EFlags;
-    UInt32 Esp;
-    UInt32 SegSs;
-    UInt8  ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-
-    void SetIP(UIntNative ip) { Eip = ip; }
-    void SetSP(UIntNative sp) { Esp = sp; }
-    void SetArg0Reg(UIntNative val) { Ecx = val; }
-    void SetArg1Reg(UIntNative val) { Edx = val; }
-    UIntNative GetIP() { return Eip; }
-    UIntNative GetSP() { return Esp; }
-} CONTEXT, *PCONTEXT;
-#include "poppack.h"
-
-#endif 
-
-
-#define EXCEPTION_MAXIMUM_PARAMETERS 15 // maximum number of exception parameters
-
-typedef struct _EXCEPTION_RECORD32 {
-    UInt32      ExceptionCode;
-    UInt32      ExceptionFlags;
-    UIntNative  ExceptionRecord;
-    UIntNative  ExceptionAddress;
-    UInt32      NumberParameters;
-    UIntNative  ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-} EXCEPTION_RECORD, *PEXCEPTION_RECORD;
-
-typedef struct _EXCEPTION_POINTERS {
-    PEXCEPTION_RECORD   ExceptionRecord;
-    PCONTEXT            ContextRecord;
-} EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
+typedef void* PCONTEXT;
+typedef void* PEXCEPTION_RECORD;
+typedef void* PEXCEPTION_POINTERS;
 
 typedef Int32 (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
     PEXCEPTION_POINTERS ExceptionInfo
@@ -400,23 +183,213 @@ typedef Int32 (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
 
 ///////////////////////////
 
+static const int tccSecondsToMilliSeconds = 1000;
+static const int tccSecondsToMicroSeconds = 1000000;
+static const int tccSecondsToNanoSeconds = 1000000000;
+static const int tccMilliSecondsToMicroSeconds = 1000;
+static const int tccMilliSecondsToNanoSeconds = 1000000;
+static const int tccMicroSecondsToNanoSeconds = 1000;
+
+static const uint32_t INFINITE = 0xFFFFFFFF;
+
 extern "C" UInt32 __stdcall NtGetCurrentProcessorNumber();
 
 static uint32_t g_dwPALCapabilities;
+static UInt32 g_cLogicalCpus = 0;
+static size_t g_cbLargestOnDieCache = 0;
+static size_t g_cbLargestOnDieCacheAdjusted = 0;
 
 extern bool PalQueryProcessorTopology();
 REDHAWK_PALEXPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...);
 
+void TimeSpecAdd(timespec* time, uint32_t milliseconds)
+{
+    time->tv_nsec += milliseconds * tccMilliSecondsToNanoSeconds;
+    if (time->tv_nsec > tccSecondsToNanoSeconds)
+    {
+        time->tv_sec += (time->tv_nsec - tccSecondsToNanoSeconds) / tccSecondsToNanoSeconds;
+        time->tv_nsec %= tccSecondsToNanoSeconds;
+    }
+}
+
+class UnixEvent
+{
+    pthread_cond_t m_condition;
+    pthread_mutex_t m_mutex;
+    bool m_manualReset;
+    bool m_state;
+
+    void Update(bool state)
+    {
+        pthread_mutex_lock(&m_mutex);
+        m_state = state;
+        // Unblock all threads waiting for the condition variable
+        pthread_cond_broadcast(&m_condition);
+        pthread_mutex_unlock(&m_mutex);
+    }
+
+public:
+
+    UnixEvent(bool manualReset, bool initialState)
+    : m_manualReset(manualReset),
+      m_state(initialState)
+    {
+        int st = pthread_mutex_init(&m_mutex, NULL);
+        ASSERT(st == NULL);
+
+        pthread_condattr_t attrs;
+        st = pthread_condattr_init(&attrs);
+        ASSERT(st == NULL);
+
+#if HAVE_CLOCK_MONOTONIC
+        // Ensure that the pthread_cond_timedwait will use CLOCK_MONOTONIC
+        st = pthread_condattr_setclock(&attrs, CLOCK_MONOTONIC);
+        ASSERT(st == NULL);
+#endif // HAVE_CLOCK_MONOTONIC
+
+        st = pthread_cond_init(&m_condition, &attrs);
+        ASSERT(st == NULL);
+
+        st = pthread_condattr_destroy(&attrs);
+        ASSERT(st == NULL);
+    }
+
+    ~UnixEvent()
+    {
+        int st = pthread_mutex_destroy(&m_mutex);
+        ASSERT(st == NULL);
+
+        st = pthread_cond_destroy(&m_condition);
+        ASSERT(st == NULL);
+    }
+
+    uint32_t Wait(uint32_t milliseconds)
+    {
+        timespec endTime;
+
+        if (milliseconds != INFINITE)
+        {
+#if HAVE_CLOCK_MONOTONIC
+            clock_gettime(CLOCK_MONOTONIC, &endTime);
+            TimeSpecAdd(&endTime, milliseconds);
+#else // HAVE_CLOCK_MONOTONIC
+            // TODO: fix this. The time of day can be changed by the user and then the timeout
+            // would change. So we will need to use pthread_cond_timedwait_relative_np and
+            // update the relative time each time pthread_cond_timedwait gets waked.
+            // on OSX and other systems that don't support the monotonic clock
+            timeval now;
+            gettimeofday(&now, NULL);
+            endTime.tv_sec = now.tv_sec;
+            endTime.tv_nsec = now.tv_usec * tccMicroSecondsToNanoSeconds;
+            TimeSpecAdd(&endTime, milliseconds);
+#endif // HAVE_CLOCK_MONOTONIC
+        }
+
+        int st = 0;
+
+        pthread_mutex_lock(&m_mutex);
+        while (!m_state)
+        {
+            if (milliseconds == INFINITE)
+            {
+                st = pthread_cond_wait(&m_condition, &m_mutex);
+            }
+            else
+            {
+                st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
+            }
+
+            if (st != 0)
+            {
+                // wait failed or timed out
+                break;
+            }
+
+        }
+        pthread_mutex_unlock(&m_mutex);
+
+        uint32_t waitStatus;
+
+        if (st == 0)
+        {
+            waitStatus = WAIT_OBJECT_0;
+        }
+        else if (st == ETIMEDOUT)
+        {
+            waitStatus = WAIT_TIMEOUT;
+        }
+        else
+        {
+            waitStatus = WAIT_FAILED;
+        }
+
+        return waitStatus;
+    }
+
+    void Set()
+    {
+        Update(true);
+    }
+
+    void Reset()
+    {
+        Update(false);
+    }
+};
+
+class UnixMutex
+{
+    pthread_mutex_t m_mutex;
+
+public:
+
+    UnixMutex()
+    {
+        int st = pthread_mutex_init(&m_mutex, NULL);
+        ASSERT(st == NULL);
+    }
+
+    ~UnixMutex()
+    {
+        int st = pthread_mutex_destroy(&m_mutex);
+        ASSERT(st == NULL);
+    }
+
+    bool Release()
+    {
+        return pthread_mutex_unlock(&m_mutex) == 0;
+    }
+
+    uint32_t Wait(uint32_t milliseconds)
+    {
+        // TODO: implement timed wait if needed
+        ASSERT(milliseconds == INFINITE);
+        int st = pthread_mutex_lock(&m_mutex);
+        return (st == 0) ? WAIT_OBJECT_0 : WAIT_FAILED;
+    }
+};
+
+typedef UnixHandle<UnixHandleType::Event, UnixEvent> EventUnixHandle;
+typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
+typedef UnixHandle<UnixHandleType::Mutex, UnixMutex> MutexUnixHandle;
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
+__attribute__((constructor))
+void PalInit()
 {
     g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
 
     if (!PalQueryProcessorTopology())
-        return false;
+        ASSERT_UNCONDITIONALLY("PalQueryProcessorTopology failed\n");
 
-    return true;
+#if HAVE_MACH_ABSOLUTE_TIME
+    kern_return_t machRet;
+    if ((machRet = mach_timebase_info(&s_TimebaseInfo)) != KERN_SUCCESS)
+    {
+        ASSERT_UNCONDITIONALLY("mach_timebase_info() failed\n");
+    }
+#endif
 }
 
 // Given a mask of capabilities return true if all of them are supported by the current PAL.
@@ -425,20 +398,76 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
     return (g_dwPALCapabilities & (uint32_t)capability) == (uint32_t)capability;
 }
 
+static const char* const WCharEncoding = "UTF-32LE";
+
+int UTF8ToWideChar(char* bytes, int len, wchar_t* buffer, int bufLen)
+{
+    iconv_t cd = iconv_open(WCharEncoding, "UTF-8");
+    if (cd == (iconv_t)-1)
+    {
+        fprintf(stderr, "iconv_open failed with %d\n", errno);
+        return 0;
+    }
+
+    char* inbuf = bytes;
+    char* outbuf = (char*)buffer;
+    size_t inbufbytesleft = len;
+    size_t outbufbytesleft = bufLen;
+
+    int rc = iconv(cd, &inbuf, &inbufbytesleft, &outbuf, &outbufbytesleft);
+    if (rc == -1)
+    {
+        fprintf(stderr, "iconv_open failed with %d\n", errno);
+        return 0;
+    }
+
+    iconv_close(cd);
+
+    return (bufLen - outbufbytesleft) / sizeof(wchar_t);
+}
+
+int WideCharToUTF8(wchar_t* chars, int len, char* buffer, int bufLen)
+{
+    iconv_t cd = iconv_open("UTF-8", WCharEncoding);
+    if (cd == (iconv_t)-1)
+    {
+        fprintf(stderr, "iconv_open failed with %d\n", errno);
+        return 0;
+    }
+
+    char* inbuf = (char*)chars;
+    char* outbuf = buffer;
+    size_t inbufbytesleft = len;
+    size_t outbufbytesleft = bufLen;
+
+    int rc = iconv(cd, &inbuf, &inbufbytesleft, &outbuf, &outbufbytesleft);
+    if (rc == -1)
+    {
+        fprintf(stderr, "iconv_open failed with %d\n", errno);
+        return 0;
+    }
+
+    iconv_close(cd);
+
+    return bufLen - outbufbytesleft;
+}
+
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#ifdef __LINUX__
+    int processorNumber = sched_getcpu();
+    ASSERT(processorNumber != -1);
+
+    return (unsigned int)processorNumber;
+#else
+    // TODO: implement for OSX / FreeBSD
+    return 0;
+#endif
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
-{
-    // UNIXTODO: Implement this function
-    return WAIT_OBJECT_0;
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Inout_ MEMORYSTATUSEX* pBuffer)
@@ -530,7 +559,24 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Inout_ MEM
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#if HAVE_CLOCK_MONOTONIC
+    timespec endTime;
+    clock_gettime(CLOCK_MONOTONIC, &endTime);
+    TimeSpecAdd(&endTime, milliseconds);
+    while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &endTime, NULL) == EINTR)
+    {
+    }
+#else // HAVE_CLOCK_MONOTONIC
+    timespec requested;
+    requested.tv_sec = milliseconds / tccSecondsToMilliSeconds;
+    requested.tv_nsec = (milliseconds - requested.tv_sec * tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
+
+    timespec remaining;
+    while (nanosleep(&requested, &remaining) == EINTR)
+    {
+        requested = remaining;
+    }
+#endif // HAVE_CLOCK_MONOTONIC
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
@@ -540,43 +586,151 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
     return sched_yield() == 0;
 }
 
+UInt32_BOOL CloseHandle(HANDLE handle)
+{
+    UnixHandleBase* handleBase = (UnixHandleBase*)handle;
+
+    delete handleBase;
+
+    return UInt32_TRUE;
+}
+
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateMutexW(_In_opt_ LPSECURITY_ATTRIBUTES pMutexAttributes, UInt32_BOOL initialOwner, _In_opt_z_ const wchar_t* pName)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    return new MutexUnixHandle(UnixMutex());
 }
+
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const wchar_t* pName)
 {
-    // UNIXTODO: Implement this function
-    return (HANDLE)1;
+    return new EventUnixHandle(UnixEvent(manualReset, initialState));
 }
 
+// This is not needed in the PAL
+#if 0
 REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
+#endif
 
 typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
-    // UNIXTODO: Implement this function
-    return NULL;
+    pthread_attr_t attrs;
+
+    int st = pthread_attr_init(&attrs);
+    ASSERT(st == 0);
+
+    static const int NormalPriority = 0;
+    static const int HighestPriority = -20;
+
+    // TODO: Figure out which scheduler to use, the default one doesn't seem to
+    // support per thread priorities.
+#if 0
+    sched_param params;
+    memset(&params, 0, sizeof(params));
+
+    params.sched_priority = highPriority ? HighestPriority : NormalPriority;
+
+    // Set the priority of the thread
+    st = pthread_attr_setschedparam(&attrs, &params);
+    ASSERT(st == 0);
+#endif
+    // Create the thread as detached, that means not joinable
+    st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+    ASSERT(st == 0);
+
+    pthread_t threadId;
+    st = pthread_create(&threadId, &attrs, (void *(*)(void*))callback, pCallbackContext);
+
+    int st2 = pthread_attr_destroy(&attrs);
+    ASSERT(st2 == 0);
+
+    return st == 0;
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
-    return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE) != NULL;
+    return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
-    return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE) != NULL;
+    return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
+}
+
+// Returns a 64-bit tick count with a millisecond resolution. It tries its best
+// to return monotonically increasing counts and avoid being affected by changes
+// to the system clock (either due to drift or due to explicit changes to system
+// time).
+REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
+{
+    UInt64 retval = 0;
+
+#if HAVE_CLOCK_MONOTONIC
+    {
+        struct timespec ts;
+        if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
+        {
+            retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
+        }
+        else
+        {
+            ASSERT_UNCONDITIONALLY("clock_gettime(CLOCK_MONOTONIC) failed\n");
+        }
+    }
+#elif HAVE_MACH_ABSOLUTE_TIME
+    {
+        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
+        if (s_TimebaseInfo.denom != 0)
+        {
+            retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMilliSecondsToNanoSeconds;
+        }
+        else
+        {
+            ASSERT_UNCONDITIONALLY("s_TimebaseInfo is uninitialized.\n");
+        }
+    }
+#elif HAVE_GETHRTIME
+    {
+        retval = (UInt64)(gethrtime() / tccMilliSecondsToNanoSeconds);
+    }
+#elif HAVE_READ_REAL_TIME
+    {
+        timebasestruct_t tb;
+        read_real_time(&tb, TIMEBASE_SZ);
+        if (time_base_to_time(&tb, TIMEBASE_SZ) == 0)
+        {
+            retval = (tb.tb_high * tccSecondsToMilliSeconds)+(tb.tb_low / tccMilliSecondsToNanoSeconds);
+        }
+        else
+        {
+            ASSERT_UNCONDITIONALLY("time_base_to_time() failed\n");
+        }
+    }
+#else
+    {
+        struct timeval tv;    
+        if (gettimeofday(&tv, NULL) == 0)
+        {
+            retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
+
+        }
+        else
+        {
+            ASSERT_UNCONDITIONALLY("gettimeofday() failed\n");
+        }
+    }
+#endif // HAVE_CLOCK_MONOTONIC 
+
+    return retval;    
 }
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetTickCount()
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    return (uint32_t)GetTickCount64();
 }
 
 #if 0
@@ -594,23 +748,32 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ wchar_t pFileName,
 REDHAWK_PALEXPORT _Success_(return == 0)
 uint32_t REDHAWK_PALAPI PalGetWriteWatch(_In_ uint32_t flags, _In_ void* pBaseAddress, _In_ size_t regionSize, _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, _Inout_opt_ uintptr_t* pCount, _Out_opt_ uint32_t* pGranularity)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // There is no write watching feature available on Unix other than a possibility to emulate 
+    // it using read only pages and page fault handler. 
+    *pAddresses = NULL;
+    *pCount = 0;
+    // Return non-zero value as an indicator of failure
+    return 1;
 }
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, size_t regionSize)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateLowMemoryNotification()
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // There is no write watching feature available on Unix.
+    // Return non-zero value as an indicator of failure. 
+    return 1;
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
-    // UNIXTODO: Implement this function
-    return (HANDLE)1;
+    HANDLE moduleHandle = NULL;
+    Dl_info info;
+    int st = dladdr(pointer, &info);
+    if (st != 0)
+    {
+        moduleHandle = info.dli_fbase;
+    }
+
+    return moduleHandle;
 }
 
 REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
@@ -618,569 +781,135 @@ REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t f
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Some more globally initialized data (in InitializeSubsystems), this time internal and used to cache
-// information returned by various GC support routines.
-//
-static UInt32 g_cLogicalCpus = 0;
-static size_t g_cbLargestOnDieCache = 0;
-static size_t g_cbLargestOnDieCacheAdjusted = 0;
-
-
-
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
-
-uint32_t getcpuid(uint32_t arg, unsigned char result[16])
+bool QueryCacheSize()
 {
-    uint32_t eax;
-    __asm("  xor %%ecx, %%ecx\n" \
-          "  cpuid\n" \
-          "  mov %%eax, 0(%[result])\n" \
-          "  mov %%ebx, 4(%[result])\n" \
-          "  mov %%ecx, 8(%[result])\n" \
-          "  mov %%edx, 12(%[result])\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
-        : "eax", "rbx", "ecx", "edx" /* registers that are clobbered*/
-      );
-    return eax;
-}
+    bool success = true;
+    g_cbLargestOnDieCache = 0;
 
-uint32_t getextcpuid(uint32_t arg1, uint32_t arg2, unsigned char result[16])
-{
-    uint32_t eax;
-    __asm("  cpuid\n" \
-          "  mov %%eax, 0(%[result])\n" \
-          "  mov %%ebx, 4(%[result])\n" \
-          "  mov %%ecx, 8(%[result])\n" \
-          "  mov %%edx, 12(%[result])\n" \
-        : "=a"(eax) /*output in eax*/\
-        : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
-        : "eax", "rbx", "ecx", "edx" /* registers that are clobbered*/
-      );
-    return eax;
-}
-
-void QueryAMDCacheInfo(_Out_ UInt32* pcbCache, _Out_ UInt32* pcbCacheAdjusted)
-{
-    unsigned char buffer[16];
-
-    if (getcpuid(0x80000000, buffer) >= 0x80000006)
+#ifdef __LINUX__
+    DIR* cpuDir = opendir("/sys/devices/system/cpu");
+    if (cpuDir == nullptr)
     {
-        UInt32* pdwBuffer = (UInt32*)buffer;
+        ASSERT_UNCONDITIONALLY("opendir on /sys/devices/system/cpu failed\n");        
+        return false;
+    }
 
-        getcpuid(0x80000006, buffer);
-
-        UInt32 dwL2CacheBits = pdwBuffer[2];
-        UInt32 dwL3CacheBits = pdwBuffer[3];
-
-        *pcbCache = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-
-        getcpuid(0x1, buffer);
-        UInt32 dwBaseFamily = (pdwBuffer[0] & (0xF << 8)) >> 8;
-        UInt32 dwExtFamily = (pdwBuffer[0] & (0xFF << 20)) >> 20;
-        UInt32 dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
-
-        if (dwFamily >= 0x10)
+    dirent* cpuEntry;
+    // Process entries starting with "cpu" (cpu0, cpu1, ...) in the directory
+    while (success && (cpuEntry = readdir(cpuDir)) != nullptr)
+    {
+        if ((strncmp(cpuEntry->d_name, "cpu", 3) == 0) && isdigit(cpuEntry->d_name[3]))
         {
-            UInt32_BOOL bSkipAMDL3 = UInt32_FALSE;
-
-            if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
+            char cpuCachePath[64] = "/sys/devices/system/cpu/";
+            strcat(cpuCachePath, cpuEntry->d_name);
+            strcat(cpuCachePath, "/cache");
+            DIR* cacheDir = opendir(cpuCachePath);
+            if (cacheDir == nullptr)
             {
-                // check model
-                UInt32 dwBaseModel = (pdwBuffer[0] & (0xF << 4)) >> 4;
-                UInt32 dwExtModel = (pdwBuffer[0] & (0xF << 16)) >> 16;
-                UInt32 dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
+                success = false;
+                break;
+            }
 
-                switch (dwModel)
+            strcat(cpuCachePath, "/");
+            int cpuCacheBasePathLength = strlen(cpuCachePath);
+
+            dirent* cacheEntry;
+            // For all entries in the directory
+            while ((cacheEntry = readdir(cacheDir)) != nullptr)
+            {
+                if (strncmp(cacheEntry->d_name, "index", 5) == 0)
                 {
-                case 0x2:
-                    // 65nm parts do not benefit from larger Gen0
-                    bSkipAMDL3 = UInt32_TRUE;
-                    break;
+                    cpuCachePath[cpuCacheBasePathLength] = '\0';
+                    strcat(cpuCachePath, cacheEntry->d_name);
+                    strcat(cpuCachePath, "/size");
 
-                case 0x4:
-                default:
-                    bSkipAMDL3 = UInt32_FALSE;
+                    int fd = open(cpuCachePath, O_RDONLY);
+                    if (fd < 0)
+                    {
+                        success = false;
+                        break;
+                    }
+
+                    char cacheSizeStr[16];
+                    int bytesRead = read(fd, cacheSizeStr, sizeof(cacheSizeStr) - 1);
+                    cacheSizeStr[bytesRead] = '\0';
+
+                    // Parse the cache size that is formatted as a number followed by the K letter
+                    char* lastChar;
+                    int cacheSize = strtol(cacheSizeStr, &lastChar, 10) * 1024;
+                    ASSERT(*lastChar == 'K');
+                    g_cbLargestOnDieCache = max(g_cbLargestOnDieCache, cacheSize);
+
+                    close(fd);
                 }
             }
 
-            if (!bSkipAMDL3)
+            closedir(cacheDir);
+        }
+    }
+    closedir(cpuDir);
+
+#elif HAVE_SYSCTL
+
+    int64_t g_cbLargestOnDieCache;
+    size_t sz = sizeof(g_cbLargestOnDieCache);
+
+    if (sysctlbyname("hw.l3cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
+    {
+        // No L3 cache, try the L2 one
+        if (sysctlbyname("hw.l2cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
+        {
+            // No L2 cache, try the L1 one
+            if (sysctlbyname("hw.l1dcachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
             {
-                // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
-                // from increased gen0 size, taking L3 into account
-                getcpuid(0x80000008, buffer);
-                UInt32 dwNumberOfCores = (pdwBuffer[2] & (0xFF)) + 1;       // NC is in ECX bits 7-0
-
-                UInt32 dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
-                                                                                      // L3 is shared between cores
-                dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
-                *pcbCache += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
-                                                  // L1 is too small to worry about, so ignore it
+                ASSERT_UNCONDITIONALLY("sysctl failed to get cache size\n");
+                return false;
             }
         }
-    }
-    *pcbCacheAdjusted = *pcbCache;
-}
-
-#ifdef _DEBUG
-#define CACHE_WAY_BITS          0xFFC00000      // number of cache WAYS-Associativity is returned in EBX[31:22] (10 bits) using cpuid function 4
-#define CACHE_PARTITION_BITS    0x003FF000      // number of cache Physical Partitions is returned in EBX[21:12] (10 bits) using cpuid function 4
-#define CACHE_LINESIZE_BITS     0x00000FFF      // Linesize returned in EBX[11:0] (12 bits) using cpuid function 4
-#define LIMITED_METHOD_CONTRACT 
-
-size_t CLR_GetIntelDeterministicCacheEnum()
-{
-    LIMITED_METHOD_CONTRACT;
-    size_t retVal = 0;
-    unsigned char buffer[16];
-
-    uint32_t maxCpuid = getextcpuid(0, 0, buffer);
-
-    uint32_t* dwBuffer = (uint32_t*)buffer;
-
-    if ((maxCpuid > 3) && (maxCpuid < 0x80000000)) // Deterministic Cache Enum is Supported
-    {
-        uint32_t dwCacheWays, dwCachePartitions, dwLineSize, dwSets;
-        uint32_t retEAX = 0;
-        uint32_t loopECX = 0;
-        size_t maxSize = 0;
-        size_t curSize = 0;
-
-        // Make First call  to getextcpuid with loopECX=0. loopECX provides an index indicating which level to return information about.
-        // The second parameter is input EAX=4, to specify we want deterministic cache parameter leaf information. 
-        // getextcpuid with EAX=4 should be executed with loopECX = 0,1, ... until retEAX [4:0] contains 00000b, indicating no more
-        // cache levels are supported.
-
-        getextcpuid(loopECX, 4, buffer);
-        retEAX = dwBuffer[0];       // get EAX
-
-        int i = 0;
-        while (retEAX & 0x1f)       // Crack cache enums and loop while EAX > 0
-        {
-
-            dwCacheWays = (dwBuffer[1] & CACHE_WAY_BITS) >> 22;
-            dwCachePartitions = (dwBuffer[1] & CACHE_PARTITION_BITS) >> 12;
-            dwLineSize = dwBuffer[1] & CACHE_LINESIZE_BITS;
-            dwSets = dwBuffer[2];    // ECX
-
-            curSize = (dwCacheWays + 1)*(dwCachePartitions + 1)*(dwLineSize + 1)*(dwSets + 1);
-
-            if (maxSize < curSize)
-                maxSize = curSize;
-
-            loopECX++;
-            getextcpuid(loopECX, 4, buffer);
-            retEAX = dwBuffer[0];      // get EAX[4:0];        
-            i++;
-            if (i > 16)                // prevent infinite looping
-                return 0;
-        }
-        retVal = maxSize;
-    }
-
-    return retVal;
-}
-
-// The following function uses CPUID function 2 with descriptor values to determine the cache size.  This requires a-priori 
-// knowledge of the descriptor values. This works on gallatin and prior processors (already released processors).
-// If successful, this function returns the cache size in bytes of the highest level on-die cache. Returns 0 on failure.
-
-size_t CLR_GetIntelDescriptorValuesCache()
-{
-    LIMITED_METHOD_CONTRACT;
-    size_t size = 0;
-    size_t maxSize = 0;
-    unsigned char buffer[16];
-
-    getextcpuid(0, 2, buffer);         // call CPUID with EAX function 2H to obtain cache descriptor values 
-
-    for (int i = buffer[0]; --i >= 0;)
-    {
-        int j;
-        for (j = 3; j < 16; j += 4)
-        {
-            // if the information in a register is marked invalid, set to null descriptors
-            if (buffer[j] & 0x80)
-            {
-                buffer[j - 3] = 0;
-                buffer[j - 2] = 0;
-                buffer[j - 1] = 0;
-                buffer[j - 0] = 0;
-            }
-        }
-
-        for (j = 1; j < 16; j++)
-        {
-            switch (buffer[j])    // need to add descriptor values for 8M and 12M when they become known
-            {
-            case    0x41:
-            case    0x79:
-                size = 128 * 1024;
-                break;
-
-            case    0x42:
-            case    0x7A:
-            case    0x82:
-                size = 256 * 1024;
-                break;
-
-            case    0x22:
-            case    0x43:
-            case    0x7B:
-            case    0x83:
-            case    0x86:
-                size = 512 * 1024;
-                break;
-
-            case    0x23:
-            case    0x44:
-            case    0x7C:
-            case    0x84:
-            case    0x87:
-                size = 1024 * 1024;
-                break;
-
-            case    0x25:
-            case    0x45:
-            case    0x85:
-                size = 2 * 1024 * 1024;
-                break;
-
-            case    0x29:
-                size = 4 * 1024 * 1024;
-                break;
-            }
-            if (maxSize < size)
-                maxSize = size;
-        }
-
-        if (i > 0)
-            getextcpuid(0, 2, buffer);
-    }
-    return     maxSize;
-}
-
-size_t CLR_GetLargestOnDieCacheSizeX86(UInt32_BOOL bTrueSize)
-{
-
-    static size_t maxSize;
-    static size_t maxTrueSize;
-
-    if (maxSize)
-    {
-        // maxSize and maxTrueSize cached
-        if (bTrueSize)
-        {
-            return maxTrueSize;
-        }
-        else
-        {
-            return maxSize;
-        }
-    }
-
-    __try
-    {
-        unsigned char buffer[16];
-        uint32_t* dwBuffer = (uint32_t*)buffer;
-
-        uint32_t maxCpuId = getcpuid(0, buffer);
-
-        if (dwBuffer[1] == 'uneG')
-        {
-            if (dwBuffer[3] == 'Ieni')
-            {
-                if (dwBuffer[2] == 'letn')
-                {
-                    size_t tempSize = 0;
-                    if (maxCpuId >= 2)         // cpuid support for cache size determination is available
-                    {
-                        tempSize = CLR_GetIntelDeterministicCacheEnum();          // try to use use deterministic cache size enumeration
-                        if (!tempSize)
-                        {                    // deterministic enumeration failed, fallback to legacy enumeration using descriptor values            
-                            tempSize = CLR_GetIntelDescriptorValuesCache();
-                        }
-                    }
-
-                    // update maxSize once with final value
-                    maxTrueSize = tempSize;
-
-#ifdef _WIN64
-                    if (maxCpuId >= 2)
-                    {
-                        // If we're running on a Prescott or greater core, EM64T tests
-                        // show that starting with a gen0 larger than LLC improves performance.
-                        // Thus, start with a gen0 size that is larger than the cache.  The value of
-                        // 3 is a reasonable tradeoff between workingset and performance.
-                        maxSize = maxTrueSize * 3;
-                    }
-                    else
-#endif
-                    {
-                        maxSize = maxTrueSize;
-                    }
-                }
-            }
-        }
-
-        if (dwBuffer[1] == 'htuA') {
-            if (dwBuffer[3] == 'itne') {
-                if (dwBuffer[2] == 'DMAc') {
-
-                    if (getcpuid(0x80000000, buffer) >= 0x80000006)
-                    {
-                        getcpuid(0x80000006, buffer);
-
-                        uint32_t dwL2CacheBits = dwBuffer[2];
-                        uint32_t dwL3CacheBits = dwBuffer[3];
-
-                        maxTrueSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-
-                        getcpuid(0x1, buffer);
-                        uint32_t dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
-                        uint32_t dwExtFamily = (dwBuffer[0] & (0xFF << 20)) >> 20;
-                        uint32_t dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
-
-                        if (dwFamily >= 0x10)
-                        {
-                            UInt32_BOOL bSkipAMDL3 = UInt32_FALSE;
-
-                            if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
-                            {
-                                // check model
-                                uint32_t dwBaseModel = (dwBuffer[0] & (0xF << 4)) >> 4;
-                                uint32_t dwExtModel = (dwBuffer[0] & (0xF << 16)) >> 16;
-                                uint32_t dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
-
-                                switch (dwModel)
-                                {
-                                case 0x2:
-                                    // 65nm parts do not benefit from larger Gen0
-                                    bSkipAMDL3 = UInt32_TRUE;
-                                    break;
-
-                                case 0x4:
-                                default:
-                                    bSkipAMDL3 = UInt32_FALSE;
-                                }
-                            }
-
-                            if (!bSkipAMDL3)
-                            {
-                                // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
-                                // from increased gen0 size, taking L3 into account
-                                getcpuid(0x80000008, buffer);
-                                uint32_t dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;        // NC is in ECX bits 7-0
-
-                                uint32_t dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
-                                                                                                     // L3 is shared between cores
-                                dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
-                                maxTrueSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
-                                                                    // L1 is too small to worry about, so ignore it
-                            }
-                        }
-
-
-                        maxSize = maxTrueSize;
-                    }
-                }
-            }
-        }
-    }
-    __except (1)
-    {
-    }
-
-    if (bTrueSize)
-        return maxTrueSize;
-    else
-        return maxSize;
-}
-
-uint32_t CLR_GetLogicalCpuCountFromOS(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, uint32_t nEntries);
-
-// This function returns the number of logical processors on a given physical chip.  If it cannot
-// determine the number of logical cpus, or the machine is not populated uniformly with the same
-// type of processors, this function returns 1.
-uint32_t CLR_GetLogicalCpuCountX86(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, uint32_t nEntries)
-{
-    // No CONTRACT possible because GetLogicalCpuCount uses SEH
-
-    static uint32_t val = 0;
-
-    // cache value for later re-use
-    if (val)
-    {
-        return val;
-    }
-
-    uint32_t retVal = 1;
-
-    __try
-    {
-        unsigned char buffer[16];
-
-        uint32_t maxCpuId = getcpuid(0, buffer);
-
-        if (maxCpuId < 1)
-            goto lDone;
-
-        uint32_t* dwBuffer = (uint32_t*)buffer;
-
-        if (dwBuffer[1] == 'uneG') {
-            if (dwBuffer[3] == 'Ieni') {
-                if (dwBuffer[2] == 'letn') {  // get SMT/multicore enumeration for Intel EM64T 
-
-                                              // TODO: Currently GetLogicalCpuCountFromOS() and GetLogicalCpuCountFallback() are broken on 
-                                              // multi-core processor, but we never call into those two functions since we don't halve the
-                                              // gen0size when it's prescott and above processor. We keep the old version here for earlier
-                                              // generation system(Northwood based), perf data suggests on those systems, halve gen0 size 
-                                              // still boost the performance(ex:Biztalk boosts about 17%). So on earlier systems(Northwood) 
-                                              // based, we still go ahead and halve gen0 size.  The logic in GetLogicalCpuCountFromOS() 
-                                              // and GetLogicalCpuCountFallback() works fine for those earlier generation systems. 
-                                              // If it's a Prescott and above processor or Multi-core, perf data suggests not to halve gen0 
-                                              // size at all gives us overall better performance. 
-                                              // This is going to be fixed with a new version in orcas time frame. 
-
-                    if ((maxCpuId > 3) && (maxCpuId < 0x80000000))
-                        goto lDone;
-
-                    val = CLR_GetLogicalCpuCountFromOS(pslpi, nEntries); //try to obtain HT enumeration from OS API
-                    if (val)
-                    {
-                        retVal = val;     // OS API HT enumeration successful, we are Done        
-                        goto lDone;
-                    }
-
-                    // val = GetLogicalCpuCountFallback();    // OS API failed, Fallback to HT enumeration using CPUID
-                    // if( val )
-                    //     retVal = val;
-                }
-            }
-        }
-    lDone:;
-    }
-    __except (1)
-    {
-    }
-
-    if (val == 0)
-    {
-        val = retVal;
-    }
-
-    return retVal;
-}
-
-#endif // _DEBUG
-#endif // (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
-
-
-#ifdef _DEBUG
-uint32_t CLR_GetLogicalCpuCountFromOS(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, uint32_t nEntries)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-// This function returns the size of highest level cache on the physical chip.   If it cannot
-// determine the cachesize this function returns 0.
-size_t CLR_GetLogicalProcessorCacheSizeFromOS(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, uint32_t nEntries)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-uint32_t CLR_GetLogicalCpuCount(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, uint32_t nEntries)
-{
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
-    return CLR_GetLogicalCpuCountX86(pslpi, nEntries);
-#else
-    return CLR_GetLogicalCpuCountFromOS(pslpi, nEntries);
-#endif
-}
-
-size_t CLR_GetLargestOnDieCacheSize(UInt32_BOOL bTrueSize, _In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, uint32_t nEntries)
-{
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
-    return CLR_GetLargestOnDieCacheSizeX86(bTrueSize);
-#else
-    return CLR_GetLogicalProcessorCacheSizeFromOS(pslpi, nEntries);
-#endif
-}
-#endif // _DEBUG
-
-
-
-enum CpuVendor
-{
-    CpuUnknown,
-    CpuIntel,
-    CpuAMD,
-};
-
-CpuVendor GetCpuVendor(_Out_ UInt32* puMaxCpuId)
-{
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
-    unsigned char buffer[16];
-    *puMaxCpuId = getcpuid(0, buffer);
-
-    UInt32* pdwBuffer = (UInt32*)buffer;
-
-    if (pdwBuffer[1] == 'uneG'
-        && pdwBuffer[3] == 'Ieni'
-        && pdwBuffer[2] == 'letn')
-    {
-        return CpuIntel;
-    }
-    else if (pdwBuffer[1] == 'htuA'
-        && pdwBuffer[3] == 'itne'
-        && pdwBuffer[2] == 'DMAc')
-    {
-        return CpuAMD;
     }
 #else
-    *puMaxCpuId = 0;
-#endif
-    return CpuUnknown;
+#error Don't know how to get cache size on this platform
+#endif // __LINUX__
+
+    // TODO: implement adjusted cache size
+    g_cbLargestOnDieCacheAdjusted = g_cbLargestOnDieCache;
+
+    return success;
 }
 
-// Count set bits in a bitfield.
-UInt32 CountBits(size_t bfBitfield)
+bool QueryLogicalProcessorCount()
 {
-    UInt32 cBits = 0;
-
-    // This is not the fastest algorithm possible but it's simple and the performance is not critical.
-    for (UInt32 i = 0; i < (sizeof(size_t) * 8); i++)
+#if HAVE_SYSCONF
+    g_cLogicalCpus = sysconf(_SC_NPROCESSORS_ONLN);
+    if (g_cLogicalCpus < 1)
     {
-        cBits += (bfBitfield & 1) ? 1 : 0;
-        bfBitfield >>= 1;
+        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_ONLN\n");
+        return false;
+    }
+#elif HAVE_SYSCTL
+    size_t sz = sizeof(g_cLogicalCpus);
+
+    int st = 0;
+    if (sysctlbyname("hw.logicalcpu_max", &g_cLogicalCpus, &sz, NULL, 0) != 0)
+    {
+        ASSERT_UNCONDITIONALLY("sysctl failed for hw.logicalcpu_max\n");
+        return false;
     }
 
-    return cBits;
-}
+#endif // HAVE_SYSCONF
 
-//
-// Enable TRACE_CACHE_TOPOLOGY to get a dump of the info provided by the OS as well as a comparison of the
-// 'answers' between the current implementation and the CLR implementation.
-//
-//#define TRACE_CACHE_TOPOLOGY
-#ifdef _DEBUG
-void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    return true;
 }
-void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-#endif // _DEBUG
 
 // Method used to initialize the above values.
 bool PalQueryProcessorTopology()
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    if (!QueryLogicalProcessorCount())
+    {
+        return false;
+    }
+
+    return QueryCacheSize();
 }
 
 // Functions called by the GC to obtain our cached values for number of logical processors and cache size.
@@ -1258,36 +987,36 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress,
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-extern "C" UInt32 _InterlockedOr(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
-{
-    return __sync_fetch_and_or(pDst, iValue);
-}
-
-extern "C" UInt32 _InterlockedAnd(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
-{
-    return __sync_fetch_and_and(pDst, iValue);
+    static void* pBuffer;
+    return _InterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
 extern "C" HANDLE GetCurrentProcess()
 {
-    // UNIXTODO: Implement this function;
-    return (HANDLE)1;
+    return (HANDLE)-1;
 }
 
 extern "C" HANDLE GetCurrentThread()
 {
-    // UNIXTODO: Implement this function;
-    return (HANDLE)1;
+    return (HANDLE)-2;
 }
 
-extern "C" UInt32_BOOL DuplicateHandle(HANDLE arg1, HANDLE arg2, HANDLE arg3, HANDLE * arg4, UInt32 arg5, UInt32_BOOL arg6, UInt32 arg7)
+extern "C" UInt32_BOOL DuplicateHandle(
+    HANDLE hSourceProcessHandle,
+    HANDLE hSourceHandle,
+    HANDLE hTargetProcessHandle,
+    HANDLE * lpTargetHandle,
+    UInt32 dwDesiredAccess,
+    UInt32_BOOL bInheritHandle,
+    UInt32 dwOptions)
 {
-    // UNIXTODO: Implement this function;
-    *arg4 = (HANDLE)1;
-    return UInt32_TRUE;
+    // We can only duplicate the current thread handle. That is all that the MRT uses.
+    ASSERT(hSourceProcessHandle == GetCurrentProcess());
+    ASSERT(hTargetProcessHandle == GetCurrentProcess());
+    ASSERT(hSourceHandle == GetCurrentThread());
+    *lpTargetHandle = new ThreadUnixHandle(pthread_self());
+
+    return lpTargetHandle != nullptr;
 }
 
 // TODO: what to do with this? The CRITICAL_SECTION at the other side is different!
@@ -1317,7 +1046,8 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // Abort aborts the process and causes creation of a crash dump
+    abort();
 }
 
 typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
@@ -1326,7 +1056,7 @@ extern "C" UInt32 FlsAlloc(PFLS_CALLBACK_FUNCTION arg1)
 {
     // UNIXTODO: The FLS stuff needs to be abstracted, the only usage of the FLS is to get a callback
     // when a thread is terminating.
-    return 1;
+    return 0;
 }
 
 __thread void* flsValue;
@@ -1349,7 +1079,7 @@ extern "C" UInt32_BOOL FlsSetValue(UInt32 arg1, void * arg2)
 
 extern "C" unsigned __int64  __readgsqword(unsigned long Offset)
 {
-    // UNIXTODO: The same as PalFlsAlloc is true here.
+    // UNIXTODO: The TLS stuff needs to be better abstracted.
     return 0;
 }
 
@@ -1359,37 +1089,39 @@ extern "C" UInt32_BOOL IsDebuggerPresent()
     return UInt32_FALSE;
 }
 
-extern "C" HANDLE LoadLibraryExW(const WCHAR * arg1, HANDLE arg2, UInt32 arg3)
-{
-    // Refactor assert.h to not to use it explicitly
-    PORTABILITY_ASSERT("UNIXTODO: Remove this function");
-}
-
-extern "C" void* GetProcAddress(HANDLE arg1, const char * arg2)
-{
-    // Refactor assert.h to not to use it explicitly
-    PORTABILITY_ASSERT("UNIXTODO: Remove this function");
-}
-
 extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)
 {
+    // TODO: change it to TerminateCurrentProcess
+    // Then if we modified the signature of the DuplicateHandle too, we can
+    // get rid of the PalGetCurrentProcess.
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-extern "C" UInt32_BOOL SetEvent(HANDLE arg1)
+extern "C" void ExitProcess(UInt32 exitCode)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    exit(exitCode);
 }
 
-extern "C" UInt32_BOOL ResetEvent(HANDLE arg1)
+extern "C" UInt32_BOOL SetEvent(HANDLE event)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    EventUnixHandle* unixHandle = (EventUnixHandle*)event;
+    unixHandle->GetObject()->Set();
+
+    return UInt32_TRUE;
 }
 
-extern "C" UInt32 GetEnvironmentVariableW(const wchar_t* arg1, wchar_t* arg2, UInt32 arg3)
+extern "C" UInt32_BOOL ResetEvent(HANDLE event)
+{
+    EventUnixHandle* unixHandle = (EventUnixHandle*)event;
+    unixHandle->GetObject()->Reset();
+
+    return UInt32_TRUE;
+}
+
+extern "C" UInt32 GetEnvironmentVariableW(const wchar_t* pName, wchar_t* pBuffer, UInt32 size)
 {
     // UNIXTODO: Implement this function
-    *arg2 = '\0';
+    *pBuffer = '\0';
     return 0;
 }
 
@@ -1398,14 +1130,22 @@ extern "C" UInt16 RtlCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3,
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-extern "C" void* HeapAlloc(HANDLE arg1, UInt32 arg2, UIntNative arg3)
+extern "C" HANDLE GetProcessHeap()
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // UNIXTODO: Consider using some special value?
+    return (HANDLE)1;
 }
 
-extern "C" UInt32_BOOL HeapFree(HANDLE arg1, UInt32 arg2, void * arg3)
+extern "C" void* HeapAlloc(HANDLE heap, UInt32 flags, UIntNative bytes)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    return malloc(bytes);
+}
+
+extern "C" UInt32_BOOL HeapFree(HANDLE heap, UInt32 flags, void * mem)
+{
+    free(mem);
+
+    return UInt32_TRUE;
 }
 
 typedef UInt32 (__stdcall *HijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
@@ -1415,9 +1155,23 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackC
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-extern "C" UInt32 WaitForSingleObjectEx(HANDLE arg1, UInt32 arg2, UInt32_BOOL arg3)
+extern "C" UInt32 WaitForSingleObjectEx(HANDLE handle, UInt32 milliseconds, UInt32_BOOL alertable)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // The handle can only represent an event here
+    // TODO: encapsulate this stuff
+    UnixHandleBase* handleBase = (UnixHandleBase*)handle;
+    ASSERT(handleBase->GetType() == UnixHandleType::Event);
+    EventUnixHandle* unixHandle = (EventUnixHandle*)handleBase;
+
+    return unixHandle->GetObject()->Wait(milliseconds);
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+{
+    // Only a single handle wait for event is supported
+    ASSERT(handleCount == 1);
+
+    return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
 
 extern "C" void _mm_pause()
@@ -1427,12 +1181,127 @@ extern "C" void _mm_pause()
 
 extern "C" Int32 _wcsicmp(const wchar_t *string1, const wchar_t *string2)
 {
-    // HACK: there is no case insensitive wide char string API on Unix
-    return wcscmp(string1, string2);
+    return wcscasecmp(string1, string2);
 }
 
-// NOTE: this is needed by main.cpp of the compiled app
-int UTF8ToWideChar(char* bytes, int len, uint16_t* buffer, int bufLen)
+REDHAWK_PALEXPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...)
 {
+#if defined(_DEBUG)
+    va_list args;
+    va_start(args, szFormat);
+    vprintf(szFormat, args);
+#endif
+}
+
+REDHAWK_PALEXPORT void __cdecl PalFlushStdout()
+{
+#if defined(_DEBUG)
+    fflush(stdout);
+#endif
+}
+
+REDHAWK_PALEXPORT int __cdecl PalSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, ...)
+{
+    va_list args;
+    va_start(args, szFormat);
+    return vsnprintf(szBuffer, cchBuffer, szFormat, args);
+}
+
+REDHAWK_PALEXPORT int __cdecl PalVSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, va_list args)
+{
+    return vsnprintf(szBuffer, cchBuffer, szFormat, args);
+}
+
+// Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ UInt8 ** ppLowerBound, _Out_ UInt8 ** ppUpperBound)
+{
+    // The module handle is equal to the module base address
+    *ppLowerBound = (UInt8*)hOsHandle;
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+}
+
+REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
+{
+    // The concept of process CPU affinity is going away and so CoreSystem obsoletes the APIs used to
+    // fetch this information. Instead we'll just return total cpu count.
+    return PalGetLogicalCpuCount();
+}
+
+//Reads the entire contents of the file into the specified buffer, buff
+//returns the number of bytes read if the file is successfully read
+//returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ WCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
+{
+    // UNIXTODO: Implement this function
+    return 0;
+}
+
+__thread void* pStackHighOut = NULL;
+__thread void* pStackLowOut = NULL;
+
+// Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
+// not get the current dynamic bounds of the stack, which can be significantly smaller than 
+// the maximum bounds.
+REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+{
+    if (pStackHighOut == NULL)
+    {
+#ifdef __APPLE__
+        // This is a Mac specific method
+        pStackHighOut = pthread_get_stackaddr_np(pthread_self());
+        pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+#else // __APPLE__
+        pthread_attr_t attr;
+        size_t stackSize;
+        int status;
+
+        pthread_t thread = pthread_self();
+
+        status = pthread_attr_init(&attr);
+        ASSERT_MSG(status == 0, "pthread_attr_init call failed");
+
+#if HAVE_PTHREAD_ATTR_GET_NP
+        status = pthread_attr_get_np(thread, &attr);
+#elif HAVE_PTHREAD_GETATTR_NP
+        status = pthread_getattr_np(thread, &attr);
+#else
+#error Dont know how to get thread attributes on this platform!
+#endif
+        ASSERT_MSG(status == 0, "pthread_getattr_np call failed");
+
+        status = pthread_attr_getstack(&attr, &pStackLowOut, &stackSize);
+        ASSERT_MSG(status == 0, "pthread_attr_getstack call failed");
+
+        status = pthread_attr_destroy(&attr);
+        ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
+
+        pStackHighOut = (uint8_t*)pStackLowOut + stackSize;
+#endif // __APPLE__
+    }
+
+    *ppStackLowOut = pStackLowOut;
+    *ppStackHighOut = pStackHighOut;
+
+    return true;
+}
+
+// retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the 
+// executable module of the current process.
+//
+// Return value:  number of characters in name string
+//
+REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HANDLE moduleBase)
+{
+    // TODO: this function has a signature that expects the module name to be stored somewhere.
+    // We should change the signature to actually copy out the module name.
+    // Or get rid of this function (it is used by RHConfig to find the config file and the
+    // profiling to generate the .profile file name.
+    // UNIXTODO: Implement this function!
+    *pModuleNameOut = NULL;
+    return 0;
+}
+
+void PalDebugBreak()
+{
+    __debugbreak();
 }

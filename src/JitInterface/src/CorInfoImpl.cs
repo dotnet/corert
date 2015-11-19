@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.IL;
 
-using ILToNative;
+using ILCompiler;
 
 namespace Internal.JitInterface
 {
@@ -22,7 +22,7 @@ namespace Internal.JitInterface
     {
         IntPtr _comp;
 
-        [DllImport("protojit")]
+        [DllImport("ryujit")]
         extern static IntPtr getJit();
 
         IntPtr _jit;
@@ -54,6 +54,12 @@ namespace Internal.JitInterface
             }
         }
 
+        struct SequencePoint
+        {
+            public string Document;
+            public int LineNumber;
+        }
+
         public MethodCode CompileMethod(MethodDesc method)
         {
             try
@@ -65,7 +71,23 @@ namespace Internal.JitInterface
                     CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
                     CorJitFlag.CORJIT_FLG_READYTORUN |
                     CorJitFlag.CORJIT_FLG_RELOC |
+                    CorJitFlag.CORJIT_FLG_DEBUG_INFO |
                     CorJitFlag.CORJIT_FLG_PREJIT);
+
+                if (!_compilation.Options.NoLineNumbers)
+                {
+                    CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
+                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
+                    if (ilSequencePoints != null)
+                    {
+                        Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
+                        foreach (var point in ilSequencePoints)
+                        {
+                            sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
+                        }
+                        _sequencePoints = sequencePoints;
+                    }
+                }
 
                 IntPtr nativeEntry;
                 uint codeSize;
@@ -78,9 +100,14 @@ namespace Internal.JitInterface
                 {
                     Code = _code,
                     ColdCode = _coldCode,
+
+                    RODataAlignment = _roDataAlignment,
                     ROData = _roData,
 
-                    Relocs = (_relocs != null) ? _relocs.ToArray() : null
+                    Relocs = (_relocs != null) ? _relocs.ToArray() : null,
+
+                    FrameInfos = _frameInfos,
+                    DebugLocInfos = _debugLocInfos
                 };
             }
             finally
@@ -118,8 +145,18 @@ namespace Internal.JitInterface
 
             _code = null;
             _coldCode = null;
+
+            _roDataAlignment = 0;
             _roData = null;
+
             _relocs = null;
+
+            _numFrameInfos = 0;
+            _usedFrameInfos = 0;
+            _frameInfos = null;
+
+            _sequencePoints = null;
+            _debugLocInfos = null;
         }
 
         Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -189,7 +226,7 @@ namespace Internal.JitInterface
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, out sig.retTypeClass);
             sig._retType = (byte)corInfoRetType;
-            sig.retTypeSigClass = sig.retTypeClass; // The difference between the two is not relevant for ILToNative
+            sig.retTypeSigClass = sig.retTypeClass; // The difference between the two is not relevant for ILCompiler
 
             sig.flags = 0;    // used by IL stubs code
 
@@ -215,7 +252,7 @@ namespace Internal.JitInterface
             // }
         }
 
-        void Get_CORINFO_SIG_INFO(TypeDesc[] locals, out CORINFO_SIG_INFO sig)
+        void Get_CORINFO_SIG_INFO(LocalVariableDefinition[] locals, out CORINFO_SIG_INFO sig)
         {
             sig.callConv = CorInfoCallConv.CORINFO_CALLCONV_DEFAULT;
             sig._retType = (byte)CorInfoType.CORINFO_TYPE_VOID;
@@ -319,80 +356,62 @@ namespace Internal.JitInterface
         {
             CorInfoFlag result = 0;
 
-            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
-            if (ecmaMethod != null)
+            // CORINFO_FLG_PROTECTED - verification only
+
+            if (method.Signature.IsStatic)
+                result |= CorInfoFlag.CORINFO_FLG_STATIC;
+
+            // TODO: if (pMD->IsSynchronized())
+            //    result |= CORINFO_FLG_SYNCH;
+
+            if (method.IsIntrinsic)
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
+            if (method.IsVirtual)
+                result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
+            if (method.IsAbstract)
+                result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
+            if (method.IsConstructor || method.IsStaticConstructor)
+                result |= CorInfoFlag.CORINFO_FLG_CONSTRUCTOR;
+
+            //
+            // See if we need to embed a .cctor call at the head of the
+            // method body.
+            //
+
+            var owningType = method.OwningType;
+            var owningMetadataType = owningType as MetadataType;
+
+            // method or class might have the final bit
+            if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
+                result |= CorInfoFlag.CORINFO_FLG_FINAL;
+
+            // TODO: Generics
+            // if (pMD->IsSharedByGenericInstantiations())
+            //     result |= CORINFO_FLG_SHAREDINST;
+
+            // TODO: PInvoke
+            // if ((attribs & MethodAttributes.PinvokeImpl) != 0)
+            //    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+
+            // TODO: Cache inlining hits
+            // Check for an inlining directive.
+
+            if (method.IsNoInlining)
             {
-                var attribs = ecmaMethod.Attributes;
-
-                // CORINFO_FLG_PROTECTED - verification only
-
-                if ((attribs & MethodAttributes.Static) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_STATIC;
-
-                // TODO: if (pMD->IsSynchronized())
-                //    result |= CORINFO_FLG_SYNCH;
-
-                if (ecmaMethod.IsIntrinsic)
-                    result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
-
-                if ((attribs & MethodAttributes.Virtual) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
-                if ((attribs & MethodAttributes.Abstract) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
-                if ((attribs & MethodAttributes.SpecialName) != 0)
-                {
-                    string name = method.Name;
-                    if (name == ".ctor" || name == ".cctor")
-                        result |= CorInfoFlag.CORINFO_FLG_CONSTRUCTOR;
-                }
-
-                //
-                // See if we need to embed a .cctor call at the head of the
-                // method body.
-                //
-
-                var owningType = method.OwningType;
-
-                var typeAttribs = ((EcmaType)owningType.GetTypeDefinition()).Attributes;
-
-                // method or class might have the final bit
-                if ((attribs & MethodAttributes.Final) != 0 || (typeAttribs & TypeAttributes.Sealed) != 0)
-                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
-
-                // TODO: Generics
-                // if (pMD->IsSharedByGenericInstantiations())
-                //     result |= CORINFO_FLG_SHAREDINST;
-
-                // TODO: PInvoke
-                // if ((attribs & MethodAttributes.PinvokeImpl) != 0)
-                //    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                // TODO: Cache inlining hits
-                // Check for an inlining directive.
-
-                var implAttribs = ecmaMethod.ImplAttributes;
-                if ((implAttribs & MethodImplAttributes.NoInlining) != 0)
-                {
-                    /* Function marked as not inlineable */
-                    result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
-                }
-                else if ((implAttribs & MethodImplAttributes.AggressiveInlining) != 0)
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-                }
-
-                if (owningType.IsDelegate)
-                {
-                    if (method.Name == "Invoke")
-                        // This is now used to emit efficient invoke code for any delegate invoke,
-                        // including multicast.
-                        result |= CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE;
-                }
+                /* Function marked as not inlineable */
+                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
-            else
+            else if (method.IsAggressiveInlining)
             {
-                if (method.Signature.IsStatic)
-                    result |= CorInfoFlag.CORINFO_FLG_STATIC;
+                result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
+            }
+
+            if (owningType.IsDelegate)
+            {
+                if (method.Name == "Invoke")
+                    // This is now used to emit efficient invoke code for any delegate invoke,
+                    // including multicast.
+                    result |= CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE;
             }
 
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
@@ -436,8 +455,8 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         bool canTailCall(IntPtr _this, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix)
         {
-            // TODO: tail call
-            return false;
+            // No restrictions on tailcalls
+            return true;
         }
 
         void reportTailCallDecision(IntPtr _this, CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, [MarshalAs(UnmanagedType.I1)]bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
@@ -465,9 +484,9 @@ namespace Internal.JitInterface
         }
 
         CORINFO_MODULE_STRUCT_* getMethodModule(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getMethodModule"); }
         void getMethodVTableOffset(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getMethodVTableOffset"); }
         CorInfoIntrinsics getIntrinsicID(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
         {
             var md = HandleToObject(method);
@@ -482,34 +501,34 @@ namespace Internal.JitInterface
         }
 
         CorInfoUnmanagedCallConv getUnmanagedCallConv(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getUnmanagedCallConv"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool pInvokeMarshalingRequired(IntPtr _this, CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("pInvokeMarshalingRequired"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool satisfiesMethodConstraints(IntPtr _this, CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("satisfiesMethodConstraints"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isCompatibleDelegate(IntPtr _this, CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, [MarshalAs(UnmanagedType.Bool)] ref bool pfIsOpenDelegate)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("isCompatibleDelegate"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isDelegateCreationAllowed(IntPtr _this, CORINFO_CLASS_STRUCT_* delegateHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             return true;
         }
         CorInfoInstantiationVerification isInstantiationOfVerifiedGeneric(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("isInstantiationOfVerifiedGeneric"); }
         void initConstraintsForVerification(IntPtr _this, CORINFO_METHOD_STRUCT_* method, [MarshalAs(UnmanagedType.Bool)] ref bool pfHasCircularClassConstraints, [MarshalAs(UnmanagedType.Bool)] ref bool pfHasCircularMethodConstraint)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("isInstantiationOfVerifiedGeneric"); }
         CorInfoCanSkipVerificationResult canSkipMethodVerification(IntPtr _this, CORINFO_METHOD_STRUCT_* ftnHandle)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("canSkipMethodVerification"); }
 
         void methodMustBeLoadedBeforeCodeIsRun(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
         {
         }
 
         CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(IntPtr _this, CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
         void getGSCookie(IntPtr _this, GSCookie* pCookieVal, GSCookie** ppCookieVal)
         {
@@ -522,7 +541,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("getGSCookie");
             }
         }
 
@@ -595,16 +614,16 @@ namespace Internal.JitInterface
         }
 
         CorInfoCanSkipVerificationResult canSkipVerification(IntPtr _this, CORINFO_MODULE_STRUCT_* module)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("canSkipVerification"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isValidToken(IntPtr _this, CORINFO_MODULE_STRUCT_* module, uint metaTOK)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("isValidToken"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isValidStringRef(IntPtr _this, CORINFO_MODULE_STRUCT_* module, uint metaTOK)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("isValidStringRef"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool shouldEnforceCallvirtRestriction(IntPtr _this, CORINFO_MODULE_STRUCT_* scope)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("shouldEnforceCallvirtRestriction"); }
 
         CorInfoType asCorInfoType(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
@@ -619,7 +638,7 @@ namespace Internal.JitInterface
         }
 
         int appendClassName(IntPtr _this, short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fNamespace, [MarshalAs(UnmanagedType.Bool)]bool fFullInst, [MarshalAs(UnmanagedType.Bool)]bool fAssembly)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("appendClassName"); }
 
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isValueClass(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
@@ -629,7 +648,7 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.Bool)]
         bool canInlineTypeCheckWithObjectVTable(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("canInlineTypeCheckWithObjectVTable"); }
 
         uint getClassAttribs(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
@@ -696,11 +715,11 @@ namespace Internal.JitInterface
         }
 
         CORINFO_MODULE_STRUCT_* getClassModule(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getClassModule"); }
         CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(IntPtr _this, CORINFO_MODULE_STRUCT_* mod)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getModuleAssembly"); }
         byte* getAssemblyName(IntPtr _this, CORINFO_ASSEMBLY_STRUCT_* assem)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getAssemblyName"); }
 
         void* LongLifetimeMalloc(IntPtr _this, UIntPtr sz)
         {
@@ -713,7 +732,7 @@ namespace Internal.JitInterface
         }
 
         byte* getClassModuleIdForStatics(IntPtr _this, CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getClassModuleIdForStatics"); }
 
         uint getClassSize(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
@@ -722,7 +741,7 @@ namespace Internal.JitInterface
         }
 
         uint getClassAlignmentRequirement(IntPtr _this, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fDoubleAlignHint)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getClassAlignmentRequirement"); }
 
         int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
@@ -842,17 +861,17 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.Bool)]
         bool checkMethodModifier(IntPtr _this, CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, [MarshalAs(UnmanagedType.Bool)]bool fOptional)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("checkMethodModifier"); }
         CorInfoHelpFunc getNewHelper(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getNewHelper"); }
         CorInfoHelpFunc getNewArrHelper(IntPtr _this, CORINFO_CLASS_STRUCT_* arrayCls)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getNewArrHelper"); }
         CorInfoHelpFunc getCastingHelper(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.I1)]bool fThrowing)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getCastingHelper"); }
         CorInfoHelpFunc getSharedCCtorHelper(IntPtr _this, CORINFO_CLASS_STRUCT_* clsHnd)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getSharedCCtorHelper"); }
         CorInfoHelpFunc getSecurityPrologHelper(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getSecurityPrologHelper"); }
 
         CORINFO_CLASS_STRUCT_* getTypeForBox(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
@@ -930,12 +949,12 @@ namespace Internal.JitInterface
                     }
                     break;
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
         }
 
         byte* getHelperName(IntPtr _this, CorInfoHelpFunc helpFunc)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getHelperName"); }
 
         CorInfoInitClassResult initClass(IntPtr _this, CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative)
         {
@@ -999,7 +1018,7 @@ namespace Internal.JitInterface
         }
 
         CORINFO_CLASS_STRUCT_* getBuiltinClass(IntPtr _this, CorInfoClassId classId)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getBuiltinClass"); }
 
         CorInfoType getTypeForPrimitiveValueClass(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
@@ -1013,14 +1032,14 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.Bool)]
         bool canCast(IntPtr _this, CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("canCast"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool areTypesEquivalent(IntPtr _this, CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("areTypesEquivalent"); }
         CORINFO_CLASS_STRUCT_* mergeClasses(IntPtr _this, CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("mergeClasses"); }
         CORINFO_CLASS_STRUCT_* getParentType(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getParentType"); }
 
         CorInfoType getChildType(IntPtr _this, CORINFO_CLASS_STRUCT_* clsHnd, ref CORINFO_CLASS_STRUCT_* clsRet)
         {
@@ -1040,7 +1059,7 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.Bool)]
         bool satisfiesClassConstraints(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("satisfiesClassConstraints"); }
 
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isSDArray(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
@@ -1050,7 +1069,7 @@ namespace Internal.JitInterface
         }
 
         uint getArrayRank(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getArrayRank"); }
 
         void* getArrayInitializationData(IntPtr _this, CORINFO_FIELD_STRUCT_* field, uint size)
         {
@@ -1077,7 +1096,7 @@ namespace Internal.JitInterface
             var field = HandleToObject(ftn);
             if (moduleName != null)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("getFieldName");
             }
 
             return (byte*)GetPin(StringToUTF8(field.Name));
@@ -1106,7 +1125,7 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.I1)]
         bool isWriteBarrierHelperRequired(IntPtr _this, CORINFO_FIELD_STRUCT_* field)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("isWriteBarrierHelperRequired"); }
 
         void getFieldInfo(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, ref CORINFO_FIELD_INFO pResult)
         {
@@ -1187,10 +1206,50 @@ namespace Internal.JitInterface
             pILOffsets = null;
             *implicitBoundaries = BoundaryTypes.DEFAULT_BOUNDARIES;
         }
+
+        // Create a DebugLocInfo which is a table from native offset to sourece line.
+        // using native to il offset (pMap) and il to source line (_sequencePoints).
         void setBoundaries(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, uint cMap, OffsetMapping* pMap)
         {
-            // TODO: Debugging
+            Debug.Assert(_debugLocInfos == null);
+            // No interest if sequencePoints is not populated before.
+            if (_sequencePoints == null)
+            {
+                return;
+            }
+
+            List<DebugLocInfo> debugLocInfos = new List<DebugLocInfo>();
+            for (int i = 0; i < cMap; i++)
+            {
+                SequencePoint s;
+                if (_sequencePoints.TryGetValue((int)pMap[i].ilOffset, out s))
+                {
+                    Debug.Assert(!string.IsNullOrEmpty(s.Document));
+                    int nativeOffset = (int)pMap[i].nativeOffset;
+                    DebugLocInfo loc = new DebugLocInfo(nativeOffset, s.Document, s.LineNumber);
+
+                    // https://github.com/dotnet/corert/issues/270
+                    // We often miss line number at 0 offset, which prevents debugger from
+                    // stepping into callee.
+                    // Synthesize a location info at 0 offset assuming line number is minus one
+                    // from the first entry.
+                    if (debugLocInfos.Count == 0 && nativeOffset != 0)
+                    {
+                        DebugLocInfo firstLoc = loc;
+                        firstLoc.NativeOffset = 0;
+                        firstLoc.LineNumber--;
+                        debugLocInfos.Add(firstLoc);
+                    }
+
+                    debugLocInfos.Add(loc);
+                }
+            }
+
+            if (debugLocInfos.Count > 0) {
+                _debugLocInfos = debugLocInfos.ToArray();
+            }
         }
+
         void getVars(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref uint cVars, ILVarInfo** vars, [MarshalAs(UnmanagedType.U1)] ref bool extendOthers)
         {
             // TODO: Debugging
@@ -1237,11 +1296,12 @@ namespace Internal.JitInterface
             }
             else
             {
-                TypeDesc type = ((TypeDesc[])sigObj)[index];
-
-                // TODO: Pinning
+                LocalVariableDefinition[] locals = (LocalVariableDefinition[])sigObj;
+                TypeDesc type = locals[index].Type;
+                
                 CorInfoType corInfoType = asCorInfoType(type, out vcTypeRet);
-                return (CorInfoTypeWithMod)corInfoType;
+
+                return (CorInfoTypeWithMod)corInfoType | (locals[index].IsPinned ? CorInfoTypeWithMod.CORINFO_TYPE_MOD_PINNED : 0);
             }
         }
 
@@ -1258,41 +1318,48 @@ namespace Internal.JitInterface
             }
             else
             {
-                TypeDesc type = methodSig[index];
-
-                // TODO: Pinning
+                LocalVariableDefinition[] locals = (LocalVariableDefinition[])sigObj;
+                TypeDesc type = locals[index].Type;
                 return ObjectToHandle(type);
             }
         }
 
         CorInfoType getHFAType(IntPtr _this, CORINFO_CLASS_STRUCT_* hClass)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getHFAType"); }
         HRESULT GetErrorHRESULT(IntPtr _this, _EXCEPTION_POINTERS* pExceptionPointers)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("GetErrorHRESULT"); }
         uint GetErrorMessage(IntPtr _this, short* buffer, uint bufferLength)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("GetErrorMessage"); }
 
         int FilterException(IntPtr _this, _EXCEPTION_POINTERS* pExceptionPointers)
         {
-            Debug.Assert(false);
-            throw new NotImplementedException();
+            return 0; // EXCEPTION_CONTINUE_SEARCH
         }
 
         void HandleException(IntPtr _this, _EXCEPTION_POINTERS* pExceptionPointers)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("HandleException"); }
         void ThrowExceptionForJitResult(IntPtr _this, HRESULT result)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("ThrowExceptionForJitResult"); }
         void ThrowExceptionForHelper(IntPtr _this, ref CORINFO_HELPER_DESC throwHelper)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("ThrowExceptionForHelper"); }
 
         void getEEInfo(IntPtr _this, ref CORINFO_EE_INFO pEEInfoOut)
         {
             pEEInfoOut = new CORINFO_EE_INFO();
 
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_EE_INFO* tmp = &pEEInfoOut)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_EE_INFO>());
+#endif
+
             int pointerSize = this.PointerSize;
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
+
+            pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
         }
 
         [return: MarshalAs(UnmanagedType.LPWStr)]
@@ -1302,7 +1369,7 @@ namespace Internal.JitInterface
         }
 
         mdToken getMethodDefFromMethod(IntPtr _this, CORINFO_METHOD_STRUCT_* hMethod)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getMethodDefFromMethod"); }
 
         static byte[] StringToUTF8(string s)
         {
@@ -1334,7 +1401,7 @@ namespace Internal.JitInterface
         }
 
         byte* findNameOfToken(IntPtr _this, CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("findNameOfToken"); }
 
         bool getSystemVAmd64PassStructInRegisterDescriptor(IntPtr _this, CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
@@ -1364,19 +1431,19 @@ namespace Internal.JitInterface
         }
 
         int getIntConfigValue(IntPtr _this, String name, int defaultValue)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getIntConfigValue"); }
         short* getStringConfigValue(IntPtr _this, String name)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getStringConfigValue"); }
         void freeStringConfigValue(IntPtr _this, short* value)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("freeStringConfigValue"); }
         uint getThreadTLSIndex(IntPtr _this, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getThreadTLSIndex"); }
         void* getInlinedCallFrameVptr(IntPtr _this, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getInlinedCallFrameVptr"); }
         int* getAddrOfCaptureThreadGlobal(IntPtr _this, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
         SIZE_T* getAddrModuleDomainID(IntPtr _this, CORINFO_MODULE_STRUCT_* module)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getAddrModuleDomainID"); }
         void* getHelperFtn(IntPtr _this, CorInfoHelpFunc ftnNum, ref void* ppIndirection)
         {
             JitHelperId id;
@@ -1450,11 +1517,11 @@ namespace Internal.JitInterface
             return (void*)ObjectToHandle(_compilation.GetJitHelper(id));
         }
         void getFunctionEntryPoint(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getFunctionEntryPoint"); }
         void getFunctionFixedEntryPoint(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
         void* getMethodSync(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getMethodSync"); }
 
         CorInfoHelpFunc getLazyStringLiteralHelper(IntPtr _this, CORINFO_MODULE_STRUCT_* handle)
         {
@@ -1463,13 +1530,13 @@ namespace Internal.JitInterface
         }
 
         CORINFO_MODULE_STRUCT_* embedModuleHandle(IntPtr _this, CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("embedModuleHandle"); }
         CORINFO_CLASS_STRUCT_* embedClassHandle(IntPtr _this, CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("embedClassHandle"); }
         CORINFO_METHOD_STRUCT_* embedMethodHandle(IntPtr _this, CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("embedMethodHandle"); }
         CORINFO_FIELD_STRUCT_* embedFieldHandle(IntPtr _this, CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("embedFieldHandle"); }
 
         void embedGenericHandle(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.Bool)]bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
@@ -1482,7 +1549,7 @@ namespace Internal.JitInterface
 
             if (!fEmbedParent && pResolvedToken.hMethod != null)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("embedGenericHandle");
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
@@ -1524,55 +1591,174 @@ namespace Internal.JitInterface
             }
         }
 
-        void getLocationOfThisType(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context)
+        // Workaround for struct return marshaling bug on Windows.
+        // Delete once https://github.com/dotnet/corert/issues/162 is fixed
+        bool IsWindows()
         {
-            result->needsRuntimeLookup = false;
-            result->runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+            return Path.DirectorySeparatorChar == '\\';
+        }
+
+        void getLocationOfThisType_Windows(IntPtr _this, CORINFO_LOOKUP_KIND* result, CORINFO_METHOD_STRUCT_* context)
+        {
+            *result = getLocationOfThisType(_this, context);
+        }
+        // End of workaround
+
+        CORINFO_LOOKUP_KIND getLocationOfThisType(IntPtr _this, CORINFO_METHOD_STRUCT_* context)
+        {
+            CORINFO_LOOKUP_KIND result = new CORINFO_LOOKUP_KIND();
+            result.needsRuntimeLookup = false;
+            result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
 
             // TODO: shared generics
+
+            return result;
         }
 
         void* getPInvokeUnmanagedTarget(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
         void* getAddressOfPInvokeFixup(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
         void* GetCookieForPInvokeCalliSig(IntPtr _this, CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
         [return: MarshalAs(UnmanagedType.I1)]
         bool canGetCookieForPInvokeCalliSig(IntPtr _this, CORINFO_SIG_INFO* szMetaSig)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
         CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(IntPtr _this, CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_** ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getJustMyCodeHandle"); }
         void GetProfilingHandle(IntPtr _this, [MarshalAs(UnmanagedType.Bool)] ref bool pbHookFunction, ref void* pProfilerHandle, [MarshalAs(UnmanagedType.Bool)] ref bool pbIndirectedHandles)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("GetProfilingHandle"); }
 
         void getCallInfo(IntPtr _this, ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, ref CORINFO_CALL_INFO pResult)
         {
-            // TODO: Constrained calls
-            if (pConstrainedResolvedToken != null)
-                throw new NotImplementedException();
-
+#if DEBUG
+            // In debug, write some bogus data to the struct to ensure we have filled everything
+            // properly.
+            fixed (CORINFO_CALL_INFO* tmp = &pResult)
+                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
+#endif
             MethodDesc method = HandleToObject(pResolvedToken.hMethod);
 
+            // Spec says that a callvirt lookup ignores static methods. Since static methods
+            // can't have the exact same signature as instance methods, a lookup that found
+            // a static method would have never found an instance method.
+            if (method.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
+            {
+                throw new BadImageFormatException();
+            }
+
+            TypeDesc exactType = HandleToObject(pResolvedToken.hClass);
+
+            TypeDesc constrainedType = null;
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && pConstrainedResolvedToken != null)
+            {
+                constrainedType = HandleToObject(pConstrainedResolvedToken->hClass);
+            }
+
+            bool resolvedConstraint = false;
+            bool forceUseRuntimeLookup = false;
+
+            MethodDesc methodAfterConstraintResolution = method;
+            if (constrainedType == null)
+            {
+                pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
+            }
+            else
+            {
+                // We have a "constrained." call.  Try a partial resolve of the constraint call.  Note that this
+                // will not necessarily resolve the call exactly, since we might be compiling
+                // shared generic code - it may just resolve it to a candidate suitable for
+                // JIT compilation, and require a runtime lookup for the actual code pointer
+                // to call.
+
+                MethodDesc directMethod = constrainedType.GetClosestMetadataType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                if (directMethod != null)
+                {
+                    // Either
+                    //    1. no constraint resolution at compile time (!directMethod)
+                    // OR 2. no code sharing lookup in call
+                    // OR 3. we have have resolved to an instantiating stub
+
+                    methodAfterConstraintResolution = directMethod;
+
+                    Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
+                    resolvedConstraint = true;
+                    pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
+
+                    exactType = constrainedType;
+                }
+                else if (constrainedType.IsValueType)
+                {
+                    pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS;
+                }
+                else
+                {
+                    pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS;
+                }
+            }
+
+            MethodDesc targetMethod = methodAfterConstraintResolution;
+
+            //
+            // Determine whether to perform direct call
+            //
+
+            bool directCall = false;
+            bool resolvedCallVirt = false;
+
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            {
+                // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
+                directCall = true;
+            }
+            else if (targetMethod.Signature.IsStatic)
+            {
+                // Static methods are always direct calls
+                directCall = true;
+            }
+            else if (targetMethod.OwningType.IsInterface)
+            {
+                // Force all interface calls to be interpreted as if they are virtual.
+                directCall = false;
+            }
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) == 0 || resolvedConstraint)
+            {
+                directCall = true;
+            }
+            else
+            {
+                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.GetClosestMetadataType().IsSealed)
+                {
+                    resolvedCallVirt = true;
+                    directCall = true;
+                }
+            }
+
             // TODO: Interface methods
-            if (method.IsVirtual && method.OwningType.IsInterface)
-                throw new NotImplementedException();
+            if (targetMethod.IsVirtual && targetMethod.OwningType.IsInterface)
+                throw new NotImplementedException("Interface method");
 
-            pResult.hMethod = pResolvedToken.hMethod;
-            pResult.methodFlags = getMethodAttribsInternal(method);
+            pResult.hMethod = ObjectToHandle(targetMethod);
+            pResult.methodFlags = getMethodAttribsInternal(targetMethod);
 
-            pResult.classFlags = getClassAttribsInternal(method.OwningType);
+            pResult.classFlags = getClassAttribsInternal(targetMethod.OwningType);
 
-            Get_CORINFO_SIG_INFO(method.Signature, out pResult.sig);
+            Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.sig);
 
-            pResult.verMethodFlags = pResult.methodFlags;
-            pResult.verSig = pResult.sig;
+            // Get the required verification information in case it is needed by the verifier later
+            if (pResult.hMethod != pResolvedToken.hMethod)
+            {
+                pResult.verMethodFlags = getMethodAttribsInternal(targetMethod);
+                Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.verSig);
+            }
+            else
+            {
+                pResult.verMethodFlags = pResult.methodFlags;
+                pResult.verSig = pResult.sig;
+            }
 
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
-            // TODO: Constraint calls
-            pResult.thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
-            
             pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
             pResult._nullInstanceCheck = (uint)(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) ? 1 : 0);
 
@@ -1584,10 +1770,10 @@ namespace Internal.JitInterface
             // TODO: CORINFO_CALL_CODE_POINTER
             pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-            if (((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) && method.IsVirtual)
+            if (!directCall)
             {
                 pResult.codePointerOrStubLookup.constLookup.addr = 
-                    (void *)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.VirtualCall, method));
+                    (void *)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
 
                 if ((pResult.methodFlags & (uint)CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE) != 0)
                 {
@@ -1596,16 +1782,18 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (method.IsConstructor && method.OwningType.IsString)
+                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    var initMethod = IntrinsicMethods.GetStringInitializer(method);
+                    var initMethod = IntrinsicMethods.GetStringInitializer(targetMethod);
                     pResult.codePointerOrStubLookup.constLookup.addr = ObjectToHandle(initMethod);
                 }
                 else
                 {
-                    pResult.codePointerOrStubLookup.constLookup.addr = pResolvedToken.hMethod;
+                    pResult.codePointerOrStubLookup.constLookup.addr = pResult.hMethod;
                 }
+
+                pResult.nullInstanceCheck = resolvedCallVirt;
             }
 
             // TODO: Generics
@@ -1614,19 +1802,19 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.Bool)]
         bool canAccessFamily(IntPtr _this, CORINFO_METHOD_STRUCT_* hCaller, CORINFO_CLASS_STRUCT_* hInstanceType)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("canAccessFamily"); }
         [return: MarshalAs(UnmanagedType.Bool)]
         bool isRIDClassDomainID(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("isRIDClassDomainID"); }
         uint getClassDomainID(IntPtr _this, CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getClassDomainID"); }
         void* getFieldAddress(IntPtr _this, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getFieldAddress"); }
         IntPtr getVarArgsHandle(IntPtr _this, CORINFO_SIG_INFO* pSig, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getVarArgsHandle"); }
         [return: MarshalAs(UnmanagedType.I1)]
         bool canGetVarArgsHandle(IntPtr _this, CORINFO_SIG_INFO* pSig)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("canGetVarArgsHandle"); }
 
         InfoAccessType constructStringLiteral(IntPtr _this, CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
@@ -1637,19 +1825,19 @@ namespace Internal.JitInterface
         }
 
         InfoAccessType emptyStringLiteral(IntPtr _this, ref void* ppValue)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("emptyStringLiteral"); }
         uint getFieldThreadLocalStoreID(IntPtr _this, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getFieldThreadLocalStoreID"); }
         void setOverride(IntPtr _this, IntPtr pOverride, CORINFO_METHOD_STRUCT_* currentMethod)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("setOverride"); }
         void addActiveDependency(IntPtr _this, CORINFO_MODULE_STRUCT_* moduleFrom, CORINFO_MODULE_STRUCT_* moduleTo)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("addActiveDependency"); }
         CORINFO_METHOD_STRUCT_* GetDelegateCtor(IntPtr _this, CORINFO_METHOD_STRUCT_* methHnd, CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* targetMethodHnd, ref DelegateCtorArgs pCtorData)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("GetDelegateCtor"); }
         void MethodCompileComplete(IntPtr _this, CORINFO_METHOD_STRUCT_* methHnd)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("MethodCompileComplete"); }
         void* getTailCallCopyArgsThunk(IntPtr _this, CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getTailCallCopyArgsThunk"); }
 
         delegate IntPtr _ClrVirtualAlloc(IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect);
         static IntPtr ClrVirtualAlloc(IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect)
@@ -1689,7 +1877,16 @@ namespace Internal.JitInterface
 
         byte[] _code;
         byte[] _coldCode;
+
+        int _roDataAlignment;
         byte[] _roData;
+
+        int _numFrameInfos;
+        int _usedFrameInfos;
+        FrameInfo[] _frameInfos;
+
+        Dictionary<int, SequencePoint> _sequencePoints;
+        DebugLocInfo[] _debugLocInfos;
 
         void allocMem(IntPtr _this, uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
@@ -1699,16 +1896,47 @@ namespace Internal.JitInterface
                 coldCodeBlock = (void *)GetPin(_coldCode = new byte[coldCodeSize]);
 
             if (roDataSize != 0)
+            {
+                if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+                {
+                    _roDataAlignment = 16;
+                }
+                else if (roDataSize < 8)
+                {
+                    _roDataAlignment = PointerSize;
+                }
+                else
+                {
+                    _roDataAlignment = 8;
+                }
+
                 roDataBlock = (void*)GetPin(_roData = new byte[roDataSize]);
+            }
+
+            if (_numFrameInfos > 0)
+            {
+                _frameInfos = new FrameInfo[_numFrameInfos];
+            }
         }
 
         void reserveUnwindInfo(IntPtr _this, [MarshalAs(UnmanagedType.Bool)]bool isFunclet, [MarshalAs(UnmanagedType.Bool)]bool isColdCode, uint unwindSize)
         {
+            _numFrameInfos++;
         }
 
         void allocUnwindInfo(IntPtr _this, byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
         {
-            // TODO: Unwind Info
+            FrameInfo frameInfo = new FrameInfo();
+            frameInfo.StartOffset = (int)startOffset;
+            frameInfo.EndOffset = (int)endOffset;
+            frameInfo.BlobData = new byte[unwindSize];
+            for (uint i = 0; i < unwindSize; i++)
+            {
+                frameInfo.BlobData[i] = pUnwindBlock[i];
+            }
+
+            Debug.Assert(_usedFrameInfos < _frameInfos.Length);
+            _frameInfos[_usedFrameInfos++] = frameInfo;
         }
 
         void* allocGCInfo(IntPtr _this, UIntPtr size)
@@ -1748,11 +1976,11 @@ namespace Internal.JitInterface
         }
 
         void reportFatalError(IntPtr _this, CorJitResult result)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("reportFatalError"); }
         HRESULT allocBBProfileBuffer(IntPtr _this, uint count, ref ProfileBuffer* profileBuffer)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("allocBBProfileBuffer"); }
         HRESULT getBBProfileData(IntPtr _this, CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getBBProfileData"); }
 
         void recordCallSite(IntPtr _this, uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
         {
@@ -1760,14 +1988,14 @@ namespace Internal.JitInterface
 
         List<Relocation> _relocs;
 
-        int findKnownBlock(void *location, out int offset)
+        BlockType findKnownBlock(void *location, out int offset)
         {
             fixed (byte * pCode = _code)
             {
                 if (pCode <= (byte*)location && (byte*)location < pCode + _code.Length)
                 {
                     offset = (int)((byte*)location - pCode);
-                    return 0;
+                    return BlockType.Code;
                 }
             }
 
@@ -1778,7 +2006,7 @@ namespace Internal.JitInterface
                     if (pColdCode <= (byte*)location && (byte*)location < pColdCode + _coldCode.Length)
                     {
                         offset = (int)((byte*)location - pColdCode);
-                        return 1;
+                        return BlockType.ColdCode;
                     }
                 }
             }
@@ -1790,13 +2018,13 @@ namespace Internal.JitInterface
                     if (pROData <= (byte*)location && (byte*)location < pROData + _roData.Length)
                     {
                         offset = (int)((byte*)location - pROData);
-                        return 2;
+                        return BlockType.ROData;
                     }
                 }
             }
 
             offset = 0;
-            return -1;
+            return BlockType.Unknown;
         }
 
         void recordRelocation(IntPtr _this, void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
@@ -1805,13 +2033,13 @@ namespace Internal.JitInterface
 
             reloc.RelocType = fRelocType;
 
-            int locationBlock = findKnownBlock(location, out reloc.Offset);
-            Debug.Assert(locationBlock >= 0);
-            reloc.Block = (sbyte)locationBlock;
+            BlockType locationBlock = findKnownBlock(location, out reloc.Offset);
+            Debug.Assert(locationBlock == BlockType.Code || locationBlock == BlockType.ColdCode || locationBlock == BlockType.ROData, "Known block");
+            reloc.Block = locationBlock;
 
             int targetOffset;
-            int targetBlock = findKnownBlock(target, out targetOffset);
-            if (targetBlock < 0)
+            BlockType targetBlock = findKnownBlock(target, out targetOffset);
+            if (targetBlock == BlockType.Unknown)
             {
                 // Reloc points to something outside of the generated blocks
                 reloc.Target = HandleToObject((IntPtr)target);
@@ -1821,7 +2049,7 @@ namespace Internal.JitInterface
                 // Target is relative to one of the blocks
                 reloc.Target = new BlockRelativeTarget
                 {
-                    Block = (sbyte)targetBlock,
+                    Block = targetBlock,
                     Offset = targetOffset
                 };
             }
@@ -1835,11 +2063,14 @@ namespace Internal.JitInterface
 
         ushort getRelocTypeHint(IntPtr _this, void* target)
         {
-            // TODO: Hint to use REL32
-            return 0xFFFF;
+            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
+                return (ushort)ILCompiler.DependencyAnalysis.RelocType.IMAGE_REL_BASED_REL32;
+
+            return UInt16.MaxValue;
         }
+
         void getModuleNativeEntryPointRange(IntPtr _this, ref void* pStart, ref void* pEnd)
-        { throw new NotImplementedException(); }
+        { throw new NotImplementedException("getModuleNativeEntryPointRange"); }
 
         uint getExpectedTargetArchitecture(IntPtr _this)
         {

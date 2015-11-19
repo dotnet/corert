@@ -15,7 +15,7 @@ namespace Internal.TypeSystem.Ecma
     /// <summary>
     /// Override of MetadataType that uses actual Ecma335 metadata.
     /// </summary>
-    public sealed partial class EcmaType : MetadataType
+    public sealed partial class EcmaType : MetadataType, EcmaModule.IEntityHandleObject
     {
         EcmaModule _module;
         TypeDefinitionHandle _handle;
@@ -26,7 +26,6 @@ namespace Internal.TypeSystem.Ecma
         string _name;
         TypeDesc[] _genericParameters;
         MetadataType _baseType;
-        TypeDesc[] _implementedInterfaces;
 
         internal EcmaType(EcmaModule module, TypeDefinitionHandle handle)
         {
@@ -41,6 +40,14 @@ namespace Internal.TypeSystem.Ecma
             // Initialize name eagerly in debug builds for convenience
             this.ToString();
 #endif
+        }
+
+        EntityHandle EcmaModule.IEntityHandleObject.Handle
+        {
+            get
+            {
+                return _handle;
+            }
         }
 
         // TODO: Use stable hashcode based on the type name?
@@ -147,35 +154,7 @@ namespace Internal.TypeSystem.Ecma
                 return _baseType;
             }
         }
-
-        private TypeDesc[] InitializeImplementedInterfaces()
-        {
-            var interfaceHandles = _typeDefinition.GetInterfaceImplementations();
-
-            int count = interfaceHandles.Count;
-            if (count == 0)
-                return (_implementedInterfaces = TypeDesc.EmptyTypes);
-
-            TypeDesc[] implementedInterfaces = new TypeDesc[count];
-            int i = 0;
-            foreach (var interfaceHandle in interfaceHandles)
-            {
-                var interfaceImplementation = this.MetadataReader.GetInterfaceImplementation(interfaceHandle);
-                implementedInterfaces[i++] = _module.GetType(interfaceImplementation.Interface);
-            }
-            return (_implementedInterfaces = implementedInterfaces);
-        }
-
-        public override TypeDesc[] ImplementedInterfaces
-        {
-            get
-            {
-                if (_implementedInterfaces == null)
-                    return InitializeImplementedInterfaces();
-                return _implementedInterfaces;
-            }
-        }
-
+        
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;

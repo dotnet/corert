@@ -69,6 +69,17 @@
     <BinDirPlatform Condition="'$(BinDirPlatform)'=='AnyCPU' or '$(BinDirPlatform)'=='amd64'">x64</BinDirPlatform> 
   </PropertyGroup>
 
+  <!-- Initialize the NuPkg name specific RuntimeStr -->
+  <PropertyGroup>
+    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'==''">$(OSGroup)</NuPkgRuntimeOS>
+    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='Windows_NT'">win7</NuPkgRuntimeOS> 
+    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='Linux'">ubuntu.14.04</NuPkgRuntimeOS> 
+    <NuPkgRuntimeOS Condition="'$(NuPkgRuntimeOS)'=='OSX'">osx.10.10</NuPkgRuntimeOS> 
+
+    <NuPkgRuntimePlatform Condition="'$(NuPkgRuntimePlatform)'==''">$(Platform)</NuPkgRuntimePlatform>
+    <NuPkgRuntimePlatform Condition="'$(NuPkgRuntimePlatform)'=='AnyCPU' or '$(NuPkgRuntimePlatform)'=='amd64'">x64</NuPkgRuntimePlatform> 
+  </PropertyGroup>
+
   <!-- Common repo directories -->
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
@@ -101,6 +112,7 @@
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
+    <AotPackageReferencePath>$(IntermediateOutputRootPath)\CoreRTRef</AotPackageReferencePath>
 
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
 
@@ -112,12 +124,16 @@
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
     
-    <NuSpecSrcs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(SourceDir).nuget\Microsoft.DotNet.ILToNative.nuspec" />
-    <NuSpecSrcs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(SourceDir).nuget\Microsoft.DotNet.ILToNative.Development.nuspec" />
-    <NuSpecSrcs Condition="'$(OSGroup)' != 'Windows_NT'" Include="$(SourceDir).nuget\$(OSGroup)\Microsoft.DotNet.ILToNative.nuspec" />
+    <!-- Platform agnostic parent NuSpec -->
+    <NuSpecSrcs Include="$(SourceDir).nuget\Microsoft.DotNet.ILCompiler.nuspec" />
+    <NuPkgRuntimeJson Include="$(SourceDir).nuget\runtime.json" />
 
-    <NuSpecs Include="$(ProductPackageDir)Microsoft.DotNet.ILToNative.nuspec" />
-    <NuSpecs Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(ProductPackageDir)Microsoft.DotNet.ILToNative.Development.nuspec" />
+    <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.nuspec" />
+    <NuSpecSrcs Condition="'$(OSGroup)' != 'OSX'" Include="$(SourceDir).nuget\toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
+
+    <NuSpecs Include="$(ProductPackageDir)Microsoft.DotNet.ILCompiler.nuspec" />
+    <NuSpecs Include="$(ProductPackageDir)toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.nuspec" />
+    <NuSpecs Condition="'$(OSGroup)' != 'OSX'" Include="$(ProductPackageDir)toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
   </ItemGroup>
 
   <!-- Common nuget properties -->

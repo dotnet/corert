@@ -46,6 +46,7 @@ dlldata.c
 *_p.c
 *_i.h
 *.ilk
+*.idb
 *.meta
 *.obj
 *.pch
@@ -77,6 +78,7 @@ ipch/
 *.opensdf
 *.sdf
 *.cachefile
+*.opendb
 
 # Visual Studio profiler
 *.psess
@@ -269,7 +271,7 @@ Makefile
 cross/rootfs/*
 
 # Temporary files from ad hoc testing projects
-src/ILToNative/reproNative/repro.cpp
-src/ILToNative/reproNative/repro.s
-src/ILToNative/reproNative/reproNative.sln
-src/ILToNative/reproNative/reproNativeCpp.sln
+src/ILCompiler/reproNative/repro.cpp
+src/ILCompiler/reproNative/repro.s
+src/ILCompiler/reproNative/reproNative.sln
+src/ILCompiler/reproNative/reproNativeCpp.sln

@@ -8,6 +8,8 @@
 #include "gc.h"
 #include "objecthandle.h"
 
+#include <stdlib.h> 
+
 #pragma warning(disable:4297)
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
@@ -120,16 +122,25 @@ extern "C" void* __ldelema_ref(System::Array * pArray, unsigned idx, MethodTable
     return &(((Object **)(pArray->GetArrayData()))[idx]);
 }
 
+extern "C" void __not_yet_implemented(System::String * pMethodName, System::String * pMessage)
+{
+    printf("ILCompiler failed generating code for this method; execution cannot continue.\n");
+    printf("This is likely because of a feature that is not yet implemented in the compiler.\n");
+    wprintf(L"Method: %ls\n", (wchar_t*)((char*)(pMethodName)+12));
+    wprintf(L"Reason: %ls\n", (wchar_t*)((char*)(pMessage)+12));
+    exit(-1);
+}
+
 extern "C" void __throw_exception(void * pEx)
 {
     // TODO: Exception throwing
-    throw pEx;
+    throw "__throw_exception";
 }
 
 extern "C" void __fail_fast()
 {
     // TODO: FailFast
-    throw 42;
+    throw "__fail_fast";
 }
 
 Object * __load_string_literal(const char * string)
@@ -171,11 +182,14 @@ extern "C" Object * __castclass_class(void * p, MethodTable * pTargetMT)
         if (pMT == pTargetMT)
             return o;
 
+        if (pMT->IsArray())
+            break;
+
         pMT = pMT->GetParent();
     } while (pMT);
 
     // TODO: Handle corner cases, throw proper exception
-    throw 1;
+    throw "__castclass_class";
 }
 
 extern "C" Object * __isinst_class(void * p, MethodTable * pTargetMT)
@@ -191,6 +205,9 @@ extern "C" Object * __isinst_class(void * p, MethodTable * pTargetMT)
         if (pMT == pTargetMT)
             return o;
 
+        if (pMT->IsArray())
+            break;
+
         pMT = pMT->GetParent();
     } while (pMT);
 
@@ -202,7 +219,7 @@ __declspec(noreturn)
 __declspec(noinline)
 void ThrowRangeOverflowException()
 {
-    throw 0;
+    throw "ThrowRangeOverflowException";
 }
 
 void __range_check_fail()
@@ -239,47 +256,57 @@ extern "C" void Buffer_BlockCopy(class System::Array * src, int srcOfs, class Sy
 
 extern "C" Object* RhMemberwiseClone(Object*)
 {
-    throw 42;
+    throw "RhMemberwiseClone";
 }
 
 extern "C" uint8_t RhGetCorElementType(MethodTable*)
 {
-    throw 42;
+    throw "RhGetCorElementType";
 }
 
 extern "C" MethodTable* RhGetRelatedParameterType(MethodTable*)
 {
-    throw 42;
+    throw "RhGetRelatedParameterType";
 }
 
 extern "C" uint16_t RhGetComponentSize(MethodTable*)
 {
-    throw 42;
+    throw "RhGetComponentSize";
 }
 
 extern "C" uint8_t RhHasReferenceFields(MethodTable*)
 {
-    throw 42;
+    throw "RhHasReferenceFields";
 }
 
 extern "C" uint8_t RhIsValueType(MethodTable*)
 {
-    throw 42;
+    throw "RhIsValueType";
 }
 
 extern "C" uint8_t RhIsArray(MethodTable*)
 {
-    throw 42;
+    throw "RhIsArray";
+}
+
+extern "C" int32_t RhGetEETypeHash(MethodTable*)
+{
+    throw "RhGetEETypeHash";
 }
 
 extern "C" uint8_t RhTypeCast_AreTypesEquivalent(MethodTable*, MethodTable*)
 {
-    throw 42;
+    throw "RhTypeCast_AreTypesEquivalent";
+}
+
+extern "C" uint8_t RhTypeCast_AreTypesAssignable(MethodTable*, MethodTable*)
+{
+    throw "RhTypeCast_AreTypesAssignable";
 }
 
 extern "C" void RhGetCurrentThreadStackTrace()
 {
-    throw 42;
+    throw "RhGetCurrentThreadStackTrace";
 }
 
 extern "C" intptr_t RhHandleAlloc(Object * pObject, int type)
@@ -294,50 +321,50 @@ extern "C" intptr_t RhHandleAllocDependent(Object* pPrimary, Object* pSecondary)
 
 extern "C" void RhGetNonArrayBaseType()
 {
-    throw 42;
+    throw "RhGetNonArrayBaseType";
 }
 
 extern "C" void RhGetEETypeClassification()
 {
-    throw 42;
+    throw "RhGetEETypeClassification";
 }
 
 extern "C" void RhpUniversalTransition()
 {
-    throw 42;
+    throw "RhpUniversalTransition";
 }
 extern "C" void RhpFailFastForPInvokeExceptionPreemp()
 {
-    throw 42;
+    throw "RhpFailFastForPInvokeExceptionPreemp";
 }
 extern "C" void RhpFailFastForPInvokeExceptionCoop()
 {
-    throw 42;
+    throw "RhpFailFastForPInvokeExceptionCoop";
 }
 extern "C" void RhpThrowHwEx()
 {
-    throw 42;
+    throw "RhpThrowHwEx";
 }
 
 extern "C" void RhExceptionHandling_FailedAllocation()
 {
-    throw 42;
+    throw "RhExceptionHandling_FailedAllocation";
 }
 extern "C" void RhpCalculateStackTraceWorker()
 {
-    throw 42;
+    throw "RhpCalculateStackTraceWorker";
 }
 extern "C" void RhThrowHwEx()
 {
-    throw 42;
+    throw "RhThrowHwEx";
 }
 extern "C" void RhThrowEx()
 {
-    throw 42;
+    throw "RhThrowEx";
 }
 extern "C" void RhRethrow()
 {
-    throw 42;
+    throw "RhRethrow";
 }
 
 #ifdef CPPCODEGEN
@@ -471,7 +498,17 @@ int main(int argc, char * argv[]) {
     if (__strings_fixup() != 0) return -1;
     if (__statics_fixup() != 0) return -1;
 
-    int retval = __managed__Main();
+    int retval;
+    try
+    {
+        retval = __managed__Main();
+    }
+    catch (const char* &e)
+    {
+        printf("Call to an unimplemented runtime method; execution cannot continue.\n");
+        printf("Method: %s\n", e);
+        retval = -1;
+    }
 
     __reverse_pinvoke_return(&frame);
     __shutdown_runtime();

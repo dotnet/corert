@@ -5,9 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem
 {
-    public sealed class ArrayType : ParameterizedType
+    public sealed partial class ArrayType : ParameterizedType
     {
         int _rank; // -1 for regular single dimensional arrays, > 0 for multidimensional arrays
 
@@ -29,15 +31,6 @@ namespace Internal.TypeSystem
                 return this.Context.GetWellKnownType(WellKnownType.Array);
             }
         }
-
-        // TODO: Implement
-        // public override TypeDesc[] ImplementedInterfaces
-        // {
-        //     get
-        //     {
-        //         ...
-        //     }
-        // }
 
         public TypeDesc ElementType
         {
@@ -65,43 +58,53 @@ namespace Internal.TypeSystem
             }
         }
 
+        private void InitializeMethods()
+        {
+            int numCtors;
+                
+            if (IsSzArray)
+            {
+                numCtors = 1;
+
+                var t = this.ElementType;
+                while (t.IsSzArray)
+                {
+                    t = ((ArrayType)t).ElementType;
+                    numCtors++;
+                }
+            }
+            else
+            {
+                // ELEMENT_TYPE_ARRAY has two ctor functions, one with and one without lower bounds
+                numCtors = 2;
+            }
+
+            MethodDesc[] methods = new MethodDesc[(int)ArrayMethodKind.Ctor + numCtors];
+
+            for (int i = 0; i < methods.Length; i++)
+                methods[i] = new ArrayMethod(this, (ArrayMethodKind)i);
+
+            Interlocked.CompareExchange(ref _methods, methods, null);
+        }
+
         public override IEnumerable<MethodDesc> GetMethods()
         {
             if (_methods == null)
-            {
-                int numCtors;
-                
-                if (IsSzArray)
-                {
-                    numCtors = 1;
-
-                    var t = this.ElementType;
-                    while (t.IsSzArray)
-                    {
-                        t = ((ArrayType)t).ElementType;
-                        numCtors++;
-                    }
-                }
-                else
-                {
-                    // ELEMENT_TYPE_ARRAY has two ctor functions, one with and one without lower bounds
-                    numCtors = 2;
-                }
-
-                MethodDesc[] methods = new MethodDesc[(int)ArrayMethodKind.Ctor + numCtors];
-
-                for (int i = 0; i < methods.Length; i++)
-                    methods[i] = new ArrayMethod(this, (ArrayMethodKind)i);
-
-                Interlocked.CompareExchange(ref _methods, methods, null);
-            }
+                InitializeMethods();
             return _methods;
+        }
+
+        public MethodDesc GetArrayMethod(ArrayMethodKind kind)
+        {
+            if (_methods == null)
+                InitializeMethods();
+            return _methods[(int)kind];
         }
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             TypeDesc instantiatedElementType = this.ElementType.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return instantiatedElementType.Context.GetArrayType(instantiatedElementType);
+            return instantiatedElementType.Context.GetArrayType(instantiatedElementType, this._rank);
         }
 
         public override TypeDesc GetTypeDefinition()
@@ -279,7 +282,7 @@ namespace Internal.TypeSystem
             TypeDesc instantiatedOwningType = owningType.InstantiateSignature(typeInstantiation, methodInstantiation);
 
             if (owningType != instantiatedOwningType)
-                return ((ArrayMethod[])instantiatedOwningType.GetMethods())[(int)this._kind];
+                return ((ArrayType)instantiatedOwningType).GetArrayMethod(this._kind);
             else
                 return this;
         }

@@ -118,7 +118,7 @@ build_managed_corert()
     __buildlog=$__scriptpath/msbuild.log
 
     # TODO: Renable running tests
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:CleanedTheBuild=$(__CleanBuild) /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) "$@"
+    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) "$@"
     BUILDERRORLEVEL=$?
 
     echo
@@ -181,7 +181,7 @@ __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MS
 __ToolNugetRuntimeId=ubuntu.14.04-x64
 __TestNugetRuntimeId=ubuntu.14.04-x64
 __BuildArch=x64
-__buildmanaged=false
+__buildmanaged=true
 __buildnative=true
 
 # Workaround to enable nuget package restoration work successully on Mono
@@ -297,7 +297,7 @@ if [ "$__buildmanaged" = false -a "$__buildnative" = false ]; then
 fi
 
 # Set the remaining variables based upon the determined build configuration
-__IntermediatesDir="$__rootbinpath/obj/Product/$__BuildOS.$__BuildArch.$__BuildType"
+__IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__BuildType"
 __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
 # Make the directories necessary for build if they don't exist

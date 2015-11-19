@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaMethod : MethodDesc
+    public sealed class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
     {
         static class MethodFlags
         {
@@ -20,6 +20,9 @@ namespace Internal.TypeSystem.Ecma
             public const int Virtual                = 0x0002;
             public const int NewSlot                = 0x0004;
             public const int Abstract               = 0x0008;
+            public const int Final                  = 0x0010;
+            public const int NoInlining             = 0x0020;
+            public const int AggressiveInlining     = 0x0040;
 
             public const int AttributeMetadataCache = 0x0100;
             public const int Intrinsic            = 0x0200;
@@ -43,6 +46,14 @@ namespace Internal.TypeSystem.Ecma
             // Initialize name eagerly in debug builds for convenience
             this.ToString();
 #endif
+        }
+
+        EntityHandle EcmaModule.IEntityHandleObject.Handle
+        {
+            get
+            {
+                return _handle;
+            }
         }
 
         public override TypeSystemContext Context
@@ -113,6 +124,7 @@ namespace Internal.TypeSystem.Ecma
             if ((mask & MethodFlags.BasicMetadataCache) != 0)
             {
                 var methodAttributes = Attributes;
+                var methodImplAttributes = ImplAttributes;
 
                 if ((methodAttributes & MethodAttributes.Virtual) != 0)
                     flags |= MethodFlags.Virtual;
@@ -122,6 +134,15 @@ namespace Internal.TypeSystem.Ecma
 
                 if ((methodAttributes & MethodAttributes.Abstract) != 0)
                     flags |= MethodFlags.Abstract;
+
+                if ((methodAttributes & MethodAttributes.Final) != 0)
+                    flags |= MethodFlags.Final;
+
+                if ((methodImplAttributes & MethodImplAttributes.NoInlining) != 0)
+                    flags |= MethodFlags.NoInlining;
+
+                if ((methodImplAttributes & MethodImplAttributes.AggressiveInlining) != 0)
+                    flags |= MethodFlags.AggressiveInlining;
 
                 flags |= MethodFlags.BasicMetadataCache;
             }
@@ -187,6 +208,30 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Abstract) & MethodFlags.Abstract) != 0;
+            }
+        }
+
+        public override bool IsFinal
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Final) & MethodFlags.Final) != 0;
+            }
+        }
+
+        public override bool IsNoInlining
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.NoInlining) & MethodFlags.NoInlining) != 0;
+            }
+        }
+
+        public override bool IsAggressiveInlining
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.AggressiveInlining) & MethodFlags.AggressiveInlining) != 0;
             }
         }
 
@@ -272,18 +317,29 @@ namespace Internal.TypeSystem.Ecma
             return _type.ToString() + "." + Name;
         }
 
-        public bool IsPInvoke()
+        public override bool IsPInvoke
         {
-            return (((int)Attributes & (int)MethodAttributes.PinvokeImpl) != 0);
+            get
+            {
+                return (((int)Attributes & (int)MethodAttributes.PinvokeImpl) != 0);
+            }
         }
 
-        public string GetPInvokeImportName()
+        public override PInvokeMetadata GetPInvokeMethodMetadata()
         {
-            if (((int)Attributes & (int)MethodAttributes.PinvokeImpl) == 0)
-                return null;
+            if (!IsPInvoke)
+                return default(PInvokeMetadata);
 
-            var metadataReader = MetadataReader;
-            return metadataReader.GetString(metadataReader.GetMethodDefinition(_handle).GetImport().Name);
+            MetadataReader metadataReader = MetadataReader;
+            MethodImport import = metadataReader.GetMethodDefinition(_handle).GetImport();
+            string name = metadataReader.GetString(import.Name);
+
+            // Spot check the enums match
+            Debug.Assert((int)MethodImportAttributes.CallingConventionStdCall == (int)PInvokeAttributes.CallingConventionStdCall);
+            Debug.Assert((int)MethodImportAttributes.CharSetAuto == (int)PInvokeAttributes.CharSetAuto);
+            Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
+
+            return new PInvokeMetadata(name, (PInvokeAttributes)import.Attributes);
         }
     }
 

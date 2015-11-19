@@ -1,0 +1,20 @@
+{
+  "runtimes": {
+    "win7-x64": {
+      "Microsoft.DotNet.ILCompiler": {
+        "toolchain.win7-x64.Microsoft.DotNet.ILCompiler": "1.0.0-prerelease"
+      }
+    },
+    "ubuntu.14.04-x64": {
+      "Microsoft.DotNet.ILCompiler": {
+        "toolchain.ubuntu.14.04-x64.Microsoft.DotNet.ILCompiler": "1.0.0-prerelease"
+      }
+    },
+    "osx.10.10-x64": {
+      "Microsoft.DotNet.ILCompiler": {
+        "toolchain.osx.10.10-x64.Microsoft.DotNet.ILCompiler": "1.0.0-prerelease"
+      }
+    }
+  }
+}
+

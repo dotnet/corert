@@ -9,8 +9,80 @@ namespace Internal.TypeSystem
 {
     public static class VirtualFunctionResolution
     {
+        private class MethodDescHashtable : LockFreeReaderHashtable<MethodDesc, MethodDesc>
+        {
+            protected override int GetKeyHashCode(MethodDesc key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(MethodDesc value)
+            {
+                return value.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(MethodDesc key, MethodDesc value)
+            {
+                return Object.ReferenceEquals(key, value);
+            }
+
+            protected override bool CompareValueToValue(MethodDesc value1, MethodDesc value2)
+            {
+                return Object.ReferenceEquals(value1, value2);
+            }
+
+            protected override MethodDesc CreateValueFromKey(MethodDesc key)
+            {
+                return key;
+            }
+        }
+
         class UnificationGroup
         {
+            private MethodDesc[] _members = Array.Empty<MethodDesc>();
+            private int _memberCount = 0;
+
+            /// <summary>
+            /// Custom enumerator struct for Unification group. Makes enumeration require 0 allocations.
+            /// </summary>
+            public struct Enumerator
+            {
+                private MethodDesc[] _arrayToEnumerate;
+                private int _index;
+                private MethodDesc _current;
+
+                internal Enumerator(MethodDesc[] arrayToEnumerate)
+                {
+                    _arrayToEnumerate = arrayToEnumerate;
+                    _index = 0;
+                    _current = default(MethodDesc);
+                }
+
+                public bool MoveNext()
+                {
+                    for (; _index < _arrayToEnumerate.Length; _index++)
+                    {
+                        if (_arrayToEnumerate[_index] != null)
+                        {
+                            _current = _arrayToEnumerate[_index];
+                            _index++;
+                            return true;
+                        }
+                    }
+
+                    _current = default(MethodDesc);
+                    return false;
+                }
+
+                public MethodDesc Current
+                {
+                    get
+                    {
+                        return _current;
+                    }
+                }
+            }
+
             public UnificationGroup(MethodDesc definingMethod)
             {
                 DefiningMethod = definingMethod;
@@ -18,13 +90,17 @@ namespace Internal.TypeSystem
             }
 
             public MethodDesc DefiningMethod;
-            public List<MethodDesc> Members = new List<MethodDesc>();
+
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(_members);
+            }
 
             public void SetDefiningMethod(MethodDesc newDefiningMethod)
             {
                 // Do not change the defining method if its the same as
                 // one of the members, or it isn't a change at all
-                if (!Members.Contains(newDefiningMethod) &&
+                if (!IsInGroup(newDefiningMethod) &&
                     DefiningMethod != newDefiningMethod)
                 {
                     DefiningMethod = newDefiningMethod;
@@ -37,8 +113,21 @@ namespace Internal.TypeSystem
                 if (method == DefiningMethod)
                     return;
 
-                if (!Members.Contains(method))
-                    Members.Add(method);
+                if (!IsInGroup(method))
+                {
+                    _memberCount++;
+                    if (_memberCount >= _members.Length)
+                    {
+                        Array.Resize(ref _members, Math.Max(_members.Length * 2, 2));
+                    }
+                    for (int i = 0; i < _members.Length; i++)
+                    {
+                        if (_members[i] == null)
+                        {
+                            _members[i] = method;
+                        }
+                    }
+                }
             }
 
             public void RemoveFromGroup(MethodDesc method)
@@ -46,7 +135,15 @@ namespace Internal.TypeSystem
                 if (method == DefiningMethod)
                     throw new BadImageFormatException();
 
-                Members.Remove(method);
+                for (int i = 0; i < _members.Length; i++)
+                {
+                    if (_members[i] == method)
+                    {
+                        _memberCount--;
+                        _members[i] = null;
+                        return;
+                    }
+                }
             }
 
             public bool IsInGroupOrIsDefiningSlot(MethodDesc method)
@@ -59,7 +156,13 @@ namespace Internal.TypeSystem
 
             public bool IsInGroup(MethodDesc method)
             {
-                return Members.Contains(method);
+                for (int i = 0; i < _members.Length; i++)
+                {
+                    if (_members[i] == method)
+                        return true;
+                }
+
+                return false;
             }
         }
 
@@ -111,9 +214,7 @@ namespace Internal.TypeSystem
 
         private static bool IsInterfaceImplementedOnType(MetadataType type, MetadataType interfaceType)
         {
-            // TODO! This function is the same as IsInterfaceExplicitlyImplementedOnType which isn't quite right.
-            // Fix the concept of implemented/explictly implemented interfaces and make these methods right.
-            foreach (TypeDesc iface in type.ImplementedInterfaces)
+            foreach (TypeDesc iface in type.RuntimeInterfaces)
             {
                 if (iface == interfaceType)
                     return true;
@@ -151,9 +252,7 @@ namespace Internal.TypeSystem
 
         private static bool IsInterfaceExplicitlyImplementedOnType(MetadataType type, MetadataType interfaceType)
         {
-            // TODO! This function is the same as IsInterfaceImplementedOnType which isn't quite right.
-            // Fix the concept of implemented/explictly implemented interfaces and make these methods right.
-            foreach (TypeDesc iface in type.ImplementedInterfaces)
+            foreach (TypeDesc iface in type.ExplicitlyImplementedInterfaces)
             {
                 if (iface == interfaceType)
                     return true;
@@ -270,22 +369,22 @@ namespace Internal.TypeSystem
             // have seperated themselves from the group
 
             // Start with removing methods that seperated themselves from the group via name/sig matches
-            List<MethodDesc> seperatedMethods = null;
+            MethodDescHashtable seperatedMethods = null;
 
-            foreach (MethodDesc memberMethod in unificationGroup.Members)
+            foreach (MethodDesc memberMethod in unificationGroup)
             {
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType);
                 if (nameSigMatchMemberMethod != null)
                 {
                     if (seperatedMethods == null)
-                        seperatedMethods = new List<MethodDesc>();
-                    seperatedMethods.Add(memberMethod);
+                        seperatedMethods = new MethodDescHashtable();
+                    seperatedMethods.AddOrGetExisting(memberMethod);
                 }
             }
 
             if (seperatedMethods != null)
             {
-                foreach (MethodDesc seperatedMethod in seperatedMethods)
+                foreach (MethodDesc seperatedMethod in MethodDescHashtable.Enumerator.Get(seperatedMethods))
                 {
                     unificationGroup.RemoveFromGroup(seperatedMethod);
                 }
@@ -300,7 +399,7 @@ namespace Internal.TypeSystem
                 if (unificationGroup.IsInGroup(declSlot) && !unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
                 {
                     unificationGroup.RemoveFromGroup(declSlot);
-                    seperatedMethods.Add(declSlot);
+                    seperatedMethods.AddOrGetExisting(declSlot);
                     continue;
                 }
                 if (!unificationGroup.IsInGroupOrIsDefiningSlot(declSlot) && unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
@@ -319,7 +418,7 @@ namespace Internal.TypeSystem
                         unificationGroup.AddToGroup(addDeclGroup.DefiningMethod);
                     }
 
-                    foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup.Members)
+                    foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup)
                     {
                         if (!seperatedMethods.Contains(addDeclGroupMemberMethod))
                         {
@@ -447,7 +546,7 @@ namespace Internal.TypeSystem
         // Enumerate all possible virtual slots of a type
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(MetadataType type)
         {
-            HashSet<MethodDesc> alreadyEnumerated = new HashSet<MethodDesc>();
+            MethodDescHashtable alreadyEnumerated = new MethodDescHashtable();
             if (!type.IsInterface)
             {
                 do
@@ -459,7 +558,7 @@ namespace Internal.TypeSystem
                             MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
                             if (!alreadyEnumerated.Contains(possibleVirtual))
                             {
-                                alreadyEnumerated.Add(possibleVirtual);
+                                alreadyEnumerated.AddOrGetExisting(possibleVirtual);
                                 yield return possibleVirtual;
                             }
                         }
