@@ -72,6 +72,8 @@ namespace Internal.IL.Stubs
 
             int pointerSize = _method.Context.Target.PointerSize;
 
+            var rangeExceptionLabel = NewCodeLabel();
+
             // TODO: type check
 
             for (int i = 0; i < _rank; i++)
@@ -85,13 +87,10 @@ namespace Internal.IL.Stubs
 
                 codeStream.EmitLdArg(i + 1);
 
-#if false
-                // TODO: generate IL to check bounds
                 // Compare with length
                 codeStream.Emit(ILOpcode.dup);
                 codeStream.EmitLdLoc(lengthLocalNum);
-                codeStream.Emit(ILOpcode.bge_un, rangeExceptionLabel1);
-#endif
+                codeStream.Emit(ILOpcode.bge_un, rangeExceptionLabel);
 
                 // Add to the running total if we have one already
                 if (i > 0)
@@ -136,16 +135,14 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.ret);
 
-#if false
             codeStream.EmitLdc(0);
-            codeStream.EmitLabel(rangeExceptionLabel1); // Assumes that there is one "int" pushed on the stack
+            codeStream.EmitLabel(rangeExceptionLabel); // Assumes that there is one "int" pushed on the stack
             codeStream.Emit(ILOpcode.pop);
 
-            var tokIndexOutOfRangeCtorExcep = GetToken(GetException(kIndexOutOfRangeException).GetDefaultConstructor());
-            codeStream.EmitLabel(rangeExceptionLabel);
-            codeStream.Emit(ILOpcode.newobj, tokIndexOutOfRangeCtorExcep, 0);
-            codeStream.Emit(ILOpcode.throw_);
-
+            MethodDesc throwHelper = _method.Context.GetHelperEntryPoint("ArrayMethodILHelpers", "ThrowIndexOutOfRangeException");
+            codeStream.Emit(ILOpcode.call, NewToken(throwHelper));
+            codeStream.Emit(ILOpcode.ret);
+#if false
             if (typeMismatchExceptionLabel != null)
             {
                 var tokTypeMismatchExcepCtor = GetToken(GetException(kArrayTypeMismatchException).GetDefaultConstructor());
