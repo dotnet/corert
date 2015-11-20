@@ -27,7 +27,7 @@
 
 #include <string.h>
 
-UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName)
+UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName, UInt32 uiDefaultValue)
 {
     WCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // 8 hex digits plus a nul terminator.
     const UInt32 cchBuffer = sizeof(wszBuffer) / sizeof(wszBuffer[0]);
@@ -43,7 +43,7 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName)
         cchResult = GetIniVariable(wszName, wszBuffer, cchBuffer);
 
     if ((cchResult == 0) || (cchResult >= cchBuffer))
-        return 0;
+        return uiDefaultValue; // not found, return default
 
     UInt32 uiResult = 0;
 
@@ -59,7 +59,7 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName)
         else if ((ch >= L'A') && (ch <= L'F'))
             uiResult += (ch - L'A') + 10;
         else
-            return 0;
+            return uiDefaultValue; // parse error, return default
     }
 
     return uiResult;

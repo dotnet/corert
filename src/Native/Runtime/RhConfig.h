@@ -56,12 +56,12 @@ private:
 
 public:
 
-#define DEFINE_VALUE_ACCESSOR(_name)                    \
+#define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
     UInt32 Get##_name()                                 \
     {                                                   \
         if (m_uiConfigValuesRead & (1 << RCV_##_name))  \
             return m_uiConfigValues[RCV_##_name];       \
-        UInt32 uiValue = ReadConfigValue(L"RH_" L ## #_name); \
+        UInt32 uiValue = ReadConfigValue(L"RH_" L ## #_name, defaultVal); \
         m_uiConfigValues[RCV_##_name] = uiValue;        \
         m_uiConfigValuesRead |= 1 << RCV_##_name;       \
         return uiValue;                                 \
@@ -69,26 +69,35 @@ public:
 
 
 #ifdef _DEBUG
-#define DEBUG_CONFIG_VALUE(_name) DEFINE_VALUE_ACCESSOR(_name)
+#define DEBUG_CONFIG_VALUE(_name) DEFINE_VALUE_ACCESSOR(_name, 0)
+#define DEBUG_CONFIG_VALUE_WITH_DEFAULT(_name, defaultVal) DEFINE_VALUE_ACCESSOR(_name, defaultVal)
 #else
 #define DEBUG_CONFIG_VALUE(_name) 
+#define DEBUG_CONFIG_VALUE_WITH_DEFAULT(_name, defaultVal) 
 #endif
-#define RETAIL_CONFIG_VALUE(_name) DEFINE_VALUE_ACCESSOR(_name)
+#define RETAIL_CONFIG_VALUE(_name) DEFINE_VALUE_ACCESSOR(_name, 0)
+#define RETAIL_CONFIG_VALUE_WITH_DEFAULT(_name, defaultVal) DEFINE_VALUE_ACCESSOR(_name, defaultVal)
 #include "RhConfigValues.h"
 #undef DEBUG_CONFIG_VALUE
 #undef RETAIL_CONFIG_VALUE
+#undef DEBUG_CONFIG_VALUE_WITH_DEFAULT
+#undef RETAIL_CONFIG_VALUE_WITH_DEFAULT
 
 private:
 
-    UInt32 ReadConfigValue(_In_z_ const WCHAR *wszName);
+    UInt32 ReadConfigValue(_In_z_ const WCHAR *wszName, UInt32 uiDefault);
 
     enum RhConfigValue
     {
 #define DEBUG_CONFIG_VALUE(_name) RCV_##_name,
 #define RETAIL_CONFIG_VALUE(_name) RCV_##_name,
+#define DEBUG_CONFIG_VALUE_WITH_DEFAULT(_name, defaultVal) RCV_##_name,
+#define RETAIL_CONFIG_VALUE_WITH_DEFAULT(_name, defaultVal) RCV_##_name,
 #include "RhConfigValues.h"
 #undef DEBUG_CONFIG_VALUE
 #undef RETAIL_CONFIG_VALUE
+#undef DEBUG_CONFIG_VALUE_WITH_DEFAULT
+#undef RETAIL_CONFIG_VALUE_WITH_DEFAULT
         RCV_Count
     };
     
