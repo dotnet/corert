@@ -1175,8 +1175,11 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 }
 
 extern "C" void _mm_pause()
+// Defined for implementing PalYieldProcessor in PalRedhawk.h
 {
+#if defined(_AMD64_) || defined(_X86_)
   __asm__ volatile ("pause");
+#endif
 }
 
 extern "C" Int32 _wcsicmp(const wchar_t *string1, const wchar_t *string2)
