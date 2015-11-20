@@ -10,8 +10,6 @@ namespace Internal.JitInterface
     // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
     // These helpers can be called by native code which executes in the runtime.
     // Compilers can emit calls to these helpers.
-    //
-    // The signatures of the helpers are below (see RuntimeHelperArgumentCheck)
 
     public enum CorInfoHelpFunc
     {
@@ -239,9 +237,6 @@ namespace Internal.JitInterface
 
         // These helpers are required for MDIL backward compatibility only. They are not used by current JITed code.
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_OBSOLETE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
-#if RYUJIT_CTPBUILD
-        CORINFO_HELP_METHODDESC_TO_RUNTIMEMETHODHANDLE_MAYBENULL_OBSOLETE, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
-#endif
         CORINFO_HELP_METHODDESC_TO_RUNTIMEMETHODHANDLE_OBSOLETE, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
         CORINFO_HELP_FIELDDESC_TO_RUNTIMEFIELDHANDLE_OBSOLETE, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
 
@@ -261,47 +256,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_STATIC_BASE,
         CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
-
-#if REDHAWK
-        // these helpers are arbitrary since we don't have any relation to the actual CLR corinfo.h.
-        CORINFO_HELP_PINVOKE,               // transition to preemptive mode for a pinvoke, frame in EAX
-        CORINFO_HELP_PINVOKE_2,             // transition to preemptive mode for a pinvoke, frame in ESI / R10
-        CORINFO_HELP_PINVOKE_RETURN,        // return to cooperative mode from a pinvoke
-        CORINFO_HELP_REVERSE_PINVOKE,       // transition to cooperative mode for a callback from native
-        CORINFO_HELP_REVERSE_PINVOKE_RETURN,// return to preemptive mode to return to native from managed
-        CORINFO_HELP_REGISTER_MODULE,       // module load notification
-        CORINFO_HELP_CREATECOMMANDLINE,     // get the command line from the system and return it for Main
-        CORINFO_HELP_VSD_INITIAL_TARGET,    // all VSD indirection cells initially point to this function
-        CORINFO_HELP_NEW_FINALIZABLE,       // allocate finalizable object
-        CORINFO_HELP_SHUTDOWN,              // called when Main returns from a managed executable
-        CORINFO_HELP_CHECKARRAYSTORE,       // checks that an array element assignment is of the right type
-        CORINFO_HELP_CHECK_VECTOR_ELEM_ADDR,// does a precise type check on the array element type
-        CORINFO_HELP_FLT2INT_OVF,           // checked float->int conversion
-        CORINFO_HELP_FLT2LNG,               // float->long conversion
-        CORINFO_HELP_FLT2LNG_OVF,           // checked float->long conversion
-        CORINFO_HELP_FLTREM_REV,            // Bartok helper for float remainder - uses reversed param order from CLR helper
-        CORINFO_HELP_DBLREM_REV,            // Bartok helper for double remainder - uses reversed param order from CLR helper
-        CORINFO_HELP_HIJACKFORGCSTRESS,     // this helper hijacks the caller for GC stress
-        CORINFO_HELP_INIT_GCSTRESS,         // this helper initializes the runtime for GC stress
-        CORINFO_HELP_SUPPRESS_GCSTRESS,     // disables gc stress
-        CORINFO_HELP_UNSUPPRESS_GCSTRESS,   // re-enables gc stress
-        CORINFO_HELP_THROW_INTRA,           // Throw an exception object to a hander within the method
-        CORINFO_HELP_THROW_INTER,           // Throw an exception object to a hander within the caller
-        CORINFO_HELP_THROW_ARITHMETIC,      // Throw the classlib-defined arithmetic exception
-        CORINFO_HELP_THROW_DIVIDE_BY_ZERO,  // Throw the classlib-defined divide by zero exception
-        CORINFO_HELP_THROW_INDEX,           // Throw the classlib-defined index out of range exception
-        CORINFO_HELP_THROW_OVERFLOW,        // Throw the classlib-defined overflow exception
-        CORINFO_HELP_EHJUMP_SCALAR,         // Helper to jump to a handler in a different method for EH dispatch.
-        CORINFO_HELP_EHJUMP_OBJECT,         // Helper to jump to a handler in a different method for EH dispatch.
-        CORINFO_HELP_EHJUMP_BYREF,          // Helper to jump to a handler in a different method for EH dispatch.
-        CORINFO_HELP_EHJUMP_SCALAR_GCSTRESS,// Helper to jump to a handler in a different method for EH dispatch.
-        CORINFO_HELP_EHJUMP_OBJECT_GCSTRESS,// Helper to jump to a handler in a different method for EH dispatch.
-        CORINFO_HELP_EHJUMP_BYREF_GCSTRESS, // Helper to jump to a handler in a different method for EH dispatch.
-
-        // Bartok emits code with destination in ECX rather than EDX and only ever uses EDX as the reference
-        // register. It also only ever specifies the checked version.
-        CORINFO_HELP_CHECKED_ASSIGN_REF_EDX, // EDX hold GC ptr, want do a 'mov [ECX], EDX' and inform GC
-#endif // REDHAWK
 
         CORINFO_HELP_EE_PRESTUB,            // Not real JIT helper. Used in native images.
 
