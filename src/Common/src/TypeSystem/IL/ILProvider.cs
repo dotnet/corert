@@ -88,7 +88,7 @@ namespace Internal.IL
             else
             if (method is ArrayMethod)
             {
-                return new ArrayMethodILEmitter((ArrayMethod)method).EmitIL();
+                return ArrayMethodILEmitter.EmitIL((ArrayMethod)method);
             }
             else
             {
