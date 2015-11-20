@@ -232,7 +232,7 @@ COOP_PINVOKE_HELPER(void*, RhpPublishObject, (void* pObject, UIntNative cbSize))
 {
     UNREFERENCED_PARAMETER(cbSize);
     ASSERT(cbSize >= LARGE_OBJECT_SIZE);
-    GCHeap::GetGCHeap()->PublishObject((BYTE*)pObject);
+    GCHeap::GetGCHeap()->PublishObject((uint8_t*)pObject);
     return pObject;
 }
 
@@ -653,7 +653,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobj
 // does not require the destination pointer to be on the heap.
 EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize);
 
-COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (BYTE* pDest, BYTE* pSrc, int cbDest))
+COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* pSrc, int cbDest))
 {
     memmove(pDest, pSrc, cbDest);
     // Use RhpBulkWriteBarrier here instead of SetCardsAfterBulkCopy as RhpBulkWriteBarrier

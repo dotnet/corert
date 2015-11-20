@@ -99,7 +99,7 @@ public:
 
 class EEConfig
 {
-    BYTE m_gcStressMode;
+    UInt8 m_gcStressMode;
 
 public:
     enum HeapVerifyFlags {
@@ -147,7 +147,7 @@ public:
     bool    IsHeapVerifyEnabled()                 { return GetHeapVerifyLevel() != 0; }
 
     GCStressFlags GetGCStressLevel()        const { return (GCStressFlags) m_gcStressMode; }
-    void    SetGCStressLevel(int val)             { m_gcStressMode = (BYTE) val;}
+    void    SetGCStressLevel(int val)             { m_gcStressMode = (UInt8) val;}
     bool    IsGCStressMix()                 const { return false; }
 
     int     GetGCtraceStart()               const { return 0; }
@@ -186,7 +186,7 @@ class SyncBlockCache
 {
 public:
     static SyncBlockCache *GetSyncBlockCache() { return &g_sSyncBlockCache; }
-    void GCWeakPtrScan(void *pCallback, LPARAM pCtx, int dummy)
+    void GCWeakPtrScan(void *pCallback, uintptr_t pCtx, int dummy)
     {
         UNREFERENCED_PARAMETER(pCallback);
         UNREFERENCED_PARAMETER(pCtx);

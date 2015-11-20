@@ -32,6 +32,7 @@ typedef uint32_t BOOL;
 typedef uint32_t DWORD;
 typedef void* LPVOID;
 typedef uint32_t UINT;
+typedef int32_t LONG;
 typedef uintptr_t ULONG_PTR;
 typedef void VOID;
 typedef void* PVOID;

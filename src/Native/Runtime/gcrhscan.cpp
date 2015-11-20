@@ -59,11 +59,11 @@ VOID CNameSpace::GcStartDoWork()
 VOID CNameSpace::GcWeakPtrScan( EnumGcRefCallbackFunc* fn, int condemned, int max_gen, EnumGcRefScanContext* sc )
 {
     PalPrintf("CNameSpace::GcWeakPtrScan\n");
-    Ref_CheckReachable(condemned, max_gen, (LPARAM)sc);
+    Ref_CheckReachable(condemned, max_gen, (uintptr_t)sc);
     Ref_ScanDependentHandlesForClearing(condemned, max_gen, sc, fn);
 }
 
-static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, LPARAM * /*pExtraInfo*/, LPARAM /*lp1*/, LPARAM /*lp2*/)
+static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t * /*pExtraInfo*/, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
 {
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Checking referent of Weak-", pObjRef, "to ", *pObjRef)));
 
@@ -84,14 +84,14 @@ VOID CNameSpace::GcWeakPtrScanBySingleThread( int /*condemned*/, int /*max_gen*/
 {
     PalPrintf("CNameSpace::GcWeakPtrScanBySingleThread\n");
 #ifdef VERIFY_HEAP    
-    SyncBlockCache::GetSyncBlockCache()->GCWeakPtrScan(&CheckPromoted, (LPARAM)sc, 0);
+    SyncBlockCache::GetSyncBlockCache()->GCWeakPtrScan(&CheckPromoted, (uintptr_t)sc, 0);
 #endif // VERIFY_HEAP
 }
 
 VOID CNameSpace::GcShortWeakPtrScan(EnumGcRefCallbackFunc* /*fn*/,  int condemned, int max_gen, EnumGcRefScanContext* sc)
 {
     PalPrintf("CNameSpace::GcShortWeakPtrScan\n");
-    Ref_CheckAlive(condemned, max_gen, (LPARAM)sc);
+    Ref_CheckAlive(condemned, max_gen, (uintptr_t)sc);
 }
 
 
@@ -188,7 +188,7 @@ VOID CNameSpace::GcScanHandles (EnumGcRefCallbackFunc* fn,  int condemned, int m
 VOID CNameSpace::GcScanHandlesForProfilerAndETW (int max_gen, EnumGcRefScanContext* sc)
 {
         LOG((LF_GC|LF_GCROOTS, LL_INFO10, "Profiler Root Scan Phase, Handles\n"));
-        Ref_ScanPointersForProfilerAndETW(max_gen, (LPARAM)sc);
+        Ref_ScanPointersForProfilerAndETW(max_gen, (uintptr_t)sc);
 }
     
 /*
@@ -223,7 +223,7 @@ void CNameSpace::GcRuntimeStructuresValid (BOOL bValid)
 void CNameSpace::GcDemote (int condemned, int max_gen, EnumGcRefScanContext* sc)
 {
     PalPrintf("CNameSpace::GcDemote\n");
-    Ref_RejuvenateHandles (condemned, max_gen, (LPARAM)sc);
+    Ref_RejuvenateHandles (condemned, max_gen, (uintptr_t)sc);
 #ifdef VERIFY_HEAP    
     if (!GCHeap::IsServerHeap() || sc->thread_number == 0)
         SyncBlockCache::GetSyncBlockCache()->GCDone(TRUE, max_gen);
@@ -233,7 +233,7 @@ void CNameSpace::GcDemote (int condemned, int max_gen, EnumGcRefScanContext* sc)
 void CNameSpace::GcPromotionsGranted (int condemned, int max_gen, EnumGcRefScanContext* sc)
 {
     PalPrintf("CNameSpace::GcPromotionsGranted\n");
-    Ref_AgeHandles(condemned, max_gen, (LPARAM)sc);
+    Ref_AgeHandles(condemned, max_gen, (uintptr_t)sc);
 #ifdef VERIFY_HEAP    
     if (!GCHeap::IsServerHeap() || sc->thread_number == 0)
         SyncBlockCache::GetSyncBlockCache()->GCDone(FALSE, max_gen);
