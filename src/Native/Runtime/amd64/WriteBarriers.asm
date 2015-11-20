@@ -141,6 +141,7 @@ LEAF_ENTRY RhpAssignRef&EXPORT_REG_NAME&, _TEXT
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <RDX>
     ALTERNATE_ENTRY RhpAssignRef
+    ALTERNATE_ENTRY RhpAssignRefAVLocation
     endif
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here
@@ -194,6 +195,7 @@ LEAF_ENTRY RhpCheckedAssignRef&EXPORT_REG_NAME&, _TEXT
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <RDX>
     ALTERNATE_ENTRY RhpCheckedAssignRef
+    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
     endif
 
     ;; Write the reference into the location. Note that we rely on the fact that no GC can occur between here

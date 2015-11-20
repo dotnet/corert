@@ -16,6 +16,10 @@
 #ifndef __EVENTTRACEPRIV_H__
 #define __EVENTTRACEPRIV_H__
 
+#ifdef FEATURE_REDHAWK
+#include "holder.h"
+#endif // FEATURE_REDHAWK
+
 #ifndef _countof
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 #endif

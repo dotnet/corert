@@ -2,9 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "CommonTypes.h"
-#include "gcrhenvbase.h"
-#include "eventtrace.h"
+#include "common.h"
+#include "gcenv.h"
 #include "gc.h"
 #include "assert.h"
 #include "RedhawkWarnings.h"
@@ -14,9 +13,8 @@
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
+#include "targetptrs.h"
 #include "rhbinder.h"
-#include "holder.h"
-#include "Crst.h"
 #include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"

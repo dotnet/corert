@@ -41,7 +41,7 @@ struct RH_ETW_CONTEXT
 UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * CallbackContext);
 
 __declspec(noinline) __inline void __stdcall
-RhEtwControlCallback(GUID * SourceId, UInt32 IsEnabled, UInt8 Level, UInt64 MatchAnyKeyword, UInt64 MatchAllKeyword, EVENT_FILTER_DESCRIPTOR * FilterData, void * CallbackContext)
+RhEtwControlCallback(GUID * /*SourceId*/, UInt32 IsEnabled, UInt8 Level, UInt64 MatchAnyKeyword, UInt64 MatchAllKeyword, EVENT_FILTER_DESCRIPTOR * FilterData, void * CallbackContext)
 {
     RH_ETW_CONTEXT * Ctx = (RH_ETW_CONTEXT*)CallbackContext;
     if (Ctx == NULL)
@@ -330,6 +330,9 @@ extern "C" __declspec(selectany) const EVENT_DESCRIPTOR GCSuspendEEEnd_V1 = {0x8
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR GCTerminateConcurrentThread_V1 = {0xc, 0x1, 0x10, 0x4, 0xd, 0x1, 0x8000000000010001};
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR ModuleLoad_V2 = {0x98, 0x2, 0x10, 0x4, 0x21, 0xa, 0x8000000020000008};
 extern "C" __declspec(selectany) const EVENT_DESCRIPTOR SetGCHandle = {0x1e, 0x0, 0x10, 0x4, 0x21, 0x1, 0x8000000000000002};
+
+// @TODO: ETW update required -- placeholder guid
+extern "C" __declspec(selectany) const EVENT_DESCRIPTOR PinPlugAtGCTime = { 0x00, 0x0, 0x00, 0x0, 0x00, 0x0, 0x0000000000000000 };
 
 extern "C" __declspec(selectany) REGHANDLE Microsoft_Windows_Redhawk_GC_PublicHandle;
 extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context;

@@ -669,6 +669,9 @@ bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext);
 void Ref_ScanDependentHandlesForClearing(UINT condemned, UINT maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanDependentHandlesForRelocation(UINT condemned, UINT maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanSizedRefHandles(UINT condemned, UINT maxgen, ScanContext* sc, Ref_promote_func* fn);
+#ifdef FEATURE_REDHAWK
+void Ref_ScanPointers(UINT condemned, UINT maxgen, ScanContext* sc, Ref_promote_func* fn);
+#endif
 
 void Ref_CheckReachable       (UINT uCondemnedGeneration, UINT uMaxGeneration, LPARAM lp1);
 void Ref_CheckAlive           (UINT uCondemnedGeneration, UINT uMaxGeneration, LPARAM lp1);

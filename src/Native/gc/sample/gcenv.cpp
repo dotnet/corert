@@ -229,3 +229,61 @@ bool IsGCSpecialThread()
     // TODO: Implement for background GC
     return false;
 }
+
+void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC /*scanProc*/, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
+{
+}
+
+void GCToEEInterface::SyncBlockCacheDemote(int /*max_gen*/)
+{
+}
+
+void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
+{
+}
+
+void StompWriteBarrierEphemeral()
+{
+}
+
+void StompWriteBarrierResize(bool /*bReqUpperBoundsCheck*/)
+{
+}
+
+VOID LogSpewAlways(const char * /*fmt*/, ...)
+{
+}
+
+uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
+{
+    switch (eType)
+    {
+    case UNSUPPORTED_BGCSpinCount:
+        return 140;
+
+    case UNSUPPORTED_BGCSpin:
+        return 2;
+
+    case UNSUPPORTED_GCLogEnabled:
+    case UNSUPPORTED_GCLogFile:
+    case UNSUPPORTED_GCLogFileSize:
+    case EXTERNAL_GCStressStart:
+    case INTERNAL_GCStressStartAtJit:
+    case INTERNAL_DbgDACSkipVerifyDlls:
+        return 0;
+
+    case Config_COUNT:
+    default:
+#ifdef _MSC_VER
+#pragma warning(suppress:4127) // Constant conditional expression in ASSERT below
+#endif
+        ASSERT(!"Unknown config value type");
+        return 0;
+    }
+}
+
+HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, wchar_t * * outVal)
+{
+    *outVal = NULL;
+    return 0;
+}

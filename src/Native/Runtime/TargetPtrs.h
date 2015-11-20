@@ -113,10 +113,8 @@ typedef UInt32 UIntTarget;
 #error unexpected target architecture
 #endif
 
-#ifndef GCENV_INCLUDED
 typedef PTR_UInt8                       TgtPTR_UInt8;
 typedef PTR_UInt32                      TgtPTR_UInt32;
-#endif // GCENV_INCLUDED
 typedef void *                          TgtPTR_Void;
 typedef PTR_EEType                      TgtPTR_EEType;
 typedef PTR_GenericInstanceDesc         TgtPTR_GenericInstanceDesc;

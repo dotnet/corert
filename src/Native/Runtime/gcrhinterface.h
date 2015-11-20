@@ -20,7 +20,6 @@
 
 #ifndef DACCESS_COMPILE
 // Global data cells exported by the GC.
-extern "C" unsigned int *g_card_table;
 extern "C" unsigned char *g_ephemeral_low;
 extern "C" unsigned char *g_ephemeral_high;
 extern "C" unsigned char *g_lowest_address;

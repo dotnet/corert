@@ -72,7 +72,7 @@ public:
     }
     void RawSetMethodTable(MethodTable * pMT)
     {
-        m_pEEType = (EEType *)pMT;
+        m_pEEType = PTR_EEType((EEType *)pMT);
     }
     ////// End adaptor methods 
 };

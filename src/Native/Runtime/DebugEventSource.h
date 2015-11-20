@@ -16,11 +16,9 @@
 // This global is set from out of process using the debugger. It controls which events are emitted.
 GVAL_DECL(UInt32, g_DebuggerEventsFilter);
 
-#ifndef DACCESS_COMPILE
-
-// this is also defined in cordebug.h, but I don't want to pull that header into redhawk
-// runtime build.
 typedef UInt64 CORDB_ADDRESS;
+
+#ifndef DACCESS_COMPILE
 
 struct DebugEventPayload;
 

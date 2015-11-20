@@ -129,11 +129,11 @@ public:
         { return &m_dispatchMap[m_entryCount]; }
 };
 
-#if !defined(BINDER) && !defined(DACCESS_COMPILE)
+#if !defined(BINDER)
 //-------------------------------------------------------------------------------------------------
 // The subset of CLR-style CorElementTypes that Redhawk knows about at runtime (just the primitives and a
 // special case for ELEMENT_TYPE_ARRAY used to mark the System.Array EEType).
-enum CorElementType
+enum CorElementType : UInt8
 {
     ELEMENT_TYPE_END        = 0x0,
 
@@ -155,7 +155,7 @@ enum CorElementType
     ELEMENT_TYPE_I          = 0x18,
     ELEMENT_TYPE_U          = 0x19,
 };
-#endif // !BINDER && !DACCESS_COMPILE
+#endif // !BINDER
 
 //-------------------------------------------------------------------------------------------------
 // Support for encapsulating the location of fields in the EEType that have variable offsets or may be

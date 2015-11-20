@@ -156,7 +156,6 @@ namespace ETW
 
 #endif // FEATURE_REDHAWK
 
-
     // Class to wrap all GC logic for ETW
     class GCLog
     {
@@ -260,7 +259,7 @@ namespace ETW
             struct {
                 ULONGLONG SegmentSize; 
                 ULONGLONG LargeObjectSegmentSize; 
-                BOOL ServerGC; // TRUE means it’s server GC; FALSE means it’s workstation.
+                BOOL ServerGC; // TRUE means it's server GC; FALSE means it's workstation.
             } GCSettings;
 
             struct {
@@ -269,15 +268,6 @@ namespace ETW
                 // 1 means the notification was due to allocation; 0 means it was due to other factors.
                 ULONG Alloc; 
             } GCFullNotify;
-
-            typedef  enum _GC_ROOT_KIND {
-                GC_ROOT_STACK = 0,
-                GC_ROOT_FQ = 1,
-                GC_ROOT_HANDLES = 2,
-                GC_ROOT_OLDER = 3,
-                GC_ROOT_SIZEDREF = 4,
-                GC_ROOT_OVERFLOW = 5
-            } GC_ROOT_KIND;
         } ETW_GC_INFO, *PETW_GC_INFO;
 
 #ifdef FEATURE_EVENT_TRACE
@@ -289,6 +279,7 @@ namespace ETW
         static BOOL ShouldWalkHeapObjectsForEtw();
         static BOOL ShouldWalkHeapRootsForEtw();
         static BOOL ShouldTrackMovementForEtw();
+        static BOOL ShouldWalkStaticsAndCOMForEtw();
         static HRESULT ForceGCForDiagnostics();
         static VOID ForceGC(LONGLONG l64ClientSequenceNumber);
         static VOID FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo);
@@ -315,8 +306,9 @@ namespace ETW
             Object ** rgObjReferenceTargets);
         static VOID EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext);
         static VOID BeginMovedReferences(size_t * pProfilingContext);
-        static VOID MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting);
-        static VOID EndMovedReferences(size_t profilingContext);
+        static VOID MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
+        static VOID EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
+        static VOID WalkStaticsAndCOMForETW();
 #ifndef FEATURE_REDHAWK
         static VOID SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj);
 #endif // FEATURE_REDHAWK
@@ -327,12 +319,14 @@ namespace ETW
 inline BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
+inline BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw() { return FALSE; }
 inline VOID ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo) { }
 inline VOID ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth) { }
 inline VOID ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext) { }
 inline VOID ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
 inline VOID ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting) { }
 inline VOID ETW::GCLog::EndMovedReferences(size_t profilingContext) { }
+inline VOID ETW::GCLog::WalkStaticsAndCOMForETW() { }
 inline VOID ETW::GCLog::RootReference(
     LPVOID pvHandle,
     Object * pRootedNode,
@@ -343,5 +337,6 @@ inline VOID ETW::GCLog::RootReference(
     DWORD rootFlags) { }
 #endif
 
+inline BOOL EventEnabledPinObjectAtGCTime() { return FALSE; }
 
 #endif //_VMEVENTTRACE_H_

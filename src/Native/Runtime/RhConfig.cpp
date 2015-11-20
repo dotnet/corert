@@ -2,8 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
+#include "common.h"
 #ifndef DACCESS_COMPILE
-#include "rhcommon.h"
 #include "CommonTypes.h"
 #include "daccess.h"
 #include "CommonMacros.h"
@@ -25,6 +25,7 @@
 #include "module.h"
 #include "RhConfig.h"
 
+#include <string.h>
 
 UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName)
 {

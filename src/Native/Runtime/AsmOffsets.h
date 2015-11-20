@@ -46,12 +46,12 @@ ASM_OFFSET(   4,    4,    4, EEType,  m_uBaseSize)
 ASM_OFFSET(  14,   14,   18, EEType,  m_VTable)
 
 ASM_OFFSET(   0,    0,    0, Thread,  m_rgbAllocContextBuffer)
-ASM_OFFSET(  28,   28,   38, Thread,  m_ThreadStateFlags)
-ASM_OFFSET(  2c,   2c,   40, Thread,  m_pTransitionFrame)
-ASM_OFFSET(  30,   30,   48, Thread,  m_pHackPInvokeTunnel)
-ASM_OFFSET(  40,   40,   68, Thread,  m_ppvHijackedReturnAddressLocation)
-ASM_OFFSET(  44,   44,   70, Thread,  m_pvHijackedReturnAddress)
-ASM_OFFSET(  48,   48,   78, Thread,  m_pExInfoStackHead)
+ASM_OFFSET(  1c,   1c,   28, Thread,  m_ThreadStateFlags)
+ASM_OFFSET(  20,   20,   30, Thread,  m_pTransitionFrame)
+ASM_OFFSET(  24,   24,   38, Thread,  m_pHackPInvokeTunnel)
+ASM_OFFSET(  34,   34,   58, Thread,  m_ppvHijackedReturnAddressLocation)
+ASM_OFFSET(  38,   38,   60, Thread,  m_pvHijackedReturnAddress)
+ASM_OFFSET(  3c,   3c,   68, Thread,  m_pExInfoStackHead)
 
 ASM_SIZEOF(  14,   14,   20, EHEnum) 
 

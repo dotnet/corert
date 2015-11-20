@@ -922,6 +922,7 @@ public:
 
     size_t EncodeFuncletInfo(UInt8 * & pDest)
     {
+        UNREFERENCED_PARAMETER(pDest);
         size_t size = 0;
 #if defined(BINDER)
         if (hasFunclets)

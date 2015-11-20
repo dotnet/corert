@@ -2,15 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"
@@ -32,10 +27,6 @@
 #include "eetype.h"
 
 #include "slist.inl"
-#else
-#include "runtimeinstance.h"
-#include "slist.inl"
-#endif
 
 EXTERN_C volatile UInt32 RhpTrapThreads = 0;
 
@@ -413,7 +404,28 @@ Thread * ThreadStore::GetCurrentThreadIfAvailable()
 }
 #endif // !DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE
+#ifdef _MSC_VER
+// Keep a global variable in the target process which contains
+// the address of _tls_index.  This is the breadcrumb needed
+// by DAC to read _tls_index since we don't control the 
+// declaration of _tls_index directly.
+EXTERN_C UInt32 _tls_index;
+GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
+#endif // _MSC_VER
+
+#ifndef DACCESS_COMPILE
+
+// We must prevent the linker from removing the unused global variable 
+// that DAC will be looking at to find _tls_index.
+#ifdef _MSC_VER
+#ifdef _WIN64
+#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PEAIEA")
+#else
+#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PAIA")
+#endif
+#endif // _MSC_VER
+
+#else // DACCESS_COMPILE
 
 #if defined(_WIN64)
 #define OFFSETOF__TLS__tls_CurrentThread            0x20

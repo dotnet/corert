@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
+#include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "PalRedhawkCommon.h"

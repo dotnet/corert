@@ -104,7 +104,7 @@ class DefaultSHashTraits
     static bool IsNull(const ELEMENT &e) { return e == (const ELEMENT) 0; }
     static bool IsDeleted(const ELEMENT &e) { return e == (const ELEMENT) -1; }
 
-    static void OnFailure(FailureType ft) { }
+    static void OnFailure(FailureType /*ft*/) { }
 
     // No defaults - must specify:
     // 

@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
+#include "common.h"
 #ifndef DACCESS_COMPILE
-#include "rhcommon.h"
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "assert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
@@ -187,6 +187,7 @@ COOP_PINVOKE_HELPER(Int32, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ wcha
 COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, 
                                 (void * pOSContext, Int32 cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
 {
+    UNREFERENCED_PARAMETER(cbOSContext);
     ASSERT(cbOSContext >= sizeof(CONTEXT));
     CONTEXT* pContext = (CONTEXT *)pOSContext;
 #ifdef _AMD64_
@@ -242,11 +243,12 @@ EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(IntNative PInv
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
 EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
-                                        UIntNative              MemoryStackFp,
+                                        UIntNative              /*MemoryStackFp*/,
                                         PCONTEXT                pContextRecord,
                                         DISPATCHER_CONTEXT *    pDispatcherContext)
 {
 #ifdef APP_LOCAL_RUNTIME
+    UNREFERENCED_PARAMETER(pDispatcherContext);
     //
     // When running on Windows 8.1 RTM, we cannot register our vectored exception handler, because that 
     // version of MRT100.dll does not support it.  However, the binder sets this function as the personality 
@@ -326,12 +328,8 @@ EXTERN_C void* RhpThrowHwEx2 = NULL;
 EXTERN_C void* RhpRethrow2   = NULL;
 #endif
 
-#if defined(_AMD64_) || defined(_X86_)
-#define RhpAssignRefAVLocation RhpAssignRef
-#define RhpCheckedAssignRefAVLocation RhpCheckedAssignRef
-#endif
-EXTERN_C void * RhpAssignRefAVLocation();
-EXTERN_C void * RhpCheckedAssignRefAVLocation();
+EXTERN_C void * RhpAssignRefAVLocation;
+EXTERN_C void * RhpCheckedAssignRefAVLocation;
 EXTERN_C void * RhpCheckedLockCmpXchgAVLocation;
 EXTERN_C void * RhpCheckedXchgAVLocation;
 EXTERN_C void * RhpCopyMultibyteDestAVLocation;

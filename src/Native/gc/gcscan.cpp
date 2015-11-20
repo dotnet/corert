@@ -27,7 +27,7 @@ SVAL_IMPL_INIT(LONG, CNameSpace, m_GcStructuresInvalidCnt, 1);
 VOLATILE(LONG) CNameSpace::m_GcStructuresInvalidCnt = 1;
 #endif //DACCESS_COMPILE
 
-BOOL CNameSpace::GetGcRuntimeStructuresValid ()
+bool CNameSpace::GetGcRuntimeStructuresValid ()
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;

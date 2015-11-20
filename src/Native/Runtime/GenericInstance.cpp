@@ -2,17 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "assert.h"
 #include "rhbinder.h"
 #include "eetype.h"
 #include "GenericInstance.h"
-#else
-#include "gcrhenv.h"
-#endif
 
 bool UnifiedGenericInstance::Equals(GenericInstanceDesc * pLocalGid)
 {

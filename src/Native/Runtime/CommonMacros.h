@@ -197,3 +197,18 @@ bool inline FitsInI4(__int64 val)
 #define DECLSPEC_THREAD __declspec(thread)
 #endif // !__llvm__
 
+#ifndef GCENV_INCLUDED
+#if !defined(_INC_WINDOWS) && !defined(BINDER)
+#ifdef WIN32
+// this must exactly match the typedef used by windows.h
+typedef long HRESULT;
+#else
+typedef int32_t HRESULT;
+#endif
+
+#define S_OK  0x0
+#define E_FAIL 0x80004005
+
+#define UNREFERENCED_PARAMETER(P)          (void)(P)
+#endif // !defined(_INC_WINDOWS) && !defined(BINDER)
+#endif // GCENV_INCLUDED

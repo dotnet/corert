@@ -17,10 +17,10 @@ typedef SPTR(struct GenericInstanceDesc) PTR_GenericInstanceDesc;
 struct SimpleModuleHeader;
 
 class Module
-#ifndef DACCESS_COMPILE
+//#ifndef DACCESS_COMPILE
     // TODO: JIT support in DAC
     : public ICodeManager
-#endif
+//#endif
 {
 #ifdef DACCESS_COMPILE
     // The DAC does not support registration of dynamic code managers yet, but we need a space for the vtable used at runtime.

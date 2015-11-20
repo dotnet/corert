@@ -2,12 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -34,11 +29,6 @@
 
 #include "CommonMacros.inl"
 #include "slist.inl"
-#else
-#include "gcrhinterface.h"
-#include "module.h"
-#include "rhbinder.h"
-#endif
 
 #include "gcinfo.h"
 #include "RHCodeMan.h"
@@ -1411,4 +1401,27 @@ void Module::DoCustomImports(ModuleHeader * pModuleHeader)
 }
 #endif // FEATURE_CUSTOM_IMPORTS
 
+#endif // DACCESS_COMPILE
+
+#ifdef DACCESS_COMPILE
+UInt32 StaticGcDesc::DacSize(TADDR addr)
+{
+    uint32_t numSeries = 0;
+    DacReadAll(addr + offsetof(StaticGcDesc, m_numSeries), &numSeries, sizeof(numSeries), true);
+
+    return (UInt32)(offsetof(StaticGcDesc, m_series) + (numSeries * sizeof(GCSeries)));
+}
+
+UInt32 GenericInstanceDesc::DacSize(TADDR addr)
+{
+    STATIC_ASSERT(offsetof(GenericInstanceDesc, m_Flags) == 0);
+
+    GenericInstanceDesc dummyDesc;
+    DacReadAll(addr, &dummyDesc, sizeof(GenericInstanceDesc::OptionalFieldTypes), true);
+
+    UInt32 arity = 0;
+    UInt32 arityOffset = dummyDesc.GetArityOffset();
+    DacReadAll(addr + arityOffset, &arity, sizeof(UInt32), true);
+    return GenericInstanceDesc::GetSize(dummyDesc.GetFlags(), arity);
+}
 #endif // DACCESS_COMPILE

@@ -2,15 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
-#include "rhcommon.h"
-#ifdef DACCESS_COMPILE
-#include "gcrhenv.h"
-#endif // DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
+#include "common.h"
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
+#include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"
@@ -30,8 +25,6 @@
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
-#endif // !DACCESS_COMPILE
-
 
 #ifndef DACCESS_COMPILE
 
@@ -311,11 +304,6 @@ bool Thread::IsInitialized()
 
 #endif // !DACCESS_COMPILE
 
-alloc_context * Thread::GetAllocContext()  // @TODO: I would prefer to not expose this in this way
-{
-    return dac_cast<DPTR(alloc_context)>(dac_cast<TADDR>(this) + offsetof(Thread, m_rgbAllocContextBuffer));
-}
-
 
 // -----------------------------------------------------------------------------------------------------------
 // LEGACY APIs: do not use except from GC itself
@@ -415,15 +403,16 @@ void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)
 #endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
-// A trivial wrapper that unpacks the ScanCallbackData and calls the callback provided to GcScanRoots
-void GcScanRootsCallbackWrapper(PTR_RtuObjectRef ppObject, Thread::ScanCallbackData* callbackData, UInt32 flags)
+// A trivial wrapper that unpacks the DacScanCallbackData and calls the callback provided to GcScanRoots
+void GcScanRootsCallbackWrapper(PTR_RtuObjectRef ppObject, DacScanCallbackData* callbackData, UInt32 flags)
 {
-    callbackData->pfnUserCallback(ppObject, callbackData->token, flags);
+    Thread::GcScanRootsCallbackFunc * pfnUserCallback = (Thread::GcScanRootsCallbackFunc *)callbackData->pfnUserCallback;
+    pfnUserCallback(ppObject, callbackData->token, flags);
 }
 
 bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token, PTR_PAL_LIMITED_CONTEXT pInitialContext)
 {
-    ScanCallbackData callbackDataWrapper;
+    DacScanCallbackData callbackDataWrapper;
     callbackDataWrapper.thread_under_crawl = this;
     callbackDataWrapper.promotion = true;
     callbackDataWrapper.token = token;
@@ -575,7 +564,7 @@ bool Thread::Hijack()
     return PalHijack(m_hPalThread, HijackCallback, this) <= 0;
 }
 
-UInt32_BOOL Thread::HijackCallback(HANDLE hThread, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
+UInt32_BOOL Thread::HijackCallback(HANDLE /*hThread*/, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext)
 {
     Thread* pThread = (Thread*) pCallbackContext;
 
@@ -923,6 +912,9 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
         ASSERT_MSG(pExInfo->m_kind & EK_SuperscededFlag, "popping a non-supersceded ExInfo");
         pExInfo = pExInfo->m_pPrevExInfo;
     }
+#else
+    UNREFERENCED_PARAMETER(pExInfo);
+    UNREFERENCED_PARAMETER(limitSP);
 #endif // _DEBUG
 }
 

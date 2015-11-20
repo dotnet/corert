@@ -40,10 +40,6 @@ typedef UInt32              UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, 
 #define UInt32_FALSE        0
 #define UInt32_TRUE         1
 
-#ifndef UNREFERENCED_PARAMETER
-#define UNREFERENCED_PARAMETER(P)          (void)(P)
-#endif // UNREFERENCED_PARAMETER
-
 #define UInt16_MAX          ((UInt16)0xffffU)
 #define UInt16_MIN          ((UInt16)0x0000U)
 

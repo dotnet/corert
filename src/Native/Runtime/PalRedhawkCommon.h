@@ -39,22 +39,6 @@ struct AMD64_ALIGN_16 Fp128 {
     Int64 High;
 };
 
-struct PAL_MEMORY_STATUS
-{
-    UInt32      dwLength;
-    UInt32      dwMemoryLoad;
-#ifndef APP_LOCAL_RUNTIME
-    UInt64      ullTotalPhys;
-    UInt64      ullAvailPhys;
-    UInt64      ullTotalPageFile;
-    UInt64      ullAvailPageFile;
-#endif
-    UInt64      ullTotalVirtual;
-#ifndef APP_LOCAL_RUNTIME
-    UInt64      ullAvailVirtual;
-    UInt64      ullAvailExtendedVirtual;
-#endif
-};
 
 struct PAL_LIMITED_CONTEXT
 {
@@ -109,5 +93,7 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetFp() const { return Rbp; }
 #endif // _ARM_
 };
+
+
 
 #endif // __PAL_REDHAWK_COMMON_INCLUDED
