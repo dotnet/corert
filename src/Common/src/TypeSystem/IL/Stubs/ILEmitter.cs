@@ -64,10 +64,10 @@ namespace Internal.IL.Stubs
             EmitByte((byte)opcode);
         }
 
-        public void Emit(ILOpcode opcode, int token)
+        public void Emit(ILOpcode opcode, ILToken token)
         {
             Emit(opcode);
-            EmitUInt32(token);
+            EmitUInt32((int)token);
         }
 
         public void EmitLdc(int value)
@@ -101,8 +101,10 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public void EmitLdLoc(int index)
+        public void EmitLdLoc(ILLocalVariable variable)
         {
+            int index = (int)variable;
+
             if (index < 4)
             {
                 Emit((ILOpcode)(ILOpcode.ldloc_0 + index));
@@ -119,8 +121,10 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public void EmitLdLoca(int index)
+        public void EmitLdLoca(ILLocalVariable variable)
         {
+            int index = (int)variable;
+
             if (index < 0x100)
             {
                 Emit(ILOpcode.ldloca_s);
@@ -133,8 +137,10 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public void EmitStLoc(int index)
+        public void EmitStLoc(ILLocalVariable variable)
         {
+            int index = (int)variable;
+
             if (index < 4)
             {
                 Emit((ILOpcode)(ILOpcode.stloc_0 + index));
@@ -189,6 +195,17 @@ namespace Internal.IL.Stubs
             }
         }
     }
+
+    /// <summary>
+    /// Represent a token. Use one of the overloads of <see cref="ILEmitter.NewToken"/>
+    /// to create a new token.
+    /// </summary>
+    public enum ILToken { }
+
+    /// <summary>
+    /// Represents a local variable. Use <see cref="ILEmitter.NewLocal"/> to create a new local variable.
+    /// </summary>
+    public enum ILLocalVariable { }
 
     internal class ILStubMethodIL : MethodIL
     {
@@ -281,42 +298,42 @@ namespace Internal.IL.Stubs
             return stream;
         }
 
-        private int NewToken(Object value, int tokenType)
+        private ILToken NewToken(Object value, int tokenType)
         {
             _tokens.Add(value);
-            return _tokens.Count | tokenType;
+            return (ILToken)(_tokens.Count | tokenType);
         }
 
-        public int NewToken(TypeDesc value)
+        public ILToken NewToken(TypeDesc value)
         {
             return NewToken(value, 0x01000000);
         }
 
-        public int NewToken(MethodDesc value)
+        public ILToken NewToken(MethodDesc value)
         {
             return NewToken(value, 0x0a000000);
         }
 
-        public int NewToken(FieldDesc value)
+        public ILToken NewToken(FieldDesc value)
         {
             return NewToken(value, 0x0a000000);
         }
 
-        public int NewToken(string value)
+        public ILToken NewToken(string value)
         {
             return NewToken(value, 0x70000000);
         }
 
-        public int NewToken(MethodSignature value)
+        public ILToken NewToken(MethodSignature value)
         {
             return NewToken(value, 0x11000000);
         }
 
-        public int NewLocal(TypeDesc localType, bool isPinned = false)
+        public ILLocalVariable NewLocal(TypeDesc localType, bool isPinned = false)
         {
             int index = _locals.Count;
             _locals.Add(new LocalVariableDefinition(localType, isPinned));
-            return index;
+            return (ILLocalVariable)index;
         }
 
         public ILCodeLabel NewCodeLabel()
