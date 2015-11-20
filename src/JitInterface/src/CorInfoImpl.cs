@@ -1018,7 +1018,40 @@ namespace Internal.JitInterface
         }
 
         private CORINFO_CLASS_STRUCT_* getBuiltinClass(IntPtr _this, CorInfoClassId classId)
-        { throw new NotImplementedException("getBuiltinClass"); }
+        {
+            switch (classId)
+            {
+                case CorInfoClassId.CLASSID_SYSTEM_OBJECT:
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
+
+                case CorInfoClassId.CLASSID_TYPED_BYREF:
+                    // TODO: better exception type: invalid input IL
+                    throw new NotSupportedException("TypedReference not supported in .NET Core");
+
+                case CorInfoClassId.CLASSID_TYPE_HANDLE:
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeTypeHandle));
+
+                case CorInfoClassId.CLASSID_FIELD_HANDLE:
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeFieldHandle));
+
+                case CorInfoClassId.CLASSID_METHOD_HANDLE:
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.RuntimeMethodHandle));
+
+                case CorInfoClassId.CLASSID_ARGUMENT_HANDLE:
+                    // TODO: better exception type: invalid input IL
+                    throw new NotSupportedException("Vararg methods not supported in .NET Core");
+
+                case CorInfoClassId.CLASSID_STRING:
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
+
+                case CorInfoClassId.CLASSID_RUNTIME_TYPE:
+                    // This is used in a JIT optimization. It's not applicable due to the structure of CoreRT CoreLib.
+                    return null;
+
+                default:
+                    throw new NotImplementedException();
+            }
+        }
 
         private CorInfoType getTypeForPrimitiveValueClass(IntPtr _this, CORINFO_CLASS_STRUCT_* cls)
         {
@@ -1517,6 +1550,7 @@ namespace Internal.JitInterface
 
             return (void*)ObjectToHandle(_compilation.GetJitHelper(id));
         }
+
         private void getFunctionEntryPoint(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         { throw new NotImplementedException("getFunctionEntryPoint"); }
         private void getFunctionFixedEntryPoint(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
