@@ -51,6 +51,3 @@ endif()
 add_executable(gcsample
     ${SOURCES}
 )
-
-# Install gcsample
-install (TARGETS gcsample DESTINATION .)
