@@ -233,7 +233,7 @@ BUILDERRORLEVEL=0
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __UnprocessedBuildArgs=
 __CleanBuild=0
-__VerboseBuild=false
+__VerboseBuild=0
 __ClangMajorVersion=3
 __ClangMinorVersion=5
 
