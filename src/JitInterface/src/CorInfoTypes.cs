@@ -499,9 +499,6 @@ namespace Internal.JitInterface
         // This is due to how we implement the NoStringInterningAttribute
         // (by reusing the fixup table).
         INLINE_SAME_THIS = 0x00000004, // You can inline only if the callee is on the same this reference as caller
-#if MDIL
-    INLINE_NOT_FOR_MDIL     = 0x00000008, // You cannot inline this method for MDIL
-#endif
     }
 
     // If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man
@@ -811,9 +808,6 @@ namespace Internal.JitInterface
     public struct CORINFO_HELPER_ARG
     {
         public IntPtr argHandle;
-#if  MDIL
-    public uint token;
-#endif
         public CorInfoAccessAllowedHelperArgType argType;
     }
 
@@ -1200,10 +1194,6 @@ namespace Internal.JitInterface
 
         VLT_COUNT,
         VLT_INVALID,
-#if MDIL
-        VLT_MDIL_SYMBOLIC = 0x20
-#endif
-
     };
 
     public struct VarLoc

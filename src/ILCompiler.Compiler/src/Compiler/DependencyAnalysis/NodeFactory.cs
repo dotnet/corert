@@ -248,7 +248,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (kind == SpecialMethodKind.RuntimeImport)
             {
-                return ExternSymbol(((EcmaMethod)method).GetRuntimeImportEntryPointName());
+                return ExternSymbol(((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute"));
             }
 
             return _methodCode.GetOrAdd(method);
@@ -311,11 +311,34 @@ namespace ILCompiler.DependencyAnalysis
             return _stringIndirectionNodes.GetOrAdd(data);
         }
 
-        public ArrayOfEmbeddedDataNode GCStaticsRegion = new ArrayOfEmbeddedDataNode("__GCStaticRegionStart", "__GCStaticRegionEnd", null);
-        public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode("__ThreadStaticRegionStart", "__ThreadStaticRegionEnd", null);
-        public ArrayOfEmbeddedDataNode StringTable = new ArrayOfEmbeddedDataNode("__str_fixup", "__str_fixup_end", null);
+        /// <summary>
+        /// Returns alternative symbol name that object writer should produce for given symbols
+        /// in addition to the regular one.
+        /// </summary>
+        public string GetSymbolAlternateName(ISymbolNode node)
+        {
+            string value;
+            if (!NodeAliases.TryGetValue(node, out value))
+                return null;
+            return value;
+        }
+
+        public ArrayOfEmbeddedDataNode GCStaticsRegion = new ArrayOfEmbeddedDataNode(
+            NameMangler.CompilationUnitPrefix + "__GCStaticRegionStart", 
+            NameMangler.CompilationUnitPrefix + "__GCStaticRegionEnd", 
+            null);
+        public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
+            NameMangler.CompilationUnitPrefix + "__ThreadStaticRegionStart",
+            NameMangler.CompilationUnitPrefix + "__ThreadStaticRegionEnd", 
+            null);
+        public ArrayOfEmbeddedDataNode StringTable = new ArrayOfEmbeddedDataNode(
+            NameMangler.CompilationUnitPrefix + "__str_fixup",
+            NameMangler.CompilationUnitPrefix + "__str_fixup_end", 
+            null);
 
         public Dictionary<TypeDesc, List<MethodDesc>> VirtualSlots = new Dictionary<TypeDesc, List<MethodDesc>>();
+
+        public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
 
         public static NameMangler NameMangler;
 

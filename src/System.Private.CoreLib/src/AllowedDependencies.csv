@@ -119,6 +119,5 @@ T:System.IO.LongPathHelper,G:Interop,Regular MCG interop dependancy
 T:System.IO.PathHelper,T:System.IO.LongPathHelper,Used to get long path from short path
 ,,
 T:System.Runtime.InteropServices.InteropExtensions,T:System.Runtime.RuntimeImports,Needed to provide the marshal class details about types
-T:System.Runtime.InteropServices.InteropExtensions,T:Midori.Runtime.Magic,Needed to provide runtime magic for interop
 T:Internal.Numerics.BigIntegerFormatProvider,T:System.Globalization.FormatProvider,Currently implemented inside System.Private.CoreLib so needs access to the basic globalization
 T:Internal.Numerics.BigIntegerFormatProvider,T:System.Globalization.NumberFormatInfo,Currently implemented inside System.Private.CoreLib so needs access to the basic globalization

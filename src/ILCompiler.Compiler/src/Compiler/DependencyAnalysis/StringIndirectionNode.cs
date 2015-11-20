@@ -31,9 +31,9 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 if (base.Offset != 1)
-                    return "__str" + base.Offset.ToString(CultureInfo.InvariantCulture);
+                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + base.Offset.ToString(CultureInfo.InvariantCulture);
                 else
-                    return "__str" + _data;
+                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + _data;
             }
         }
 

@@ -30,7 +30,6 @@ namespace ILCompiler.DependencyAnalysis
         // We preserved the original order of ISymbolNode[].
         private Dictionary<int, List<ISymbolNode>> _offsetToDefSymbol = new Dictionary<int, List<ISymbolNode>>();
 
-        public const string MainEntryNodeName = "__managed__Main";
         private const string NativeObjectWriterFileName = "objwriter";
 
         [DllImport(NativeObjectWriterFileName)]
@@ -193,7 +192,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitSymbolDefinition(int currentOffset)
+        public void EmitSymbolDefinition(int currentOffset, NodeFactory factory)
         {
             List<ISymbolNode> nodes;
             if (_offsetToDefSymbol.TryGetValue(currentOffset, out nodes))
@@ -201,6 +200,10 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var node in nodes)
                 {
                     EmitSymbolDef(node.MangledName);
+
+                    string alternateName = factory.GetSymbolAlternateName(node);
+                    if (alternateName != null)
+                        EmitSymbolDef(alternateName);
                 }
             }
         }
@@ -241,7 +244,7 @@ namespace ILCompiler.DependencyAnalysis
             Dispose(false);
         }
 
-        public static void EmitObject(string OutputPath, IEnumerable<DependencyNode> nodes, ISymbolNode mainMethodNode, NodeFactory factory)
+        public static void EmitObject(string OutputPath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
             using (ObjectWriter objectWriter = new ObjectWriter(OutputPath))
             {
@@ -282,11 +285,6 @@ namespace ILCompiler.DependencyAnalysis
                         nextRelocIndex = 0;
                     }
 
-                    if (mainMethodNode == node)
-                    {
-                        objectWriter.EmitSymbolDef(MainEntryNodeName);
-                    }
-
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(nodeContents.DefinedSymbols);
 
@@ -296,7 +294,7 @@ namespace ILCompiler.DependencyAnalysis
                     for (int i = 0; i < nodeContents.Data.Length; i++)
                     {
                         // Emit symbol definitions if necessary
-                        objectWriter.EmitSymbolDefinition(i);
+                        objectWriter.EmitSymbolDefinition(i, factory);
 
                         // Emit debug loc info if needed.
                         objectWriter.EmitDebugLocInfo(i);
@@ -311,11 +309,6 @@ namespace ILCompiler.DependencyAnalysis
                             bool isPCRelative = false;
                             switch (reloc.RelocType)
                             {
-                                // REVIEW: I believe the JIT is emitting 0x3 instead of 0xA
-                                // for x64, because emitter from x86 is ported for RyuJIT.
-                                // I will consult with Bruce and if he agrees, I will delete
-                                // this "case" duplicated by IMAGE_REL_BASED_DIR64.
-                                case (RelocType)0x03: // IMAGE_REL_BASED_HIGHLOW
                                 case RelocType.IMAGE_REL_BASED_DIR64:
                                     size = 8;
                                     break;
@@ -342,7 +335,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     // It is possible to have a symbol just after all of the data.
-                    objectWriter.EmitSymbolDefinition(nodeContents.Data.Length);
+                    objectWriter.EmitSymbolDefinition(nodeContents.Data.Length, factory);
 
                     // The first definition is the main node name
                     string nodeName = objectWriter._offsetToDefSymbol[0][0].MangledName;
