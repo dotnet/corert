@@ -9,37 +9,38 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
 {
-    internal class ArrayMethodILEmitter : ILEmitter
+    internal struct ArrayMethodILEmitter
     {
         private ArrayMethod _method;
         private TypeDesc _elementType;
         private int _rank;
 
         private ILToken _helperFieldToken;
+        private ILEmitter _emitter;
 
-        public ArrayMethodILEmitter(ArrayMethod method)
+        private ArrayMethodILEmitter(ArrayMethod method)
         {
             _method = method;
 
             ArrayType arrayType = (ArrayType)method.OwningType;
             _rank = arrayType.Rank;
             _elementType = arrayType.ElementType;
+            _emitter = new ILEmitter();
+            
+            // This helper field is needed to generate proper GC tracking. There is no direct way
+            // to create interior pointer. 
+            _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetField("m_pEEType"));
         }
 
         private void EmitLoadInteriorAddress(ILCodeStream codeStream, int offset)
         {
-            // This helper field is needed to generate proper GC tracking. There is no direct way
-            // to create interior pointer. 
-            if (_helperFieldToken == 0)
-                _helperFieldToken = NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetField("m_pEEType"));
-
             codeStream.EmitLdArg(0); // this
             codeStream.Emit(ILOpcode.ldflda, _helperFieldToken);
             codeStream.EmitLdc(offset);
             codeStream.Emit(ILOpcode.add);
         }
 
-        public MethodIL EmitIL()
+        private MethodIL EmitIL()
         {
             switch (_method.Kind)
             {
@@ -56,23 +57,28 @@ namespace Internal.IL.Stubs
                     throw new InvalidOperationException();
             }
 
-            return Link();
+            return _emitter.Link();
+        }
+
+        public static MethodIL EmitIL(ArrayMethod arrayMethod)
+        {
+            return new ArrayMethodILEmitter(arrayMethod).EmitIL();
         }
 
         private void EmitILForAccessor()
         {
             Debug.Assert(_rank > 1);
 
-            var codeStream = NewCodeStream();
+            var codeStream = _emitter.NewCodeStream();
 
             var int32Type = _method.Context.GetWellKnownType(WellKnownType.Int32);
 
-            var totalLocalNum = NewLocal(int32Type);
-            var lengthLocalNum = NewLocal(int32Type);
+            var totalLocalNum = _emitter.NewLocal(int32Type);
+            var lengthLocalNum = _emitter.NewLocal(int32Type);
 
             int pointerSize = _method.Context.Target.PointerSize;
 
-            var rangeExceptionLabel = NewCodeLabel();
+            var rangeExceptionLabel = _emitter.NewCodeLabel();
 
             // TODO: type check
 
@@ -121,12 +127,12 @@ namespace Internal.IL.Stubs
             switch (_method.Kind)
             {
                 case ArrayMethodKind.Get:
-                    codeStream.Emit(ILOpcode.ldobj, NewToken(_elementType));
+                    codeStream.Emit(ILOpcode.ldobj, _emitter.NewToken(_elementType));
                     break;
 
                 case ArrayMethodKind.Set:
                     codeStream.EmitLdArg(_rank + 1);
-                    codeStream.Emit(ILOpcode.stobj, NewToken(_elementType));
+                    codeStream.Emit(ILOpcode.stobj, _emitter.NewToken(_elementType));
                     break;
 
                 case ArrayMethodKind.Address:
@@ -140,7 +146,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.pop);
 
             MethodDesc throwHelper = _method.Context.GetHelperEntryPoint("ArrayMethodILHelpers", "ThrowIndexOutOfRangeException");
-            codeStream.Emit(ILOpcode.call, NewToken(throwHelper));
+            codeStream.Emit(ILOpcode.call, _emitter.NewToken(throwHelper));
             codeStream.Emit(ILOpcode.ret);
 #if false
             if (typeMismatchExceptionLabel != null)
