@@ -97,6 +97,12 @@
     <ClCompile Include="..\..\Native\Bootstrap\main.cpp" />
     <ClCompile Include="..\..\Native\Bootstrap\platform.windows.cpp" />
     <ClCompile Include="repro.cpp" />
+    <ClCompile Include="System.Console.cpp" />
+    <ClCompile Include="System.IO.cpp" />
+    <ClCompile Include="System.Private.CoreLib.cpp" />
+    <ClCompile Include="System.Private.Interop.cpp" />
+    <ClCompile Include="System.Private.Threading.cpp" />
+    <ClCompile Include="System.Resources.ResourceManager.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

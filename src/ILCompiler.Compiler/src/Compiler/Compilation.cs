@@ -39,6 +39,10 @@ namespace ILCompiler
         Dictionary<TypeDesc, RegisteredType> _registeredTypes = new Dictionary<TypeDesc, RegisteredType>();
         Dictionary<MethodDesc, RegisteredMethod> _registeredMethods = new Dictionary<MethodDesc, RegisteredMethod>();
         Dictionary<FieldDesc, RegisteredField> _registeredFields = new Dictionary<FieldDesc, RegisteredField>();
+        Dictionary<EcmaModule, TextWriter> _codegenWritersCpp = new Dictionary<EcmaModule, TextWriter>();
+        EcmaModule _moduleEntryPoint = null;
+        string _outPathCpp = null;
+
         List<MethodDesc> _methodsThatNeedsCompilation = null;
 
         NameMangler _nameMangler = null;
@@ -85,6 +89,30 @@ namespace ILCompiler
         {
             get;
             set;
+        }
+
+        public EcmaModule EntryPointModule
+        {
+            get
+            {
+                return _moduleEntryPoint;
+            }
+            set
+            {
+                _moduleEntryPoint = value;
+            }
+        }
+
+        public string CPPOutPath
+        {
+            get
+            {
+                return _outPathCpp;
+            }
+            set
+            {
+                _outPathCpp = value;
+            }
         }
 
         MethodDesc _mainMethod;
@@ -658,6 +686,102 @@ namespace ILCompiler
                 _rvaFieldDatas.Add(field, result = new RvaFieldData(this, field));
             }
             return result;
+        }
+
+        // Returns the TextWriter to be used for generating code for the specified type.
+        public TextWriter GetOutWriterForType(TypeDesc type)
+        {
+            TextWriter swRetVal = null;
+            TypeDesc typeToWorkWith = GetActualTypeFromTypeDesc(type);
+
+            // Get the Module in which the type is defined
+            EcmaModule moduleType = ((EcmaType)typeToWorkWith).Module;
+
+            // And get the writer for the module
+            swRetVal = GetOutWriterForModule(moduleType);
+
+            return swRetVal;
+        }
+
+        private TypeDesc GetActualTypeFromTypeDesc(TypeDesc type)
+        {
+            if (type is EcmaType)
+            {
+                // Ecma types represent the actual type we need to work with.
+                return type;
+            }
+            else if (type is ArrayType)
+            {
+                // ElementType represents the actual type of the array
+                return GetActualTypeFromTypeDesc(((ArrayType)type).ElementType);
+            }
+            else if ((type is ByRefType) || (type is PointerType))
+            {
+                // We are dealing with a non-ArrayType parameterized type
+                return GetActualTypeFromTypeDesc(((ParameterizedType)type).ParameterType);
+            }
+            else
+            {
+                // This is the case of generic instanatiation, so we will
+                // extract the actual type from typeDefinition.
+                return GetActualTypeFromTypeDesc(type.GetTypeDefinition());
+            }
+        }
+
+        // Returns the TextWriter, corresponding to the specified module, from the Dictionary maintained
+        // by the Compilation instance. If the Module is not found in the Dictionary, it implies we are seeing
+        // it for the first time and thus, a new Textwriter would be created for it and the pair (of Module/TextWriter)
+        // will be inserted into the Dictionary.
+        public TextWriter GetOutWriterForModule(EcmaModule moduleType)
+        {
+            TextWriter swRetVal = null;
+
+            // Check if we have the writer for the module already
+            if (!_codegenWritersCpp.TryGetValue(moduleType, out swRetVal))
+            {
+                // Create a stream writer for the module that will write to a <modulename>.cpp file
+                // in CPPOutPath
+                string outpathCpp = Path.Combine(CPPOutPath, moduleType.GetName().Name + ".cpp");
+                swRetVal = new StreamWriter(File.Create(outpathCpp));
+
+                // Update the dictionary with the mapping details
+                _codegenWritersCpp.Add(moduleType, swRetVal);
+
+                // Insert include statements in the source file 
+                swRetVal.WriteLine("#include \"common.h\"");
+                swRetVal.WriteLine("#include \"appdependency.h\"");
+                swRetVal.WriteLine();
+            }
+            
+            return swRetVal;
+        }
+
+        // Returns the TextWriter for a specified method, based upon its owning type.
+        public TextWriter GetOutWriterForMethod(MethodDesc method)
+        {
+            TypeDesc typeContainingMethod = method.OwningType;
+            TextWriter swMethod = GetOutWriterForType(typeContainingMethod);
+
+            return swMethod;
+        }
+
+        public Dictionary<EcmaModule, TextWriter> CppCodegenWriters
+        {
+            get
+            {
+                return _codegenWritersCpp;
+            }
+        }
+
+        public void DisposeCppOutWriters()
+        {
+            if (_codegenWritersCpp != null)
+            {
+                foreach(KeyValuePair<EcmaModule, TextWriter> outWriter in _codegenWritersCpp)
+                {
+                    outWriter.Value.Dispose();
+                }
+            }
         }
     }
 }

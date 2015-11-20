@@ -133,8 +133,15 @@ namespace ILCompiler
             compilation.OutputPath = _outputPath;
             if (_options.IsCppCodeGen)
             {
+                // Set the entrypoint module
+                compilation.EntryPointModule = entryPointModule;
+
+                // Set the default output path for CPPCodgen
+                compilation.CPPOutPath = Path.GetDirectoryName(_outputPath);
+
                 // Don't set Out when using object writer which is handled by LLVM.
-                compilation.Out = new StreamWriter(File.Create(_outputPath));
+                // Set the writer corresponding to the entrypoint module.
+                compilation.Out = compilation.GetOutWriterForModule(entryPointModule); 
             }
 
             compilation.CompileSingleFile(entryPointMethod);

@@ -365,7 +365,9 @@ namespace ILCompiler.CppCodeGen
         // Base classes and valuetypes has to be emitted before they are used.
         HashSet<RegisteredType> _emittedTypes;
 
-        void OutputTypes(bool full)
+        // Writes the type details (minimal or detailed) to the specified writer (which points to a source file
+        // corresponding to an EcmaModule).
+        void OutputTypes(bool full, TextWriter outWriter)
         {
             if (full)
             {
@@ -387,35 +389,35 @@ namespace ILCompiler.CppCodeGen
                 if (_emittedTypes != null && _emittedTypes.Contains(t))
                     continue;
 
-                OutputType(t, full);
+                OutputType(t, full, outWriter);
             }
             if (full)
                 _emittedTypes = null;
 
             if (full)
             {
-                Out.WriteLine();
-                Out.WriteLine("struct {");
-                Out.Write(_statics.ToString());
-                Out.WriteLine("} __statics;");
+                outWriter.WriteLine();
+                outWriter.WriteLine("static struct {");
+                outWriter.Write(_statics.ToString());
+                outWriter.WriteLine("} __statics;");
 
                 // TODO: Register GC statics with GC
-                Out.WriteLine();
-                Out.WriteLine("struct {");
-                Out.Write(_gcStatics.ToString());
-                Out.WriteLine("} __gcStatics;");
+                outWriter.WriteLine();
+                outWriter.WriteLine("static struct {");
+                outWriter.Write(_gcStatics.ToString());
+                outWriter.WriteLine("} __gcStatics;");
 
-                Out.WriteLine();
+                outWriter.WriteLine();
                 // @TODO_SDM: do for real - note: the 'extra' series are just testing the init syntax for 0-length arrays, they should be removed
                 // TODO: preinitialized 0-length arrays are not supported in CLang
-                Out.WriteLine("#ifdef _MSC_VER");
-                Out.WriteLine("StaticGcDesc __gcStaticsDescs = { 1, { { sizeof(__gcStatics), 0 }, { 123, 456 }, { 789, 101112 } } };");
-                Out.WriteLine("#else");
-                Out.WriteLine("StaticGcDesc __gcStaticsDescs;");
-                Out.WriteLine("#endif");
+                outWriter.WriteLine("#ifdef _MSC_VER");
+                outWriter.WriteLine("static StaticGcDesc __gcStaticsDescs = { 1, { { sizeof(__gcStatics), 0 }, { 123, 456 }, { 789, 101112 } } };");
+                outWriter.WriteLine("#else");
+                outWriter.WriteLine("static StaticGcDesc __gcStaticsDescs;");
+                outWriter.WriteLine("#endif");
 
-                Out.WriteLine();
-                Out.WriteLine("SimpleModuleHeader __module = { &__gcStatics, &__gcStaticsDescs };");
+                outWriter.WriteLine();
+                outWriter.WriteLine("static SimpleModuleHeader __module = { &__gcStatics, &__gcStaticsDescs };");
 
 
                 _statics = null;
@@ -425,7 +427,7 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        void OutputType(RegisteredType t, bool full)
+        void OutputType(RegisteredType t, bool full, TextWriter outWriterOverride = null)
         {
             if (_emittedTypes != null)
             {
@@ -437,7 +439,7 @@ namespace ILCompiler.CppCodeGen
                         var baseRegistration = _compilation.GetRegisteredType(baseType);
                         if (!_emittedTypes.Contains(baseRegistration))
                         {
-                            OutputType(baseRegistration, full);
+                            OutputType(baseRegistration, full, outWriterOverride);
                         }
                     }
                 }
@@ -453,12 +455,19 @@ namespace ILCompiler.CppCodeGen
                         var fieldTypeRegistration = _compilation.GetRegisteredType(fieldType);
                         if (!_emittedTypes.Contains(fieldTypeRegistration))
                         {
-                            OutputType(fieldTypeRegistration, full);
+                            OutputType(fieldTypeRegistration, full, outWriterOverride);
                         }
                     }
                 }
 
                 _emittedTypes.Add(t);
+            }
+
+            // Get the StreamWriter for the type, unless it was overridden by the caller.
+            TextWriter swType = outWriterOverride;
+            if (swType == null)
+            {
+                swType = _compilation.GetOutWriterForType(t.Type);
             }
 
             string mangledName = GetCppTypeName(t.Type);
@@ -471,7 +480,7 @@ namespace ILCompiler.CppCodeGen
                 if (sep < 0)
                     break;
 
-                Out.Write("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                swType.Write("namespace " + mangledName.Substring(current, sep - current) + " { ");
                 current = sep + 2;
 
                 nesting++;
@@ -479,19 +488,19 @@ namespace ILCompiler.CppCodeGen
 
             if (full)
             {
-                Out.Write("class " + mangledName.Substring(current));
+                swType.Write("class " + mangledName.Substring(current));
                 if (!t.Type.IsValueType)
                 {
                     var baseType = t.Type.BaseType;
                     if (baseType != null)
                     {
-                        Out.Write(" : public " + GetCppTypeName(baseType));
+                        swType.Write(" : public " + GetCppTypeName(baseType));
                     }
                 }
-                Out.WriteLine(" { public:");
+                swType.WriteLine(" { public:");
                 if (t.IncludedInCompilation)
                 {
-                    Out.WriteLine("static MethodTable * __getMethodTable();");
+                    swType.WriteLine("static MethodTable * __getMethodTable();");
                 }
                 if (t.VirtualSlots != null)
                 {
@@ -508,12 +517,12 @@ namespace ILCompiler.CppCodeGen
                     for (int slot = 0; slot < t.VirtualSlots.Count; slot++)
                     {
                         MethodDesc virtualMethod = t.VirtualSlots[slot];
-                        Out.WriteLine(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
+                        swType.WriteLine(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
                     }
                 }
                 if (t.Type.IsDelegate)
                 {
-                    Out.WriteLine(GetCodeForDelegate(t.Type));
+                    swType.WriteLine(GetCodeForDelegate(t.Type));
                 }
                 foreach (var field in t.Type.GetFields())
                 {
@@ -538,7 +547,7 @@ namespace ILCompiler.CppCodeGen
                     }
                     else
                     {
-                        Out.WriteLine(GetCppSignatureTypeName(field.FieldType) + " " + GetCppFieldName(field) + ";");
+                        swType.WriteLine(GetCppSignatureTypeName(field.FieldType) + " " + GetCppFieldName(field) + ";");
                     }
                 }
                 if (t.Type.GetMethod(".cctor", null) != null)
@@ -551,27 +560,28 @@ namespace ILCompiler.CppCodeGen
                     foreach (var m in t.Methods)
                     {
                         if (m.IncludedInCompilation)
-                            OutputMethod(m);
+                            OutputMethod(m, swType);
                     }
                 }
-                Out.Write("};");
+                swType.Write("};");
             }
             else
             {
-                Out.Write("class " + mangledName.Substring(current) + ";");
+                swType.Write("class " + mangledName.Substring(current) + ";");
             }
 
             while (nesting > 0)
             {
-                Out.Write(" };");
+                swType.Write(" };");
                 nesting--;
             }
-            Out.WriteLine();
+            swType.WriteLine();
         }
 
-        void OutputMethod(RegisteredMethod m)
+        void OutputMethod(RegisteredMethod m, TextWriter outWriterMethod)
         {
-            Out.WriteLine(GetCppMethodDeclaration(m.Method, false));
+            // Write the method declaration to the specified writer
+            outWriterMethod.WriteLine(GetCppMethodDeclaration(m.Method, false));
         }
 
         void AppendSlotTypeDef(StringBuilder sb, MethodDesc method)
@@ -791,19 +801,19 @@ namespace ILCompiler.CppCodeGen
                     AddInstanceFields(t.Type);
             }
 
-            Out.WriteLine("#include \"common.h\"");
-            Out.WriteLine();
+            // Write common prototypes and include information
+            // for cross module references in a header
+            GenerateCrossModuleReferenceHeader();
 
-            OutputTypes(false);
-            Out.WriteLine();
-            OutputTypes(true);
-            Out.WriteLine();
-
+            // Generate the code for the sources files we have generated
             foreach (var t in _compilation.RegisteredTypes)
             {
+                // Get the writer for the type
+                TextWriter swOut = _compilation.GetOutWriterForType(t.Type);
+
                 if (t.IncludedInCompilation)
                 {
-                    Out.WriteLine(GetCodeForType(t.Type));
+                    swOut.WriteLine(GetCodeForType(t.Type));
                 }
 
                 if (t.Methods != null)
@@ -811,7 +821,9 @@ namespace ILCompiler.CppCodeGen
                     foreach (var m in t.Methods)
                     {
                         if (m.MethodCode != null)
-                            Out.WriteLine(m.MethodCode);
+                        {
+                            swOut.WriteLine(m.MethodCode);
+                        }
                     }
                 }
             }
@@ -850,7 +862,27 @@ namespace ILCompiler.CppCodeGen
                 Out.WriteLine("}");
             }
 
-            Out.Dispose();
+            // Dispose all generated Streamwriters from compilation
+            _compilation.DisposeCppOutWriters();
+        }
+
+        private void GenerateCrossModuleReferenceHeader()
+        {
+            // Form the path where the header will be generated.
+            string pathHeader = Path.Combine(_compilation.CPPOutPath, "appdependency.h");
+            TextWriter outHeader = new StreamWriter(File.Create(pathHeader));
+            outHeader.WriteLine("// This is a compile-time generated file and any changes made to it will be lost after the next compilation.");
+            outHeader.WriteLine();
+
+            // Write out the basic prototypes
+            OutputTypes(false, outHeader);
+            outHeader.WriteLine();
+            
+            // Now write the detailed type definitions alongwith information about statics, GC statics, etc
+            OutputTypes(true, outHeader);
+            outHeader.WriteLine();
+
+            outHeader.Dispose();
         }
     }
 }
