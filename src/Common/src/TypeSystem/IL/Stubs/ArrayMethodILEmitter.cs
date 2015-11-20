@@ -15,7 +15,7 @@ namespace Internal.IL.Stubs
         private TypeDesc _elementType;
         private int _rank;
 
-        private int _helperFieldToken;
+        private ILToken _helperFieldToken;
 
         public ArrayMethodILEmitter(ArrayMethod method)
         {

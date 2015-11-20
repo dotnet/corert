@@ -130,8 +130,8 @@ namespace Internal.IL.Stubs
             if (!IsSimpleType(arrayType.ParameterType) && !IsBlittableStruct(arrayType.ParameterType))
                 throw new NotSupportedException();
 
-            int vPinnedFirstElement = _emitter.NewLocal(arrayType.ParameterType.MakeByRefType(), true);
-            int vArray = _emitter.NewLocal(arrayType);
+            ILLocalVariable vPinnedFirstElement = _emitter.NewLocal(arrayType.ParameterType.MakeByRefType(), true);
+            ILLocalVariable vArray = _emitter.NewLocal(arrayType);
             ILCodeLabel lNullArray = _emitter.NewCodeLabel();
 
             // Check for null array, or 0 element array.
@@ -166,7 +166,7 @@ namespace Internal.IL.Stubs
             if (!IsSimpleType(byRefType.ParameterType) && !IsBlittableStruct(byRefType.ParameterType))
                 throw new NotSupportedException();
 
-            int vPinnedByRef = _emitter.NewLocal(byRefType, true);
+            ILLocalVariable vPinnedByRef = _emitter.NewLocal(byRefType, true);
             _marshallingCodeStream.EmitStLoc(vPinnedByRef);
             _marshallingCodeStream.EmitLdLoc(vPinnedByRef);
             _marshallingCodeStream.Emit(ILOpcode.conv_i);
@@ -204,7 +204,7 @@ namespace Internal.IL.Stubs
                 // Unicode marshalling. Pin the string and push a pointer to the first character on the stack.
                 //
 
-                int vPinnedString = _emitter.NewLocal(stringType, true);
+                ILLocalVariable vPinnedString = _emitter.NewLocal(stringType, true);
                 ILCodeLabel lNullString = _emitter.NewCodeLabel();
 
                 _marshallingCodeStream.EmitStLoc(vPinnedString);
@@ -240,7 +240,7 @@ namespace Internal.IL.Stubs
                 ILCodeLabel lDone = _emitter.NewCodeLabel();
 
                 // Check for the simple case: string is null
-                int vStringToMarshal = _emitter.NewLocal(stringType);
+                ILLocalVariable vStringToMarshal = _emitter.NewLocal(stringType);
                 _marshallingCodeStream.EmitStLoc(vStringToMarshal);
                 _marshallingCodeStream.EmitLdLoc(vStringToMarshal);
                 _marshallingCodeStream.Emit(ILOpcode.brfalse, lNullString);
@@ -253,12 +253,12 @@ namespace Internal.IL.Stubs
                 _marshallingCodeStream.EmitLdc(1);
                 _marshallingCodeStream.Emit(ILOpcode.add);
                 _marshallingCodeStream.Emit(ILOpcode.newarr, _emitter.NewToken(byteType));
-                int vByteArray = _emitter.NewLocal(byteArrayType);
+                ILLocalVariable vByteArray = _emitter.NewLocal(byteArrayType);
                 _marshallingCodeStream.EmitStLoc(vByteArray);
 
                 // for (int i = 0; i < byteArray.Length - 1; i++)
                 //     byteArray[i] = (byte)stringToMarshal[i];
-                int vIterator = _emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
+                ILLocalVariable vIterator = _emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
                 _marshallingCodeStream.Emit(ILOpcode.ldc_i4_0);
                 _marshallingCodeStream.EmitStLoc(vIterator);
                 _marshallingCodeStream.Emit(ILOpcode.br, lStart);
@@ -287,7 +287,7 @@ namespace Internal.IL.Stubs
                 // Pin first element and load the byref on the stack.
                 _marshallingCodeStream.EmitLdc(0);
                 _marshallingCodeStream.Emit(ILOpcode.ldelema, _emitter.NewToken(byteType));
-                int vPinnedFirstElement = _emitter.NewLocal(byteArrayType.MakeByRefType(), true);
+                ILLocalVariable vPinnedFirstElement = _emitter.NewLocal(byteArrayType.MakeByRefType(), true);
                 _marshallingCodeStream.EmitStLoc(vPinnedFirstElement);
                 _marshallingCodeStream.EmitLdLoc(vPinnedFirstElement);
                 _marshallingCodeStream.Emit(ILOpcode.conv_i);
@@ -354,7 +354,7 @@ namespace Internal.IL.Stubs
 
                 nativeParameterTypes[i] = nativeType;
 
-                int vMarshalledTypeTemp = _emitter.NewLocal(nativeType);
+                ILLocalVariable vMarshalledTypeTemp = _emitter.NewLocal(nativeType);
                 _marshallingCodeStream.EmitStLoc(vMarshalledTypeTemp);
 
                 callsiteSetupCodeStream.EmitLdLoc(vMarshalledTypeTemp);
