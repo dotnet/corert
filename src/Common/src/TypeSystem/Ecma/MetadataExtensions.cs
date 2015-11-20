@@ -9,7 +9,7 @@ namespace Internal.TypeSystem.Ecma
 {
     public static class MetadataExtensions
     {
-        public static bool HasCustomAttribute(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes, 
+        public static bool HasCustomAttribute(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
             string attributeNamespace, string attributeName)
         {
             foreach (var attributeHandle in customAttributes)
@@ -18,7 +18,7 @@ namespace Internal.TypeSystem.Ecma
                 if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
                     continue;
 
-                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace) 
+                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
                     && metadataReader.StringComparer.Equals(nameHandle, attributeName))
                 {
                     return true;

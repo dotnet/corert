@@ -3,7 +3,6 @@
 
 /*============================================================
 **
-** Class:  NonVersionableAttribute
 **
 **
 ** The [NonVersionable] attribute is applied to indicate that the implementation 
@@ -16,7 +15,7 @@
 
 namespace System.Runtime.Versioning
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor, 
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor,
                     AllowMultiple = false, Inherited = false)]
     internal sealed class NonVersionableAttribute : Attribute
     {

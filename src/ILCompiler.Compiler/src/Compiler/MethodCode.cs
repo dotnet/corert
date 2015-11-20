@@ -5,7 +5,7 @@ using System;
 
 namespace ILCompiler
 {
-    class MethodCode
+    internal class MethodCode
     {
         public byte[] Code;
         public byte[] ColdCode;
@@ -19,7 +19,7 @@ namespace ILCompiler
         public DebugLocInfo[] DebugLocInfos;
     }
 
-    class BlockRelativeTarget
+    internal class BlockRelativeTarget
     {
         public BlockType Block;
         public int Offset;
@@ -40,7 +40,7 @@ namespace ILCompiler
         ROData = 2
     }
 
-    struct Relocation
+    internal struct Relocation
     {
         public ushort RelocType;
         public BlockType Block;

@@ -417,7 +417,7 @@ namespace System.Text
             get
             {
                 StringBuilder chunk = this;
-                for (; ;)
+                for (;;)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
                     if (indexInBlock >= 0)
@@ -434,7 +434,7 @@ namespace System.Text
             set
             {
                 StringBuilder chunk = this;
-                for (; ;)
+                for (;;)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
                     if (indexInBlock >= 0)
@@ -1512,7 +1512,7 @@ namespace System.Text
             int thisChunkIndex = thisChunk.m_ChunkLength;
             StringBuilder sbChunk = sb;
             int sbChunkIndex = sbChunk.m_ChunkLength;
-            for (; ;)
+            for (;;)
             {
                 // Decrement the pointer to the 'this' StringBuilder
                 --thisChunkIndex;
@@ -1644,7 +1644,7 @@ namespace System.Text
 
             int endIndex = startIndex + count;
             StringBuilder chunk = this;
-            for (; ;)
+            for (;;)
             {
                 int endIndexInChunk = endIndex - chunk.m_ChunkOffset;
                 int startIndexInChunk = startIndex - chunk.m_ChunkOffset;
@@ -1752,7 +1752,7 @@ namespace System.Text
                         MakeRoom(targetChunk.m_ChunkOffset + targetIndexInChunk, delta, out targetChunk, out targetIndexInChunk, true);
                     // We made certain that characters after the insertion point are not moved, 
                     int i = 0;
-                    for (; ;)
+                    for (;;)
                     {
                         // Copy in the new string for the ith replacement
                         ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, valuePtr, value.Length);
@@ -1820,7 +1820,7 @@ namespace System.Text
         {
             if (count != 0)
             {
-                for (; ;)
+                for (;;)
                 {
                     int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
 
@@ -2073,7 +2073,7 @@ namespace System.Text
             chunk = this;
             StringBuilder endChunk = null;
             int endIndexInChunk = 0;
-            for (; ;)
+            for (;;)
             {
                 if (endIndex - chunk.m_ChunkOffset >= 0)
                 {

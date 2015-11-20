@@ -14,7 +14,7 @@ namespace ILCompiler
 {
     // For now, open PDB files using legacy desktop SymBinder
 
-    class PdbSymbolProvider
+    internal class PdbSymbolProvider
     {
         [Guid("809c652e-7396-11d2-9771-00a0c9b4d50c")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -50,19 +50,19 @@ namespace ILCompiler
                                                        [Out, MarshalAs(UnmanagedType.Interface)] out Object ppv);
 
         [DllImport("ole32.dll")]
-        static extern int CoCreateInstance(ref Guid rclsid, IntPtr pUnkOuter,
+        private static extern int CoCreateInstance(ref Guid rclsid, IntPtr pUnkOuter,
                                            Int32 dwClsContext,
                                            ref Guid riid,
                                            [MarshalAs(UnmanagedType.Interface)] out object ppv);
 
-        void ThrowExceptionForHR(int hr)
+        private void ThrowExceptionForHR(int hr)
         {
             Marshal.ThrowExceptionForHR(hr, new IntPtr(-1));
         }
 
-        IMetaDataDispenser _metadataDispenser;
+        private IMetaDataDispenser _metadataDispenser;
 
-        ISymUnmanagedBinder _symBinder;
+        private ISymUnmanagedBinder _symBinder;
 
         public PdbSymbolProvider()
         {
@@ -121,7 +121,7 @@ namespace ILCompiler
             }
         }
 
-        Dictionary<ISymUnmanagedDocument, string> _urlCache = new Dictionary<ISymUnmanagedDocument, string>();
+        private Dictionary<ISymUnmanagedDocument, string> _urlCache = new Dictionary<ISymUnmanagedDocument, string>();
 
         private string GetUrl(ISymUnmanagedDocument doc)
         {

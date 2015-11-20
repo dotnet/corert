@@ -134,7 +134,7 @@ namespace Internal.TypeSystem
                 case TypeFlags.IntPtr:
                     return PointerSize;
             }
-            
+
             // Add new well known types if necessary
 
             throw new InvalidOperationException();
@@ -170,7 +170,6 @@ namespace Internal.TypeSystem
                 default:
                     throw new NotImplementedException();
             }
-
         }
     }
 }

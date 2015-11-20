@@ -44,7 +44,7 @@ namespace Internal.Runtime.CompilerServices
         public override int GetHashCode()
         {
             int hash = Name.GetHashCode();
-            
+
             return hash;
         }
     }

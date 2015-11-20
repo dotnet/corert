@@ -10,12 +10,12 @@ namespace Internal.CommandLine
     //
     // Simple command line parser
     //
-    class CommandLineParser
+    internal class CommandLineParser
     {
-        string[] _args;
-        int _current;
+        private string[] _args;
+        private int _current;
 
-        string _currentOption;
+        private string _currentOption;
 
         public CommandLineParser(string[] args)
         {
@@ -111,6 +111,5 @@ namespace Internal.CommandLine
                 }
             }
         }
-
     }
 }

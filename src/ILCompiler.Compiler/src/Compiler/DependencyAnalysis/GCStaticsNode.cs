@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class GCStaticsNode : EmbeddedObjectNode, ISymbolNode
     {
-        MetadataType _type;
+        private MetadataType _type;
 
         public GCStaticsNode(MetadataType type, NodeFactory factory)
         {
@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override void OnMarked(NodeFactory factory)
         {
             factory.GCStaticsRegion.AddEmbeddedObject(this);
-        } 
+        }
 
         string ISymbolNode.MangledName
         {
@@ -47,7 +47,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-
             return new DependencyListEntry[] { new DependencyListEntry(context.GCStaticsRegion, "GCStatics Region"),
                                                new DependencyListEntry(GetGCStaticEETypeNode(context), "GCStatic EEType")};
         }

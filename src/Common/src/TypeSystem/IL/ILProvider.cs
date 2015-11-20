@@ -14,7 +14,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
-    class ILProvider
+    internal class ILProvider
     {
         // TODO: Caching
 

@@ -1,4 +1,7 @@
-﻿using ILCompiler.DependencyAnalysis;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.X64;
 using System;
 using System.Collections.Generic;
@@ -15,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref X64Emitter encoder, bool relocsOnly)
         {
-            encoder.EmitJMP(_target);   
+            encoder.EmitJMP(_target);
         }
     }
 }

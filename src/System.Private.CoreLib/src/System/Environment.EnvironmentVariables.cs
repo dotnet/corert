@@ -15,7 +15,6 @@ using System.Collections;
 
 namespace System
 {
-
     public static partial class Environment
     {
         private const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value

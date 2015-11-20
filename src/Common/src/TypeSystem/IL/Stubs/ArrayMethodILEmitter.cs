@@ -11,11 +11,11 @@ namespace Internal.IL.Stubs
 {
     internal class ArrayMethodILEmitter : ILEmitter
     {
-        ArrayMethod _method;
-        TypeDesc _elementType;
-        int _rank;
+        private ArrayMethod _method;
+        private TypeDesc _elementType;
+        private int _rank;
 
-        int _helperFieldToken;
+        private int _helperFieldToken;
 
         public ArrayMethodILEmitter(ArrayMethod method)
         {
@@ -26,7 +26,7 @@ namespace Internal.IL.Stubs
             _elementType = arrayType.ElementType;
         }
 
-        void EmitLoadInteriorAddress(ILCodeStream codeStream, int offset)
+        private void EmitLoadInteriorAddress(ILCodeStream codeStream, int offset)
         {
             // This helper field is needed to generate proper GC tracking. There is no direct way
             // to create interior pointer. 
@@ -59,7 +59,7 @@ namespace Internal.IL.Stubs
             return Link();
         }
 
-        void EmitILForAccessor()
+        private void EmitILForAccessor()
         {
             Debug.Assert(_rank > 1);
 

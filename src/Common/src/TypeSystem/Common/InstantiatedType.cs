@@ -10,8 +10,8 @@ namespace Internal.TypeSystem
 {
     public sealed partial class InstantiatedType : MetadataType
     {
-        MetadataType _typeDef;
-        Instantiation _instantiation;
+        private MetadataType _typeDef;
+        private Instantiation _instantiation;
 
         internal InstantiatedType(MetadataType typeDef, Instantiation instantiation)
         {
@@ -24,7 +24,7 @@ namespace Internal.TypeSystem
             _baseType = this; // Not yet initialized flag
         }
 
-        int _hashCode;
+        private int _hashCode;
 
         public override int GetHashCode()
         {
@@ -49,9 +49,9 @@ namespace Internal.TypeSystem
             }
         }
 
-        MetadataType _baseType /* = this */;
+        private MetadataType _baseType /* = this */;
 
-        MetadataType InitializeBaseType()
+        private MetadataType InitializeBaseType()
         {
             var uninst = _typeDef.MetadataBaseType;
 

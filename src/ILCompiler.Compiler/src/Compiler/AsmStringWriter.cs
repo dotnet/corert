@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ILCompiler
 {
-    class AsmStringWriter
+    internal class AsmStringWriter
     {
         private Encoding _stringEncoding;
 
@@ -15,7 +18,7 @@ namespace ILCompiler
         public AsmStringWriter(Action<byte> byteWriter)
         {
             this.WriteByte = byteWriter;
-            this._stringEncoding = UTF8Encoding.UTF8;
+            _stringEncoding = UTF8Encoding.UTF8;
         }
 
         public void WriteUInt32(uint value)

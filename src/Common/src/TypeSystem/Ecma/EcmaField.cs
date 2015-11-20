@@ -13,7 +13,7 @@ namespace Internal.TypeSystem.Ecma
 {
     public sealed class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
     {
-        static class FieldFlags
+        private static class FieldFlags
         {
             public const int BasicMetadataCache     = 0x0001;
             public const int Static                 = 0x0002;
@@ -25,13 +25,13 @@ namespace Internal.TypeSystem.Ecma
             public const int ThreadStatic           = 0x0200;
         };
 
-        EcmaType _type;
-        FieldDefinitionHandle _handle;
+        private EcmaType _type;
+        private FieldDefinitionHandle _handle;
 
         // Cached values
-        ThreadSafeFlags _fieldFlags;
-        TypeDesc _fieldType;
-        string _name;
+        private ThreadSafeFlags _fieldFlags;
+        private TypeDesc _fieldType;
+        private string _name;
 
         internal EcmaField(EcmaType type, FieldDefinitionHandle handle)
         {
@@ -156,7 +156,7 @@ namespace Internal.TypeSystem.Ecma
                         {
                             // TODO: Thread statics
                             //flags |= FieldFlags.ThreadStatic;
-                        } 
+                        }
                     }
                 }
 
@@ -247,7 +247,7 @@ namespace Internal.TypeSystem.Ecma
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return MetadataReader.HasCustomAttribute(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(), 
+            return MetadataReader.HasCustomAttribute(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(),
                 attributeNamespace, attributeName);
         }
 

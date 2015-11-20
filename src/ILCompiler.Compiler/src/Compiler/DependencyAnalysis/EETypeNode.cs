@@ -10,10 +10,10 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class EETypeNode : ObjectNode, ISymbolNode
+    internal class EETypeNode : ObjectNode, ISymbolNode
     {
-        TypeDesc _type;
-        bool _constructed;
+        private TypeDesc _type;
+        private bool _constructed;
 
         public EETypeNode(TypeDesc type, bool constructed)
         {

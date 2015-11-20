@@ -54,8 +54,8 @@ namespace Internal.TypeSystem
         /// </summary>
         private DefType[] ComputeRuntimeInterfacesForNonInstantiatedMetadataType(MetadataType type)
         {
-            DefType [] explicitInterfaces = type.ExplicitlyImplementedInterfaces;
-            DefType [] baseTypeInterfaces = (type.BaseType != null) ? (type.BaseType.RuntimeInterfaces) : Array.Empty<DefType>();
+            DefType[] explicitInterfaces = type.ExplicitlyImplementedInterfaces;
+            DefType[] baseTypeInterfaces = (type.BaseType != null) ? (type.BaseType.RuntimeInterfaces) : Array.Empty<DefType>();
 
             // Optimized case for no interfaces newly defined.
             if (explicitInterfaces.Length == 0)

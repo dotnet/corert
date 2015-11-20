@@ -59,7 +59,7 @@ namespace Internal.IL
                 sb.AppendLine();
 
                 int offset = 0;
-                
+
                 Func<int, string> resolver = token => _methodIL.GetObject(token).ToString();
 
                 while (offset < ilBytes.Length)

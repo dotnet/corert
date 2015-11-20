@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -86,9 +89,9 @@ namespace ILCompiler
         FltRound                    = 0xE3,
     }
 
-    class JitHelper
+    internal class JitHelper
     {
-        Compilation _compilation;
+        private Compilation _compilation;
 
         public JitHelper(Compilation compilation, JitHelperId id)
         {
@@ -138,10 +141,8 @@ namespace ILCompiler
                         // TODO: Uncomment once all helpers are implemented
                         // throw new NotImplementedException();
                         return "__fail_fast";
-                        
                 }
             }
         }
     }
-
 }

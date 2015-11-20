@@ -30,20 +30,20 @@ namespace ILCompiler
 
     public partial class Compilation
     {
-        readonly CompilerTypeSystemContext _typeSystemContext;
-        readonly CompilationOptions _options;
-        
-        NodeFactory _nodeFactory;
-        DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
+        private readonly CompilerTypeSystemContext _typeSystemContext;
+        private readonly CompilationOptions _options;
 
-        Dictionary<TypeDesc, RegisteredType> _registeredTypes = new Dictionary<TypeDesc, RegisteredType>();
-        Dictionary<MethodDesc, RegisteredMethod> _registeredMethods = new Dictionary<MethodDesc, RegisteredMethod>();
-        Dictionary<FieldDesc, RegisteredField> _registeredFields = new Dictionary<FieldDesc, RegisteredField>();
-        List<MethodDesc> _methodsThatNeedsCompilation = null;
+        private NodeFactory _nodeFactory;
+        private DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
 
-        NameMangler _nameMangler = null;
+        private Dictionary<TypeDesc, RegisteredType> _registeredTypes = new Dictionary<TypeDesc, RegisteredType>();
+        private Dictionary<MethodDesc, RegisteredMethod> _registeredMethods = new Dictionary<MethodDesc, RegisteredMethod>();
+        private Dictionary<FieldDesc, RegisteredField> _registeredFields = new Dictionary<FieldDesc, RegisteredField>();
+        private List<MethodDesc> _methodsThatNeedsCompilation = null;
 
-        ILCompiler.CppCodeGen.CppWriter _cppWriter = null;
+        private NameMangler _nameMangler = null;
+
+        private ILCompiler.CppCodeGen.CppWriter _cppWriter = null;
 
         public Compilation(CompilerTypeSystemContext typeSystemContext, CompilationOptions options)
         {
@@ -87,7 +87,7 @@ namespace ILCompiler
             set;
         }
 
-        MethodDesc _mainMethod;
+        private MethodDesc _mainMethod;
 
         internal MethodDesc MainMethod
         {
@@ -107,7 +107,7 @@ namespace ILCompiler
 
         internal CompilationOptions Options
         {
-           get
+            get
             {
                 return _options;
             }
@@ -166,14 +166,14 @@ namespace ILCompiler
             return registration;
         }
 
-        ILProvider _ilProvider = new ILProvider();
+        private ILProvider _ilProvider = new ILProvider();
 
         public MethodIL GetMethodIL(MethodDesc method)
         {
             return _ilProvider.GetMethodIL(method);
         }
 
-        void CompileMethods()
+        private void CompileMethods()
         {
             var pendingMethods = _methodsThatNeedsCompilation;
             _methodsThatNeedsCompilation = null;
@@ -181,10 +181,10 @@ namespace ILCompiler
             foreach (MethodDesc method in pendingMethods)
             {
                 _cppWriter.CompileMethod(method);
-           }
+            }
         }
 
-        void ExpandVirtualMethods()
+        private void ExpandVirtualMethods()
         {
             // Take a snapshot of _registeredTypes - new registered types can be added during the expansion
             foreach (var reg in _registeredTypes.Values.ToArray())
@@ -211,7 +211,7 @@ namespace ILCompiler
             }
         }
 
-        CorInfoImpl _corInfo;
+        private CorInfoImpl _corInfo;
 
         public void CompileSingleFile(MethodDesc mainMethod)
         {
@@ -228,7 +228,7 @@ namespace ILCompiler
 
             if (!_options.IsCppCodeGen)
             {
-                _nodeFactory = new NodeFactory(this._typeSystemContext);
+                _nodeFactory = new NodeFactory(_typeSystemContext);
                 NodeFactory.NameMangler = NameMangler;
 
                 // Choose which dependency graph implementation to use based on the amount of logging requested.
@@ -578,10 +578,10 @@ namespace ILCompiler
             }
         }
 
-        struct ReadyToRunHelperKey : IEquatable<ReadyToRunHelperKey>
+        private struct ReadyToRunHelperKey : IEquatable<ReadyToRunHelperKey>
         {
-            ReadyToRunHelperId _id;
-            Object _obj;
+            private ReadyToRunHelperId _id;
+            private Object _obj;
 
             public ReadyToRunHelperKey(ReadyToRunHelperId id, Object obj)
             {
@@ -608,7 +608,7 @@ namespace ILCompiler
             }
         }
 
-        Dictionary<ReadyToRunHelperKey, ReadyToRunHelper> _readyToRunHelpers = new Dictionary<ReadyToRunHelperKey, ReadyToRunHelper>();
+        private Dictionary<ReadyToRunHelperKey, ReadyToRunHelper> _readyToRunHelpers = new Dictionary<ReadyToRunHelperKey, ReadyToRunHelper>();
 
         public Object GetReadyToRunHelper(ReadyToRunHelperId id, Object target)
         {
@@ -621,7 +621,7 @@ namespace ILCompiler
             return helper;
         }
 
-        Dictionary<JitHelperId, JitHelper> _jitHelpers = new Dictionary<JitHelperId, JitHelper>();
+        private Dictionary<JitHelperId, JitHelper> _jitHelpers = new Dictionary<JitHelperId, JitHelper>();
         public Object GetJitHelper(JitHelperId id)
         {
             JitHelper helper;
@@ -632,7 +632,7 @@ namespace ILCompiler
             return helper;
         }
 
-        Dictionary<MethodDesc, DelegateInfo> _delegateInfos = new Dictionary<MethodDesc, DelegateInfo>();
+        private Dictionary<MethodDesc, DelegateInfo> _delegateInfos = new Dictionary<MethodDesc, DelegateInfo>();
         public DelegateInfo GetDelegateCtor(MethodDesc target)
         {
             DelegateInfo info;
@@ -645,7 +645,7 @@ namespace ILCompiler
             return info;
         }
 
-        Dictionary<FieldDesc, RvaFieldData> _rvaFieldDatas = new Dictionary<FieldDesc, RvaFieldData>();
+        private Dictionary<FieldDesc, RvaFieldData> _rvaFieldDatas = new Dictionary<FieldDesc, RvaFieldData>();
 
         /// <summary>
         /// Gets an object representing the static data for RVA mapped fields from the PE image.

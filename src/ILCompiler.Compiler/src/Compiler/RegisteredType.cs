@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    class RegisteredType
+    internal class RegisteredType
     {
         public TypeDesc Type;
 

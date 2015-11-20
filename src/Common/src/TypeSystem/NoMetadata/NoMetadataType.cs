@@ -10,7 +10,7 @@ namespace Internal.TypeSystem.NoMetadata
     /// Base type for types that had metadata at one point, but that metadata is 
     /// not accessible for the lifetime of the TypeSystemContext
     /// </summary>
-    public abstract class NoMetadataType: DefType
+    public abstract class NoMetadataType : DefType
     {
     }
 }

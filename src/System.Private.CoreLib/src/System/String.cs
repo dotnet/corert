@@ -105,10 +105,10 @@ namespace System
 
 #pragma warning restore
 
-// String constructors
-// These are special. the implementation methods for these have a different signature from the
-// declared constructors. We use a RuntimeImport/RuntimeExport combination to workaround this difference.
-// TODO: Determine a more reasonable solution for this.
+        // String constructors
+        // These are special. the implementation methods for these have a different signature from the
+        // declared constructors. We use a RuntimeImport/RuntimeExport combination to workaround this difference.
+        // TODO: Determine a more reasonable solution for this.
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
 #if CORERT

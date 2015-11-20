@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    class CompilerMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
+    internal class CompilerMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
     {
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {

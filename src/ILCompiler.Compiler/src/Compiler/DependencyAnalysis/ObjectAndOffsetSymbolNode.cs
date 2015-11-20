@@ -8,7 +8,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
+    internal class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
     {
         private ObjectNode _object;
         private int _offset;

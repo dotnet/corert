@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public partial class ReadyToRunHelperNode : AssemblyStubNode
     {
-        ReadyToRunHelper _helper;
+        private ReadyToRunHelper _helper;
 
         public ReadyToRunHelperNode(ReadyToRunHelper helper)
         {

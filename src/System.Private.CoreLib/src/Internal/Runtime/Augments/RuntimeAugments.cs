@@ -794,7 +794,8 @@ namespace Internal.Runtime.Augments
         }
 
         [System.Diagnostics.DebuggerStepThrough]
-        /* TEMP workaround due to bug 149078 */ [MethodImpl(MethodImplOptions.NoInlining)]
+        /* TEMP workaround due to bug 149078 */
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void CallDescrWorker(IntPtr callDescr)
         {
             RuntimeImports.RhCallDescrWorker(callDescr);

@@ -14,8 +14,8 @@ namespace Internal.TypeSystem.Ecma
 {
     public sealed partial class EcmaGenericParameter : TypeDesc
     {
-        EcmaModule _module;
-        GenericParameterHandle _handle;
+        private EcmaModule _module;
+        private GenericParameterHandle _handle;
 
         internal EcmaGenericParameter(EcmaModule module, GenericParameterHandle handle)
         {

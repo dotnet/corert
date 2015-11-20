@@ -14,13 +14,13 @@ namespace Internal.IL
 {
     public class EcmaMethodIL : MethodIL
     {
-        EcmaModule _module;
-        MethodBodyBlock _methodBody;
+        private EcmaModule _module;
+        private MethodBodyBlock _methodBody;
 
         // Cached values
-        byte[] _ilBytes;
-        LocalVariableDefinition[] _locals;
-        ILExceptionRegion[] _ilExceptionRegions;
+        private byte[] _ilBytes;
+        private LocalVariableDefinition[] _locals;
+        private ILExceptionRegion[] _ilExceptionRegions;
 
         static public EcmaMethodIL Create(EcmaMethod method)
         {
@@ -37,7 +37,7 @@ namespace Internal.IL
         }
 
         // Avoid unnecessary copy
-        static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
+        private static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
         {
             var union = new ByteArrayUnion();
             union.ImmutableArray = array;
@@ -45,7 +45,7 @@ namespace Internal.IL
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        struct ByteArrayUnion
+        private struct ByteArrayUnion
         {
             [FieldOffset(0)]
             internal byte[] UnderlyingArray;

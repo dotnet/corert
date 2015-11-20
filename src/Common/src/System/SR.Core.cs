@@ -21,7 +21,7 @@ namespace System
         // not have such assemblies depend on internal contratcs as we can decide to make these assemblies portable.
         //
 
-        static Object s_resourceMap;
+        private static Object s_resourceMap;
         private const string MoreInfoLink = @". For more information, visit http://go.microsoft.com/fwlink/?LinkId=623485";
 
         private static Object ResourceMap

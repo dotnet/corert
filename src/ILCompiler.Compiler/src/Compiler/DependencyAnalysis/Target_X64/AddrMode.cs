@@ -25,11 +25,11 @@ namespace ILCompiler.DependencyAnalysis.X64
             _size = size;
         }
 
-        Register _baseReg;
-        Register? _indexReg;
-        int _offset;
-        byte _scale;
-        AddrModeSize _size;
+        private Register _baseReg;
+        private Register? _indexReg;
+        private int _offset;
+        private byte _scale;
+        private AddrModeSize _size;
 
         public Register BaseReg
         {

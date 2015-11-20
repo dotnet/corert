@@ -145,7 +145,7 @@ namespace System.Runtime.CompilerServices
                 // If the threads are deadlocked for any reason other a class constructor cycling, this loop will never 
                 // terminate - this is by design. If the user code inside the class constructors were to 
                 // deadlock themselves, then that's a bug in user code.
-                for (; ;)
+                for (;;)
                 {
                     lock (s_cctorGlobalLock)
                     {

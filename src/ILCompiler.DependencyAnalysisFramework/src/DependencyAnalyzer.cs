@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysisFramework
     /// is configurable via the MarkStrategy
     /// 
     /// </summary>
-    public sealed class DependencyAnalyzer<MarkStrategy, DependencyContextType> : DependencyAnalyzerBase<DependencyContextType> where MarkStrategy: struct, IDependencyAnalysisMarkStrategy<DependencyContextType>
+    public sealed class DependencyAnalyzer<MarkStrategy, DependencyContextType> : DependencyAnalyzerBase<DependencyContextType> where MarkStrategy : struct, IDependencyAnalysisMarkStrategy<DependencyContextType>
     {
         private MarkStrategy _marker = new MarkStrategy();
         private DependencyContextType _dependencyContext;
@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             public void MarkNewDynamicDependencies(DependencyAnalyzer<MarkStrategy, DependencyContextType> analyzer)
             {
-                foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in 
+                foreach (DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry dependency in
                     _node.SearchDynamicDependencies(analyzer._dynamicDependencyInterestingList, _next, analyzer._dependencyContext))
                 {
                     analyzer.AddToMarkStack(dependency.Node, dependency.Reason, _node, dependency.OtherReasonNode);
@@ -133,7 +133,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         // Internal details
-        void GetStaticDependenciesImpl(DependencyNodeCore<DependencyContextType> node)
+        private void GetStaticDependenciesImpl(DependencyNodeCore<DependencyContextType> node)
         {
             IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> staticDependencies = node.GetStaticDependencies(_dependencyContext);
             if (staticDependencies != null)
@@ -240,7 +240,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             } while (_markStack.Count != 0);
         }
 
-        void ComputeMarkedNodes()
+        private void ComputeMarkedNodes()
         {
             do
             {

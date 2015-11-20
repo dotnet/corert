@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    class RegisteredMethod
+    internal class RegisteredMethod
     {
         public MethodDesc Method;
 

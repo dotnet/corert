@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace Internal.IL
 {
-    static class HelperExtensions
+    internal static class HelperExtensions
     {
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {

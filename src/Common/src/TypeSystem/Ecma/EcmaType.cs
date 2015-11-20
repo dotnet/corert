@@ -17,15 +17,15 @@ namespace Internal.TypeSystem.Ecma
     /// </summary>
     public sealed partial class EcmaType : MetadataType, EcmaModule.IEntityHandleObject
     {
-        EcmaModule _module;
-        TypeDefinitionHandle _handle;
+        private EcmaModule _module;
+        private TypeDefinitionHandle _handle;
 
-        TypeDefinition _typeDefinition;
+        private TypeDefinition _typeDefinition;
 
         // Cached values
-        string _name;
-        TypeDesc[] _genericParameters;
-        MetadataType _baseType;
+        private string _name;
+        private TypeDesc[] _genericParameters;
+        private MetadataType _baseType;
 
         internal EcmaType(EcmaModule module, TypeDefinitionHandle handle)
         {
@@ -63,7 +63,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        void ComputeGenericParameters()
+        private void ComputeGenericParameters()
         {
             var genericParameterHandles = _typeDefinition.GetGenericParameters();
             int count = genericParameterHandles.Count;
@@ -117,7 +117,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        MetadataType InitializeBaseType()
+        private MetadataType InitializeBaseType()
         {
             var baseTypeHandle = _typeDefinition.BaseType;
             if (baseTypeHandle.IsNil)
@@ -154,7 +154,7 @@ namespace Internal.TypeSystem.Ecma
                 return _baseType;
             }
         }
-        
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;

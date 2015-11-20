@@ -448,7 +448,7 @@ namespace System
         // such scenarios are going to be extremely rare, where timing
         // matches precisely.
         private static Object s_EDILock = new Object();
-        
+
         /// <summary>
         /// This is the binary format for serialized exceptions that get saved into a special buffer that is
         /// known to WER (by way of a runtime API) and will be saved into triage dumps.  This format is known

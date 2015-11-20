@@ -1174,7 +1174,7 @@ namespace System.Globalization
                 fixed (char* pFormat = format)
                 {
                     src = 0;
-                    for (; ;)
+                    for (;;)
                     {
                         switch (ch = pFormat[src++])
                         {

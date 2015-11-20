@@ -26,15 +26,15 @@ namespace Internal.TypeSystem
             public StaticsBlock ThreadStatics;
         }
 
-        ThreadSafeFlags _fieldLayoutFlags;
+        private ThreadSafeFlags _fieldLayoutFlags;
 
-        int _instanceFieldSize;
-        int _instanceFieldAlignment;
-        int _instanceByteCountUnaligned;
-        int _instanceByteAlignment;
+        private int _instanceFieldSize;
+        private int _instanceFieldAlignment;
+        private int _instanceByteCountUnaligned;
+        private int _instanceByteAlignment;
 
         // Information about various static blocks is rare, so we keep it out of line.
-        StaticBlockInfo _staticBlockInfo;
+        private StaticBlockInfo _staticBlockInfo;
 
         public override bool ContainsPointers
         {
@@ -96,7 +96,7 @@ namespace Internal.TypeSystem
             }
         }
 
-    public override int NonGCStaticFieldSize
+        public override int NonGCStaticFieldSize
         {
             get
             {

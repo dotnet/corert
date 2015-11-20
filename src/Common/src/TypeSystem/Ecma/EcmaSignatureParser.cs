@@ -11,8 +11,8 @@ namespace Internal.TypeSystem.Ecma
 {
     public struct EcmaSignatureParser
     {
-        EcmaModule _module;
-        BlobReader _reader;
+        private EcmaModule _module;
+        private BlobReader _reader;
 
         // TODO
         // bool _hasModifiers;
@@ -77,7 +77,7 @@ namespace Internal.TypeSystem.Ecma
                     {
                         var elementType = ParseType();
                         var rank = _reader.ReadCompressedInteger();
- 
+
                         // TODO: Bounds for multi-dimmensional arrays
                         var boundsCount = _reader.ReadCompressedInteger();
                         for (int i = 0; i < boundsCount; i++)

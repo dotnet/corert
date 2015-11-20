@@ -230,7 +230,7 @@ namespace ILCompiler.DependencyAnalysis.X64
             EmitModRM(subOpcode, ref addrMode);
         }
 
-        void EmitIndirInstruction(int opcode, Register dstReg, ref AddrMode addrMode)
+        private void EmitIndirInstruction(int opcode, Register dstReg, ref AddrMode addrMode)
         {
             EmitRexPrefix(dstReg, ref addrMode);
             if ((opcode >> 8) != 0)

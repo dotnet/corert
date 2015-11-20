@@ -11,8 +11,8 @@ namespace System.Collections.Generic
     //
     internal struct ArrayBuilder<T>
     {
-        T[] _items;
-        int _count;
+        private T[] _items;
+        private int _count;
 
         public T[] ToArray()
         {

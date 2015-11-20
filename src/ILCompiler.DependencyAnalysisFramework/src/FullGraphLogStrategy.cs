@@ -136,7 +136,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             associatedNodes.Add(new MarkData(reason, reasonNode, reasonNode2));
             return newlyMarked;
         }
-        
+
         void IDependencyAnalysisMarkStrategy<DependencyContextType>.VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor logNodeVisitor)
         {
             HashSet<Tuple<DependencyNode, DependencyNode>> combinedNodesReported = new HashSet<Tuple<DependencyNode, DependencyNode>>();

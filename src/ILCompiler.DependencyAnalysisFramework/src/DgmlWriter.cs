@@ -14,8 +14,8 @@ namespace ILCompiler.DependencyAnalysisFramework
 {
     public class DgmlWriter : IDisposable, IDependencyAnalyzerLogEdgeVisitor, IDependencyAnalyzerLogNodeVisitor
     {
-        XmlWriter _xmlWrite;
-        bool _done = false;
+        private XmlWriter _xmlWrite;
+        private bool _done = false;
         public DgmlWriter(XmlWriter xmlWrite)
         {
             _xmlWrite = xmlWrite;
@@ -25,7 +25,6 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         public void WriteNodesAndEdges(Action<Action<object>> nodeWriter, Action<Action<object, object, string>> edgeWriter)
         {
-
             _xmlWrite.WriteStartElement("Nodes");
             {
                 nodeWriter(AddNode);
@@ -93,10 +92,10 @@ namespace ILCompiler.DependencyAnalysisFramework
             Close();
         }
 
-        Dictionary<object, int> _nodeMappings = new Dictionary<object, int>();
-        int _nodeNextId = 0;
+        private Dictionary<object, int> _nodeMappings = new Dictionary<object, int>();
+        private int _nodeNextId = 0;
 
-        void AddNode(object node)
+        private void AddNode(object node)
         {
             int nodeId = _nodeNextId++;
             Debug.Assert(!_nodeMappings.ContainsKey(node));
@@ -109,7 +108,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             _xmlWrite.WriteEndElement();
         }
 
-        void AddReason(object nodeA, object nodeB, string reason)
+        private void AddReason(object nodeA, object nodeB, string reason)
         {
             _xmlWrite.WriteStartElement("Link");
             _xmlWrite.WriteAttributeString("Source", _nodeMappings[nodeA].ToString());
@@ -138,7 +137,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             AddNode(node);
         }
 
-        HashSet<Tuple<DependencyNode, DependencyNode>> _combinedNodesEdgeVisited = new HashSet<Tuple<DependencyNode, DependencyNode>>();
+        private HashSet<Tuple<DependencyNode, DependencyNode>> _combinedNodesEdgeVisited = new HashSet<Tuple<DependencyNode, DependencyNode>>();
 
         void IDependencyAnalyzerLogEdgeVisitor.VisitEdge(DependencyNode nodeDepender, DependencyNode nodeDependerOther, DependencyNode nodeDependedOn, string reason)
         {

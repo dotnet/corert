@@ -20,7 +20,7 @@ namespace ILCompiler
     //
     public class NameMangler
     {
-        readonly Compilation _compilation;
+        private readonly Compilation _compilation;
 
         public NameMangler(Compilation compilation)
         {
@@ -75,7 +75,7 @@ namespace ILCompiler
             return (sb != null) ? sb.ToString() : s;
         }
 
-        ImmutableDictionary<TypeDesc, string> _mangledTypeNames = ImmutableDictionary<TypeDesc, string>.Empty;
+        private ImmutableDictionary<TypeDesc, string> _mangledTypeNames = ImmutableDictionary<TypeDesc, string>.Empty;
 
         public string GetMangledTypeName(TypeDesc type)
         {
@@ -184,7 +184,7 @@ namespace ILCompiler
             return mangledName;
         }
 
-        ImmutableDictionary<MethodDesc, string> _mangledMethodNames = ImmutableDictionary<MethodDesc, string>.Empty;
+        private ImmutableDictionary<MethodDesc, string> _mangledMethodNames = ImmutableDictionary<MethodDesc, string>.Empty;
 
         public string GetMangledMethodName(MethodDesc method)
         {
@@ -270,7 +270,7 @@ namespace ILCompiler
             return mangledName;
         }
 
-        ImmutableDictionary<FieldDesc, string> _mangledFieldNames = ImmutableDictionary<FieldDesc, string>.Empty;
+        private ImmutableDictionary<FieldDesc, string> _mangledFieldNames = ImmutableDictionary<FieldDesc, string>.Empty;
 
         public string GetMangledFieldName(FieldDesc field)
         {

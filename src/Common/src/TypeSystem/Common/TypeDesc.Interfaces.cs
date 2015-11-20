@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
 
     public partial class TypeDesc
     {
-        DefType[] _runtimeInterfaces;
+        private DefType[] _runtimeInterfaces;
 
         /// <summary>
         /// The interfaces implemented by this type at runtime. There may be duplicates in this list.

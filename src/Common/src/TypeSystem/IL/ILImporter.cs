@@ -11,7 +11,7 @@ namespace Internal.IL
     //
     // Corresponds to "I.12.3.2.1 The evaluation stack" in ECMA spec
     //
-    enum StackValueKind
+    internal enum StackValueKind
     {
         Unknown,
         Int32,
@@ -23,18 +23,18 @@ namespace Internal.IL
         ValueType
     }
 
-    partial class ILImporter
+    internal partial class ILImporter
     {
-        static readonly StackValue[] s_emptyStack = new StackValue[0];
-        StackValue[] _stack = s_emptyStack;
-        int _stackTop = 0;
+        private static readonly StackValue[] s_emptyStack = new StackValue[0];
+        private StackValue[] _stack = s_emptyStack;
+        private int _stackTop = 0;
 
-        BasicBlock[] _basicBlocks; // Maps IL offset to basic block
+        private BasicBlock[] _basicBlocks; // Maps IL offset to basic block
 
-        BasicBlock _currentBasicBlock;
-        int _currentOffset;
+        private BasicBlock _currentBasicBlock;
+        private int _currentOffset;
 
-        BasicBlock _pendingBasicBlocks;
+        private BasicBlock _pendingBasicBlocks;
 
         //
         // IL stream reading
@@ -92,7 +92,7 @@ namespace Internal.IL
         // Basic block identification
         //
 
-        void FindBasicBlocks()
+        private void FindBasicBlocks()
         {
             _basicBlocks = new BasicBlock[_ilBytes.Length];
 
@@ -103,7 +103,7 @@ namespace Internal.IL
             FindEHTargets();
         }
 
-        BasicBlock CreateBasicBlock(int offset)
+        private BasicBlock CreateBasicBlock(int offset)
         {
             BasicBlock basicBlock = _basicBlocks[offset];
             if (basicBlock == null)
@@ -114,7 +114,7 @@ namespace Internal.IL
             return basicBlock;
         }
 
-        void FindJumpTargets()
+        private void FindJumpTargets()
         {
             _currentOffset = 0;
 
@@ -258,7 +258,7 @@ namespace Internal.IL
             }
         }
 
-        void FindEHTargets()
+        private void FindEHTargets()
         {
             for (int i = 0; i < _exceptionRegions.Length; i++)
             {
@@ -275,7 +275,7 @@ namespace Internal.IL
         // Basic block importing
         //
 
-        void ImportBasicBlocks()
+        private void ImportBasicBlocks()
         {
             _pendingBasicBlocks = _basicBlocks[0];
             while (_pendingBasicBlocks != null)
@@ -289,7 +289,7 @@ namespace Internal.IL
             }
         }
 
-        void MarkBasicBlock(BasicBlock basicBlock)
+        private void MarkBasicBlock(BasicBlock basicBlock)
         {
             if (basicBlock.EndOffset == 0)
             {
@@ -301,7 +301,7 @@ namespace Internal.IL
             }
         }
 
-        void ImportBasicBlock(BasicBlock basicBlock)
+        private void ImportBasicBlock(BasicBlock basicBlock)
         {
             _stackTop = 0;
 
@@ -893,22 +893,22 @@ namespace Internal.IL
             }
         }
 
-        void ImportLoadIndirect(WellKnownType wellKnownType)
+        private void ImportLoadIndirect(WellKnownType wellKnownType)
         {
             ImportLoadIndirect(GetWellKnownType(wellKnownType));
         }
 
-        void ImportStoreIndirect(WellKnownType wellKnownType)
+        private void ImportStoreIndirect(WellKnownType wellKnownType)
         {
             ImportStoreIndirect(GetWellKnownType(wellKnownType));
         }
 
-        void ImportLoadElement(WellKnownType wellKnownType)
+        private void ImportLoadElement(WellKnownType wellKnownType)
         {
             ImportLoadElement(GetWellKnownType(wellKnownType));
         }
 
-        void ImportStoreElement(WellKnownType wellKnownType)
+        private void ImportStoreElement(WellKnownType wellKnownType)
         {
             ImportStoreElement(GetWellKnownType(wellKnownType));
         }

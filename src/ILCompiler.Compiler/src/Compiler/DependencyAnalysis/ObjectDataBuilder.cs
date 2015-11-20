@@ -133,7 +133,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ObjectNode.ObjectData ToObjectData()
         {
-            ObjectNode.ObjectData returnData = new ObjectNode.ObjectData(_data.ToArray(), 
+            ObjectNode.ObjectData returnData = new ObjectNode.ObjectData(_data.ToArray(),
                                                                          _relocs.ToArray(),
                                                                          Alignment,
                                                                          DefinedSymbols.ToArray());

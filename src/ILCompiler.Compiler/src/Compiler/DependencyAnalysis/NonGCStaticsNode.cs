@@ -14,10 +14,10 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    class NonGCStaticsNode : ObjectNode, ISymbolNode
+    internal class NonGCStaticsNode : ObjectNode, ISymbolNode
     {
-        MetadataType _type;
-        ISymbolNode _classConstructorContext;
+        private MetadataType _type;
+        private ISymbolNode _classConstructorContext;
 
         public NonGCStaticsNode(MetadataType type)
         {
@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Add padding before the context if alignment forces us to do so
                 builder.EmitZeros(((ISymbolNode)this).Offset - ClassConstructorContextSize);
-                
+
                 // Emit the actual StaticClassConstructionContext                
                 var cctorMethod = _type.GetStaticConstructor();
                 builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));

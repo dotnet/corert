@@ -14,7 +14,7 @@ namespace Internal.TypeSystem.Ecma
 {
     public sealed class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
     {
-        static class MethodFlags
+        private static class MethodFlags
         {
             public const int BasicMetadataCache     = 0x0001;
             public const int Virtual                = 0x0002;
@@ -28,14 +28,14 @@ namespace Internal.TypeSystem.Ecma
             public const int Intrinsic            = 0x0200;
         };
 
-        EcmaType _type;
-        MethodDefinitionHandle _handle;
+        private EcmaType _type;
+        private MethodDefinitionHandle _handle;
 
         // Cached values
-        ThreadSafeFlags _methodFlags;
-        MethodSignature _signature;
-        string _name;
-        TypeDesc[] _genericParameters; // TODO: Optional field?
+        private ThreadSafeFlags _methodFlags;
+        private MethodSignature _signature;
+        private string _name;
+        private TypeDesc[] _genericParameters; // TODO: Optional field?
 
         internal EcmaMethod(EcmaType type, MethodDefinitionHandle handle)
         {
@@ -91,7 +91,7 @@ namespace Internal.TypeSystem.Ecma
                 return _signature;
             }
         }
- 
+
         public EcmaModule Module
         {
             get
@@ -276,7 +276,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        void ComputeGenericParameters()
+        private void ComputeGenericParameters()
         {
             var genericParameterHandles = MetadataReader.GetMethodDefinition(_handle).GetGenericParameters();
             int count = genericParameterHandles.Count;

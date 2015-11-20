@@ -59,7 +59,7 @@ namespace Internal.IL
         {
             string opCodeName = "";
 
-            again:
+        again:
 
             ILOpcode opCode = (ILOpcode)ReadILByte(instructionStream, ref offset);
             if (opCode == ILOpcode.prefix1)

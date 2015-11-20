@@ -8,7 +8,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    class RvaFieldData
+    internal class RvaFieldData
     {
         private Compilation _compilation;
 

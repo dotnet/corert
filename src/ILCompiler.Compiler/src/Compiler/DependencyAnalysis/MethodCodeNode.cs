@@ -7,12 +7,12 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class MethodCodeNode : ObjectNode, INodeWithFrameInfo, INodeWithDebugInfo, ISymbolNode
+    internal class MethodCodeNode : ObjectNode, INodeWithFrameInfo, INodeWithDebugInfo, ISymbolNode
     {
-        MethodDesc _method;
-        ObjectData _methodCode;
-        FrameInfo[] _frameInfos;
-        DebugLocInfo[] _debugLocInfos;
+        private MethodDesc _method;
+        private ObjectData _methodCode;
+        private FrameInfo[] _frameInfos;
+        private DebugLocInfo[] _debugLocInfos;
 
         public MethodCodeNode(MethodDesc method)
         {
