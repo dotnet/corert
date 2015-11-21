@@ -2,7 +2,8 @@
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
   <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
 
-    <!-- Takes forever to run and consumes 8+ GB of memory while at it. Didn't have patience. -->
+    <!-- Infinite generic expansion -->
+    <!-- https://github.com/dotnet/corert/issues/363 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\inlining\bug505642\test\test.*" />
                  
                  
@@ -171,6 +172,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\M00\b112982\b112982\b112982.*" />
 
     <!-- RuntimeFieldHandle -->
+    <!-- https://github.com/dotnet/corert/issues/364 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\lclfldadd_cs_d\lclfldadd_cs_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\lclfldadd_cs_do\lclfldadd_cs_do.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\lclfldadd_cs_r\lclfldadd_cs_r.*" />
@@ -330,6 +332,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.2\ddb\b429039\b429039\b429039.*" />
 
     <!-- Interface methods -->
+    <!-- https://github.com/dotnet/corert/issues/365 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\UnrollLoop\Dev10_846218\Dev10_846218.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Constraints\call_instance01\call_instance01.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\Constraints\Call_instance01_d\Call_instance01_d.*" />
@@ -942,6 +945,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b91377\b91377\b91377.*" />
 
     <!-- getFunctionEntryPoint -->
+    <!-- https://github.com/dotnet/corert/issues/366 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\jump\jump.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\zeroinit\tail\tail.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\opt\cg\il\jmp_dbg\jmp_dbg.*" />
@@ -976,6 +980,7 @@
 
 
     <!-- TypedReference -->
+    <!-- https://github.com/dotnet/corert/issues/367 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\refanytype1\refanytype1.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\TypedReference\TypedReference\TypedReference.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\ELEMENT_TYPE_IU\_il_dbgi_ref\_il_dbgi_ref.*" />
@@ -1027,6 +1032,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b51575\b51575\b51575.*" />
 
     <!-- CreateInstance<T> -->
+    <!-- https://github.com/dotnet/corert/issues/368 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\CheckedCtor\Generic_Test_CSharp_Base_6\Generic_Test_CSharp_Base_6.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\CheckedCtor\Generic_Test_CSharp_Peer_6\Generic_Test_CSharp_Peer_6.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\class1_cs_d\class1_cs_d.*" />
@@ -1043,6 +1049,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt4_cs_ro\vt4_cs_ro.*" />
 
     <!-- Delegate to virtual -->
+    <!-- https://github.com/dotnet/corert/issues/369 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\ldvirtftncalli_il_d\ldvirtftncalli_il_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\ldvirtftncalli_il_r\ldvirtftncalli_il_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\Misc\function_pointer\funcptrtest\funcptrtest.*" />
@@ -1067,6 +1074,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b374944\b374944\b374944.*" />
 
     <!-- System.Threading -->
+    <!-- https://github.com/dotnet/corert/issues/370 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\LocallocLarge\LocallocLarge.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\v2.1\b72218\b72218\b72218.*" />
@@ -1079,6 +1087,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\Threading\ThreadStatics\ThreadStatic06\ThreadStatic06.*" />
 
     <!-- SIMD -->
+    <!-- https://github.com/dotnet/corert/issues/370 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\AbsGeneric\AbsGeneric.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\AbsSqrt\AbsSqrt.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\AddingSequence\AddingSequence.*" />
@@ -1104,6 +1113,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector4\Vector4.*" />
 
     <!-- Function pointer -->
+    <!-- https://github.com/dotnet/corert/issues/371 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\casts\coverage\_il_dbgcastclass_calli\_il_dbgcastclass_calli.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\casts\coverage\_il_dbgisinst_calli\_il_dbgisinst_calli.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\casts\coverage\_il_relcastclass_calli\_il_relcastclass_calli.*" />
@@ -1118,6 +1128,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\SEH\_il_relcatchfinally_ind\_il_relcatchfinally_ind.*" />
 
     <!-- GetResourceString -->
+    <!-- https://github.com/dotnet/corert/issues/372 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\arrgetlen_il_d\arrgetlen_il_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\oldtests\arrgetlen_il_r\arrgetlen_il_r.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\ConstrainedCall\vt2_cs_d\vt2_cs_d.*" />
@@ -1162,6 +1173,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b02345\b02345\b02345.*" />
 
     <!-- ApplicationException (need to fix tests) -->
+    <!-- https://github.com/dotnet/coreclr/issues/2131 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\casts\SEH\_il_dbgcastclass_catch_neg\_il_dbgcastclass_catch_neg.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\casts\SEH\_il_dbgisinst_catch_neg\_il_dbgisinst_catch_neg.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\casts\SEH\_il_relcastclass_catch_neg\_il_relcastclass_catch_neg.*" />
@@ -1208,6 +1220,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\Invoke\SEH\_il_relcatchfinally_tail\_il_relcatchfinally_tail.*" />
 
     <!-- Delegate to valuetype -->
+    <!-- https://github.com/dotnet/corert/issues/373 -->
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\Misc\function_pointer\funcptrtest\funcptrtest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\funcptr\expl_funcptr_val_d\expl_funcptr_val_d.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\explicit\funcptr\expl_funcptr_val_r\expl_funcptr_val_r.*" />
@@ -1222,6 +1235,7 @@
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\VT\callconv\_il_relcalli\_il_relcalli.*" />
     
     <!-- __fail_fast (likely one of the unimplemented JIT helpers; needs finer bucketing) -->
+    <!-- https://github.com/dotnet/corert/issues/374 -->
     <ExcludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta1\289745\289745\289745.*" />
     <ExcludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta1\289745\302560\302560.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\CodeGenBringUpTests\DblRem\DblRem.*" />
