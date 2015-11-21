@@ -146,8 +146,8 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.pop);
 
             MethodDesc throwHelper = _method.Context.GetHelperEntryPoint("ArrayMethodILHelpers", "ThrowIndexOutOfRangeException");
-            codeStream.Emit(ILOpcode.call, _emitter.NewToken(throwHelper));
-            codeStream.Emit(ILOpcode.ret);
+            codeStream.EmitCallThrowHelper(_emitter, throwHelper);
+
 #if false
             if (typeMismatchExceptionLabel != null)
             {
