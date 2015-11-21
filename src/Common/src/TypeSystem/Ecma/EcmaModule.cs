@@ -138,10 +138,13 @@ namespace Internal.TypeSystem.Ecma
                         item = _module.ResolveExportedType((ExportedTypeHandle)handle);
                         break;
 
-                    // TODO: Resolve other tokens
+                    case HandleKind.StandaloneSignature:
+                        item = _module.ResolveStandaloneSignature((StandaloneSignatureHandle)handle);
+                        break;
 
+                    // TODO: Resolve other tokens
                     default:
-                        throw new BadImageFormatException("Unknown metadata token type");
+                        throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
                 }
 
                 switch (handle.Kind)
@@ -302,6 +305,16 @@ namespace Internal.TypeSystem.Ecma
 
             TypeDesc[] instantiation = parser.ParseMethodSpecSignature();
             return Context.GetInstantiatedMethod(methodDef, new Instantiation(instantiation));
+        }
+
+        private Object ResolveStandaloneSignature(StandaloneSignatureHandle handle)
+        {
+            StandaloneSignature signature = _metadataReader.GetStandaloneSignature(handle);
+            BlobReader signatureReader = _metadataReader.GetBlobReader(signature.Signature);
+            EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader);
+
+            MethodSignature methodSig = parser.ParseMethodSignature();
+            return methodSig;
         }
 
         private Object ResolveTypeSpecification(TypeSpecificationHandle handle)
