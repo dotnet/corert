@@ -421,29 +421,28 @@ namespace System
             if (values == null)
                 throw new ArgumentNullException("values");
 
-            if (separator == null)
-                separator = String.Empty;
-
-
             using (IEnumerator<String> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
                     return String.Empty;
 
-                StringBuilder result = StringBuilderCache.Acquire();
-                if (en.Current != null)
+                String firstValue = en.Current;
+
+                if (!en.MoveNext())
                 {
-                    result.Append(en.Current);
+                    // Only one value available
+                    return firstValue ?? String.Empty;
                 }
 
-                while (en.MoveNext())
+                // Null separator and values are handled by the StringBuilder
+                StringBuilder result = StringBuilderCache.Acquire();
+                result.Append(firstValue);
+
+                do
                 {
                     result.Append(separator);
-                    if (en.Current != null)
-                    {
-                        result.Append(en.Current);
-                    }
-                }
+                    result.Append(en.Current);
+                } while (en.MoveNext());
                 return StringBuilderCache.GetStringAndRelease(result);
             }
         }
@@ -474,6 +473,11 @@ namespace System
             if (count == 0)
             {
                 return String.Empty;
+            }
+
+            if (count == 1)
+            {
+                return value[startIndex] ?? String.Empty;
             }
 
             int endIndex = startIndex + count - 1;
