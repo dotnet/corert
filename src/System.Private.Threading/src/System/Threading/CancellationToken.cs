@@ -217,8 +217,6 @@ namespace System.Threading
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
         /// be used to deregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext)
         {
             if (callback == null)
@@ -248,8 +246,6 @@ namespace System.Threading
         /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
         /// be used to deregister the callback.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">The associated <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public CancellationTokenRegistration Register(Action<Object> callback, Object state)
         {
             if (callback == null)
@@ -500,7 +496,7 @@ namespace System.Threading
 
         private void InitializeDefaultSource()
         {
-            // Lazy is slower, and although multiple threads may race and set m_source repeatedly, the race is benign.
+            // Lazy is slower, and although multiple threads may try and set m_source repeatedly, the race is benign.
             // Alternative: LazyInititalizer.EnsureInitialized(ref m_source, ()=>CancellationTokenSource.InternalGetStaticSource(false));
 
             m_source = CancellationTokenSource.InternalGetStaticSource(false);
