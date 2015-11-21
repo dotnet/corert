@@ -324,7 +324,7 @@ namespace System
             else if (count == 0)
                 return String.Empty;
             else
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
         }
 
         private const int TrimHead = 0;
@@ -1989,10 +1989,10 @@ namespace System
         public unsafe int IndexOf(char value, int startIndex, int count)
         {
             if (startIndex < 0 || startIndex > Length)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || count > Length - startIndex)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
 
             fixed (char* pChars = this)
             {
@@ -2031,7 +2031,7 @@ namespace System
                 throw new ArgumentOutOfRangeException();
 
             if (count < 0 || count > Length - startIndex)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
 
             // use probabilistic map, see InitializeProbabilisticMap
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
@@ -2202,10 +2202,10 @@ namespace System
                 return -1;
 
             if (startIndex < 0 || startIndex >= Length)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || count - 1 > startIndex)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
 
             fixed (char* pChars = this)
             {
@@ -2249,11 +2249,11 @@ namespace System
                 return -1;
 
             if ((startIndex < 0) || (startIndex >= Length))
-                throw new ArgumentOutOfRangeException("startIndex", "ArgumentOutOfRange_Index");
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
 
             if ((count < 0) || ((count - 1) > startIndex))
             {
-                throw new ArgumentOutOfRangeException("count", "ArgumentOutOfRange_Count");
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
             }
 
             // use probabilistic map, see InitializeProbabilisticMap
