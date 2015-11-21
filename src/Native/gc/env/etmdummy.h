@@ -130,7 +130,7 @@
 #define FireEtwMethodJitInliningFailed(MethodBeingCompiledNamespace, MethodBeingCompiledName, MethodBeingCompiledNameSignature, InlinerNamespace, InlinerName, InlinerNameSignature, InlineeNamespace, InlineeName, InlineeNameSignature, FailAlways, FailReason, ClrInstanceID) 0
 #define FireEtwMethodJitTailCallSucceeded(MethodBeingCompiledNamespace, MethodBeingCompiledName, MethodBeingCompiledNameSignature, CallerNamespace, CallerName, CallerNameSignature, CalleeNamespace, CalleeName, CalleeNameSignature, TailPrefix, TailCallType, ClrInstanceID) 0
 #define FireEtwMethodJitTailCallFailed(MethodBeingCompiledNamespace, MethodBeingCompiledName, MethodBeingCompiledNameSignature, CallerNamespace, CallerName, CallerNameSignature, CalleeNamespace, CalleeName, CalleeNameSignature, TailPrefix, FailReason, ClrInstanceID) 0
-#define FireEtwMethodILCompilerMap(MethodID, ReJITID, MethodExtent, CountOfMapEntries, ILOffsets, NativeOffsets, ClrInstanceID) 0
+#define FireEtwMethodILToNativeMap(MethodID, ReJITID, MethodExtent, CountOfMapEntries, ILOffsets, NativeOffsets, ClrInstanceID) 0
 #define FireEtwModuleDCStartV2(ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath) 0
 #define FireEtwModuleDCEndV2(ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath) 0
 #define FireEtwDomainModuleLoad(ModuleID, AssemblyID, AppDomainID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath) 0
@@ -191,8 +191,8 @@
 #define FireEtwDCStartInit_V1(ClrInstanceID) 0
 #define FireEtwDCEndInit() 0
 #define FireEtwDCEndInit_V1(ClrInstanceID) 0
-#define FireEtwMethodDCStartILCompilerMap(MethodID, ReJITID, MethodExtent, CountOfMapEntries, ILOffsets, NativeOffsets, ClrInstanceID) 0
-#define FireEtwMethodDCEndILCompilerMap(MethodID, ReJITID, MethodExtent, CountOfMapEntries, ILOffsets, NativeOffsets, ClrInstanceID) 0
+#define FireEtwMethodDCStartILToNativeMap(MethodID, ReJITID, MethodExtent, CountOfMapEntries, ILOffsets, NativeOffsets, ClrInstanceID) 0
+#define FireEtwMethodDCEndILToNativeMap(MethodID, ReJITID, MethodExtent, CountOfMapEntries, ILOffsets, NativeOffsets, ClrInstanceID) 0
 #define FireEtwDomainModuleDCStart(ModuleID, AssemblyID, AppDomainID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath) 0
 #define FireEtwDomainModuleDCStart_V1(ModuleID, AssemblyID, AppDomainID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath, ClrInstanceID) 0
 #define FireEtwDomainModuleDCEnd(ModuleID, AssemblyID, AppDomainID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath) 0
