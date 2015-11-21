@@ -497,11 +497,11 @@ namespace System
         {
             // If any of our indices are negative throw an exception.
             if (count < 0)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
             if (indexA < 0)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("indexA", SR.ArgumentOutOfRange_Index);
             if (indexB < 0)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("indexB", SR.ArgumentOutOfRange_Index);
 
             int countA = count;
             int countB = count;
@@ -511,14 +511,14 @@ namespace System
             {
                 countA = strA.Length - indexA;
                 if (countA < 0)
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("indexA", SR.ArgumentOutOfRange_Index);
             }
 
             if (count > (strB.Length - indexB))
             {
                 countB = strB.Length - indexB;
                 if (countB < 0)
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("indexB", SR.ArgumentOutOfRange_Index);
             }
 
             // Set up the loop variables.
