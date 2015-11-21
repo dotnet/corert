@@ -68,22 +68,11 @@ namespace System.Threading
 
         private bool m_disposed;
 
-        private CancellationTokenRegistration[] m_linkingRegistrations; //lazily initialized if required.
-
-        private static readonly Action<object> s_LinkedTokenCancelDelegate = new Action<object>(LinkedTokenCancelDelegate);
-
         // we track the running callback to assist ctr.Dispose() to wait for the target callback to complete.
         private volatile CancellationCallbackInfo m_executingCallback;
 
         // provided for CancelAfter and timer-related constructors
         private volatile Timer m_timer;
-
-        private static void LinkedTokenCancelDelegate(object source)
-        {
-            CancellationTokenSource cts = source as CancellationTokenSource;
-            Contract.Assert(source != null);
-            cts.Cancel();
-        }
 
         // ---------------------- 
         // ** public properties
@@ -122,7 +111,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// A simple helper to determine whether disposal has occured.
+        /// A simple helper to determine whether disposal has occurred.
         /// </summary>
         internal bool IsDisposed
         {
@@ -186,7 +175,7 @@ namespace System.Threading
                     ((IDisposable)mre).Dispose();
                 }
 
-                // There is a race between checking IsCancellationRequested and setting the event.
+                // There is a race condition between checking IsCancellationRequested and setting the event.
                 // However, at this point, the kernel object definitely exists and the cases are:
                 //   1. if IsCancellationRequested = true, then we will call Set()
                 //   2. if IsCancellationRequested = false, then NotifyCancellation will see that the event exists, and will call Set().
@@ -468,12 +457,12 @@ namespace System.Threading
             {
                 // Lazily initialize the timer in a thread-safe fashion.
                 // Initially set to "never go off" because we don't want to take a
-                // chance on a timer "losing" the initialization race and then
+                // chance on a timer "losing" the initialization and then
                 // cancelling the token before it (the timer) can be disposed.
                 Timer newTimer = new Timer(s_timerCallback, this, -1, -1);
                 if (Interlocked.CompareExchange(ref m_timer, newTimer, null) != null)
                 {
-                    // We lost the race to initialize the timer.  Dispose the new timer.
+                    // We did not initialize the timer.  Dispose the new timer.
                     newTimer.Dispose();
                 }
             }
@@ -506,7 +495,7 @@ namespace System.Threading
             {
                 // There is a small window for a race condition where a cts.Dispose can sneak
                 // in right here.  I'll wrap the cts.Cancel() in a try/catch to proof us
-                // against this race.
+                // against this race condition.
                 try
                 {
                     cts.Cancel(); // will take care of disposing of m_timer
@@ -539,28 +528,24 @@ namespace System.Threading
         {
             // There is nothing to do if disposing=false because the CancellationTokenSource holds no unmanaged resources.
 
-            if (disposing)
+            if (disposing && !m_disposed)
             {
                 //NOTE: We specifically tolerate that a callback can be deregistered
                 //      after the CTS has been disposed and/or concurrently with cts.Dispose().
                 //      This is safe without locks because the reg.Dispose() only
                 //      mutates a sparseArrayFragment and then reads from properties of the CTS that are not
                 //      invalidated by cts.Dispose().
-
-                if (m_disposed)
-                    return;
+                //     
+                //      We also tolerate that a callback can be registered after the CTS has been
+                //      disposed.  This is safe without locks because InternalRegister is tolerant
+                //      of m_registeredCallbacksLists becoming null during its execution.  However,
+                //      we run the acceptable risk of m_registeredCallbacksLists getting reinitialized
+                //      to non-null if there is a race between Dispose and Register, in which case this
+                //      instance may unnecessarily hold onto a registered callback.  But that's no worse
+                //      than if Dispose wasn't safe to use concurrently, as Dispose would never be called,
+                //      and thus no handlers would be dropped.
 
                 if (m_timer != null) m_timer.Dispose();
-
-                var linkingRegistrations = m_linkingRegistrations;
-                if (linkingRegistrations != null)
-                {
-                    m_linkingRegistrations = null; // free for GC once we're done enumerating
-                    for (int i = 0; i < linkingRegistrations.Length; i++)
-                    {
-                        linkingRegistrations[i].Dispose();
-                    }
-                }
 
                 // registered callbacks are now either complete or will never run, due to guarantees made by ctr.Dispose()
                 // so we can now perform main disposal work without risk of linking callbacks trying to use this CTS.
@@ -611,8 +596,6 @@ namespace System.Threading
         internal CancellationTokenRegistration InternalRegister(
             Action<object> callback, object stateForCallback, SynchronizationContext targetSyncContext, ExecutionContext executionContext)
         {
-            ThrowIfDisposed();
-
             // the CancellationToken has already checked that the token is cancelable before calling this method.
             Contract.Assert(CanBeCanceled, "Cannot register for uncancelable token src");
 
@@ -623,6 +606,20 @@ namespace System.Threading
 
             if (!IsCancellationRequested)
             {
+                // In order to enable code to not leak too many handlers, we allow Dispose to be called concurrently
+                // with Register.  While this is not a recommended practice, consumers can and do use it this way.
+                // We don't make any guarantees about whether the CTS will hold onto the supplied callback
+                // if the CTS has already been disposed when the callback is registered, but we try not to
+                // while at the same time not paying any non-negligible overhead.  The simple compromise
+                // is to check whether we're disposed (not volatile), and if we see we are, to return an empty
+                // registration, just as if CanBeCanceled was false for the check made in CancellationToken.Register.
+                // If there's a race and m_disposed is false even though it's been disposed, or if the disposal request
+                // comes in after this line, we simply run the minor risk of having m_registeredCallbacksLists reinitialized
+                // (after it was cleared to null during Dispose).
+
+                if (m_disposed)
+                    return new CancellationTokenRegistration();
+
                 int myIndex = Environment.CurrentManagedThreadId % s_nLists;
 
                 CancellationCallbackInfo callbackInfo = new CancellationCallbackInfo(callback, stateForCallback, targetSyncContext, executionContext, this);
@@ -718,7 +715,7 @@ namespace System.Threading
             List<Exception> exceptionList = null;
             SparselyPopulatedArray<CancellationCallbackInfo>[] callbackLists = m_registeredCallbacksLists;
 
-            // If there are no callbacks to run, we can safely exit.  Any races to lazy initialize it
+            // If there are no callbacks to run, we can safely exit.  Any race conditions to lazy initialize it
             // will see IsCancellationRequested and will then run the callback themselves.
             if (callbackLists == null)
             {
@@ -826,33 +823,11 @@ namespace System.Threading
         /// <param name="token2">The second <see cref="T:System.Threading.CancellationToken">CancellationToken</see> to observe.</param>
         /// <returns>A <see cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> that is linked 
         /// to the source tokens.</returns>
-        /// <exception cref="T:System.ObjectDisposedException">A <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
-        /// one of the source tokens has been disposed.</exception>
         public static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token1, CancellationToken token2)
         {
-            CancellationTokenSource linkedTokenSource = new CancellationTokenSource();
-
-            bool token2CanBeCanceled = token2.CanBeCanceled;
-
-            if (token1.CanBeCanceled)
-            {
-                linkedTokenSource.m_linkingRegistrations = new CancellationTokenRegistration[token2CanBeCanceled ? 2 : 1]; // there will be at least 1 and at most 2 linkings
-                linkedTokenSource.m_linkingRegistrations[0] = token1.InternalRegisterWithoutEC(s_LinkedTokenCancelDelegate, linkedTokenSource);
-            }
-
-            if (token2CanBeCanceled)
-            {
-                int index = 1;
-                if (linkedTokenSource.m_linkingRegistrations == null)
-                {
-                    linkedTokenSource.m_linkingRegistrations = new CancellationTokenRegistration[1]; // this will be the only linking
-                    index = 0;
-                }
-                linkedTokenSource.m_linkingRegistrations[index] = token2.InternalRegisterWithoutEC(s_LinkedTokenCancelDelegate, linkedTokenSource);
-            }
-
-            return linkedTokenSource;
+            return token1.CanBeCanceled || token2.CanBeCanceled ?
+                new LinkedCancellationTokenSource(token1, token2) :
+                new CancellationTokenSource();
         }
 
         /// <summary>
@@ -863,9 +838,6 @@ namespace System.Threading
         /// <returns>A <see cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> that is linked 
         /// to the source tokens.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="tokens"/> is null.</exception>
-        /// <exception cref="T:System.ObjectDisposedException">A <see
-        /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> associated with
-        /// one of the source tokens has been disposed.</exception>
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
             if (tokens == null)
@@ -878,21 +850,7 @@ namespace System.Threading
             // hence each item cannot be null itself, and reads of the payloads cannot be torn.
             Contract.EndContractBlock();
 
-            CancellationTokenSource linkedTokenSource = new CancellationTokenSource();
-            linkedTokenSource.m_linkingRegistrations = new CancellationTokenRegistration[tokens.Length];
-
-            for (int i = 0; i < tokens.Length; i++)
-            {
-                if (tokens[i].CanBeCanceled)
-                {
-                    linkedTokenSource.m_linkingRegistrations[i] = tokens[i].InternalRegisterWithoutEC(s_LinkedTokenCancelDelegate, linkedTokenSource);
-                }
-                // Empty slots in the array will be default(CancellationTokenRegistration), which are nops to Dispose.
-                // Based on usage patterns, such occurrences should also be rare, such that it's not worth resizing
-                // the array and incurring the related costs.
-            }
-
-            return linkedTokenSource;
+            return new LinkedCancellationTokenSource(tokens);
         }
 
 
@@ -906,6 +864,69 @@ namespace System.Threading
             {
                 sw.SpinOnce();  //spin as we assume callback execution is fast and that this situation is rare.
             }
+        }
+
+        private sealed class LinkedCancellationTokenSource : CancellationTokenSource
+        {
+            private static readonly Action<object> s_linkedTokenCancelDelegate = s => ((CancellationTokenSource)s).Cancel();
+            private CancellationTokenRegistration[] m_linkingRegistrations;
+
+            internal LinkedCancellationTokenSource(CancellationToken token1, CancellationToken token2)
+            {
+                bool token2CanBeCanceled = token2.CanBeCanceled;
+
+                if (token1.CanBeCanceled)
+                {
+                    m_linkingRegistrations = new CancellationTokenRegistration[token2CanBeCanceled ? 2 : 1]; // there will be at least 1 and at most 2 linkings
+                    m_linkingRegistrations[0] = token1.InternalRegisterWithoutEC(s_linkedTokenCancelDelegate, this);
+                }
+
+                if (token2CanBeCanceled)
+                {
+                    int index = 1;
+                    if (m_linkingRegistrations == null)
+                    {
+                        m_linkingRegistrations = new CancellationTokenRegistration[1]; // this will be the only linking
+                        index = 0;
+                    }
+                    m_linkingRegistrations[index] = token2.InternalRegisterWithoutEC(s_linkedTokenCancelDelegate, this);
+                }
+            }
+
+            internal LinkedCancellationTokenSource(params CancellationToken[] tokens)
+            {
+                m_linkingRegistrations = new CancellationTokenRegistration[tokens.Length];
+
+                for (int i = 0; i < tokens.Length; i++)
+                {
+                    if (tokens[i].CanBeCanceled)
+                    {
+                        m_linkingRegistrations[i] = tokens[i].InternalRegisterWithoutEC(s_linkedTokenCancelDelegate, this);
+                    }
+                    // Empty slots in the array will be default(CancellationTokenRegistration), which are nops to Dispose.
+                    // Based on usage patterns, such occurrences should also be rare, such that it's not worth resizing
+                    // the array and incurring the related costs.
+                }
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!disposing || m_disposed)
+                    return;
+
+                CancellationTokenRegistration[] linkingRegistrations = m_linkingRegistrations;
+                if (linkingRegistrations != null)
+                {
+                    m_linkingRegistrations = null; // release for GC once we're done enumerating
+                    for (int i = 0; i < linkingRegistrations.Length; i++)
+                    {
+                        linkingRegistrations[i].Dispose();
+                    }
+                }
+
+                base.Dispose(disposing);
+            }
+
         }
     }
 
@@ -965,7 +986,7 @@ namespace System.Threading
         {
             if (TargetExecutionContext != null)
             {
-                // Lazily initialize the callback delegate; benign race
+                // Lazily initialize the callback delegate; benign race condition
                 var callback = s_executionContextCallback;
                 if (callback == null) s_executionContextCallback = callback = new ContextCallback(ExecutionContextCallback);
 
@@ -1180,7 +1201,7 @@ namespace System.Threading
 
         // only removes the item at the specified index if it is still the expected one.
         // Returns the prevailing value.
-        // The remove occured successfully if the return value == expected element
+        // The remove occurred successfully if the return value == expected element
         // otherwise the remove did not occur.
         internal T SafeAtomicRemove(int index, T expectedElement)
         {
