@@ -219,13 +219,13 @@ namespace System.Threading.Tasks
 
             internal CancellationToken m_cancellationToken; // Task's cancellation token, if it has one
             internal object m_cancellationRegistration; // Task's registration with the cancellation token; actually a boxed CancellationTokenRegistration
-            internal volatile int m_internalCancellationRequested; // Its own field because threads legally race to set it.
+            internal volatile int m_internalCancellationRequested; // Its own field because multiple threads legally try to set it.
 
             // Parenting fields
 
             // # of active children + 1 (for this task itself).
             // Used for ensuring all children are done before this task can complete
-            // The extra count helps prevent the race for executing the final state transition
+            // The extra count helps prevent the race condition for executing the final state transition
             // (i.e. whether the last child or this task itself should call FinishStageTwo())
             internal volatile int m_completionCountdown = 1;
             // A list of child tasks that threw an exception (TCEs don't count),
@@ -603,14 +603,12 @@ namespace System.Threading.Tasks
         private void AssignCancellationToken(CancellationToken cancellationToken, Task antecedent, TaskContinuation continuation)
         {
             // There is no need to worry about concurrency issues here because we are in the constructor path of the task --
-            // there should not be any races to set m_contingentProperties at this point.
+            // there should not be any race conditions to set m_contingentProperties at this point.
             ContingentProperties props = EnsureContingentPropertiesInitialized(needsProtection: false);
             props.m_cancellationToken = cancellationToken;
 
             try
             {
-                cancellationToken.ThrowIfSourceDisposed();
-
                 // If an unstarted task has a valid CancellationToken that gets signalled while the task is still not queued
                 // we need to proactively cancel it, because it may never execute to transition itself. 
                 // The only way to accomplish this is to register a callback on the CT.
@@ -1205,7 +1203,7 @@ namespace System.Threading.Tasks
                 throw new InvalidOperationException(SR.Task_RunSynchronously_AlreadyStarted);
             }
 
-            // execute only if we win the race against concurrent cancel attempts.
+            // execute only if we successfully cancel when concurrent cancel attempts are made.
             // otherwise throw an exception, because we've been canceled.
             if (MarkStarted())
             {
@@ -1661,7 +1659,7 @@ namespace System.Threading.Tasks
             {
                 var completedTask = s_completedTask;
                 if (completedTask == null)
-                    s_completedTask = completedTask = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken)); // benign initialization race
+                    s_completedTask = completedTask = new Task(false, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default(CancellationToken)); // benign initialization race condition
                 return completedTask;
             }
         }
@@ -1681,7 +1679,7 @@ namespace System.Threading.Tasks
                     ManualResetEventSlim newMre = new ManualResetEventSlim(wasCompleted);
                     if (Interlocked.CompareExchange(ref contingentProps.m_completionEvent, newMre, null) != null)
                     {
-                        // We lost the race, so we will just close the event right away.
+                        // Someone else already set the value, so we will just close the event right away.
                         newMre.Dispose();
                     }
                     else if (!wasCompleted && IsCompleted)
@@ -1882,7 +1880,7 @@ namespace System.Threading.Tasks
                 TaskExceptionHolder holder = new TaskExceptionHolder(this);
                 if (Interlocked.CompareExchange(ref props.m_exceptionsHolder, holder, null) != null)
                 {
-                    // If we lost the race, suppress finalization.
+                    // If someone else already set the value, suppress finalization.
                     holder.MarkAsHandled(false);
                 }
             }
@@ -2415,7 +2413,7 @@ namespace System.Threading.Tasks
                 // Run the task.  We need a simple shim that converts the
                 // object back into a Task object, so that we can Execute it.
 
-                // Lazily initialize the callback delegate; benign race
+                // Lazily initialize the callback delegate; benign race condition
                 var callback = s_ecCallback;
                 if (callback == null) s_ecCallback = callback = new ContextCallback(ExecutionContextCallback);
                 ExecutionContext.Run(ec, callback, this);
@@ -2744,7 +2742,7 @@ namespace System.Threading.Tasks
                 // If cancellation was requested and the task was canceled, throw an 
                 // OperationCanceledException.  This is prioritized ahead of the ThrowIfExceptional
                 // call to bring more determinism to cases where the same token is used to 
-                // cancel the Wait and to cancel the Task.  Otherwise, there's a race between
+                // cancel the Wait and to cancel the Task.  Otherwise, there's a race condition between
                 // whether the Wait or the Task observes the cancellation request first,
                 // and different exceptions result from the different cases.
                 if (IsCanceled) cancellationToken.ThrowIfCancellationRequested();
@@ -3014,8 +3012,8 @@ namespace System.Threading.Tasks
 
                 // Determine whether we need to clean up
                 // This will be the case 
-                //     1) if we were able to pop, and we win the race to update task state to TASK_STATE_CANCELED
-                //     2) if the task seems to be yet unstarted, and we win the race to transition to
+                //     1) if we were able to pop, and we are able to update task state to TASK_STATE_CANCELED
+                //     2) if the task seems to be yet unstarted, and we can transition to
                 //        TASK_STATE_CANCELED before anyone else can transition into _STARTED or _CANCELED or 
                 //        _RAN_TO_COMPLETION or _FAULTED
                 // Note that we do not check for TASK_STATE_COMPLETION_RESERVED.  That only applies to promise-style
@@ -3115,7 +3113,11 @@ namespace System.Threading.Tasks
 
             // Fire completion event if it has been lazily initialized
             var cp = m_contingentProperties;
-            if (cp != null) cp.SetCompleted();
+            if (cp != null)
+            {
+                cp.SetCompleted();
+                cp.DeregisterCancellationCallback();
+            }
 
             if (DebuggerSupport.LoggingOn)
                 DebuggerSupport.TraceOperationCompletion(CausalityTraceLevel.Required, this, AsyncStatus.Canceled);
@@ -3176,7 +3178,14 @@ namespace System.Threading.Tasks
                 ITaskCompletionAction singleTaskCompletionAction = continuationObject as ITaskCompletionAction;
                 if (singleTaskCompletionAction != null)
                 {
-                    singleTaskCompletionAction.Invoke(this);
+                    if (bCanInlineContinuations)
+                    {
+                        singleTaskCompletionAction.Invoke(this);
+                    }
+                    else
+                    {
+                        ThreadPool.UnsafeQueueCustomWorkItem(new CompletionActionInvoker(singleTaskCompletionAction, this), forceGlobal: false);
+                    }
                     LogFinishCompletionNotification();
                     return;
                 }
@@ -3251,7 +3260,15 @@ namespace System.Threading.Tasks
                         {
                             Contract.Assert(currentContinuation is ITaskCompletionAction, "Expected continuation element to be Action, TaskContinuation, or ITaskContinuationAction");
                             var action = (ITaskCompletionAction)currentContinuation;
-                            action.Invoke(this);
+
+                            if (bCanInlineContinuations)
+                            {
+                                action.Invoke(this);
+                            }
+                            else
+                            {
+                                ThreadPool.UnsafeQueueCustomWorkItem(new CompletionActionInvoker(action, this), forceGlobal: false);
+                            }
                         }
                     }
                 }
@@ -4165,7 +4182,7 @@ namespace System.Threading.Tasks
                     // continuation can be dequeued upon the signalling of the token.
                     //
                     // It's possible that the antecedent completes before the call to AddTaskContinuation,
-                    // and that is a benign race.  It just means that the cancellation will result in
+                    // and that is a benign race condition.  It just means that the cancellation will result in
                     // a futile search of the antecedent's continuation list.
                     continuationTask.AssignCancellationToken(cancellationToken, this, continuation);
                 }
@@ -4217,6 +4234,7 @@ namespace System.Threading.Tasks
 
                 // Now CAS in the new list
                 Interlocked.CompareExchange(ref m_continuationObject, newList, oldValue);
+
                 // We might be racing against another thread converting the single into
                 // a list, or we might be racing against task completion, so resample "list"
                 // below.
@@ -4235,18 +4253,18 @@ namespace System.Threading.Tasks
             {
                 lock (list)
                 {
-                    // Before growing the list we remove possible null entries that are the
-                    // result from RemoveContinuations()
-                    if (list.Count == list.Capacity)
-                    {
-                        list.RemoveAll(s_IsTaskContinuationNullPredicate);
-                    }
-
                     // It is possible for the task to complete right after we snap the copy of
                     // the list.  If so, then fall through and return false without queuing the
                     // continuation.
                     if (m_continuationObject != s_taskCompletionSentinel)
                     {
+                        // Before growing the list we remove possible null entries that are the
+                        // result from RemoveContinuations()
+                        if (list.Count == list.Capacity)
+                        {
+                            list.RemoveAll(s_IsTaskContinuationNullPredicate);
+                        }
+
                         list.Add(tc);
                         return true; // continuation successfully queued, so return true.
                     }
@@ -5178,8 +5196,6 @@ namespace System.Threading.Tasks
             if (function == null) throw new ArgumentNullException("function");
             Contract.EndContractBlock();
 
-            cancellationToken.ThrowIfSourceDisposed();
-
             // Short-circuit if we are given a pre-canceled token
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCancellation<TResult>(cancellationToken);
@@ -5351,7 +5367,7 @@ namespace System.Threading.Tasks
                 }
 
 
-                // If we won the race, also clean up.
+                // If we set the value, also clean up.
                 if (setSucceeded)
                 {
                     if (Timer != null) Timer.Dispose();
@@ -6061,6 +6077,24 @@ namespace System.Threading.Tasks
             return DebuggerSupport.GetActiveTaskFromId(taskId);
         }
     }  // class Task
+
+    internal sealed class CompletionActionInvoker : IThreadPoolWorkItem
+    {
+        private readonly ITaskCompletionAction m_action;
+        private readonly Task m_completingTask;
+
+        internal CompletionActionInvoker(ITaskCompletionAction action, Task completingTask)
+        {
+            m_action = action;
+            m_completingTask = completingTask;
+        }
+
+        [SecurityCritical]
+        void IThreadPoolWorkItem.ExecuteWorkItem()
+        {
+            m_action.Invoke(m_completingTask);
+        }
+    }
 
     // Proxy class for better debugging experience
     internal class SystemThreadingTasks_TaskDebugView
