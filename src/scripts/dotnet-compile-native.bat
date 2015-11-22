@@ -24,6 +24,7 @@ set __LogFilePath=%__Temp%
 set __CodegenPath=
 set __ObjgenPath=
 set __LinkLibs=
+set __AdditionalRefs=
 
 :Arg_Loop
 if "%1" == "" goto :ArgsDone
@@ -40,6 +41,7 @@ if /i "%1" == "/logpath" (set __LogFilePath=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/codegenpath" (set __CodegenPath=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/objgenpath" (set __ObjgenPath=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/linklibs" (set __LinkLibs=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/reference" (set __AdditionalRefs=%__AdditionalRefs% -r %2&shift&shift&goto Arg_Loop)
 
 echo Invalid command line argument: %1
 goto :InvalidArgs
@@ -112,7 +114,7 @@ REM Setup the path to include the location of the codegenerator and binary file 
 REM so that they can be located by the OS loader.
 set path=%__CodegenPath%;%__ObjgenPath%;%path%
 echo Generating app obj file
-"%__ILCompiler%\corerun.exe" "%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out %ObjFileName% > %__LogFilePath%\ILCompiler.App.log
+"%__ILCompiler%\corerun.exe" "%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out %ObjFileName% %__AdditionalRefs% > %__LogFilePath%\ILCompiler.App.log
 endlocal
 
 set EXITCode=%ERRORLEVEL%
@@ -139,7 +141,7 @@ call :DeleteFile "%__Outfile%"
 
 REM Generate the CPP file for the MSIL assembly
 echo Generating source file
-"%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out "%CPPFileName%" -cpp > %__LogFilePath%\ILCompiler.MSILToCpp.log
+"%__ILCompiler%\ilc.exe" %__Infile% -r "%__ILCompiler%\System.Private.CoreLib.dll" -r %__AppDepSdk%\*.dll -out "%CPPFileName%" -cpp %__AdditionalRefs% > %__LogFilePath%\ILCompiler.MSILToCpp.log
 if ERRORLEVEL 1 (
 	echo Unable to generate CPP file.
 	goto :FailedExit
