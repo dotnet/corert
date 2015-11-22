@@ -289,6 +289,8 @@ namespace ILCompiler
 
         private void AddCompilationRoots()
         {
+            bool fIsCppCodeGen = _options.IsCppCodeGen;
+
             if (_mainMethod != null)
             {
                 AddCompilationRoot(_mainMethod, "Main method", "__managed__Main");
