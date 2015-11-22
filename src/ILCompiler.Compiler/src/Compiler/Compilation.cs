@@ -291,9 +291,7 @@ namespace ILCompiler
         {
             if (_mainMethod != null)
             {
-                AddCompilationRoot(_mainMethod, "Main method");
-
-                _nodeFactory.NodeAliases.Add(_nodeFactory.MethodEntrypoint(_mainMethod), "__managed__Main");
+                AddCompilationRoot(_mainMethod, "Main method", "__managed__Main");
             }
 
             foreach (var inputFile in _typeSystemContext.InputFilePaths)
@@ -305,21 +303,24 @@ namespace ILCompiler
                     {
                         if (method.HasCustomAttribute("System.Runtime", "RuntimeExportAttribute"))
                         {
-                            AddCompilationRoot(method, "Runtime export");
-
                             string exportName = ((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeExportAttribute");
-                            _nodeFactory.NodeAliases.Add(_nodeFactory.MethodEntrypoint(method), exportName);
+                            AddCompilationRoot(method, "Runtime export", exportName);
                         }
                     }
                 }
             }
         }
 
-        private void AddCompilationRoot(MethodDesc method, string reason)
+        private void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
         {
             if (_dependencyGraph != null)
             {
-                _dependencyGraph.AddRoot(_nodeFactory.MethodEntrypoint(method), reason);
+                var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
+
+                _dependencyGraph.AddRoot(methodEntryPoint, reason);
+
+                if (exportName != null)
+                    _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
             }
             else
             {
