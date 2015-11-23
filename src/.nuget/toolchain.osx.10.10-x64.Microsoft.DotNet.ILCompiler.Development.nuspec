@@ -14,7 +14,6 @@
     <releaseNotes>Initial release</releaseNotes>
     <copyright>Copyright &#169; Microsoft Corporation</copyright>
     <dependencies>
-        <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
     </dependencies>
   </metadata>
   <files>
