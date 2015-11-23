@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NetCore.Platforms": "1.0.1-beta-23213",
+    "Microsoft.NETCore.Platforms": "1.0.1-beta-23213",
     "System.Runtime": "4.0.20",
     "System.Runtime.Extensions": "4.0.10",
     "System.Diagnostics.Tracing": "4.0.20",

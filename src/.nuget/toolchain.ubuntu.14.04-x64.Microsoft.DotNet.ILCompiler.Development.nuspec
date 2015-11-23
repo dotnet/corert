@@ -32,6 +32,8 @@
       <file src="../ToolRuntime/*.dll" />
       <file src="../ToolRuntime/*.so" />
       <file src="../ToolRuntime/corerun" target="corerun" />
+      <file src="../../../../packages/toolchain.ubuntu.14.04-x64.Microsoft.DotNet.RyuJit/1.0.0-prerelease/runtimes/ubuntu.14.04-x64/native/libryujit.so" target="ryujit.so" />
+      <file src="../../../../packages/toolchain.ubuntu.14.04-x64.Microsoft.DotNet.ObjectWriter/1.0.2-prerelease/runtimes/ubuntu.14.04-x64/native/libobjwriter.so" target="objwriter.so" />
       <file src="../../../../packages/Microsoft.DiaSymReader/1.0.6/lib/portable-net45+win8/Microsoft.DiaSymReader.dll" />
   </files>
 </package>
