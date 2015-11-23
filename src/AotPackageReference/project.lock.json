@@ -1,9 +1,9 @@
 {
   "locked": false,
-  "version": 1,
+  "version": 2,
   "targets": {
     ".NETCore,Version=v5.0": {
-      "Microsoft.NetCore.Platforms/1.0.1-beta-23213": {
+      "Microsoft.NETCore.Platforms/1.0.1-beta-23213": {
         "type": "package"
       },
       "System.Collections/4.0.10": {
@@ -24,9 +24,6 @@
       },
       "System.Diagnostics.Contracts/4.0.0": {
         "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
         "compile": {
           "ref/netcore50/System.Diagnostics.Contracts.dll": {}
         },
@@ -76,7 +73,7 @@
           "ref/netcore50/System.Globalization.dll": {}
         },
         "runtime": {
-          "lib/win8/_._": {}
+          "lib/wpa81/_._": {}
         }
       },
       "System.IO/4.0.10": {
@@ -302,7 +299,7 @@
       }
     },
     ".NETCore,Version=v5.0/win8-aot": {
-      "Microsoft.NetCore.Platforms/1.0.1-beta-23213": {
+      "Microsoft.NETCore.Platforms/1.0.1-beta-23213": {
         "type": "package"
       },
       "System.Collections/4.0.10": {
@@ -323,9 +320,6 @@
       },
       "System.Diagnostics.Contracts/4.0.0": {
         "type": "package",
-        "dependencies": {
-          "System.Runtime": "4.0.0"
-        },
         "compile": {
           "ref/netcore50/System.Diagnostics.Contracts.dll": {}
         },
@@ -375,7 +369,7 @@
           "ref/netcore50/System.Globalization.dll": {}
         },
         "runtime": {
-          "lib/win8/_._": {}
+          "lib/wpa81/_._": {}
         }
       },
       "System.IO/4.0.10": {
@@ -602,13 +596,13 @@
     }
   },
   "libraries": {
-    "Microsoft.NetCore.Platforms/1.0.1-beta-23213": {
+    "Microsoft.NETCore.Platforms/1.0.1-beta-23213": {
       "type": "package",
       "sha512": "C7vDZPS/4Gn5+4Pei3oOL62r4FH/rOlozCNpfe/T58ClkHuSau/XoiWqq/BBmS6LOlF0qMcNHnCogjhvrN5O5Q==",
       "files": [
-        "Microsoft.NetCore.Platforms.1.0.1-beta-23213.nupkg",
-        "Microsoft.NetCore.Platforms.1.0.1-beta-23213.nupkg.sha512",
-        "Microsoft.NetCore.Platforms.nuspec",
+        "Microsoft.NETCore.Platforms.1.0.1-beta-23213.nupkg",
+        "Microsoft.NETCore.Platforms.1.0.1-beta-23213.nupkg.sha512",
+        "Microsoft.NETCore.Platforms.nuspec",
         "runtime.json"
       ]
     },
@@ -1319,7 +1313,7 @@
   },
   "projectFileDependencyGroups": {
     "": [
-      "Microsoft.NetCore.Platforms >= 1.0.1-beta-23213",
+      "Microsoft.NETCore.Platforms >= 1.0.1-beta-23213",
       "System.Runtime >= 4.0.20",
       "System.Runtime.Extensions >= 4.0.10",
       "System.Diagnostics.Tracing >= 4.0.20",

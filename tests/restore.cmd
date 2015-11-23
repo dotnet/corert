@@ -54,16 +54,6 @@ echo.
 echo Installing CoreRT external dependencies
 %__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_AppDepSdkVer% %CoreRT_AppDepSdkPkg% -prerelease %__NuGetOptions%
 
-REM ** Install RyuJit
-echo.
-echo Installing RyuJit from NuGet
-%__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_RyuJitVer% %CoreRT_RyuJitPkg% -prerelease %__NuGetOptions%
-
-REM ** Install ObjectWriter
-echo.
-echo Installing ObjectWriter from NuGet
-%__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_ObjWriterVer% %CoreRT_ObjWriterPkg% -prerelease %__NuGetOptions%
-
 REM ** Install the built toolchain from product dir
 echo.
 echo Installing ILCompiler from %__BuiltNuPkgPath% into %__NuPkgInstallDir%
@@ -78,11 +68,13 @@ echo ^<packages^>^<package id="%CoreRT_ToolchainPkg%" version="%CoreRT_Toolchain
 %__NuGetExeDir%\NuGet.exe install "%__NuPkgUnpackDir%\packages.config" -Source "%__NuPkgUnpackDir%" -OutputDir "%__NuPkgInstallDir%" -prerelease %__NuGetOptions%
 rmdir /s /q %__NuPkgUnpackDir%
 
+set __ToolchainDir=%__NuPkgInstallDir%\%CoreRT_ToolchainPkg%.%CoreRT_ToolchainVer%
+
 endlocal & (
+  set CoreRT_ToolchainDir=%__ToolchainDir%
+  set    CoreRT_RyuJitDir=%__ToolchainDir%
+  set CoreRT_ObjWriterDir=%__ToolchainDir%
   set CoreRT_AppDepSdkDir=%__NuPkgInstallDir%\%CoreRT_AppDepSdkPkg%.%CoreRT_AppDepSdkVer%
-  set CoreRT_RyuJitDir=%__NuPkgInstallDir%\%CoreRT_RyuJitPkg%.%CoreRT_RyuJitVer%\runtimes\win7-%CoreRT_BuildArch%\native
-  set CoreRT_ObjWriterDir=%__NuPkgInstallDir%\%CoreRT_ObjWriterPkg%.%CoreRT_ObjWriterVer%\runtimes\win7-%CoreRT_BuildArch%\native
-  set CoreRT_ToolchainDir=%__NuPkgInstallDir%\%CoreRT_ToolchainPkg%.%CoreRT_ToolchainVer%
 )
 
 exit /b 100

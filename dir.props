@@ -11,7 +11,7 @@
   <!-- Build Tools Versions -->
   <PropertyGroup>
     <BuildToolsVersion>1.0.25-prerelease-00104</BuildToolsVersion>
-    <DnxVersion>1.0.0-beta7</DnxVersion>
+    <DnxVersion>1.0.0-beta8</DnxVersion>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'!='Unix'">dnx-coreclr-win-x86.$(DnxVersion)</DnxPackageName>
     <DnxPackageName Condition="'$(DnxPackageName)' == '' and '$(OsEnvironment)'=='Unix'">dnx-mono.$(DnxVersion)</DnxPackageName>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
@@ -158,6 +158,7 @@
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-coreclr/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" />
     <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools/" />
+    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet/" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
   </ItemGroup>
 
