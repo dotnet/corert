@@ -36,9 +36,12 @@ if "%CoreRT_TestCompileMode%"=="" ((call :Fail "Test compile mode not set in Cor
 
 set "__CompileLogPath=%__SourceFolder%"
 
+set __ExtraArguments=
+if exist "%__SourceFolder%\*.dll" set __ExtraArguments=/reference "%__SourceFolder%\*.dll"
+
 REM ** Invoke ILCompiler to compile. Set CORE_ROOT to empty so, ILCompiler's corerun doesn't load dependencies from there.
 set CORE_ROOT=
-call %CoreRT_ToolchainDir%\dotnet-compile-native.bat %CoreRT_BuildArch% %CoreRT_BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_RyuJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in %__SourceFile% /out %__SourceFile%.compiled.exe
+call %CoreRT_ToolchainDir%\dotnet-compile-native.bat %CoreRT_BuildArch% %CoreRT_BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_RyuJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in %__SourceFile% /out %__SourceFile%.compiled.exe %__ExtraArguments%
 
 REM ** Fail if we did not generate obj file
 if exist "%__SourceFile%.compiled.exe" (
