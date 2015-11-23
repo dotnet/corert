@@ -19,6 +19,7 @@
 
 #include <sal.h>
 #include <stdarg.h>
+#include "gcenv.structs.h"
 
 #ifndef PAL_REDHAWK_INCLUDED
 #define PAL_REDHAWK_INCLUDED
@@ -50,16 +51,6 @@ typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
 #define WINAPI              __stdcall
 #define WINBASEAPI          __declspec(dllimport)
 
-union LARGE_INTEGER
-{
-    struct
-    {
-        UInt32  LowPart;
-        Int32   HighPart;
-    } u;
-    Int64       QuadPart;
-};
-
 typedef struct _GUID {
     unsigned long  Data1;
     unsigned short Data2;
@@ -67,15 +58,6 @@ typedef struct _GUID {
     unsigned char  Data4[8];
 } GUID;
 
-struct CRITICAL_SECTION
-{
-    void *      DebugInfo;
-    Int32       LockCount;
-    Int32       RecursionCount;
-    HANDLE      OwningThread;
-    HANDLE      LockSemaphore;
-    UIntNative  SpinCount;
-};
 #endif //!GCENV_INCLUDED
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
@@ -583,12 +565,6 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
 #endif // EVENT_PROVIDER_INCLUDED
 
 #ifndef GCENV_INCLUDED
-struct GCSystemInfo
-{
-    uint32_t dwNumberOfProcessors;
-    uint32_t dwPageSize;
-    uint32_t dwAllocationGranularity;
-};
 extern GCSystemInfo g_SystemInfo;
 
 #define REDHAWK_PALIMPORT EXTERN_C
