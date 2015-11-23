@@ -72,7 +72,6 @@ else()
   include_directories(unix)
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    ../gc/env/gcenv.unix.cpp    
     unix/PalRedhawkUnix.cpp
   )
 

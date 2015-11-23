@@ -10,6 +10,7 @@
 #endif
 
 #include "sal.h"
+#include "gcenv.structs.h"
 #include "gcenv.base.h"
 
 #include "Crst.h"

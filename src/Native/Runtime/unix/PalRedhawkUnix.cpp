@@ -12,9 +12,9 @@
 #include <errno.h>
 #include <cwchar>
 #include "CommonTypes.h"
-#include "daccess.h"
 #include <PalRedhawkCommon.h>
 #include "CommonMacros.h"
+#include <sal.h>
 #include "assert.h"
 #include "config.h"
 #include "UnixHandle.h"
@@ -66,6 +66,10 @@
 static mach_timebase_info_data_t s_TimebaseInfo;
 #endif
 
+using std::nullptr_t;
+
+#include "gcenv.structs.h"
+
 #ifdef USE_PORTABLE_HELPERS
 #define assert(expr) ASSERT(expr)
 #endif
@@ -83,67 +87,7 @@ static mach_timebase_info_data_t s_TimebaseInfo;
 #endif
 #endif // __APPLE__
 
-// TODO: what to do with these?
-///////////////////////////////
-struct MEMORYSTATUSEX
-{
-  uint32_t dwLength;
-  uint32_t dwMemoryLoad;
-  uint64_t ullTotalPhys;
-  uint64_t ullAvailPhys;
-  uint64_t ullTotalPageFile;
-  uint64_t ullAvailPageFile;
-  uint64_t ullTotalVirtual;
-  uint64_t ullAvailVirtual;
-  uint64_t ullAvailExtendedVirtual;
-};
-
 typedef void * LPSECURITY_ATTRIBUTES;
-
-enum LOGICAL_PROCESSOR_RELATIONSHIP
-{
-    RelationProcessorCore,
-    RelationNumaNode,
-    RelationCache,
-    RelationProcessorPackage
-};
-
-enum PROCESSOR_CACHE_TYPE
-{
-    CacheUnified,
-    CacheInstruction,
-    CacheData,
-    CacheTrace
-};
-
-struct CACHE_DESCRIPTOR
-{
-    UInt8   Level;
-    UInt8   Associativity;
-    UInt16  LineSize;
-    UInt32  Size;
-    PROCESSOR_CACHE_TYPE Type;
-};
-
-struct SYSTEM_LOGICAL_PROCESSOR_INFORMATION
-{
-    UIntNative   ProcessorMask;
-    LOGICAL_PROCESSOR_RELATIONSHIP Relationship;
-    union
-    {
-        struct
-        {
-            UInt8  Flags;
-        } ProcessorCore;
-        struct
-        {
-            UInt32 NodeNumber;
-        } NumaNode;
-        CACHE_DESCRIPTOR Cache;
-        UInt64  Reserved[2];
-    };
-};
-
 typedef void* PCONTEXT;
 typedef void* PEXCEPTION_RECORD;
 typedef void* PEXCEPTION_POINTERS;
@@ -180,8 +124,6 @@ typedef Int32 (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
 #define WAIT_OBJECT_0           0
 #define WAIT_TIMEOUT            258
 #define WAIT_FAILED             0xFFFFFFFF
-
-///////////////////////////
 
 static const int tccSecondsToMilliSeconds = 1000;
 static const int tccSecondsToMicroSeconds = 1000000;
@@ -376,20 +318,22 @@ typedef UnixHandle<UnixHandleType::Mutex, UnixMutex> MutexUnixHandle;
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 __attribute__((constructor))
-void PalInit()
+bool PalInit()
 {
     g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
 
     if (!PalQueryProcessorTopology())
-        ASSERT_UNCONDITIONALLY("PalQueryProcessorTopology failed\n");
+        return false;
 
 #if HAVE_MACH_ABSOLUTE_TIME
     kern_return_t machRet;
     if ((machRet = mach_timebase_info(&s_TimebaseInfo)) != KERN_SUCCESS)
     {
-        ASSERT_UNCONDITIONALLY("mach_timebase_info() failed\n");
+        return false;
     }
 #endif
+
+    return true;
 }
 
 // Given a mask of capabilities return true if all of them are supported by the current PAL.
@@ -470,10 +414,8 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDL
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Inout_ MEMORYSTATUSEX* pBuffer)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Inout_ GCMemoryStatus* pBuffer)
 {
-    assert(pBuffer->dwLength == sizeof(MEMORYSTATUSEX));
-
     pBuffer->dwMemoryLoad = 0;
     pBuffer->ullTotalPhys = 0;
     pBuffer->ullAvailPhys = 0;
@@ -481,7 +423,6 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Inout_ MEM
     pBuffer->ullAvailPageFile = 0;
     pBuffer->ullTotalVirtual = 0;
     pBuffer->ullAvailVirtual = 0;
-    pBuffer->ullAvailExtendedVirtual = 0;
 
     UInt32_BOOL fRetVal = UInt32_FALSE;
 
@@ -586,7 +527,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
     return sched_yield() == 0;
 }
 
-UInt32_BOOL CloseHandle(HANDLE handle)
+extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
 {
     UnixHandleBase* handleBase = (UnixHandleBase*)handle;
 
@@ -616,7 +557,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
 
 typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
     pthread_attr_t attrs;
 
@@ -651,12 +592,12 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartBackgroundWork(_In_ Backgro
     return st == 0;
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
 }
@@ -740,7 +681,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle
 }
 #endif
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ wchar_t pFileName, uint32_t desiredAccess, uint32_t shareMode, _In_opt_ LPSECURITY_ATTRIBUTES pSecurityAttributes, uint32_t creationDisposition, uint32_t flagsAndAttributes, HANDLE hTemplateFile)
+REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ const WCHAR* pFileName, uint32_t desiredAccess, uint32_t shareMode, _In_opt_ LPSECURITY_ATTRIBUTES pSecurityAttributes, uint32_t creationDisposition, uint32_t flagsAndAttributes, HANDLE hTemplateFile)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
@@ -961,7 +902,32 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
     
     if (allocationType & MEM_RESERVE)
     {
-        void * pRetVal = mmap(pAddress, size, unixProtect, MAP_ANON | MAP_PRIVATE, -1, 0);
+        // For Windows compatibility, let the PalVirtualAlloc reserve memory with 64k alignment.
+        static const size_t Alignment = 64 * 1024;
+
+        size_t alignedSize = size + (Alignment - OS_PAGE_SIZE);
+
+        void * pRetVal = mmap(pAddress, alignedSize, unixProtect, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+        if (pRetVal != NULL)
+        {
+            void * pAlignedRetVal = (void *)(((size_t)pRetVal + (Alignment - 1)) & ~(Alignment - 1));
+            size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
+            if (startPadding != 0)
+            {
+                int ret = munmap(pRetVal, startPadding);
+                ASSERT(ret == 0);
+            }
+
+            size_t endPadding = alignedSize - (startPadding + size);
+            if (endPadding != 0)
+            {
+                int ret = munmap((void *)((size_t)pAlignedRetVal + size), endPadding);
+                ASSERT(ret == 0);
+            }
+
+            pRetVal = pAlignedRetVal;
+        }
          
         return pRetVal;
     }
@@ -1019,15 +985,16 @@ extern "C" UInt32_BOOL DuplicateHandle(
     return lpTargetHandle != nullptr;
 }
 
-// TODO: what to do with this? The CRITICAL_SECTION at the other side is different!
-typedef struct _RTL_CRITICAL_SECTION {
-    pthread_mutex_t mutex;
-} CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
-
-extern "C" UInt32_BOOL InitializeCriticalSectionEx(CRITICAL_SECTION * lpCriticalSection, UInt32 arg2, UInt32 arg3)
+extern "C" UInt32_BOOL InitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 {
     return pthread_mutex_init(&lpCriticalSection->mutex, NULL) == 0;
 }
+
+extern "C" UInt32_BOOL InitializeCriticalSectionEx(CRITICAL_SECTION * lpCriticalSection, UInt32 arg2, UInt32 arg3)
+{
+    return InitializeCriticalSection(lpCriticalSection);
+}
+
 
 extern "C" void DeleteCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 {
@@ -1230,7 +1197,7 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ WCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const WCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
 {
     // UNIXTODO: Implement this function
     return 0;
@@ -1304,4 +1271,198 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HAN
 void PalDebugBreak()
 {
     __debugbreak();
+}
+
+GCSystemInfo g_SystemInfo;
+
+void InitializeSystemInfo()
+{
+    // TODO: Implement
+    g_SystemInfo.dwNumberOfProcessors = 4;
+
+    g_SystemInfo.dwPageSize = OS_PAGE_SIZE;
+    g_SystemInfo.dwAllocationGranularity = OS_PAGE_SIZE;
+}
+
+extern "C" void FlushProcessWriteBuffers()
+{
+    // UNIXTODO: Implement
+}
+
+extern "C" uint32_t GetTickCount()
+{
+    return PalGetTickCount();
+}
+
+int32_t FastInterlockIncrement(int32_t volatile *lpAddend)
+{
+    return __sync_add_and_fetch(lpAddend, 1);
+}
+
+int32_t FastInterlockDecrement(int32_t volatile *lpAddend)
+{
+    return __sync_sub_and_fetch(lpAddend, 1);
+}
+
+int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value)
+{
+    return __sync_swap(Target, Value);
+}
+
+int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand)
+{
+    return __sync_val_compare_and_swap(Destination, Comperand, Exchange);
+}
+
+int32_t FastInterlockExchangeAdd(int32_t volatile *Addend, int32_t Value)
+{
+    return __sync_fetch_and_add(Addend, Value);
+}
+
+void * _FastInterlockExchangePointer(void * volatile *Target, void * Value)
+{
+    return __sync_swap(Target, Value);
+}
+
+void * _FastInterlockCompareExchangePointer(void * volatile *Destination, void * Exchange, void * Comperand)
+{
+    return __sync_val_compare_and_swap(Destination, Comperand, Exchange);
+}
+
+void FastInterlockOr(uint32_t volatile *p, uint32_t msk)
+{
+    __sync_fetch_and_or(p, msk);
+}
+
+void FastInterlockAnd(uint32_t volatile *p, uint32_t msk)
+{
+    __sync_fetch_and_and(p, msk);
+}
+
+extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
+{
+    // TODO: More efficient, platform-specific implementation
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) == -1)
+    {
+        ASSERT_UNCONDITIONALLY("gettimeofday() failed");
+        return UInt32_FALSE;
+    }
+    lpPerformanceCount->QuadPart =
+        (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
+    return UInt32_TRUE;
+}
+
+extern "C" UInt32_BOOL QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
+{
+    lpFrequency->QuadPart = (int64_t) tccSecondsToMicroSeconds;
+    return UInt32_TRUE;
+}
+
+extern "C" uint32_t GetCurrentThreadId()
+{
+    // UNIXTODO: Implement
+    return 1;
+}
+
+extern "C" uint32_t SetFilePointer(
+    HANDLE hFile,
+    int32_t lDistanceToMove,
+    int32_t * lpDistanceToMoveHigh,
+    uint32_t dwMoveMethod)
+{
+    // TODO: Reimplement callers using CRT
+    return 0;
+}
+
+extern "C" UInt32_BOOL FlushFileBuffers(
+    HANDLE hFile)
+{
+    // TODO: Reimplement callers using CRT
+    return UInt32_FALSE;
+}
+
+extern "C" UInt32_BOOL WriteFile(
+    HANDLE hFile,
+    const void* lpBuffer,
+    uint32_t nNumberOfBytesToWrite,
+    uint32_t * lpNumberOfBytesWritten,
+    void* lpOverlapped)
+{
+    // TODO: Reimplement callers using CRT
+    return UInt32_FALSE;
+}
+
+extern "C" void YieldProcessor()
+{
+}
+
+extern "C" void DebugBreak()
+{
+    PalDebugBreak();
+}
+
+extern "C" uint32_t GetLastError()
+{
+    return 1;
+}
+
+extern "C" uint32_t GetWriteWatch(
+    uint32_t dwFlags,
+    void* lpBaseAddress,
+    size_t dwRegionSize,
+    void** lpAddresses,
+    uintptr_t * lpdwCount,
+    uint32_t * lpdwGranularity
+    )
+{
+    // TODO: Implement for background GC
+    *lpAddresses = NULL;
+    *lpdwCount = 0;
+    // Until it is implemented, return non-zero value as an indicator of failure
+    return 1;
+}
+
+extern "C" uint32_t ResetWriteWatch(
+    void* lpBaseAddress,
+    size_t dwRegionSize
+    )
+{
+    // TODO: Implement for background GC
+    // Until it is implemented, return non-zero value as an indicator of failure
+    return 1;
+}
+
+extern "C" UInt32_BOOL VirtualUnlock(
+    void* lpAddress,
+    size_t dwSize
+    )
+{
+    // TODO: Implement
+    return UInt32_FALSE;
+}
+
+void UnsafeInitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
+{
+    InitializeCriticalSection(lpCriticalSection);
+}
+
+void UnsafeEEEnterCriticalSection(CRITICAL_SECTION *lpCriticalSection)
+{
+    EnterCriticalSection(lpCriticalSection);
+}
+
+void UnsafeEELeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
+{
+    LeaveCriticalSection(lpCriticalSection);
+}
+
+void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
+{
+    DeleteCriticalSection(lpCriticalSection);
+}
+
+extern "C" UInt32 WaitForMultipleObjectsEx(UInt32, HANDLE *, UInt32_BOOL, UInt32, UInt32_BOOL)
+{
+    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }

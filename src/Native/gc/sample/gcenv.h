@@ -17,6 +17,7 @@
 #endif
 
 #include "sal.h"
+#include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.object.h"
 #include "gcenv.sync.h"
