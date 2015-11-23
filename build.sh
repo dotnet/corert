@@ -6,7 +6,7 @@ usage()
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
-    echo "BuildArch can be: x64, arm"
+    echo "BuildArch can be: x64, x86, arm, arm64"
     echo "BuildType can be: Debug, Release"
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
@@ -180,13 +180,39 @@ __msbuildpackageversion="14.1.0.0-prerelease"
 __msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MSBuild.exe
 __ToolNugetRuntimeId=ubuntu.14.04-x64
 __TestNugetRuntimeId=ubuntu.14.04-x64
-__BuildArch=x64
 __buildmanaged=true
 __buildnative=true
 
 # Workaround to enable nuget package restoration work successully on Mono
 export TZ=UTC 
 export MONO_THREADS_PER_CPU=2000
+
+# Use uname to determine what the CPU is.
+CPUName=$(uname -p)
+case $CPUName in
+    i686)
+        __BuildArch=x86
+        ;;
+
+    x86_64)
+        __BuildArch=x64
+        ;;
+
+    armv7l)
+        echo "Unsupported CPU $CPUName detected, build might not succeed!"
+        __BuildArch=arm
+        ;;
+
+    aarch64)
+        echo "Unsupported CPU $CPUName detected, build might not succeed!"
+        __BuildArch=arm64
+        ;;
+
+    *)
+        echo "Unknown CPU $CPUName detected, configuring as if for x64"
+        __BuildArch=x64
+        ;;
+esac
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
