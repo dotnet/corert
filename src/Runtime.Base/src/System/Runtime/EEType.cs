@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Internal.Runtime;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -45,52 +46,6 @@ namespace System.Runtime
 
 #pragma warning restore
 
-        private enum Flags : ushort
-        {
-            // There are three kinds of EETypes, the fourth state is currently unused and disallowed.
-            EETypeKindMask = 0x0003,
-
-            // This flag is set when m_RelatedType is in a different module.  In that case, _pRelatedType
-            // actually points to an IAT slot in this module, which then points to the desired EEType in the
-            // other module.  In other words, there is an extra indirection through m_RelatedType to get to 
-            // the related type in the other module.  When this flag is set, it is expected that you use the 
-            // "_ppXxxxViaIAT" member of the RelatedTypeUnion for the particular related type you're 
-            // accessing.
-            RelatedTypeViaIATFlag = 0x0004,
-
-            // This EEType represents a value type
-            ValueTypeFlag = 0x0008,
-
-            // This EEType represents a type which requires finalization
-            HasFinalizerFlag = 0x0010,
-
-            // This type contain gc pointers
-            HasPointersFlag = 0x0020,
-
-            // This type instance was allocated at runtime (rather than being embedded in a module image)
-            RuntimeAllocatedFlag = 0x0040,
-
-            // This type is generic and one or more of it's type parameters is co- or contra-variant. This
-            // only applies to interface and delegate types.
-            GenericVarianceFlag = 0x0080,
-
-            // This type has optional fields present.
-            OptionalFieldsFlag = 0x0100,
-
-            // This EEType represents an interface.
-            IsInterfaceFlag = 0x0200,
-
-            // This type is generic.
-            IsGenericFlag = 0x0400,
-
-            // We are storing a CorElementType in the upper bits for unboxing enums
-            CorElementTypeMask = 0xf800,
-            CorElementTypeShift = 11,
-
-            // Single mark to check TypeKind and two flags. When non-zero, casting is more complicated
-            ComplexCastingMask = EETypeKindMask | RelatedTypeViaIATFlag | GenericVarianceFlag
-        };
-
         // These are flag values that are rarely set for types. If any of them are set then an optional field will
         // be associated with the EEType to represent them.
         private enum RareFlags
@@ -125,20 +80,12 @@ namespace System.Runtime
             // This EEType represents a structure that is an HFA
             IsHFAFlag = 0x00000100,
         }
-
-        private enum Kinds : ushort
-        {
-            CanonicalEEType = 0x0000,
-            ClonedEEType = 0x0001,
-            ParameterizedEEType = 0x0002,   // parameter eetype, currently either pointer or single dimensional array type
-            GenericTypeDefEEType = 0x0003,  // Generic type definition EEType
-        }
-
-        private Kinds Kind
+        
+        private EETypeKind Kind
         {
             get
             {
-                return (Kinds)(_usFlags & (ushort)Flags.EETypeKindMask);
+                return (EETypeKind)(_usFlags & (ushort)EETypeFlags.EETypeKindMask);
             }
         }
 
@@ -178,7 +125,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)Flags.HasFinalizerFlag) != 0);
+                return ((_usFlags & (ushort)EETypeFlags.HasFinalizerFlag) != 0);
             }
         }
 
@@ -186,7 +133,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)Flags.IsInterfaceFlag) != 0);
+                return ((_usFlags & (ushort)EETypeFlags.IsInterfaceFlag) != 0);
             }
         }
 
@@ -194,7 +141,7 @@ namespace System.Runtime
         {
             get
             {
-                return Kind == Kinds.CanonicalEEType;
+                return Kind == EETypeKind.CanonicalEEType;
             }
         }
 
@@ -202,7 +149,7 @@ namespace System.Runtime
         {
             get
             {
-                return Kind == Kinds.ClonedEEType;
+                return Kind == EETypeKind.ClonedEEType;
             }
         }
 
@@ -210,7 +157,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (UInt16)Flags.HasPointersFlag) != 0);
+                return ((_usFlags & (UInt16)EETypeFlags.HasPointersFlag) != 0);
             }
         }
 
@@ -218,7 +165,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (UInt16)Flags.OptionalFieldsFlag) != 0);
+                return ((_usFlags & (UInt16)EETypeFlags.OptionalFieldsFlag) != 0);
             }
         }
 
@@ -236,7 +183,7 @@ namespace System.Runtime
         {
             get
             {
-                return Kind == Kinds.ParameterizedEEType;
+                return Kind == EETypeKind.ParameterizedEEType;
             }
         }
 
@@ -257,7 +204,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (UInt16)Flags.RelatedTypeViaIATFlag) != 0);
+                return ((_usFlags & (UInt16)EETypeFlags.RelatedTypeViaIATFlag) != 0);
             }
         }
 
@@ -265,7 +212,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (UInt16)Flags.ValueTypeFlag) != 0);
+                return ((_usFlags & (UInt16)EETypeFlags.ValueTypeFlag) != 0);
             }
         }
 
@@ -281,7 +228,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (UInt16)Flags.RuntimeAllocatedFlag) != 0);
+                return ((_usFlags & (UInt16)EETypeFlags.RuntimeAllocatedFlag) != 0);
             }
         }
 
@@ -289,7 +236,7 @@ namespace System.Runtime
         {
             get
             {
-                return (_usFlags & (UInt16)Flags.IsGenericFlag) != 0;
+                return (_usFlags & (UInt16)EETypeFlags.IsGenericFlag) != 0;
             }
         }
 
@@ -299,7 +246,7 @@ namespace System.Runtime
         {
             get
             {
-                return ((_usFlags & (UInt16)Flags.GenericVarianceFlag) != 0);
+                return ((_usFlags & (UInt16)EETypeFlags.GenericVarianceFlag) != 0);
             }
         }
 
@@ -461,7 +408,7 @@ namespace System.Runtime
                 Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
                 Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
                 Debug.Assert(IsCanonical, "we expect canonical types here");
-                _usFlags &= (ushort)~Flags.RelatedTypeViaIATFlag;
+                _usFlags &= (ushort)~EETypeFlags.RelatedTypeViaIATFlag;
                 _relatedType._pBaseType = value;
             }
         }
@@ -533,7 +480,7 @@ namespace System.Runtime
         {
             get
             {
-                return (TypeCast.CorElementType)((_usFlags & (ushort)Flags.CorElementTypeMask) >> (ushort)Flags.CorElementTypeShift);
+                return (TypeCast.CorElementType)((_usFlags & (ushort)EETypeFlags.CorElementTypeMask) >> (ushort)EETypeFlags.CorElementTypeShift);
             }
         }
 
@@ -596,7 +543,7 @@ namespace System.Runtime
         {
             get
             {
-                return Kind == Kinds.GenericTypeDefEEType;
+                return Kind == EETypeKind.GenericTypeDefEEType;
             }
         }
 
@@ -604,7 +551,7 @@ namespace System.Runtime
         {
             get
             {
-                if (Kind != Kinds.ParameterizedEEType)
+                if (Kind != EETypeKind.ParameterizedEEType)
                     return false;
                 return ParameterizedTypeShape == 0; // See comment above ParameterizedTypeShape for details.
             }
@@ -632,7 +579,7 @@ namespace System.Runtime
         /// </summary>
         internal bool SimpleCasting()
         {
-            return (_usFlags & (ushort)Flags.ComplexCastingMask) == (ushort)Kinds.CanonicalEEType;
+            return (_usFlags & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
         }
 
         /// <summary>
@@ -652,7 +599,7 @@ namespace System.Runtime
         /// </summary>
         static internal bool BothSimpleCasting(EEType* pThis, EEType* pOther)
         {
-            return ((pThis->_usFlags | pOther->_usFlags) & (ushort)Flags.ComplexCastingMask) == (ushort)Kinds.CanonicalEEType;
+            return ((pThis->_usFlags | pOther->_usFlags) & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
         }
     }
 

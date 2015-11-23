@@ -137,6 +137,11 @@
     <Compile Include="RhBaseName.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeFlags.cs" >
+      <Link>Common\EETypeFlags.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
 

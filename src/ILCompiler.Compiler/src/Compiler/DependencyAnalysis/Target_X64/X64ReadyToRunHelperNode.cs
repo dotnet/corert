@@ -58,9 +58,9 @@ namespace ILCompiler.DependencyAnalysis
                                 break;
                             }
                         }
-
+                        
                         Debug.Assert(methodSlot != -1);
-                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, 16 + (baseSlots + methodSlot) * factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (baseSlots + methodSlot) * factory.Target.PointerSize, 0, AddrModeSize.Int64);
                         encoder.EmitJmpToAddrMode(ref jmpAddrMode);
                     }
                     break;

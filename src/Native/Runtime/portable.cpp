@@ -74,7 +74,7 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame* pFrame)
 // runtimeexports.cs -- @TODO: use C# implementation
 COOP_PINVOKE_HELPER(Object *, RhNewObject, (EEType* pEEType))
 {
-    ASSERT_MSG(!pEEType->RequiresAlign8() && !pEEType->HasFinalizer(), "NYI");
+    ASSERT_MSG(!pEEType->RequiresAlign8(), "NYI");
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     alloc_context * acontext = pCurThread->GetAllocContext();

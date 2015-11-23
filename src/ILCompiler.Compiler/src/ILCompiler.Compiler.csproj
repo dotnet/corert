@@ -83,6 +83,9 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeFlags.cs" >
+      <Link>Common\EETypeFlags.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
