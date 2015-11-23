@@ -48,12 +48,12 @@ namespace Internal.IL.Stubs
             // TODO: true if SetLastError is true
 
             TypeDesc returnType = method.Signature.ReturnType;
-            if (!IsSimpleType(returnType) && !returnType.IsVoid)
+            if (!IsBlittableType(returnType) && !returnType.IsVoid)
                 return true;
 
             for (int i = 0; i < method.Signature.Length; i++)
             {
-                if (!IsSimpleType(method.Signature[i]))
+                if (!IsBlittableType(method.Signature[i]))
                 {
                     return true;
                 }
@@ -63,43 +63,24 @@ namespace Internal.IL.Stubs
         }
 
         /// <summary>
-        /// Returns true if <paramref name="type"/> doesn't require marshalling and can be directly passed
-        /// to native code.
+        /// Returns true if this is a type that doesn't require marshalling.
         /// </summary>
-        private static bool IsSimpleType(TypeDesc type)
+        private static bool IsBlittableType(TypeDesc type)
         {
             type = type.UnderlyingType;
 
-            switch (type.Category)
-            {
-                case TypeFlags.Byte:
-                case TypeFlags.SByte:
-                case TypeFlags.UInt16:
-                case TypeFlags.Int16:
-                case TypeFlags.UInt32:
-                case TypeFlags.Int32:
-                case TypeFlags.UInt64:
-                case TypeFlags.Int64:
-                case TypeFlags.Double:
-                case TypeFlags.Single:
-                case TypeFlags.UIntPtr:
-                case TypeFlags.IntPtr:
-                    return true;
-            }
-
-            if (type.IsPointer)
-                return true;
-
-            return false;
-        }
-
-        /// <summary>
-        /// Returns true if struct doesn't have fields that require marshalling.
-        /// </summary>
-        private static bool IsBlittableStruct(TypeDesc type)
-        {
             if (type.IsValueType)
             {
+                if (type.IsPrimitive)
+                {
+                    // All primitive types except char and bool are blittable
+                    TypeFlags category = type.Category;
+                    if (category == TypeFlags.Boolean || category == TypeFlags.Char)
+                        return false;
+
+                    return true;
+                }
+
                 foreach (FieldDesc field in type.GetFields())
                 {
                     if (field.IsStatic)
@@ -108,11 +89,14 @@ namespace Internal.IL.Stubs
                     TypeDesc fieldType = field.FieldType;
 
                     // TODO: we should also reject fields that specify custom marshalling
-                    if (!IsSimpleType(fieldType) && !IsBlittableStruct(fieldType))
+                    if (!IsBlittableType(fieldType))
                         return false;
                 }
                 return true;
             }
+
+            if (type.IsPointer)
+                return true;
 
             return false;
         }
@@ -127,7 +111,7 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(arrayType.IsSzArray);
 
-            if (!IsSimpleType(arrayType.ParameterType) && !IsBlittableStruct(arrayType.ParameterType))
+            if (!IsBlittableType(arrayType.ParameterType))
                 throw new NotSupportedException();
 
             ILLocalVariable vPinnedFirstElement = _emitter.NewLocal(arrayType.ParameterType.MakeByRefType(), true);
@@ -163,7 +147,7 @@ namespace Internal.IL.Stubs
         /// <returns>Type the ByRef was marshalled into.</returns>
         private TypeDesc EmitByRefMarshalling(ByRefType byRefType)
         {
-            if (!IsSimpleType(byRefType.ParameterType) && !IsBlittableStruct(byRefType.ParameterType))
+            if (!IsBlittableType(byRefType.ParameterType))
                 throw new NotSupportedException();
 
             ILLocalVariable vPinnedByRef = _emitter.NewLocal(byRefType, true);
@@ -315,7 +299,7 @@ namespace Internal.IL.Stubs
             // TODO: throw if SetLastError is true
             // TODO: throw if there's custom marshalling
             TypeDesc nativeReturnType = _targetMethod.Signature.ReturnType;
-            if (!IsSimpleType(nativeReturnType) && !nativeReturnType.IsVoid)
+            if (!IsBlittableType(nativeReturnType) && !nativeReturnType.IsVoid)
                 throw new NotSupportedException();
 
             TypeDesc[] nativeParameterTypes = new TypeDesc[_targetMethod.Signature.Length];
@@ -346,10 +330,10 @@ namespace Internal.IL.Stubs
                 }
                 else
                 {
-                    if (!IsSimpleType(parameterType))
+                    if (!IsBlittableType(parameterType))
                         throw new NotSupportedException();
 
-                    nativeType = parameterType;
+                    nativeType = parameterType.UnderlyingType;
                 }
 
                 nativeParameterTypes[i] = nativeType;
