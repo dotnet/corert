@@ -27,10 +27,10 @@ This will result in the following:
 
 *Note: On Windows, please ensure you have VS 2015 installed to get the native toolset and work within a VS 2015 x64 Native Tools command prompt.*
 
-* Create a folder layout, similar to the [HelloWorld sample](https://github.com/dotnet/core/tree/master/samples/helloworld), containing the source file and corresponding project.json. You can use the source file and project.json from the sample as a starting point.
-
 * Ensure that you have done a repo build per the instructions above.
 * Extract the contents of `<repo_root>/bin/product/<OS>_<Arch>_<BuildType>/.nuget/toolchain.<OS>-<Arch>-<BuildType>.Microsoft.DotNet.ILCompiler.Development*.nupkg` to a folder, say, **c:\extractedilc**
+* Create a new folder and switch into it. 
+* Issue the command, `dotnet init`, on the command/shell prompt. This will add a template source file and corresponding project.json. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
 
 
 ## Using RyuJIT ##
