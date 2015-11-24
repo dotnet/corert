@@ -362,9 +362,16 @@ namespace Internal.TypeSystem.Ecma
                     throw new MissingMemberException("Method not found " + parent.ToString() + "." + name);
                 }
             }
+            else if (parent is MethodDesc)
+            {
+                throw new NotSupportedException("Vararg methods not supported in .NET Core.");
+            }
+            else if (parent is ModuleDesc)
+            {
+                throw new NotImplementedException("MemberRef to a global function or variable.");
+            }
 
-            // TODO: Not implemented
-            throw new NotImplementedException();
+            throw new BadImageFormatException();
         }
 
         private Object ResolveTypeReference(TypeReferenceHandle handle)
