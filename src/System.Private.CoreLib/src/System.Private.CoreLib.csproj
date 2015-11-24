@@ -478,7 +478,7 @@
   </ItemGroup>
 
   <!-- Windows is default build -->
-  <ItemGroup Condition="'$(OSGroup)' != 'Linux'">
+  <ItemGroup Condition="'$(OSGroup)' == 'Windows_NT'">
       <Compile Include="System\Globalization\CultureInfo.Win32.cs" />
       <Compile Include="System\Globalization\CompareInfo.Win32.cs" />
       <Compile Include="System\Globalization\CultureData.Win32.cs" />
@@ -491,7 +491,7 @@
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(OSGroup)' == 'Linux'">
+  <ItemGroup Condition="'$(OSGroup)' != 'Windows_NT'">
       <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
       <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
       <Compile Include="System\Globalization\CultureData.Dummy.cs" />
