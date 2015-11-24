@@ -39,17 +39,19 @@ TOTAL: 3 PASSED: 3
 * Clone (or pull into) repo: dotnet/corert into corert
 * Open a new command prompt:
 
-> cd corert
-> build.cmd
-> cd tests
-> runtest.cmd /?
-> 
-> runtest.cmd [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
-> /mode : Compilation mode. Specify cpp/RyuJIT. Default: RyuJIT
-> /runtest  : Should just compile or run compiled bianry? Specify: true/false. Default: true.
-> /extrepo  : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
-> /buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
-> /nocache  : When restoring toolchain packages, obtain them from the feed not the cache.
+```
+cd corert
+build.cmd
+cd tests
+runtest.cmd /?
+
+runtest.cmd [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
+/mode : Compilation mode. Specify cpp/RyuJIT. Default: RyuJIT
+/runtest  : Should just compile or run compiled bianry? Specify: true/false. Default: true.
+/extrepo  : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
+/buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
+/nocache  : When restoring toolchain packages, obtain them from the feed not the cache.
+```
 
 ## External Repo (CoreCLR Testing)
 **Test ILToNative compilation only**
@@ -58,7 +60,7 @@ TOTAL: 3 PASSED: 3
 
 **Test ILToNative RyuJIT Compilation and Run Exe**
 
-```runtest.cmd /mode protojit /runtest true /extrepo e:\git\coreclr /buildextrepo false```
+```runtest.cmd /mode ryujit /runtest true /extrepo e:\git\coreclr /buildextrepo false```
 
 **Test ILToNative CPP Compilation and Run Exe**
 
