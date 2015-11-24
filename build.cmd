@@ -33,6 +33,7 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptestbuild" (set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "installcli" (set __InstallCli=$2&shift&shift&goto Arg_Loop)
 
 echo Invalid command line argument: %1
 goto Usage
@@ -75,6 +76,26 @@ echo Checking pre-requisites...
 echo.
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\Native\probe-win.ps1"""') do %%a
+
+:GetDotNetCli
+
+set "__DotNetCliPath=%__RootBinDir%\tools\cli"
+if not "%__InstallCli%"=="" (
+    if exist "%__DotNetCliPath%" (rmdir /s /q "%__DotNetCliPath%")
+    if not %ErrorLevel%==0 (
+        echo "Could not remove current installation of dotnet CLI"
+        exit /b 1
+    )
+)
+if not exist "%__DotNetCliPath%" (
+    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools""') do (
+        echo "" > nul
+    )
+)
+if not exist "%__DotNetCliPath%" (
+    echo DotNet CLI could not be downloaded or installed.
+    exit /b 1
+)
 
 :CheckVS
 

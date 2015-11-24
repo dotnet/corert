@@ -11,6 +11,7 @@ usage()
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
+    echo "installcli - should downloa CLI and not use cached copy of the CLI."
 
     exit 1
 }
@@ -47,6 +48,25 @@ check_managed_prereqs()
         else
             echo "WARNING: Mono 4.0.1.44 or later is required to build corert. Unable to assess if current version is supported."
         fi
+    fi
+}
+
+install_dotnet_cli()
+{
+    echo "Installing the dotnet/cli..."
+    hash wget 2>/dev/null || { echo >&2 "Please ensure curl is present before running this script"; exit 1; }
+    __tools_dir=${__scriptpath}/bin/tools
+    __cli_dir=${__tools_dir}/cli
+    
+    if [ ${__InstallCli} -ne 0 ]; then
+        rm -rf "${__cli_dir}"
+    fi
+    if [ ! -f "${__cli_dir}/bin/dotnet" ]; then
+        mkdir -p "${__cli_dir}"
+        __cli_tarball=dotnet-linux-${__BuildArch}.latest.tar.gz
+        echo Downloading... "https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/${__cli_tarball}"
+        wget -q -P ${__tools_dir} "https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/${__cli_tarball}"
+        tar -xzf ${__tools_dir}/${__cli_tarball} -C ${__cli_dir}
     fi
 }
 
@@ -260,6 +280,7 @@ BUILDERRORLEVEL=0
 __UnprocessedBuildArgs=
 __CleanBuild=0
 __VerboseBuild=0
+__InstallCli=0
 __ClangMajorVersion=3
 __ClangMinorVersion=5
 
@@ -301,6 +322,9 @@ for i in "$@"
             ;;
         verbose)
             __VerboseBuild=1
+            ;;
+        installcli)
+            __InstallCli=1
             ;;
         clang3.5)
             __ClangMajorVersion=3
@@ -345,6 +369,10 @@ if $__buildnative; then
 
     check_native_prereqs
 
+    # Obtain dotnet CLI
+
+    install_dotnet_cli
+
     # Prepare the system
 
     prepare_native_build
@@ -381,6 +409,15 @@ fi
 # If managed build failed, exit with the status code of the managed build
 if [ $BUILDERRORLEVEL != 0 ]; then
     exit $BUILDERRORLEVEL
+fi
+
+pushd ${__scriptpath}/tests
+source ${__scriptpath}/tests/runtest.sh $__BuildOS $__BuildArch $__BuildType
+TESTERRORLEVEL=$?
+popd
+
+if [ $TESTERRORLEVEL != 0 ]; then
+    exit $TESTERRORLEVEL
 fi
 
 echo "Product binaries are available at $__ProductBinDir"
