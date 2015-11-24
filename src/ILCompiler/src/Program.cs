@@ -164,6 +164,8 @@ namespace ILCompiler
                 targetOS = TargetOS.Windows;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 targetOS = TargetOS.Linux;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                targetOS = TargetOS.OSX;
             else
                 throw new NotImplementedException();
 #else

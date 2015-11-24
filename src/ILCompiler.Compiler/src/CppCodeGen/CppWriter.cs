@@ -264,7 +264,7 @@ namespace ILCompiler.CppCodeGen
                         EcmaMethod ecmaMethod = method as EcmaMethod;
 
                         string importName = kind == SpecialMethodKind.PInvoke ?
-                            method.GetPInvokeMethodMetadata().Name : ecmaMethod.GetAttributeStringValue("System.Runtime", "RuntimeImport");
+                            method.GetPInvokeMethodMetadata().Name : ecmaMethod.GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute");
 
                         if (importName == null)
                             importName = method.Name;
