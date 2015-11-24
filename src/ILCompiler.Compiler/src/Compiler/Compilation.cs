@@ -373,7 +373,7 @@ namespace ILCompiler
                 MethodCode methodCode;
                 try
                 {
-                    if (_skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
+                    if (Path.DirectorySeparatorChar != '\\' && _skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
                     {
                         throw new NotImplementedException("SkipJIT");
                     }
