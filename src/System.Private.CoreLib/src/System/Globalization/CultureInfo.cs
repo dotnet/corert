@@ -114,9 +114,9 @@ namespace System.Globalization
         private static volatile CultureInfo s_DefaultThreadCurrentCulture;
 
         [ThreadStatic]
-        private static volatile CultureInfo s_currentThreadCulture;
+        private static CultureInfo s_currentThreadCulture;
         [ThreadStatic]
-        private static volatile CultureInfo s_currentThreadUICulture;
+        private static CultureInfo s_currentThreadUICulture;
 
         private static readonly Lock s_lock = new Lock();
         private static volatile LowLevelDictionary<string, CultureInfo> s_NameCachedCultures;

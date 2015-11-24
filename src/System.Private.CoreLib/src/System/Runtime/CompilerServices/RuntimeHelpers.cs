@@ -49,15 +49,15 @@ namespace System.Runtime.CompilerServices
             return RuntimeImports.RhMemberwiseClone(obj);
         }
 
-        private const uint HASHCODE_BITS = 26;
-        private const uint MASK_HASHCODE = (1 << (int)HASHCODE_BITS) - 1;
+        private const int HASHCODE_BITS = 26;
+        private const int MASK_HASHCODE = (1 << (int)HASHCODE_BITS) - 1;
 
         [ThreadStatic]
-        private static uint t_hashSeed;
+        private static int t_hashSeed;
 
-        private static uint GetNewHashCode()
+        private static int GetNewHashCode()
         {
-            uint multiplier = (uint)Environment.CurrentManagedThreadId * 4 + 5;
+            int multiplier = Environment.CurrentManagedThreadId * 4 + 5;
             // Every thread has its own generator for hash codes so that we won't get into a situation
             // where two threads consistently give out the same hash codes.
             // Choice of multiplier guarantees period of 2**32 - see Knuth Vol 2 p16 (3.2.1.2 Theorem A).
@@ -72,28 +72,28 @@ namespace System.Runtime.CompilerServices
 
             fixed (IntPtr* pEEType = &o.m_pEEType)
             {
-                uint* pSyncBlockIndex = (uint*)((byte*)pEEType - 4); // skipping exactly 4 bytes for the SyncTableEntry (exactly 4 bytes not a pointer size).
-                uint hash = *pSyncBlockIndex & MASK_HASHCODE;
+                int* pSyncBlockIndex = (int*)((byte*)pEEType - 4); // skipping exactly 4 bytes for the SyncTableEntry (exactly 4 bytes not a pointer size).
+                int hash = *pSyncBlockIndex & MASK_HASHCODE;
 
                 if (hash == 0)
                     return MakeHashCode(o, pSyncBlockIndex);
                 else
-                    return (int)hash;
+                    return hash;
             }
         }
 
-        private static unsafe int MakeHashCode(Object o, uint* pSyncBlockIndex)
+        private static unsafe int MakeHashCode(Object o, int* pSyncBlockIndex)
         {
-            uint hash = GetNewHashCode() & MASK_HASHCODE;
+            int hash = GetNewHashCode() & MASK_HASHCODE;
 
             if (hash == 0)
                 hash = 1;
 
             while (true)
             {
-                uint oldIndex = Volatile.Read(ref *pSyncBlockIndex);
+                int oldIndex = Volatile.Read(ref *pSyncBlockIndex);
 
-                uint currentHash = oldIndex & MASK_HASHCODE;
+                int currentHash = oldIndex & MASK_HASHCODE;
                 if (currentHash != 0)
                 {
                     // Someone else set the hash code.
@@ -101,7 +101,7 @@ namespace System.Runtime.CompilerServices
                     break;
                 }
 
-                uint newIndex = oldIndex | hash;
+                int newIndex = oldIndex | hash;
 
                 if (Interlocked.CompareExchange(ref *pSyncBlockIndex, newIndex, oldIndex) == oldIndex)
                     break;
