@@ -277,13 +277,17 @@ for i in "$@"
         native)
             __buildnative=true
             ;;
+        x86)
+            __BuildArch=x86
+            ;;
         x64)
             __BuildArch=x64
-            __MSBuildBuildArch=x64
             ;;
         arm)
             __BuildArch=arm
-            __MSBuildBuildArch=arm
+            ;;
+        arm64)
+            __BuildArch=arm64
             ;;
         debug)
             __BuildType=Debug
