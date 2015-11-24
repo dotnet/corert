@@ -26,22 +26,6 @@ namespace System.Threading
         }
 
         [Intrinsic]
-        internal static uint CompareExchange(ref uint location1, uint value, uint comparand)
-        {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            if (oldValue == comparand)
-                location1 = value;
-            return oldValue;
-#else
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return CompareExchange(ref location1, value, comparand);
-#endif
-        }
-
-        [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
 #if CORERT
