@@ -53,7 +53,6 @@ void MDArray::InitMDArrayLength(UInt32 length)
 
 void MDArray::InitMDArrayDimension(UInt32 dimension, UInt32 value)
 {
-    ASSERT(dimension < 32);
     ASSERT(m_Dimensions[dimension] == NULL);
     m_Dimensions[dimension] = value;
 }
