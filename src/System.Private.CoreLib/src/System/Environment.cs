@@ -15,7 +15,6 @@ using System.Runtime;
 using System.Globalization;
 using System.Collections;
 using System.Text;
-//    using System.Configuration.Assemblies;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Runtime.CompilerServices;
@@ -29,24 +28,6 @@ namespace System
     [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemEnvironment)]
     public static partial class Environment
     {
-        //// Assume the following constants include the terminating '\0' - use <, not <=
-        //const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value
-        //// System environment variables are stored in the registry, and have 
-        //// a size restriction that is separate from both normal environment 
-        //// variables and registry value name lengths, according to MSDN.
-        //// MSDN doesn't detail whether the name is limited to 1024, or whether
-        //// that includes the contents of the environment variable.
-        //const int MaxSystemEnvVariableLength = 1024;
-        //const int MaxUserEnvVariableLength = 255;
-
-        //// Desktop dropped support for Win2k3 in version 4.5, but Silverlight 5 supports Win2k3.
-
-
-        //private const  int    MaxMachineNameLength = 256;
-
-
-        //private static volatile OperatingSystem m_os;  // Cached OperatingSystem value
-
         /*==================================TickCount===================================
         **Action: Gets the number of ticks since the system was started.
         **Returns: The number of ticks since the system was started.
