@@ -372,6 +372,12 @@ extern "C" void RhpBulkWriteBarrier()
 {
     throw 42;
 }
+
+extern "C" Object* RhNewArrayAsString(MethodTable*)
+{
+    throw "RhIsArray";
+}
+
 #endif
 
 #ifndef CPPCODEGEN

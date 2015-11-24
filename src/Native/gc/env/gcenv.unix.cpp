@@ -81,6 +81,14 @@ void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
     pthread_mutex_destroy(&lpCriticalSection->mutex);
 }
 
+#if !defined(CORERT)
+
+// These would be define only when we are not building the runtime (e.g. when building the GC sample). For the CoreRT build, 
+// they are defined in gcrhenv.cpp where they go to CoreRT/OS via the PAL.
+
+int32_t g_TrapReturningThreads;
+bool g_fFinalizerRunOnShutDown;
+MethodTable * g_pFreeObjectMethodTable;
 
 void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
 {
@@ -114,6 +122,114 @@ void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
         pGCMemStatus->ullAvailPhys = pGCMemStatus->ullAvailVirtual;
     }
 }
+
+void * ClrVirtualAlloc(
+    void * lpAddress,
+    size_t dwSize,
+    uint32_t flAllocationType,
+    uint32_t flProtect)
+{
+    return ClrVirtualAllocAligned(lpAddress, dwSize, flAllocationType, flProtect, OS_PAGE_SIZE);
+}
+
+void * ClrVirtualAllocAligned(
+    void * lpAddress,
+    size_t dwSize,
+    uint32_t flAllocationType,
+    uint32_t flProtect,
+    size_t dwAlignment)
+{
+    if ((flAllocationType & ~(MEM_RESERVE | MEM_COMMIT)) != 0)
+    {
+        // TODO: Implement
+        return NULL;
+    }
+
+    _ASSERTE(((size_t)lpAddress & (OS_PAGE_SIZE - 1)) == 0);
+
+    // Align size to whole pages
+    dwSize = (dwSize + (OS_PAGE_SIZE - 1)) & ~(OS_PAGE_SIZE - 1);
+
+    if (flAllocationType & MEM_RESERVE)
+    {
+        size_t alignedSize = dwSize;
+
+        if (dwAlignment > OS_PAGE_SIZE)
+            alignedSize += (dwAlignment - OS_PAGE_SIZE);
+
+        void * pRetVal = mmap(lpAddress, alignedSize, W32toUnixAccessControl(flProtect),
+            MAP_ANON | MAP_PRIVATE, -1, 0);
+         
+        if (dwAlignment > OS_PAGE_SIZE && pRetVal != NULL)
+        {
+            void * pAlignedRetVal = (void *)(((size_t)pRetVal + (dwAlignment - 1)) & ~(dwAlignment - 1));
+
+            size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
+            if (startPadding != 0)
+            {
+                int ret = munmap(pRetVal, startPadding);
+                _ASSERTE(ret == 0);
+            }
+
+            size_t endPadding = alignedSize - (startPadding + dwSize);
+            if (endPadding != 0)
+            {
+                int ret = munmap((void *)((size_t)pAlignedRetVal + dwSize), endPadding);
+                _ASSERTE(ret == 0);
+            }
+
+            pRetVal = pAlignedRetVal;
+        }
+
+        return pRetVal;
+    }
+
+    if (flAllocationType & MEM_COMMIT)
+    {
+        int ret = mprotect(lpAddress, dwSize, W32toUnixAccessControl(flProtect));
+        return (ret == 0) ? lpAddress : NULL;
+    }
+
+    return NULL;
+}
+
+bool ClrVirtualFree(
+    void * lpAddress,
+    size_t dwSize,
+    uint32_t dwFreeType)
+{
+    // TODO: Implement
+    return false;
+}
+
+bool
+ClrVirtualProtect(
+           void * lpAddress,
+           size_t dwSize,
+           uint32_t flNewProtect,
+           uint32_t * lpflOldProtect)
+{
+    // TODO: Implement, not currently used
+    return false;
+}
+
+bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
+{
+    return sched_yield() == 0;
+}
+
+void DestroyThread(Thread * pThread)
+{
+    // TODO: Implement
+}
+
+bool PalHasCapability(PalCapability capability)
+{
+    // TODO: Implement for background GC
+    return false;
+}
+
+#endif // defined(CORERT)
 
 #if 0
 void CLREventStatic::CreateManualEvent(bool bInitialState)
@@ -199,20 +315,6 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
 }
 #endif // 0
 
-bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount)
-{
-    return sched_yield() == 0;
-}
-
-void * ClrVirtualAlloc(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect)
-{
-    return ClrVirtualAllocAligned(lpAddress, dwSize, flAllocationType, flProtect, OS_PAGE_SIZE);
-}
-
 static int W32toUnixAccessControl(uint32_t flProtect)
 {
     int prot = 0;
@@ -232,89 +334,6 @@ static int W32toUnixAccessControl(uint32_t flProtect)
     return prot;
 }
 
-void * ClrVirtualAllocAligned(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect,
-    size_t dwAlignment)
-{
-    if ((flAllocationType & ~(MEM_RESERVE | MEM_COMMIT)) != 0)
-    {
-        // TODO: Implement
-        return NULL;
-    }
-
-    _ASSERTE(((size_t)lpAddress & (OS_PAGE_SIZE - 1)) == 0);
-
-    // Align size to whole pages
-    dwSize = (dwSize + (OS_PAGE_SIZE - 1)) & ~(OS_PAGE_SIZE - 1);
-
-    if (flAllocationType & MEM_RESERVE)
-    {
-        size_t alignedSize = dwSize;
-
-        if (dwAlignment > OS_PAGE_SIZE)
-            alignedSize += (dwAlignment - OS_PAGE_SIZE);
-
-        void * pRetVal = mmap(lpAddress, alignedSize, W32toUnixAccessControl(flProtect),
-            MAP_ANON | MAP_PRIVATE, -1, 0);
-         
-        if (dwAlignment > OS_PAGE_SIZE && pRetVal != NULL)
-        {
-            void * pAlignedRetVal = (void *)(((size_t)pRetVal + (dwAlignment - 1)) & ~(dwAlignment - 1));
-
-            size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
-            if (startPadding != 0)
-            {
-                int ret = munmap(pRetVal, startPadding);
-                _ASSERTE(ret == 0);
-            }
-
-            size_t endPadding = alignedSize - (startPadding + dwSize);
-            if (endPadding != 0)
-            {
-                int ret = munmap((void *)((size_t)pAlignedRetVal + dwSize), endPadding);
-                _ASSERTE(ret == 0);
-            }
-
-            pRetVal = pAlignedRetVal;
-        }
-
-        return pRetVal;
-    }
-
-    if (flAllocationType & MEM_COMMIT)
-    {
-        int ret = mprotect(lpAddress, dwSize, W32toUnixAccessControl(flProtect));
-        return (ret == 0) ? lpAddress : NULL;
-    }
-
-    return NULL;
-}
-
-bool ClrVirtualFree(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t dwFreeType)
-{
-    // TODO: Implement
-    return false;
-}
-
-bool
-ClrVirtualProtect(
-           void * lpAddress,
-           size_t dwSize,
-           uint32_t flNewProtect,
-           uint32_t * lpflOldProtect)
-{
-    // TODO: Implement, not currently used
-    return false;
-}
-
-MethodTable * g_pFreeObjectMethodTable;
-
 GCSystemInfo g_SystemInfo;
 
 void InitializeSystemInfo()
@@ -325,10 +344,6 @@ void InitializeSystemInfo()
     g_SystemInfo.dwPageSize = OS_PAGE_SIZE;
     g_SystemInfo.dwAllocationGranularity = OS_PAGE_SIZE;
 }
-
-int32_t g_TrapReturningThreads;
-
-bool g_fFinalizerRunOnShutDown;
 
 #if 0
 #ifdef _MSC_VER
@@ -365,10 +380,6 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     g_pThreadList = pThread;
 }
 #endif // 0
-void DestroyThread(Thread * pThread)
-{
-    // TODO: Implement
-}
 
 #if 0 
 void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
@@ -429,12 +440,6 @@ bool IsGCSpecialThread()
 }
 
 #endif // 0
-
-bool PalHasCapability(PalCapability capability)
-{
-    // TODO: Implement for background GC
-    return false;
-}
 
 WINBASEAPI
 UINT
