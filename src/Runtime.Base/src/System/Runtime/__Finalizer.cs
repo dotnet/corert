@@ -3,6 +3,8 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+
 //
 // Implements the single finalizer thread for a Redhawk instance. Essentially waits for an event to fire
 // indicating finalization is necessary then drains the queue of pending finalizable objects, calling the
@@ -31,20 +33,7 @@ namespace System.Runtime
                         MakeFinalizerInitCallbacks();
                     }
 
-                    // Drain the queue of finalizable objects.
-                    Object target = InternalCalls.RhpGetNextFinalizableObject();
-                    while (target != null)
-                    {
-                        // Call the finalizer on the current target object. If the finalizer throws we'll fail
-                        // fast via normal Redhawk exception semantics (since we don't attempt to catch
-                        // anything).
-                        unsafe
-                        {
-                            CalliIntrinsics.CallVoid(target.EEType->FinalizerCode, target);
-                        }
-
-                        target = InternalCalls.RhpGetNextFinalizableObject();
-                    }
+                    DrainQueue();
 
                     // Tell anybody that's interested that the finalization pass is complete (there is a race condition here
                     // where we might immediately signal a new request as complete, but this is acceptable).
@@ -59,6 +48,26 @@ namespace System.Runtime
             }
         }
 
+        // Do not inline this method -- we do not want to accidentally have any temps in ProcessFinalizers which contain
+        // objects that came off of the finalizer queue.  If such temps were reported across the duration of the 
+        // finalizer thread wait operation, it could cause unpredictable behavior with weak handles.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private unsafe static void DrainQueue()
+        {
+            // Drain the queue of finalizable objects.
+            while (true)
+            { 
+                Object target = InternalCalls.RhpGetNextFinalizableObject();
+                if (target == null)
+                    return;
+
+                // Call the finalizer on the current target object. If the finalizer throws we'll fail
+                // fast via normal Redhawk exception semantics (since we don't attempt to catch
+                // anything).
+                CalliIntrinsics.CallVoid(target.EEType->FinalizerCode, target);
+            }
+        }
+
         // Each class library can sign up for a callback to run code on the finalizer thread before any 
         // objects derived from that class library's System.Object are finalized.  This is where we make those
         // callbacks.  When a class library is loaded, we set the s_fHasNewClasslibs flag and then the next
@@ -69,7 +78,7 @@ namespace System.Runtime
             {
                 IntPtr pfnFinalizerInitCallback = InternalCalls.RhpGetNextFinalizerInitCallback();
                 if (pfnFinalizerInitCallback == IntPtr.Zero)
-                    break;
+                    return;
 
                 CalliIntrinsics.CallVoid(pfnFinalizerInitCallback);
             }
