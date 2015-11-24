@@ -12,6 +12,8 @@ Want to get more familiar with what's going on in the code? Take a look at the a
 
 Looking for something to work on? The [active issues](https://github.com/dotnet/corert/issues?q=is:open+is:issue+no:assignee) ([Issue Guide](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/issue-guide.md)) are a great place to start or take a look at our [documentation](https://github.com/dotnet/corert/tree/master/Documentation). You are also encouraged to start a discussion by filing an issue or creating a gist.
 
+[![Join the chat at https://gitter.im/dotnet/corert](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/corert?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 You can discuss .NET OSS more generally in the [.NET Foundation forums](http://forums.dotnetfoundation.org).
 
 ## Daily Builds
