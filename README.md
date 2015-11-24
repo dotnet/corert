@@ -1,4 +1,6 @@
 # .NET Core Runtime (CoreRT)
+
+[![Join the chat at https://gitter.im/dotnet/corert](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/corert?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 This repo contains the .NET Core runtime optimized for AOT compilation
 
 |         |Ubuntu 14.04 |Windows |Mac OS X |
