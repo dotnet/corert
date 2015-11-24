@@ -1185,7 +1185,7 @@ namespace Internal.JitInterface
 
                 if (field.HasRva)
                 {
-                    throw new NotSupportedException();
+                    throw new NotSupportedException("getFieldInfo for RVA mapped field");
                 }
 
                 fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;

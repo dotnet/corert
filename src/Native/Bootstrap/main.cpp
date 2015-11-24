@@ -329,6 +329,11 @@ extern "C" void RhGetEETypeClassification()
     throw "RhGetEETypeClassification";
 }
 
+extern "C" void RhCollect()
+{
+    throw "RhCollect";
+}
+
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
