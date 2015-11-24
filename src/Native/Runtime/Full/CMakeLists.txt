@@ -32,12 +32,14 @@ add_custom_command(
     DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
 )
 
-add_custom_command(
-    # The AsmOffsets.inc will be built in the pre-build phase of the Runtime build
-    TARGET Runtime PRE_BUILD
+add_custom_target(AsmOffsets
     COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} "${RUNTIME_DIR}/AsmOffsets.cpp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
     DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
+    COMMENT "Generating AsmOffsets.inc"
 )
+
+# The AsmOffsets.inc will be built as a dependency of the Runtime
+add_dependencies(Runtime AsmOffsets)
 
 # Extract the definitions for the ASM code. Since there is a bug in the cmake that prevents us from
 # using the generator expressions, we split the definitions into lists based on the configuration.
