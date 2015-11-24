@@ -161,7 +161,7 @@ namespace Internal.TypeSystem
 
             foreach (var field in type.GetFields())
             {
-                if (!field.IsStatic)
+                if (!field.IsStatic || field.HasRva)
                     continue;
 
                 numStaticFields++;
@@ -186,18 +186,14 @@ namespace Internal.TypeSystem
 
             foreach (var field in type.GetFields())
             {
-                if (!field.IsStatic)
+                // Nonstatic fields and RVA mapped fields don't participate in layout
+                if (!field.IsStatic || field.HasRva)
                     continue;
 
                 StaticsBlock* block =
                     field.IsThreadStatic ? &result.ThreadStatics :
                     field.HasGCStaticBase ? &result.GcStatics :
                     &result.NonGcStatics;
-
-                if (field.HasRva)
-                {
-                    throw new NotImplementedException();
-                }
 
                 SizeAndAlignment sizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType, type.Context.Target.DefaultPackingSize);
 
