@@ -78,7 +78,10 @@ namespace Internal.IL
             else
             if (method is InstantiatedMethod)
             {
-                return new InstantiatedMethodIL(GetMethodIL(method.GetMethodDefinition()), new Instantiation(), method.Instantiation);
+                var methodDefinitionIL = GetMethodIL(method.GetMethodDefinition());
+                if (methodDefinitionIL == null)
+                    return null;
+                return new InstantiatedMethodIL(methodDefinitionIL, new Instantiation(), method.Instantiation);
             }
             else
             if (method is ILStubMethod)
