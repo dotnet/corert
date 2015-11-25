@@ -384,10 +384,6 @@ void Thread::Destroy()
 
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
 
-#if _DEBUG
-    memset(this, 0x06, sizeof(*this));
-#endif // _DEBUG
-
     // Thread::Destroy is called when the thread's "home" fiber dies.  We mark the thread as "detached" here
     // so that we can validate, in our DLL_THREAD_DETACH handler, that the thread was already destroyed at that
     // point.
@@ -942,8 +938,7 @@ bool Thread::IsDetached()
 
 void Thread::SetDetached()
 {
-    // https://github.com/dotnet/corert/issues/114
-    // ASSERT(!IsStateSet(TSF_Detached));
+    ASSERT(!IsStateSet(TSF_Detached));
     SetState(TSF_Detached);
 }
 
