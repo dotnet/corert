@@ -36,6 +36,9 @@
 #include "slist.inl"
 #include "eetype.inl"
 #include "CommonMacros.inl"
+#include "Volatile.h"
+#include "GCMemoryHelpers.h"
+#include "GCMemoryHelpers.inl"
 
 // Busy spin for the given number of iterations.
 COOP_PINVOKE_HELPER(void, RhSpinWait, (Int32 iterations))
@@ -629,7 +632,6 @@ COOP_PINVOKE_CDECL_HELPER(void *, RhpInitMultibyte, (void * mem, int c, size_t s
 } 
 
 EXTERN_C void * __cdecl memmove(void *, const void *, size_t);
-EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize);
 
 //
 // Return true if the array slice is valid
@@ -684,7 +686,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIn
         else
             BackwardGCSafeCopy(pDestinationData, pSourceData, size);
 
-        RhpBulkWriteBarrier(pDestinationData, (UInt32)size);
+        InlinedBulkWriteBarrier(pDestinationData, (UInt32)size);
     }
     else
     {

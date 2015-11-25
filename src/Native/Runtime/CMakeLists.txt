@@ -10,6 +10,7 @@ set(COMMON_RUNTIME_SOURCES
     FinalizerHelpers.cpp
     gcdump.cpp
     GCHelpers.cpp
+    GCMemoryHelpers.cpp
     gcrhenv.cpp
     gcrhscan.cpp
     GcStressControl.cpp

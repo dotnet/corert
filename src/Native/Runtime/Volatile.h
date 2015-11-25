@@ -46,6 +46,18 @@ T VolatileLoad(T const * pt)
     return val;
 }
 
+template<typename T>
+inline
+T VolatileLoadWithoutBarrier(T const * pt)
+{
+#ifndef DACCESS_COMPILE
+    T val = *(T volatile const *)pt;
+#else
+    T val = *pt;
+#endif
+    return val;
+}
+
 template <typename T> class Volatile;
 
 template<typename T>

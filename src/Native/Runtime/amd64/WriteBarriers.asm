@@ -239,7 +239,7 @@ ALTERNATE_ENTRY RhpCheckedXchgAVLocation
 
 LEAF_END RhpCheckedXchg, _TEXT
 
-
+ifndef CORERT
 ;;
 ;; Write barrier used when a large number of bytes possibly containing GC references have been updated. For
 ;; speed we don't try to determine GC series information for the value or array of values. Instead we just
@@ -272,7 +272,6 @@ LEAF_ENTRY RhpBulkWriteBarrier, _TEXT
     jb      NoBarrierRequired
 
 ifdef WRITE_BARRIER_CHECK
-  
     ;; Perform shadow heap updates corresponding to the gc heap updates that immediately preceded this helper
     ;; call. See the comment for UPDATE_GC_SHADOW above for a more detailed explanation of why we do this and
     ;; the synchronization implications.
@@ -389,6 +388,8 @@ NoBarrierRequired:
     ret
 
 LEAF_END RhpBulkWriteBarrier, _TEXT
+
+endif ; CORERT
 
 ;;
 ;; RhpByRefAssignRef simulates movs instruction for object references.

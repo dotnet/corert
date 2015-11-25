@@ -6,10 +6,6 @@
 // TODO: Implement Unix write barriers
 #include <unixasmmacros.inc>
 
-LEAF_ENTRY RhpBulkWriteBarrier, _TEXT
-	bx	lr
-LEAF_END RhpBulkWriteBarrier, _TEXT
-
 LEAF_ENTRY RhpAssignRef, _TEXT
 	str	r1, [r0]
 	bx	lr

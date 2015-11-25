@@ -511,6 +511,18 @@ T VolatileLoad(T const * pt)
     return val;
 }
 
+template<typename T>
+inline
+T VolatileLoadWithoutBarrier(T const * pt)
+{
+#ifndef DACCESS_COMPILE
+    T val = *(T volatile const *)pt;
+#else
+    T val = *pt;
+#endif
+    return val;
+}
+
 //
 // VolatileStore stores a T into the target of a pointer to T.  Is is guaranteed that this store will
 // not be optimized away by the compiler, and that any operation that occurs before this store, in program

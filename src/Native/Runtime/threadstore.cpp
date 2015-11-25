@@ -27,6 +27,7 @@
 #include "eetype.h"
 
 #include "slist.inl"
+#include "GCMemoryHelpers.h"
 
 EXTERN_C volatile UInt32 RhpTrapThreads = 0;
 
@@ -460,7 +461,6 @@ PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize);
 
 // internal static extern unsafe bool RhGetExceptionsForCurrentThread(Exception[] outputArray, out int writtenCountOut);
 COOP_PINVOKE_HELPER(Boolean, RhGetExceptionsForCurrentThread, (Array* pOutputArray, Int32* pWrittenCountOut))

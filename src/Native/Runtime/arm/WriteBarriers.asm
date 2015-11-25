@@ -421,6 +421,7 @@ X_Retry
 
         LEAF_END RhpCheckedXchg
 
+#ifndef CORERT
 ;;
 ;; Write barrier used when a large number of bytes possibly containing GC references have been updated. For
 ;; speed we don't try to determine GC series information for the value or array of values. Instead we just
@@ -543,7 +544,7 @@ X_Retry
 
     add     r1, r1, r0                      ; r1 <- end address
     lsr     r0, #LOG2_CLUMP_SIZE            ; r0 <- starting clump
-    add     r1, CLUMP_SIZE-1                ; r1 <- end address + round up 
+    add     r1, CLUMP_SIZE-1                ; r1 <- end address + round up
     lsr     r1, #LOG2_CLUMP_SIZE            ; r1 <- ending clump index (rounded up)
 
     ;; calculate number of clumps to mark (round_up(end) - start)
@@ -576,5 +577,7 @@ NoBarrierRequired
     bx      lr
 
     LEAF_END RhpBulkWriteBarrier
+
+#endif // CORERT
 
     end
