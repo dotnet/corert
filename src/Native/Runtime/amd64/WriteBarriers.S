@@ -10,6 +10,10 @@
 
 .macro UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG
 
+	.ifc \REFREG, RAX
+	.error "REFREG cannot be RAX since this macro uses RAX as a helper register!"
+	.endif
+
     // If g_GCShadow is 0, don't perform the check.
     PREPARE_EXTERNAL_VAR g_GCShadow, rax
     cmp     qword ptr [rax], 0
@@ -27,10 +31,13 @@
     push    \DESTREG
 
     // Transform DESTREG into the equivalent address in the shadow heap.
-    sub     \DESTREG, G_LOWEST_ADDRESS
+    PREPARE_EXTERNAL_VAR g_lowest_address, rax
+    sub     \DESTREG, [rax]
     jb      \BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG
-    add     \DESTREG, [g_GCShadow]
-    cmp     \DESTREG, [g_GCShadowEnd]
+    PREPARE_EXTERNAL_VAR g_GCShadow, rax
+    add     \DESTREG, [rax]
+    PREPARE_EXTERNAL_VAR g_GCShadowEnd, rax
+    cmp     \DESTREG, [rax]
     ja      \BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG
 
     // Update the shadow heap.
@@ -162,7 +169,8 @@ DEFINE_UNCHECKED_WRITE_BARRIER RSI, ESI
     PREPARE_EXTERNAL_VAR g_lowest_address, rax
     cmp     rdi, [rax]
     jb      \BASENAME\()_NoBarrierRequired_\REFREG
-    cmp     rdi, [g_highest_address]
+    PREPARE_EXTERNAL_VAR g_highest_address, rax
+    cmp     rdi, [rax]
     jae     \BASENAME\()_NoBarrierRequired_\REFREG
 
     DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG
@@ -243,7 +251,6 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      rcx: trashed
 //
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
-	push    rax
     mov     rcx, [rsi]
     mov     [rdi], rcx
 
@@ -274,19 +281,16 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
     add     rcx, [rax]
     cmp     byte ptr [rcx], 0FFh
     jne     RhpByRefAssignRef_UpdateCardTable
-    pop 	rax
     ret
 
 // We get here if it's necessary to update the card table.
 RhpByRefAssignRef_UpdateCardTable:
     mov     byte ptr [rcx], 0FFh
-    pop 	rax
     ret
 
 RhpByRefAssignRef_NotInHeap:
     // Increment the pointers before leaving
     add     rdi, 8h
     add     rsi, 8h
-    pop 	rax
     ret
 LEAF_END RhpByRefAssignRef, _TEXT

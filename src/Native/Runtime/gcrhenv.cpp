@@ -39,6 +39,7 @@
 
 #include "daccess.h"
 
+#include "GCHelpers.h"
 
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
@@ -651,7 +652,6 @@ COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobj
 
 // Move memory, in a way that is compatible with a move onto the heap, but
 // does not require the destination pointer to be on the heap.
-EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize);
 
 COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* pSrc, int cbDest))
 {
