@@ -2,7 +2,7 @@
 
 - Build managed parts
 	- Build language source to IL
-	- Compile IL assembly with ILToNative
+	- Compile IL assembly with ILC compiler
 - Unix
 	- Runtime Unix PAL
 	- Assembly port
