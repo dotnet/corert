@@ -355,6 +355,10 @@ extern "C" void RhExceptionHandling_FailedAllocation()
 {
     throw "RhExceptionHandling_FailedAllocation";
 }
+extern "C" void RhIsNullable()
+{
+    throw "RhIsNullable";
+}
 extern "C" void RhpCalculateStackTraceWorker()
 {
     throw "RhpCalculateStackTraceWorker";

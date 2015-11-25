@@ -333,7 +333,8 @@ namespace Internal.TypeSystem.Ecma
 
             Object parent = GetObject(memberReference.Parent);
 
-            if (parent is TypeDesc)
+            TypeDesc parentTypeDesc = parent as TypeDesc;
+            if (parentTypeDesc != null)
             {
                 BlobReader signatureReader = _metadataReader.GetBlobReader(memberReference.Signature);
 
@@ -343,7 +344,7 @@ namespace Internal.TypeSystem.Ecma
 
                 if (parser.IsFieldSignature)
                 {
-                    FieldDesc field = ((TypeDesc)parent).GetField(name);
+                    FieldDesc field = parentTypeDesc.GetField(name);
                     if (field != null)
                         return field;
 
@@ -352,11 +353,25 @@ namespace Internal.TypeSystem.Ecma
                 }
                 else
                 {
-                    MethodDesc method = ((TypeDesc)parent).GetMethod(name, parser.ParseMethodSignature());
-                    if (method != null)
-                        return method;
+                    MethodSignature sig = parser.ParseMethodSignature();
+                    TypeDesc typeDescToInspect = parentTypeDesc;
 
-                    // TODO: Lookup in parent
+                    // Try to resolve the name and signature in the current type, or any of the base types.
+                    do
+                    {
+                        // TODO: handle substitutions
+                        MethodDesc method = typeDescToInspect.GetMethod(name, sig);
+                        if (method != null)
+                        {
+                            // If this resolved to one of the base types, make sure it's not a constructor.
+                            // Instance constructors are not inherited.
+                            if (typeDescToInspect != parentTypeDesc && method.IsConstructor)
+                                break;
+
+                            return method;
+                        }
+                        typeDescToInspect = typeDescToInspect.BaseType;
+                    } while (typeDescToInspect != null);
 
                     // TODO: Better error message
                     throw new MissingMemberException("Method not found " + parent.ToString() + "." + name);
