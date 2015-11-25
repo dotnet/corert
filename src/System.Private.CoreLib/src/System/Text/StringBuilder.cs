@@ -1343,8 +1343,6 @@ namespace System.Text
 
             while (true)
             {
-                int p = pos;
-                int i = pos;
                 while (pos < len)
                 {
                     ch = format[pos];
@@ -1417,8 +1415,6 @@ namespace System.Text
                 if (ch == ':')
                 {
                     pos++;
-                    p = pos;
-                    i = pos;
                     while (true)
                     {
                         if (pos == len) FormatError();
