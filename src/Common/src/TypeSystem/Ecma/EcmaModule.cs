@@ -359,12 +359,13 @@ namespace Internal.TypeSystem.Ecma
                     // Try to resolve the name and signature in the current type, or any of the base types.
                     do
                     {
+                        // TODO: handle substitutions
                         MethodDesc method = typeDescToInspect.GetMethod(name, sig);
                         if (method != null)
                         {
                             // If this resolved to one of the base types, make sure it's not a constructor.
-                            // Constructors are not inherited.
-                            if (typeDescToInspect != parentTypeDesc && (method.IsConstructor || method.IsStaticConstructor))
+                            // Instance constructors are not inherited.
+                            if (typeDescToInspect != parentTypeDesc && method.IsConstructor)
                                 break;
 
                             return method;
