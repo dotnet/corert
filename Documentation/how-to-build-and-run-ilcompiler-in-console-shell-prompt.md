@@ -23,8 +23,6 @@ This will result in the following:
 
 # Compiling source to native code using the ILCompiler you built#
 
-**Note: Support for Mac OSX is coming soon!**
-
 *Note: On Windows, please ensure you have VS 2015 installed to get the native toolset and work within a VS 2015 x64 Native Tools command prompt.*
 
 * Ensure that you have done a repo build per the instructions above.
@@ -36,6 +34,8 @@ This will result in the following:
 
 
 ## Using RyuJIT ##
+
+**Note: Support for Mac OSX is coming soon!**
 
 This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github.com/dotnet/coreclr), for compiling the application. From the shell/command prompt, issue the following commands, from the folder containing your source file and project.json, to generate the native executable
 
