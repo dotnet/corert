@@ -67,7 +67,7 @@ namespace Internal.IL.Stubs
 
         private void EmitILForAccessor()
         {
-            Debug.Assert(_rank > 1);
+            Debug.Assert(_rank > 0);
 
             var codeStream = _emitter.NewCodeStream();
 
