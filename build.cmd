@@ -157,6 +157,7 @@ exit /b 1
 
 
 :AfterILCompilerBuild
+if defined __SkipTestBuild exit /b 0
 
 pushd "%__ProjectDir%\tests"
 call "runtest.cmd" %__BuildType% %__BuildArch%
