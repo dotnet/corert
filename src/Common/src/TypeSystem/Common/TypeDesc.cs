@@ -435,5 +435,13 @@ namespace Internal.TypeSystem
                 return GetTypeDefinition() == this;
             }
         }
+
+        /// <summary>
+        /// Determine if two types share the same type definition
+        /// </summary>
+        public bool HasSameTypeDefinition(TypeDesc otherType)
+        {
+            return GetTypeDefinition() == otherType.GetTypeDefinition();
+        }
     }
 }
