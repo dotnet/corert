@@ -37,7 +37,8 @@
 #include "eetype.inl"
 #include "CommonMacros.inl"
 #include "Volatile.h"
-#include "GCHelpers.h"
+#include "GCMemoryHelpers.h"
+#include "GCMemoryHelpers.inl"
 
 // Busy spin for the given number of iterations.
 COOP_PINVOKE_HELPER(void, RhSpinWait, (Int32 iterations))
@@ -685,7 +686,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIn
         else
             BackwardGCSafeCopy(pDestinationData, pSourceData, size);
 
-        RhpBulkWriteBarrier(pDestinationData, (UInt32)size);
+        InlinedBulkWriteBarrier(pDestinationData, (UInt32)size);
     }
     else
     {

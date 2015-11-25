@@ -4,7 +4,7 @@
 //
 
 //
-// Unmanaged GC helpers
+// Unmanaged GC memory helpers
 //
 
 #ifdef WRITE_BARRIER_CHECK
@@ -15,9 +15,9 @@ extern "C" uint8_t* g_highest_address;
 #endif
 
 extern "C" uint32_t* g_card_table;
-static UInt32 INVALIDGCVALUE = 0xcccccccd;
+static const UInt32 INVALIDGCVALUE = 0xcccccccd;
 
-FORCEINLINE void RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
+FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
 {
     // Check whether the writes were even into the heap. If not there's no card update required.
     // Also if the size is smaller than a pointer, no write barrier is required.

@@ -27,8 +27,7 @@
 #include "eetype.h"
 
 #include "slist.inl"
-#include "Volatile.h"
-#include "GCHelpers.h"
+#include "GCMemoryHelpers.h"
 
 EXTERN_C volatile UInt32 RhpTrapThreads = 0;
 

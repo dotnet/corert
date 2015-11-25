@@ -39,7 +39,8 @@
 
 #include "daccess.h"
 
-#include "GCHelpers.h"
+#include "GCMemoryHelpers.h"
+#include "GCMemoryHelpers.inl"
 
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
@@ -658,7 +659,7 @@ COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* 
     memmove(pDest, pSrc, cbDest);
     // Use RhpBulkWriteBarrier here instead of SetCardsAfterBulkCopy as RhpBulkWriteBarrier
     // is both faster, and is compatible with a destination that isn't the GC heap.
-    RhpBulkWriteBarrier(pDest, cbDest);
+    InlinedBulkWriteBarrier(pDest, cbDest);
 }
 
 COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
