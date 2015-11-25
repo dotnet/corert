@@ -1205,15 +1205,18 @@ namespace System
                 return Array.Empty<String>();
             }
 
+            if (count == 1)
+            {
+                return new String[] { this };
+            }
+
             int[] sepList = new int[Length];
             int numReplaces = MakeSeparatorList(separator, ref sepList);
 
-            //Handle the special case of no replaces and special count.
-            if (0 == numReplaces || count == 1)
+            // Handle the special case of no replaces.
+            if (0 == numReplaces)
             {
-                String[] stringArray = new String[1];
-                stringArray[0] = this;
-                return stringArray;
+                return new String[] { this };
             }
 
             if (omitEmptyEntries)
@@ -1256,16 +1259,19 @@ namespace System
                 return Array.Empty<String>();
             }
 
+            if (count == 1)
+            {
+                return new String[] { this };
+            }
+
             int[] sepList = new int[Length];
             int[] lengthList = new int[Length];
             int numReplaces = MakeSeparatorList(separator, ref sepList, ref lengthList);
 
-            //Handle the special case of no replaces and special count.
-            if (0 == numReplaces || count == 1)
+            //Handle the special case of no replaces.
+            if (0 == numReplaces)
             {
-                String[] stringArray = new String[1];
-                stringArray[0] = this;
-                return stringArray;
+                return new String[] { this };
             }
 
             if (omitEmptyEntries)
