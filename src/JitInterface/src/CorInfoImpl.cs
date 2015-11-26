@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.IL;
 
 using ILCompiler;
+using ILCompiler.DependencyAnalysis;
 
 namespace Internal.JitInterface
 {
@@ -60,12 +61,16 @@ namespace Internal.JitInterface
             public int LineNumber;
         }
 
-        public MethodCode CompileMethod(MethodDesc method)
+        private MethodDesc _methodBeingCompiled;
+
+        public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
         {
             try
             {
+                _methodBeingCompiled = methodCodeNodeNeedingCode.Method;
+
                 CORINFO_METHOD_INFO methodInfo;
-                Get_CORINFO_METHOD_INFO(method, out methodInfo);
+                Get_CORINFO_METHOD_INFO(_methodBeingCompiled, out methodInfo);
 
                 uint flags = (uint)(
                     CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
@@ -77,7 +82,7 @@ namespace Internal.JitInterface
                 if (!_compilation.Options.NoLineNumbers)
                 {
                     CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
+                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(_methodBeingCompiled);
                     if (ilSequencePoints != null)
                     {
                         Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
@@ -93,27 +98,28 @@ namespace Internal.JitInterface
                 uint codeSize;
                 _compile(_jit, _comp, ref methodInfo, flags, out nativeEntry, out codeSize);
 
-                if (_relocs != null)
-                    _relocs.Sort((x, y) => (x.Block != y.Block) ? (x.Block - y.Block) : (x.Offset - y.Offset));
-
-                return new MethodCode()
-                {
-                    Code = _code,
-                    ColdCode = _coldCode,
-
-                    RODataAlignment = _roDataAlignment,
-                    ROData = _roData,
-
-                    Relocs = (_relocs != null) ? _relocs.ToArray() : null,
-
-                    FrameInfos = _frameInfos,
-                    DebugLocInfos = _debugLocInfos
-                };
+                PublishCode(methodCodeNodeNeedingCode);
             }
             finally
             {
                 FlushPins();
             }
+        }
+
+        private void PublishCode(MethodCodeNode methodCodeNodeNeedingCode)
+        {
+            var relocs = _relocs.ToArray();
+            Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
+
+            var objectData = new ObjectNode.ObjectData(_code,
+                                                       relocs,
+                                                       _compilation.NodeFactory.Target.MinimumFunctionAlignment,
+                                                       new ISymbolNode[] { methodCodeNodeNeedingCode });
+
+            methodCodeNodeNeedingCode.SetCode(objectData);
+
+            methodCodeNodeNeedingCode.InitializeFrameInfos(_frameInfos);
+            methodCodeNodeNeedingCode.InitializeDebugLocInfos(_debugLocInfos);
         }
 
         private int PointerSize
@@ -143,13 +149,15 @@ namespace Internal.JitInterface
                 pin.Value.Free();
             _pins.Clear();
 
+            _methodBeingCompiled = null;
+
             _code = null;
             _coldCode = null;
 
-            _roDataAlignment = 0;
             _roData = null;
+            _roDataBlob = null;
 
-            _relocs = null;
+            _relocs = new ArrayBuilder<Relocation>();
 
             _numFrameInfos = 0;
             _usedFrameInfos = 0;
@@ -907,7 +915,7 @@ namespace Internal.JitInterface
                         var type = HandleToObject(pResolvedToken.hClass);
                         Debug.Assert(type is DefType);
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -915,28 +923,28 @@ namespace Internal.JitInterface
                         var type = HandleToObject(pResolvedToken.hClass);
                         Debug.Assert(type.IsSzArray);
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR:
@@ -945,7 +953,7 @@ namespace Internal.JitInterface
 
                         DelegateInfo delegateInfo = _compilation.GetDelegateCtor(method);
 
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
                     }
                     break;
                 default:
@@ -1205,7 +1213,7 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.GetNonGCStaticBase;
                 }
 
-                pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(helperId, field.OwningType));
+                pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
                 pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
             }
             else
@@ -1548,7 +1556,7 @@ namespace Internal.JitInterface
                     throw new NotImplementedException();
             }
 
-            return (void*)ObjectToHandle(_compilation.GetJitHelper(id));
+            return (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(JitHelper.GetMangledName(id)));
         }
 
         private void getFunctionEntryPoint(IntPtr _this, CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
@@ -1808,7 +1816,7 @@ namespace Internal.JitInterface
             if (!directCall)
             {
                 pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.GetReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
 
                 if ((pResult.methodFlags & (uint)CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE) != 0)
                 {
@@ -1820,13 +1828,11 @@ namespace Internal.JitInterface
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    var initMethod = IntrinsicMethods.GetStringInitializer(targetMethod);
-                    pResult.codePointerOrStubLookup.constLookup.addr = ObjectToHandle(initMethod);
+                    targetMethod = IntrinsicMethods.GetStringInitializer(targetMethod);
                 }
-                else
-                {
-                    pResult.codePointerOrStubLookup.constLookup.addr = pResult.hMethod;
-                }
+
+                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
@@ -1855,7 +1861,7 @@ namespace Internal.JitInterface
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
             object literal = methodIL.GetObject((int)metaTok);
-            ppValue = (void*)ObjectToHandle(literal);
+            ppValue = (void*)ObjectToHandle(_compilation.NodeFactory.StringIndirection((string)literal));
             return InfoAccessType.IAT_PPVALUE;
         }
 
@@ -1913,8 +1919,8 @@ namespace Internal.JitInterface
         private byte[] _code;
         private byte[] _coldCode;
 
-        private int _roDataAlignment;
         private byte[] _roData;
+        private BlobNode _roDataBlob;
 
         private int _numFrameInfos;
         private int _usedFrameInfos;
@@ -1932,20 +1938,24 @@ namespace Internal.JitInterface
 
             if (roDataSize != 0)
             {
+                int alignment = 8;
+
                 if ((flag & CorJitAllocMemFlag.CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
                 {
-                    _roDataAlignment = 16;
+                    alignment = 16;
                 }
                 else if (roDataSize < 8)
                 {
-                    _roDataAlignment = PointerSize;
-                }
-                else
-                {
-                    _roDataAlignment = 8;
+                    alignment = PointerSize;
                 }
 
-                roDataBlock = (void*)GetPin(_roData = new byte[roDataSize]);
+                _roData = new byte[roDataSize];
+
+                _roDataBlob = _compilation.NodeFactory.ReadOnlyDataBlob(
+                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(_methodBeingCompiled),
+                    _roData, alignment);
+
+                roDataBlock = (void*)GetPin(_roData);
             }
 
             if (_numFrameInfos > 0)
@@ -2021,7 +2031,22 @@ namespace Internal.JitInterface
         {
         }
 
-        private List<Relocation> _relocs;
+        private ArrayBuilder<Relocation> _relocs;
+
+        /// <summary>
+        /// Various type of block.
+        /// </summary>
+        public enum BlockType : sbyte
+        {
+            /// <summary>Not a generated block.</summary>
+            Unknown = -1,
+            /// <summary>Represent code.</summary>
+            Code = 0,
+            /// <summary>Represent cold code (i.e. code not called frequently).</summary>
+            ColdCode = 1,
+            /// <summary>Read-only data.</summary>
+            ROData = 2
+        }
 
         private BlockType findKnownBlock(void* location, out int offset)
         {
@@ -2066,33 +2091,48 @@ namespace Internal.JitInterface
         {
             Relocation reloc;
 
-            reloc.RelocType = fRelocType;
+            reloc.RelocType = (RelocType)fRelocType;
 
             BlockType locationBlock = findKnownBlock(location, out reloc.Offset);
-            Debug.Assert(locationBlock == BlockType.Code || locationBlock == BlockType.ColdCode || locationBlock == BlockType.ROData, "Known block");
-            reloc.Block = locationBlock;
+            Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
-            int targetOffset;
-            BlockType targetBlock = findKnownBlock(target, out targetOffset);
-            if (targetBlock == BlockType.Unknown)
+            // TODO: Arbitrary relocs
+            if (locationBlock != BlockType.Code)
+                throw new NotImplementedException("Arbitrary relocs");
+
+            BlockType targetBlock = findKnownBlock(target, out reloc.Delta);
+            switch (targetBlock)
             {
-                // Reloc points to something outside of the generated blocks
-                reloc.Target = HandleToObject((IntPtr)target);
-            }
-            else
-            {
-                // Target is relative to one of the blocks
-                reloc.Target = new BlockRelativeTarget
-                {
-                    Block = targetBlock,
-                    Offset = targetOffset
-                };
+                case BlockType.Code:
+                    // TODO: Arbitrary relocs
+                    throw new NotImplementedException("Arbitrary relocs");
+
+                case BlockType.ColdCode:
+                    // TODO: Arbitrary relocs
+                    throw new NotImplementedException("Arbitrary relocs");
+
+                case BlockType.ROData:
+                    reloc.Target = _roDataBlob;
+                    break;
+
+                default:
+                    // Reloc points to something outside of the generated blocks
+                    var targetObject = HandleToObject((IntPtr)target);
+
+                    if (targetObject is FieldDesc)
+                    {
+                        // We only support FieldDesc for InitializeArray intrinsic right now.
+                        throw new NotImplementedException("RuntimeFieldHandle is not implemented");
+                    }
+
+                    reloc.Target = (ISymbolNode)targetObject;
+                    break;
             }
 
-            reloc.Delta = addlDelta;
+            reloc.Delta += addlDelta;
 
-            if (_relocs == null)
-                _relocs = new List<Relocation>(_code.Length / 32 + 1);
+            if (_relocs.Count == 0)
+                _relocs.EnsureCapacity(_code.Length / 32 + 1);
             _relocs.Add(reloc);
         }
 

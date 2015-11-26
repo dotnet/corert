@@ -3,6 +3,13 @@
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public class FrameInfo
+    {
+        public int StartOffset;
+        public int EndOffset;
+        public byte[] BlobData;
+    }
+
     public interface INodeWithFrameInfo
     {
         FrameInfo[] FrameInfos
