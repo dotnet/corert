@@ -1,23 +1,12 @@
-# Known Issues
+# Testing CoreRT
 
-## Windows
+The CoreRT test harness can run in two modes - with the tests local to the CoreRT repo, or with tests from the [CoreCLR](http://github.com/dotnet/coreclr) repo. The local tests only provide basic sanity testing and it's recommended to run the CoreCLR tests which are much more thorough.
 
-During dotnet-compile-native, when using VS 2015 RTM,
-* LINK : fatal error LNK1101: incorrect MSPDB140.DLL version; recheck installation of this product
-
-If you are using VS 2015 Update 1, no action is needed.
-* Please use the workaround [here](https://connect.microsoft.com/VisualStudio/feedback/details/1651822/incorrect-mspdb140-dll-version-picked-in-x86-x64-cross-tools-environment).
-
-# Pre Checkin Tests
+The tests are exercising both the runtime, and the ILC compiler that compiles IL into native code. The harness can test both the RyuJIT code generation backend, or the C++ backend of the ILC compiler.
 
 ## On Windows
 
-```build.cmd debug clean```
-at repo root level with your changes before you merge your PR. These tests run as part of the CI.
-
-### Dependencies
-
-* Visual Studio Dev 15 must be installed to use the platform linker at ```%VS140COMNTOOLS%```
+Make sure you have the [prerequisites](prerequisites-for-building.md) to build the repo, and run `build.cmd debug clean` at repo root level. This will build the CoreRT repo, compile the local test sources, and use the built ILC compiler to compile the tests to native code and run them. These tests run as part of the CI.
 
 ### Verifying test pass
 You should see the below message when you run the above ```build.cmd```, else something is broken.
@@ -35,12 +24,12 @@ TOTAL: 3 PASSED: 3
 *Note: These are currently supported only on Windows and Ubuntu/Mac OSX support is coming soon.*
 
 ## Setup
-* Clone (or pull into) repo: dotnet/coreclr into coreclr
-* Clone (or pull into) repo: dotnet/corert into corert
+* Clone (or pull into) repo: [dotnet/coreclr](http://github.com/dotnet/coreclr) into {coreclr}
+* Clone (or pull into) repo: dotnet/corert into {corert}
 * Open a new command prompt:
 
 ```
-cd corert
+cd {corert}
 build.cmd
 cd tests
 runtest.cmd /?
@@ -54,23 +43,36 @@ runtest.cmd [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
 ```
 
 ## External Repo (CoreCLR Testing)
-**Test ILToNative compilation only**
+At this point, running CoreCLR tests is known to succeed in RyuJIT. We haven't done failure bucketing for the C++ backend and you'll probably not get a clean test pass.
 
-```runtest.cmd /runtest false /extrepo e:\git\coreclr /buildextrepo false```
+**Test ILC compilation but don't run the tests**
+
+```
+runtest.cmd /runtest false /extrepo e:\git\coreclr
+```
 
 **Test ILToNative RyuJIT Compilation and Run Exe**
 
-```runtest.cmd /mode ryujit /runtest true /extrepo e:\git\coreclr /buildextrepo false```
+```
+runtest.cmd /mode ryujit /runtest true /extrepo e:\git\coreclr
+```
 
 **Test ILToNative CPP Compilation and Run Exe**
 
-```runtest.cmd /mode cpp /runtest true /extrepo e:\git\coreclr /buildextrepo false```
+```
+runtest.cmd /mode cpp /runtest true /extrepo e:\git\coreclr
+```
 
 **Restore Packages from NuGet with Nocache**
 
-```runtest.cmd /nocache```
+```
+runtest.cmd /nocache
+```
 
-## CoreRT Testing
+After you initially build the CoreCLR repo, it's recommended to pass `/buildextrepo false` to runtests so that you skip the part where the tests are built from sources into IL. This step doesn't require testing.
+
+
+## Running local CoreRT tests
 ```build.cmd``` auto runs the pre-checkin tests with RyuJIT
 
 **Run CoreRT pre-checkin tests in CPP mode**
