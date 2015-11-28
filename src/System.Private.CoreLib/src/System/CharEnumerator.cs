@@ -55,15 +55,7 @@ namespace System
         /// <internalonly/>
         Object IEnumerator.Current
         {
-            get
-            {
-                if (_index == -1)
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
-                if (_index >= _str.Length)
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
-
-                return _currentElement;
-            }
+            get { return Current; }
         }
 
         public char Current
