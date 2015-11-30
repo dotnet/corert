@@ -69,6 +69,14 @@ namespace ILCompiler
             }
         }
 
+        public NodeFactory NodeFactory
+        {
+            get
+            {
+                return _nodeFactory;
+            }
+        }
+
         public TextWriter Log
         {
             get;
@@ -370,7 +378,6 @@ namespace ILCompiler
                 if (methodIL == null)
                     return;
 
-                MethodCode methodCode;
                 try
                 {
                     if (Path.DirectorySeparatorChar != '\\' && _skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
@@ -378,16 +385,7 @@ namespace ILCompiler
                         throw new NotImplementedException("SkipJIT");
                     }
 
-                    methodCode = _corInfo.CompileMethod(method);
-
-                    if (methodCode.Relocs != null)
-                    {
-                        if (methodCode.Relocs.Any(r => r.Target is FieldDesc))
-                        {
-                            // We only support FieldDesc for InitializeArray intrinsic right now.
-                            throw new NotImplementedException("RuntimeFieldHandle is not implemented");
-                        }
-                    }
+                    _corInfo.CompileMethod(methodCodeNodeNeedingCode);
                 }
                 catch (Exception e)
                 {
@@ -414,85 +412,6 @@ namespace ILCompiler
                     methodCodeNodeNeedingCode.SetCode(emit.Builder.ToObjectData());
                     continue;
                 }
-
-                ObjectDataBuilder objData = new ObjectDataBuilder();
-                objData.Alignment = _nodeFactory.Target.MinimumFunctionAlignment;
-                objData.EmitBytes(methodCode.Code);
-                objData.DefinedSymbols.Add(methodCodeNodeNeedingCode);
-
-                BlobNode readOnlyDataBlob = null;
-                if (methodCode.ROData != null)
-                {
-                    readOnlyDataBlob = _nodeFactory.ReadOnlyDataBlob(
-                        "__readonlydata_" + _nameMangler.GetMangledMethodName(method),
-                        methodCode.ROData, methodCode.RODataAlignment);
-                }
-
-                if (methodCode.Relocs != null)
-                {
-                    for (int i = 0; i < methodCode.Relocs.Length; i++)
-                    {
-                        // TODO: Arbitrary relocs
-                        if (methodCode.Relocs[i].Block != BlockType.Code)
-                            throw new NotImplementedException();
-
-                        int offset = methodCode.Relocs[i].Offset;
-                        int delta = methodCode.Relocs[i].Delta;
-                        RelocType relocType = (RelocType)methodCode.Relocs[i].RelocType;
-                        ISymbolNode targetNode;
-
-                        object target = methodCode.Relocs[i].Target;
-                        if (target is MethodDesc)
-                        {
-                            targetNode = _nodeFactory.MethodEntrypoint((MethodDesc)target);
-                        }
-                        else if (target is ReadyToRunHelper)
-                        {
-                            targetNode = _nodeFactory.ReadyToRunHelper((ReadyToRunHelper)target);
-                        }
-                        else if (target is JitHelper)
-                        {
-                            targetNode = _nodeFactory.ExternSymbol(((JitHelper)target).MangledName);
-                        }
-                        else if (target is string)
-                        {
-                            targetNode = _nodeFactory.StringIndirection((string)target);
-                        }
-                        else if (target is TypeDesc)
-                        {
-                            targetNode = _nodeFactory.NecessaryTypeSymbol((TypeDesc)target);
-                        }
-                        else if (target is RvaFieldData)
-                        {
-                            var rvaFieldData = (RvaFieldData)target;
-                            targetNode = _nodeFactory.ReadOnlyDataBlob(rvaFieldData.MangledName,
-                                rvaFieldData.Data, _typeSystemContext.Target.PointerSize);
-                        }
-                        else if (target is BlockRelativeTarget)
-                        {
-                            var blockRelativeTarget = (BlockRelativeTarget)target;
-                            // TODO: Arbitrary block relative relocs
-                            if (blockRelativeTarget.Block != BlockType.ROData)
-                                throw new NotImplementedException();
-                            targetNode = readOnlyDataBlob;
-                        }
-                        else
-                        {
-                            // TODO:
-                            throw new NotImplementedException();
-                        }
-
-                        objData.AddRelocAtOffset(targetNode, relocType, offset, delta);
-                    }
-                }
-                // TODO: ColdCode
-                if (methodCode.ColdCode != null)
-                    throw new NotImplementedException();
-
-                methodCodeNodeNeedingCode.SetCode(objData.ToObjectData());
-
-                methodCodeNodeNeedingCode.InitializeFrameInfos(methodCode.FrameInfos);
-                methodCodeNodeNeedingCode.InitializeDebugLocInfos(methodCode.DebugLocInfos);
             }
         }
 
@@ -588,60 +507,6 @@ namespace ILCompiler
             }
         }
 
-        private struct ReadyToRunHelperKey : IEquatable<ReadyToRunHelperKey>
-        {
-            private ReadyToRunHelperId _id;
-            private Object _obj;
-
-            public ReadyToRunHelperKey(ReadyToRunHelperId id, Object obj)
-            {
-                _id = id;
-                _obj = obj;
-            }
-
-            public bool Equals(ReadyToRunHelperKey other)
-            {
-                return (_id == other._id) && ReferenceEquals(_obj, other._obj);
-            }
-
-            public override int GetHashCode()
-            {
-                return _id.GetHashCode() ^ _obj.GetHashCode();
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (!(obj is ReadyToRunHelperKey))
-                    return false;
-
-                return Equals((ReadyToRunHelperKey)obj);
-            }
-        }
-
-        private Dictionary<ReadyToRunHelperKey, ReadyToRunHelper> _readyToRunHelpers = new Dictionary<ReadyToRunHelperKey, ReadyToRunHelper>();
-
-        public Object GetReadyToRunHelper(ReadyToRunHelperId id, Object target)
-        {
-            ReadyToRunHelper helper;
-
-            ReadyToRunHelperKey key = new ReadyToRunHelperKey(id, target);
-            if (!_readyToRunHelpers.TryGetValue(key, out helper))
-                _readyToRunHelpers.Add(key, helper = new ReadyToRunHelper(this, id, target));
-
-            return helper;
-        }
-
-        private Dictionary<JitHelperId, JitHelper> _jitHelpers = new Dictionary<JitHelperId, JitHelper>();
-        public Object GetJitHelper(JitHelperId id)
-        {
-            JitHelper helper;
-
-            if (!_jitHelpers.TryGetValue(id, out helper))
-                _jitHelpers.Add(id, helper = new JitHelper(this, id));
-
-            return helper;
-        }
-
         private Dictionary<MethodDesc, DelegateInfo> _delegateInfos = new Dictionary<MethodDesc, DelegateInfo>();
         public DelegateInfo GetDelegateCtor(MethodDesc target)
         {
@@ -655,19 +520,13 @@ namespace ILCompiler
             return info;
         }
 
-        private Dictionary<FieldDesc, RvaFieldData> _rvaFieldDatas = new Dictionary<FieldDesc, RvaFieldData>();
-
         /// <summary>
         /// Gets an object representing the static data for RVA mapped fields from the PE image.
         /// </summary>
         public object GetFieldRvaData(FieldDesc field)
         {
-            RvaFieldData result;
-            if (!_rvaFieldDatas.TryGetValue(field, out result))
-            {
-                _rvaFieldDatas.Add(field, result = new RvaFieldData(this, field));
-            }
-            return result;
+            return _nodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
+                ((EcmaField)field).GetFieldRvaData(), _typeSystemContext.Target.PointerSize);
         }
     }
 }

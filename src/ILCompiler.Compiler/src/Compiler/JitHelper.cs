@@ -91,57 +91,43 @@ namespace ILCompiler
 
     internal class JitHelper
     {
-        private Compilation _compilation;
-
-        public JitHelper(Compilation compilation, JitHelperId id)
+        static public string GetMangledName(JitHelperId id)
         {
-            _compilation = compilation;
-
-            this.Id = id;
-        }
-
-        public JitHelperId Id { get; private set; }
-
-        public string MangledName
-        {
-            get
+            switch (id)
             {
-                switch (this.Id)
-                {
-                    case JitHelperId.RngChkFail:
-                        return "__range_check_fail";
+                case JitHelperId.RngChkFail:
+                    return "__range_check_fail";
 
-                    case JitHelperId.WriteBarrier:
-                        return "RhpAssignRef";
+                case JitHelperId.WriteBarrier:
+                    return "RhpAssignRef";
 
-                    case JitHelperId.CheckedWriteBarrier:
-                        return "RhpCheckedAssignRef";
+                case JitHelperId.CheckedWriteBarrier:
+                    return "RhpCheckedAssignRef";
 
-                    case JitHelperId.ByRefWriteBarrier:
-                        return "RhpByRefAssignRef";
+                case JitHelperId.ByRefWriteBarrier:
+                    return "RhpByRefAssignRef";
 
-                    case JitHelperId.Throw:
-                        return "__throw_exception";
+                case JitHelperId.Throw:
+                    return "__throw_exception";
 
-                    case JitHelperId.FailFast:
-                        return "__fail_fast";
+                case JitHelperId.FailFast:
+                    return "__fail_fast";
 
-                    case JitHelperId.NewMultiDimArr:
-                        return "RhNewMDArray";
+                case JitHelperId.NewMultiDimArr:
+                    return "RhNewMDArray";
 
-                    case JitHelperId.Stelem_Ref:
-                        return "__stelem_ref";
-                    case JitHelperId.Ldelema_Ref:
-                        return "__ldelema_ref";
+                case JitHelperId.Stelem_Ref:
+                    return "__stelem_ref";
+                case JitHelperId.Ldelema_Ref:
+                    return "__ldelema_ref";
 
-                    case JitHelperId.MemCpy:
-                        return "memcpy";
+                case JitHelperId.MemCpy:
+                    return "memcpy";
 
-                    default:
-                        // TODO: Uncomment once all helpers are implemented
-                        // throw new NotImplementedException();
-                        return "__fail_fast";
-                }
+                default:
+                    // TODO: Uncomment once all helpers are implemented
+                    // throw new NotImplementedException();
+                    return "__fail_fast";
             }
         }
     }

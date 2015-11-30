@@ -122,9 +122,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new VirtualMethodUseNode(method);
             });
 
-            _readyToRunHelpers = new NodeCache<ReadyToRunHelper, ReadyToRunHelperNode>((ReadyToRunHelper helper) =>
+            _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ReadyToRunHelperNode>((Tuple < ReadyToRunHelperId, Object > helper) =>
             {
-                return new ReadyToRunHelperNode(helper);
+                return new ReadyToRunHelperNode(helper.Item1, helper.Item2);
             });
 
             _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
@@ -290,11 +290,11 @@ namespace ILCompiler.DependencyAnalysis
             return _virtMethods.GetOrAdd(decl);
         }
 
-        private NodeCache<ReadyToRunHelper, ReadyToRunHelperNode> _readyToRunHelpers;
+        private NodeCache<Tuple<ReadyToRunHelperId, Object>, ReadyToRunHelperNode> _readyToRunHelpers;
 
-        public ReadyToRunHelperNode ReadyToRunHelper(ReadyToRunHelper helper)
+        public ReadyToRunHelperNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
         {
-            return _readyToRunHelpers.GetOrAdd(helper);
+            return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
         }
 
         private NodeCache<string, StringDataNode> _stringDataNodes;
