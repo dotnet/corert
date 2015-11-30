@@ -981,11 +981,3 @@ namespace System.Runtime.CompilerServices
         }
     }
 }
-
-namespace System.Runtime.InteropServices
-{
-    [System.AttributeUsageAttribute((System.AttributeTargets.Method | System.AttributeTargets.Class))]
-    internal class McgIntrinsicsAttribute : System.Attribute
-    {
-    }
-}

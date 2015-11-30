@@ -130,5 +130,8 @@
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\__HResults.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
