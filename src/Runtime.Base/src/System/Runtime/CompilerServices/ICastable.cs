@@ -55,6 +55,6 @@ namespace System.Runtime.CompilerServices
         //
         // The results of this lookup are cached so computation of the result is not as perf-sensitive as
         // IsInstanceOfInterface.
-        EETypePtr GetImplType(EEType interfaceType);
+        EETypePtr GetImplType(EETypePtr interfaceType);
     }
 }

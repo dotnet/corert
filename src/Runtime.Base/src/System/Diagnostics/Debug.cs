@@ -17,15 +17,5 @@ namespace System.Diagnostics
                 EH.FailFast(RhFailFastReason.InternalError, null);
             }
         }
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void TriggerGCForGCStress()
-        {
-#if FEATURE_GC_STRESS
-            if(GCStress.Initialized)
-                InternalCalls.RhCollect(-1, InternalGCCollectionMode.Blocking);
-#endif
-        }
     }
 }

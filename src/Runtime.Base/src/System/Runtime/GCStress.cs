@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Runtime
 {
     public /*internal*/ class GCStress
@@ -32,6 +34,16 @@ namespace System.Runtime
             // notify redhawku.dll
             InternalCalls.RhpInitializeGcStress();
 #endif // FEATURE_GC_STRESS
+        }
+
+        [System.Diagnostics.Conditional("FEATURE_GC_STRESS")]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void TriggerGC()
+        {
+#if FEATURE_GC_STRESS
+            if(GCStress.Initialized)
+                InternalCalls.RhCollect(-1, InternalGCCollectionMode.Blocking);
+#endif
         }
 
         ~GCStress()
