@@ -80,7 +80,7 @@ namespace Internal.Reflection.Core.NonPortable
                     return null;
             }
 
-            return ReflectionCoreNonPortable.GetRuntimeTypeForEEType(elementTypeHandle.EEType);
+            return ReflectionCoreNonPortable.GetRuntimeTypeForEEType(elementTypeHandle.ToEETypePtr());
         }
 
         private RuntimeTypeHandle _runtimeTypeHandle;

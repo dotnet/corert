@@ -86,11 +86,11 @@ namespace Internal.Runtime.Augments
         //
         public static Object NewObject(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = typeHandle.EEType;
+            EETypePtr eeType = typeHandle.ToEETypePtr();
             if (RuntimeImports.RhIsNullable(eeType)
-                || eeType == typeof(String).TypeHandle.EEType
-                || eeType == typeof(IntPtr).TypeHandle.EEType
-                || eeType == typeof(UIntPtr).TypeHandle.EEType
+                || eeType == typeof(String).TypeHandle.ToEETypePtr()
+                || eeType == typeof(IntPtr).TypeHandle.ToEETypePtr()
+                || eeType == typeof(UIntPtr).TypeHandle.ToEETypePtr()
                )
                 return null;
             return RuntimeImports.RhNewObject(eeType);
@@ -102,8 +102,8 @@ namespace Internal.Runtime.Augments
         public static Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             // Don't make the easy mistake of passing in the element EEType rather than the "array of element" EEType.
-            Debug.Assert(typeHandleForArrayType.EEType.IsArray);
-            return RuntimeImports.RhNewArray(typeHandleForArrayType.EEType, count);
+            Debug.Assert(typeHandleForArrayType.ToEETypePtr().IsArray);
+            return RuntimeImports.RhNewArray(typeHandleForArrayType.ToEETypePtr(), count);
         }
 
         //
@@ -169,7 +169,7 @@ namespace Internal.Runtime.Augments
         //
         public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, Object thisObject, bool isStatic, bool isOpen)
         {
-            return Delegate.CreateDelegate(typeHandleForDelegate.EEType, ldftnResult, thisObject, isStatic: isStatic, isOpen: isOpen);
+            return Delegate.CreateDelegate(typeHandleForDelegate.ToEETypePtr(), ldftnResult, thisObject, isStatic: isStatic, isOpen: isOpen);
         }
 
         //
@@ -197,7 +197,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetPointerFromTypeHandle(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.EEType.RawValue;
+            return typeHandle.ToEETypePtr().RawValue;
         }
 
         public static IntPtr GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
@@ -212,17 +212,17 @@ namespace Internal.Runtime.Augments
 
         public unsafe static IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, IntPtr fieldCookie)
         {
-            return new IntPtr(RuntimeImports.RhGetThreadStaticFieldAddress(typeHandle.EEType, fieldCookie));
+            return new IntPtr(RuntimeImports.RhGetThreadStaticFieldAddress(typeHandle.ToEETypePtr(), fieldCookie));
         }
 
         public unsafe static void StoreValueTypeField(IntPtr address, Object fieldValue, RuntimeTypeHandle fieldType)
         {
-            RuntimeImports.RhUnbox(fieldValue, *(void**)&address, fieldType.EEType);
+            RuntimeImports.RhUnbox(fieldValue, *(void**)&address, fieldType.ToEETypePtr());
         }
 
         public unsafe static Object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return RuntimeImports.RhBox(fieldType.EEType, *(void**)&address);
+            return RuntimeImports.RhBox(fieldType.ToEETypePtr(), *(void**)&address);
         }
 
         public unsafe static void StoreValueTypeField(Object obj, int fieldOffset, Object fieldValue, RuntimeTypeHandle fieldType)
@@ -320,7 +320,7 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
-            EETypePtr elementType = RuntimeImports.RhGetRelatedParameterType(parameterTypeHandle.EEType);
+            EETypePtr elementType = RuntimeImports.RhGetRelatedParameterType(parameterTypeHandle.ToEETypePtr());
             return new RuntimeTypeHandle(elementType);
         }
 
@@ -336,7 +336,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object Box(RuntimeTypeHandle type, IntPtr address)
         {
-            return RuntimeImports.RhBox(type.EEType, address.ToPointer());
+            return RuntimeImports.RhBox(type.ToEETypePtr(), address.ToPointer());
         }
 
         // Used to mutate the first parameter in a closed static delegate.  Note that this does no synchronization of any kind;
@@ -376,8 +376,8 @@ namespace Internal.Runtime.Augments
         //
         public static bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
         {
-            EETypePtr dstEEType = dstType.EEType;
-            EETypePtr srcEEType = srcType.EEType;
+            EETypePtr dstEEType = dstType.ToEETypePtr();
+            EETypePtr srcEEType = srcType.ToEETypePtr();
 
             return RuntimeImports.AreTypesAssignable(srcEEType, dstEEType);
         }
@@ -390,7 +390,7 @@ namespace Internal.Runtime.Augments
         //
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
-            EETypePtr eeType = typeHandle.EEType;
+            EETypePtr eeType = typeHandle.ToEETypePtr();
             RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
             if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
                 eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
@@ -409,7 +409,7 @@ namespace Internal.Runtime.Augments
         //
         public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = typeHandle.EEType;
+            EETypePtr eeType = typeHandle.ToEETypePtr();
             RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
             if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
                 eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
@@ -436,7 +436,7 @@ namespace Internal.Runtime.Augments
 
         private static EETypePtr CreateEETypePtr(RuntimeTypeHandle runtimeTypeHandle)
         {
-            return runtimeTypeHandle.EEType;
+            return runtimeTypeHandle.ToEETypePtr();
         }
 
         public static int GetGCDescSize(RuntimeTypeHandle typeHandle)
@@ -596,8 +596,8 @@ namespace Internal.Runtime.Augments
                 return false;
 
 
-            EETypePtr srcEEType = srcType.EEType;
-            EETypePtr dstEEType = dstType.EEType;
+            EETypePtr srcEEType = srcType.ToEETypePtr();
+            EETypePtr dstEEType = dstType.ToEETypePtr();
             if (!srcEEType.IsPrimitive)
                 return false;
             if (!dstEEType.IsPrimitive)
@@ -615,7 +615,7 @@ namespace Internal.Runtime.Augments
         public static bool IsAssignable(Object srcObject, RuntimeTypeHandle dstType)
         {
             EETypePtr srcEEType = srcObject.EETypePtr;
-            return RuntimeImports.AreTypesAssignable(srcEEType, dstType.EEType);
+            return RuntimeImports.AreTypesAssignable(srcEEType, dstType.ToEETypePtr());
         }
 
         //==============================================================================================
@@ -623,12 +623,12 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         public static bool IsNullable(RuntimeTypeHandle declaringTypeHandle)
         {
-            return RuntimeImports.RhIsNullable(declaringTypeHandle.EEType);
+            return RuntimeImports.RhIsNullable(declaringTypeHandle.ToEETypePtr());
         }
 
         public static RuntimeTypeHandle GetNullableType(RuntimeTypeHandle nullableType)
         {
-            EETypePtr theT = RuntimeImports.RhGetNullableType(nullableType.EEType);
+            EETypePtr theT = RuntimeImports.RhGetNullableType(nullableType.ToEETypePtr());
             return new RuntimeTypeHandle(theT);
         }
 
@@ -777,7 +777,7 @@ namespace Internal.Runtime.Augments
 
         public static int GetCorElementType(RuntimeTypeHandle type)
         {
-            return (int)RuntimeImports.RhGetCorElementType(type.EEType);
+            return (int)RuntimeImports.RhGetCorElementType(type.ToEETypePtr());
         }
 
         // Move memory which may be on the heap which may have object references in it.

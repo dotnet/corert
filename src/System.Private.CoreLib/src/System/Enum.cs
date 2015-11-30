@@ -162,7 +162,7 @@ namespace System
             }
             else
             {
-                if (value.EETypePtr != enumInfo.UnderlyingType.TypeHandle.EEType)
+                if (value.EETypePtr != enumInfo.UnderlyingType.TypeHandle.ToEETypePtr())
                     throw new ArgumentException(SR.Format(SR.Arg_EnumFormatUnderlyingTypeAndObjectMustBeSameType, value.GetType().ToString(), enumInfo.UnderlyingType.ToString()));
             }
 
@@ -388,7 +388,7 @@ namespace System
                 // Try to see if its one of the enum values, then we return a String back else the value
                 String name = GetNameIfAny(enumInfo, rawValue);
                 if (name == null)
-                    return DoFormatD(rawValue, enumInfo.UnderlyingType.TypeHandle.EEType.CorElementType);
+                    return DoFormatD(rawValue, enumInfo.UnderlyingType.TypeHandle.ToEETypePtr().CorElementType);
                 else
                     return name;
             }
@@ -436,7 +436,7 @@ namespace System
 
             // We were unable to represent this number as a bitwise or of valid flags
             if (result != 0)
-                return DoFormatD(rawValue, enumInfo.UnderlyingType.TypeHandle.EEType.CorElementType);
+                return DoFormatD(rawValue, enumInfo.UnderlyingType.TypeHandle.ToEETypePtr().CorElementType);
 
             // For the case when we have zero
             if (rawValue == 0)
@@ -520,7 +520,7 @@ namespace System
                 throw new ArgumentNullException("enumType");
 
             RuntimeTypeHandle runtimeTypeHandle = enumType.TypeHandle;
-            EETypePtr eeType = runtimeTypeHandle.EEType;
+            EETypePtr eeType = runtimeTypeHandle.ToEETypePtr();
             if (!eeType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
@@ -557,7 +557,7 @@ namespace System
                 throw new ArgumentNullException("enumType");
             Array values = GetEnumInfo(enumType).Values;
             int count = values.Length;
-            EETypePtr enumArrayType = enumType.MakeArrayType().TypeHandle.EEType;
+            EETypePtr enumArrayType = enumType.MakeArrayType().TypeHandle.ToEETypePtr();
             Array result = RuntimeImports.RhNewArray(enumArrayType, count);
             Array.CopyImplValueTypeArrayNoInnerGcRefs(values, 0, result, 0, count);
             return result;
@@ -604,7 +604,7 @@ namespace System
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            if (value.EETypePtr == typeof(string).TypeHandle.EEType)
+            if (value.EETypePtr == typeof(string).TypeHandle.ToEETypePtr())
             {
                 EnumInfo enumInfo = GetEnumInfo(enumType);
                 foreach (KeyValuePair<String, ulong> kv in enumInfo.NamesAndValues)
@@ -634,7 +634,7 @@ namespace System
                 else
                 {
                     enumInfo = GetEnumInfo(enumType);
-                    if (!(enumInfo.UnderlyingType.TypeHandle.EEType == value.EETypePtr))
+                    if (!(enumInfo.UnderlyingType.TypeHandle.ToEETypePtr() == value.EETypePtr))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), enumInfo.UnderlyingType));
                 }
 
@@ -664,7 +664,7 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException("enumType");
 
-            if (!enumType.TypeHandle.EEType.IsEnum)
+            if (!enumType.TypeHandle.ToEETypePtr().IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             if (value == null)
@@ -678,7 +678,7 @@ namespace System
             if (value.EETypePtr.IsEnum && !ValueTypeMatchesEnumType(enumType, value))
                 throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), enumType));
 
-            EETypePtr enumEEType = enumType.TypeHandle.EEType;
+            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
             return RuntimeImports.RhBox(enumEEType, &rawValue);  //@todo: Not big-endian compatible.
         }
 
@@ -757,7 +757,7 @@ namespace System
         private static EnumInfo GetEnumInfoIfAvailable(Type enumType)
         {
             RuntimeTypeHandle runtimeTypeHandle = enumType.TypeHandle;
-            if (!runtimeTypeHandle.EEType.IsEnum)
+            if (!runtimeTypeHandle.ToEETypePtr().IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
             // We know this cast will succeed as we already checked for the existence of a RuntimeTypeHandle.
@@ -894,7 +894,7 @@ namespace System
                 return false;
             }
 
-            EETypePtr enumEEType = runtimeEnumType.TypeHandle.EEType;
+            EETypePtr enumEEType = runtimeEnumType.TypeHandle.ToEETypePtr();
             if (!enumEEType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
