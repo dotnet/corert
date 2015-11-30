@@ -1052,15 +1052,3 @@ internal partial class Interop
 #endif
     }
 }
-
-namespace System.Runtime.InteropServices
-{
-    //
-    // We have hand-written code in System.Private.CoreLib that depends on McgIntrinsicsAttribute
-    //
-    [AttributeUsageAttribute(AttributeTargets.Method | AttributeTargets.Class)]
-    internal class McgIntrinsicsAttribute : Attribute
-    {
-    }
-}
-

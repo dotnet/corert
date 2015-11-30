@@ -40,7 +40,7 @@ namespace System
             if (IsNull)
                 return 0;
 
-            return (int)RuntimeImports.RhGetEETypeHash(this.EEType);
+            return (int)RuntimeImports.RhGetEETypeHash(this.ToEETypePtr());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,7 +56,7 @@ namespace System
             }
             else
             {
-                return RuntimeImports.AreTypesEquivalent(this.EEType, handle.EEType);
+                return RuntimeImports.AreTypesEquivalent(this.ToEETypePtr(), handle.ToEETypePtr());
             }
         }
 
@@ -88,19 +88,16 @@ namespace System
             return true;
         }
 
-        internal EETypePtr EEType
+        internal EETypePtr ToEETypePtr()
         {
-            get
-            {
-                return new EETypePtr(_value);
-            }
+            return new EETypePtr(_value);
         }
 
         internal RuntimeImports.RhEETypeClassification Classification
         {
             get
             {
-                return RuntimeImports.RhGetEETypeClassification(this.EEType);
+                return RuntimeImports.RhGetEETypeClassification(this.ToEETypePtr());
             }
         }
 
@@ -118,7 +115,7 @@ namespace System
             get
             {
                 String s;
-                EETypePtr eeType = this.EEType;
+                EETypePtr eeType = this.ToEETypePtr();
                 IntPtr rawEEType = eeType.RawValue;
                 IntPtr moduleBase = RuntimeImports.RhGetModuleFromEEType(rawEEType);
                 uint rva = (uint)(rawEEType.ToInt64() - moduleBase.ToInt64());

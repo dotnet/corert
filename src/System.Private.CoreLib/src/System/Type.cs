@@ -149,7 +149,7 @@ namespace System
             RuntimeTypeHandle typeHandle;
             if (!runtimeType.InternalTryGetTypeHandle(out typeHandle))
                 return false;
-            eeType = typeHandle.EEType;
+            eeType = typeHandle.ToEETypePtr();
             return true;
         }
     }

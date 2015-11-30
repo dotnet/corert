@@ -18,7 +18,7 @@ namespace Internal.Runtime.CompilerServices
             IntPtr resolution = IntPtr.Zero;
 
             // Otherwise, walk parent hierarchy attempting to resolve
-            EETypePtr eetype = type.EEType;
+            EETypePtr eetype = type.ToEETypePtr();
 
             IntPtr functionPointer = IntPtr.Zero;
             IntPtr genericDictionary = IntPtr.Zero;

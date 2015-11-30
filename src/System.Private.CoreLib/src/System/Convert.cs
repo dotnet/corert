@@ -127,7 +127,7 @@ namespace System
 
             if (value == null)
             {
-                if (conversionType.TypeHandle.EEType.IsValueType)
+                if (conversionType.TypeHandle.ToEETypePtr().IsValueType)
                 {
                     throw new InvalidCastException(SR.InvalidCast_CannotCastNullToValueType);
                 }

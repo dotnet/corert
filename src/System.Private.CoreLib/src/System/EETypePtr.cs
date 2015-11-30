@@ -151,7 +151,7 @@ namespace System
                 if (!(classification == RuntimeImports.RhEETypeClassification.Regular || classification == RuntimeImports.RhEETypeClassification.Generic))
                     return false;
                 EETypePtr baseType = this.BaseType;
-                return baseType == typeof(Enum).TypeHandle.EEType;
+                return baseType == typeof(Enum).TypeHandle.ToEETypePtr();
             }
         }
 
@@ -168,17 +168,17 @@ namespace System
             get
             {
                 if (IsArray)
-                    return typeof(Array).TypeHandle.EEType;
+                    return typeof(Array).TypeHandle.ToEETypePtr();
 
                 if (IsPointer)
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = RuntimeImports.RhGetNonArrayBaseType(this);
-                if (baseEEType == typeof(MDArrayRank2).TypeHandle.EEType ||
-                    baseEEType == typeof(MDArrayRank3).TypeHandle.EEType ||
-                    baseEEType == typeof(MDArrayRank4).TypeHandle.EEType)
+                if (baseEEType == typeof(MDArrayRank2).TypeHandle.ToEETypePtr() ||
+                    baseEEType == typeof(MDArrayRank3).TypeHandle.ToEETypePtr() ||
+                    baseEEType == typeof(MDArrayRank4).TypeHandle.ToEETypePtr())
                 {
-                    return typeof(Array).TypeHandle.EEType;
+                    return typeof(Array).TypeHandle.ToEETypePtr();
                 }
 
                 return baseEEType;

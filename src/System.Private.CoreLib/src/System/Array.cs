@@ -122,7 +122,7 @@ namespace System
                 throw new ArgumentOutOfRangeException("length");
 
             Type arrayType = GetArrayTypeFromElementType(elementType, false, 1);
-            return RuntimeImports.RhNewArray(arrayType.TypeHandle.EEType, length);
+            return RuntimeImports.RhNewArray(arrayType.TypeHandle.ToEETypePtr(), length);
         }
 
         private static Array CreateMultiDimArray(Type elementType, int[] lengths, int[] lowerBounds)

@@ -35,7 +35,7 @@ namespace System.ComponentModel
             // load an otherwise normal class.
             try
             {
-                if (type.TypeHandle.EEType.IsEnum)
+                if (type.TypeHandle.ToEETypePtr().IsEnum)
                 {
                     _value = Enum.Parse(type, value, true);
                 }

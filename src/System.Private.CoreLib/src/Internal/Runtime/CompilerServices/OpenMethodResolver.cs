@@ -97,7 +97,7 @@ namespace Internal.Runtime.CompilerServices
         {
             if (_resolveType == DispatchResolve)
             {
-                return RuntimeImports.RhResolveDispatch(thisObject, _declaringType.EEType, (ushort)_methodHandleOrSlotOrCodePointer.ToInt32());
+                return RuntimeImports.RhResolveDispatch(thisObject, _declaringType.ToEETypePtr(), (ushort)_methodHandleOrSlotOrCodePointer.ToInt32());
             }
             else if (_resolveType == GVMResolve)
             {

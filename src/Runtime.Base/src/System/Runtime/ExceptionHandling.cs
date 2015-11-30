@@ -570,7 +570,7 @@ namespace System.Runtime
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
         {
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
-            Debug.TriggerGCForGCStress();
+            GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
 
@@ -619,7 +619,7 @@ namespace System.Runtime
         public static void RhThrowEx(Exception exceptionObj, ref ExInfo exInfo)
         {
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
-            Debug.TriggerGCForGCStress();
+            GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
 
@@ -639,7 +639,7 @@ namespace System.Runtime
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
         {
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
-            Debug.TriggerGCForGCStress();
+            GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
 
