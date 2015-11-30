@@ -268,20 +268,20 @@ namespace System
                 case 0:
                     return (String.Empty);
                 case 1:
-                    return (String.Concat(_Major));
+                    return (FormatComponent(_Major));
                 case 2:
-                    return (String.Concat(_Major, ".", _Minor));
+                    return (String.Concat(FormatComponent(_Major), ".", FormatComponent(_Minor)));
                 default:
                     if (_Build == -1)
                         throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "2"), "fieldCount");
                     if (fieldCount == 3)
-                        return (_Major + "." + _Minor + "." + _Build);
+                        return (FormatComponent(_Major) + "." + FormatComponent(_Minor) + "." + FormatComponent(_Build));
 
                     if (_Revision == -1)
                         throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "3"), "fieldCount");
 
                     if (fieldCount == 4)
-                        return (Major + "." + _Minor + "." + _Build + "." + _Revision);
+                        return (FormatComponent(Major) + "." + FormatComponent(_Minor) + "." + FormatComponent(_Build) + "." + FormatComponent(_Revision));
 
                     throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), "fieldCount");
             }
@@ -391,6 +391,15 @@ namespace System
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Format a version component using culture-invariant formatting.
+        /// </summary>
+        /// <param name="component">A numeric component of the version number</param>
+        private static string FormatComponent(int component)
+        {
+            return component.ToString(FormatProvider.InvariantCulture);
         }
 
         public static bool operator ==(Version v1, Version v2)
