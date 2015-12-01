@@ -261,6 +261,9 @@ namespace System
             // This is portable version of memcpy. It mirrors what the hand optimized assembly versions of memcpy typically do.
             //
 
+#if ALIGN_ACCESS
+#error Needs porting for ALIGN_ACCESS (https://github.com/dotnet/corert/issues/430)
+#else // ALIGN_ACCESS
             switch (len)
             {
                 case 0:
@@ -383,9 +386,7 @@ namespace System
             }
 
             // P/Invoke into the native version for large lengths.
-            // On desktop, we only PInvoke for lengths >= 512. Since the overhead of a PInvoke is cheaper here,
-            // we are able to PInvoke for smaller copy workloads (length >= 50) and still get a benefit.
-            if (len >= 50)
+            if (len >= 200)
             {
                 _Memmove(dest, src, len);
                 return;
@@ -461,6 +462,7 @@ namespace System
             }
             if ((len & 1) != 0)
                 *dest = *src;
+#endif // ALIGN_ACCESS
         }
 
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
