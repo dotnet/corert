@@ -28,22 +28,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\StackTraceGenerator\StackTraceGenerator.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\StackTraceGenerator\Attributes.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\LightweightInterop\ComInterface.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\LightweightInterop\StdCall.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\LightweightInterop\MarshalExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Dia\Guids.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Dia\StdCall.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Dia\DiaEnums.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Dia\DiaInterfaces.cs" />
+    <Compile Include="Internal\StackTraceGenerator\StackTraceGenerator.cs" />
+    <Compile Include="Internal\LightweightInterop\ComInterface.cs" />
+    <Compile Include="Internal\LightweightInterop\StdCall.cs" />
+    <Compile Include="Internal\LightweightInterop\MarshalExtensions.cs" />
+    <Compile Include="Internal\Dia\Guids.cs" />
+    <Compile Include="Internal\Dia\StdCall.cs" />
+    <Compile Include="Internal\Dia\DiaEnums.cs" />
+    <Compile Include="Internal\Dia\DiaInterfaces.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)..\..\Common\src\System\NotImplemented.cs" />
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
   </ItemGroup>
 
   <PropertyGroup>
