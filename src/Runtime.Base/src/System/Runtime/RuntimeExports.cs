@@ -314,6 +314,21 @@ namespace System.Runtime
                 return new Wrapper();
         }
 
+        [RuntimeExport("RhMemberwiseClone")]
+        public unsafe static object RhMemberwiseClone(object src)
+        {
+            object objClone;
+
+            if (src.EEType->IsArray)
+                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), src.GetArrayLength());
+            else
+                objClone = RhNewObject(new EETypePtr((IntPtr)src.EEType));
+
+            InternalCalls.RhpCopyObjectContents(objClone, src);
+
+            return objClone;
+        }
+
         [RuntimeExport("RhpReversePInvokeBadTransition")]
         public static void RhpReversePInvokeBadTransition()
         {
@@ -332,12 +347,6 @@ namespace System.Runtime
                 EH.FailFast(RhFailFastReason.InternalError, null);
                 throw EH.GetClasslibException(ExceptionIDs.Arithmetic, returnAddress);
             }
-        }
-
-        [RuntimeExport("RhMemberwiseClone")]
-        public static object RhMemberwiseClone(object src)
-        {
-            return src.MemberwiseClone();
         }
 
         // EEType interrogation methods.

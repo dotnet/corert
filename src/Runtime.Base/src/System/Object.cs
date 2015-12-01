@@ -61,42 +61,13 @@ namespace System
             }
         }
 
-        private unsafe int GetArrayLength()
+        internal unsafe int GetArrayLength()
         {
             Debug.Assert(_pEEType->IsArray, "this is only supported on arrays");
 
             // m_numComponents is an int field that is directly after _pEEType
             fixed (EEType** ptr = &_pEEType)
                 return *(int*)(ptr + 1);
-        }
-
-        internal object MemberwiseClone()
-        {
-            object objClone;
-#if FEATURE_64BIT_ALIGNMENT
-            if (_pEEType->RequiresAlign8)
-            {
-                if (_pEEType->IsArray)
-                    objClone = InternalCalls.RhpNewArrayAlign8(_pEEType, GetArrayLength());
-                else if (_pEEType->IsFinalizable)
-                    objClone = InternalCalls.RhpNewFinalizableAlign8(_pEEType);
-                else
-                    objClone = InternalCalls.RhpNewFastAlign8(_pEEType);
-            }
-            else
-#endif // FEATURE_64BIT_ALIGNMENT
-            {
-                if (_pEEType->IsArray)
-                    objClone = InternalCalls.RhpNewArray(_pEEType, GetArrayLength());
-                else if (_pEEType->IsFinalizable)
-                    objClone = InternalCalls.RhpNewFinalizable(_pEEType);
-                else
-                    objClone = InternalCalls.RhpNewFast(_pEEType);
-            }
-
-            InternalCalls.RhpCopyObjectContents(objClone, this);
-
-            return objClone;
         }
     }
 }
