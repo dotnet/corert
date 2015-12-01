@@ -48,7 +48,7 @@ set(COMMON_RUNTIME_SOURCES
 )
 
 set(FULL_RUNTIME_SOURCES
-    # AsmOffsetsVerify.cpp
+    AsmOffsetsVerify.cpp
 )
 
 set(PORTABLE_RUNTIME_SOURCES
