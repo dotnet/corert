@@ -15,10 +15,10 @@ internal static partial class Interop
 
     internal static unsafe partial class mincore
     {
-        [DllImport("Libraries.Process")]
+        [DllImport(Libraries.Process)]
         internal static extern IntPtr GetStdHandle(int nStdHandle);
 
-        [DllImport("Libraries.Console", EntryPoint = "WriteConsoleW")]
+        [DllImport(Libraries.Console, EntryPoint = "WriteConsoleW")]
         internal static unsafe extern bool WriteConsole(IntPtr hConsoleOutput, byte* lpBuffer, int nNumberOfCharsToWrite, out int lpNumberOfCharsWritten, IntPtr lpReservedMustBeNull);
     }
 }
