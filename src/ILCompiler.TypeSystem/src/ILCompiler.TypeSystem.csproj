@@ -41,7 +41,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.Interfaces.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.cs" />
-    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.FieldLayout.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.Interfaces.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs" />
