@@ -50,7 +50,7 @@ FASTCALL_FUNC ManagedCallout2, 16
         ;; we can just go. The _ReturnFromManagedCallout2 label must immediately follow the call instruction.
         mov     eax, [ebp + 08h]
         call    eax
-ALTERNATE_ENTRY ReturnFromManagedCallout2
+LABELED_RETURN_ADDRESS ReturnFromManagedCallout2
 
         ;; Pop the ebp frame and return.
         mov     esp, ebp

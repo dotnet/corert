@@ -40,6 +40,14 @@
     #define FireEtwPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) 0
     #define FireEtwGCTriggered(Reason, ClrInstanceID) 0
 
+    #ifndef _INC_WINDOWS
+        typedef uint64_t ULONGLONG;
+        typedef uint32_t ULONG;
+        typedef int64_t LONGLONG;
+        typedef uint8_t BYTE;
+        typedef uint16_t UINT16;
+    #endif // _INC_WINDOWS
+
     #include "etwevents.h"
     #include "eventtrace.h"
 #endif
@@ -152,7 +160,7 @@ public:
     bool    IsGCStressMix()                 const { return false; }
 
     int     GetGCtraceStart()               const { return 0; }
-    int     GetGCtraceEnd  ()               const { return 0; }//1000000000; }
+    int     GetGCtraceEnd  ()               const { return 1000000000; }
     int     GetGCtraceFac  ()               const { return 0; }
     int     GetGCprnLvl    ()               const { return 0; }
     bool    IsGCBreakOnOOMEnabled()         const { return false; }

@@ -73,7 +73,7 @@ ALTERNATE_ENTRY RhpUniversalTransition@0
         mov  edx, [ebp-8]    ; Get first argument
         lea  ecx, [ebp-14h]  ; Get pointer to argument information
         call eax
-ALTERNATE_ENTRY ReturnFromUniversalTransition
+LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
 
         POP_COOP_PINVOKE_FRAME
         pop edx

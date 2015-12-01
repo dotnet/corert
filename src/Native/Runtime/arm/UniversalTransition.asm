@@ -115,7 +115,7 @@
         ALIGN 4
         add         r0, sp, #(RETURN_BLOCK_STACK_OFFSET) ; First parameter to target function is a pointer to the return block
         blx         r12
-        ALTERNATE_ENTRY ReturnFromUniversalTransition
+    LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
 
         ;; Move the result (the target address) to r12 so it doesn't get overridden when we restore the
         ;; argument registers. Additionally make sure the thumb2 bit is set.

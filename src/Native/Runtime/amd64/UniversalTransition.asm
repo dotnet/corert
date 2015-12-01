@@ -84,7 +84,7 @@ NESTED_ENTRY RhpUniversalTransition, _TEXT
         mov  rdx, r11
         lea  rcx, [rsp + OFFSETOF_SCRATCH_SPACE] 
         call rax
-ALTERNATE_ENTRY ReturnFromUniversalTransition
+LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
 
         ; restore fp argument registers
         movdqa          xmm0, [rsp + OFFSETOF_FP_ARG_SPILL      ]

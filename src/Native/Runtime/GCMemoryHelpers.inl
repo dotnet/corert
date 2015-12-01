@@ -7,14 +7,21 @@
 // Unmanaged GC memory helpers
 //
 
+#ifndef DACCESS_COMPILE
 #ifdef WRITE_BARRIER_CHECK
 extern uint8_t* g_GCShadow;
 extern uint8_t* g_GCShadowEnd;
-extern "C" uint8_t* g_lowest_address;
-extern "C" uint8_t* g_highest_address;
+typedef DPTR(uint8_t)   PTR_uint8_t;
+extern "C" {
+    GPTR_DECL(uint8_t, g_lowest_address);
+    GPTR_DECL(uint8_t, g_highest_address);
+}
 #endif
 
-extern "C" uint32_t* g_card_table;
+typedef DPTR(uint32_t)   PTR_uint32_t;
+extern "C" {
+    GPTR_DECL(uint32_t, g_card_table);
+}
 static const UInt32 INVALIDGCVALUE = 0xcccccccd;
 
 FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
@@ -105,3 +112,4 @@ FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
     }
     while (clumpCount != 0);
 }
+#endif // DACCESS_COMPILE

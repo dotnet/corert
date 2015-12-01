@@ -59,7 +59,7 @@ LNoFloatingPoint
         ;; Note that remoting expect target in r4.
         ldr     r4, [r5,#OFFSETOF__CallDescrData__pTarget]
         blx     r4
-        ALTERNATE_ENTRY ReturnFromCallDescrThunk
+    LABELED_RETURN_ADDRESS ReturnFromCallDescrThunk
 
         ldr     r3, [r5,#OFFSETOF__CallDescrData__fpReturnSize]
 
