@@ -26,9 +26,7 @@ namespace ILCompiler
 
             if (target.Signature.IsStatic)
             {
-                var shuffleThunk = new DelegateShuffleThunk(target);
-                compilation.AddMethod(shuffleThunk);
-                this.ShuffleThunk = shuffleThunk;
+                this.ShuffleThunk = new DelegateShuffleThunk(target);
 
                 this.Ctor = systemDelegate.GetMethod("InitializeClosedStaticThunk", null);
             }

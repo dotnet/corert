@@ -12,6 +12,8 @@ using Internal.IL.Stubs;
 using ILCompiler;
 using ILCompiler.CppCodeGen;
 
+using ILCompiler.DependencyAnalysis;
+
 namespace Internal.IL
 {
     public struct ILSequencePoint
@@ -32,6 +34,7 @@ namespace Internal.IL
     internal partial class ILImporter
     {
         private Compilation _compilation;
+        private NodeFactory _nodeFactory;
         private CppWriter _writer;
 
         private TypeSystemContext _typeSystemContext;
@@ -84,6 +87,7 @@ namespace Internal.IL
         private TypeDesc _constrained;
 
         private StringBuilder _builder = new StringBuilder();
+        private ArrayBuilder<object> _dependencies = new ArrayBuilder<object>();
 
         private class BasicBlock
         {
@@ -106,6 +110,8 @@ namespace Internal.IL
         public ILImporter(Compilation compilation, CppWriter writer, MethodDesc method, MethodIL methodIL)
         {
             _compilation = compilation;
+            _nodeFactory = _compilation.NodeFactory;
+
             _writer = writer;
 
             _method = method;
@@ -422,7 +428,7 @@ namespace Internal.IL
                 _builder.AppendLine();
         }
 
-        public string Compile()
+        public void Compile(CppMethodCodeNode methodCodeNodeNeedingCode)
         {
             FindBasicBlocks();
 
@@ -522,7 +528,7 @@ namespace Internal.IL
 
             _builder.AppendLine("}");
 
-            return _builder.ToString();
+            methodCodeNodeNeedingCode.SetCode(_builder.ToString(), _dependencies.ToArray());
         }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
@@ -611,6 +617,8 @@ namespace Internal.IL
 
             var value = Pop();
             PushTemp(StackValueKind.ObjRef, type);
+
+            AddTypeReference(type, false);
 
             Append(opcode == ILOpcode.isinst ? "__isinst_class" : "__castclass_class");
             Append("(");
@@ -761,17 +769,17 @@ namespace Internal.IL
                     if (method.OwningType.IsInterface)
                         throw new NotImplementedException();
 
-                    _compilation.AddVirtualSlot(method);
+                    _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
 
                     callViaSlot = true;
                 }
             }
 
             if (!callViaSlot && !delegateInvoke && !mdArrayCreate)
-                _compilation.AddMethod(method);
+                AddMethodReference(method);
 
             if (opcode == ILOpcode.newobj)
-                _compilation.MarkAsConstructed(retType);
+                AddTypeReference(retType, true);
 
             var methodSignature = method.Signature;
 
@@ -808,8 +816,6 @@ namespace Internal.IL
             {
                 if (!retType.IsValueType)
                 {
-                    _compilation.AddType(retType);
-
                     Append("__allocate_object(");
                     Append(_writer.GetCppTypeName(retType));
                     Append("::__getMethodTable())");
@@ -817,6 +823,8 @@ namespace Internal.IL
 
                     if (delegateInfo != null && delegateInfo.ShuffleThunk != null)
                     {
+                        AddMethodReference(delegateInfo.ShuffleThunk);
+
                         _stack[_stackTop - 2].Value.Name = temp;
 
                         StringBuilder sb = new StringBuilder();
@@ -850,7 +858,6 @@ namespace Internal.IL
             }
             else if (mdArrayCreate)
             {
-                _compilation.AddType(method.OwningType);
                 Append("RhNewMDArray");
             }
             else
@@ -931,7 +938,7 @@ namespace Internal.IL
                     throw new NotImplementedException();
             }
 
-            _compilation.AddMethod(method);
+            AddMethodReference(method);
 
             PushTemp(StackValueKind.NativeInt);
             Append("(intptr_t)&");
@@ -1393,7 +1400,7 @@ namespace Internal.IL
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
 
-            _compilation.AddField(field);
+            AddFieldReference(field);
 
             var thisPtr = isStatic ? new StackValue() : Pop();
 
@@ -1443,7 +1450,7 @@ namespace Internal.IL
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
 
-            _compilation.AddField(field);
+            AddFieldReference(field);
 
             var thisPtr = isStatic ? new StackValue() : Pop();
 
@@ -1495,7 +1502,7 @@ namespace Internal.IL
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
 
-            _compilation.AddField(field);
+            AddFieldReference(field);
 
             var value = Pop();
             var thisPtr = isStatic ? new StackValue() : Pop();
@@ -1666,8 +1673,7 @@ namespace Internal.IL
 
                 PushTemp(StackValueKind.ObjRef, type);
 
-                _compilation.AddType(type);
-                _compilation.MarkAsConstructed(type);
+                AddTypeReference(type, true);
 
                 Append("__allocate_object(");
                 Append(_writer.GetCppTypeName(type));
@@ -1778,8 +1784,7 @@ namespace Internal.IL
 
             PushTemp(StackValueKind.ObjRef, arrayType);
 
-            _compilation.AddType(arrayType);
-            _compilation.MarkAsConstructed(arrayType);
+            AddTypeReference(arrayType, true);
 
             Append("__allocate_array(");
             Append(numElements.Value.Name);
@@ -2115,7 +2120,7 @@ namespace Internal.IL
         {
             // TODO: Before field init
 
-            MethodDesc cctor = type.GetMethod(".cctor", null);
+            MethodDesc cctor = type.GetStaticConstructor();
             if (cctor == null)
                 return;
 
@@ -2128,7 +2133,50 @@ namespace Internal.IL
             Append(_writer.GetCppMethodName(cctor));
             Append("(); }");
 
-            _compilation.AddMethod(cctor);
+            AddMethodReference(cctor);
+        }
+
+        private void AddTypeReference(TypeDesc type, bool constructed)
+        {
+            Object node;
+
+            if (constructed)
+                node = _nodeFactory.ConstructedTypeSymbol(type);
+            else
+                node = _nodeFactory.NecessaryTypeSymbol(type);
+
+            _dependencies.Add(node);
+        }
+
+        private void AddMethodReference(MethodDesc method)
+        {
+            _dependencies.Add(_nodeFactory.MethodEntrypoint(method));
+        }
+
+        private void AddFieldReference(FieldDesc field)
+        {
+            if (field.IsStatic)
+            {
+                var owningType = (MetadataType)field.OwningType;
+
+                Object node;
+                if (field.IsThreadStatic)
+                {
+                    node = _nodeFactory.TypeThreadStaticsSymbol(owningType);
+                }
+                else
+                {
+                    if (field.HasGCStaticBase)
+                        node = _nodeFactory.TypeGCStaticsSymbol(owningType);
+                    else
+                        node = _nodeFactory.TypeNonGCStaticsSymbol(owningType);
+                }
+
+                // TODO: Remove once the depedencies for static fields are tracked properly
+                _writer.GetCppSignatureTypeName(owningType);
+
+                _dependencies.Add(node);
+            }
         }
     }
 }

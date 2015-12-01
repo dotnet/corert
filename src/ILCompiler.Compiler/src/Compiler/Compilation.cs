@@ -37,11 +37,6 @@ namespace ILCompiler
         private NodeFactory _nodeFactory;
         private DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
 
-        private Dictionary<TypeDesc, RegisteredType> _registeredTypes = new Dictionary<TypeDesc, RegisteredType>();
-        private Dictionary<MethodDesc, RegisteredMethod> _registeredMethods = new Dictionary<MethodDesc, RegisteredMethod>();
-        private Dictionary<FieldDesc, RegisteredField> _registeredFields = new Dictionary<FieldDesc, RegisteredField>();
-        private List<MethodDesc> _methodsThatNeedsCompilation = null;
-
         private NameMangler _nameMangler = null;
 
         private ILCompiler.CppCodeGen.CppWriter _cppWriter = null;
@@ -122,59 +117,6 @@ namespace ILCompiler
             }
         }
 
-        internal IEnumerable<RegisteredType> RegisteredTypes
-        {
-            get
-            {
-                return _registeredTypes.Values;
-            }
-        }
-
-        internal RegisteredType GetRegisteredType(TypeDesc type)
-        {
-            RegisteredType existingRegistration;
-            if (_registeredTypes.TryGetValue(type, out existingRegistration))
-                return existingRegistration;
-
-            RegisteredType registration = new RegisteredType() { Type = type };
-            _registeredTypes.Add(type, registration);
-
-            // Register all base types too
-            var baseType = type.BaseType;
-            if (baseType != null)
-                GetRegisteredType(baseType);
-
-            return registration;
-        }
-
-        internal RegisteredMethod GetRegisteredMethod(MethodDesc method)
-        {
-            RegisteredMethod existingRegistration;
-            if (_registeredMethods.TryGetValue(method, out existingRegistration))
-                return existingRegistration;
-
-            RegisteredMethod registration = new RegisteredMethod() { Method = method };
-            _registeredMethods.Add(method, registration);
-
-            GetRegisteredType(method.OwningType);
-
-            return registration;
-        }
-
-        internal RegisteredField GetRegisteredField(FieldDesc field)
-        {
-            RegisteredField existingRegistration;
-            if (_registeredFields.TryGetValue(field, out existingRegistration))
-                return existingRegistration;
-
-            RegisteredField registration = new RegisteredField() { Field = field };
-            _registeredFields.Add(field, registration);
-
-            GetRegisteredType(field.OwningType);
-
-            return registration;
-        }
-
         private ILProvider _ilProvider = new ILProvider();
 
         public MethodIL GetMethodIL(MethodDesc method)
@@ -182,117 +124,69 @@ namespace ILCompiler
             return _ilProvider.GetMethodIL(method);
         }
 
-        private void CompileMethods()
-        {
-            var pendingMethods = _methodsThatNeedsCompilation;
-            _methodsThatNeedsCompilation = null;
-
-            foreach (MethodDesc method in pendingMethods)
-            {
-                _cppWriter.CompileMethod(method);
-            }
-        }
-
-        private void ExpandVirtualMethods()
-        {
-            // Take a snapshot of _registeredTypes - new registered types can be added during the expansion
-            foreach (var reg in _registeredTypes.Values.ToArray())
-            {
-                if (!reg.Constructed)
-                    continue;
-
-                TypeDesc declType = reg.Type;
-                while (declType != null)
-                {
-                    var declReg = GetRegisteredType(declType);
-                    if (declReg.VirtualSlots != null)
-                    {
-                        for (int i = 0; i < declReg.VirtualSlots.Count; i++)
-                        {
-                            MethodDesc declMethod = declReg.VirtualSlots[i];
-
-                            AddMethod(VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, reg.Type.GetClosestMetadataType()));
-                        }
-                    }
-
-                    declType = declType.BaseType;
-                }
-            }
-        }
-
         private CorInfoImpl _corInfo;
 
         public void CompileSingleFile(MethodDesc mainMethod)
         {
+            _mainMethod = mainMethod;
+
+            NodeFactory.NameMangler = NameMangler;
+
+            _nodeFactory = new NodeFactory(_typeSystemContext, _options.IsCppCodeGen);
+
+            // Choose which dependency graph implementation to use based on the amount of logging requested.
+            if (_options.DgmlLog == null)
+            {
+                // No log uses the NoLogStrategy
+                _dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+            }
+            else
+            {
+                if (_options.FullLog)
+                {
+                    // Full log uses the full log strategy
+                    _dependencyGraph = new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                }
+                else
+                {
+                    // Otherwise, use the first mark strategy
+                    _dependencyGraph = new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
+                }
+            }
+
+            _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
+
+            AddWellKnownTypes();
+            AddCompilationRoots();
+
             if (_options.IsCppCodeGen)
             {
                 _cppWriter = new CppCodeGen.CppWriter(this);
+
+                _dependencyGraph.ComputeDependencyRoutine += CppCodeGenComputeDependencyNodeDependencies;
+
+                var nodes = _dependencyGraph.MarkedNodeList;
+
+                _cppWriter.OutputCode(nodes);
             }
             else
             {
                 _corInfo = new CorInfoImpl(this);
-            }
-
-            _mainMethod = mainMethod;
-
-            if (!_options.IsCppCodeGen)
-            {
-                NodeFactory.NameMangler = NameMangler;
-
-                _nodeFactory = new NodeFactory(_typeSystemContext);
-
-                // Choose which dependency graph implementation to use based on the amount of logging requested.
-                if (_options.DgmlLog == null)
-                {
-                    // No log uses the NoLogStrategy
-                    _dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
-                }
-                else
-                {
-                    if (_options.FullLog)
-                    {
-                        // Full log uses the full log strategy
-                        _dependencyGraph = new DependencyAnalyzer<FullGraphLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
-                    }
-                    else
-                    {
-                        // Otherwise, use the first mark strategy
-                        _dependencyGraph = new DependencyAnalyzer<FirstMarkLogStrategy<NodeFactory>, NodeFactory>(_nodeFactory, null);
-                    }
-                }
-
-                _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
-
-                AddWellKnownTypes();
-                AddCompilationRoots();
 
                 _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
+
                 var nodes = _dependencyGraph.MarkedNodeList;
 
                 ObjectWriter.EmitObject(OutputPath, nodes, _nodeFactory);
-
-                if (_options.DgmlLog != null)
-                {
-                    using (FileStream dgmlOutput = new FileStream(_options.DgmlLog, FileMode.Create))
-                    {
-                        DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
-                        dgmlOutput.Flush();
-                    }
-                }
             }
-            else
+
+            if (_options.DgmlLog != null)
             {
-                AddWellKnownTypes();
-                AddCompilationRoots();
-
-                while (_methodsThatNeedsCompilation != null)
+                using (FileStream dgmlOutput = new FileStream(_options.DgmlLog, FileMode.Create))
                 {
-                    CompileMethods();
-
-                    ExpandVirtualMethods();
+                    DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
+                    dgmlOutput.Flush();
                 }
-
-                _cppWriter.OutputCode();
             }
         }
 
@@ -322,19 +216,12 @@ namespace ILCompiler
 
         private void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
         {
-            if (_dependencyGraph != null)
-            {
-                var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
+            var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
 
-                _dependencyGraph.AddRoot(methodEntryPoint, reason);
+            _dependencyGraph.AddRoot(methodEntryPoint, reason);
 
-                if (exportName != null)
-                    _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
-            }
-            else
-            {
-                AddMethod(method);
-            }
+            if (exportName != null)
+                _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
         }
 
         private struct TypeAndMethod
@@ -416,103 +303,24 @@ namespace ILCompiler
             }
         }
 
+        private void CppCodeGenComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
+        {
+            foreach (CppMethodCodeNode methodCodeNodeNeedingCode in obj)
+            {
+                _cppWriter.CompileMethod(methodCodeNodeNeedingCode);
+            }
+        }
+
         private void AddWellKnownTypes()
         {
             var stringType = TypeSystemContext.GetWellKnownType(WellKnownType.String);
 
+            _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(stringType), "String type is always generated");
+
             // TODO: We are rooting String[] so the bootstrap code can find the EEType for making the command-line args
             // string array.  Once we generate the startup code in managed code, we should remove this
             var arrayOfStringType = stringType.MakeArrayType();
-
-            if (_dependencyGraph != null)
-            {
-                _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(stringType), "String type is always generated");
-                _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(arrayOfStringType), "String[] type is always generated");
-            }
-            else
-            {
-                AddType(stringType);
-                MarkAsConstructed(stringType);
-                AddType(arrayOfStringType);
-                MarkAsConstructed(arrayOfStringType);
-            }
-        }
-
-        public void AddMethod(MethodDesc method)
-        {
-            RegisteredMethod reg = GetRegisteredMethod(method);
-            if (reg.IncludedInCompilation)
-                return;
-            reg.IncludedInCompilation = true;
-
-            RegisteredType regType = GetRegisteredType(method.OwningType);
-            if (regType.Methods == null)
-                regType.Methods = new List<RegisteredMethod>();
-            regType.Methods.Add(reg);
-
-            if (_methodsThatNeedsCompilation == null)
-                _methodsThatNeedsCompilation = new List<MethodDesc>();
-            _methodsThatNeedsCompilation.Add(method);
-
-            if (_options.IsCppCodeGen)
-            {
-                // Precreate name to ensure that all types referenced by signatures are present
-                GetRegisteredType(method.OwningType);
-                var signature = method.Signature;
-                GetRegisteredType(signature.ReturnType);
-                for (int i = 0; i < signature.Length; i++)
-                    GetRegisteredType(signature[i]);
-            }
-        }
-
-        public void AddVirtualSlot(MethodDesc method)
-        {
-            RegisteredType reg = GetRegisteredType(method.OwningType);
-
-            if (reg.VirtualSlots == null)
-                reg.VirtualSlots = new List<MethodDesc>();
-
-            for (int i = 0; i < reg.VirtualSlots.Count; i++)
-            {
-                if (reg.VirtualSlots[i] == method)
-                    return;
-            }
-
-            reg.VirtualSlots.Add(method);
-        }
-
-        public void MarkAsConstructed(TypeDesc type)
-        {
-            GetRegisteredType(type).Constructed = true;
-        }
-
-        public void AddType(TypeDesc type)
-        {
-            RegisteredType reg = GetRegisteredType(type);
-            if (reg.IncludedInCompilation)
-                return;
-            reg.IncludedInCompilation = true;
-
-            TypeDesc baseType = type.BaseType;
-            if (baseType != null)
-                AddType(baseType);
-            if (type.IsArray)
-                AddType(((ArrayType)type).ElementType);
-        }
-
-        public void AddField(FieldDesc field)
-        {
-            RegisteredField reg = GetRegisteredField(field);
-            if (reg.IncludedInCompilation)
-                return;
-            reg.IncludedInCompilation = true;
-
-            if (_options.IsCppCodeGen)
-            {
-                // Precreate name to ensure that all types referenced by signatures are present
-                GetRegisteredType(field.OwningType);
-                GetRegisteredType(field.FieldType);
-            }
+            _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(arrayOfStringType), "String[] type is always generated");
         }
 
         private Dictionary<MethodDesc, DelegateInfo> _delegateInfos = new Dictionary<MethodDesc, DelegateInfo>();

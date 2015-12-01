@@ -38,9 +38,11 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
@@ -53,7 +55,6 @@
     <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithFrameInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectAndOffsetSymbolNode.cs" />
@@ -74,9 +75,6 @@
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
     <Compile Include="Compiler\PdbSymbolProvider.cs" />
-    <Compile Include="Compiler\RegisteredField.cs" />
-    <Compile Include="Compiler\RegisteredMethod.cs" />
-    <Compile Include="Compiler\RegisteredType.cs" />
     <Compile Include="Compiler\IntrinsicMethods.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
