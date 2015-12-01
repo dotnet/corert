@@ -5,10 +5,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
-    public /*internal*/ class GCStress
+    public class GCStress
     {
         [RuntimeExport("RhGcStress_Initialize")]
-        public /*internal*/ static void Initialize()
+        public static void Initialize()
         {
 #if FEATURE_GC_STRESS
             // This method is called via binder-injected code in a module's DllMain.  The OS guarantees that 

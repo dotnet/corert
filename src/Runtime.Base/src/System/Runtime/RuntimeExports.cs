@@ -269,7 +269,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhArrayStoreCheckAny")]
-        static public /*internal*/ unsafe void RhArrayStoreCheckAny(object array, ref Hack_o_p data)
+        static public unsafe void RhArrayStoreCheckAny(object array, ref Hack_o_p data)
         {
             if (array == null)
             {
@@ -288,7 +288,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhBoxAndNullCheck")]
-        static public /*internal*/ unsafe bool RhBoxAndNullCheck(ref Hack_o_p data, EETypePtr pEEType)
+        static public unsafe bool RhBoxAndNullCheck(ref Hack_o_p data, EETypePtr pEEType)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
             if (ptrEEType->IsValueType)
