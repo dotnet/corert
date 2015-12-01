@@ -46,7 +46,7 @@ NESTED_ENTRY ManagedCallout2, _TEXT
         ;; Call the target method. Arguments are already in the correct registers. The
         ;; ReturnFromManagedCallout2 label must immediately follow the call instruction.
         call    r8
-ALTERNATE_ENTRY ReturnFromManagedCallout2
+LABELED_RETURN_ADDRESS ReturnFromManagedCallout2
 
         ;; Pop the rbp frame and return.
         mov     rsp, rbp

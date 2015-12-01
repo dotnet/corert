@@ -49,7 +49,7 @@ donestack:
         mov     ecx, dword ptr [eax + 4]
         mov     eax,[ebx + OFFSETOF__CallDescrData__pTarget]
         call    eax
-ALTERNATE_ENTRY ReturnFromCallDescrThunk ; Symbol used to identify thunk call to managed function so the special case unwinder can unwind through this function
+LABELED_RETURN_ADDRESS ReturnFromCallDescrThunk ; Symbol used to identify thunk call to managed function so the special case unwinder can unwind through this function
 
         ; Save FP return value if necessary
         mov     ecx, [ebx + OFFSETOF__CallDescrData__fpReturnSize]

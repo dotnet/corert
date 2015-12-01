@@ -208,6 +208,11 @@ Name label proc
 PUBLIC Name
         endm
 
+LABELED_RETURN_ADDRESS macro Name
+
+Name label proc
+PUBLIC Name
+        endm
 
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 

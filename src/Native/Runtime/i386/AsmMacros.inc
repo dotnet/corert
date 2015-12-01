@@ -26,6 +26,14 @@ decoratedName label proc
 PUBLIC decoratedName
         endm
 
+LABELED_RETURN_ADDRESS macro Name
+
+decoratedName TEXTEQU @CatStr( _, Name ) )
+
+decoratedName label proc
+PUBLIC decoratedName
+        endm
+
 __tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;

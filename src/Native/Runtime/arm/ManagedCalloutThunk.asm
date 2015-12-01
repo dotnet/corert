@@ -44,7 +44,7 @@
         ;; Call the target method. Arguments are already in the correct registers. The
         ;; ReturnFromManagedCallout2 label must immediately follow the blx instruction.
         blx     r2
-    ALTERNATE_ENTRY ReturnFromManagedCallout2
+    LABELED_RETURN_ADDRESS ReturnFromManagedCallout2
 
         ;; Pop the frame and return.
         EPILOG_STACK_RESTORE r7
