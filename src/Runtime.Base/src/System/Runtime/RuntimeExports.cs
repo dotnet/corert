@@ -269,7 +269,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhArrayStoreCheckAny")]
-        static public /*internal*/ unsafe void RhArrayStoreCheckAny(object array, ref Hack_o_p data)
+        static public unsafe void RhArrayStoreCheckAny(object array, ref Hack_o_p data)
         {
             if (array == null)
             {
@@ -288,7 +288,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhBoxAndNullCheck")]
-        static public /*internal*/ unsafe bool RhBoxAndNullCheck(ref Hack_o_p data, EETypePtr pEEType)
+        static public unsafe bool RhBoxAndNullCheck(ref Hack_o_p data, EETypePtr pEEType)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
             if (ptrEEType->IsValueType)
@@ -314,6 +314,21 @@ namespace System.Runtime
                 return new Wrapper();
         }
 
+        [RuntimeExport("RhMemberwiseClone")]
+        public unsafe static object RhMemberwiseClone(object src)
+        {
+            object objClone;
+
+            if (src.EEType->IsArray)
+                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), src.GetArrayLength());
+            else
+                objClone = RhNewObject(new EETypePtr((IntPtr)src.EEType));
+
+            InternalCalls.RhpCopyObjectContents(objClone, src);
+
+            return objClone;
+        }
+
         [RuntimeExport("RhpReversePInvokeBadTransition")]
         public static void RhpReversePInvokeBadTransition()
         {
@@ -332,12 +347,6 @@ namespace System.Runtime
                 EH.FailFast(RhFailFastReason.InternalError, null);
                 throw EH.GetClasslibException(ExceptionIDs.Arithmetic, returnAddress);
             }
-        }
-
-        [RuntimeExport("RhMemberwiseClone")]
-        public static object RhMemberwiseClone(object src)
-        {
-            return src.MemberwiseClone();
         }
 
         // EEType interrogation methods.

@@ -17,10 +17,10 @@ namespace System.Runtime
     //
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public /*internal*/ static class TypeCast
+    public static class TypeCast
     {
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
-        static public /*internal*/ unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
+        static public unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
         {
             if (obj == null)
             {
@@ -126,7 +126,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastClass")]
-        static public /*internal*/ unsafe object CheckCastClass(Object obj, void* pvTargetEEType)
+        static public unsafe object CheckCastClass(Object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -151,7 +151,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckUnbox")]
-        static public /*internal*/ unsafe void CheckUnbox(Object obj, byte expectedCorElementType)
+        static public unsafe void CheckUnbox(Object obj, byte expectedCorElementType)
         {
             if (obj == null)
             {
@@ -209,7 +209,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastArray")]
-        static public /*internal*/ unsafe object CheckCastArray(Object obj, void* pvTargetEEType)
+        static public unsafe object CheckCastArray(Object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -644,7 +644,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastInterface")]
-        static public /*internal*/ unsafe object CheckCastInterface(Object obj, void* pvTargetEEType)
+        static public unsafe object CheckCastInterface(Object obj, void* pvTargetEEType)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -684,7 +684,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckArrayStore")]
-        static public /*internal*/ unsafe void CheckArrayStore(object array, object obj)
+        static public unsafe void CheckArrayStore(object array, object obj)
         {
             if (array == null || obj == null)
             {
@@ -724,7 +724,7 @@ namespace System.Runtime
 
 
         [RuntimeExport("RhTypeCast_CheckVectorElemAddr")]
-        static public /*internal*/ unsafe void CheckVectorElemAddr(void* pvElemType, object array)
+        static public unsafe void CheckVectorElemAddr(void* pvElemType, object array)
         {
             if (array == null)
             {
@@ -818,7 +818,7 @@ namespace System.Runtime
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
-        static public /*internal*/ unsafe object IsInstanceOf(object obj, void* pvTargetType)
+        static public unsafe object IsInstanceOf(object obj, void* pvTargetType)
         {
             EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
@@ -830,7 +830,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
-        static public /*internal*/ unsafe object CheckCast(Object obj, void* pvTargetType)
+        static public unsafe object CheckCast(Object obj, void* pvTargetType)
         {
             EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
