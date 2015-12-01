@@ -146,7 +146,7 @@ namespace Internal.TypeSystem
         Ctor
     }
 
-    public class ArrayMethod : MethodDesc
+    public partial class ArrayMethod : MethodDesc
     {
         private ArrayType _owningType;
         private ArrayMethodKind _kind;

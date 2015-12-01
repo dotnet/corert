@@ -128,6 +128,11 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// The current count of elements in the hashtable
+        /// </summary>
+        public int Count { get { return _count; } }
+
+        /// <summary>
         /// Gets the value associated with the specified key.
         /// </summary>
         /// <param name="key">The key of the value to get.</param>
@@ -232,7 +237,9 @@ namespace Internal.TypeSystem
             if (value == null)
                 throw new ArgumentNullException();
 
+#if !TYPE_SYSTEM_SINGLE_THREADED
             lock (this)
+#endif
             {
                 // Check to see if adding this value may require a resize. If so, expand
                 // the table now.
