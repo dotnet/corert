@@ -267,7 +267,7 @@ for i in "$@"
     do
         lowerI="$(echo $i | awk '{print tolower($0)}')"
         case $lowerI in
-        -?|-h|--help)
+        -h|--help)
             usage
             exit 1
             ;;
