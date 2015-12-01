@@ -528,12 +528,6 @@
     <Compile Include="CoverageSupport.cs" />
   </ItemGroup>
 
-
-  <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
-  </ItemGroup>
-
-
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" >
         <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
