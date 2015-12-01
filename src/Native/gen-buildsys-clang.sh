@@ -3,12 +3,13 @@
 # This file invokes cmake and generates the build system for Clang.
 #
 
-if [ $# -lt 3 -o $# -gt 4 ]
+if [ $# -lt 3 -o $# -gt 5 ]
 then
   echo "Usage..."
-  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> [build flavor]"
+  echo "gen-buildsys-clang.sh <path to top level CMakeLists.txt> <ClangMajorVersion> <ClangMinorVersion> <Architecture> [build flavor]"
   echo "Specify the path to the top level CMake file - <corert>/src/Native"
   echo "Specify the clang version to use, split into major and minor version"
+  echo "Specify the target architecture." 
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG." 
   exit 1
 fi
@@ -31,14 +32,17 @@ else
     exit 1
 fi
 
-# Possible build types are DEBUG, RELEASE, RELWITHDEBINFO, MINSIZEREL.
-# Default to DEBUG
-if [ -z "$4" ]
-then
-  echo "Defaulting to DEBUG build."
-  buildtype="DEBUG"
+build_arch="$4"
+if [ -z "$5" ]; then
+    echo "Defaulting to DEBUG build."
+    build_type="DEBUG"
 else
-  buildtype="$4"
+    # Possible build types are DEBUG, RELEASE
+    build_type="$(echo $5 | awk '{print toupper($0)}')"
+    if [ "$build_type" != "DEBUG" ] && [ "$build_type" != "RELEASE" ]; then
+        echo "Invalid Build type, only debug or release is accepted."
+        exit 1
+    fi
 fi
 
 OS=`uname`
@@ -100,6 +104,14 @@ fi
 if [[ -n "$LLDB_INCLUDE_DIR" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DWITH_LLDB_INCLUDES=$LLDB_INCLUDE_DIR"
 fi
+if [[ -n "$CROSSCOMPILE" ]]; then
+    if ! [[ -n "$ROOTFS_DIR" ]]; then
+        echo "ROOTFS_DIR not set for crosscompile"
+        exit 1
+    fi
+    cmake_extra_defines="$cmake_extra_defines -C $1/cross/$build_arch/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$1/cross/$build_arch/toolchain.cmake"
+fi
 
 cmake \
   "-DCMAKE_AR=$llvm_ar" \
@@ -107,6 +119,6 @@ cmake \
   "-DCMAKE_NM=$llvm_nm" \
   "-DCMAKE_OBJDUMP=$llvm_objdump" \
   "-DCMAKE_RANLIB=$llvm_ranlib" \
-  "-DCMAKE_BUILD_TYPE=$buildtype" \
+  "-DCMAKE_BUILD_TYPE=$build_type" \
   $cmake_extra_defines \
-  "$1"
+  "$1/src/Native"

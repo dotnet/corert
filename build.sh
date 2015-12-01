@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [verbose] [clangx.y]"
+    echo "Usage: $0 [managed] [native] [BuildArch] [BuildType] [clean] [cross] [verbose] [clangx.y]"
     echo "managed - optional argument to build the managed code"
     echo "native - optional argument to build the native code"
     echo "The following arguments affect native builds only:"
@@ -11,6 +11,8 @@ usage()
     echo "clean - optional argument to force a clean build."
     echo "verbose - optional argument to enable verbose build output."
     echo "clangx.y - optional argument to build using clang version x.y."
+    echo "cross - optional argument to signify cross compilation,"
+    echo "      - will use ROOTFS_DIR environment variable if set."
 
     exit 1
 }
@@ -115,7 +117,7 @@ prepare_native_build()
 build_managed_corert()
 {
     __buildproj=$__scriptpath/build.proj
-    __buildlog=$__scriptpath/msbuild.log
+    __buildlog=$__scriptpath/msbuild.$__BuildArch.log
 
     # TODO: Renable running tests
     MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) "$@"
@@ -136,8 +138,8 @@ build_native_corert()
     cd "$__IntermediatesDir"
 
     # Regenerate the CMake solution
-    echo "Invoking cmake with arguments: \"$__nativeroot\" $__CMakeArgs"
-    "$__nativeroot/gen-buildsys-clang.sh" "$__nativeroot" $__ClangMajorVersion $__ClangMinorVersion $__CMakeArgs
+    echo "Invoking cmake with arguments: \"$__ProjectRoot\" $__BuildType"
+    "$__ProjectRoot/src/Native/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $__BuildArch $__BuildType
 
     # Check that the makefiles were created.
 
@@ -169,7 +171,7 @@ build_native_corert()
 }
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
-__nativeroot=$__scriptpath/src/Native
+__ProjectRoot=$__scriptpath
 __packageroot=$__scriptpath/packages
 __sourceroot=$__scriptpath/src
 __nugetpath=$__packageroot/NuGet.exe
@@ -239,7 +241,6 @@ case $OSName in
         ;;
 esac
 __BuildType=Debug
-__CMakeArgs=DEBUG
 
 case $__BuildOS in
     FreeBSD)
@@ -262,6 +263,7 @@ __CleanBuild=0
 __VerboseBuild=0
 __ClangMajorVersion=3
 __ClangMinorVersion=5
+__CrossBuild=0
 
 for i in "$@"
     do
@@ -294,7 +296,6 @@ for i in "$@"
             ;;
         release)
             __BuildType=Release
-            __CMakeArgs=RELEASE
             ;;
         clean)
             __CleanBuild=1
@@ -314,6 +315,9 @@ for i in "$@"
             __ClangMajorVersion=3
             __ClangMinorVersion=7
             ;;
+        cross)
+            __CrossBuild=1
+        ;;
         *)
           __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
     esac
@@ -335,6 +339,14 @@ __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
 # Configure environment if we are doing a clean build.
 if [ $__CleanBuild == 1 ]; then
     clean
+fi
+
+# Configure environment if we are doing a cross compile.
+if [ $__CrossBuild == 1 ]; then
+    export CROSSCOMPILE=1
+    if ! [[ -n "$ROOTFS_DIR" ]]; then
+        export ROOTFS_DIR="$__ProjectRoot/cross/rootfs/$__BuildArch"
+    fi
 fi
 
 setup_dirs
