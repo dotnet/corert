@@ -3,10 +3,9 @@
 
 #include "common.h"
 
-#include "gcenv.h"
-
-#include "gc.h"
-#include "objecthandle.h"
+#include "sal.h"
+#include "gcenv.structs.h"
+#include "gcenv.base.h"
 
 #include <stdlib.h> 
 
@@ -18,6 +17,9 @@ extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
 extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
 extern "C" void RhpRegisterSimpleModule(SimpleModuleHeader* pModule);
+extern "C" void * RhHandleAlloc(void * pObject, int handleType);
+extern "C" void * RhTypeCast_IsInstanceOfClass(void * pObject, MethodTable * pMT);
+extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
 
 #define DLL_PROCESS_ATTACH      1
 extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
@@ -187,55 +189,17 @@ OBJECTHANDLE __load_static_string_literal(const uint8_t* utf8, int32_t utf8Len, 
     uint16_t * buffer = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     if (strLen > 0)
         UTF8ToWideChar((char*)utf8, utf8Len, buffer, strLen);
-    return CreateGlobalHandle(ObjectToOBJECTREF(pString));
+    return (OBJECTHANDLE)RhHandleAlloc(pString, 2 /* Normal */);
 }
-
-// TODO: Rewrite in C#
 
 extern "C" Object * __castclass_class(void * p, MethodTable * pTargetMT)
 {
-    Object * o = (Object *)p;
-
-    if (o == NULL)
-        return o;
-
-    MethodTable * pMT = o->RawGetMethodTable();
-
-    do {
-        if (pMT == pTargetMT)
-            return o;
-
-        if (pMT->IsArray())
-            break;
-
-        pMT = pMT->GetParent();
-    } while (pMT);
-
-    // TODO: Handle corner cases, throw proper exception
-    throw "__castclass_class";
+    return (Object *)RhTypeCast_CheckCast(p, pTargetMT);
 }
 
 extern "C" Object * __isinst_class(void * p, MethodTable * pTargetMT)
 {
-    Object * o = (Object *)p;
-
-    if (o == NULL)
-        return o;
-
-    MethodTable * pMT = o->RawGetMethodTable();
-
-    do {
-        if (pMT == pTargetMT)
-            return o;
-
-        if (pMT->IsArray())
-            break;
-
-        pMT = pMT->GetParent();
-    } while (pMT);
-
-    // TODO: Handle corner cases
-    return NULL;
+    return (Object *)RhTypeCast_IsInstanceOfClass(p, pTargetMT);
 }
 
 __declspec(noreturn)
@@ -271,12 +235,6 @@ Object * __get_commandline_args(int argc, char * argv[])
 	}
 	
 	return (Object *)args;
-}
-
-extern "C" void Buffer_BlockCopy(class System::Array * src, int srcOfs, class System::Array * dst, int dstOfs, int count)
-{
-    // TODO: Argument validation
-    memmove((uint8_t*)dst + 2 * sizeof(void*) + dstOfs, (uint8_t*)src + 2 * sizeof(void*) + srcOfs, count);
 }
 
 extern "C" void RhGetCurrentThreadStackTrace()
@@ -439,7 +397,7 @@ int __statics_fixup()
     for (void** currentBlock = &__GCStaticRegionStart; currentBlock < &__GCStaticRegionEnd; currentBlock++)
     {
         Object* gcBlock = __allocate_object((MethodTable*)*currentBlock);
-        *currentBlock = CreateGlobalHandle(ObjectToOBJECTREF(gcBlock));
+        *currentBlock = RhHandleAlloc(gcBlock, 2 /* Normal */);
     }
 
     return 0;

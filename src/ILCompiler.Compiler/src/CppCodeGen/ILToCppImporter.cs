@@ -946,7 +946,7 @@ namespace Internal.IL
                     thisArgument = thisArgument.MakeByRefType();
             }
 
-            string typeDefName = "__calli__" + token.ToString("X8", CultureInfo.InvariantCulture);
+            string typeDefName = "__calli__" + token.ToString("x8", CultureInfo.InvariantCulture);
             _writer.AppendSignatureTypeDef(_builder, typeDefName, methodSignature, thisArgument);
 
             TypeDesc retType = methodSignature.ReturnType;
@@ -1016,14 +1016,14 @@ namespace Internal.IL
                 if (value == Int64.MinValue)
                     val = "(int64_t)(0x8000000000000000" + (_msvc ? "i64" : "LL") + ")";
                 else
-                    val = value.ToString() + (_msvc ? "i64" : "LL");
+                    val = value.ToString(CultureInfo.InvariantCulture) + (_msvc ? "i64" : "LL");
             }
             else
             {
                 if (value == Int32.MinValue)
                     val = "(int32_t)(0x80000000)";
                 else
-                    val = ((int)value).ToString();
+                    val = ((int)value).ToString(CultureInfo.InvariantCulture);
             }
 
             Push(kind, new Value(val));

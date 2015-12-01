@@ -61,23 +61,10 @@
             <ILCompilerSdkFiles Include="System.Private.CoreLib.Native" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
             <!-- ILCompiler.SDK Cpp Codegen support files -->
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/etmdummy.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/inc/unix/sal.h" /> 
             <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.base.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.object.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.sync.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gc.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcdesc.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/sample/gcenv.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcimpl.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcpriv.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcrecord.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcscan.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/handletable.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/handletable.inl" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/handletablepriv.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/objecthandle.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.structs.h" />
             <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/common.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/platform.h" />
 
             <ILCompilerSdkFilesManaged Include="System.Private.CoreLib" />
 

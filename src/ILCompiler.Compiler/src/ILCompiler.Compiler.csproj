@@ -89,7 +89,7 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EETypeOptionalFieldsBuilder.cs">
       <Link>Common\EETypeOptionalFieldsBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs">
+    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>Common\EEType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatWriter.Primitives.cs">
