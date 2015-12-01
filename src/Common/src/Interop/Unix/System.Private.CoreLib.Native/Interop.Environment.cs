@@ -7,14 +7,9 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    private static class Libraries
-    {
-        internal const string SystemPrivateCoreLibNative = "System.Private.CoreLib.Native";
-    }
-
     internal unsafe partial class Sys
     {
-        [DllImport(Libraries.SystemPrivateCoreLibNative)]
+        [DllImport(Interop.Libraries.SystemPrivateCoreLibNative)]
         internal static unsafe extern int GetEnvironmentVariable(byte* name, out IntPtr result);
     }
 }
