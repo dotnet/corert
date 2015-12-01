@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime
 {
     // We choose this name to avoid clashing with any future public class with the name Finalizer. 
-    public static class __Finalizer
+    internal static class __Finalizer
     {
         private static bool s_fHaveNewClasslibs /* = false */;
 

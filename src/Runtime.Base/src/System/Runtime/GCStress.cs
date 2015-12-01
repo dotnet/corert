@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
-    public class GCStress
+    internal class GCStress
     {
         [RuntimeExport("RhGcStress_Initialize")]
         public static void Initialize()

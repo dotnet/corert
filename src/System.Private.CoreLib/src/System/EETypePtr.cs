@@ -30,6 +30,13 @@ namespace System
             _value = value;
         }
 
+#if INPLACE_RUNTIME
+        internal unsafe System.Runtime.EEType* ToPointer()
+        {
+            return (System.Runtime.EEType*)(void*)_value;
+        }
+#endif
+
         public override bool Equals(Object obj)
         {
             if (obj is EETypePtr)

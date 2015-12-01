@@ -2064,6 +2064,9 @@ namespace Internal.IL
         {
             var type = ResolveTypeToken(token);
 
+            // TODO: Remove
+            _writer.GetCppSignatureTypeName(type);
+
             Push(StackValueKind.Int32, new Value("sizeof(" + _writer.GetCppTypeName(type) + ")"));
         }
 

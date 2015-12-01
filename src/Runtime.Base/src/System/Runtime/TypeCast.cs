@@ -17,7 +17,7 @@ namespace System.Runtime
     //
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public static class TypeCast
+    internal static class TypeCast
     {
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
         static public unsafe object IsInstanceOfClass(object obj, void* pvTargetType)

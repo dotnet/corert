@@ -239,7 +239,7 @@ struct DISPATCHER_CONTEXT
 };
 
 EXTERN_C void __cdecl RhpFailFastForPInvokeExceptionPreemp(IntNative PInvokeCallsiteReturnAddr, 
-                                                                    void* pExceptionRecord, void* pContextRecord);
+                                                           void* pExceptionRecord, void* pContextRecord);
 EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(IntNative PInvokeCallsiteReturnAddr, 
                                                                   void* pExceptionRecord, void* pContextRecord);
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);

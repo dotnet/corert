@@ -71,10 +71,10 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame* pFrame)
 //
 // Allocations
 //
-// runtimeexports.cs -- @TODO: use C# implementation
-COOP_PINVOKE_HELPER(Object *, RhNewObject, (EEType* pEEType))
+COOP_PINVOKE_HELPER(Object *, RhpNewFast, (EEType* pEEType))
 {
-    ASSERT_MSG(!pEEType->RequiresAlign8(), "NYI");
+    ASSERT(!pEEType->RequiresAlign8());
+    ASSERT(!pEEType->HasFinalizer());
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     alloc_context * acontext = pCurThread->GetAllocContext();
@@ -104,8 +104,33 @@ COOP_PINVOKE_HELPER(Object *, RhNewObject, (EEType* pEEType))
 
     return pObject;
 }
-// runtimeexports.cs -- @TODO: use C# implementation
-COOP_PINVOKE_HELPER(Array *, RhNewArray, (EEType * pArrayEEType, int numElements))
+
+#define GC_ALLOC_FINALIZE 0x1 // TODO: Defined in gc.h
+
+COOP_PINVOKE_HELPER(Object *, RhpNewFinalizable, (EEType* pEEType))
+{
+    ASSERT(!pEEType->RequiresAlign8());
+    ASSERT(pEEType->HasFinalizer());
+
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
+    Object * pObject;
+
+    size_t size = pEEType->get_BaseSize();
+
+    pObject = (Object *)RedhawkGCInterface::Alloc(pCurThread, size, GC_ALLOC_FINALIZE, pEEType);
+    if (pObject == nullptr)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
+    }
+    pObject->set_EEType(pEEType);
+
+    if (size >= RH_LARGE_OBJECT_SIZE)
+        RhpPublishObject(pObject, size);
+
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElements))
 {
     ASSERT_MSG(!pArrayEEType->RequiresAlign8(), "NYI");
 
@@ -200,46 +225,13 @@ COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank
     return pObject;
 }
 
-COOP_PINVOKE_HELPER(void, RhBox, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpNewFast, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpNewFinalizable, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpNewArray, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-
-// finalizer.cs
-COOP_PINVOKE_HELPER(void, RhpSetHaveNewClasslibs, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
 // finalizer.cs
 COOP_PINVOKE_HELPER(void, ProcessFinalizers, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-// runtimeexports.cs
-COOP_PINVOKE_HELPER(void, RhpReversePInvokeBadTransition, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
@@ -323,36 +315,3 @@ COOP_PINVOKE_HELPER(void, RhpCheckedAssignRef, (Object ** dst, Object * ref))
 }
 
 #endif
-
-//
-// type cast stuff from TypeCast.cs
-//
-COOP_PINVOKE_HELPER(void, RhTypeCast_IsInstanceOfClass, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhTypeCast_CheckCastClass, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhTypeCast_IsInstanceOfArray, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhTypeCast_CheckCastArray, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhTypeCast_IsInstanceOfInterface, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhTypeCast_CheckCastInterface, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-COOP_PINVOKE_HELPER(void, RhTypeCast_CheckVectorElemAddr, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-

@@ -11,6 +11,7 @@
 ** 
 ===========================================================*/
 
+using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -53,6 +54,25 @@ namespace System
         ~Object()
         {
         }
+
+#if INPLACE_RUNTIME
+        internal unsafe EEType* EEType
+        {
+            get
+            {
+                return (EEType *)m_pEEType;
+            }
+        }
+
+        internal unsafe int GetArrayLength()
+        {
+            Debug.Assert(EEType->IsArray, "this is only supported on arrays");
+
+            // m_numComponents is an int field that is directly after _pEEType
+            fixed (IntPtr * ptr = &m_pEEType)
+                return *(int*)(ptr + 1);
+        }
+#endif
 
         public Type GetType()
         {

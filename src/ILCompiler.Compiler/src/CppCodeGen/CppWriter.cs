@@ -47,6 +47,8 @@ namespace ILCompiler.CppCodeGen
             SetWellKnownTypeSignatureName(WellKnownType.UIntPtr, "uintptr_t");
             SetWellKnownTypeSignatureName(WellKnownType.Single, "float");
             SetWellKnownTypeSignatureName(WellKnownType.Double, "double");
+
+            BuildExternCSignatureMap();
         }
 
         private Dictionary<TypeDesc, string> _cppSignatureNames = new Dictionary<TypeDesc, string>();
@@ -71,36 +73,51 @@ namespace ILCompiler.CppCodeGen
             return mangledName;
         }
 
-        public string GetCppMethodDeclaration(MethodDesc method, bool implementation, string externalMethodName = null)
+        // extern "C" methods are sometimes referenced via different signatures.
+        // _externCSignatureMap contains the canonical signature of the extern "C" import. References
+        // via other signatures are required to use casts.
+        private Dictionary<string, MethodSignature> _externCSignatureMap = new Dictionary<string, MethodSignature>();
+
+        private void BuildExternCSignatureMap()
+        {
+            foreach (var nodeAlias in _compilation.NodeFactory.NodeAliases)
+            {
+                var methodNode = (CppMethodCodeNode)nodeAlias.Key;
+                _externCSignatureMap.Add(nodeAlias.Value, methodNode.Method.Signature);
+            }
+        }
+
+        public string GetCppMethodDeclaration(MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null)
         {
             StringBuilder sb = new StringBuilder();
 
-            var methodSignature = method.Signature;
+            if (methodSignature == null)
+                methodSignature = method.Signature;
 
-            if (!implementation)
+            if (externalMethodName != null)
             {
-                if (externalMethodName != null)
-                {
-                    sb.Append("extern \"C\" ");
-                }
-                else
+                sb.Append("extern \"C\" ");
+            }
+            else
+            {
+                if (!implementation)
                 {
                     sb.Append("static ");
                 }
             }
             sb.Append(GetCppSignatureTypeName(methodSignature.ReturnType));
             sb.Append(" ");
-            if (implementation)
-            {
-                sb.Append(GetCppTypeName(method.OwningType));
-                sb.Append("::");
-            }
             if (externalMethodName != null)
             {
                 sb.Append(externalMethodName);
             }
             else
             {
+                if (implementation)
+                {
+                    sb.Append(GetCppTypeName(method.OwningType));
+                    sb.Append("::");
+                }
                 sb.Append(GetCppMethodName(method));
             }
             sb.Append("(");
@@ -265,30 +282,53 @@ namespace ILCompiler.CppCodeGen
                         if (importName == null)
                             importName = method.Name;
 
+                        MethodSignature methodSignature = method.Signature;
+                        bool slotCastRequired = false;
+
+                        MethodSignature externCSignature;
+                        if (_externCSignatureMap.TryGetValue(importName, out externCSignature))
+                        {
+                            slotCastRequired = !externCSignature.Equals(method.Signature);
+                        }
+                        else
+                        {
+                            externCSignature = methodSignature;
+                        }
+
                         // TODO: hacky special-case
                         if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
                         {
-                            builder.AppendLine(GetCppMethodDeclaration(method, false, importName));
+                            builder.AppendLine(GetCppMethodDeclaration(method, false, importName, externCSignature));
                         }
                         builder.AppendLine(GetCppMethodDeclaration(method, true));
                         builder.AppendLine("{");
-                        builder.Append("    ");
-                        if (GetCppSignatureTypeName(method.Signature.ReturnType) != "void")
+
+                        if (slotCastRequired)
+                        {
+                            AppendSlotTypeDef(builder, method);
+                        }
+
+                        if (!method.Signature.ReturnType.IsVoid)
                         {
                             builder.Append("return ");
                         }
 
-                        builder.AppendLine("::" + importName + "(" + GetCppMethodCallParamList(method) + ");");
+                        if (slotCastRequired)
+                            builder.Append("((__slot__" + GetCppMethodName(method) + ")");
+                        builder.Append("::");
+                        builder.Append(importName);
+                        if (slotCastRequired)
+                            builder.Append(")");
+
+                        builder.Append("(");
+                        builder.Append(GetCppMethodCallParamList(method));
+                        builder.AppendLine(");");
                         builder.AppendLine("}");
 
                         return builder.ToString();
                     }
 
                 default:
-                    // TODO: hacky special-case
-                    if (method.Name == "BlockCopy")
-                        return null;
-
                     return GetCppMethodDeclaration(method, true) + " { throw 0xC000C000; }" + Environment.NewLine;
             }
         }
@@ -894,6 +934,25 @@ namespace ILCompiler.CppCodeGen
                     {
                         var methodCodeNode = (CppMethodCodeNode)_compilation.NodeFactory.MethodEntrypoint(m);
                         Out.WriteLine(methodCodeNode.CppCode);
+
+                        var alternateName = _compilation.NodeFactory.GetSymbolAlternateName(methodCodeNode);
+                        if (alternateName != null)
+                        {
+                            Out.WriteLine(GetCppMethodDeclaration(m, true, alternateName));
+                            Out.WriteLine("{");
+                            Out.Write("    ");
+                            if (!m.Signature.ReturnType.IsVoid)
+                            {
+                                Out.Write("return ");
+                            }
+                            Out.Write(GetCppTypeName(m.OwningType));
+                            Out.Write("::");
+                            Out.Write(GetCppMethodName(m));
+                            Out.Write("(");
+                            Out.Write(GetCppMethodCallParamList(m));
+                            Out.WriteLine(");");
+                            Out.WriteLine("}");
+                        }
                     }
                 }
             }
