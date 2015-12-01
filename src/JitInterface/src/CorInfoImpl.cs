@@ -1600,6 +1600,14 @@ namespace Internal.JitInterface
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hField;
 
                 // fRuntimeLookup = th.IsSharedByGenericInstantiations() && pFD->IsStatic();
+
+                // TODO: shared generics
+                // If the target is not shared then we've already got our result and
+                // can simply do a static look up
+                pResult.lookup.lookupKind.needsRuntimeLookup = false;
+
+                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)pResult.compileTimeHandle;
+                pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
             }
             else
             {
@@ -1611,27 +1619,20 @@ namespace Internal.JitInterface
                 // TODO? If we're embedding a method handle for a method that points to a sub-class of the actual
                 //       class, we might need to embed the actual declaring type in compileTimeHandle.  
 
+                // TODO: shared generics
                 // IsSharedByGenericInstantiations would not work here. The runtime lookup is required
                 // even for standalone generic variables that show up as __Canon here.
                 //fRuntimeLookup = th.IsCanonicalSubtype();
-            }
 
-            Debug.Assert(pResult.compileTimeHandle != null);
-
-            // TODO: shared generics
-            //if (...)
-            //{
-            //    ...
-            //}
-            // else
-            {
                 // If the target is not shared then we've already got our result and
                 // can simply do a static look up
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
 
-                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)pResult.compileTimeHandle;
+                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
                 pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
             }
+
+            Debug.Assert(pResult.compileTimeHandle != null);
         }
 
         // Workaround for struct return marshaling bug on Windows.
