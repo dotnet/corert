@@ -13,7 +13,7 @@
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
-#include "targetptrs.h"
+#include "TargetPtrs.h"
 #include "rhbinder.h"
 #include "RWLock.h"
 #include "RuntimeInstance.h"
