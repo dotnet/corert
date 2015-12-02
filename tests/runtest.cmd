@@ -31,7 +31,7 @@ goto :Usage
 :Usage
 echo %0 [OS] [arch] [flavor] [/extrepo] [/buildextrepo] [/mode] [/runtest]
 echo     /mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit
-echo     /runtest      : Should just compile or run compiled bianry? Specify: true/false. Default: true.
+echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /extrepo      : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
 echo     /buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
 echo     /nocache      : When restoring toolchain packages, obtain them from the feed not the cache.
@@ -41,9 +41,9 @@ exit /b 2
 
 setlocal EnableDelayedExpansion
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
-set __TestBinDir=%CoreRT_TestRoot%..\bin\tests
+set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
-set __NuPkgInstallDir=%__TestBinDir%\package
+set __NuPkgInstallDir=%__CoreRTTestBinDir%\package
 set __BuiltNuPkgDir=%CoreRT_TestRoot%..\bin\Product\%__BuildStr%\.nuget
 
 set __PackageRestoreCmd=restore.cmd
@@ -67,7 +67,7 @@ if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrt.lib
 )
 
-echo. > %__TestBinDir%\testResults.tmp
+echo. > %__CoreRTTestBinDir%\testResults.tmp
 
 set /a __CppTotalTests=0
 set /a __CppPassedTests=0
@@ -95,14 +95,14 @@ set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%
 set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%
 set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%
 
-echo ^<?xml version="1.0" encoding="utf-8"?^> > %__TestBinDir%\testResults.xml
-echo ^<assemblies^>  >> %__TestBinDir%\testResults.xml
-echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__TestBinDir%\testResults.xml
-echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__TestBinDir%\testResults.xml
-type %__TestBinDir%\testResults.tmp >> %__TestBinDir%\testResults.xml
-echo ^</collection^>  >> %__TestBinDir%\testResults.xml
-echo ^</assembly^>  >> %__TestBinDir%\testResults.xml
-echo ^</assemblies^>  >> %__TestBinDir%\testResults.xml
+echo ^<?xml version="1.0" encoding="utf-8"?^> > %__CoreRTTestBinDir%\testResults.xml
+echo ^<assemblies^>  >> %__CoreRTTestBinDir%\testResults.xml
+echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\testResults.xml
+echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\testResults.xml
+type %__CoreRTTestBinDir%\testResults.tmp >> %__CoreRTTestBinDir%\testResults.xml
+echo ^</collection^>  >> %__CoreRTTestBinDir%\testResults.xml
+echo ^</assembly^>  >> %__CoreRTTestBinDir%\testResults.xml
+echo ^</assemblies^>  >> %__CoreRTTestBinDir%\testResults.xml
 
 echo.
 set __JitStatusPassed=0
@@ -161,13 +161,13 @@ goto :eof
 :SkipTestRun
     if "%__SavedErrorLevel%"=="0" (
         set /a __%__Mode%PassedTests=!__%__Mode%PassedTests!+1
-        echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Pass" /^> >> %__TestBinDir%\testResults.tmp
+        echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Pass" /^> >> %__CoreRTTestBinDir%\testResults.tmp
     ) ELSE (
-        echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Fail"^> >> %__TestBinDir%\testResults.tmp
-        echo ^<failure exception-type="Exit code: %ERRORLEVEL%" ^> >> %__TestBinDir%\testResults.tmp
-        echo     ^<message^>See !__SourceFile! \bin or \obj for logs ^</message^> >> %__TestBinDir%\testResults.tmp
-        echo ^</failure^> >> %__TestBinDir%\testResults.tmp
-        echo ^</test^> >> %__TestBinDir%\testResults.tmp
+        echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Fail"^> >> %__CoreRTTestBinDir%\testResults.tmp
+        echo ^<failure exception-type="Exit code: %ERRORLEVEL%" ^> >> %__CoreRTTestBinDir%\testResults.tmp
+        echo     ^<message^>See !__SourceFile! \bin or \obj for logs ^</message^> >> %__CoreRTTestBinDir%\testResults.tmp
+        echo ^</failure^> >> %__CoreRTTestBinDir%\testResults.tmp
+        echo ^</test^> >> %__CoreRTTestBinDir%\testResults.tmp
     )
     goto :eof
 
