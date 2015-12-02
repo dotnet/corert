@@ -3,7 +3,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-// Some of our header files are shared with the binder, which needs the TARGET_* macros defined
+// Some of our header files are shared with the binder, which needs the _TARGET_* macros defined
 #if defined(_TARGET_AMD64_)
 #elif defined(_TARGET_X86_)
 #elif defined(_TARGET_ARM_)
