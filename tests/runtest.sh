@@ -55,7 +55,7 @@ run_test_dir()
         eval ${__pass_var}=$((${__pass_var} + 1))
         echo "<test name=\"${__dir_path}\" type=\"${__filename}:${__mode}\" method=\"Main\" result=\"Pass\" />" >> ${__TestBinDir}/testResults.tmp
     else
-        echo "<test name=\"${__dir_path}\" type=\"${__filename}:${__mode}\" method=\"Main\" result=\"Fail\" />" >> ${__TestBinDir}/testResults.tmp
+        echo "<test name=\"${__dir_path}\" type=\"${__filename}:${__mode}\" method=\"Main\" result=\"Fail\">" >> ${__TestBinDir}/testResults.tmp
         echo "<failure exception-type=\"Exit code: ${__exitcode}\">" >> ${__TestBinDir}/testResults.tmp
         echo     "<message>See ${__dir_path} /bin or /obj for logs </message>" >> ${__TestBinDir}/testResults.tmp
         echo "</failure>" >> ${__TestBinDir}/testResults.tmp
