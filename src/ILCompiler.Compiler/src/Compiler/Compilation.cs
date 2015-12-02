@@ -26,6 +26,7 @@ namespace ILCompiler
         public bool NoLineNumbers;
         public string DgmlLog;
         public bool FullLog;
+        public bool Verbose;
     }
 
     public partial class Compilation

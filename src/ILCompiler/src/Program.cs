@@ -77,6 +77,10 @@ namespace ILCompiler
                         _options.FullLog = true;
                         break;
 
+                    case "verbose":
+                        _options.Verbose = true;
+                        break;
+
                     case "r":
                     case "reference":
                         parser.AppendExpandedPaths(_referenceFilePaths, false);
@@ -129,7 +133,7 @@ namespace ILCompiler
             }
 
             Compilation compilation = new Compilation(_compilerTypeSystemContext, _options);
-            compilation.Log = Console.Out;
+            compilation.Log = _options.Verbose ? Console.Out : TextWriter.Null;
             compilation.OutputPath = _outputPath;
             if (_options.IsCppCodeGen)
             {

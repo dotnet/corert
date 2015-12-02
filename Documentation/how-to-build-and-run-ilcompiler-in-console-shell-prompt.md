@@ -27,7 +27,7 @@ This will result in the following:
 
 * Ensure that you have done a repo build per the instructions above.
 * Install the contents of `<repo_root>/bin/product/<OS>.<Arch>.<BuildType>/.nuget/toolchain.<nupkg-rid>.Microsoft.DotNet.ILCompiler.Development*.nupkg` to a folder, say, **c:\newilc** using NuGet
-  * Example: `<repo_root>/packages/NuGet.exe install -Source <repo_root>/bin/Product/<OS>.<Arch>.<BuildType>/.nuget/ toolchain.win7-x64.Microsoft.DotNet.ILCompiler.Development -Version 1.0.0-prerelease -prerelease -OutputDirectory c:\newilc`
+  * Example: `<repo_root>/packages/NuGet.exe install -Source <repo_root>/bin/Product/<OS>.<Arch>.<BuildType>/.nuget/ toolchain.win7-x64.Microsoft.DotNet.ILCompiler.Development -Version 1.0.2-prerelease-00001 -prerelease -OutputDirectory c:\newilc`
   * On OSX/Ubuntu, use `mono` to run `NuGet.exe`.
 * Create a new folder and switch into it. 
 * Issue the command, `dotnet init`, on the command/shell prompt. This will add a template source file and corresponding project.json. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 

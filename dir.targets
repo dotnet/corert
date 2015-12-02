@@ -94,11 +94,7 @@
     <!-- Restore build tools -->
     <Exec Command="$(_RestoreBuildToolsCommand)" StandardOutputImportance="Low" />
 
-    <!-- Add DNU and Roslyn tool execute rights -->
-    <Exec Condition="'$(OsEnvironment)'=='Unix'"
-          Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnu&quot;" />
-    <Exec Condition="'$(OsEnvironment)'=='Unix'"
-          Command="chmod a+x &quot;$(DnxPackageDir)/bin/dnx&quot;" />
+    <!-- Add Roslyn tool execute rights -->
     <Exec Condition="'$(OsEnvironment)'=='Unix'"
           Command="find '$(RoslynPackageDir)tools' -name &quot;*.exe&quot; -exec chmod &quot;+x&quot; '{}' ';'" />
 

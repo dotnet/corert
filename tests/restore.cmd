@@ -7,13 +7,9 @@ if not defined CoreRT_BuildArch ((call :Fail "Set CoreRT_BuildArch to x86/x64/ar
 if not defined CoreRT_BuildType ((call :Fail "Set CoreRT_BuildType to Debug or Release") & exit /b -1)
 
 set CoreRT_ToolchainPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.ILCompiler.Development
-set CoreRT_ToolchainVer=1.0.0-prerelease
+set CoreRT_ToolchainVer=1.0.2-prerelease-00001
 set CoreRT_AppDepSdkPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.AppDep
-set CoreRT_AppDepSdkVer=1.0.1-prerelease
-set CoreRT_RyuJitPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.RyuJit
-set CoreRT_RyuJitVer=1.0.0-prerelease
-set CoreRT_ObjWriterPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.ObjectWriter
-set CoreRT_ObjWriterVer=1.0.2-prerelease
+set CoreRT_AppDepSdkVer=1.0.2-prerelease-00002
 
 setlocal EnableExtensions
 set __ScriptDir=%~dp0
@@ -30,11 +26,6 @@ if /i "%1" == "/nugetopt"      (set __NuGetOptions=%2&shift&shift&goto Arg_Loop)
 echo Invalid command line argument: %1
 goto Usage
 :ArgsDone
-
-:SetTempFolder
-set __TempFolder=%TMP%\unpack-%RANDOM%-%RANDOM%
-if exist "%__TempFolder%" goto :SetTempFolder
-set __NuPkgUnpackDir=%__TempFolder%
 
 if not exist %__NuGetExeDir%\NuGet.exe ((call :Fail "No NuGet.exe found at %__NuGetExeDir%. Specify /nugetexedir option") & exit /b -1)
 if "%__NuPkgInstallDir%"=="" ((call :Fail "Specify /installdir option") & exit /b -1)
@@ -55,18 +46,12 @@ echo Installing CoreRT external dependencies
 %__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_AppDepSdkVer% %CoreRT_AppDepSdkPkg% -prerelease %__NuGetOptions%
 
 REM ** Install the built toolchain from product dir
+set __BuiltNuPkgPath=%__BuiltNuPkgDir%\%CoreRT_ToolchainPkg%.%CoreRT_ToolchainVer%.nupkg
 echo.
 echo Installing ILCompiler from %__BuiltNuPkgPath% into %__NuPkgInstallDir%
-
-set __BuiltNuPkgPath=%__BuiltNuPkgDir%\%CoreRT_ToolchainPkg%.%CoreRT_ToolchainVer%.nupkg
 if not exist "%__BuiltNuPkgPath%" ((call :Fail "Did not find a built %__BuiltNuPkgPath%. Did you run build.cmd?") & exit /b -1)
 
-mkdir %__NuPkgUnpackDir%
-if not exist %__NuPkgUnpackDir% ((call :Fail "Could not make install dir") & exit /b -1)
-copy /y %__BuiltNuPkgPath% %__NuPkgUnpackDir% > nul
-echo ^<packages^>^<package id="%CoreRT_ToolchainPkg%" version="%CoreRT_ToolchainVer%"/^>^</packages^> > %__NuPkgUnpackDir%\packages.config
-%__NuGetExeDir%\NuGet.exe install "%__NuPkgUnpackDir%\packages.config" -Source "%__NuPkgUnpackDir%" -OutputDir "%__NuPkgInstallDir%" -prerelease %__NuGetOptions%
-rmdir /s /q %__NuPkgUnpackDir%
+%__NuGetExeDir%\NuGet.exe install %CoreRT_ToolchainPkg% -Version %CoreRT_ToolchainVer% -Source "%__BuiltNuPkgDir%" -OutputDir "%__NuPkgInstallDir%" -prerelease %__NuGetOptions%
 
 set __ToolchainDir=%__NuPkgInstallDir%\%CoreRT_ToolchainPkg%.%CoreRT_ToolchainVer%
 

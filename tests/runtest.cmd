@@ -1,6 +1,7 @@
 @echo off
 
 set CoreRT_TestRoot=%~dp0
+set CoreRT_CliDir=%CoreRT_TestRoot%..\bin\tools\cli\bin
 set CoreRT_BuildArch=x64
 set CoreRT_BuildType=Debug
 set CoreRT_BuildOS=Windows_NT
@@ -40,9 +41,9 @@ exit /b 2
 
 setlocal EnableDelayedExpansion
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
-set __BinDir=%CoreRT_TestRoot%..\bin\tests
+set __TestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
-set __NuPkgInstallDir=%__BinDir%\package
+set __NuPkgInstallDir=%__TestBinDir%\package
 set __BuiltNuPkgDir=%CoreRT_TestRoot%..\bin\Product\%__BuildStr%\.nuget
 
 set __PackageRestoreCmd=restore.cmd
@@ -66,67 +67,85 @@ if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrt.lib
 )
 
-echo. > %__BinDir%\testResults.tmp
+echo. > %__TestBinDir%\testResults.tmp
 
-set /a __TotalTests=0
-set /a __PassedTests=0
+set /a __CppTotalTests=0
+set /a __CppPassedTests=0
+set /a __JitTotalTests=0
+set /a __JitPassedTests=0
 for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
-    if exist "!__SourceFolder!\!__SourceFileName!.cs" (
-        call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
-        set /a __TotalTests=!__TotalTests!+1
-    ) else (echo !__SourceFolder!\!__SourceFileName!)
-)
-set /a __FailedTests=%__TotalTests%-%__PassedTests%
+    if exist "!__SourceFolder!\project.json" (
+        %CoreRT_CliDir%\dotnet restore !__SourceFolder!
 
-echo ^<?xml version="1.0" encoding="utf-8"?^> > %__BinDir%\testResults.xml
-echo ^<assemblies^>  >> %__BinDir%\testResults.xml
-echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__BinDir%\testResults.xml
-echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__BinDir%\testResults.xml
-type %__BinDir%\testResults.tmp >> %__BinDir%\testResults.xml
-echo ^</collection^>  >> %__BinDir%\testResults.xml
-echo ^</assembly^>  >> %__BinDir%\testResults.xml
-echo ^</assemblies^>  >> %__BinDir%\testResults.xml
+        set __Mode=Jit
+        call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
+        set /a __JitTotalTests=!__JitTotalTests!+1
+
+        set __Mode=Cpp
+        call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath! --cpp
+        set /a __CppTotalTests=!__CppTotalTests!+1
+    )
+)
+set /a __CppFailedTests=%__CppTotalTests%-%__CppPassedTests%
+set /a __JitFailedTests=%__JitTotalTests%-%__JitPassedTests%
+set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%
+set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%
+set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%
+
+echo ^<?xml version="1.0" encoding="utf-8"?^> > %__TestBinDir%\testResults.xml
+echo ^<assemblies^>  >> %__TestBinDir%\testResults.xml
+echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__TestBinDir%\testResults.xml
+echo ^<collection total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__TestBinDir%\testResults.xml
+type %__TestBinDir%\testResults.tmp >> %__TestBinDir%\testResults.xml
+echo ^</collection^>  >> %__TestBinDir%\testResults.xml
+echo ^</assembly^>  >> %__TestBinDir%\testResults.xml
+echo ^</assemblies^>  >> %__TestBinDir%\testResults.xml
 
 echo.
-set "__ConsoleOut=TOTAL: %__TotalTests% PASSED: %__PassedTests%"
+set __JitStatusPassed=0
+if %__JitTotalTests% EQU %__JitPassedTests% (set __JitStatusPassed=1)
+if %__JitTotalTests% EQU 0 (set __JitStatusPassed=0)
+call :PassFail %__JitStatusPassed% "JIT - TOTAL: %__JitTotalTests% PASSED: %__JitPassedTests%"
 
-if %__TotalTests% EQU %__PassedTests% (set __StatusPassed=1)
-if %__TotalTests% EQU 0 (set __StatusPassed=0)
-if "%__StatusPassed%"=="1" (
-    powershell -Command Write-Host "%__ConsoleOut%" -foreground "Black" -background "Green"
-    exit /b 0
+set __CppStatusPassed=0
+if %__CppTotalTests% EQU %__CppPassedTests% (set __CppStatusPassed=1)
+if %__CppTotalTests% EQU 0 (set __CppStatusPassed=0)
+call :PassFail %__CppStatusPassed% "CPP - TOTAL: %__CppTotalTests% PASSED: %__CppPassedTests%"
+
+if not %__JitStatusPassed% EQU 1 (exit /b 1)
+if not %__CppStatusPassed% EQU 1 (exit /b 1)
+exit /b 0
+
+:PassFail
+set __Green=%~1
+set __OutStr=%~2
+if "%__Green%"=="1" (
+    powershell -Command Write-Host %__OutStr% -foreground "Black" -background "Green"
 ) else ( 
-    powershell -Command Write-Host "%__ConsoleOut%" -foreground "White" -background "Red"
-    exit /b 1
+    powershell -Command Write-Host %__OutStr% -foreground "White" -background "Red"
 )
+goto :eof
 
 :CompileFile
     echo.
-    echo Compiling directory %~1
     set __SourceFolder=%~1
     set __SourceFileName=%~2
     set __CompileLogPath=%~3
+    set __ExtraCompileArgs=%~4
+    echo Compiling directory !__SourceFolder! !__ExtraCompileArgs!
     if not exist "!__CompileLogPath!" (mkdir !__CompileLogPath!)
-    endlocal
     set __SourceFile=!__SourceFolder!\!__SourceFileName!
-    call :DeleteFile "!__SourceFile!.S"
-    call :DeleteFile "!__SourceFile!.compiled.exe"
-    call :DeleteFile "!__SourceFile!.obj"
-    call :DeleteFile "!__SourceFile!.exe"
 
-    set __VSProductVersion=140
+    rmdir /s /q !__SourceFolder!\bin
+    rmdir /s /q !__SourceFolder!\obj
+
     setlocal
-    echo.
-    echo Begin managed build of !__SourceFile!.cs
-    call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
-    csc.exe /nologo /noconfig /unsafe+ /nowarn:1701,1702,2008 /langversion:5 /nostdlib+ /errorreport:prompt /warn:4 /define:TRACE;DEBUG;SIGNED /errorendlocation /preferreduilang:en-US /reference:..\packages\System.Collections\4.0.0\ref\dotnet\System.Collections.dll /reference:..\packages\System.Console\4.0.0-beta-23419\ref\dotnet\System.Console.dll /reference:..\packages\System.Diagnostics.Debug\4.0.0\ref\dotnet\System.Diagnostics.Debug.dll /reference:..\packages\System.Globalization\4.0.0\ref\dotnet\System.Globalization.dll /reference:..\packages\System.IO\4.0.10\ref\dotnet\System.IO.dll /reference:..\packages\System.IO.FileSystem\4.0.0\ref\dotnet\System.IO.FileSystem.dll /reference:..\packages\System.IO.FileSystem.Primitives\4.0.0\ref\dotnet\System.IO.FileSystem.Primitives.dll /reference:..\packages\System.Reflection\4.0.0\ref\dotnet\System.Reflection.dll /reference:..\packages\System.Reflection.Extensions\4.0.0\ref\dotnet\System.Reflection.Extensions.dll /reference:..\packages\System.Reflection.Primitives\4.0.0\ref\dotnet\System.Reflection.Primitives.dll /reference:..\packages\System.Resources.ResourceManager\4.0.0\ref\dotnet\System.Resources.ResourceManager.dll /reference:..\packages\System.Runtime\4.0.20\ref\dotnet\System.Runtime.dll /reference:..\packages\System.Runtime.Extensions\4.0.10\ref\dotnet\System.Runtime.Extensions.dll /reference:..\packages\System.Runtime.Handles\4.0.0\ref\dotnet\System.Runtime.Handles.dll /reference:..\packages\System.Runtime.InteropServices\4.0.10\ref\dotnet\System.Runtime.InteropServices.dll /reference:..\packages\System.Text.Encoding\4.0.0\ref\dotnet\System.Text.Encoding.dll /reference:..\packages\System.Text.Encoding.Extensions\4.0.0\ref\dotnet\System.Text.Encoding.Extensions.dll /reference:..\packages\System.Threading\4.0.0\ref\dotnet\System.Threading.dll /reference:..\packages\System.Threading.Overlapped\4.0.0\ref\dotnet\System.Threading.Overlapped.dll /reference:..\packages\System.Threading.Tasks\4.0.10\ref\dotnet\System.Threading.Tasks.dll /debug+ /debug:full /filealign:512 /optimize- /out:!__SourceFile!.exe /target:exe /warnaserror+ /utf8output !__SourceFile!.cs
-
-    echo.
-    echo Compiling ILCompiler !__SourceFile!.exe
-    call !CoreRT_ToolchainDir!\dotnet-compile-native.bat %__BuildArch% %__BuildType% /mode %CoreRT_TestCompileMode% /appdepsdk %CoreRT_AppDepSdkDir% /codegenpath %CoreRT_RyuJitDir% /objgenpath %CoreRT_ObjWriterDir% /logpath %__CompileLogPath% /linklibs %__LinkLibs% /in !__SourceFile!.exe /out !__SourceFile!.compiled.exe
+    REM TODO: Add AppDepSDK argument after CLI build picks up: PR dotnet/cli #336
+    call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
+    "%CoreRT_CliDir%\dotnet" compile --native --ilcpath "%CoreRT_ToolchainDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType%
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
@@ -135,20 +154,20 @@ if "%__StatusPassed%"=="1" (
     if "%__SavedErrorLevel%"=="0" (
         echo.
         echo Running test !__SourceFileName!
-        call !__SourceFile!.cmd
+        call !__SourceFile!.cmd %CoreRT_BuildType%
         set __SavedErrorLevel=!ErrorLevel!
     )
 
 :SkipTestRun
     if "%__SavedErrorLevel%"=="0" (
-        set /a __PassedTests=%__PassedTests%+1
-        echo ^<test name="!__SourceFile!" type="Program" method="Main" result="Pass" /^> >> %__BinDir%\testResults.tmp
+        set /a __%__Mode%PassedTests=!__%__Mode%PassedTests!+1
+        echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Pass" /^> >> %__TestBinDir%\testResults.tmp
     ) ELSE (
-        echo ^<test name="!__SourceFile!" type="Program" method="Main" result="Fail"^> >> %__BinDir%\testResults.tmp
-        echo ^<failure exception-type="Exit code: %ERRORLEVEL%" ^> >> %__BinDir%\testResults.tmp
-        echo     ^<message^>See !__SourceFile!.*.log ^</message^> >> %__BinDir%\testResults.tmp
-        echo ^</failure^> >> %__BinDir%\testResults.tmp
-        echo ^</test^> >> %__BinDir%\testResults.tmp
+        echo ^<test name="!__SourceFile!" type="!__SourceFileName!:%__Mode%" method="Main" result="Fail"^> >> %__TestBinDir%\testResults.tmp
+        echo ^<failure exception-type="Exit code: %ERRORLEVEL%" ^> >> %__TestBinDir%\testResults.tmp
+        echo     ^<message^>See !__SourceFile! \bin or \obj for logs ^</message^> >> %__TestBinDir%\testResults.tmp
+        echo ^</failure^> >> %__TestBinDir%\testResults.tmp
+        echo ^</test^> >> %__TestBinDir%\testResults.tmp
     )
     goto :eof
 
