@@ -167,6 +167,10 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
     m_ControlPC       = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
+
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
 #else // _TARGET_ARM_
     if (pFrame->m_dwFlags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
@@ -306,6 +310,10 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     // scratch regs
     //
     m_RegDisplay.pR0  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R0);
+
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
 #else // _TARGET_ARM_
     //
     // preserved regs
@@ -426,6 +434,10 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR9  = thisFuncletPtrs.pR9 ;
     m_RegDisplay.pR10 = thisFuncletPtrs.pR10;
     m_RegDisplay.pR11 = thisFuncletPtrs.pR11;
+
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
 #else
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
@@ -548,6 +560,10 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
     m_RegDisplay.pR9  = SP++;
     m_RegDisplay.pR10 = SP++;
     m_RegDisplay.pR11 = SP++;
+
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
 #else
     SP = (PTR_UIntNative)(m_RegDisplay.SP);
     ASSERT_UNCONDITIONALLY("NYI for this arch");
@@ -569,6 +585,8 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
 #define STACK_ALIGN_SIZE 16
 #elif defined(_ARM_)
 #define STACK_ALIGN_SIZE 8
+#elif defined(_ARM64_)
+#define STACK_ALIGN_SIZE 16
 #elif defined(_X86_)
 #define STACK_ALIGN_SIZE 4
 #endif
@@ -588,6 +606,12 @@ struct CALL_DESCR_CONTEXT
     UIntNative  R5;
     UIntNative  R7;
     UIntNative  IP;
+};
+#elif defined(_TARGET_ARM64_)
+// @TODO: Add ARM64 entries
+struct CALL_DESCR_CONTEXT
+{
+    UIntNative IP;
 };
 #elif defined(_TARGET_X86_)
 struct CALL_DESCR_CONTEXT
@@ -648,6 +672,10 @@ bool StackFrameIterator::HandleCallDescrThunk()
     // And adjust SP to be the state that it should be in just after returning from
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT);
+
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
 #elif defined(_TARGET_X86_)
     // RBP points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
@@ -721,6 +749,8 @@ bool StackFrameIterator::HandleThrowSiteThunk()
     m_RegDisplay.pR9  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R9);
     m_RegDisplay.pR10 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R10);
     m_RegDisplay.pR11 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R11);
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #elif defined(_TARGET_X86_)
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);
@@ -974,6 +1004,8 @@ KeepUnwinding:
         {
 #ifdef _TARGET_ARM_
             m_pConservativeStackRangeUpperBound = (PTR_RtuObjectRef)*m_RegDisplay.pR11;
+#elif defined(_TARGET_ARM64_)
+            PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
             m_pConservativeStackRangeUpperBound = (PTR_RtuObjectRef)m_RegDisplay.GetFP();
 #endif
@@ -1108,6 +1140,8 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressForward(PTR_VOID controlPC)
 {
 #ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 2);
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 1);
 #endif
@@ -1116,6 +1150,8 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 {
 #ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 2);
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 1);
 #endif

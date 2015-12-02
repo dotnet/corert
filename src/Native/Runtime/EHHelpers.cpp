@@ -223,6 +223,8 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
     pContext->Sp  = pPalContext->SP;
     pContext->Lr  = pPalContext->LR;
     pContext->Pc  = pPalContext->IP;
+#elif defined(_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
 #error Not Implemented for this architecture -- RhpCopyContextFromExInfo
 #endif
@@ -376,6 +378,9 @@ static UIntNative UnwindWriteBarrierToCaller(_CONTEXT * pContext)
     pContext->SetSP(sp+sizeof(UIntNative)); // pop the stack
 #elif defined(_ARM_)
     UIntNative adjustedFaultingIP = pContext->GetLR() - 2;   // bl instruction will be 4 bytes - act as if start of call instruction + 2 were the faulting IP
+#elif defined(_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+    UIntNative adjustedFaultingIP = -1;
 #else
 #error "Unknown Architecture"
 #endif

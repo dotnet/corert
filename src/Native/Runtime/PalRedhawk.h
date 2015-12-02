@@ -286,9 +286,9 @@ typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
     UInt32 R10;
     UInt32 R11;
     UInt32 R12;
-    UInt32 Sp;
-    UInt32 Lr;
-    UInt32 Pc;
+    UInt32 Sp; // R13
+    UInt32 Lr; // R14
+    UInt32 Pc; // R15
     UInt32 Cpsr;
     UInt32 Fpscr;
     UInt32 Padding;
@@ -362,6 +362,86 @@ typedef struct _CONTEXT {
     UIntNative GetSP() { return Esp; }
 } CONTEXT, *PCONTEXT;
 #include "poppack.h"
+
+#elif defined(_ARM64_)
+
+// Specify the number of breakpoints and watchpoints that the OS
+// will track. Architecturally, ARM64 supports up to 16. In practice,
+// however, almost no one implements more than 4 of each.
+
+#define ARM64_MAX_BREAKPOINTS     8
+#define ARM64_MAX_WATCHPOINTS     2
+
+typedef struct _NEON128 {
+    UInt64 Low;
+    Int64 High;
+} NEON128, *PNEON128;
+
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+    //
+    // Control flags.
+    //
+    UInt32 ContextFlags;
+
+    //
+    // Integer registers
+    //
+    UInt32 Cpsr;       // NZVF + DAIF + CurrentEL + SPSel
+    UInt64 X0;
+    UInt64 X1;
+    UInt64 X2;
+    UInt64 X3;
+    UInt64 X4;
+    UInt64 X5;
+    UInt64 X6;
+    UInt64 X7;
+    UInt64 X8;
+    UInt64 X9;
+    UInt64 X10;
+    UInt64 X11;
+    UInt64 X12;
+    UInt64 X13;
+    UInt64 X14;
+    UInt64 X15;
+    UInt64 X16;
+    UInt64 X17;
+    UInt64 X18;
+    UInt64 X19;
+    UInt64 X20;
+    UInt64 X21;
+    UInt64 X22;
+    UInt64 X23;
+    UInt64 X24;
+    UInt64 X25;
+    UInt64 X26;
+    UInt64 X27;
+    UInt64 X28;
+    UInt64 Fp; // X29
+    UInt64 Lr; // X30
+    UInt64 Sp;
+    UInt64 Pc;
+
+    //
+    // Floating Point/NEON Registers
+    //
+    NEON128 V[32];
+    UInt32 Fpcr;
+    UInt32 Fpsr;
+
+    //
+    // Debug registers
+    //
+    UInt32 Bcr[ARM64_MAX_BREAKPOINTS];
+    UInt64 Bvr[ARM64_MAX_BREAKPOINTS];
+    UInt32 Wcr[ARM64_MAX_WATCHPOINTS];
+    UInt64 Wvr[ARM64_MAX_WATCHPOINTS];
+
+    void SetIP(UIntNative ip) { Pc = ip; }
+    void SetArg0Reg(UIntNative val) { X0 = val; }
+    void SetArg1Reg(UIntNative val) { X1 = val; }
+    UIntNative GetIP() { return Pc; }
+    UIntNative GetLR() { return Lr; }
+} CONTEXT, *PCONTEXT;
 
 #endif 
 
@@ -633,6 +713,9 @@ EXTERN_C unsigned __int64  __readgsqword(unsigned long Offset);
 #elif defined(_ARM_)
 EXTERN_C unsigned int _MoveFromCoprocessor(unsigned int, unsigned int, unsigned int, unsigned int, unsigned int);
 #pragma intrinsic(_MoveFromCoprocessor)
+#elif defined(_ARM64_)
+EXTERN_C unsigned __int64 __getReg(int);
+#pragma intrinsic(__getReg)
 #else
 #error Unsupported architecture
 #endif
@@ -646,6 +729,9 @@ inline UInt8 * PalNtCurrentTeb()
     return (UInt8*)__readgsqword(0x30);
 #elif defined(_ARM_)
     return (UInt8*)_MoveFromCoprocessor(15, 0, 13,  0, 2);
+#elif defined(_ARM64_)
+    // The calling convention recommend using X18 for storing TEB
+    return (UInt8*)__getReg(18);
 #else
 #error Unsupported architecture
 #endif
@@ -655,6 +741,9 @@ inline UInt8 * PalNtCurrentTeb()
 #if defined(_X86_) || defined(_ARM_)
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x2c
 #elif defined(_AMD64_)
+#define OFFSETOF__TEB__ThreadLocalStoragePointer 0x58
+#elif defined(_ARM64_)
+// @TODO: Find out what the offset is for ARM64
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x58
 #else
 #error Unsupported architecture
@@ -700,6 +789,12 @@ FORCEINLINE void PalYieldProcessor() {}
 EXTERN_C void __emit(const unsigned __int32 opcode);
 #pragma intrinsic(__emit)
 #define PalMemoryBarrier() { __emit(0xF3BF); __emit(0x8F5F); }
+
+#elif defined(_ARM64_)
+
+FORCEINLINE void PalYieldProcessor() {}
+// Using Urcu memory barrier
+#define PalMemoryBarrier() cmm_mb()
 
 #else
 #error Unsupported architecture

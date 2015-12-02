@@ -14,7 +14,6 @@
 #include <PalRedhawkCommon.h>
 #include "CommonMacros.h"
 #include <sal.h>
-#include "assert.h"
 #include "config.h"
 #include "UnixHandle.h"
 

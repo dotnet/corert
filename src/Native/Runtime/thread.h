@@ -16,7 +16,7 @@ class Thread;
 # else // FEATURE_SVR_GC
 #  define SIZEOF_ALLOC_CONTEXT 28
 # endif // FEATURE_SVR_GC
-#elif defined(_AMD64_)
+#elif defined(_AMD64_) || defined(_ARM64_)
 # ifdef FEATURE_SVR_GC
 #  define SIZEOF_ALLOC_CONTEXT 56
 # else // FEATURE_SVR_GC

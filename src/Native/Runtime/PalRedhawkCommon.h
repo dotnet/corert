@@ -15,6 +15,8 @@
 #ifndef __PAL_REDHAWK_COMMON_INCLUDED
 #define __PAL_REDHAWK_COMMON_INCLUDED
 
+#include "assert.h"
+
 #ifndef GCENV_INCLUDED
 // We define the notion of capabilities: optional functionality that the PAL may expose. Use
 // PalHasCapability() with the constants below to determine what is supported at runtime.
@@ -62,6 +64,13 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return SP; }
     UIntNative GetFp() const { return R7; }
+#elif defined(_ARM64_)
+    // @TODO: Add ARM64 registers
+    UIntNative IP;
+    UIntNative GetIp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
+    UIntNative GetSp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
+    UIntNative GetFp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
+
 #else // _ARM_
     UIntNative  IP;
     UIntNative  Rsp;

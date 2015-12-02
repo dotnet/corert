@@ -457,6 +457,8 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
             UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_BIT;
             return (UInt8 *)pTarget;
         }
+#elif _TARGET_ARM64_
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
 #error 'Unsupported Architecture'
 #endif
