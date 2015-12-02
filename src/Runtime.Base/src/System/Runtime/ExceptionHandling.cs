@@ -940,7 +940,7 @@ namespace System.Runtime
             }
         }
 
-        [NativeCallable(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallingConvention = CallingConvention.FastCall)]
+        [NativeCallable(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallingConvention = CallingConvention.Cdecl)]
         static public void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
             FailFastViaClasslib(RhFailFastReason.PN_UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);

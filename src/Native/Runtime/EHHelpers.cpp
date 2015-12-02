@@ -236,7 +236,7 @@ struct DISPATCHER_CONTEXT
     // N.B. There is more here (so this struct isn't the right size), but we ignore everything else
 };
 
-EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionPreemp(IntNative PInvokeCallsiteReturnAddr, 
+EXTERN_C void __cdecl RhpFailFastForPInvokeExceptionPreemp(IntNative PInvokeCallsiteReturnAddr, 
                                                                     void* pExceptionRecord, void* pContextRecord);
 EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(IntNative PInvokeCallsiteReturnAddr, 
                                                                   void* pExceptionRecord, void* pContextRecord);
