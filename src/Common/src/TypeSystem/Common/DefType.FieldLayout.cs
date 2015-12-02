@@ -9,12 +9,30 @@ namespace Internal.TypeSystem
     // This is the api surface necessary to query the field layout of a type
     public abstract partial class DefType : TypeDesc
     {
+        /// <summary>
+        /// Bit flags for layout 
+        /// </summary>
         private class FieldLayoutFlags
         {
-            public const int HasContainsPointers = 1;
+            /// <summary>
+            /// True if ContainsPointers has been computed
+            /// </summary>
+            public const int ComputedContainsPointers = 1;
+
+            /// <summary>
+            /// True if the type contains GC pointers
+            /// </summary>
             public const int ContainsPointers = 2;
-            public const int HasInstanceFieldLayout = 4;
-            public const int HasStaticFieldLayout = 8;
+
+            /// <summary>
+            /// True if the instance field layout has been computed
+            /// </summary>
+            public const int ComputedInstanceFieldLayout = 4;
+
+            /// <summary>
+            /// True if the static field layout has been computed
+            /// </summary>
+            public const int ComputedStaticFieldLayout = 8;
         }
 
         private class StaticBlockInfo
@@ -41,7 +59,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasContainsPointers))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedContainsPointers))
                 {
                     ComputeTypeContainsPointers();
                 }
@@ -56,7 +74,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceFieldLayout))
                 {
                     ComputeInstanceFieldLayout();
                 }
@@ -71,7 +89,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceFieldLayout))
                 {
                     ComputeInstanceFieldLayout();
                 }
@@ -97,7 +115,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceFieldLayout))
                 {
                     ComputeInstanceFieldLayout();
                 }
@@ -112,7 +130,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasInstanceFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceFieldLayout))
                 {
                     ComputeInstanceFieldLayout();
                 }
@@ -127,7 +145,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -142,7 +160,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -157,7 +175,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -172,7 +190,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -188,7 +206,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -204,7 +222,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.HasStaticFieldLayout))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticFieldLayout))
                 {
                     ComputeStaticFieldLayout();
                 }
@@ -230,7 +248,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.HasInstanceFieldLayout);
+            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceFieldLayout);
         }
 
         internal void ComputeStaticFieldLayout()
@@ -256,12 +274,12 @@ namespace Internal.TypeSystem
                 }
             }
 
-            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.HasStaticFieldLayout);
+            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedStaticFieldLayout);
         }
 
         private void ComputeTypeContainsPointers()
         {
-            int flagsToAdd = FieldLayoutFlags.HasContainsPointers;
+            int flagsToAdd = FieldLayoutFlags.ComputedContainsPointers;
 
             if (!IsValueType && HasBaseType && BaseType.ContainsPointers)
             {
