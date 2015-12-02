@@ -46,7 +46,7 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, &ReturnFromCallDescrThunk);
 #endif
 
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
 EXTERN_C void * RhpCallFunclet2;
 GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFunclet2Addr, &RhpCallFunclet2);
 #endif
@@ -454,7 +454,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
     if (
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         !EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFunclet2)
 #else
         !EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) &&
@@ -468,7 +468,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
 
     PTR_UIntNative SP;
 
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     // First, unwind RhpCallFunclet
     SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
     m_RegDisplay.SetAddrOfIP(SP);
@@ -509,7 +509,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
     // thunks, but we don't need to know what they are here, so we just skip them.
     if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         SP += 2;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
     m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
@@ -589,7 +589,7 @@ struct CALL_DESCR_CONTEXT
     UIntNative  R7;
     UIntNative  IP;
 };
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  Rbx;
@@ -648,7 +648,7 @@ bool StackFrameIterator::HandleCallDescrThunk()
     // And adjust SP to be the state that it should be in just after returning from
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT);
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
     // RBP points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
@@ -721,7 +721,7 @@ bool StackFrameIterator::HandleThrowSiteThunk()
     m_RegDisplay.pR9  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R9);
     m_RegDisplay.pR10 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R10);
     m_RegDisplay.pR11 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R11);
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rsi);

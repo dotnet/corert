@@ -641,7 +641,7 @@ struct PInvokeTransitionFrame
 #ifdef _TARGET_AMD64_
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
 #elif defined(TARGET_ARM)
@@ -652,7 +652,7 @@ struct PInvokeTransitionFrame
 
 #ifdef _TARGET_AMD64_
 #define OFFSETOF__Thread__m_pTransitionFrame 0x30
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x20
 #elif defined(TARGET_ARM)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x20

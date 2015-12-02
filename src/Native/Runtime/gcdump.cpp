@@ -154,7 +154,7 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     gcPrintf("   parmRegsPushedCount: %d\r\n", pHeader->ParmRegsPushedCount());
 #endif
 
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     gcPrintf("   returnPopSize:  %d\r\n", pHeader->GetReturnPopSize());
     if (pHeader->HasStackChanges())
     {

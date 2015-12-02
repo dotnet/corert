@@ -541,7 +541,7 @@
 
 #ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
 #elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;

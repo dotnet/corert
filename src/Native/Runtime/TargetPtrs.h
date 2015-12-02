@@ -10,7 +10,7 @@
 
 #ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
 #elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
@@ -80,7 +80,7 @@ typedef TargetPtr<struct StaticGcDesc>          TgtPTR_StaticGcDesc;
 #elif defined(RHDUMP)
 #ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
 #elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
@@ -105,7 +105,7 @@ typedef SPTR(struct StaticGcDesc) PTR_StaticGcDesc;
 
 #ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
 #elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;

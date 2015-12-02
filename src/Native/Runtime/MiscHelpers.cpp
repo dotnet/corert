@@ -404,7 +404,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         }
         return pCodeOrg;
 
-#elif TARGET_X86
+#elif _TARGET_X86_
         UInt8 * pCode = pCodeOrg;
 
         // is this "add ecx,4"?

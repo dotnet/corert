@@ -227,10 +227,10 @@ void ReportLocalSlot(UInt32 slotNum, REGDISPLAY * pContext, GCEnumContext * hCal
     }
     else
     {
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         // @TODO: X86: need to pass in current stack level
         UNREACHABLE_MSG("NYI - ESP frames");
-#endif // TARGET_X86
+#endif // _TARGET_X86_
 
         Int32 rspOffset = pHeader->GetFrameSize() - ((slotNum + 1) * sizeof(void *));
         PTR_PTR_Object pRoot = (PTR_PTR_Object)(pContext->GetSP() + rspOffset);
@@ -244,14 +244,14 @@ void ReportStackSlot(bool framePointerBased, Int32 offset, UInt32 gcFlags, REGDI
     UIntNative basePointer;
     if (framePointerBased)
     {
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         if (hasDynamicAlignment && offset >= 0)
             basePointer = pContext->GetPP();
         else
 #else
             // avoid warning about unused parameter
             hasDynamicAlignment;
-#endif // TARGET_X86
+#endif // _TARGET_X86_
             basePointer = pContext->GetFP();
     }
     else
@@ -550,7 +550,7 @@ ContinueUnconditionally:
             else
             {
                 bool hasDynamicAlignment = pMethodInfo->GetGCInfoHeader()->HasDynamicAlignment();
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
                 ASSERT_MSG(!hasDynamicAlignment || pMethodInfo->GetGCInfoHeader()->GetParamPointerReg() == RN_EBX, "NYI: non-EBX param pointer");
 #endif
                 // case 6 -- "stack slot" / "stack slot set"
@@ -597,10 +597,10 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
 
     bool ebpFrame = pInfoHeader->HasFramePointer();
 
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     // @TODO .. ESP-based methods with stack changes
     ASSERT_MSG(ebpFrame || !pInfoHeader->HasStackChanges(), "NYI -- ESP-based methods with stack changes");
-#endif // TARGET_X86
+#endif // _TARGET_X86_
 
     //
     // Just unwind based on the info header
@@ -657,7 +657,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     }
 #endif
 
-#if defined(TARGET_X86)
+#if defined(_TARGET_X86_)
     int registerSaveDisplacement = 0;
     // registers saved at bottom of frame in Project N
     registerSaveDisplacement = pInfoHeader->GetFrameSize();
@@ -674,7 +674,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
         if (regMask & CSR_MASK_RDI) { pContext->pRdi = RSP++; }
         if (regMask & CSR_MASK_RSI) { pContext->pRsi = RSP++; }
         if (regMask & CSR_MASK_RBX) { pContext->pRbx = RSP++; }
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
         ASSERT_MSG(ebpFrame || !(regMask & CSR_MASK_RBP), "We should never use EBP as a preserved register");
         ASSERT_MSG(!(regMask & CSR_MASK_RBX) || !pInfoHeader->HasDynamicAlignment(), "Can't have EBX as preserved regster and dynamic alignment frame pointer")
         if (regMask & CSR_MASK_RBX) { pContext->pRbx = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
@@ -700,7 +700,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     // handle dynamic frame alignment
     if (pInfoHeader->HasDynamicAlignment())
     {
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         ASSERT_MSG(pInfoHeader->GetParamPointerReg() == RN_EBX, "NYI: non-EBX param pointer");
         // For x86 dynamically-aligned frames, we have two frame pointers, like this:
         //
@@ -724,7 +724,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
 
     pContext->SetAddrOfIP((PTR_PCODE)RSP); // save off the return address location
     pContext->SetIP(*RSP++);    // pop the return address
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     // pop the callee-popped args
     RSP += (pInfoHeader->GetReturnPopSize() / sizeof(UIntNative));
 #endif

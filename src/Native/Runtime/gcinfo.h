@@ -310,7 +310,7 @@ private:
     // straightforward mapping where bit 0 corresponds to xmm0, bit 1 corresponds to xmm1 and so on.
     //
     UInt16  x64_savedXmmRegMask;      // which xmm regs were saved
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
     // OPTIONAL: only encoded if x86_argCountIsLarge = 1
     // NOTE: because we are using pointer-sized units, only 14 bits are required to represent the entire range
     // that can be expressed by a 'ret NNNN' instruction.  Therefore, with 6 in the 'low' field and 8 in the
@@ -447,7 +447,7 @@ public:
 
     void SetDynamicAlignment(UInt8 logByteAlignment)
     {
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         ASSERT(logByteAlignment >= 3); // 4 byte aligned frames
 #else
         ASSERT(logByteAlignment >= 4); // 8 byte aligned frames
@@ -552,7 +552,7 @@ public:
 #endif
     }
 
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     void SetReturnPopSize(UInt32 popSizeInBytes)
     {
         ASSERT(0 == (popSizeInBytes % POINTER_SIZE));
@@ -571,7 +571,7 @@ public:
     {
         x86_hasStackChanges = 1;
     }
-#endif // TARGET_X86
+#endif // _TARGET_X86_
 
 #ifdef TARGET_ARM
     void SetParmRegsPushed(ScratchRegMask pushedParmRegs)
@@ -749,7 +749,7 @@ public:
         ASSERT(x64_hasSavedXmmRegs);
         return x64_savedXmmRegMask;
     }
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
     int GetReturnPopSize() // returned in bytes
     {
         if (!x86_argCountIsLarge)
@@ -859,7 +859,7 @@ public:
             UInt32 encodedValue = x64_savedXmmRegMask >> 6;
             size += WriteUnsigned(pDest, encodedValue);
         }
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
         if (x86_argCountIsLarge)
         {
             size += 1;
@@ -1001,7 +1001,7 @@ public:
             x64_savedXmmRegMask = ToUInt16(encodedValue << 6);
         }
 
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
         if (x86_argCountIsLarge)
             x86_argCountHigh = *pbDecode++;
         else
@@ -1141,7 +1141,7 @@ public:
 
 #ifdef _TARGET_AMD64_
         if (x64_framePtrOffsetSmall == 0x3) { VarInt::SkipUnsigned(pbDecode); }
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
         if (x86_argCountIsLarge)
             pbDecode++;
 
@@ -1218,12 +1218,12 @@ public:
         PRINT_CALLEE_SAVE(" r14", CSR_MASK_R14, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" r15", CSR_MASK_R15, calleeSavedRegMask);
 #endif // _TARGET_AMD64_
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         PRINT_CALLEE_SAVE(" ebx", CSR_MASK_RBX, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" esi", CSR_MASK_RSI, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" edi", CSR_MASK_RDI, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" ebp", CSR_MASK_RBP, calleeSavedRegMask);
-#endif // TARGET_X86
+#endif // _TARGET_X86_
 #ifdef TARGET_ARM
         PRINT_CALLEE_SAVE(" r4" , CSR_MASK_R4 , calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" r5" , CSR_MASK_R5 , calleeSavedRegMask);
@@ -1259,7 +1259,7 @@ public:
         case RN_SP:     printf(" sp"); break;
         case RN_LR:     printf(" lr"); break;
         case RN_PC:     printf(" pc"); break;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
         case RN_EAX:    printf("eax"); break;
         case RN_ECX:    printf("ecx"); break;
         case RN_EDX:    printf("edx"); break;
