@@ -184,7 +184,7 @@ __TotalTests=$((${__JitTotalTests} + ${__CppTotalTests}))
 __PassedTests=$((${__JitPassedTests} + ${__CppPassedTests}))
 __FailedTests=$((${__TotalTests} - ${__PassedTests}))
 
-echo "<?xml version=\"1.0\" encoding=\"utf-8\"?^>" > ${__TestBinDir}/testResults.xml
+echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > ${__TestBinDir}/testResults.xml
 echo "<assemblies>"  >> ${__TestBinDir}/testResults.xml
 echo "<assembly name=\"ILCompiler\" total=\"${__TotalTests}\" passed=\"${__PassedTests}\" failed=\"${__FailedTests}\" skipped=\"0\">"  >> ${__TestBinDir}/testResults.xml
 echo "<collection total=\"${__TotalTests}\" passed=\"${__PassedTests}\" failed=\"${__FailedTests}\" skipped=\"0\">"  >> ${__TestBinDir}/testResults.xml
