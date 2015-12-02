@@ -123,7 +123,7 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     }
     gcPrintf("   returnKind:     %s\r\n", returnKind);
     gcPrintf("   frameKind:      %s", pHeader->HasFramePointer() ? "EBP" : "ESP");
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     if (pHeader->HasFramePointer())
         gcPrintf(" offset: %d", pHeader->GetFramePointerOffset());
 #endif // _AMD64_
@@ -196,7 +196,7 @@ void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
 #else
     const char* regAndSign = "EBP-";
     size_t offset = pHeader->GetPreservedRegsSaveSize() + (slotNum * POINTER_SIZE);
-# ifdef TARGET_AMD64
+# ifdef _TARGET_AMD64_
     if (((GCInfoHeader*)pHeader)->GetFramePointerOffset() == 0)
     {
         regAndSign = "RBP-";

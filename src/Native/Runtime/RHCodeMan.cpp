@@ -122,12 +122,12 @@ PTR_PTR_Object GetRegObjectAddr(REGDISPLAY * pContext)
     case CSR_NUM_RSI:  return (PTR_PTR_Object)pContext->pRsi;
     case CSR_NUM_RDI:  return (PTR_PTR_Object)pContext->pRdi;
     case CSR_NUM_RBP:  return (PTR_PTR_Object)pContext->pRbp;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     case CSR_NUM_R12:  return (PTR_PTR_Object)pContext->pR12;
     case CSR_NUM_R13:  return (PTR_PTR_Object)pContext->pR13;
     case CSR_NUM_R14:  return (PTR_PTR_Object)pContext->pR14;
     case CSR_NUM_R15:  return (PTR_PTR_Object)pContext->pR15;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
     UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
 }
@@ -141,12 +141,12 @@ PTR_PTR_Object GetRegObjectAddr(CalleeSavedRegNum regNum, REGDISPLAY * pContext)
     case CSR_NUM_RSI:  return (PTR_PTR_Object)pContext->pRsi;
     case CSR_NUM_RDI:  return (PTR_PTR_Object)pContext->pRdi;
     case CSR_NUM_RBP:  return (PTR_PTR_Object)pContext->pRbp;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     case CSR_NUM_R12:  return (PTR_PTR_Object)pContext->pR12;
     case CSR_NUM_R13:  return (PTR_PTR_Object)pContext->pR13;
     case CSR_NUM_R14:  return (PTR_PTR_Object)pContext->pR14;
     case CSR_NUM_R15:  return (PTR_PTR_Object)pContext->pR15;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
     UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
 }
@@ -158,12 +158,12 @@ PTR_PTR_Object GetScratchRegObjectAddr(ScratchRegNum regNum, REGDISPLAY * pConte
     case SR_NUM_RAX:  return (PTR_PTR_Object)pContext->pRax;
     case SR_NUM_RCX:  return (PTR_PTR_Object)pContext->pRcx;
     case SR_NUM_RDX:  return (PTR_PTR_Object)pContext->pRdx;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     case SR_NUM_R8 :  return (PTR_PTR_Object)pContext->pR8;
     case SR_NUM_R9 :  return (PTR_PTR_Object)pContext->pR9;
     case SR_NUM_R10:  return (PTR_PTR_Object)pContext->pR10;
     case SR_NUM_R11:  return (PTR_PTR_Object)pContext->pR11;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
     UNREACHABLE_MSG("unexpected ScratchRegNum");
 }
@@ -178,7 +178,7 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
     if (regSet & CSR_MASK_RSI) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_RSI>(pContext), 0); }
     if (regSet & CSR_MASK_RDI) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_RDI>(pContext), 0); }
     if (regSet & CSR_MASK_RBP) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_RBP>(pContext), 0); }
-#ifdef TARGET_AMD64                                                           
+#ifdef _TARGET_AMD64_                                                           
     if (regSet & CSR_MASK_R12) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_R12>(pContext), 0); }
 #endif
 }
@@ -215,11 +215,11 @@ void ReportLocalSlot(UInt32 slotNum, REGDISPLAY * pContext, GCEnumContext * hCal
         // ARM places the FP at the top of the locals area.
         rbpOffset = pHeader->GetFrameSize() - ((slotNum + 1) * sizeof(void *));
 #else
-#  ifdef TARGET_AMD64
+#  ifdef _TARGET_AMD64_
         if (pHeader->GetFramePointerOffset() != 0)
             rbpOffset = (slotNum * sizeof(void *));
         else
-#  endif // TARGET_AMD64
+#  endif // _TARGET_AMD64_
             rbpOffset = -pHeader->GetPreservedRegsSaveSize() - (slotNum * sizeof(void *));
 #endif
         PTR_PTR_Object pRoot = (PTR_PTR_Object)(pContext->GetFP() + rbpOffset);
@@ -614,7 +614,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
 #else
         saveSize -= sizeof(void *); // don't count RBP
         Int32 framePointerOffset = 0;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
         framePointerOffset = pInfoHeader->GetFramePointerOffset();
 #endif
         rawRSP = pContext->GetFP() - saveSize - framePointerOffset;
@@ -626,7 +626,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     }
     PTR_UIntNative RSP = (PTR_UIntNative)rawRSP;
 
-#if defined(TARGET_AMD64)
+#if defined(_TARGET_AMD64_)
     if (pInfoHeader->HasSavedXmmRegs())
     {
         typedef DPTR(Fp128) PTR_Fp128;
@@ -666,7 +666,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     if (saveSize > 0)
     {
         CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
         if (regMask & CSR_MASK_R15) { pContext->pR15 = RSP++; }
         if (regMask & CSR_MASK_R14) { pContext->pR14 = RSP++; }
         if (regMask & CSR_MASK_R13) { pContext->pR13 = RSP++; }
@@ -689,7 +689,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
         if (regMask & CSR_MASK_R9) { pContext->pR9 = RSP++; }
         if (regMask & CSR_MASK_R10) { pContext->pR10 = RSP++; }
         if (regMask & CSR_MASK_R11) { pContext->pR11 = RSP++; }
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
 
 #ifndef TARGET_ARM

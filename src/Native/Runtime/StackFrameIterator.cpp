@@ -173,12 +173,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     if (pFrame->m_dwFlags & PTFF_SAVE_RDI)  { m_RegDisplay.pRdi = pPreservedRegsCursor++; }
     ASSERT(!(pFrame->m_dwFlags & PTFF_SAVE_RBP)); // RBP should never contain a GC ref because we require
                                                   // a frame pointer for methods with pinvokes
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     if (pFrame->m_dwFlags & PTFF_SAVE_R12)  { m_RegDisplay.pR12 = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_R13)  { m_RegDisplay.pR13 = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_R14)  { m_RegDisplay.pR14 = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_R15)  { m_RegDisplay.pR15 = pPreservedRegsCursor++; }
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 
     m_RegDisplay.pRbp = (PTR_UIntNative) PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
 
@@ -187,12 +187,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     if (pFrame->m_dwFlags & PTFF_SAVE_RAX)  { m_RegDisplay.pRax = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_RCX)  { m_RegDisplay.pRcx = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_RDX)  { m_RegDisplay.pRdx = pPreservedRegsCursor++; }
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     if (pFrame->m_dwFlags & PTFF_SAVE_R8 )  { m_RegDisplay.pR8  = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_R9 )  { m_RegDisplay.pR9  = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_R11)  { m_RegDisplay.pR11 = pPreservedRegsCursor++; }
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 
     if (pFrame->m_dwFlags & PTFF_RAX_IS_GCREF)
     {
@@ -314,7 +314,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rsi);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rdi);
     m_RegDisplay.pRbx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rbx);
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     m_RegDisplay.pR12 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R12);
     m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R13);
     m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R14);
@@ -323,7 +323,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     // preserved xmm regs
     //
     memcpy(m_RegDisplay.Xmm, &pCtx->Xmm6, sizeof(m_RegDisplay.Xmm));
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 
     //
     // scratch regs
@@ -331,12 +331,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pRax = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rax);
     m_RegDisplay.pRcx = NULL;
     m_RegDisplay.pRdx = NULL;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     m_RegDisplay.pR8  = NULL;
     m_RegDisplay.pR9  = NULL;
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 #endif // TARGET_ARM
 }
 
@@ -432,12 +432,12 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pRdi = thisFuncletPtrs.pRdi;
     m_RegDisplay.pRsi = thisFuncletPtrs.pRsi;
     m_RegDisplay.pRbx = thisFuncletPtrs.pRbx;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     m_RegDisplay.pR12 = thisFuncletPtrs.pR12;
     m_RegDisplay.pR13 = thisFuncletPtrs.pR13;
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 #endif // TARGET_ARM
 }
 
@@ -483,7 +483,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
         );
 #endif
 
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
     m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
@@ -573,7 +573,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
 #define STACK_ALIGN_SIZE 4
 #endif
 
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  Rbp;
@@ -619,7 +619,7 @@ bool StackFrameIterator::HandleCallDescrThunk()
     }
     
     UIntNative newSP;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     // RBP points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
@@ -694,7 +694,7 @@ bool StackFrameIterator::HandleThrowSiteThunk()
     }
 
     const UIntNative STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     const UIntNative SIZEOF_OutgoingScratch = 0x20;
 #else
     const UIntNative SIZEOF_OutgoingScratch = 0;
@@ -703,7 +703,7 @@ bool StackFrameIterator::HandleThrowSiteThunk()
     PTR_PAL_LIMITED_CONTEXT pContext = (PTR_PAL_LIMITED_CONTEXT)
                                         (m_RegDisplay.SP + SIZEOF_OutgoingScratch + STACKSIZEOF_ExInfo);
 
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rsi);

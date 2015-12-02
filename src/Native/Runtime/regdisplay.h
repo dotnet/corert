@@ -3,7 +3,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(_TARGET_AMD64_)
 
 struct REGDISPLAY 
 {
@@ -15,7 +15,7 @@ struct REGDISPLAY
     PTR_UIntNative pRbp;
     PTR_UIntNative pRsi;
     PTR_UIntNative pRdi;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     PTR_UIntNative pR8;
     PTR_UIntNative pR9;
     PTR_UIntNative pR10;
@@ -24,18 +24,18 @@ struct REGDISPLAY
     PTR_UIntNative pR13;
     PTR_UIntNative pR14;
     PTR_UIntNative pR15;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 
     UIntNative   SP;
     PTR_PCODE    pIP;
     PCODE        IP;
 
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     Fp128          Xmm[16-6]; // preserved xmm6..xmm15 regs for EH stackwalk
                               // these need to be unwound during a stack walk
                               // for EH, but not adjusted, so we only need
                               // their values, not their addresses
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
 
     inline PCODE GetIP() { return IP; }
     inline PTR_PCODE GetAddrOfIP() { return pIP; }

@@ -70,7 +70,7 @@ struct PAL_LIMITED_CONTEXT
     UIntNative  Rsi;
     UIntNative  Rax;
     UIntNative  Rbx;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     UIntNative  R12;
     UIntNative  R13;
     UIntNative  R14;

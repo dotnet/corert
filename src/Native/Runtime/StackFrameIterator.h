@@ -146,7 +146,7 @@ private:
         PTR_UIntNative pRdi;
         PTR_UIntNative pRsi;
         PTR_UIntNative pRbx;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
         PTR_UIntNative pR12;
         PTR_UIntNative pR13;
         PTR_UIntNative pR14;

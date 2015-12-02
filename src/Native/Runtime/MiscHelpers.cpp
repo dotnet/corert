@@ -375,7 +375,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 
         bool unboxingStub = false;
 
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
         UInt8 * pCode = pCodeOrg;
 
         // is this "add rcx,8"?
