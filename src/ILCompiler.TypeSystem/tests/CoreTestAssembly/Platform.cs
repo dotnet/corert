@@ -15,6 +15,10 @@ namespace System
     {
         internal IntPtr m_pEEType;
         public virtual string ToString() { return null; }
+
+        ~Object()
+        {
+        }
     }
 
     public struct Void { }
