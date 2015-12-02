@@ -313,7 +313,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, T
     return ThreadStore::GetCurrentThread()->GetThreadLocalStorage(uiTlsIndex, uiFieldOffset);
 }
 
-#if TARGET_ARM
+#if _TARGET_ARM_
 //*****************************************************************************
 //  Extract the 16-bit immediate from ARM Thumb2 Instruction (format T2_N)
 //*****************************************************************************
@@ -359,7 +359,7 @@ inline Int32 GetThumb2BlRel24(UInt16 * p)
     // Sign-extend and return
     return (ret << 7) >> 7;
 }
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 
 // Given a pointer to code, find out if this points to an import stub
 // or unboxing stub, and if so, return the address that stub jumps to
@@ -375,7 +375,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 
         bool unboxingStub = false;
 
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
         UInt8 * pCode = pCodeOrg;
 
         // is this "add rcx,8"?
@@ -404,7 +404,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         }
         return pCodeOrg;
 
-#elif TARGET_X86
+#elif _TARGET_X86_
         UInt8 * pCode = pCodeOrg;
 
         // is this "add ecx,4"?
@@ -432,7 +432,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         }
         return pCodeOrg;
 
-#elif TARGET_ARM
+#elif _TARGET_ARM_
         const UInt16 THUMB_BIT = 1;
         UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_BIT);
         // is this "adds r0,4"?

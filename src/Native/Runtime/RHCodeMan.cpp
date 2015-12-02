@@ -40,7 +40,7 @@ inline void ReportObject(GCEnumContext * hCallback, PTR_PTR_Object p, UInt32 fla
 // It should compile away to simply an inlined field access.  Since we intentionally have conditionals that 
 // are constant at compile-time, we need to disable the level-4 warning related to that.
 //
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
 
 #pragma warning(push)
 #pragma warning(disable:4127)   // conditional expression is constant
@@ -109,7 +109,7 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
 
 
 
-#else // TARGET_ARM
+#else // _TARGET_ARM_
 
 #pragma warning(push)
 #pragma warning(disable:4127)   // conditional expression is constant
@@ -122,12 +122,12 @@ PTR_PTR_Object GetRegObjectAddr(REGDISPLAY * pContext)
     case CSR_NUM_RSI:  return (PTR_PTR_Object)pContext->pRsi;
     case CSR_NUM_RDI:  return (PTR_PTR_Object)pContext->pRdi;
     case CSR_NUM_RBP:  return (PTR_PTR_Object)pContext->pRbp;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     case CSR_NUM_R12:  return (PTR_PTR_Object)pContext->pR12;
     case CSR_NUM_R13:  return (PTR_PTR_Object)pContext->pR13;
     case CSR_NUM_R14:  return (PTR_PTR_Object)pContext->pR14;
     case CSR_NUM_R15:  return (PTR_PTR_Object)pContext->pR15;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
     UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
 }
@@ -141,12 +141,12 @@ PTR_PTR_Object GetRegObjectAddr(CalleeSavedRegNum regNum, REGDISPLAY * pContext)
     case CSR_NUM_RSI:  return (PTR_PTR_Object)pContext->pRsi;
     case CSR_NUM_RDI:  return (PTR_PTR_Object)pContext->pRdi;
     case CSR_NUM_RBP:  return (PTR_PTR_Object)pContext->pRbp;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     case CSR_NUM_R12:  return (PTR_PTR_Object)pContext->pR12;
     case CSR_NUM_R13:  return (PTR_PTR_Object)pContext->pR13;
     case CSR_NUM_R14:  return (PTR_PTR_Object)pContext->pR14;
     case CSR_NUM_R15:  return (PTR_PTR_Object)pContext->pR15;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
     UNREACHABLE_MSG("unexpected CalleeSavedRegNum");
 }
@@ -158,12 +158,12 @@ PTR_PTR_Object GetScratchRegObjectAddr(ScratchRegNum regNum, REGDISPLAY * pConte
     case SR_NUM_RAX:  return (PTR_PTR_Object)pContext->pRax;
     case SR_NUM_RCX:  return (PTR_PTR_Object)pContext->pRcx;
     case SR_NUM_RDX:  return (PTR_PTR_Object)pContext->pRdx;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     case SR_NUM_R8 :  return (PTR_PTR_Object)pContext->pR8;
     case SR_NUM_R9 :  return (PTR_PTR_Object)pContext->pR9;
     case SR_NUM_R10:  return (PTR_PTR_Object)pContext->pR10;
     case SR_NUM_R11:  return (PTR_PTR_Object)pContext->pR11;
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
     UNREACHABLE_MSG("unexpected ScratchRegNum");
 }
@@ -178,12 +178,12 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
     if (regSet & CSR_MASK_RSI) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_RSI>(pContext), 0); }
     if (regSet & CSR_MASK_RDI) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_RDI>(pContext), 0); }
     if (regSet & CSR_MASK_RBP) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_RBP>(pContext), 0); }
-#ifdef TARGET_AMD64                                                           
+#ifdef _TARGET_AMD64_                                                           
     if (regSet & CSR_MASK_R12) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_R12>(pContext), 0); }
 #endif
 }
 
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 
 void ReportRegister(UInt8 regEnc, REGDISPLAY * pContext, GCEnumContext * hCallback)
 {
@@ -211,15 +211,15 @@ void ReportLocalSlot(UInt32 slotNum, REGDISPLAY * pContext, GCEnumContext * hCal
     if (pHeader->HasFramePointer())
     {
         Int32 rbpOffset;
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
         // ARM places the FP at the top of the locals area.
         rbpOffset = pHeader->GetFrameSize() - ((slotNum + 1) * sizeof(void *));
 #else
-#  ifdef TARGET_AMD64
+#  ifdef _TARGET_AMD64_
         if (pHeader->GetFramePointerOffset() != 0)
             rbpOffset = (slotNum * sizeof(void *));
         else
-#  endif // TARGET_AMD64
+#  endif // _TARGET_AMD64_
             rbpOffset = -pHeader->GetPreservedRegsSaveSize() - (slotNum * sizeof(void *));
 #endif
         PTR_PTR_Object pRoot = (PTR_PTR_Object)(pContext->GetFP() + rbpOffset);
@@ -227,10 +227,10 @@ void ReportLocalSlot(UInt32 slotNum, REGDISPLAY * pContext, GCEnumContext * hCal
     }
     else
     {
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         // @TODO: X86: need to pass in current stack level
         UNREACHABLE_MSG("NYI - ESP frames");
-#endif // TARGET_X86
+#endif // _TARGET_X86_
 
         Int32 rspOffset = pHeader->GetFrameSize() - ((slotNum + 1) * sizeof(void *));
         PTR_PTR_Object pRoot = (PTR_PTR_Object)(pContext->GetSP() + rspOffset);
@@ -244,14 +244,14 @@ void ReportStackSlot(bool framePointerBased, Int32 offset, UInt32 gcFlags, REGDI
     UIntNative basePointer;
     if (framePointerBased)
     {
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         if (hasDynamicAlignment && offset >= 0)
             basePointer = pContext->GetPP();
         else
 #else
             // avoid warning about unused parameter
             hasDynamicAlignment;
-#endif // TARGET_X86
+#endif // _TARGET_X86_
             basePointer = pContext->GetFP();
     }
     else
@@ -550,7 +550,7 @@ ContinueUnconditionally:
             else
             {
                 bool hasDynamicAlignment = pMethodInfo->GetGCInfoHeader()->HasDynamicAlignment();
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
                 ASSERT_MSG(!hasDynamicAlignment || pMethodInfo->GetGCInfoHeader()->GetParamPointerReg() == RN_EBX, "NYI: non-EBX param pointer");
 #endif
                 // case 6 -- "stack slot" / "stack slot set"
@@ -597,10 +597,10 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
 
     bool ebpFrame = pInfoHeader->HasFramePointer();
 
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     // @TODO .. ESP-based methods with stack changes
     ASSERT_MSG(ebpFrame || !pInfoHeader->HasStackChanges(), "NYI -- ESP-based methods with stack changes");
-#endif // TARGET_X86
+#endif // _TARGET_X86_
 
     //
     // Just unwind based on the info header
@@ -609,12 +609,12 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     UIntNative rawRSP;
     if (ebpFrame)
     {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
         rawRSP = pContext->GetFP() + pInfoHeader->GetFrameSize();
 #else
         saveSize -= sizeof(void *); // don't count RBP
         Int32 framePointerOffset = 0;
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
         framePointerOffset = pInfoHeader->GetFramePointerOffset();
 #endif
         rawRSP = pContext->GetFP() - saveSize - framePointerOffset;
@@ -626,7 +626,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     }
     PTR_UIntNative RSP = (PTR_UIntNative)rawRSP;
 
-#if defined(TARGET_AMD64)
+#if defined(_TARGET_AMD64_)
     if (pInfoHeader->HasSavedXmmRegs())
     {
         typedef DPTR(Fp128) PTR_Fp128;
@@ -644,7 +644,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
             }
         }
     }
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
     UInt8 vfpRegPushedCount = pInfoHeader->GetVfpRegPushedCount();
     UInt8 vfpRegFirstPushed = pInfoHeader->GetVfpRegFirstPushed();
     UInt32 regIndex = vfpRegFirstPushed - 8;
@@ -657,7 +657,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     }
 #endif
 
-#if defined(TARGET_X86)
+#if defined(_TARGET_X86_)
     int registerSaveDisplacement = 0;
     // registers saved at bottom of frame in Project N
     registerSaveDisplacement = pInfoHeader->GetFrameSize();
@@ -666,7 +666,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     if (saveSize > 0)
     {
         CalleeSavedRegMask regMask = pInfoHeader->GetSavedRegs();
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
         if (regMask & CSR_MASK_R15) { pContext->pR15 = RSP++; }
         if (regMask & CSR_MASK_R14) { pContext->pR14 = RSP++; }
         if (regMask & CSR_MASK_R13) { pContext->pR13 = RSP++; }
@@ -674,13 +674,13 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
         if (regMask & CSR_MASK_RDI) { pContext->pRdi = RSP++; }
         if (regMask & CSR_MASK_RSI) { pContext->pRsi = RSP++; }
         if (regMask & CSR_MASK_RBX) { pContext->pRbx = RSP++; }
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
         ASSERT_MSG(ebpFrame || !(regMask & CSR_MASK_RBP), "We should never use EBP as a preserved register");
         ASSERT_MSG(!(regMask & CSR_MASK_RBX) || !pInfoHeader->HasDynamicAlignment(), "Can't have EBX as preserved regster and dynamic alignment frame pointer")
         if (regMask & CSR_MASK_RBX) { pContext->pRbx = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RSI) { pContext->pRsi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RDI) { pContext->pRdi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
-#elif defined(TARGET_ARM)       
+#elif defined(_TARGET_ARM_)       
         if (regMask & CSR_MASK_R4) { pContext->pR4 = RSP++; }
         if (regMask & CSR_MASK_R5) { pContext->pR5 = RSP++; }
         if (regMask & CSR_MASK_R6) { pContext->pR6 = RSP++; }
@@ -689,10 +689,10 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
         if (regMask & CSR_MASK_R9) { pContext->pR9 = RSP++; }
         if (regMask & CSR_MASK_R10) { pContext->pR10 = RSP++; }
         if (regMask & CSR_MASK_R11) { pContext->pR11 = RSP++; }
-#endif // TARGET_AMD64
+#endif // _TARGET_AMD64_
     }
 
-#ifndef TARGET_ARM
+#ifndef _TARGET_ARM_
     if (ebpFrame)
         pContext->pRbp = RSP++;
 #endif
@@ -700,7 +700,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     // handle dynamic frame alignment
     if (pInfoHeader->HasDynamicAlignment())
     {
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
         ASSERT_MSG(pInfoHeader->GetParamPointerReg() == RN_EBX, "NYI: non-EBX param pointer");
         // For x86 dynamically-aligned frames, we have two frame pointers, like this:
         //
@@ -724,12 +724,12 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
 
     pContext->SetAddrOfIP((PTR_PCODE)RSP); // save off the return address location
     pContext->SetIP(*RSP++);    // pop the return address
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     // pop the callee-popped args
     RSP += (pInfoHeader->GetReturnPopSize() / sizeof(UIntNative));
 #endif
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     RSP += pInfoHeader->ParmRegsPushedCount();
 #endif
 

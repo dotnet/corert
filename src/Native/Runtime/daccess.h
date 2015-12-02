@@ -539,11 +539,11 @@
 #include "safemath.h"
 //#include "corerror.h"
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture

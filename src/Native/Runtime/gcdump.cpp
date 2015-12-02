@@ -123,7 +123,7 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     }
     gcPrintf("   returnKind:     %s\r\n", returnKind);
     gcPrintf("   frameKind:      %s", pHeader->HasFramePointer() ? "EBP" : "ESP");
-#ifdef TARGET_AMD64
+#ifdef _TARGET_AMD64_
     if (pHeader->HasFramePointer())
         gcPrintf(" offset: %d", pHeader->GetFramePointerOffset());
 #endif // _AMD64_
@@ -150,11 +150,11 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     }
     gcPrintf("\r\n");
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     gcPrintf("   parmRegsPushedCount: %d\r\n", pHeader->ParmRegsPushedCount());
 #endif
 
-#ifdef TARGET_X86
+#ifdef _TARGET_X86_
     gcPrintf("   returnPopSize:  %d\r\n", pHeader->GetReturnPopSize());
     if (pHeader->HasStackChanges())
     {
@@ -190,13 +190,13 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
 void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
 {
     // @TODO: print both EBP/ESP offsets where appropriate
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     gcPrintf("local slot 0n%d, [R7+%02X] \r\n", slotNum, 
                 ((GCInfoHeader*)pHeader)->GetFrameSize() - ((slotNum + 1) * POINTER_SIZE));
 #else
     const char* regAndSign = "EBP-";
     size_t offset = pHeader->GetPreservedRegsSaveSize() + (slotNum * POINTER_SIZE);
-# ifdef TARGET_AMD64
+# ifdef _TARGET_AMD64_
     if (((GCInfoHeader*)pHeader)->GetFramePointerOffset() == 0)
     {
         regAndSign = "RBP-";
@@ -239,7 +239,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
             {
                 // case 2 -- "register set"
                 gcPrintf("%02x          | 2  ", b);
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
                 if (b & CSR_MASK_R4) { gcPrintf("R4 "); count++; }
                 if (b & CSR_MASK_R5) { gcPrintf("R5 "); count++; }
                 if (b & CSR_MASK_R6) { gcPrintf("R6 "); count++; }
@@ -265,7 +265,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
 
                 switch (b & 0x7)
                 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
                 case CSR_NUM_R4: regName = "R4"; break;
                 case CSR_NUM_R5: regName = "R5"; break;
                 case CSR_NUM_R6: regName = "R6"; break;
@@ -339,7 +339,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 unsigned offset = VarInt::ReadUnsigned(pCursor);
                 const char* interior = (b & 0x10) ? "+" : "";
                 const char* pinned   = (b & 0x08) ? "!" : "";
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
                 const char* baseReg  = (b & 0x04) ? "R7" : "SP";
 #else
                 const char* baseReg  = (b & 0x04) ? "EBP" : "ESP";

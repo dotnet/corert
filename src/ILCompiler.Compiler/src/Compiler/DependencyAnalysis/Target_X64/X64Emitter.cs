@@ -117,7 +117,7 @@ namespace ILCompiler.DependencyAnalysis.X64
 
                 if (addrMode.BaseReg == Register.None)
                 {
-                    //# ifdef TARGET_X64          
+                    //# ifdef _TARGET_AMD64_          
                     // x64 requires SIB to avoid RIP relative address
                     emitSibByte = true;
                     //#else
@@ -243,7 +243,7 @@ namespace ILCompiler.DependencyAnalysis.X64
 
         private void EmitIndirInstructionSize(int opcode, Register dstReg, ref AddrMode addrMode)
         {
-            //# ifndef TARGET_X64
+            //# ifndef _TARGET_AMD64_
             // assert that ESP, EBP, ESI, EDI are not accessed as bytes in 32-bit mode
             //            Debug.Assert(!(addrMode.Size == AddrModeSize.Int8 && dstReg > Register.RBX));
             //#endif

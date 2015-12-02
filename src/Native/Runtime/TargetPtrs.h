@@ -8,11 +8,11 @@
 
 #if defined(BINDER)
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
@@ -78,11 +78,11 @@ typedef TargetPtr<struct CORINFO_Object>        TgtPTR_CORINFO_Object;
 typedef TargetPtr<struct StaticGcDesc>          TgtPTR_StaticGcDesc;
 
 #elif defined(RHDUMP)
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
@@ -103,11 +103,11 @@ typedef DPTR(class EEType) PTR_EEType;
 typedef SPTR(struct GenericInstanceDesc) PTR_GenericInstanceDesc;
 typedef SPTR(struct StaticGcDesc) PTR_StaticGcDesc;
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 typedef UInt32 UIntTarget;
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture

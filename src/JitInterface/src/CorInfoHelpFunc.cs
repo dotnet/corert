@@ -274,7 +274,7 @@ namespace Internal.JitInterface
         // Keep platform-specific helpers at the end so that the ids for the platform neutral helpers stay same accross platforms
         //
 
-#if TARGET_X86 || _HOST_X86_ || REDHAWK // _HOST_X86_ is for altjit
+#if _TARGET_X86_ || _HOST_X86_ || REDHAWK // _HOST_X86_ is for altjit
                                         // NOGC_WRITE_BARRIERS JIT helper calls
                                         // Unchecked versions EDX is required to point into GC heap
         CORINFO_HELP_ASSIGN_REF_EAX,    // EAX holds GC ptr, do a 'mov [EDX], EAX' and inform GC

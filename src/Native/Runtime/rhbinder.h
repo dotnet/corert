@@ -244,7 +244,7 @@ public:
     static const UInt32 cbChunkCommonCode_X64   = 17;
     static const UInt32 cbChunkCommonCode_X86   = 16;
     static const UInt32 cbChunkCommonCode_ARM   = 32;
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     // on ARM, the index of the indirection cell can be computed
     // from the pointer to the indirection cell left in R12, 
     // thus we need only one entry point on ARM,
@@ -271,9 +271,9 @@ public:
 #ifndef RHDUMP
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex)
     {
-# if defined(TARGET_ARM)
+# if defined(_TARGET_ARM_)
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_ARM);
-# elif defined(TARGET_X64)
+# elif defined(_TARGET_AMD64_)
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X64);
 # else
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X86);
@@ -283,7 +283,7 @@ public:
 
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex, UInt32 cbChunkCommonCode)
     {
-# if defined(TARGET_ARM)
+# if defined(_TARGET_ARM_)
         UNREFERENCED_PARAMETER(entryIndex);
         UNREFERENCED_PARAMETER(cbChunkCommonCode);
 
@@ -553,7 +553,7 @@ struct InterfaceDispatchCell
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
 // Note for ARM: try and keep the flags in the low 16-bits, since they're not easy to load into a register in
 // a single instruction within our stubs.
 enum PInvokeTransitionFrameFlags
@@ -584,7 +584,7 @@ enum PInvokeTransitionFrameFlags
     PTFF_R0_IS_GCREF    = 0x00004000,   // used by hijack handler to report return value of hijacked method
     PTFF_R0_IS_BYREF    = 0x00008000,   // used by hijack handler to report return value of hijacked method
 };
-#else // TARGET_ARM
+#else // _TARGET_ARM_
 enum PInvokeTransitionFrameFlags
 {
     // standard preserved registers
@@ -617,44 +617,44 @@ enum PInvokeTransitionFrameFlags
     PTFF_RAX_IS_GCREF   = 0x00010000,   // used by hijack handler to report return value of hijacked method
     PTFF_RAX_IS_BYREF   = 0x00020000,   // used by hijack handler to report return value of hijacked method
 };
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 class Thread;
 struct PInvokeTransitionFrame
 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     TgtPTR_Void     m_ChainPointer; // R11, used by OS to walk stack quickly
 #endif
     TgtPTR_Void     m_RIP;
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
     UInt32          m_dwFlags;  // PInvokeTransitionFrameFlags
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     UInt32          m_dwAlignPad2;
 #endif
     UIntTarget      m_PreservedRegs[];
 };
 #pragma warning(pop)
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 // R4-R6,R8-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 8
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 #define OFFSETOF__Thread__m_pTransitionFrame 0x30
-#elif defined(TARGET_X86)
+#elif defined(_TARGET_X86_)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x20
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x20
 #endif
 

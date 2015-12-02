@@ -983,13 +983,13 @@ void Module::UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo)
     void * pvRedirStubsStart = m_pModuleHeader->GetLoopRedirTargets();
     void * pvRedirStubsEnd   = ((UInt8 *)pvRedirStubsStart) + GcPollInfo::EntryIndexToStubOffset(nIndirCells);
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     // on ARM, there is just one redir stub, because we can compute the indir cell index 
     // from the indir cell pointer left in r12
     // to make the range tests below work, bump up the end by one byte
     ASSERT(pvRedirStubsStart == pvRedirStubsEnd);
     pvRedirStubsEnd = (void *)(((UInt8 *)pvRedirStubsEnd)+1);
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 
 
     void ** ppvStart = &ppvIndirCells[0];
@@ -1304,7 +1304,7 @@ UInt32 Module::GetGenericInstanceDescCount(GenericInstanceDescKind gidKind)
 #define IMAGE_ORDINAL_FLAG64 0x8000000000000000
 #define IMAGE_ORDINAL_FLAG32 0x80000000
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 #define TARGET_IMAGE_ORDINAL_FLAG IMAGE_ORDINAL_FLAG64
 #else
 #define TARGET_IMAGE_ORDINAL_FLAG IMAGE_ORDINAL_FLAG32

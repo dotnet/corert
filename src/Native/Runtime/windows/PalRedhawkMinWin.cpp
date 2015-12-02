@@ -389,7 +389,7 @@ static size_t g_cbLargestOnDieCacheAdjusted = 0;
 
 
 
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#if (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
 EXTERN_C DWORD __fastcall getcpuid(DWORD arg, unsigned char result[16]);
 EXTERN_C DWORD __fastcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
 
@@ -806,7 +806,7 @@ DWORD CLR_GetLogicalCpuCountX86(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSO
 }
 
 #endif // _DEBUG
-#endif // (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#endif // (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
 
 
 #ifdef _DEBUG
@@ -913,7 +913,7 @@ Exit:
 
 DWORD CLR_GetLogicalCpuCount(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, DWORD nEntries)
 {
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#if (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
     return CLR_GetLogicalCpuCountX86(pslpi, nEntries);
 #else
     return CLR_GetLogicalCpuCountFromOS(pslpi, nEntries);
@@ -922,7 +922,7 @@ DWORD CLR_GetLogicalCpuCount(_In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_I
 
 size_t CLR_GetLargestOnDieCacheSize(UInt32_BOOL bTrueSize, _In_reads_opt_(nEntries) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pslpi, DWORD nEntries)
 {
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#if (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
     return CLR_GetLargestOnDieCacheSizeX86(bTrueSize);
 #else
     return CLR_GetLogicalProcessorCacheSizeFromOS(pslpi, nEntries);
@@ -941,7 +941,7 @@ enum CpuVendor
 
 CpuVendor GetCpuVendor(_Out_ UInt32* puMaxCpuId)
 {
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#if (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
     unsigned char buffer[16];
     *puMaxCpuId = getcpuid(0, buffer);
 
@@ -1171,7 +1171,7 @@ bool PalQueryProcessorTopology()
         if (cLogicalCpus == 0)
             cLogicalCpus = 1;
 
-#if (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#if (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
         // Apply some experimentally-derived policy to the number of logical CPUs in the same way CLR does.
         if ((maxCpuId < 1)
             || (cpuVendor != CpuIntel)
@@ -1199,10 +1199,10 @@ bool PalQueryProcessorTopology()
         {
             QueryAMDCacheInfo(&cbCache, &cbCacheAdjusted);
         }
-#else  // (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#else  // (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
         cpuVendor; // avoid unused variable warnings.
         maxCpuId;
-#endif // (defined(TARGET_AMD64) || defined (TARGET_X86)) && !defined(USE_PORTABLE_HELPERS)
+#endif // (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
 
         g_cLogicalCpus = cLogicalCpus;
         g_cbLargestOnDieCache = cbCache;
