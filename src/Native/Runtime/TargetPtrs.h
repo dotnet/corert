@@ -8,7 +8,7 @@
 
 #if defined(BINDER)
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
 #elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
@@ -78,7 +78,7 @@ typedef TargetPtr<struct CORINFO_Object>        TgtPTR_CORINFO_Object;
 typedef TargetPtr<struct StaticGcDesc>          TgtPTR_StaticGcDesc;
 
 #elif defined(RHDUMP)
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
 #elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
@@ -103,7 +103,7 @@ typedef DPTR(class EEType) PTR_EEType;
 typedef SPTR(struct GenericInstanceDesc) PTR_GenericInstanceDesc;
 typedef SPTR(struct StaticGcDesc) PTR_StaticGcDesc;
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
 #elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;

@@ -539,7 +539,7 @@
 #include "safemath.h"
 //#include "corerror.h"
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
 #elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;

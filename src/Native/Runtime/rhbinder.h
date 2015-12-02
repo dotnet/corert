@@ -273,7 +273,7 @@ public:
     {
 # if defined(TARGET_ARM)
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_ARM);
-# elif defined(TARGET_X64)
+# elif defined(_TARGET_AMD64_)
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X64);
 # else
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X86);
@@ -631,14 +631,14 @@ struct PInvokeTransitionFrame
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
     UInt32          m_dwFlags;  // PInvokeTransitionFrameFlags
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     UInt32          m_dwAlignPad2;
 #endif
     UIntTarget      m_PreservedRegs[];
 };
 #pragma warning(pop)
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
 #elif defined(TARGET_X86)
@@ -650,7 +650,7 @@ struct PInvokeTransitionFrame
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 #define OFFSETOF__Thread__m_pTransitionFrame 0x30
 #elif defined(TARGET_X86)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x20

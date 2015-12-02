@@ -115,7 +115,7 @@ enum ScratchRegMask
 
 #else // TARGET_ARM
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
 #define NUM_PRESERVED_REGS 8
 #else
 #define NUM_PRESERVED_REGS 4
@@ -143,7 +143,7 @@ enum RegMask
 
     RBM_RETVAL = RBM_EAX,
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     RBM_CALLEE_SAVED_REGS = (RBM_EDI|RBM_ESI|RBM_EBX|RBM_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15),
     RBM_CALLEE_SAVED_REG_COUNT = 8,
     RBM_SCRATCH_REGS = (RBM_EAX|RBM_ECX|RBM_EDX|RBM_R8|RBM_R9|RBM_R10|RBM_R11),
@@ -153,7 +153,7 @@ enum RegMask
     RBM_CALLEE_SAVED_REG_COUNT = 4,
     RBM_SCRATCH_REGS = (RBM_EAX|RBM_ECX|RBM_EDX),
     RBM_SCRATCH_REG_COUNT = 3,
-#endif // TARGET_X64
+#endif // _TARGET_AMD64_
 };
 
 enum RegNumber
@@ -202,7 +202,7 @@ enum CalleeSavedRegMask
     CSR_MASK_R14 = 0x40,
     CSR_MASK_R15 = 0x80,
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     CSR_MASK_ALL = 0xFF,
     CSR_MASK_HIGHEST = 0x80,
 #else
@@ -256,7 +256,7 @@ private:
     UInt8  returnKind               : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt8  ebpFrame                 : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7
     UInt8  epilogAtEnd              : 1; // 2 [3]
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     UInt8  hasFrameSize             : 1; // 2 [4]   1: frame size is encoded below, 0: frame size is 0
     UInt8  x64_framePtrOffsetSmall  : 2; // 2 [5:6] 00: framePtrOffset = 0x20
                                          //         01: framePtrOffset = 0x30
@@ -267,7 +267,7 @@ private:
                                                             // X86        X64
     UInt8  calleeSavedRegMask       : NUM_PRESERVED_REGS;   // 2 [4:7]    3 [0:7]
 
-#ifndef TARGET_X64
+#ifndef _TARGET_AMD64_
     UInt8  x86_argCountLow          : 5; // 3 [0-4]  expressed in pointer-sized units    // @TODO: steal more bits here?
     UInt8  x86_argCountIsLarge      : 1; // 3 [5]    if this bit is set, then the high 8 bits are encoded in x86_argCountHigh
     UInt8  x86_hasStackChanges      : 1; // 3 [6]    x86-only, !ebpFrame-only, this method has pushes 
@@ -289,7 +289,7 @@ private:
     // OPTIONAL: only encoded if returnKind = MRK_ReturnsToNative
     UInt32  reversePinvokeFrameOffset;   // expressed in pointer-sized units away from the frame pointer
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     // OPTIONAL: only encoded if x64_framePtrOffsetSmall = 11
     //
     // ENCODING NOTE: In the encoding, the variable-sized unsigned will be 7 less than the total number
@@ -488,7 +488,7 @@ public:
         }
         ASSERT(offsetInBytes == 0 || isOffsetFromSP);
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
         if (isOffsetFromSP)
             offsetInBytes += SKEW_FOR_OFFSET_FROM_SP;
 
@@ -506,7 +506,7 @@ public:
         ASSERT(x64_framePtrOffset == offsetInSlots);
 #else
         ASSERT(offsetInBytes == 0 && !isOffsetFromSP);
-#endif // TARGET_X64
+#endif // _TARGET_AMD64_
     }
 
     void SetFrameSize(UInt32 frameSizeInBytes)
@@ -536,7 +536,7 @@ public:
         ASSERT((offsetInBytes % POINTER_SIZE) == 0);
         ASSERT(GetReturnKind() == MRK_ReturnsToNative);
 
-#if defined(TARGET_ARM) || defined(TARGET_X64)
+#if defined(TARGET_ARM) || defined(_TARGET_AMD64_)
         // The offset can be either positive or negative on ARM and x64.
         bool isNeg = (offsetInBytes < 0);
         UInt32 uOffsetInBytes = isNeg ? -offsetInBytes : offsetInBytes;
@@ -593,7 +593,7 @@ public:
     }
 #endif
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     void SetSavedXmmRegs(UInt32 savedXmmRegMask)
     {
         // any subset of xmm6-xmm15 may be saved, but no registers in xmm0-xmm5 should be present
@@ -601,7 +601,7 @@ public:
         x64_hasSavedXmmRegs = savedXmmRegMask != 0;
         x64_savedXmmRegMask = (UInt16)savedXmmRegMask;
     }
-#endif // TARGET_X64
+#endif // _TARGET_AMD64_
 
     //
     // GETTERS
@@ -690,12 +690,12 @@ public:
         return 1 << logStackAlignment;
     }
 
-#if defined(RHDUMP) && !defined(TARGET_X64)
+#if defined(RHDUMP) && !defined(_TARGET_AMD64_)
     // Due to the wackiness of RhDump, we need this method defined, even though it won't ever be called.
     int GetFramePointerOffset() { ASSERT(!"UNREACHABLE"); __assume(0); }
-#endif // defined(RHDUMP) && !defined(TARGET_X64)
+#endif // defined(RHDUMP) && !defined(_TARGET_AMD64_)
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
     static const UInt32 SKEW_FOR_OFFSET_FROM_SP = 0x10;
 
     int GetFramePointerOffset() // returned in bytes
@@ -773,7 +773,7 @@ public:
 
     int GetReversePinvokeFrameOffset()
     {
-#if defined(TARGET_ARM) || defined(TARGET_X64)
+#if defined(TARGET_ARM) || defined(_TARGET_AMD64_)
         // The offset can be either positive or negative on ARM.
         Int32 offsetInBytes;
         UInt32 uEncodedVal = reversePinvokeFrameOffset;
@@ -850,7 +850,7 @@ public:
         if (returnKind == MRK_ReturnsToNative)
             size += WriteUnsigned(pDest, reversePinvokeFrameOffset);
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
         if (x64_framePtrOffsetSmall == 0x3)
             size += WriteUnsigned(pDest, x64_framePtrOffset);
         if (x64_hasSavedXmmRegs)
@@ -987,7 +987,7 @@ public:
             ? VarInt::ReadUnsigned(pbDecode)
             : 0;
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
         x64_framePtrOffset = (x64_framePtrOffsetSmall == 0x3)
             ? ToUInt8(VarInt::ReadUnsigned(pbDecode))
             : x64_framePtrOffsetSmall + 3;
@@ -1139,7 +1139,7 @@ public:
         if (returnKind == MRK_ReturnsToNative)  { VarInt::SkipUnsigned(pbDecode); }
         if (dynamicAlign) { VarInt::SkipUnsigned(pbDecode); VarInt::SkipUnsigned(pbDecode); }
 
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
         if (x64_framePtrOffsetSmall == 0x3) { VarInt::SkipUnsigned(pbDecode); }
 #elif defined(TARGET_X86)
         if (x86_argCountIsLarge)
@@ -1208,7 +1208,7 @@ public:
 #define PRINT_CALLEE_SAVE(name, mask, val) {if ((val) & (mask)) { printf(name); }}
     void PrintCalleeSavedRegs(UInt32 calleeSavedRegMask)
     {
-#ifdef TARGET_X64
+#ifdef _TARGET_AMD64_
         PRINT_CALLEE_SAVE(" rbx", CSR_MASK_RBX, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" rsi", CSR_MASK_RSI, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" rdi", CSR_MASK_RDI, calleeSavedRegMask);
@@ -1217,7 +1217,7 @@ public:
         PRINT_CALLEE_SAVE(" r13", CSR_MASK_R13, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" r14", CSR_MASK_R14, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" r15", CSR_MASK_R15, calleeSavedRegMask);
-#endif // TARGET_X64
+#endif // _TARGET_AMD64_
 #ifdef TARGET_X86
         PRINT_CALLEE_SAVE(" ebx", CSR_MASK_RBX, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" esi", CSR_MASK_RSI, calleeSavedRegMask);
@@ -1268,7 +1268,7 @@ public:
         case RN_EBP:    printf("ebp"); break;
         case RN_ESI:    printf("esi"); break;
         case RN_EDI:    printf("edi"); break;
-#elif defined(TARGET_X64)
+#elif defined(_TARGET_AMD64_)
         case RN_EAX:    printf("rax"); break;
         case RN_ECX:    printf("rcx"); break;
         case RN_EDX:    printf("rdx"); break;
@@ -1327,7 +1327,7 @@ public:
                 printf(" }\n");
             }
         }
-#elif defined(TARGET_X64)
+#elif defined(_TARGET_AMD64_)
         if (x64_hasSavedXmmRegs)
         {
             printf("  | xmmRegs:    %04X  {", x64_savedXmmRegMask);

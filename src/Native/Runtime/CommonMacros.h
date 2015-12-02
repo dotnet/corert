@@ -4,7 +4,7 @@
 //
 
 // Some of our header files are shared with the binder, which needs the TARGET_* macros defined
-#if defined(TARGET_X64)
+#if defined(_TARGET_AMD64_)
 #elif defined(TARGET_X86)
 #elif defined(TARGET_ARM)
 #else
