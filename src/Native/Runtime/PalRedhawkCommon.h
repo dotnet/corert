@@ -42,7 +42,7 @@ struct AMD64_ALIGN_16 Fp128 {
 
 struct PAL_LIMITED_CONTEXT
 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     UIntNative  R0;
     UIntNative  R4;
     UIntNative  R5;

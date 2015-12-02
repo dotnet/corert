@@ -133,7 +133,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
 
     PTR_UIntNative pPreservedRegsCursor = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
     m_RegDisplay.pR11 = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_ChainPointer);
      
@@ -167,7 +167,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
     m_ControlPC       = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
-#else // TARGET_ARM
+#else // _TARGET_ARM_
     if (pFrame->m_dwFlags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
     if (pFrame->m_dwFlags & PTFF_SAVE_RDI)  { m_RegDisplay.pRdi = pPreservedRegsCursor++; }
@@ -206,7 +206,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     }
 
     m_ControlPC       = dac_cast<PTR_VOID>(*(m_RegDisplay.pIP));
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 
     // @TODO: currently, we always save all registers -- how do we handle the onese we don't save once we 
     //        start only saving those that weren't already saved?
@@ -281,7 +281,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.IP   = pCtx->GetIp();
     m_RegDisplay.pIP  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, IP);
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     //
     // preserved regs
     //
@@ -306,7 +306,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     // scratch regs
     //
     m_RegDisplay.pR0  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R0);
-#else // TARGET_ARM
+#else // _TARGET_ARM_
     //
     // preserved regs
     //
@@ -337,7 +337,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 #endif // _TARGET_AMD64_
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 }
 
 PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo, PTR_VOID collapsingTargetFrame)
@@ -417,7 +417,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     // Then, put back the pointers to the funclet's preserved registers (since those are the correct values
     // until the funclet completes, at which point the values will be copied back to the ExInfo's REGDISPLAY).
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     m_RegDisplay.pR4  = thisFuncletPtrs.pR4 ;
     m_RegDisplay.pR5  = thisFuncletPtrs.pR5 ;
     m_RegDisplay.pR6  = thisFuncletPtrs.pR6 ;
@@ -438,7 +438,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 #endif // _TARGET_AMD64_
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 }
 
 
@@ -523,7 +523,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
     m_RegDisplay.pRbx = SP++;
     m_RegDisplay.pRbp = SP++;
 
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
     // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
     // thunks, but we don't need to know what they are here, so we just skip them.
     UIntNative uOffsetToR4 = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 0xC : 0x4;
@@ -581,7 +581,7 @@ struct CALL_DESCR_CONTEXT
     UIntNative  Rbx;
     UIntNative  IP;
 };
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  R4;
@@ -634,7 +634,7 @@ bool StackFrameIterator::HandleCallDescrThunk()
     // And adjust SP to be the state that it should be in just after returning from
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT);
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
     // R7 points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
@@ -712,7 +712,7 @@ bool StackFrameIterator::HandleThrowSiteThunk()
     m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R13);
     m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R14);
     m_RegDisplay.pR15 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R15);
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
     m_RegDisplay.pR4  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R4);
     m_RegDisplay.pR5  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R5);
     m_RegDisplay.pR6  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R6);
@@ -972,7 +972,7 @@ KeepUnwinding:
         }
         else
         {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
             m_pConservativeStackRangeUpperBound = (PTR_RtuObjectRef)*m_RegDisplay.pR11;
 #else
             m_pConservativeStackRangeUpperBound = (PTR_RtuObjectRef)m_RegDisplay.GetFP();
@@ -1106,7 +1106,7 @@ void StackFrameIterator::GetStackRangeToReportConservatively(PTR_RtuObjectRef * 
 // We adjust by the minimum instruction size on the target-architecture (1-byte on x86 and AMD64, 2-bytes on ARM)
 PTR_VOID StackFrameIterator::AdjustReturnAddressForward(PTR_VOID controlPC)
 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 2);
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) + 1);
@@ -1114,7 +1114,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressForward(PTR_VOID controlPC)
 }
 PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 2);
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 1);

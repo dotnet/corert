@@ -132,7 +132,7 @@ private:
 
     struct PreservedRegPtrs
     {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
         PTR_UIntNative pR4;
         PTR_UIntNative pR5;
         PTR_UIntNative pR6;

@@ -48,7 +48,7 @@ struct REGDISPLAY
     inline void SetSP(UIntNative SP) { this->SP = SP; }
 };
 
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
 
 struct REGDISPLAY 
 {

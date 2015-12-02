@@ -40,7 +40,7 @@ inline void ReportObject(GCEnumContext * hCallback, PTR_PTR_Object p, UInt32 fla
 // It should compile away to simply an inlined field access.  Since we intentionally have conditionals that 
 // are constant at compile-time, we need to disable the level-4 warning related to that.
 //
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
 
 #pragma warning(push)
 #pragma warning(disable:4127)   // conditional expression is constant
@@ -109,7 +109,7 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
 
 
 
-#else // TARGET_ARM
+#else // _TARGET_ARM_
 
 #pragma warning(push)
 #pragma warning(disable:4127)   // conditional expression is constant
@@ -183,7 +183,7 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
 #endif
 }
 
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 
 void ReportRegister(UInt8 regEnc, REGDISPLAY * pContext, GCEnumContext * hCallback)
 {
@@ -211,7 +211,7 @@ void ReportLocalSlot(UInt32 slotNum, REGDISPLAY * pContext, GCEnumContext * hCal
     if (pHeader->HasFramePointer())
     {
         Int32 rbpOffset;
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
         // ARM places the FP at the top of the locals area.
         rbpOffset = pHeader->GetFrameSize() - ((slotNum + 1) * sizeof(void *));
 #else
@@ -609,7 +609,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     UIntNative rawRSP;
     if (ebpFrame)
     {
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
         rawRSP = pContext->GetFP() + pInfoHeader->GetFrameSize();
 #else
         saveSize -= sizeof(void *); // don't count RBP
@@ -644,7 +644,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
             }
         }
     }
-#elif defined(TARGET_ARM)
+#elif defined(_TARGET_ARM_)
     UInt8 vfpRegPushedCount = pInfoHeader->GetVfpRegPushedCount();
     UInt8 vfpRegFirstPushed = pInfoHeader->GetVfpRegFirstPushed();
     UInt32 regIndex = vfpRegFirstPushed - 8;
@@ -680,7 +680,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
         if (regMask & CSR_MASK_RBX) { pContext->pRbx = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RSI) { pContext->pRsi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
         if (regMask & CSR_MASK_RDI) { pContext->pRdi = (PTR_UIntNative)((PTR_UInt8)RSP - registerSaveDisplacement); ++RSP; } // registers saved at bottom of frame
-#elif defined(TARGET_ARM)       
+#elif defined(_TARGET_ARM_)       
         if (regMask & CSR_MASK_R4) { pContext->pR4 = RSP++; }
         if (regMask & CSR_MASK_R5) { pContext->pR5 = RSP++; }
         if (regMask & CSR_MASK_R6) { pContext->pR6 = RSP++; }
@@ -692,7 +692,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
 #endif // _TARGET_AMD64_
     }
 
-#ifndef TARGET_ARM
+#ifndef _TARGET_ARM_
     if (ebpFrame)
         pContext->pRbp = RSP++;
 #endif
@@ -729,7 +729,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     RSP += (pInfoHeader->GetReturnPopSize() / sizeof(UIntNative));
 #endif
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     RSP += pInfoHeader->ParmRegsPushedCount();
 #endif
 

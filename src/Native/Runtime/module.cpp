@@ -983,13 +983,13 @@ void Module::UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo)
     void * pvRedirStubsStart = m_pModuleHeader->GetLoopRedirTargets();
     void * pvRedirStubsEnd   = ((UInt8 *)pvRedirStubsStart) + GcPollInfo::EntryIndexToStubOffset(nIndirCells);
 
-#ifdef TARGET_ARM
+#ifdef _TARGET_ARM_
     // on ARM, there is just one redir stub, because we can compute the indir cell index 
     // from the indir cell pointer left in r12
     // to make the range tests below work, bump up the end by one byte
     ASSERT(pvRedirStubsStart == pvRedirStubsEnd);
     pvRedirStubsEnd = (void *)(((UInt8 *)pvRedirStubsEnd)+1);
-#endif // TARGET_ARM
+#endif // _TARGET_ARM_
 
 
     void ** ppvStart = &ppvIndirCells[0];
