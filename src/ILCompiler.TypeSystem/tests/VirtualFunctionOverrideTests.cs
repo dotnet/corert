@@ -98,5 +98,17 @@ namespace TypeSystemTests
             MethodDesc genericTargetOverload = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(baseGenericOverload, derivedInstance);
             Assert.Equal(derivedGenericOverload, genericTargetOverload);
         }
+
+        [Fact]
+        public void TestFinalizeOverrideChecking()
+        {
+            MetadataType classWithFinalizer = _testModule.GetType("VirtualFunctionOverride", "ClassWithFinalizer");
+            MetadataType objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
+            MethodDesc finalizeMethod = objectType.GetMethod("Finalize", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { }));
+
+            MethodDesc actualFinalizer = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(finalizeMethod, classWithFinalizer);
+            Assert.NotNull(actualFinalizer);
+            Assert.NotEqual(actualFinalizer, finalizeMethod);
+        }
     }
 }

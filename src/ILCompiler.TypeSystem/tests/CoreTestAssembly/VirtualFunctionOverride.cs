@@ -31,4 +31,12 @@ namespace VirtualFunctionOverride
         public override void MyMethod(string s) { }
         public override void MyMethod(U s) { }
     }
+
+    class ClassWithFinalizer
+    {
+        ~ClassWithFinalizer()
+        {
+
+        }
+    }
 }
