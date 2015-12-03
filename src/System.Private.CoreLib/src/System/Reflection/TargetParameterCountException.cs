@@ -7,7 +7,7 @@
 **
 ==============================================================*/
 
-using global::System;
+using System;
 
 namespace System.Reflection
 {

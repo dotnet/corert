@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using global::System;
-using global::System.Text;
-using global::System.Diagnostics;
-using global::System.Runtime.InteropServices;
-using global::Internal.Runtime.Augments;
-using global::Internal.StackGenerator.Dia;
+using System;
+using System.Text;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Internal.Runtime.Augments;
+using Internal.StackGenerator.Dia;
 
 namespace Internal.StackTraceGenerator
 {

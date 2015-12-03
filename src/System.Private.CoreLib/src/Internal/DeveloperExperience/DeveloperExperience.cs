@@ -1,13 +1,13 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using global::System;
-using global::System.Text;
-using global::System.Runtime;
-using global::System.Diagnostics;
-using global::System.Diagnostics.Contracts;
+using System;
+using System.Text;
+using System.Runtime;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
-using global::Internal.Runtime.Augments;
+using Internal.Runtime.Augments;
 
 namespace Internal.DeveloperExperience
 {

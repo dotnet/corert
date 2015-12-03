@@ -27,11 +27,11 @@ using System.Diagnostics.Tracing;
 //using System.Diagnostics.Tracing;
 #endif
 
-using AsyncStatus = global::Internal.Runtime.Augments.AsyncStatus;
-using CausalityRelation = global::Internal.Runtime.Augments.CausalityRelation;
-using CausalitySource = global::Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = global::Internal.Runtime.Augments.CausalityTraceLevel;
-using CausalitySynchronousWork = global::Internal.Runtime.Augments.CausalitySynchronousWork;
+using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
+using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
+using CausalitySource = Internal.Runtime.Augments.CausalitySource;
+using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
+using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420

@@ -1,16 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Threading.Tasks;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using AsyncStatus = global::Internal.Runtime.Augments.AsyncStatus;
-using CausalityRelation = global::Internal.Runtime.Augments.CausalityRelation;
-using CausalitySource = global::Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = global::Internal.Runtime.Augments.CausalityTraceLevel;
-using CausalitySynchronousWork = global::Internal.Runtime.Augments.CausalitySynchronousWork;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
+using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
+using CausalitySource = Internal.Runtime.Augments.CausalitySource;
+using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
+using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
 
 namespace Internal.Threading.Tasks
 {

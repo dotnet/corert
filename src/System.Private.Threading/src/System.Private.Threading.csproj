@@ -45,6 +45,7 @@
     <Compile Include="Internal\Helpers.cs" />
     <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
     <Compile Include="System\AggregateException.cs" />
+    <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\OperationCanceledException.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
     <Compile Include="System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
@@ -52,11 +53,16 @@
     <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
     <Compile Include="System\Threading\AsyncLocal.cs" />
+    <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CancellationToken.cs" />
     <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="System\Threading\CancellationTokenSource.cs" />
+    <Compile Include="System\Threading\CountdownEvent.cs" />
+    <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
     <Compile Include="System\Threading\ExecutionContext.cs" />
     <Compile Include="System\Threading\PlatformHelper.cs" />
+    <Compile Include="System\Threading\Progress.cs" />
+    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\LockRecursionException.cs" />
     <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\SemaphoreSlim.cs" />
@@ -81,6 +87,7 @@
     <Compile Include="System\Threading\Tasks\TPLETWProvider.cs" />
     <Compile Include="System\Threading\ThreadLocal.cs" />
     <Compile Include="System\Threading\ThreadPool.cs" />
+    <Compile Include="System\Threading\TimeoutHelper.cs" />
     <Compile Include="System\Threading\Timer.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -101,30 +108,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs">
       <Link>Common\Interop\Interop.VirtualQuery.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- Shared System.Threading source -->
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\LowLevelConcurrentQueue.cs">
-      <Link>System\Collections\Concurrent\LowLevelConcurrentQueue.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\Progress.cs">
-      <Link>System\Progress.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\Barrier.cs">
-      <Link>System\Threading\Barrier.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\CDSsyncETWBCLProvider.cs">
-      <Link>System\Threading\CDSsyncETWBCLProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\CountdownEvent.cs">
-      <Link>System\Threading\CountdownEvent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\ReaderWriterLockSlim.cs">
-      <Link>System\Threading\ReaderWriterLockSlim.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\TimeoutHelper.cs">
-      <Link>System\Threading\TimeoutHelper.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
