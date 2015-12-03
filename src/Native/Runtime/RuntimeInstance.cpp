@@ -436,6 +436,25 @@ bool RuntimeInstance::RegisterModule(ModuleHeader *pModuleHeader)
     InitProfiling(pModuleHeader);
 #endif // FEATURE_PROFILING
 
+    {
+        // Support for late-loaded modules: flush the generic hashtable to force its regeneration
+        // including the new module.
+        // @TODO: This is obviously not ideal, we would be better of by incrementally adding
+        //        types in the new module to the existing hashtable. Unfortunately today implementation
+        //        doesn't expect the table to be growable, BuildGenericTypeHashTable starts out
+        //        by calculating the total number of elements to be put there. Additionally, we should 
+        //        revisit the if (m_genericInstHashtabCount == 0) statement in LookupGenericInstance,
+        //        there seems to be a distinction being made between "single-module" and "multi-module"
+        //        apps the boundaries of which might have shifted recently and are likely to continue
+        //        shifting in the near future.
+        ReaderWriterLock::WriteHolder write(&m_GenericHashTableLock);
+        if (m_pGenericTypeHashTable != nullptr)
+        {
+            delete m_pGenericTypeHashTable;
+            m_pGenericTypeHashTable = nullptr;
+        }
+    }
+
     pModule.SuppressRelease();
     // This event must occur after the module is added to the enumeration
     DebugEventSource::SendModuleLoadEvent(pModule);
