@@ -54,6 +54,8 @@ set(FULL_RUNTIME_SOURCES
 set(PORTABLE_RUNTIME_SOURCES
 )
 
+include_directories(inc)
+
 if(WIN32)
 
   include_directories(windows)
