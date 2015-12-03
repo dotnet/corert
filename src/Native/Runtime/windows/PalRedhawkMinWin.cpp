@@ -14,7 +14,6 @@
 // Redhawk header files.
 //
 #include "common.h"
-#include <banned.h>
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>

@@ -7,7 +7,6 @@
 // Implementation of the Redhawk Platform Abstraction Layer (PAL) library when Unix is the platform. 
 //
 
-#include <banned.h>
 #include <stdio.h>
 #include <errno.h>
 #include <cwchar>
