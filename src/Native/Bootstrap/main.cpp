@@ -95,6 +95,7 @@ extern "C" Object * __allocate_object(MethodTable * pMT)
 }
 
 extern "C" void __EEType_System_Private_CoreLib_System_String();
+extern "C" void __EEType_System_Private_CoreLib_System_String__Array();
 
 Object * __allocate_string(int32_t len)
 {
@@ -233,20 +234,22 @@ void __range_check(void * a, size_t elem)
         ThrowRangeOverflowException();
 }
 
-#ifdef CPPCODEGEN
 Object * __get_commandline_args(int argc, char * argv[])
 {
-    System::Array * p = (System::Array *)__allocate_array(argc, System::String__Array::__getMethodTable());
-
-    for (int i = 0; i < argc; i++)
-    {
-        // TODO: Write barrier
-        ((Object **)(p->GetArrayData()))[i] = __load_string_literal(argv[i]);
-    }    
-
-    return (Object *)p;
-}
+#ifdef CPPCODEGEN
+	 MethodTable * pStringArrayMT = System::String__Array::__getMethodTable();
+#else
+	 MethodTable * pStringArrayMT = (MethodTable*)__EEType_System_Private_CoreLib_System_String__Array;
 #endif
+	System::Array * args = (System::Array *)__allocate_array(argc, pStringArrayMT);
+
+	for (int i = 0; i < argc; i++)
+	{
+		__stelem_ref(args, i, __load_string_literal(argv[i]));
+	}
+	
+	return (Object *)args;
+}
 
 extern "C" void Buffer_BlockCopy(class System::Array * src, int srcOfs, class System::Array * dst, int dstOfs, int count)
 {
@@ -379,7 +382,7 @@ extern "C" void RhRethrow()
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
 
-extern "C" int __managed__Main();
+extern "C" int __managed__Main(Object*);
 
 namespace AsmDataFormat
 {
@@ -503,7 +506,10 @@ int main(int argc, char * argv[]) {
     int retval;
     try
     {
-        retval = __managed__Main();
+		// Managed apps don't see the first args argument (full path of executable) so skip it
+		assert(argc > 0);
+		Object* args = __get_commandline_args(argc - 1, argv + 1);
+		retval = __managed__Main(args);
     }
     catch (const char* &e)
     {
