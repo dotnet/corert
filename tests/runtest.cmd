@@ -43,23 +43,15 @@ setlocal EnableDelayedExpansion
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
-set __NuPkgInstallDir=%__CoreRTTestBinDir%\package
-set __BuiltNuPkgDir=%CoreRT_TestRoot%..\bin\Product\%__BuildStr%\.nuget
 
 set __PackageRestoreCmd=restore.cmd
-call %__PackageRestoreCmd% /nugetexedir %CoreRT_TestRoot%..\packages /installdir %__NuPkgInstallDir% /nupkgdir %__BuiltNuPkgDir% /nugetopt %CoreRT_NuGetOptions%
+call %__PackageRestoreCmd% /nugetexedir %CoreRT_TestRoot%..\packages /nugetopt %CoreRT_NuGetOptions%
 if not "%ErrorLevel%"=="100" (((call :Fail "Preptests failed... cannot continue")) & exit /b -1)
 
 REM ** Validate the paths needed to run tests
 if not exist "%CoreRT_AppDepSdkDir%" ((call :Fail "AppDep SDK not installed at %CoreRT_AppDepSdkDir%") & exit /b -1)
-if not exist "%CoreRT_RyuJitDir%"  ((call :Fail "RyuJIT not installed at %CoreRT_RyuJitDir%") & exit /b -1)
-if not exist "%CoreRT_ObjWriterDir%" ((call :Fail "ObjWriter not installed at %ObjWriterDir%") & exit /b -1)
-if not exist "%CoreRT_ToolchainDir%\dotnet-compile-native.bat" ((call :Fail "dotnet-compile-native.bat not found in %CoreRT_ToolchainDir%") & exit /b -1)
 
 if not "%CoreRT_TestExtRepo%"=="" goto :TestExtRepo
-
-if not defined CoreRT_ToolchainPkg ((call :Fail "Run %__PackageRestoreCmd% first") & exit /b -1)
-if not defined CoreRT_ToolchainVer ((call :Fail "Run %__PackageRestoreCmd% first") & exit /b -1)
 
 if /i "%__BuildType%"=="Debug" (
     set __LinkLibs=msvcrtd.lib

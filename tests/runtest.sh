@@ -145,10 +145,9 @@ done
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
 __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
 __LogDir=${CoreRT_TestRoot}/../bin/Logs/${__BuildStr}/tests
-__NuPkgInstallDir=${__CoreRTTestBinDir}/package
 __BuiltNuPkgDir=${CoreRT_TestRoot}/../bin/Product/${__BuildStr}/.nuget
 __PackageRestoreCmd=$CoreRT_TestRoot/restore.sh
-source ${__PackageRestoreCmd} -nugetexedir ${CoreRT_TestRoot}/../packages -installdir ${__NuPkgInstallDir} -nupkgdir ${__BuiltNuPkgDir} -nugetopt ${CoreRT_NuGetOptions}
+source ${__PackageRestoreCmd} -nugetexedir ${CoreRT_TestRoot}/../packages -nupkgdir ${__BuiltNuPkgDir} -nugetopt ${CoreRT_NuGetOptions}
 
 if [ ! -d ${CoreRT_AppDepSdkDir} ]; then
     echo "AppDep SDK not installed at ${CoreRT_AppDepSdkDir}"

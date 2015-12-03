@@ -19,6 +19,7 @@ set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
 set __SkipTestBuild=
+set __ToolchainMilestone=testing
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -33,6 +34,7 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptestbuild" (set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "/milestone" (set __ToolchainMilestone=%2&shift&shift&goto Arg_Loop)
 
 echo Invalid command line argument: %1
 goto Usage
@@ -161,7 +163,7 @@ call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
 set "__ILCompilerBuildLog=%__LogsDir%\ILCompiler_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__ILCompilerBuildLog%"
+%_msbuildexe% "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__ILCompilerBuildLog%"
 IF NOT ERRORLEVEL 1 (
   findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__ILCompilerBuildLog%"
   goto AfterILCompilerBuild
