@@ -17,11 +17,11 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Diagnostics.Contracts;
 
-using AsyncStatus = global::Internal.Runtime.Augments.AsyncStatus;
-using CausalityRelation = global::Internal.Runtime.Augments.CausalityRelation;
-using CausalitySource = global::Internal.Runtime.Augments.CausalitySource;
-using CausalityTraceLevel = global::Internal.Runtime.Augments.CausalityTraceLevel;
-using CausalitySynchronousWork = global::Internal.Runtime.Augments.CausalitySynchronousWork;
+using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
+using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
+using CausalitySource = Internal.Runtime.Augments.CausalitySource;
+using CausalityTraceLevel = Internal.Runtime.Augments.CausalityTraceLevel;
+using CausalitySynchronousWork = Internal.Runtime.Augments.CausalitySynchronousWork;
 
 namespace System.Threading.Tasks
 {
