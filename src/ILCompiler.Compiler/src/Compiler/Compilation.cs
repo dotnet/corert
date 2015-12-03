@@ -420,14 +420,21 @@ namespace ILCompiler
         {
             var stringType = TypeSystemContext.GetWellKnownType(WellKnownType.String);
 
+            // TODO: We are rooting String[] so the bootstrap code can find the EEType for making the command-line args
+            // string array.  Once we generate the startup code in managed code, we should remove this
+            var arrayOfStringType = stringType.MakeArrayType();
+
             if (_dependencyGraph != null)
             {
                 _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(stringType), "String type is always generated");
+                _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(arrayOfStringType), "String[] type is always generated");
             }
             else
             {
                 AddType(stringType);
                 MarkAsConstructed(stringType);
+                AddType(arrayOfStringType);
+                MarkAsConstructed(arrayOfStringType);
             }
         }
 

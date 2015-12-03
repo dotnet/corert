@@ -48,10 +48,6 @@ namespace ILCompiler.CppCodeGen
             // TODO: For now, ensure that all types/methods referenced by unmanaged helpers are present
             var stringType = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String);
             AddInstanceFields(stringType);
-
-            var stringArrayType = stringType.MakeArrayType();
-            _compilation.AddType(stringArrayType);
-            _compilation.MarkAsConstructed(stringArrayType);
         }
 
         public string GetCppSignatureTypeName(TypeDesc type)
