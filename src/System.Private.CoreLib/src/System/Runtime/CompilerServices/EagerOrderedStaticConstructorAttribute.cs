@@ -34,12 +34,12 @@ namespace System.Runtime.CompilerServices
         CompilerServicesClassConstructorRunnerCctor,
         CompilerServicesClassConstructorRunner,
 
-        // System.Private.Reflection.Execution
-        ReflectionExecution,
-
         // Interop
         InteropHeap,
         VtableIUnknown,
-        McgModuleManager
+        McgModuleManager,
+
+        // System.Private.Reflection.Execution
+        ReflectionExecution,
     }
 }
