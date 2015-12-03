@@ -39,6 +39,9 @@ namespace System.Runtime.CompilerServices
         VtableIUnknown,
         McgModuleManager,
 
+        // Per Module Interop
+        McgCurrentModule,
+
         // System.Private.Reflection.Execution
         ReflectionExecution,
     }
