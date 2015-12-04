@@ -38,3 +38,5 @@ sudo apt-get install referenceassemblies-pcl
 Install [Command Line Tools for XCode 6.3.1](https://developer.apple.com/xcode/download/) or higher. 
 
 Next, install [Mono](http://www.mono-project.com/docs/getting-started/install/mac/)
+
+Download CMake 3.3.2 from https://cmake.org/download/ and launch `/Applications/CMake.app/Contents/MacOS/CMake` GUI. Goto "OSX App Menu -> Tools -> Install For Command Line Use" and follow the steps.
