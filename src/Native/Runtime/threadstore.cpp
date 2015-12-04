@@ -428,7 +428,7 @@ GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
 
 #else // DACCESS_COMPILE
 
-#if defined(_WIN64)
+#if defined(BIT64)
 #define OFFSETOF__TLS__tls_CurrentThread            0x20
 #elif defined(_ARM_)
 #define OFFSETOF__TLS__tls_CurrentThread            0x10

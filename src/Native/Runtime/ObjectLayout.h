@@ -18,9 +18,9 @@
 class ObjHeader
 {
 private:
-#if defined(_WIN64)
+#if defined(BIT64)
     UInt32   m_uAlignpad;
-#endif // _WIN64
+#endif // BIT64
     UInt32   m_uSyncBlockValue;
 
 public:
@@ -92,9 +92,9 @@ class Array : public Object
     friend class AsmOffsets;
 
     UInt32       m_Length;
-#if defined(_WIN64)
+#if defined(BIT64)
     UInt32       m_uAlignpad;
-#endif // _WIN64
+#endif // BIT64
 public:  
     UInt32 GetArrayLength();
     void InitArrayLength(UInt32 length);
@@ -106,9 +106,9 @@ typedef DPTR(Array) PTR_Array;
 class MDArray : public Object
 {
     UInt32       m_Length;
-#if defined(_WIN64)
+#if defined(BIT64)
     UInt32       m_uAlignpad;
-#endif // _WIN64
+#endif // BIT64
     UInt32       m_Dimensions[1];
 public:  
     void InitMDArrayLength(UInt32 length);

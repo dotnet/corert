@@ -176,7 +176,7 @@ typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
     UInt32  MxCsr;
     UInt32  MxCsr_Mask;
     Fp128   FloatRegisters[8];
-#if defined(_WIN64)
+#if defined(BIT64)
     Fp128   XmmRegisters[16];
     UInt8   Reserved4[96];
 #else
