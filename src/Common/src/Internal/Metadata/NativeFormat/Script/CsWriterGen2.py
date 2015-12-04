@@ -389,7 +389,7 @@ finally
             # ns.members.add(CreateHandleEnumerable(reader, hnd))
 
         # Source NativeFormatReaderGen.cs
-        with open(r'..\..\..\PnToolChain\Metadata\NativeFormatWriter\NativeFormatWriterGen.cs', 'w') as output :
+        with open(r'..\..\..\..\..\ILCompiler.MetadataWriter\src\Internal\Metadata\NativeFormat\Writer\NativeFormatWriterGen.cs', 'w') as output :
             iprint = IPrint(output)
             CsEmitFileHeader(iprint)
             iprint('#pragma warning disable 649')
