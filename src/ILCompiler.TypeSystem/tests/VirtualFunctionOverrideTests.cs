@@ -15,8 +15,8 @@ namespace TypeSystemTests
     {
         TestTypeSystemContext _context;
         EcmaModule _testModule;
-        MetadataType _stringType;
-        MetadataType _voidType;
+        DefType _stringType;
+        DefType _voidType;
 
         public VirtualFunctionOverrideTests()
         {
@@ -69,7 +69,7 @@ namespace TypeSystemTests
         public void TestVirtualDispatchOnGenericType()
         {
             // Verifies that virtual dispatch to a non-generic method on a generic instantiation works
-            MetadataType objectType = _context.GetWellKnownType(WellKnownType.Object);
+            DefType objectType = _context.GetWellKnownType(WellKnownType.Object);
             MethodSignature toStringSig = new MethodSignature(MethodSignatureFlags.None, 0, _stringType, Array.Empty<TypeDesc>());
             MethodDesc objectToString = objectType.GetMethod("ToString", toStringSig);
             Assert.NotNull(objectToString);
@@ -103,7 +103,7 @@ namespace TypeSystemTests
         public void TestFinalizeOverrideChecking()
         {
             MetadataType classWithFinalizer = _testModule.GetType("VirtualFunctionOverride", "ClassWithFinalizer");
-            MetadataType objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
+            DefType objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
             MethodDesc finalizeMethod = objectType.GetMethod("Finalize", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { }));
 
             MethodDesc actualFinalizer = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(finalizeMethod, classWithFinalizer);

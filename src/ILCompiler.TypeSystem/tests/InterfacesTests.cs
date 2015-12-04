@@ -27,7 +27,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestMultidimensionalArrays()
         {
-            MetadataType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
+            DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
             ArrayType objectMDArray = (ArrayType)_context.GetArrayType(objectType, 2);
@@ -39,7 +39,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSingleDimensionalArrays()
         {
-            MetadataType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
+            DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             MetadataType systemIListOfTType = _testModule.GetType("System.Collections.Generic", "IList`1");
 
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
