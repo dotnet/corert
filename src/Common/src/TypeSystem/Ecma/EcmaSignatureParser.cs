@@ -142,7 +142,7 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 BlobReader peek = _reader;
-                return (peek.ReadByte() & 0xF) == 6; // IMAGE_CEE_CS_CALLCONV_FIELD - add it to SignatureCallingConvention?
+                return peek.ReadSignatureHeader().Kind == SignatureKind.Field;
             }
         }
 
@@ -150,11 +150,11 @@ namespace Internal.TypeSystem.Ecma
         {
             MethodSignatureFlags flags = 0;
 
-            byte callingConvention = _reader.ReadByte();
-            if ((callingConvention & (byte)SignatureAttributes.Instance) == 0)
+            SignatureHeader header = _reader.ReadSignatureHeader();
+            if (!header.IsInstance)
                 flags |= MethodSignatureFlags.Static;
 
-            int arity = ((callingConvention & (byte)SignatureAttributes.Generic) != 0) ? _reader.ReadCompressedInteger() : 0;
+            int arity = header.IsGeneric ? _reader.ReadCompressedInteger() : 0;
 
             int count = _reader.ReadCompressedInteger();
 
@@ -180,7 +180,7 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc ParseFieldSignature()
         {
-            if ((_reader.ReadByte() & 0xF) != 6) // IMAGE_CEE_CS_CALLCONV_FIELD - add it to SignatureCallingConvention?
+            if (_reader.ReadSignatureHeader().Kind != SignatureKind.Field)
                 throw new BadImageFormatException();
 
             return ParseType();
@@ -188,7 +188,7 @@ namespace Internal.TypeSystem.Ecma
 
         public LocalVariableDefinition[] ParseLocalsSignature()
         {
-            if ((_reader.ReadByte() & 0xF) != 7) // IMAGE_CEE_CS_CALLCONV_LOCAL_SIG - add it to SignatureCallingConvention?
+            if (_reader.ReadSignatureHeader().Kind != SignatureKind.LocalVariables)
                 throw new BadImageFormatException();
 
             int count = _reader.ReadCompressedInteger();
@@ -221,7 +221,7 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc[] ParseMethodSpecSignature()
         {
-            if ((_reader.ReadByte() & 0xF) != 0xa) // IMAGE_CEE_CS_CALLCONV_GENERICINST - add it to SignatureCallingConvention?
+            if (_reader.ReadSignatureHeader().Kind != SignatureKind.MethodSpecification)
                 throw new BadImageFormatException();
 
             int count = _reader.ReadCompressedInteger();
