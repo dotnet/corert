@@ -107,9 +107,34 @@ void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCal
     if (regSet & CSR_MASK_R8) { ReportObject(hCallback, GetRegObjectAddr<CSR_NUM_R8>(pContext), 0); }
 }
 
+#elif defined(_TARGET_ARM64_)
+
+#pragma warning(push)
+#pragma warning(disable:4127)   // conditional expression is constant
+template <CalleeSavedRegNum regNum>
+PTR_PTR_Object GetRegObjectAddr(REGDISPLAY * pContext)
+{
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+}
+#pragma warning(pop)
+
+PTR_PTR_Object GetRegObjectAddr(CalleeSavedRegNum regNum, REGDISPLAY * pContext)
+{
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+}
+
+PTR_PTR_Object GetScratchRegObjectAddr(ScratchRegNum regNum, REGDISPLAY * pContext)
+{
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+}
+
+void ReportRegisterSet(UInt8 regSet, REGDISPLAY * pContext, GCEnumContext * hCallback)
+{
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+}
 
 
-#else // _TARGET_ARM_
+#else // _TARGET_ARM_ && _TARGET_ARM64_
 
 #pragma warning(push)
 #pragma warning(disable:4127)   // conditional expression is constant
@@ -214,6 +239,8 @@ void ReportLocalSlot(UInt32 slotNum, REGDISPLAY * pContext, GCEnumContext * hCal
 #ifdef _TARGET_ARM_
         // ARM places the FP at the top of the locals area.
         rbpOffset = pHeader->GetFrameSize() - ((slotNum + 1) * sizeof(void *));
+#elif defined(_TARGET_ARM64_)
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
 #  ifdef _TARGET_AMD64_
         if (pHeader->GetFramePointerOffset() != 0)
@@ -578,6 +605,10 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
                                      UInt32         codeOffset,
                                      REGDISPLAY *   pContext)
 {
+#ifdef _TARGET_ARM64_
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+#endif
+
     GCInfoHeader *  pInfoHeader = pMethodInfo->GetGCInfoHeader();
 
     // We could implement this unwind if we wanted, but there really isn't any reason
@@ -611,6 +642,8 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     {
 #ifdef _TARGET_ARM_
         rawRSP = pContext->GetFP() + pInfoHeader->GetFrameSize();
+#elif defined(_TARGET_ARM64_)
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
         saveSize -= sizeof(void *); // don't count RBP
         Int32 framePointerOffset = 0;
@@ -655,6 +688,8 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
         regIndex++;
         RSP = (PTR_UIntNative)((PTR_UInt8)RSP + sizeof(UInt64));
     }
+#elif defined(_TARGET_ARM64_)
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif
 
 #if defined(_TARGET_X86_)
@@ -689,10 +724,12 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
         if (regMask & CSR_MASK_R9) { pContext->pR9 = RSP++; }
         if (regMask & CSR_MASK_R10) { pContext->pR10 = RSP++; }
         if (regMask & CSR_MASK_R11) { pContext->pR11 = RSP++; }
+#elif defined(_TARGET_ARM64_)
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif // _TARGET_AMD64_
     }
 
-#ifndef _TARGET_ARM_
+#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
     if (ebpFrame)
         pContext->pRbp = RSP++;
 #endif
@@ -731,6 +768,8 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
 
 #ifdef _TARGET_ARM_
     RSP += pInfoHeader->ParmRegsPushedCount();
+#elif defined(_TARGET_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif
 
     pContext->SetSP((UIntNative) dac_cast<TADDR>(RSP));
@@ -785,6 +824,8 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
     // be saved in the prolog.
     if (!pHeader->IsRegSaved(CSR_MASK_LR))
         return NULL;
+#elif defined(_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif // _ARM_
 
     void ** ppvResult;
@@ -796,6 +837,8 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 #ifdef _ARM_
         // Disable hijacking from epilogs on ARM until we implement GetReturnAddressLocationFromEpilog.
         return NULL;
+#elif defined(_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #else
         ppvResult = GetReturnAddressLocationFromEpilog(pHeader, pContext, epilogOffset, epilogSize);
         // Early out if GetReturnAddressLocationFromEpilog indicates a non-hijackable epilog (e.g. exception
@@ -811,6 +854,9 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
     // case where LR is not pushed, but that was handled above). The protocol specifies that the return
     // address is pushed at [r11, #4].
     ppvResult = (void **)((*pContext->pR11) + sizeof(void *));
+    goto Finished;
+#elif _ARM64_
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
     goto Finished;
 #else
 
@@ -1327,7 +1373,11 @@ void ** EECodeManager::GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHe
     // Shouldn't be any other instructions in the epilog.
     UNREACHABLE_MSG("Unknown epilog instruction");
     return NULL;
-#endif // _X86_
+
+#elif defined(_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
+#endif
 }
 
 #ifdef _DEBUG
@@ -1366,6 +1416,12 @@ bool EECodeManager::FindNextEpilog(GCInfoHeader * pInfoHeader, UInt32 methodSize
 
 #ifdef _ARM_
 #define IS_FRAMELESS() ((pInfoHeader->GetSavedRegs() & CSR_MASK_LR) == 0)
+#elif defined(_ARM64_)
+inline bool IsFramelessArm64(void)
+{
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+}
+#define IS_FRAMELESS() (IsFramelessArm64())
 #else
 #define IS_FRAMELESS() (!pInfoHeader->HasFramePointer())
 #endif
@@ -1401,6 +1457,8 @@ void CheckHijackInEpilog(GCInfoHeader * pInfoHeader, Code * pEpilog, Code * pEpi
 #elif defined(_ARM_)
     context.pR11 = &RBP_TEST_VAL;
     context.SP = RSP_TEST_VAL; 
+#elif defined(_ARM64_)
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif
 
     context.SetIP((PCODE)pEpilog);
@@ -2047,18 +2105,23 @@ bool VerifyEpilogBytesARM(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt3
 
     return false;
 }
+#elif defined(_ARM64_)
+bool VerifyEpilogBytesARM64(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt32 epilogSize)
+{
+    PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+}
 #endif // _ARM_
 
 bool EECodeManager::VerifyEpilogBytes(GCInfoHeader * pInfoHeader, Code * pEpilogStart, UInt32 epilogSize)
 {
 #ifdef _X86_
     return VerifyEpilogBytesX86(pInfoHeader, pEpilogStart, epilogSize);
-#endif // _X86_
-#ifdef _AMD64_
+#elif defined(_AMD64_)
     return VerifyEpilogBytesAMD64(pInfoHeader, pEpilogStart, epilogSize);
-#endif // _AMD64_
-#ifdef _ARM_
+#elif defined(_ARM_)
     return VerifyEpilogBytesARM(pInfoHeader, pEpilogStart, epilogSize);
+#elif defined(_ARM64_)
+    return VerifyEpilogBytesARM64(pInfoHeader, pEpilogStart, epilogSize);
 #endif
 }
 

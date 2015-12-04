@@ -7,6 +7,7 @@
 #if defined(_TARGET_AMD64_)
 #elif defined(_TARGET_X86_)
 #elif defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARM64_)
 #else
 #error Unsupported architecture
 #endif
@@ -98,21 +99,23 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 
 #if defined(_AMD64_)
 
-#define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
 #elif defined(_X86_)
 
-#define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
 #elif defined(_ARM_)
 
-#define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
+
+#elif defined(_ARM64_)
+
+#define LOG2_PTRSIZE 3
+#define POINTER_SIZE 8
 
 #else
 #error Unsupported target architecture
@@ -134,6 +137,13 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 #elif defined(_ARM_)
 
 #define DATA_ALIGNMENT  4
+#ifndef OS_PAGE_SIZE
+#define OS_PAGE_SIZE    0x1000
+#endif
+
+#elif defined(_ARM64_)
+
+#define DATA_ALIGNMENT  8
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
 #endif
