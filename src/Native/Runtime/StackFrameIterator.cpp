@@ -19,7 +19,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "RWLock.h"
-#include "static_check.h"
 #include "event.h"
 #include "threadstore.h"
 #include "stressLog.h"

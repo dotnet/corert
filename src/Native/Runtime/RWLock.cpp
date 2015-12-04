@@ -13,7 +13,6 @@
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"
-#include "static_check.h"
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "varint.h"

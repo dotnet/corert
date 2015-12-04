@@ -521,7 +521,7 @@ const DispatchStubCode dispatchTemplate =
 void DispatchHolder::InitializeStatic()
 {
     // Check that _expectedType is aligned in the DispatchHolder
-    STATIC_ASSERT(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub,_expectedType)) % sizeof(void*)) == 0);
+    static_assert(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _expectedType)) % sizeof(void*)) == 0, "_expectedType is misaligned");
 };
 
 //-----------------------------------------------------------------------------------------------------------
@@ -612,7 +612,7 @@ const ResolveStubCode resolveTemplate =
 void ResolveHolder::InitializeStatic()
 {
     // Check that _itfType is aligned in ResolveHolder
-    STATIC_ASSERT(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _itfType)) % sizeof(void*)) == 0);
+    static_assert(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _itfType)) % sizeof(void*)) == 0, "_itfType is misaligned");
 };
 
 //-----------------------------------------------------------------------------------------------------------

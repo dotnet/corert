@@ -522,37 +522,7 @@ struct EEEHEnumState
 };
 
 // Ensure that EEEHEnumState fits into the space reserved by EHEnumState
-STATIC_ASSERT(sizeof(EEEHEnumState) <= sizeof(EHEnumState));
-
-#if 1 // only needed for local-exception model
-bool Module::EHEnumInitFromReturnAddress(PTR_VOID ControlPC, PTR_VOID * pMethodStartAddressOut, EHEnumState * pEHEnumStateOut)
-{
-    ASSERT(ContainsCodeAddress(ControlPC));
-
-    PTR_UInt8 pbControlPC = dac_cast<PTR_UInt8>(ControlPC);
-
-    UInt32 uMethodIndex;
-    UInt32 uMethodStartSectionOffset;
-
-    PTR_UInt8 pbTextSectionStart = m_pModuleHeader->RegionPtr[ModuleHeader::TEXT_REGION];
-    UInt32 uTextSectionOffset = (UInt32)(pbControlPC - pbTextSectionStart);
-
-    m_MethodList.GetMethodInfo(uTextSectionOffset, &uMethodIndex, &uMethodStartSectionOffset, NULL);
-
-    *pMethodStartAddressOut = pbTextSectionStart + uMethodStartSectionOffset;
-
-    PTR_VOID pEHInfo = m_MethodList.GetEHInfo(uMethodIndex);
-    if (pEHInfo == NULL)
-        return false;
-
-    EEEHEnumState * pEnumState = (EEEHEnumState *)pEHEnumStateOut;
-    pEnumState->pEHInfo = (PTR_UInt8)pEHInfo;
-    pEnumState->uClause = 0;
-    pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
-
-    return true;
-}
-#endif // 1
+static_assert(sizeof(EEEHEnumState) <= sizeof(EHEnumState), "EEEHEnumState does not fit into EHEnumState");
 
 bool Module::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddressOut, EHEnumState * pEHEnumStateOut)
 {
@@ -1414,7 +1384,7 @@ UInt32 StaticGcDesc::DacSize(TADDR addr)
 
 UInt32 GenericInstanceDesc::DacSize(TADDR addr)
 {
-    STATIC_ASSERT(offsetof(GenericInstanceDesc, m_Flags) == 0);
+    static_assert(offsetof(GenericInstanceDesc, m_Flags) == 0, "GenericInstanceDesc::m_Flags is expected to be at offset 0");
 
     GenericInstanceDesc dummyDesc;
     DacReadAll(addr, &dummyDesc, sizeof(GenericInstanceDesc::OptionalFieldTypes), true);

@@ -10,7 +10,6 @@
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "assert.h"
-#include "static_check.h"
 #include "slist.h"
 #include "holder.h"
 #include "Crst.h"
