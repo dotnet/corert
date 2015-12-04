@@ -314,7 +314,7 @@ def CsEmitSource():
             sig = [hnd, [(Ty.MetadataReader, 'reader')]]))
 
     # Source NativeFormatReaderCommonGen.cs
-    with open(r'System\Reflection\Metadata\NativeFormatReaderCommonGen.cs', 'w') as output :
+    with open(r'NativeFormatReaderCommonGen.cs', 'w') as output :
         iprint = IPrint(output)
         CsEmitFileHeader(iprint)
         iprint('using System;')

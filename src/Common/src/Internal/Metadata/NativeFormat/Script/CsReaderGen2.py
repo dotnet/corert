@@ -538,7 +538,7 @@ def CsEmitSource():
     Ty.MetadataReader.members += CreateReaderMembers(Ty.MetadataReader, records, handles)
 
     # Source NativeFormatReaderGen.cs
-    with open(r'System\Reflection\Metadata\NativeFormatReaderGen.cs', 'w') as output :
+    with open(r'NativeFormatReaderGen.cs', 'w') as output :
         iprint = IPrint(output)
         CsEmitFileHeader(iprint)
         iprint('#pragma warning disable 649')

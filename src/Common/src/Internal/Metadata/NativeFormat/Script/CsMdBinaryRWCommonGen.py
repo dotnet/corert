@@ -174,7 +174,7 @@ else
     #------------------------------------------------------------------------------------------------------
     def CsEmitSource(self):
         # Source MdBinaryReaderGen.cs
-        with open(r'System\Reflection\Metadata\MdBinaryReaderGen.cs', 'w') as output :
+        with open(r'MdBinaryReaderGen.cs', 'w') as output :
             ns = NamespaceDef('Internal.Metadata.NativeFormat')
             ns.members.add(self.CreateMdBinaryReaderClass())
 
@@ -193,7 +193,7 @@ else
             ns.CsDefine(iprint)
 
         # Source MdBinaryWriterGen.cs
-        with open(r'..\..\..\PnToolChain\Metadata\NativeFormatWriter\MdBinaryWriterGen.cs', 'w') as output :
+        with open(r'..\..\..\..\..\ILCompiler.MetadataWriter\src\Internal\Metadata\NativeFormat\Writer\MdBinaryWriterGen.cs', 'w') as output :
             ns = NamespaceDef('Internal.Metadata.NativeFormat.Writer')
             ns.members.add(self.CreateMdBinaryWriterClass())
 
