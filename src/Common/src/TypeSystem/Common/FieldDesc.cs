@@ -36,7 +36,7 @@ namespace Internal.TypeSystem
             get;
         }
 
-        public abstract MetadataType OwningType
+        public abstract DefType OwningType
         {
             get;
         }

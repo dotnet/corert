@@ -28,7 +28,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestMultidimensionalArrays()
         {
-            MetadataType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
+            DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
             ArrayType objectMDArrayRank1 = (ArrayType)_context.GetArrayType(objectType, 1);
@@ -43,7 +43,7 @@ namespace TypeSystemTests
         [Fact]
         public void TestSingleDimensionalArrays()
         {
-            MetadataType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
+            DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
 
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 

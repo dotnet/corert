@@ -52,7 +52,7 @@ namespace Internal.TypeSystem
             SystemModule = systemModule;
         }
 
-        public abstract MetadataType GetWellKnownType(WellKnownType wellKnownType);
+        public abstract DefType GetWellKnownType(WellKnownType wellKnownType);
 
         public virtual ModuleDesc ResolveAssembly(AssemblyName name)
         {

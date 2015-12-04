@@ -106,7 +106,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Retrieves the size of a well known type.
         /// </summary>
-        public int GetWellKnownTypeSize(MetadataType type)
+        public int GetWellKnownTypeSize(DefType type)
         {
             switch (type.Category)
             {
@@ -145,7 +145,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Retrieves the alignment required by a well known type.
         /// </summary>
-        public int GetWellKnownTypeAlignment(MetadataType type)
+        public int GetWellKnownTypeAlignment(DefType type)
         {
             // Size == Alignment for all platforms.
             return GetWellKnownTypeSize(type);

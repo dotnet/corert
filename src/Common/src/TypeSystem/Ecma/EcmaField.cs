@@ -61,7 +61,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MetadataType OwningType
+        public override DefType OwningType
         {
             get
             {

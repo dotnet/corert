@@ -101,7 +101,7 @@ namespace ILCompiler
             }
         }
 
-        public override MetadataType GetWellKnownType(WellKnownType wellKnownType)
+        public override DefType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _wellKnownTypes[(int)wellKnownType - 1];
         }
