@@ -1,5 +1,7 @@
 @echo off
 
+setlocal
+
 if "%PYTHON%"=="" (
   echo PYTHON environment variable not set. Point this to a Python interpreter EXE (e.g. ipy.exe for IronPython^)
   exit /b 1
