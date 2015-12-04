@@ -28,17 +28,6 @@
     <PlatformTarget>arm</PlatformTarget>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
-  </ItemGroup>
-
   <PropertyGroup>
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
     <MetadataCommonPath>..\..\Common\src\Internal\Metadata\NativeFormat</MetadataCommonPath>
