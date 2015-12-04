@@ -16,6 +16,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool HasFinalizer
+        {
+            get
+            {
+                return GetFinalizer() != null;
+            }
+        }
+
         /// <summary>
         /// Gets metadata that controls instance layout of this type.
         /// </summary>

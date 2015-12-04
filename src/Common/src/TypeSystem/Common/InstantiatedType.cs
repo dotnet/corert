@@ -137,6 +137,14 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalCctor, this);
         }
 
+        public override MethodDesc GetFinalizer()
+        {
+            MethodDesc typicalFinalizer = _typeDef.GetFinalizer();
+            if (typicalFinalizer == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalFinalizer, this);
+        }
+
         public override IEnumerable<FieldDesc> GetFields()
         {
             foreach (var fieldDef in _typeDef.GetFields())

@@ -443,5 +443,18 @@ namespace Internal.TypeSystem
         {
             return GetTypeDefinition() == otherType.GetTypeDefinition();
         }
+
+        public virtual bool HasFinalizer
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public virtual MethodDesc GetFinalizer()
+        {
+            return null;
+        }
     }
 }

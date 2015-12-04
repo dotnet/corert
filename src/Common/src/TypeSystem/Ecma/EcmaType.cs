@@ -259,6 +259,32 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
+        public override MethodDesc GetFinalizer()
+        {
+            // System.Object defines Finalize but doesn't use it, so we can determine that a type has a Finalizer
+            // by checking for a virtual method override that lands anywhere other than Object in the inheritance
+            // chain.
+            if (!HasBaseType)
+                return null;
+
+            TypeDesc objectType = Context.GetWellKnownType(WellKnownType.Object);
+            MethodDesc decl = objectType.GetMethod("Finalize", null);
+
+            if (decl != null)
+            {
+                MethodDesc impl = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(decl, this);
+                if (impl.OwningType != objectType)
+                {
+                    return impl;
+                }
+
+                return null;
+            }
+
+            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
+            throw new NotImplementedException();
+        }
+
         public override IEnumerable<FieldDesc> GetFields()
         {
             foreach (var handle in _typeDefinition.GetFields())
