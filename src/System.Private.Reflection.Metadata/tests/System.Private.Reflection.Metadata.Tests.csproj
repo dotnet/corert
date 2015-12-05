@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3A6D978E-156A-4BFF-B394-7F6F6BB22AE1}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AssemblyName>System.Private.Reflection.Metadata.Tests</AssemblyName>
+    <RootNamespace>System.Private.Reflection.Metadata.Tests</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Private.Reflection.Metadata.csproj">
+      <Project>{45A617DF-FEC7-59C8-FD0D-BD27938DC940}</Project>
+      <Name>System.Private.Reflection.Metadata</Name>
+      <Aliases>reader</Aliases>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
+      <Project>{D66338D4-F9E4-4051-B302-232C6BFB6EF6}</Project>
+      <Name>ILCompiler.MetadataWriter</Name>
+      <Aliases>writer</Aliases>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+
+    <!-- Disable the test for now. We can't build it because System.Private.Reflection.Metadata builds against
+         CoreLib and has a different System.Object, et al -->
+    <!--Compile Include="RoundTripTests.cs" /-->
+
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
