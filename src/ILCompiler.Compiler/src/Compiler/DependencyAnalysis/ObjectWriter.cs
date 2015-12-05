@@ -10,6 +10,7 @@ using System.IO;
 using ILCompiler.DependencyAnalysisFramework;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -31,6 +32,12 @@ namespace ILCompiler.DependencyAnalysis
         private Dictionary<int, List<ISymbolNode>> _offsetToDefSymbol = new Dictionary<int, List<ISymbolNode>>();
 
         private const string NativeObjectWriterFileName = "objwriter";
+
+        // Target platform ObjectWriter is instantiated for.
+        private TargetDetails _targetPlatform;
+
+        // Nodefactory for which ObjectWriter is instantiated for.
+        private NodeFactory _nodeFactory;
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern IntPtr InitObjWriter(string objectFilePath);
@@ -192,31 +199,52 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitSymbolDefinition(int currentOffset, NodeFactory factory)
+        private string GetSymbolToEmitForTargetPlatform(string symbol)
+        {
+            string symbolToEmit = symbol;
+
+            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+            {
+                // On OSX, we need to prefix an extra underscore to account for correct linkage of 
+                // extern "C" functions.
+                symbolToEmit = "_"+symbol;
+            }
+
+            return symbolToEmit;
+        }
+
+        public void EmitSymbolDefinition(int currentOffset)
         {
             List<ISymbolNode> nodes;
             if (_offsetToDefSymbol.TryGetValue(currentOffset, out nodes))
             {
                 foreach (var node in nodes)
                 {
-                    EmitSymbolDef(node.MangledName);
+                    string symbolToEmit = GetSymbolToEmitForTargetPlatform(node.MangledName);
+                    EmitSymbolDef(symbolToEmit);
 
-                    string alternateName = factory.GetSymbolAlternateName(node);
+                    string alternateName = _nodeFactory.GetSymbolAlternateName(node);
                     if (alternateName != null)
-                        EmitSymbolDef(alternateName);
+                    {
+                        symbolToEmit = GetSymbolToEmitForTargetPlatform(alternateName);
+                        EmitSymbolDef(symbolToEmit);
+                    }
                 }
             }
         }
 
         private IntPtr _nativeObjectWriter = IntPtr.Zero;
 
-        public ObjectWriter(string outputPath)
+        public ObjectWriter(string outputPath, NodeFactory factory)
         {
             _nativeObjectWriter = InitObjWriter(outputPath);
             if (_nativeObjectWriter == IntPtr.Zero)
             {
                 throw new IOException("Fail to initialize Native Object Writer");
             }
+
+            _nodeFactory = factory;
+            _targetPlatform = _nodeFactory.Target;
         }
 
         public void Dispose()
@@ -233,6 +261,8 @@ namespace ILCompiler.DependencyAnalysis
                 _nativeObjectWriter = IntPtr.Zero;
             }
 
+            _nodeFactory = null;
+
             if (bDisposing)
             {
                 GC.SuppressFinalize(this);
@@ -246,7 +276,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void EmitObject(string OutputPath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
-            using (ObjectWriter objectWriter = new ObjectWriter(OutputPath))
+            using (ObjectWriter objectWriter = new ObjectWriter(OutputPath, factory))
             {
                 string currentSection = "";
 
@@ -294,7 +324,7 @@ namespace ILCompiler.DependencyAnalysis
                     for (int i = 0; i < nodeContents.Data.Length; i++)
                     {
                         // Emit symbol definitions if necessary
-                        objectWriter.EmitSymbolDefinition(i, factory);
+                        objectWriter.EmitSymbolDefinition(i);
 
                         // Emit debug loc info if needed.
                         objectWriter.EmitDebugLocInfo(i);
@@ -304,7 +334,7 @@ namespace ILCompiler.DependencyAnalysis
                             Relocation reloc = relocs[nextRelocIndex];
 
                             ISymbolNode target = reloc.Target;
-                            string targetName = target.MangledName;
+                            string targetName = objectWriter.GetSymbolToEmitForTargetPlatform(target.MangledName);
                             int size = 0;
                             bool isPCRelative = false;
                             switch (reloc.RelocType)
@@ -335,7 +365,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     // It is possible to have a symbol just after all of the data.
-                    objectWriter.EmitSymbolDefinition(nodeContents.Data.Length, factory);
+                    objectWriter.EmitSymbolDefinition(nodeContents.Data.Length);
 
                     // The first definition is the main node name
                     string nodeName = objectWriter._offsetToDefSymbol[0][0].MangledName;

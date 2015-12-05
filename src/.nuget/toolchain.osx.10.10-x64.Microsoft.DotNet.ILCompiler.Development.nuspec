@@ -31,6 +31,8 @@
       <file src="../ToolRuntime/*.dll" />
       <file src="../ToolRuntime/*.dylib" />
       <file src="../ToolRuntime/corerun" target="corerun" />
+      <file src="../../../../packages/toolchain.osx.10.10-x64.Microsoft.DotNet.RyuJit/1.0.1-prerelease-00002/runtimes/osx.10.10-x64/native/libryujit.dylib" target="ryujit.dylib" />
+      <file src="../../../../packages/toolchain.osx.10.10-x64.Microsoft.DotNet.ObjectWriter/1.0.3-prerelease-00001/runtimes/osx.10.10-x64/native/libobjwriter.dylib" target="objwriter.dylib" />
       <file src="../../../../packages/Microsoft.DiaSymReader/1.0.6/lib/portable-net45+win8/Microsoft.DiaSymReader.dll" />
   </files>
 </package>
