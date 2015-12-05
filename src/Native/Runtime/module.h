@@ -120,8 +120,6 @@ public:
     void UnsynchronizedResetHijackedLoops();
     void UnsynchronizedHijackAllLoops();
 
-    bool EHEnumInitFromReturnAddress(PTR_VOID ControlPC, PTR_VOID * pMethodStartAddressOut, EHEnumState * pEHEnumStateOut);
-
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddressOut, EHEnumState * pEHEnumStateOut);
     bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut);
 

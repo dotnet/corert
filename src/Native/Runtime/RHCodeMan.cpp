@@ -23,7 +23,7 @@
 
 
 // Ensure that EEMethodInfo fits into the space reserved by MethodInfo
-STATIC_ASSERT(sizeof(EEMethodInfo) <= sizeof(MethodInfo));
+static_assert(sizeof(EEMethodInfo) <= sizeof(MethodInfo), "EEMethodInfo does not fit into a MethodInfo");
 
 EEMethodInfo * GetEEMethodInfo(MethodInfo * pMethodInfo)
 {
@@ -903,9 +903,9 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 
 GCRefKind EECodeManager::GetReturnValueKind(EEMethodInfo * pMethodInfo)
 {
-    STATIC_ASSERT((GCRefKind)GCInfoHeader::MRK_ReturnsScalar == GCRK_Scalar);
-    STATIC_ASSERT((GCRefKind)GCInfoHeader::MRK_ReturnsObject == GCRK_Object);
-    STATIC_ASSERT((GCRefKind)GCInfoHeader::MRK_ReturnsByref  == GCRK_Byref);
+    static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsScalar == GCRK_Scalar, "GCInfoHeader::MRK_ReturnsScalar does not match GCRK_Scalar");
+    static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsObject == GCRK_Object, "GCInfoHeader::MRK_ReturnsObject does not match GCRK_Object");
+    static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsByref  == GCRK_Byref, "GCInfoHeader::MRK_ReturnsByref does not match GCRK_Byref");
 
     GCInfoHeader::MethodReturnKind retKind = pMethodInfo->GetGCInfoHeader()->GetReturnKind();
     switch (retKind)

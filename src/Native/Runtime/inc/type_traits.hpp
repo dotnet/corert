@@ -11,7 +11,6 @@
 #ifndef __TYPE_TRAITS_HPP__
 #define __TYPE_TRAITS_HPP__
 
-#include "static_check.h"
 #include "CommonTypes.h"
 
 namespace type_traits
@@ -172,8 +171,8 @@ template<class TBase, class TDerived> struct is_base_of
 {
     is_base_of()
     {
-        STATIC_ASSERT_MSG((type_traits::is_base_of<TBase, TDerived>::value),
-                           is_base_of_constraint_violation);
+        static_assert((type_traits::is_base_of<TBase, TDerived>::value),
+                      "is_base_of() constraint violation: TDerived does not derive from TBase");
     }
 };
 

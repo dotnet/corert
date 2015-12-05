@@ -296,7 +296,7 @@ const UInt8 **StubCallSite::ComputeIndirCellAddr(const UInt8 *returnAddr, const 
 void DispatchHolder::InitializeStatic()
 {
     // Check that _expectedType is aligned in the DispatchHolder
-    STATIC_ASSERT(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub,_expectedType)) % sizeof(void*)) == 0);
+    static_assert(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _expectedType)) % sizeof(void*)) == 0, "_expectedType is misaligned");
 };
 
 //-----------------------------------------------------------------------------------------------------------
@@ -390,7 +390,7 @@ DispatchHolder* DispatchHolder::FromDispatchEntryPoint(PTR_Code dispatchEntry)
 void ResolveHolder::InitializeStatic()
 {
     // Check that _itfType is aligned in ResolveHolder
-    STATIC_ASSERT(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _itfType)) % sizeof(void*)) == 0);
+    static_assert(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _itfType)) % sizeof(void*)) == 0, "_itfType is misaligned");
 };
 
 //-----------------------------------------------------------------------------------------------------------

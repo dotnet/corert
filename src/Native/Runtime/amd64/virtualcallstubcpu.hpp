@@ -498,7 +498,7 @@ const DispatchStubLongCode dispatchLongTemplate =
 void DispatchHolder::InitializeStatic()
 {
     // Check that _expectedType is aligned in the DispatchHolder
-    STATIC_ASSERT(((sizeof(DispatchHolder) + offsetof(DispatchStub,_expectedType)) % sizeof(void*)) == 0);
+    static_assert(((sizeof(DispatchHolder) + offsetof(DispatchStub, _expectedType)) % sizeof(void*)) == 0, "_expectedType is misaligned");
 };
 
 void  DispatchHolder::Initialize(UInt8 const * implTarget, UInt8 const * failTarget, size_t expectedType,
@@ -599,7 +599,7 @@ const ResolveStubCode resolveTemplate =
 void ResolveHolder::InitializeStatic()
 {
     // Check that _itfType is aligned in ResolveHolder
-    STATIC_ASSERT(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _itfType)) % sizeof(void*)) == 0);
+    static_assert(((offsetof(ResolveHolder, _stub) + offsetof(ResolveStub, _itfType)) % sizeof(void*)) == 0, "_itfType is misaligned");
 };
 
 void  ResolveHolder::Initialize(
