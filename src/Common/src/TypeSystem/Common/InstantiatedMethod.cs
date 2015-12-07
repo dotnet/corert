@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
@@ -21,6 +22,11 @@ namespace Internal.TypeSystem
 
             Debug.Assert(instantiation.Length > 0);
             _instantiation = instantiation;
+        }
+
+        protected override int ComputeHashCode()
+        {
+            return TypeHashingAlgorithms.ComputeMethodHashcode(OwningType.GetHashCode(), Instantiation.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(Name)));
         }
 
         public override TypeSystemContext Context
