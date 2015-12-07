@@ -28,12 +28,12 @@ endif()
 add_custom_command(
     # The AsmOffsets.cs is consumed later by the managed build
     TARGET Runtime
-    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
+	COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
     DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
 )
 
 add_custom_target(AsmOffsets
-    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} "${RUNTIME_DIR}/AsmOffsets.cpp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+	COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${RUNTIME_DIR}/AsmOffsets.cpp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
     DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
     COMMENT "Generating AsmOffsets.inc"
 )

@@ -4,179 +4,107 @@
 //
 
 //
-// This file is used by AsmOffsets.cpp to validate that our 
+// This file is used by AsmOffsets.cpp to validate that our
 // assembly-code offsets always match their C++ counterparts.
-//
+
 // You must #define PLAT_ASM_OFFSET and PLAT_ASM_SIZEOF before you #include this file
-//
 
-#if defined(_X86_)
-#define ASM_OFFSET(x86_offset, arm_offset, amd64_offset, arm64_offset, cls, member) PLAT_ASM_OFFSET(x86_offset, cls, member)
-#define ASM_SIZEOF(x86_offset, arm_offset, amd64_offset, arm64_offset, cls        ) PLAT_ASM_SIZEOF(x86_offset, cls)
-#define ASM_CONST(x86_const, arm_const, amd64_const, arm64_const, expr)            PLAT_ASM_CONST(x86_const, expr)
-#elif defined(_AMD64_)
-#define ASM_OFFSET(x86_offset, arm_offset, amd64_offset, arm64_offset, cls, member) PLAT_ASM_OFFSET(amd64_offset, cls, member)
-#define ASM_SIZEOF(x86_offset, arm_offset, amd64_offset, arm64_offset, cls        ) PLAT_ASM_SIZEOF(amd64_offset, cls)
-#define ASM_CONST(x86_const, arm_const, amd64_const, arm64_const, expr)            PLAT_ASM_CONST(amd64_const, expr)
-#elif defined(_ARM_)
-#define ASM_OFFSET(x86_offset, arm_offset, amd64_offset, arm64_offset, cls, member) PLAT_ASM_OFFSET(arm_offset, cls, member)
-#define ASM_SIZEOF(x86_offset, arm_offset, amd64_offset, arm64_offset, cls        ) PLAT_ASM_SIZEOF(arm_offset, cls)
-#define ASM_CONST(x86_const, arm_const, amd64_const, arm64_const, expr)            PLAT_ASM_CONST(arm_const, expr)
-#elif defined(_ARM64_)
-#define ASM_OFFSET(x86_offset, arm_offset, amd64_offset, arm64_offset, cls, member) PLAT_ASM_OFFSET(arm64_offset, cls, member)
-#define ASM_SIZEOF(x86_offset, arm_offset, amd64_offset, arm64_offset, cls        ) PLAT_ASM_SIZEOF(arm64_offset, cls)
-#define ASM_CONST(x86_const, arm_const, amd64_const, arm64_const, expr)            PLAT_ASM_CONST(arm64_const, expr)
+#ifdef BIT64
+#define ASM_OFFSET(offset32, offset64, cls, member) PLAT_ASM_OFFSET(offset64, cls, member)
+#define ASM_SIZEOF(sizeof32, sizeof64, cls        ) PLAT_ASM_SIZEOF(sizeof64, cls)
+#define ASM_CONST(const32, const64, expr)           PLAT_ASM_CONST(const64, expr)
 #else
-#error unknown architecture
+#define ASM_OFFSET(offset32, offset64, cls, member) PLAT_ASM_OFFSET(offset32, cls, member)
+#define ASM_SIZEOF(sizeof32, sizeof64, cls        ) PLAT_ASM_SIZEOF(sizeof32, cls)
+#define ASM_CONST(const32, const64, expr)           PLAT_ASM_CONST(const32, expr)
 #endif
 
-//
-// NOTE: the offsets MUST be in hex notation WITHOUT the 0x prefix
-// 
-//          x86,  arm,amd64, arm64, constant symbol
-ASM_CONST(14c08,14c08,14c08, 14c08, RH_LARGE_OBJECT_SIZE)
-ASM_CONST(  400,  400,  800,   800, CLUMP_SIZE)
-ASM_CONST(    a,    a,    b,     b, LOG2_CLUMP_SIZE)
-                             
-//          x86,  arm,amd64, arm64, class,   member
-                             
-ASM_OFFSET(   0,    0,    0,     0, Object,  m_pEEType)
-                             
-ASM_OFFSET(   4,    4,    8,     8, Array,   m_Length)
-                             
-ASM_OFFSET(   0,    0,    0,     0, EEType,  m_usComponentSize)
-ASM_OFFSET(   2,    2,    2,     2, EEType,  m_usFlags)
-ASM_OFFSET(   4,    4,    4,     4, EEType,  m_uBaseSize)
-ASM_OFFSET(  14,   14,   18,    18, EEType,  m_VTable)
-                             
-ASM_OFFSET(   0,    0,    0,     0, Thread,  m_rgbAllocContextBuffer)
-ASM_OFFSET(  1c,   1c,   28,    28, Thread,  m_ThreadStateFlags)
-ASM_OFFSET(  20,   20,   30,    30, Thread,  m_pTransitionFrame)
-ASM_OFFSET(  24,   24,   38,    38, Thread,  m_pHackPInvokeTunnel)
-ASM_OFFSET(  34,   34,   58,    58, Thread,  m_ppvHijackedReturnAddressLocation)
-ASM_OFFSET(  38,   38,   60,    60, Thread,  m_pvHijackedReturnAddress)
-ASM_OFFSET(  3c,   3c,   68,    68, Thread,  m_pExInfoStackHead)
-                             
-ASM_SIZEOF(  14,   14,   20,    20, EHEnum) 
-                             
-ASM_SIZEOF(  b0,  128,  250,   240, ExInfo) 
-ASM_OFFSET(   0,    0,    0,     0, ExInfo,  m_pPrevExInfo)
-ASM_OFFSET(   4,    4,    8,     8, ExInfo,  m_pExContext)
-ASM_OFFSET(   8,    8,   10,    10, ExInfo,  m_exception)
-ASM_OFFSET(  0c,   0c,   18,    18, ExInfo,  m_kind)
-ASM_OFFSET(  0d,   0d,   19,    19, ExInfo,  m_passNumber)
-ASM_OFFSET(  10,   10,   1c,    1c, ExInfo,  m_idxCurClause)
-ASM_OFFSET(  14,   18,   20,    20, ExInfo,  m_frameIter)
-ASM_OFFSET(  ac,  120,  240,   238, ExInfo,  m_notifyDebuggerSP)
-                             
-ASM_OFFSET(   0,    0,    0,     0, alloc_context, alloc_ptr)
-ASM_OFFSET(   4,    4,    8,     8, alloc_context, alloc_limit)
-                             
-                             
-ASM_OFFSET(   4,    4,    8,     8, RuntimeInstance, m_pThreadStore)
-                             
-ASM_OFFSET(   0,    4,    0,     0, PInvokeTransitionFrame, m_RIP)
-ASM_OFFSET(   4,    8,    8,     8, PInvokeTransitionFrame, m_FramePointer)
-ASM_OFFSET(   8,   0C,   10,    10, PInvokeTransitionFrame, m_pThread)
-ASM_OFFSET(  0C,   10,   18,    18, PInvokeTransitionFrame, m_dwFlags)
-ASM_OFFSET(  10,   14,   20,    20, PInvokeTransitionFrame, m_PreservedRegs)
-                             
-ASM_SIZEOF(  98,  108,  220,   218, StackFrameIterator)
-ASM_OFFSET(  08,   08,   10,    10, StackFrameIterator, m_FramePointer)
-ASM_OFFSET(  0C,   0C,   18,    18, StackFrameIterator, m_ControlPC)
-ASM_OFFSET(  10,   10,   20,    20, StackFrameIterator, m_RegDisplay)
-                             
-ASM_SIZEOF(  1c,   70,  100,     8, PAL_LIMITED_CONTEXT)
-ASM_OFFSET(   0,   24,    0,     0, PAL_LIMITED_CONTEXT, IP)
+// NOTE: the values MUST be in hex notation WITHOUT the 0x prefix
 
-#ifdef _ARM_                 
-ASM_OFFSET(   0,    0,    0,     0, PAL_LIMITED_CONTEXT, R0)
-ASM_OFFSET(   0,    4,    0,     0, PAL_LIMITED_CONTEXT, R4)
-ASM_OFFSET(   0,    8,    0,     0, PAL_LIMITED_CONTEXT, R5)
-ASM_OFFSET(   0,   0c,    0,     0, PAL_LIMITED_CONTEXT, R6)
-ASM_OFFSET(   0,   10,    0,     0, PAL_LIMITED_CONTEXT, R7)
-ASM_OFFSET(   0,   14,    0,     0, PAL_LIMITED_CONTEXT, R8)
-ASM_OFFSET(   0,   18,    0,     0, PAL_LIMITED_CONTEXT, R9)
-ASM_OFFSET(   0,   1c,    0,     0, PAL_LIMITED_CONTEXT, R10)
-ASM_OFFSET(   0,   20,    0,     0, PAL_LIMITED_CONTEXT, R11)
-ASM_OFFSET(   0,   28,    0,     0, PAL_LIMITED_CONTEXT, SP)
-ASM_OFFSET(   0,   2c,    0,     0, PAL_LIMITED_CONTEXT, LR)
-                             
-#elif defined _ARM64_        
-// @TODO: Add ARM64 entries
-                             
-#else // _ARM64_
-                            
-ASM_OFFSET(   4,    0,    8,     8, PAL_LIMITED_CONTEXT, Rsp)
-ASM_OFFSET(   8,    0,   10,    10, PAL_LIMITED_CONTEXT, Rbp)
-ASM_OFFSET(  0c,    0,   18,    18, PAL_LIMITED_CONTEXT, Rdi)
-ASM_OFFSET(  10,    0,   20,    20, PAL_LIMITED_CONTEXT, Rsi)
-ASM_OFFSET(  14,    0,   28,    28, PAL_LIMITED_CONTEXT, Rax)
-ASM_OFFSET(  18,    0,   30,    30, PAL_LIMITED_CONTEXT, Rbx)
-#ifdef _AMD64_               
-ASM_OFFSET(   0,    0,   38,    38, PAL_LIMITED_CONTEXT, R12)
-ASM_OFFSET(   0,    0,   40,    40, PAL_LIMITED_CONTEXT, R13)
-ASM_OFFSET(   0,    0,   48,    48, PAL_LIMITED_CONTEXT, R14)
-ASM_OFFSET(   0,    0,   50,    50, PAL_LIMITED_CONTEXT, R15)
-ASM_OFFSET(   0,    0,   60,    60, PAL_LIMITED_CONTEXT, Xmm6)
-ASM_OFFSET(   0,    0,   70,    70, PAL_LIMITED_CONTEXT, Xmm7)
-ASM_OFFSET(   0,    0,   80,    80, PAL_LIMITED_CONTEXT, Xmm8)
-ASM_OFFSET(   0,    0,   90,    90, PAL_LIMITED_CONTEXT, Xmm9)
-ASM_OFFSET(   0,    0,  0a0,   0a0, PAL_LIMITED_CONTEXT, Xmm10)
-ASM_OFFSET(   0,    0,  0b0,   0b0, PAL_LIMITED_CONTEXT, Xmm11)
-ASM_OFFSET(   0,    0,  0c0,   0c0, PAL_LIMITED_CONTEXT, Xmm12)
-ASM_OFFSET(   0,    0,  0d0,   0d0, PAL_LIMITED_CONTEXT, Xmm13)
-ASM_OFFSET(   0,    0,  0e0,   0e0, PAL_LIMITED_CONTEXT, Xmm14)
-ASM_OFFSET(   0,    0,  0f0,   0f0, PAL_LIMITED_CONTEXT, Xmm15)
-#endif // _AMD64_            
-#endif // _ARM_              
-                             
-ASM_SIZEOF(  28,   88,  130,   150, REGDISPLAY)
-ASM_OFFSET(  1c,   38,   78,    f8, REGDISPLAY, SP)
+//        32-bit,64-bit, constant symbol
+ASM_CONST( 14c08, 14c08, RH_LARGE_OBJECT_SIZE)
+ASM_CONST(   400,   800, CLUMP_SIZE)
+ASM_CONST(     a,     b, LOG2_CLUMP_SIZE)
 
-#ifdef _ARM_                 
-ASM_OFFSET(   0,   10,    0,     0, REGDISPLAY, pR4)
-ASM_OFFSET(   0,   14,    0,     0, REGDISPLAY, pR5)
-ASM_OFFSET(   0,   18,    0,     0, REGDISPLAY, pR6)
-ASM_OFFSET(   0,   1c,    0,     0, REGDISPLAY, pR7)
-ASM_OFFSET(   0,   20,    0,     0, REGDISPLAY, pR8)
-ASM_OFFSET(   0,   24,    0,     0, REGDISPLAY, pR9)
-ASM_OFFSET(   0,   28,    0,     0, REGDISPLAY, pR10)
-ASM_OFFSET(   0,   2c,    0,     0, REGDISPLAY, pR11)
-ASM_OFFSET(   0,   48,    0,     0, REGDISPLAY, D)
-#elif _ARM64_
-// @TODO: Add ARM64 entries
+//        32-bit,64-bit, class, member
+ASM_OFFSET(    0,     0, Object, m_pEEType)
 
-#else // _ARM64_               
-ASM_OFFSET(  0c,    0,   18,    18, REGDISPLAY, pRbx)
-ASM_OFFSET(  10,    0,   20,    20, REGDISPLAY, pRbp)
-ASM_OFFSET(  14,    0,   28,    28, REGDISPLAY, pRsi)
-ASM_OFFSET(  18,    0,   30,    30, REGDISPLAY, pRdi)
-#ifdef _AMD64_               
-ASM_OFFSET(   0,    0,   58,    58, REGDISPLAY, pR12)
-ASM_OFFSET(   0,    0,   60,    60, REGDISPLAY, pR13)
-ASM_OFFSET(   0,    0,   68,    68, REGDISPLAY, pR14)
-ASM_OFFSET(   0,    0,   70,    70, REGDISPLAY, pR15)
-ASM_OFFSET(   0,    0,   90,    90, REGDISPLAY, Xmm)
-#endif // _AMD64_            
-#endif // _ARM_              
-                             
+ASM_OFFSET(    4,     8, Array, m_Length)
+
+ASM_OFFSET(    0,     0, EEType, m_usComponentSize)
+ASM_OFFSET(    2,     2, EEType, m_usFlags)
+ASM_OFFSET(    4,     4, EEType, m_uBaseSize)
+ASM_OFFSET(   14,    18, EEType, m_VTable)
+
+ASM_OFFSET(    0,     0, Thread, m_rgbAllocContextBuffer)
+ASM_OFFSET(   1c,    28, Thread, m_ThreadStateFlags)
+ASM_OFFSET(   20,    30, Thread, m_pTransitionFrame)
+ASM_OFFSET(   24,    38, Thread, m_pHackPInvokeTunnel)
+ASM_OFFSET(   34,    58, Thread, m_ppvHijackedReturnAddressLocation)
+ASM_OFFSET(   38,    60, Thread, m_pvHijackedReturnAddress)
+ASM_OFFSET(   3c,    68, Thread, m_pExInfoStackHead)
+
+ASM_SIZEOF(   14,    20, EHEnum)
+
+ASM_OFFSET(    0,     0, alloc_context, alloc_ptr)
+ASM_OFFSET(    4,     8, alloc_context, alloc_limit)
+
+ASM_OFFSET(    4,     8, RuntimeInstance, m_pThreadStore)
+
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-ASM_OFFSET(   4,    4,    8,     8, InterfaceDispatchCell, m_pCache)
-#ifndef _AMD64_              
-ASM_OFFSET(   8,    8,   10,    10, InterfaceDispatchCache, m_pCell)
-#endif                       
-ASM_OFFSET(  10,   10,   20,    20, InterfaceDispatchCache, m_rgEntries)
-#endif                       
-                             
-ASM_OFFSET(   4,    4,    8,     8, StaticClassConstructionContext, m_initialized)
-                             
-#ifdef FEATURE_DYNAMIC_CODE
-ASM_OFFSET(   0,    0,    0,     0, CallDescrData, pSrc)
-ASM_OFFSET(   4,    4,    8,     8, CallDescrData, numStackSlots)
-ASM_OFFSET(   8,    8,    C,     C, CallDescrData, fpReturnSize)
-ASM_OFFSET(   C,    C,   10,    10, CallDescrData, pArgumentRegisters)
-ASM_OFFSET(  10,   10,   18,    18, CallDescrData, pFloatArgumentRegisters)
-ASM_OFFSET(  14,   14,   20,    20, CallDescrData, pTarget)
-ASM_OFFSET(  18,   18,   28,    28, CallDescrData, pReturnBuffer)
+ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
+#ifndef BIT64
+ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
+ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
+#endif
+
+ASM_OFFSET(    4,     8, StaticClassConstructionContext, m_initialized)
+
+#ifdef FEATURE_DYNAMIC_CODE
+ASM_OFFSET(    0,     0, CallDescrData, pSrc)
+ASM_OFFSET(    4,     8, CallDescrData, numStackSlots)
+ASM_OFFSET(    8,     C, CallDescrData, fpReturnSize)
+ASM_OFFSET(    C,    10, CallDescrData, pArgumentRegisters)
+ASM_OFFSET(   10,    18, CallDescrData, pFloatArgumentRegisters)
+ASM_OFFSET(   14,    20, CallDescrData, pTarget)
+ASM_OFFSET(   18,    28, CallDescrData, pReturnBuffer)
+#endif
+
+// Undefine macros that are only used in this header for convenience.
+#undef ASM_OFFSET
+#undef ASM_SIZEOF
+#undef ASM_CONST
+
+// Define platform specific offsets
+#include "AsmOffsetsCpu.h"
+
+//#define USE_COMPILE_TIME_CONSTANT_FINDER // Uncomment this line to use the constant finder
+#if defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)
+// This class causes the compiler to emit an error with the constant we're interested in
+// in the error message. This is useful if a size or offset changes. To use, comment out
+// the compile-time assert that is firing, enable the constant finder, add the appropriate
+// constant to find to BogusFunction(), and build.
+//
+// Here's a sample compiler error:
+// In file included from corert/src/Native/Runtime/AsmOffsetsVerify.cpp:38:
+// corert/src/Native/Runtime/Full/../AsmOffsets.h:117:61: error: calling a private constructor of class
+//      'AsmOffsets::FindCompileTimeConstant<25>'
+//    FindCompileTimeConstant<offsetof(ExInfo, m_passNumber)> bogus_variable;
+//                                                            ^
+// corert/src/Native/Runtime/Full/../AsmOffsets.h:111:5: note: declared private here
+//    FindCompileTimeConstant();
+//    ^
+template<size_t N>
+class FindCompileTimeConstant
+{
+private:
+    FindCompileTimeConstant();
+};
+
+void BogusFunction()
+{
+    // Sample usage to generate the error
+    FindCompileTimeConstant<offsetof(ExInfo, m_passNumber)> bogus_variable;
+}
+#endif // defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)

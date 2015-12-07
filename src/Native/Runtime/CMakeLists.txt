@@ -95,6 +95,10 @@ set(RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
 
+# Add architecture specific folder for looking up headers.
+convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
+include_directories(${ARCH_SOURCES_DIR})
+
 add_definitions(-DAPP_LOCAL_RUNTIME)
 add_definitions(-DFEATURE_BACKGROUND_GC)
 add_definitions(-DFEATURE_BASICFREEZE)
