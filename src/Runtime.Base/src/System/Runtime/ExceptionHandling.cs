@@ -136,13 +136,11 @@ namespace System.Runtime
             private IntPtr _dummy; // For alignment
         }
 
-        // This is a fail-fast function exported by the runtime that will terminate the process
-        // with as little effort as possible. No guarantee is made about Watson behavior, whether a
-        // "debug break" is used, etc.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void FailFast(RhFailFastReason reason, Exception unhandledException)
+        // This is a fail-fast function used by the runtime as a last resort that will terminate the process with
+        // as little effort as possible. No guarantee is made about the semantics of this fail-fast.
+        internal static void FallbackFailFast(RhFailFastReason reason, Exception unhandledException)
         {
-            BinderIntrinsics.DebugBreak();
+            InternalCalls.RhpFallbackFailFast();
         }
 
         // Constants used with RhpGetClasslibFunction, to indicate which classlib function
@@ -170,7 +168,7 @@ namespace System.Runtime
             if (pFailFastFunction == IntPtr.Zero)
             {
                 // The classlib didn't provide a function, so we fail our way...
-                FailFast(reason, unhandledException);
+                FallbackFailFast(reason, unhandledException);
             }
 
             try
@@ -188,7 +186,7 @@ namespace System.Runtime
             }
 
             // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
-            FailFast(reason, unhandledException);
+            FallbackFailFast(reason, unhandledException);
         }
 
 #if AMD64
@@ -264,7 +262,7 @@ namespace System.Runtime
             }
 
             // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
-            FailFast(reason, unhandledException);
+            FallbackFailFast(reason, unhandledException);
         }
 
         private enum RhEHFrameType
@@ -457,7 +455,7 @@ namespace System.Runtime
 
                 default:
                     Debug.Assert(false, "unexpected ExceptionID");
-                    FailFast(RhFailFastReason.InternalError, null);
+                    FallbackFailFast(RhFailFastReason.InternalError, null);
                     return null;
             }
         }

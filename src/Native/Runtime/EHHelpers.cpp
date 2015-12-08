@@ -274,14 +274,16 @@ EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExcep
     if (pThread->IsDoNotTriggerGcSet())
         RhFailFast();
 
+    IntNative pinvokeCallsiteReturnAddr = (IntNative)pThread->GetCurrentThreadPInvokeReturnAddress();
+
     // We promote exceptions that were not converted to managed exceptions to a FailFast.  However, we have to
     // be careful because we got here via OS SEH infrastructure and, therefore, don't know what GC mode we're
     // currently in.  As a result, since we're calling back into managed code to handle the FailFast, we must
     // correctly call either a NativeCallable or a RuntimeExport version of the same method.
     if (pThread->IsCurrentThreadInCooperativeMode())
-        RhpFailFastForPInvokeExceptionCoop((IntNative)pDispatcherContext->ControlPc, pExceptionRecord, pContextRecord);
+        RhpFailFastForPInvokeExceptionCoop(pinvokeCallsiteReturnAddr, pExceptionRecord, pContextRecord);
     else
-        RhpFailFastForPInvokeExceptionPreemp((IntNative)pDispatcherContext->ControlPc, pExceptionRecord, pContextRecord);
+        RhpFailFastForPInvokeExceptionPreemp(pinvokeCallsiteReturnAddr, pExceptionRecord, pContextRecord);
 
     return 0;
 }
@@ -449,6 +451,11 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
         return EXCEPTION_CONTINUE_SEARCH;
     }
+}
+
+COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())
+{
+    RhFailFast();
 }
 
 

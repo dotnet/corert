@@ -25,11 +25,11 @@ namespace System.Runtime
             catch
             {
                 // Exceptions are not permitted to escape from runtime->managed callbacks
-                EH.FailFast(RhFailFastReason.InternalError, null);
+                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
             }
 
             // "Valid method implementation was not found."
-            EH.FailFast(RhFailFastReason.InternalError, null);
+            EH.FallbackFailFast(RhFailFastReason.InternalError, null);
             return IntPtr.Zero;
         }
 
