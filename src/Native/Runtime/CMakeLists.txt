@@ -40,6 +40,7 @@ set(COMMON_RUNTIME_SOURCES
     ../gc/gccommon.cpp
     ../gc/gceewks.cpp
     ../gc/gcwks.cpp
+    ../gc/gcscan.cpp
     ../gc/handletable.cpp
     ../gc/handletablecache.cpp
     ../gc/handletablecore.cpp

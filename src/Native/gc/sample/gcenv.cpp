@@ -136,13 +136,9 @@ void GCToEEInterface::RestartEE(bool bFinishedGC)
     GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
 }
 
-void GCToEEInterface::ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
+void GCToEEInterface::GcScanRoots(promote_func* fn,  int condemned, int max_gen, ScanContext* sc)
 {
     // TODO: Implement - Scan stack roots on given thread
-}
-
-void GCToEEInterface::ScanStaticGCRefsOpportunistically(promote_func* fn, ScanContext* sc)
-{
 }
 
 void GCToEEInterface::GcStartWork(int condemned, int max_gen)
@@ -202,10 +198,15 @@ void GCToEEInterface::AttachCurrentThread()
     ThreadStore::AttachCurrentThread();
 }
 
-Thread * GCToEEInterface::GetThreadList(Thread * pThread)
+void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)
 {
-    return ThreadStore::GetThreadList(pThread);
+    Thread * pThread = NULL;
+    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+    {
+        fn(pThread->GetAllocContext(), param);
+    }
 }
+
 
 void FinalizerThread::EnableFinalization()
 {
