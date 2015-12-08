@@ -101,12 +101,14 @@ New_SkipPublish:
         ret
 
 NewOutOfMemory:
-        ;; This is the OOM failure path. We're going to tail-call to a Rtm helper that will throw
+        ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
+
+        mov         rcx, r9             ; EEType pointer
+        xor         edx, edx            ; Indicate that we should throw OOM.
+
         POP_COOP_PINVOKE_FRAME  no_extraStack
 
-        ;; Jump to the helper. 
-        xor         ecx, ecx            ; Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
 NESTED_END RhpNewObject, _TEXT
 
@@ -162,11 +164,11 @@ LEAF_ENTRY RhpNewArray, _TEXT
 
 ArraySizeOverflow:
         ; We get here if the size of the final array object can't be represented as an unsigned 
-        ; 32-bit value. We're going to tail-call to a Rtm helper that will throw
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
 
-        ;; Jump to the helper. 
-        mov         ecx, 1              ; Indicate that we should throw OverflowException
+        ; rcx holds EEType pointer already
+        mov         edx, 1              ; Indicate that we should throw OverflowException
         jmp         RhExceptionHandling_FailedAllocation
 LEAF_END RhpNewArray, _TEXT
 
@@ -218,13 +220,14 @@ NewArray_SkipPublish:
         ret
 
 ArrayOutOfMemory:     
-        ;; This is the OOM failure path. We're going to tail-call to a Rtm helper that will throw
+        ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
 
-        ;; Jump to the helper. 
-        xor         ecx, ecx            ; Indicate that we should throw OOM.
+        mov         rcx, rsi            ; EEType pointer
+        xor         edx, edx            ; Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME no_extraStack
+
         jmp         RhExceptionHandling_FailedAllocation
 
 NESTED_END RhpNewArrayRare, _TEXT

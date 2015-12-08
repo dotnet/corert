@@ -92,16 +92,19 @@ NewFast_SkipPublish:
         pop         ebp
         ret
 
-NewFast_OOM:     
-        ;; This is the failure path. We're going to tail-call to a Rtm helper that will throw
+NewFast_OOM:
+        ;; This is the failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
+
+        mov         eax, esi            ; Preserve EEType pointer over POP_COOP_PINVOKE_FRAME
+
         POP_COOP_PINVOKE_FRAME
 
         ;; Cleanup our ebp frame
         pop         ebp
 
-        ;; Jump to the helper.
-        xor         ecx, ecx            ; Indicate that we should throw OOM.
+        mov         ecx, eax            ; EEType pointer
+        xor         edx, edx            ; Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
 
 FASTCALL_ENDFUNC
@@ -151,15 +154,18 @@ NewFinalizable_SkipPublish:
         ret
         
 NewFinalizable_OOM:
-        ;; This is the failure path. We're going to tail-call to a Rtm helper that will throw
+        ;; This is the failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
+
+        mov         eax, esi            ; Preserve EEType pointer over POP_COOP_PINVOKE_FRAME
+
         POP_COOP_PINVOKE_FRAME
 
         ;; Cleanup our ebp frame
         pop         ebp
         
-        ;; Jump to the helper.
-        xor         ecx, ecx            ; Indicate that we should throw OOM.
+        mov         ecx, eax            ; EEType pointer
+        xor         edx, edx            ; Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
         
 FASTCALL_ENDFUNC
@@ -284,26 +290,35 @@ NewArray_SkipPublish:
         ret
 
 ArrayOutOfMemoryWithFrame:
-        ; This is the OOM failure path. We're going to tail-call to a Rtm helper that will throw
+        ; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ; an out of memory exception that the caller of this allocator understands.
+
+        mov         eax, [ebp - 8]  ; Preserve EEType pointer over POP_COOP_PINVOKE_FRAME
 
         POP_COOP_PINVOKE_FRAME
         add         esp, 8          ; pop ecx / edx
         pop         ebp             ; restore ebp
-        xor         ecx, ecx        ; Indicate that we should throw OOM.
+
+        mov         ecx, eax        ; EEType pointer
+        xor         edx, edx        ; Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
 
 ArrayOutOfMemoryNoFrame:
         add         esp, 8          ; pop ecx / edx
-        xor         ecx, ecx        ; Indicate that we should throw OOM.
+
+        ; ecx holds EEType pointer already
+        xor         edx, edx        ; Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
 
 ArraySizeOverflow:
         ; We get here if the size of the final array object can't be represented as an unsigned 
-        ; 32-bit value. We're going to tail-call to a Rtm helper that will throw
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
+
         add         esp, 8          ; pop ecx / edx
-        mov         ecx, 1          ; Indicate that we should throw OverflowException
+
+        ; ecx holds EEType pointer already
+        mov         edx, 1          ; Indicate that we should throw OverflowException
         jmp         RhExceptionHandling_FailedAllocation
 
 FASTCALL_ENDFUNC
