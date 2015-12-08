@@ -180,11 +180,7 @@ namespace System.Runtime
             }
             catch
             {
-                // Unfortunately, this catch turns into "catch (System.Object)", which will not catch 
-                // exceptions thrown from the class library because their objects do not derive from our 
-                // System.Object. 
-                //
-                // @TODO: Use a filtered catch whose filter always returns 'true'.
+                // disallow all exceptions leaking out of callbacks
             }
 
             // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
@@ -256,11 +252,7 @@ namespace System.Runtime
             }
             catch
             {
-                // Unfortunately, this catch turns into "catch (System.Object)", which will not catch 
-                // exceptions thrown from the class library because their objects do not derive from our 
-                // System.Object. 
-                //
-                // @TODO: Use a filtered catch whose filter always returns 'true'.
+                // disallow all exceptions leaking out of callbacks
             }
 
             // The classlib's funciton should never return and should not throw. If it does, then we fail our way...
@@ -289,11 +281,7 @@ namespace System.Runtime
                 }
                 catch
                 {
-                    // Unfortunately, this catch turns into "catch (System.Object)", which will not catch 
-                    // exceptions thrown from the class library because their objects do not derive from our 
-                    // System.Object. 
-                    //
-                    // @TODO: Use a filtered catch whose filter always returns 'true'.
+                    // disallow all exceptions leaking out of callbacks
                 }
             }
         }
@@ -318,11 +306,7 @@ namespace System.Runtime
                 }
                 catch
                 {
-                    // Unfortunately, this catch turns into "catch (System.Object)", which will not catch 
-                    // exceptions thrown from the class library because their objects do not derive from our 
-                    // System.Object. 
-                    //
-                    // @TODO: Use a filtered catch whose filter always returns 'true'.
+                    // disallow all exceptions leaking out of callbacks
                 }
 
                 // If the helper fails to yield an object, then we fail-fast.
@@ -446,14 +430,7 @@ namespace System.Runtime
                     return s_theOOMException;
 
                 case ExceptionIDs.Overflow:
-                    try
-                    {
-                        return new OverflowException();
-                    }
-                    catch (OutOfMemoryException)
-                    {
-                        throw;
-                    }
+                    return new OverflowException();
 
                 default:
                     Debug.Assert(false, "unexpected ExceptionID");
@@ -851,7 +828,7 @@ namespace System.Runtime
                 // most containing.
                 if (clauseKind == RhEHClauseKind.RH_EH_CLAUSE_TYPED)
                 {
-                    if (System.Runtime.TypeCast.IsInstanceOfClass(exception, ehClause._pTargetType) != null)
+                    if (ShouldTypedClauseCatchThisException(exception, (EEType*)ehClause._pTargetType))
                     {
                         pHandler = (pbMethodStartAddress + ehClause._handlerOffset);
                         tryRegionIdx = curIdx;
@@ -872,6 +849,29 @@ namespace System.Runtime
                     }
                 }
             }
+
+            return false;
+        }
+
+        static EEType* s_pLowLevelObjectType;
+
+        private static bool ShouldTypedClauseCatchThisException(Exception exception, EEType* pClauseType)
+        {
+            if (TypeCast.IsInstanceOfClass(exception, pClauseType) != null)
+                return true;
+
+            if (s_pLowLevelObjectType == null)
+            {
+                s_pLowLevelObjectType = new System.Object().EEType;
+            }
+
+            // This allows the typical try { } catch { }--which expands to a typed catch of System.Object--to work on 
+            // all objects when the clause is in the low level runtime code.  This special case is needed because 
+            // objects from foreign type systems are sometimes throw back up at runtime code and this is the only way
+            // to catch them outside of having a filter with no type check in it, which isn't currently possible to 
+            // write in C#.  See https://github.com/dotnet/roslyn/issues/4388
+            if (pClauseType->IsEquivalentTo(s_pLowLevelObjectType))
+                return true;
 
             return false;
         }
