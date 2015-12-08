@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
@@ -326,11 +327,14 @@ namespace Internal.TypeSystem
         {
             private MethodDesc _methodDef;
             private Instantiation _instantiation;
+            private int _hashcode;
 
             public InstantiatedMethodKey(MethodDesc methodDef, Instantiation instantiation)
             {
                 _methodDef = methodDef;
                 _instantiation = instantiation;
+                _hashcode = TypeHashingAlgorithms.ComputeMethodHashcode(methodDef.OwningType.GetHashCode(),
+                    instantiation.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(methodDef.Name)));
             }
 
             public MethodDesc MethodDef
@@ -353,12 +357,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(InstantiatedMethodKey key)
                 {
-                    return key._instantiation.ComputeGenericInstanceHashCode(key._methodDef.GetHashCode());
+                    return key._hashcode;
                 }
 
                 protected override int GetValueHashCode(InstantiatedMethod value)
                 {
-                    return value.Instantiation.ComputeGenericInstanceHashCode(value.GetMethodDefinition().GetHashCode());
+                    return value.GetHashCode();
                 }
 
                 protected override bool CompareKeyToValue(InstantiatedMethodKey key, InstantiatedMethod value)
@@ -402,7 +406,9 @@ namespace Internal.TypeSystem
 
                 protected override InstantiatedMethod CreateValueFromKey(InstantiatedMethodKey key)
                 {
-                    return new InstantiatedMethod(key.MethodDef, key.Instantiation);
+                    InstantiatedMethod returnValue = new InstantiatedMethod(key.MethodDef, key.Instantiation);
+                    returnValue.SetHashCode(key._hashcode);
+                    return returnValue;
                 }
             }
         }
@@ -423,11 +429,13 @@ namespace Internal.TypeSystem
         {
             private MethodDesc _typicalMethodDef;
             private InstantiatedType _instantiatedType;
+            private int _hashcode;
 
             public MethodForInstantiatedTypeKey(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
             {
                 _typicalMethodDef = typicalMethodDef;
                 _instantiatedType = instantiatedType;
+                _hashcode = TypeHashingAlgorithms.ComputeMethodHashcode(instantiatedType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(typicalMethodDef.Name));
             }
 
             public MethodDesc TypicalMethodDef
@@ -450,12 +458,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(MethodForInstantiatedTypeKey key)
                 {
-                    return key._typicalMethodDef.GetHashCode() ^ key._instantiatedType.GetHashCode();
+                    return key._hashcode;
                 }
 
                 protected override int GetValueHashCode(MethodForInstantiatedType value)
                 {
-                    return value.GetTypicalMethodDefinition().GetHashCode() ^ value.OwningType.GetHashCode();
+                    return value.GetHashCode();
                 }
 
                 protected override bool CompareKeyToValue(MethodForInstantiatedTypeKey key, MethodForInstantiatedType value)
@@ -473,7 +481,9 @@ namespace Internal.TypeSystem
 
                 protected override MethodForInstantiatedType CreateValueFromKey(MethodForInstantiatedTypeKey key)
                 {
-                    return new MethodForInstantiatedType(key.TypicalMethodDef, key.InstantiatedType);
+                    MethodForInstantiatedType returnValue = new MethodForInstantiatedType(key.TypicalMethodDef, key.InstantiatedType);
+                    returnValue.SetHashCode(key._hashcode);
+                    return returnValue;
                 }
             }
         }

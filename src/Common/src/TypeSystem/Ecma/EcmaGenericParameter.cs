@@ -23,10 +23,20 @@ namespace Internal.TypeSystem.Ecma
             _handle = handle;
         }
 
-        // TODO: Use stable hashcode based on the type name?
-        // public override int GetHashCode()
-        // {
-        // }
+        public override int GetHashCode()
+        {
+            // TODO: Determine what a the right hash function should be. Use stable hashcode based on the type name?
+            // For now, use the same hash as a SignatureVariable type.
+            GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+            if (parameter.Parent.Kind == HandleKind.MethodDefinition)
+            {
+                return parameter.Index * 0x7822381 + 0x54872645;
+            }
+            else
+            {
+                return parameter.Index * 0x5498341 + 0x832424;
+            }
+        }
 
         public override TypeSystemContext Context
         {

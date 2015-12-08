@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
@@ -187,10 +188,42 @@ namespace Internal.TypeSystem
     {
         public readonly static MethodDesc[] EmptyMethods = new MethodDesc[0];
 
-        public override int GetHashCode()
+        private int _hashcode;
+
+        /// <summary>
+        /// Use to allow objects to have their hashcode computed
+        /// independently of the allocation of a MethodDesc object
+        /// For instance, compute the hashcode when looking up the object,
+        /// then when creating the object, pass in the hashcode directly.
+        /// The hashcode specified MUST exactly match the algorithm implemented
+        /// on this type normally.
+        /// </summary>
+        public void SetHashCode(int hashcode)
         {
-            // Inherited types are expected to override
-            return RuntimeHelpers.GetHashCode(this);
+            _hashcode = hashcode;
+            Debug.Assert(hashcode == ComputeHashCode());
+        }
+
+        public sealed override int GetHashCode()
+        {
+            if (_hashcode != 0)
+                return _hashcode;
+
+            return AcquireHashCode();
+        }
+
+        private int AcquireHashCode()
+        {
+            _hashcode = ComputeHashCode();
+            return _hashcode;
+        }
+
+        /// <summary>
+        /// Compute HashCode. Should only be overriden by a MethodDesc that represents an instantiated method.
+        /// </summary>
+        protected virtual int ComputeHashCode()
+        {
+            return TypeHashingAlgorithms.ComputeMethodHashcode(OwningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
         }
 
         public override bool Equals(Object o)

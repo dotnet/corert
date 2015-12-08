@@ -96,11 +96,9 @@ namespace Internal.TypeSystem
     {
         public static readonly TypeDesc[] EmptyTypes = new TypeDesc[0];
 
-        public override int GetHashCode()
-        {
-            // Inherited types are expected to override
-            return RuntimeHelpers.GetHashCode(this);
-        }
+        /// Inherited types are required to override, and should use the algorithms
+        /// in TypeHashingAlgorithms in their implementation.
+        public abstract override int GetHashCode();
 
         public override bool Equals(Object o)
         {

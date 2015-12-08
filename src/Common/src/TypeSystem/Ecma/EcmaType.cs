@@ -9,6 +9,7 @@ using System.Threading;
 using Debug = System.Diagnostics.Debug;
 
 using Internal.TypeSystem;
+using Internal.NativeFormat;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -26,6 +27,7 @@ namespace Internal.TypeSystem.Ecma
         private string _name;
         private TypeDesc[] _genericParameters;
         private MetadataType _baseType;
+        private int _hashcode;
 
         internal EcmaType(EcmaModule module, TypeDefinitionHandle handle)
         {
@@ -40,6 +42,26 @@ namespace Internal.TypeSystem.Ecma
             // Initialize name eagerly in debug builds for convenience
             this.ToString();
 #endif
+        }
+
+        public override int GetHashCode()
+        {
+            if (_hashcode != 0)
+            {
+                return _hashcode;
+            }
+            int nameHash = TypeHashingAlgorithms.ComputeNameHashCode(Name);
+            TypeDesc containingType = ContainingType;
+            if (containingType == null)
+            {
+                _hashcode = nameHash;
+            }
+            else
+            {
+                _hashcode = TypeHashingAlgorithms.ComputeNestedTypeHashCode(containingType.GetHashCode(), nameHash);
+            }
+
+            return _hashcode;
         }
 
         EntityHandle EcmaModule.IEntityHandleObject.Handle

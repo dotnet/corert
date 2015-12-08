@@ -298,6 +298,7 @@ namespace Internal.TypeSystem
         private TValue CreateValueAndEnsureValueIsInTable(TKey key)
         {
             TValue newValue = CreateValueFromKey(key);
+            Debug.Assert(GetValueHashCode(newValue) == GetKeyHashCode(key));
 
             return AddOrGetExisting(newValue);
         }
