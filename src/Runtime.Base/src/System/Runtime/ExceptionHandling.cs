@@ -338,6 +338,7 @@ namespace System.Runtime
             }
         }
 
+#if !CORERT
         #region ItWouldBeNiceToRemoveThese
         // These four functions are used to implement the special THROW_* MDIL instructions.
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -404,7 +405,7 @@ namespace System.Runtime
             throw e;
         }
         #endregion // ItWouldBeNiceToRemoveThese
-
+#endif
 
         // This function is used to throw exceptions out of our fast allocation helpers, implemented in asm. We tail-call
         // from the allocation helpers to this function, which performs the throw. The tail-call is important: it ensures
@@ -413,15 +414,17 @@ namespace System.Runtime
         // catches the exception.
         [MethodImpl(MethodImplOptions.NoInlining)]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
-        public static void FailedAllocation(bool fIsOverflow)
+        public static void FailedAllocation(EETypePtr pEEType, bool fIsOverflow)
         {
             // Throw the out of memory or overflow exception defined by the classlib, using the return address from this helper
             // to find the correct classlib.
 
             ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
 
-            IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
-            Exception e = GetClasslibException(exID, returnAddr);
+            // Throw the out of memory exception defined by the classlib, using the input EEType* 
+            // to find the correct classlib.
+            IntPtr addr = pEEType.ToPointer()->GetAssociatedModuleAddress();
+            Exception e = GetClasslibException(exID, addr);
 
             BinderIntrinsics.TailCall_RhpThrowEx(e);
         }

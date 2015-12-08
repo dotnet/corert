@@ -102,12 +102,14 @@ New_SkipPublish
         COOP_PINVOKE_FRAME_EPILOG
 
 NewOutOfMemory
-        ;; This is the OOM failure path. We're going to tail-call to a Rtm helper that will throw
+        ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
+
+        mov         r0, r5              ; EEType pointer
+        mov         r1, #0              ; Indicate that we should throw OOM.
+
         COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
 
-        ;; Jump to the helper. 
-        EPILOG_NOP    mov         r0, #0          ; Indicate that we should throw OOM.
         EPILOG_BRANCH RhExceptionHandling_FailedAllocation
 
         NESTED_END RhpNewObject
@@ -166,11 +168,11 @@ ArrayAlignSize
 
 ArraySizeOverflow
         ; We get here if the size of the final array object can't be represented as an unsigned 
-        ; 32-bit value. We're going to tail-call to a Rtm helper that will throw
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
 
-        ;; Jump to the helper. 
-        mov         r0, #1                  ; Indicate that we should throw OverflowException
+        ; r0 holds EEType pointer already
+        mov         r1, #1                  ; Indicate that we should throw OverflowException
         b           RhExceptionHandling_FailedAllocation
 
 ArraySizeBig
@@ -182,16 +184,19 @@ ArraySizeBig
         ; NOT an overflow exception
         ; we already have the component size in r2
         umull       r2, r3, r2, r1
-        cbnz        r3, ArrayOutOfMemoryFinal_jmpthunk
+        cbnz        r3, ArrayOutOfMemoryFinal
         ldr         r3, [r0, #OFFSETOF__EEType__m_uBaseSize]
         adds        r2, r3
-        bcs         ArrayOutOfMemoryFinal_jmpthunk
+        bcs         ArrayOutOfMemoryFinal
         adds        r2, #3
-        bcs         ArrayOutOfMemoryFinal_jmpthunk
+        bcs         ArrayOutOfMemoryFinal
         b           ArrayAlignSize
         
-ArrayOutOfMemoryFinal_jmpthunk
-        b ArrayOutOfMemoryFinal
+ArrayOutOfMemoryFinal
+        ; r0 holds EEType pointer already
+        mov         r1, #0                  ; Indicate that we should throw OOM.
+        b           RhExceptionHandling_FailedAllocation
+
         LEAF_END    RhpNewArray
 
 ;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
@@ -243,13 +248,14 @@ NewArray_SkipPublish
         COOP_PINVOKE_FRAME_EPILOG
 
 ArrayOutOfMemory
-        ;; This is the OOM failure path. We're going to tail-call to a Rtm helper that will throw
+        ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
+
+        mov         r0, r5              ;; EEType pointer
+        mov         r1, #0              ;; Indicate that we should throw OOM.
+
         COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
 
-ArrayOutOfMemoryFinal
-        ;; Jump to the helper. 
-        EPILOG_NOP      mov         r0, #0          ; Indicate that we should throw OOM.
         EPILOG_BRANCH   RhExceptionHandling_FailedAllocation
 
         NESTED_END RhpNewArrayRare
@@ -478,21 +484,27 @@ NewArray8_SkipPublish
 
 Array8SizeOverflow
         ; We get here if the size of the final array object can't be represented as an unsigned 
-        ; 32-bit value. We're going to tail-call to a Rtm helper that will throw
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
+
+        ; r0 holds EEType pointer already
+        mov         r1, #1              ;; Indicate that we should throw OverflowException
+
         COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
 
         ; Jump to the helper. 
-        EPILOG_NOP      mov         r0, #1          ; Indicate that we should throw OverflowException
         EPILOG_BRANCH   RhExceptionHandling_FailedAllocation
 
 Array8OutOfMemory
-        ; This is the OOM failure path. We're going to tail-call to a Rtm helper that will throw
+        ; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ; an out of memory exception that the caller of this allocator understands.
+
+        mov         r0, r5              ;; EEType pointer
+        mov         r1, #0              ;; Indicate that we should throw OOM.
+
         COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
 
         ; Jump to the helper. 
-        EPILOG_NOP      mov         r0, #0          ; Indicate that we should throw OOM.
         EPILOG_BRANCH   RhExceptionHandling_FailedAllocation
 
         NESTED_END RhpNewArrayAlign8

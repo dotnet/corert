@@ -85,36 +85,22 @@ namespace System.Runtime
         [RuntimeExport("RhNewObject")]
         public unsafe static object RhNewObject(EETypePtr pEEType)
         {
-            try
-            {
-                EEType* ptrEEType = (EEType*)pEEType.ToPointer();
+            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
 #if FEATURE_64BIT_ALIGNMENT
-                if (ptrEEType->RequiresAlign8)
-                {
-                    if (ptrEEType->IsValueType)
-                        return InternalCalls.RhpNewFastMisalign(ptrEEType);
-                    if (ptrEEType->IsFinalizable)
-                        return InternalCalls.RhpNewFinalizableAlign8(ptrEEType);
-                    return InternalCalls.RhpNewFastAlign8(ptrEEType);
-                }
-                else
-#endif // FEATURE_64BIT_ALIGNMENT
-                {
-                    if (ptrEEType->IsFinalizable)
-                        return InternalCalls.RhpNewFinalizable(ptrEEType);
-                    return InternalCalls.RhpNewFast(ptrEEType);
-                }
-            }
-            catch (OutOfMemoryException)
+            if (ptrEEType->RequiresAlign8)
             {
-                // Throw the out of memory exception defined by the classlib, using the input EEType* 
-                // to find the correct classlib.
-
-                ExceptionIDs exID = ExceptionIDs.OutOfMemory;
-
-                IntPtr addr = pEEType.ToPointer()->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(exID, addr);
-                throw e;
+                if (ptrEEType->IsValueType)
+                    return InternalCalls.RhpNewFastMisalign(ptrEEType);
+                if (ptrEEType->IsFinalizable)
+                    return InternalCalls.RhpNewFinalizableAlign8(ptrEEType);
+                return InternalCalls.RhpNewFastAlign8(ptrEEType);
+            }
+            else
+#endif // FEATURE_64BIT_ALIGNMENT
+            {
+                if (ptrEEType->IsFinalizable)
+                    return InternalCalls.RhpNewFinalizable(ptrEEType);
+                return InternalCalls.RhpNewFast(ptrEEType);
             }
         }
 
@@ -122,40 +108,15 @@ namespace System.Runtime
         public unsafe static object RhNewArray(EETypePtr pEEType, int length)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            try
-            {
 #if FEATURE_64BIT_ALIGNMENT
-                if (ptrEEType->RequiresAlign8)
-                {
-                    return InternalCalls.RhpNewArrayAlign8(ptrEEType, length);
-                }
-                else
+            if (ptrEEType->RequiresAlign8)
+            {
+                return InternalCalls.RhpNewArrayAlign8(ptrEEType, length);
+            }
+            else
 #endif // FEATURE_64BIT_ALIGNMENT
-                {
-                    return InternalCalls.RhpNewArray(ptrEEType, length);
-                }
-            }
-            catch (OutOfMemoryException)
             {
-                // Throw the out of memory exception defined by the classlib, using the input EEType* 
-                // to find the correct classlib.
-
-                ExceptionIDs exID = ExceptionIDs.OutOfMemory;
-
-                IntPtr addr = pEEType.ToPointer()->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(exID, addr);
-                throw e;
-            }
-            catch (OverflowException)
-            {
-                // Throw the overflow exception defined by the classlib, using the input EEType* 
-                // to find the correct classlib.
-
-                ExceptionIDs exID = ExceptionIDs.Overflow;
-
-                IntPtr addr = pEEType.ToPointer()->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(exID, addr);
-                throw e;
+                return InternalCalls.RhpNewArray(ptrEEType, length);
             }
         }
 
@@ -188,17 +149,6 @@ namespace System.Runtime
 #endif // FEATURE_64BIT_ALIGNMENT
             {
                 result = InternalCalls.RhpNewFast(ptrEEType);
-            }
-            if (result == null)
-            {
-                // Throw the out of memory exception defined by the classlib, using the input EEType* 
-                // to find the correct classlib.
-
-                ExceptionIDs exID = ExceptionIDs.OutOfMemory;
-
-                IntPtr addr = pEEType.ToPointer()->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(exID, addr);
-                throw e;
             }
             InternalCalls.RhpBox(result, pData);
             return result;
@@ -309,7 +259,13 @@ namespace System.Runtime
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
             if (ptrEEType->IsValueType)
-                return RhNewObject(pEEType);
+            {
+#if FEATURE_64BIT_ALIGNMENT
+                if (ptrEEType->RequiresAlign8)
+                    return InternalCalls.RhpNewFastMisalign(ptrEEType);
+#endif
+                return InternalCalls.RhpNewFast(ptrEEType);
+            }
             else
                 return new Wrapper();
         }
