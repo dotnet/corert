@@ -829,15 +829,6 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 }
 
-void GCToEEInterface::ScanStackRoots(Thread * /*pThread*/, promote_func* /*fn*/, ScanContext* /*sc*/)
-{
-    // TODO: Implement - Scan stack roots on given thread
-}
-
-void GCToEEInterface::ScanStaticGCRefsOpportunistically(promote_func* /*fn*/, ScanContext* /*sc*/)
-{
-}
-
 void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)
 {
     // Invoke any registered callouts for the start of the collection.
@@ -882,12 +873,6 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 void GCToEEInterface::AttachCurrentThread()
 {
     ThreadStore::AttachCurrentThread(false);
-}
-
-Thread * GCToEEInterface::GetThreadList(Thread * /*pThread*/)
-{
-    ASSERT(!"Intentionally not implemented"); // not used on this runtime
-    return nullptr;
 }
 
 void GCToEEInterface::SetGCSpecial(Thread * pThread)

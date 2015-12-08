@@ -385,13 +385,9 @@ void GCToEEInterface::RestartEE(bool bFinishedGC)
     GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
 }
 
-void GCToEEInterface::ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
+void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
-    // TODO: Implement - Scan stack roots on given thread
-}
-
-void GCToEEInterface::ScanStaticGCRefsOpportunistically(promote_func* fn, ScanContext* sc)
-{
+    // TODO: Implement - Scan stack roots
 }
 
 void GCToEEInterface::GcStartWork(int condemned, int max_gen)
