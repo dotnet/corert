@@ -45,41 +45,6 @@ namespace System.Runtime
         // vtable follows
 
 #pragma warning restore
-
-        // These are flag values that are rarely set for types. If any of them are set then an optional field will
-        // be associated with the EEType to represent them.
-        private enum RareFlags
-        {
-            // This type requires 8-byte alignment for its fields on certain platforms (only ARM currently).
-            RequiresAlign8Flag = 0x00000001,
-
-            // Type implements ICastable to allow dynamic resolution of interface casts.
-            ICastableFlag = 0x00000002,
-
-            // Type is an instantiation of Nullable<T>.
-            IsNullableFlag = 0x00000004,
-
-            // Nullable target type stashed in the EEType is indirected via the IAT.
-            NullableTypeViaIATFlag = 0x00000008,
-
-            // This EEType was created by generic instantiation loader
-            IsDynamicTypeFlag = 0x00000010,
-
-            // This EEType has a Class Constructor
-            HasCctorFlag = 0x0000020,
-
-            // This EEType has sealed vtable entries (note that this flag is only used for
-            // dynamically created types because they always have an optional field (hence the
-            // very explicit flag name).
-            IsDynamicTypeWithSealedVTableEntriesFlag = 0x00000040,
-
-            // This EEType was constructed from a universal canonical template, and has
-            // its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
-            HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
-
-            // This EEType represents a structure that is an HFA
-            IsHFAFlag = 0x00000100,
-        }
         
         private EETypeKind Kind
         {
@@ -274,7 +239,7 @@ namespace System.Runtime
             get
             {
                 fixed (EEType* pThis = &this)
-                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)RareFlags.ICastableFlag) != 0;
+                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)EETypeRareFlags.ICastableFlag) != 0;
             }
         }
 
@@ -304,7 +269,7 @@ namespace System.Runtime
             get
             {
                 fixed (EEType* pThis = &this)
-                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)RareFlags.IsNullableFlag) != 0;
+                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)EETypeRareFlags.IsNullableFlag) != 0;
             }
         }
 
@@ -327,7 +292,7 @@ namespace System.Runtime
             get
             {
                 fixed (EEType* pThis = &this)
-                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)RareFlags.IsDynamicTypeFlag) != 0;
+                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)EETypeRareFlags.IsDynamicTypeFlag) != 0;
             }
         }
 
@@ -590,7 +555,7 @@ namespace System.Runtime
             get
             {
                 fixed (EEType* pThis = &this)
-                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)RareFlags.HasCctorFlag) != 0;
+                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)EETypeRareFlags.HasCctorFlag) != 0;
             }
         }
 

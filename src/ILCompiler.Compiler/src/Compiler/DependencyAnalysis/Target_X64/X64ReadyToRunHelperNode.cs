@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis.X64;
 using Internal.TypeSystem;
+using ILCompiler;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -30,37 +31,10 @@ namespace ILCompiler.DependencyAnalysis
                     AddrMode loadFromRcx = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
                     encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRcx);
 
-                    // TODO: More efficient lookup of the slot
                     {
-                        MethodDesc method = (MethodDesc)Target;
-                        TypeDesc owningType = method.OwningType;
-
-                        int baseSlots = 0;
-                        var baseType = owningType.BaseType;
-
-                        while (baseType != null)
-                        {
-                            List<MethodDesc> baseVirtualSlots;
-                            factory.VirtualSlots.TryGetValue(baseType, out baseVirtualSlots);
-
-                            if (baseVirtualSlots != null)
-                                baseSlots += baseVirtualSlots.Count;
-                            baseType = baseType.BaseType;
-                        }
-
-                        List<MethodDesc> virtualSlots = factory.VirtualSlots[owningType];
-                        int methodSlot = -1;
-                        for (int slot = 0; slot < virtualSlots.Count; slot++)
-                        {
-                            if (virtualSlots[slot] == method)
-                            {
-                                methodSlot = slot;
-                                break;
-                            }
-                        }
-                        
-                        Debug.Assert(methodSlot != -1);
-                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (baseSlots + methodSlot) * factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, (MethodDesc)Target);
+                        Debug.Assert(slot != -1);
+                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
                         encoder.EmitJmpToAddrMode(ref jmpAddrMode);
                     }
                     break;

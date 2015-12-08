@@ -230,6 +230,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Do the fields of the type satisfy the Homogeneous Float Aggregate classification on ARM architecture?
+        /// </summary>
+        public virtual bool IsHFA()
+        {
+            return false;
+        }
+        
         internal void ComputeInstanceFieldLayout()
         {
             var computedLayout = this.Context.GetLayoutAlgorithmForType(this).ComputeInstanceFieldLayout(this);

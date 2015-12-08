@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.Runtime;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -136,6 +138,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new StringIndirectionNode(data);
             });
+
+            _typeOptionalFields = new NodeCache<EETypeOptionalFieldsBuilder, EETypeOptionalFieldsNode>((EETypeOptionalFieldsBuilder fieldBuilder) =>
+            {
+                return new EETypeOptionalFieldsNode(fieldBuilder);
+            });
         }
 
         private NodeCache<TypeDesc, EETypeNode> _typeSymbols;
@@ -222,6 +229,13 @@ namespace ILCompiler.DependencyAnalysis
             return _readOnlyDataBlobs.GetOrAdd(new Tuple<string, byte[], int>(name, blobData, alignment));
         }
 
+        private NodeCache<EETypeOptionalFieldsBuilder, EETypeOptionalFieldsNode> _typeOptionalFields;
+
+        internal EETypeOptionalFieldsNode EETypeOptionalFields(EETypeOptionalFieldsBuilder fieldBuilder)
+        {
+            return _typeOptionalFields.GetOrAdd(fieldBuilder);
+        }
+
         private NodeCache<string, ExternSymbolNode> _externSymbols;
 
         public ISymbolNode ExternSymbol(string name)
@@ -281,6 +295,21 @@ namespace ILCompiler.DependencyAnalysis
                 _helperEntrypointSymbols[index] = symbol;
             }
             return symbol;
+        }
+
+        private TypeDesc _systemICastableType;
+
+        public TypeDesc ICastableInterface
+        {
+            get
+            {
+                if (_systemICastableType == null)
+                {
+                    _systemICastableType = _context.SystemModule.GetType("System.Runtime.CompilerServices", "ICastable");
+                    Debug.Assert(_systemICastableType != null);
+                }
+                return _systemICastableType;
+            }
         }
 
         private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;

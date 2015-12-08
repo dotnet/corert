@@ -101,4 +101,96 @@ namespace Internal.Runtime
         /// </summary>
         GenericTypeDefEEType = 0x0003,
     }
+
+    /// <summary>
+    /// These are flag values that are rarely set for types. If any of them are set then an optional field will
+    /// be associated with the EEType to represent them.
+    /// </summary>
+    [Flags]
+    internal enum EETypeRareFlags : int
+    {
+        /// <summary>
+        /// This type requires 8-byte alignment for its fields on certain platforms (only ARM currently).
+        /// </summary>
+        RequiresAlign8Flag = 0x00000001,
+
+        /// <summary>
+        /// Type implements ICastable to allow dynamic resolution of interface casts.
+        /// </summary>
+        ICastableFlag = 0x00000002,
+
+        /// <summary>
+        /// Type is an instantiation of Nullable<T>.
+        /// </summary>
+        IsNullableFlag = 0x00000004,
+
+        /// <summary>
+        /// Nullable target type stashed in the EEType is indirected via the IAT.
+        /// </summary>
+        NullableTypeViaIATFlag = 0x00000008,
+
+        /// <summary>
+        /// This EEType was created by generic instantiation loader
+        /// </summary>
+        IsDynamicTypeFlag = 0x00000010,
+
+        /// <summary>
+        /// This EEType has a Class Constructor
+        /// </summary>
+        HasCctorFlag = 0x0000020,
+
+        /// <summary>
+        /// This EEType has sealed vtable entries (note that this flag is only used for
+        /// dynamically created types because they always have an optional field (hence the
+        /// very explicit flag name).
+        /// </summary>
+        IsDynamicTypeWithSealedVTableEntriesFlag = 0x00000040,
+
+        /// <summary>
+        /// This EEType was constructed from a universal canonical template, and has
+        /// its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
+        /// </summary>
+        HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
+
+        /// <summary>
+        /// This EEType represents a structure that is an HFA
+        /// </summary>
+        IsHFAFlag = 0x00000100,
+    }
+    
+    internal enum EETypeOptionalFieldsElement : byte
+    {
+        /// <summary>
+        /// Extra <c>EEType</c> flags not commonly used such as HasClassConstructor
+        /// </summary>
+        RareFlags,
+
+        /// <summary>
+        /// VTable slot of <see cref="ICastable.IsInstanceOfInterface"/> for direct invocation without interface dispatch overhead
+        /// </summary>
+        ICastableIsInstSlot,
+
+        /// <summary>
+        /// Index of the dispatch map pointer in the DispathMap table
+        /// </summary>
+        DispatchMap,
+
+        /// <summary>
+        /// Padding added to a value type when allocated on the GC heap
+        /// </summary>
+        ValueTypeFieldPadding,
+
+        /// <summary>
+        /// VTable slot of <see cref="ICastable.GetImplType"/> for direct invocation without interface dispatch overhead
+        /// </summary>
+        ICastableGetImplTypeSlot,
+
+        /// <summary>
+        /// Offset in Nullable&lt;T&gt; of the value field
+        /// </summary>
+        NullableValueOffset,
+
+        // Number of field types we support
+        Count
+    }
 }
