@@ -601,6 +601,34 @@ namespace System.Runtime
         {
             return ((pThis->_usFlags | pOther->_usFlags) & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
         }
+
+        internal bool IsEquivalentTo(EEType* pOtherEEType)
+        {
+            fixed (EEType* pThis = &this)
+            {
+                if (pThis == pOtherEEType)
+                    return true;
+
+                EEType* pThisEEType = pThis;
+
+                if (pThisEEType->IsCloned)
+                    pThisEEType = pThisEEType->CanonicalEEType;
+
+                if (pOtherEEType->IsCloned)
+                    pOtherEEType = pOtherEEType->CanonicalEEType;
+
+                if (pThisEEType == pOtherEEType)
+                    return true;
+
+                if (pThisEEType->IsParameterizedType && pOtherEEType->IsParameterizedType)
+                {
+                    return pThisEEType->RelatedParameterType->IsEquivalentTo(pOtherEEType->RelatedParameterType) &&
+                        pThisEEType->ParameterizedTypeShape == pOtherEEType->ParameterizedTypeShape;
+                }
+            }
+
+            return false;
+        }
     }
 
     // CS0169: The private field '{blah}' is never used
