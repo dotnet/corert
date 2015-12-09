@@ -267,6 +267,11 @@ namespace System.Runtime
         internal extern static unsafe bool RhpCallFilterFunclet(
             object exceptionObj, byte* pFilterIP, void* pvRegDisplay);
 
+        [RuntimeImport(Redhawk.BaseName, "RhpFallbackFailFast")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal extern static unsafe void RhpFallbackFailFast();
+
         [RuntimeImport(Redhawk.BaseName, "RhpSetThreadDoNotTriggerGC")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

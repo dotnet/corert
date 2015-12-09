@@ -300,7 +300,7 @@ namespace System.Runtime
             {
                 // @HACKHACK: we need to force the method to have an EBP frame so that we can use the
                 // GetReturnAddress() intrinsic above.  This seems to be the smallest way to do this.
-                EH.FailFast(RhFailFastReason.InternalError, null);
+                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
                 throw EH.GetClasslibException(ExceptionIDs.Arithmetic, returnAddress);
             }
         }

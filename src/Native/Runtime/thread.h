@@ -214,6 +214,7 @@ public:
     bool                IsCurrentThreadInCooperativeMode();
 
     PTR_VOID            GetTransitionFrameForStackTrace();
+    void *              GetCurrentThreadPInvokeReturnAddress();
 
     // -------------------------------------------------------------------------------------------------------
     // LEGACY APIs: do not use except from GC itself

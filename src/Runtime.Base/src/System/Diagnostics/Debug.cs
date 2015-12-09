@@ -14,7 +14,7 @@ namespace System.Diagnostics
         {
             if (!condition)
             {
-                EH.FailFast(RhFailFastReason.InternalError, null);
+                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
             }
         }
     }

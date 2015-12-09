@@ -177,6 +177,21 @@ bool Thread::IsCurrentThreadInCooperativeMode()
     return (m_pTransitionFrame == NULL);
 }
 
+//
+// This is used by the EH system to find the place where execution left managed code when an exception leaks out of a 
+// pinvoke and we need to FailFast via the appropriate class library.
+// 
+// May only be used from the same thread and while in preemptive mode with an active pinvoke on the stack.  
+//
+#ifndef DACCESS_COMPILE
+void * Thread::GetCurrentThreadPInvokeReturnAddress()
+{
+    ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(!IsCurrentThreadInCooperativeMode());
+    return ((PInvokeTransitionFrame*)m_pTransitionFrame)->m_RIP;
+}
+#endif // !DACCESS_COMPILE
+
 
 
 PTR_UInt8 Thread::GetTEB()
