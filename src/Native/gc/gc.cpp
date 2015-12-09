@@ -75,6 +75,9 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
 int compact_ratio = 0;
 #endif //GC_CONFIG_DRIVEN
 
+// See comments in reset_memory.
+BOOL reset_mm_p = TRUE;
+
 #if defined (TRACE_GC) && !defined (DACCESS_COMPILE)
 const char * const allocation_state_str[] = {
     "start",
@@ -5122,7 +5125,7 @@ void set_thread_group_affinity_for_heap(HANDLE gc_thread, int heap_number)
 void set_thread_affinity_mask_for_heap(HANDLE gc_thread, int heap_number)
 {
 #if !defined(FEATURE_REDHAWK) && !defined(FEATURE_CORECLR)
-    uintptr_t pmask, smask;
+    DWORD_PTR pmask, smask;
 
     if (GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
     {
@@ -14229,11 +14232,12 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
     }
 
 #ifdef STRESS_HEAP
+#ifdef BACKGROUND_GC
     // We can only do Concurrent GC Stress if the caller did not explicitly ask for all
     // generations to be collected,
 
     if (n_original != max_generation &&
-        g_pConfig->GetGCStressLevel() && g_pConfig->GetGCconcurrent())
+        g_pConfig->GetGCStressLevel() && gc_can_use_concurrent)
     {
 #ifndef FEATURE_REDHAWK
         // for the GC stress mix mode throttle down gen2 collections
@@ -14267,6 +14271,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             n = max_generation;
         }
     }
+#endif //BACKGROUND_GC
 #endif //STRESS_HEAP
 
     return n;
@@ -14846,14 +14851,16 @@ exit:
     if (!check_only_p)
     {
 #ifdef STRESS_HEAP
+#ifdef BACKGROUND_GC
         // We can only do Concurrent GC Stress if the caller did not explicitly ask for all
         // generations to be collected,
 
         if (orig_gen != max_generation &&
-            g_pConfig->GetGCStressLevel() && g_pConfig->GetGCconcurrent())
+            g_pConfig->GetGCStressLevel() && gc_can_use_concurrent)
         {
             *elevation_requested_p = FALSE;
         }
+#endif //BACKGROUND_GC
 #endif //STRESS_HEAP
 
         if (check_memory)
@@ -29358,13 +29365,20 @@ bool gc_heap::init_dynamic_data()
     dd->min_gc_size = Align(gen0size / 8 * 5);
     dd->min_size = dd->min_gc_size;
     //dd->max_size = Align (gen0size);
-//g_pConfig->GetGCconcurrent() is not necessarily 0 for server builds
+
+#ifdef BACKGROUND_GC
+    //gc_can_use_concurrent is not necessarily 0 for server builds
+    bool can_use_concurrent = gc_can_use_concurrent;
+#else // !BACKGROUND_GC
+    bool can_use_concurrent = false;
+#endif // BACKGROUND_GC
+
 #ifdef MULTIPLE_HEAPS
     dd->max_size = max (6*1024*1024, min ( Align(get_valid_segment_size()/2), 200*1024*1024));
 #else //MULTIPLE_HEAPS
-  dd->max_size = ((g_pConfig->GetGCconcurrent()!=0) ?
-                  6*1024*1024 :
-                  max (6*1024*1024,  min ( Align(get_valid_segment_size()/2), 200*1024*1024)));
+    dd->max_size = (can_use_concurrent ?
+                    6*1024*1024 :
+                    max (6*1024*1024,  min ( Align(get_valid_segment_size()/2), 200*1024*1024)));
 #endif //MULTIPLE_HEAPS
     dd->new_allocation = dd->min_gc_size;
     dd->gc_new_allocation = dd->new_allocation;
@@ -29387,9 +29401,9 @@ bool gc_heap::init_dynamic_data()
 #ifdef MULTIPLE_HEAPS
     dd->max_size = max (6*1024*1024, Align(get_valid_segment_size()/2));
 #else //MULTIPLE_HEAPS
-  dd->max_size = ((g_pConfig->GetGCconcurrent()!=0) ?
-                  6*1024*1024 :
-                  max (6*1024*1024, Align(get_valid_segment_size()/2)));
+    dd->max_size = (can_use_concurrent ?
+                    6*1024*1024 :
+                    max (6*1024*1024, Align(get_valid_segment_size()/2)));
 #endif //MULTIPLE_HEAPS
     dd->new_allocation = dd->min_gc_size;
     dd->gc_new_allocation = dd->new_allocation;
@@ -29990,11 +30004,6 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #endif // BIT64
 
         slack_space = min (slack_space, new_slack_space);
-
-        size_t saved_slack_space = slack_space;
-        new_slack_space = ((slack_space < gen0_big_free_spaces) ? 0 : (slack_space - gen0_big_free_spaces));
-        slack_space = new_slack_space;
-        dprintf (1, ("ss: %Id->%Id", saved_slack_space, slack_space));
     }
 
     decommit_heap_segment_pages (ephemeral_heap_segment, slack_space);    
@@ -30560,8 +30569,15 @@ void reset_memory (uint8_t* o, size_t sizeo)
 
         size_t page_start = align_on_page ((size_t)(o + size_to_skip));
         size_t size = align_lower_page ((size_t)o + sizeo - size_to_skip - plug_skew) - page_start;
-        VirtualAlloc ((char*)page_start, size, MEM_RESET, PAGE_READWRITE);
-        VirtualUnlock ((char*)page_start, size);
+        // Note we need to compensate for an OS bug here. This bug would cause the MEM_RESET to fail
+        // on write watched memory.
+        if (reset_mm_p)
+        {
+            if (VirtualAlloc ((char*)page_start, size, MEM_RESET, PAGE_READWRITE))
+                VirtualUnlock ((char*)page_start, size);
+            else
+                reset_mm_p = FALSE;
+        }
     }
 #endif //!FEATURE_PAL
 }
