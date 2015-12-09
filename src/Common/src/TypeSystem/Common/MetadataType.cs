@@ -67,6 +67,26 @@ namespace Internal.TypeSystem
         /// Returns true if the type has given custom attribute.
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
+
+        /// <summary>
+        /// Adapt current to the <paramref name="typeInstantiation"/> context. For example, if you have C <T> and a
+        /// context [int], it will yield C <int>.
+        /// </summary>
+        /// <param name="typeInstantiation">Context</param>
+        /// <param name="methodInstantiation">Not used for types.</param>
+        /// <returns></returns>
+        public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            // Type is either not generic, or no valid context is provided.
+            if (!HasInstantiation || typeInstantiation.IsNull)
+            {
+                return this;
+            }
+            else
+            {
+                return new InstantiatedType(this, typeInstantiation);
+            }
+        }
     }
 
     public struct ClassLayoutMetadata

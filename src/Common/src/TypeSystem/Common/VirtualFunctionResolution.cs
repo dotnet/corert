@@ -264,25 +264,7 @@ namespace Internal.TypeSystem
             string name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
-            // TODO: InstantiatedType.GetMethod can't handle this for a situation like
-            // an instantiation of Foo<T>.M(T) because sig is instantiated, but it compares
-            // it to the uninstantiated version
-            //MethodDesc implMethod = currentType.GetMethod(name, sig);
-            MethodDesc implMethod = null;
-            foreach (MethodDesc candidate in currentType.GetMethods())
-            {
-                if (candidate.Name == name)
-                {
-                    if (candidate.Signature.Equals(sig))
-                    {
-                        if (implMethod != null)
-                        {
-                            throw new NotImplementedException("NYI: differentiating between overloads on instantiations when the instantiated signatures match.");
-                        }
-                        implMethod = candidate;
-                    }
-                }
-            }
+            MethodDesc implMethod = currentType.GetMethod(name, sig);
 
             // Only find virtual methods
             if ((implMethod != null) && !implMethod.IsVirtual)
@@ -357,7 +339,7 @@ namespace Internal.TypeSystem
         private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc methodToVerify, MethodDesc slotDefiningMethod)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
-            return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
+            return slotDefiningMethodOfMethodToVerify.GetTypicalMethodDefinition() == slotDefiningMethod.GetTypicalMethodDefinition();
         }
 
         private static void FindBaseUnificationGroup(MetadataType currentType, UnificationGroup unificationGroup)

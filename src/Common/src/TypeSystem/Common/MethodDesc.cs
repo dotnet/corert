@@ -105,6 +105,34 @@ namespace Internal.TypeSystem
 
             return true;
         }
+
+        /// <summary>
+        /// Adapt current signature to the instantation contexts.
+        /// </summary>
+        /// <param name="typeInstantiation">Context used for adapting the signature if it involves generic type parameter.</param>
+        /// <param name="methodInstantiation">Context used for adapting the signature if it involves generic method type parameter.</param>
+        /// <returns></returns>
+        public MethodSignature InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            // Instantiate parameters first. If instantiation has no effects, avoid the allocation of a new array.
+            TypeDesc[] parameters = null;
+            for (int i = 0; i < _parameters.Length; i++)
+            {
+                TypeDesc oldType = _parameters[i];
+                TypeDesc newType = oldType.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (newType != oldType)
+                {
+                    if (parameters == null)
+                    {
+                        // Copy all entries of_parameters to parameters.
+                        parameters = new TypeDesc[_parameters.Length];
+                        Array.Copy(_parameters, 0, parameters, 0, _parameters.Length);
+                    }
+                    parameters[i] = newType;
+                }
+            }
+            return new MethodSignature(_flags, _genericParameterCount, _returnType.InstantiateSignature(typeInstantiation, methodInstantiation), parameters??_parameters);
+        }
     }
 
     public struct MethodSignatureBuilder
