@@ -34,13 +34,11 @@ void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
 }
 
 /*
- * Scan all stack roots in this 'namespace'
+ * Scan all stack and statics roots
  */
  
 VOID GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, EnumGcRefScanContext * sc)
 {
-    PalPrintf("CNameSpace::GcScanRoots\n");
-
     // STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Phase = %s\n", sc->promotion ? "promote" : "relocate");
 
     FOREACH_THREAD(pThread)
@@ -90,8 +88,6 @@ VOID GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)
 {
-    PalPrintf("CNameSpace::GcEnumAllocContexts\n");
-
     if (GCHeap::UseAllocationContexts())
     {
         FOREACH_THREAD(thread)
