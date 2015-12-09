@@ -339,15 +339,15 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public IEnumerable<TypeDesc> GetNestedTypes()
+        public override IEnumerable<MetadataType> GetNestedTypes()
         {
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
-                yield return (TypeDesc)this.Module.GetObject(handle);
+                yield return (MetadataType)this.Module.GetObject(handle);
             }
         }
 
-        public TypeDesc GetNestedType(string name)
+        public override MetadataType GetNestedType(string name)
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -355,7 +355,7 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
                 if (stringComparer.Equals(metadataReader.GetTypeDefinition(handle).Name, name))
-                    return (TypeDesc)this.Module.GetObject(handle);
+                    return (MetadataType)this.Module.GetObject(handle);
             }
 
             return null;

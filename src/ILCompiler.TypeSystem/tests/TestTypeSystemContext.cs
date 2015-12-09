@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Debug = System.Diagnostics.Debug;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 using System.Reflection.PortableExecutable;
 using System.IO;
 
@@ -51,9 +50,9 @@ namespace TypeSystemTests
 
         MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
 
-        EcmaModule _systemModule;
+        ModuleDesc _systemModule;
 
-        Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, ModuleDesc> _modules = new Dictionary<string, ModuleDesc>(StringComparer.OrdinalIgnoreCase);
 
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
@@ -69,7 +68,7 @@ namespace TypeSystemTests
             return _wellKnownTypes[(int)wellKnownType - 1];
         }
 
-        public void SetSystemModule(EcmaModule systemModule)
+        public void SetSystemModule(ModuleDesc systemModule)
         {
             _systemModule = systemModule;
 
@@ -85,18 +84,18 @@ namespace TypeSystemTests
             }
         }
 
-        public EcmaModule GetModuleForSimpleName(string simpleName)
+        public ModuleDesc GetModuleForSimpleName(string simpleName)
         {
-            EcmaModule existingModule;
+            ModuleDesc existingModule;
             if (_modules.TryGetValue(simpleName, out existingModule))
                 return existingModule;
 
             return CreateModuleForSimpleName(simpleName);
         }
 
-        public EcmaModule CreateModuleForSimpleName(string simpleName)
+        public ModuleDesc CreateModuleForSimpleName(string simpleName)
         {
-            EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(simpleName + ".dll")));
+            ModuleDesc module = new Internal.TypeSystem.Ecma.EcmaModule(this, new PEReader(File.OpenRead(simpleName + ".dll")));
             _modules.Add(simpleName, module);
             return module;
         }

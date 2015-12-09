@@ -3,7 +3,6 @@
 
 using System;
 
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 
@@ -14,7 +13,7 @@ namespace TypeSystemTests
     public class HashcodeTests
     {
         TestTypeSystemContext _context;
-        EcmaModule _testModule;
+        ModuleDesc _testModule;
 
         public HashcodeTests()
         {
@@ -57,7 +56,7 @@ namespace TypeSystemTests
         {
             DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             MetadataType nonNestedType = (MetadataType)_testModule.GetType("Hashcode", "NonNestedType");
-            TypeDesc nestedType = ((EcmaType)nonNestedType).GetNestedType("NestedType");
+            TypeDesc nestedType = nonNestedType.GetNestedType("NestedType");
 
             int expectedNonNestedTypeHashcode = TypeHashingAlgorithms.ComputeNameHashCode("Hashcode.NonNestedType");
             int expectedNestedTypeNameHashcode = TypeHashingAlgorithms.ComputeNameHashCode("NestedType");

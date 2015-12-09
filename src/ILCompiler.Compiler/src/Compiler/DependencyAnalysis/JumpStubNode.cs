@@ -4,7 +4,6 @@
 using System;
 using ILCompiler.DependencyAnalysis.X64;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {

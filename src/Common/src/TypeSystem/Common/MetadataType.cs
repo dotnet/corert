@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -67,6 +69,16 @@ namespace Internal.TypeSystem
         /// Returns true if the type has given custom attribute.
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
+
+        /// <summary>
+        /// Get all of the types nested in this type.
+        /// </summary>
+        public abstract IEnumerable<MetadataType> GetNestedTypes();
+
+        /// <summary>
+        /// Get a specific type nested in this type.
+        /// </summary>
+        public abstract MetadataType GetNestedType(string name);
     }
 
     public struct ClassLayoutMetadata
