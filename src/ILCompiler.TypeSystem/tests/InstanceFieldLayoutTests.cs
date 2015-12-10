@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -16,7 +15,7 @@ namespace TypeSystemTests
     public class InstanceFieldLayoutTests
     {
         TestTypeSystemContext _context;
-        EcmaModule _testModule;
+        ModuleDesc _testModule;
 
         public InstanceFieldLayoutTests()
         {

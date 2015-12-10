@@ -16,11 +16,11 @@ namespace TypeSystemTests
     public class ArchitectureSpecificFieldLayoutTests
     {
         TestTypeSystemContext _contextX86;
-        EcmaModule _testModuleX86;
+        ModuleDesc _testModuleX86;
         TestTypeSystemContext _contextX64;
-        EcmaModule _testModuleX64;
+        ModuleDesc _testModuleX64;
         TestTypeSystemContext _contextARM;
-        EcmaModule _testModuleARM;
+        ModuleDesc _testModuleARM;
 
         public ArchitectureSpecificFieldLayoutTests()
         {

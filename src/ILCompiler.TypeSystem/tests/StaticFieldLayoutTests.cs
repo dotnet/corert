@@ -3,7 +3,6 @@
 
 using System;
 
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -13,7 +12,7 @@ namespace TypeSystemTests
     public class StaticFieldLayoutTests
     {
         TestTypeSystemContext _context;
-        EcmaModule _testModule;
+        ModuleDesc _testModule;
 
         public StaticFieldLayoutTests()
         {

@@ -3,7 +3,6 @@
 
 using System;
 
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -14,7 +13,7 @@ namespace TypeSystemTests
     public class VirtualFunctionOverrideTests
     {
         TestTypeSystemContext _context;
-        EcmaModule _testModule;
+        ModuleDesc _testModule;
         DefType _stringType;
         DefType _voidType;
 
