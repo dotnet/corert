@@ -16,7 +16,7 @@ This will result in the following:
 - Build native and managed components of ILCompiler
 - Build tests
 - Restore dependent nuget packages into
-`<repo_root>\bin\tests\package\install`, including the *Microsoft.DotNet.ILCompiler* package built
+`<repo_root>\bin\Product\Windows_NT.x64.Debug\.nuget\publish1`, including the *Microsoft.DotNet.ILCompiler* and *Microsoft.DotNet.ILCompiler.SDK[.Debug]* package built
 - Run tests
 
 *Note: Currently, the tests are executed only for Windows Ubuntu/Mac OSX support is coming soon.*
@@ -26,9 +26,6 @@ This will result in the following:
 *Note: On Windows, please ensure you have VS 2015 installed to get the native toolset and work within a VS 2015 x64 Native Tools command prompt.*
 
 * Ensure that you have done a repo build per the instructions above.
-* Install the contents of `<repo_root>/bin/product/<OS>.<Arch>.<BuildType>/.nuget/toolchain.<nupkg-rid>.Microsoft.DotNet.ILCompiler.Development*.nupkg` to a folder, say, **c:\newilc** using NuGet
-  * Example: `<repo_root>/packages/NuGet.exe install -Source <repo_root>/bin/Product/<OS>.<Arch>.<BuildType>/.nuget/ toolchain.win7-x64.Microsoft.DotNet.ILCompiler.Development -Version 1.0.2-prerelease-00001 -prerelease -OutputDirectory c:\newilc`
-  * On OSX/Ubuntu, use `mono` to run `NuGet.exe`.
 * Create a new folder and switch into it. 
 * Issue the command, `dotnet init`, on the command/shell prompt. This will add a template source file and corresponding project.json. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
 
@@ -40,7 +37,7 @@ This will result in the following:
 This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github.com/dotnet/coreclr), for compiling the application. From the shell/command prompt, issue the following commands, from the folder containing your source file and project.json, to generate the native executable
 
     dotnet restore
-    dotnet compile --native --ilcpath c:\newilc
+    dotnet compile --native --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1
 
 Native executable will be dropped in `./bin/[configuration]/[framework]/native/` folder and will have the same name as the folder in which your source file is present.
 
@@ -53,4 +50,4 @@ This approach uses platform specific C++ compiler and linker for compiling/linki
 From the shell/command prompt, issue the following commands to generate the native executable:
 
     dotnet restore
-    dotnet compile --native --cpp --ilcpath c:\newilc
+    dotnet compile --native --cpp --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1

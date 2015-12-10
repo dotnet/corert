@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <UsingTask TaskName="GetBuildUid" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.v12.0">
+        <ParameterGroup>
+            <BuildUid ParameterType="System.String" Output="true" />
+        </ParameterGroup>
+        <Task>
+            <Code>
+                BuildUid = System.Guid.NewGuid().ToString().Replace("-", "").Substring(0, 8);
+            </Code>
+        </Task>
+    </UsingTask>
+    <Target Name="BuildNuGetPackages" AfterTargets="Build">
+        <!-- This is to fool the machine local DNX cache so each build is treated as unique. %USERPROFILE%\.dnx -->
+        <GetBuildUid>
+            <Output PropertyName="BuildUid" TaskParameter="BuildUid" />
+        </GetBuildUid>
+
+        <!-- Property needed for creating nupkgs -->
+        <PropertyGroup>
+            <ToolchainMilestone Condition="'$(ToolchainMilestone)'==''">prerelease</ToolchainMilestone>
+            <ToolchainVersion>1.0.3-$(ToolchainMilestone)-00002</ToolchainVersion>
+            <RuntimeSdkVersion>$(ToolchainVersion)</RuntimeSdkVersion>
+            <NuPkgRid>$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform)</NuPkgRid>
+            
+            <ToolchainPackageName>Microsoft.DotNet.ILCompiler</ToolchainPackageName>
+            
+            <RuntimeSdkPackageNameSuffix Condition="'$(Configuration)'=='Debug'">.Debug</RuntimeSdkPackageNameSuffix>
+            <RuntimeSdkPackageName>Microsoft.DotNet.ILCompiler.SDK$(RuntimeSdkPackageNameSuffix)</RuntimeSdkPackageName>
+
+            <!-- Uniqify package name per machine-local DNX cache for development purposes -->
+            <ToolchainPackageName Condition="'$(ToolchainMilestone)'=='testing'">$(ToolchainPackageName).$(BuildUid)</ToolchainPackageName>
+            <RuntimeSdkPackageName Condition="'$(ToolchainMilestone)'=='testing'">$(RuntimeSdkPackageName).$(BuildUid)</RuntimeSdkPackageName>
+
+            <LibPrefix Condition="'$(OsEnvironment)'!='Windows_NT'">lib</LibPrefix>
+            <StaticLibExt Condition="'$(OsEnvironment)'=='Windows_NT'">lib</StaticLibExt>
+            <StaticLibExt Condition="'$(OsEnvironment)'!='Windows_NT'">a</StaticLibExt>
+        </PropertyGroup>
+        <ItemGroup>
+            <!-- IL.Compiler target files -->
+            <ILCompilerFiles Include="ilc.exe" />
+            <ILCompilerFiles Include="ILCompiler.Compiler.dll" />
+            <ILCompilerFiles Include="ILCompiler.DependencyAnalysisFramework.dll" />
+            <ILCompilerFiles Include="ILCompiler.TypeSystem.dll" />
+            <ILCompilerBinPlace Include="@(ILCompilerFiles)">
+                <Text><![CDATA[        <file src="../%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
+            </ILCompilerBinPlace>
+
+            <!-- IL.Compiler.SDK target files -->
+            <ILCompilerSdkFiles Include="Runtime" />
+            <ILCompilerSdkFiles Include="PortableRuntime" />
+            <ILCompilerSdkFiles Include="bootstrapper" />
+            <ILCompilerSdkFiles Include="bootstrappercpp" />
+            <ILCompilerSdkFiles Include="System.Private.CoreLib.Native" Condition="'$(OsEnvironment)'!='Windows_NT'" />
+
+            <ILCompilerSdkFilesManaged Include="System.Private.CoreLib" />
+            <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
+                <Text><![CDATA[        <file src="../lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+            <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFilesManaged)">
+                <Text><![CDATA[        <file src="../%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+
+            <!-- ILCompiler nuspec file -->
+            <NuSpecFile Include="$(ToolchainPackageName)">
+                <Stage>0</Stage>
+                <Version>$(ToolchainVersion)</Version>
+                <Title>Microsoft .NET Native Toolchain</Title>
+                <Description>Provides the toolchain to compile managed code to native.</Description>
+                <Files>@(ILCompilerBinPlace -> '%(Text)', '')</Files>
+                <!-- TODO: Obtain this from project.lock.json -->
+                <Dependencies><![CDATA[
+        <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
+        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.3-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.RyuJit" version="1.0.1-prerelease-00002" />
+        <dependency id="System.AppContext" version="4.0.0" />
+        <dependency id="System.Collections" version="4.0.10" />
+        <dependency id="System.Collections.Concurrent" version="4.0.10" />
+        <dependency id="System.Collections.Immutable" version="1.1.37" />
+        <dependency id="System.Console" version="4.0.0-beta-23419" />
+        <dependency id="System.Diagnostics.Debug" version="4.0.10" />
+        <dependency id="System.Diagnostics.Tracing" version="4.0.20" />
+        <dependency id="System.IO" version="4.0.10" />
+        <dependency id="System.IO.FileSystem" version="4.0.0" />
+        <dependency id="System.Linq" version="4.0.0" />
+        <dependency id="System.Reflection" version="4.0.10" />
+        <dependency id="System.Reflection.Extensions" version="4.0.0" />
+        <dependency id="System.Reflection.Metadata" version="1.0.22" />
+        <dependency id="System.Reflection.Primitives" version="4.0.0" />
+        <dependency id="System.Resources.ResourceManager" version="4.0.0" />
+        <dependency id="System.Runtime" version="4.0.20" />
+        <dependency id="System.Runtime.Extensions" version="4.0.10" />
+        <dependency id="System.Runtime.InteropServices" version="4.0.20" />
+        <dependency id="System.Text.Encoding" version="4.0.10" />
+        <dependency id="System.Text.Encoding.Extensions" version="4.0.10" />
+        <dependency id="System.Threading" version="4.0.10" />
+        <dependency id="System.Threading.Tasks" version="4.0.10" />
+        <dependency id="System.Xml.ReaderWriter" version="4.0.0" />
+        <dependency id="System.Runtime.InteropServices.RuntimeInformation" version="4.0.0-beta-23504" />
+                    ]]></Dependencies>
+            </NuSpecFile>
+            
+            <!-- ILCompiler.SDK nuspec file -->
+            <NuSpecFile Include="$(RuntimeSdkPackageName)">
+                <Stage>1</Stage>
+                <Version>$(RuntimeSdkVersion)</Version>
+                <Title>Microsoft .NET Native Runtime SDK</Title>
+                <Description>Provides the runtime and link libraries to compile managed code to native.</Description>
+                <Files>@(ILCompilerSdkBinPlace -> '%(Text)', '')</Files>
+                <Dependencies><![CDATA[
+        <dependency id="$(ToolchainPackageName)" version="$(ToolchainVersion)"/>]]>
+                </Dependencies>
+            </NuSpecFile>
+       
+            <!-- A pair of platform and runtime package info per nuspec file -->
+            <NuSpecFileGroup Include="@(NuSpecFile)">
+                <Stage>%(Stage)</Stage>
+                <RedirPackage>%(Identity)</RedirPackage>
+                <Version>%(Version)</Version>
+                <PlatformPackage>toolchain.$(NuPkgRid).%(Identity)</PlatformPackage>
+                <NuSpecPackageMetadata><![CDATA[
+    <version>%(Version)</version>
+    <title>%(Title)</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=329770</licenseUrl>
+    <projectUrl>https://github.com/dotnet/corert</projectUrl>
+    <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>%(Description)</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright &#169%3B Microsoft Corporation</copyright>
+    <dependencies>
+        %(Dependencies)
+    </dependencies>]]>
+                </NuSpecPackageMetadata>
+                <PlatformPkgFiles>%(Files)</PlatformPkgFiles>
+            </NuSpecFileGroup>
+
+            <!-- NuSpecCollection: A collection of NuSpecFileGroup -->
+            <NuSpecCollection Include="@(NuSpecFileGroup)">
+                <Stage>%(Stage)</Stage>
+                <RuntimeJsonFile>$(ProductPackageDir)/%(RedirPackage).runtime.json</RuntimeJsonFile>
+                <RuntimeJsonLines><![CDATA[
+{
+  "runtimes": {
+    "win7-x64": {
+      "%(RedirPackage)": {
+        "toolchain.win7-x64.%(RedirPackage)": "%(Version)"
+      }
+    },
+    "osx.10.10-x64": {
+      "%(RedirPackage)": {
+        "toolchain.osx.10.10-x64.%(RedirPackage)": "%(Version)"
+      }
+    },
+    "ubuntu.14.04-x64": {
+      "%(RedirPackage)": {
+        "toolchain.ubuntu.14.04-x64.%(RedirPackage)": "%(Version)"
+      }
+    }
+  }
+}]]>
+                </RuntimeJsonLines>
+                <RedirFile>$(ProductPackageDir)/%(RedirPackage).nuspec</RedirFile>
+                <RedirLines><![CDATA[<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>%(RedirPackage)</id>
+    %(NuSpecPackageMetadata)
+  </metadata>
+  <files>
+      <file src="%(RedirPackage).runtime.json" target="runtime.json"></file>
+  </files>
+</package>
+]]>
+                </RedirLines>
+                <PlatformFile>$(ProductPackageDir)/%(PlatformPackage).nuspec</PlatformFile>
+                <PlatformLines><![CDATA[<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>%(PlatformPackage)</id>
+    %(NuSpecPackageMetadata)
+  </metadata>
+  <files>
+    %(PlatformPkgFiles)
+  </files>
+</package>
+]]>
+                </PlatformLines>
+            </NuSpecCollection>
+        </ItemGroup>
+
+        <!-- Recreate the package dir -->
+        <RemoveDir Directories="$(ProductPackageDir)" />
+        <MakeDir Directories="$(ProductPackageDir)" Condition="!Exists('$(ProductPackageDir)')" />
+
+        <!-- =================== stage0 ==================== -->
+        <!-- Write the runtime.json redirection package and the runtime platform file -->
+        <WriteLinesToFile File="%(NuSpecCollection.RuntimeJsonFile)" Lines="%(NuSpecCollection.RuntimeJsonLines)" Overwrite="true" Condition="'%(NuSpecCollection.Stage)'=='0'" />
+        <WriteLinesToFile File="%(NuSpecCollection.PlatformFile)" Lines="%(NuSpecCollection.PlatformLines)" Overwrite="true" Condition="'%(NuSpecCollection.Stage)'=='0'" />
+        <WriteLinesToFile File="%(NuSpecCollection.RedirFile)" Lines="%(NuSpecCollection.RedirLines)" Overwrite="true" Condition="'%(NuSpecCollection.Stage)'=='0'" />
+
+        <ItemGroup>
+            <Stage0NuSpecs Include="%(NuSpecCollection.PlatformFile)" Condition="'%(NuSpecCollection.Stage)'=='0'"  />
+            <Stage0NuSpecs Include="%(NuSpecCollection.RedirFile)" Condition="'%(NuSpecCollection.Stage)'=='0'" />
+        </ItemGroup>
+
+        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage0NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+
+        <PropertyGroup>
+            <Stage0ProjectDir>$(ProductPackageDir)stage0/</Stage0ProjectDir>
+            <Stage0PublishDir>$(ProductPackageDir)publish0/</Stage0PublishDir>
+            <Stage0ProjectJsonFile>$(Stage0ProjectDir)project.json</Stage0ProjectJsonFile>
+            <Stage0ProjectJsonLines><![CDATA[
+{
+    "version": "1.0.0-*",
+    "compilationOptions": {
+        "emitEntryPoint": true,
+    },
+
+    "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-beta-23504",
+        "Microsoft.NETCore.Runtime": "1.0.1-beta-23504",
+        "Microsoft.NETCore.TestHost": "1.0.0-beta-23504",
+        "toolchain.$(NuPkgRid).$(ToolchainPackageName)": "$(ToolchainVersion)",
+    },
+
+    "frameworks": {
+        "dnxcore50": { }
+    }
+}]]>
+            </Stage0ProjectJsonLines>
+        </PropertyGroup>
+        <MakeDir Directories="$(Stage0ProjectDir)" Condition="!Exists('$(Stage0ProjectDir)')" />
+        <WriteLinesToFile File="$(Stage0ProjectJsonFile)" Lines="$(Stage0ProjectJsonLines)" Overwrite="true" />
+        <WriteLinesToFile File="$(Stage0ProjectDir)/Program.cs" Lines="class Program { public static void Main() { } }" Overwrite="true" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; restore -s &quot;$(ProductPackageDir)&quot; $(DnuRestoreSource) &quot;$(Stage0ProjectDir)&quot;" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; publish &quot;$(Stage0ProjectDir)&quot; -o &quot;$(Stage0PublishDir)&quot; -f &quot;dnxcore50&quot; -r &quot;$(NuPkgRid)&quot;" />
+
+        <!-- =================== self-host ================= -->
+        <!-- Use stage0 ilc.exe/corerun to compile stage1 runtime libs -->
+
+        <!-- =================== stage1 ==================== -->
+        <!-- Write the runtime.json redirection package and the runtime platform file -->
+        <WriteLinesToFile File="%(NuSpecCollection.RuntimeJsonFile)" Lines="%(NuSpecCollection.RuntimeJsonLines)" Overwrite="true" Condition="'%(NuSpecCollection.Stage)'=='1'" />
+        <WriteLinesToFile File="%(NuSpecCollection.PlatformFile)" Lines="%(NuSpecCollection.PlatformLines)" Overwrite="true" Condition="'%(NuSpecCollection.Stage)'=='1'" />
+        <WriteLinesToFile File="%(NuSpecCollection.RedirFile)" Lines="%(NuSpecCollection.RedirLines)" Overwrite="true" Condition="'%(NuSpecCollection.Stage)'=='1'" />
+
+        <ItemGroup>
+            <Stage1NuSpecs Include="%(NuSpecCollection.PlatformFile)" Condition="'%(NuSpecCollection.Stage)'=='1'"  />
+            <Stage1NuSpecs Include="%(NuSpecCollection.RedirFile)" Condition="'%(NuSpecCollection.Stage)'=='1'" />
+        </ItemGroup>
+
+        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage1NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+
+        <PropertyGroup>
+            <Stage1ProjectDir>$(ProductPackageDir)stage1/</Stage1ProjectDir>
+            <Stage1PublishDir>$(ProductPackageDir)publish1/</Stage1PublishDir>
+            <Stage1ProjectJsonFile>$(Stage1ProjectDir)project.json</Stage1ProjectJsonFile>
+            <Stage1ProjectJsonLines><![CDATA[
+{
+    "version": "1.0.0-*",
+    "compilationOptions": {
+        "emitEntryPoint": true,
+    },
+
+    "dependencies": {
+        "Microsoft.NETCore.Platforms": "1.0.1-beta-23504",
+        "Microsoft.NETCore.Runtime": "1.0.1-beta-23504",
+        "Microsoft.NETCore.TestHost": "1.0.0-beta-23504",
+        "toolchain.$(NuPkgRid).$(RuntimeSdkPackageName)": "$(RuntimeSdkVersion)",
+    },
+
+    "frameworks": {
+        "dnxcore50": { }
+    }
+}]]>
+            </Stage1ProjectJsonLines>
+        </PropertyGroup>
+        <MakeDir Directories="$(Stage1ProjectDir)" Condition="!Exists('$(Stage1ProjectDir)')" />
+        <WriteLinesToFile File="$(Stage1ProjectJsonFile)" Lines="$(Stage1ProjectJsonLines)" Overwrite="true" />
+        <WriteLinesToFile File="$(Stage1ProjectDir)/Program.cs" Lines="class Program { public static void Main() { } }" Overwrite="true" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; restore -s &quot;$(ProductPackageDir)&quot; $(DnuRestoreSource) &quot;$(Stage1ProjectDir)&quot;" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; publish &quot;$(Stage1ProjectDir)&quot; -o &quot;$(Stage1PublishDir)&quot; -f &quot;dnxcore50&quot; -r &quot;$(NuPkgRid)&quot;" />
+
+    </Target>
+</Project>

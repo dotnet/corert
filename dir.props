@@ -120,17 +120,6 @@
   <ItemGroup>
     <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
-    
-    <!-- Platform agnostic parent NuSpec -->
-    <NuSpecSrcs Include="$(SourceDir).nuget\Microsoft.DotNet.ILCompiler.nuspec" />
-    <NuPkgRuntimeJson Include="$(SourceDir).nuget\runtime.json" />
-
-    <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.nuspec" />
-    <NuSpecSrcs Include="$(SourceDir).nuget\toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
-
-    <NuSpecs Include="$(ProductPackageDir)Microsoft.DotNet.ILCompiler.nuspec" />
-    <NuSpecs Include="$(ProductPackageDir)toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.nuspec" />
-    <NuSpecs Include="$(ProductPackageDir)toolchain.$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform).Microsoft.DotNet.ILCompiler.Development.nuspec" />
   </ItemGroup>
 
   <!-- Common nuget properties -->
