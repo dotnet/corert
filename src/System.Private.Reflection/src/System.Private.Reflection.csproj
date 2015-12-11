@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Reflection</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{81E98FD5-EEED-4F03-8449-E5CCF51AAA2D}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|arm' ">
+    <PlatformTarget>arm</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|arm' ">
+    <PlatformTarget>arm</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+ 
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Globalization.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />  
+  </ItemGroup>
+
+  <PropertyGroup>
+    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\SR.Core.cs">
+      <Link>Resources\Common</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
+    <Compile Include="..\..\Common\src\System\__HResults.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Reflection\AmbiguousMatchException.cs" />
+    <Compile Include="System\Reflection\Assembly.cs" />
+    <Compile Include="System\Reflection\AssemblyContentType.cs" />
+    <Compile Include="System\Reflection\AssemblyName.cs" />
+    <Compile Include="System\Reflection\ConstructorInfo.cs" />
+    <Compile Include="System\Reflection\CustomAttributeData.cs" />
+    <Compile Include="System\Reflection\CustomAttributeNamedArgument.cs" />
+    <Compile Include="System\Reflection\CustomAttributeTypedArgument.cs" />
+    <Compile Include="System\Reflection\EventInfo.cs" />
+    <Compile Include="System\Reflection\FieldInfo.cs" />
+    <Compile Include="System\Reflection\IntrospectionExtensions.cs" />
+    <Compile Include="System\Reflection\IReflectableType.cs" />
+    <Compile Include="System\Reflection\LocalVariableInfo.cs" />
+    <Compile Include="System\Reflection\ManifestResourceInfo.cs" />
+    <Compile Include="System\Reflection\MemberInfo.cs" />
+    <Compile Include="System\Reflection\MethodBase.cs" />
+    <Compile Include="System\Reflection\MethodInfo.cs" />
+    <Compile Include="System\Reflection\Module.cs" />
+    <Compile Include="System\Reflection\ParameterInfo.cs" />
+    <Compile Include="System\Reflection\PropertyInfo.cs" />
+    <Compile Include="System\Reflection\ReflectionContext.cs" />
+    <Compile Include="System\Reflection\ReflectionTypeLoadException.cs" />
+    <Compile Include="System\Reflection\ResourceLocation.cs" />
+    <Compile Include="System\Reflection\TypeInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
+    <Compile Include="Internal\Reflection\Extensibility\ReflectionExtensibility.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
