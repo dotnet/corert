@@ -38,6 +38,7 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringDataNode.cs" />
@@ -77,14 +78,24 @@
     <Compile Include="Compiler\RegisteredMethod.cs" />
     <Compile Include="Compiler\RegisteredType.cs" />
     <Compile Include="Compiler\IntrinsicMethods.cs" />
+    <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeFlags.cs" >
-      <Link>Common\EETypeFlags.cs</Link>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
+      <Link>Common\EEType.Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeOptionalFieldsBuilder.cs">
+      <Link>Common\EETypeOptionalFieldsBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs">
+      <Link>Common\EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatWriter.Primitives.cs">
+      <Link>Common\NativeFormat\NativeFormatWriter.Primitives.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

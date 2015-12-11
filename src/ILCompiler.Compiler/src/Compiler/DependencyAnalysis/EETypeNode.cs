@@ -47,7 +47,9 @@ namespace ILCompiler.DependencyAnalysis
     {
         private TypeDesc _type;
         private bool _constructed;
-        
+        EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        EETypeOptionalFieldsNode _optionalFieldsNode;
+
         public EETypeNode(TypeDesc type, bool constructed)
         {
             _type = type;
@@ -128,6 +130,12 @@ namespace ILCompiler.DependencyAnalysis
             objData.Alignment = 16;
             objData.DefinedSymbols.Add(this);
 
+            ComputeOptionalEETypeFields(factory);
+            if (null == _optionalFieldsNode)
+            {
+                _optionalFieldsNode = factory.EETypeOptionalFields(_optionalFieldsBuilder);
+            }
+
             OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
             OutputBaseSize(ref objData);
@@ -140,9 +148,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 OutputVirtualSlots(factory, ref objData, _type, _type);
                 OutputFinalizerMethod(factory, ref objData);
+                OutputOptionalFields(factory, ref objData);
                 OutputNullableTypeParameter(factory, ref objData);
             }
-            
+
             return objData.ToObjectData();
         }
 
@@ -189,7 +198,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             return 16 + pointerSize;
         }
-        
+
         private void OutputComponentSize(ref ObjectDataBuilder objData)
         {
             if (_type.IsArray)
@@ -205,21 +214,20 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitShort(0);
             }
         }
-        
+
         private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             // Todo: RelatedTypeViaIATFlag when we support cross-module EETypes
             // Todo: GenericVarianceFlag when we support variance
-            // Todo: OptionalFieldsFlag
             // Todo: Generic Type Definition EETypes
-            
+
             UInt16 flags = (UInt16)EETypeKind.CanonicalEEType;
-            
+
             if (_type.IsArray || _type.IsPointer)
             {
                 flags = (UInt16)EETypeKind.ParameterizedEEType;
             }
-            
+
             if (_type.IsValueType)
             {
                 flags |= (UInt16)EETypeFlags.ValueTypeFlag;
@@ -229,7 +237,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
-            
+
             if (_type is MetadataType && ((MetadataType)_type).ContainsPointers)
             {
                 flags |= (UInt16)EETypeFlags.HasPointersFlag;
@@ -243,7 +251,7 @@ namespace ILCompiler.DependencyAnalysis
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;
                 }
             }
-            
+
             if (_type.IsInterface)
             {
                 flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
@@ -254,8 +262,13 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.IsGenericFlag;
             }
 
+            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            {
+                flags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
+            }
+
             int corElementType = 0;
-            
+
             // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
             if (_type.IsEnum)
             {
@@ -271,7 +284,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 corElementType = 0x14; // ELEMENT_TYPE_ARRAY
             }
-            
+
             if (corElementType > 0)
             {
                 flags |= (UInt16)(corElementType << (UInt16)EETypeFlags.CorElementTypeShift);
@@ -279,8 +292,8 @@ namespace ILCompiler.DependencyAnalysis
 
             objData.EmitShort((short)flags);
         }
-        
-        private int ComputeRhCorElementType(TypeDesc type)
+
+        private static int ComputeRhCorElementType(TypeDesc type)
         {
             Debug.Assert(type.IsPrimitive);
             Debug.Assert(type.Category != TypeFlags.Unknown);
@@ -324,7 +337,30 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(false, "Primitive type value expected.");
             return 0;
         }
-        
+
+        private static bool ComputeRequiresAlign8(TypeDesc type)
+        {
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
+            {
+                return false;
+            }
+
+            if (type.IsArray)
+            {
+                var elementType = ((ArrayType)type).ElementType;
+                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment > 4)
+                {
+                    return true;
+                }
+            }
+            else if (type is DefType && ((DefType)type).InstanceByteAlignment > 4)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private void OutputBaseSize(ref ObjectDataBuilder objData)
         {
             int pointerSize = _type.Context.Target.PointerSize;
@@ -352,10 +388,10 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
                 throw new NotImplementedException();
-            
+
             objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
             objectSize = Math.Max(minimumObjectSize, objectSize);
-            
+
             if (_type.IsString)
             {
                 // If this is a string, throw away objectSize we computed so far. Strings are special.
@@ -375,7 +411,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 relatedType = ((ParameterizedType)_type).ParameterType;
             }
-            
+
             if (relatedType != null)
             {
                 if (_constructed)
@@ -409,7 +445,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 currentTypeSlice = currentTypeSlice.BaseType;
             }
-            
+
             objData.EmitShort(checked((short)virtualSlotCount));
 
             // Todo: Number of slots of EEInterfaceInfo when we add interface support
@@ -450,11 +486,142 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if(_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            {
+                objData.EmitPointerReloc(_optionalFieldsNode);
+            }
+        }
+
         private void OutputNullableTypeParameter(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             if (_type.IsNullable)
             {
                 objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type.Instantiation[0]));
+            }
+        }
+
+        /// <summary>
+        /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required. Returns true iff
+        /// at least one optional field was set.
+        /// </summary>
+        private void ComputeOptionalEETypeFields(NodeFactory factory)
+        {
+            // Todo: DispatchMap table index when we support interface dispatch maps
+            ComputeRareFlags();
+            ComputeNullableValueOffset();
+            ComputeICastableVirtualMethodSlots(factory);
+            ComputeValueTypeFieldPadding();
+        }
+
+        void ComputeRareFlags()
+        {
+            uint flags = 0;
+
+            if (_type.IsNullable)
+            {
+                flags |= (uint)EETypeRareFlags.IsNullableFlag;
+            }
+
+            if (_type.HasStaticConstructor)
+            {
+                flags |= (uint)EETypeRareFlags.HasCctorFlag;
+            }
+            
+            if (ComputeRequiresAlign8(_type))
+            {
+                flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
+            }
+
+            if (_type is DefType && ((DefType)_type).IsHFA())
+            {
+                flags |= (uint)EETypeRareFlags.IsHFAFlag;
+            }
+
+            if (flags != 0)
+            {
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, flags);
+            }
+        }
+
+        /// <summary>
+        /// To support boxing / unboxing, the offset of the value field of a Nullable type is recorded on the EEType.
+        /// This is variable according to the alignment requirements of the Nullable&lt;T&gt; type parameter.
+        /// </summary>
+        void ComputeNullableValueOffset()
+        {
+            if (!_type.IsNullable)
+                return;
+
+            var field = _type.GetField("value");
+
+            // Ensure the definition of Nullable<T> didn't change on us
+            Debug.Assert(field != null);
+
+            // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
+            Debug.Assert(field.Offset > 0);
+
+            // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
+            // to get a small encoding size win.
+            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.NullableValueOffset, (uint)field.Offset - 1);
+        }
+
+        /// <summary>
+        /// ICastable is a special interface whose two methods are not invoked using regular interface dispatch.
+        /// Instead, their VTable slots are recorded on the EEType of an object implementing ICastable and are
+        /// called directly.
+        /// </summary>
+        void ComputeICastableVirtualMethodSlots(NodeFactory factory)
+        {
+            // TODO: This method is untested (we don't support interfaces yet)
+            if (_type.IsInterface)
+                return;
+            
+            foreach (DefType itf in _type.RuntimeInterfaces)
+            {
+                if (itf == factory.ICastableInterface)
+                {
+                    var isInstMethod = itf.GetMethod("IsInstanceOfInterface", null);
+                    var getImplTypeMethod = itf.GetMethod("GetImplType", null);
+                    Debug.Assert(isInstMethod != null && getImplTypeMethod != null);
+
+                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethod);
+                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethod);
+
+                    if (isInstMethodSlot != -1 || getImplTypeMethodSlot != -1)
+                    {
+                        var rareFlags = _optionalFieldsBuilder.GetFieldValue(EETypeOptionalFieldsElement.RareFlags, 0);
+                        rareFlags |= (uint)EETypeRareFlags.ICastableFlag;
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.RareFlags, rareFlags);
+                    }
+
+                    if (isInstMethodSlot != -1)
+                    {
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ICastableIsInstSlot, (uint)isInstMethodSlot);
+                    }
+                    if (getImplTypeMethodSlot != -1)
+                    {
+                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
+                    }
+                }
+            }
+        }
+
+        void ComputeValueTypeFieldPadding()
+        {
+            if (!_type.IsValueType)
+                return;
+
+            DefType defType = _type as DefType;
+            Debug.Assert(defType != null);
+
+            uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount - defType.InstanceByteCountUnaligned));
+            uint valueTypeFieldPaddingEncoded = EEType.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment);
+
+            if (valueTypeFieldPaddingEncoded != 0)
+            {
+                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
     }

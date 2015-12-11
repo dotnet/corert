@@ -137,8 +137,8 @@
     <Compile Include="RhBaseName.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EETypeFlags.cs" >
-      <Link>Common\EETypeFlags.cs</Link>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
+      <Link>Common\EEType.Constants.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
