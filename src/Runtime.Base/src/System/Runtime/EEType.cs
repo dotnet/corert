@@ -226,7 +226,7 @@ namespace System.Runtime
                 // do the flags lookup via a co-op call into the runtime rather than duplicate all of the
                 // logic to locate and decompress optional fields in managed code.
                 fixed (EEType* pThis = &this)    
-                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)RareFlags.RequiresAlign8Flag) != 0;
+                    return (InternalCalls.RhpGetEETypeRareFlags(pThis) & (UInt32)EETypeRareFlags.RequiresAlign8Flag) != 0;
 #else
                 return false;
 #endif
