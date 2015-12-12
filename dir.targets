@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" InitialTargets="_RestoreBuildToolsWrapper" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" InitialTargets="_RestoreBuildToolsWrapper;DownloadCli" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="UnzipFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
+    <ParameterGroup>
+      <ZipFilePath ParameterType="System.String" Required="true" />
+      <ZipOutputDirectory ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.IO.Compression.FileSystem" />
+      <Code>System.IO.Compression.ZipFile.ExtractToDirectory(ZipFilePath, ZipOutputDirectory);</Code>
+    </Task>
+  </UsingTask> 
 
   <!-- Inline task to bootstrap the build to enable downloading nuget.exe -->
   <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v12.0.dll">
@@ -111,6 +121,30 @@
            Text="The build tools package was just restored and so we cannot continue the build of an individual project because targets from the build tools package were not able to be imported. Please retry the build the individual project again." />
   </Target>
 
+  <Target Name="DownloadCli">
+    <PropertyGroup>
+        <CliRootDir>$(ProjectDir)/bin/tools/cli/</CliRootDir>
+        <CliDownloadFileName Condition="'$(OSGroup)'=='Windows_NT'">dotnet-win-x64.latest.zip</CliDownloadFileName>
+        <CliDownloadFileName Condition="'$(OSGroup)'=='Linux'">dotnet-linux-x64.latest.tar.gz</CliDownloadFileName>
+        <CliDownloadFileName Condition="'$(OSGroup)'=='OSX'">dotnet-osx-x64.latest.tar.gz</CliDownloadFileName>
+        <CliDownloadFilePath>$(CliRootDir)$(CliDownloadFileName)</CliDownloadFilePath>
+        <CliFetchUrl>https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/$(CliDownloadFileName)</CliFetchUrl>
+    </PropertyGroup>
+
+    <DownloadFile FileName="$(CliDownloadFilePath)"
+                  Address="$(CliFetchUrl)"
+                  Condition="!Exists('$(CliDownloadFilePath)')" />
+
+    <Error Condition="!Exists('$(CliDownloadFilePath)')" 
+           Text="CLI could not be downloaded from $(CliFetchUrl)" />
+
+    <UnzipFile ZipFilePath="$(CliDownloadFilePath)" ZipOutputDirectory="$(CliRootDir)" 
+                  Condition="Exists('$(CliDownloadFilePath)') and !Exists('$(DnuToolPath).exe') and '$(OsGroup)'=='Windows_NT'" />
+
+    <Exec Command="tar -xzf &quot;$(CliDownloadFilePath)&quot; -C &quot;$(CliRootDir)&quot;"
+                  Condition="Exists('$(CliDownloadFilePath)') and !Exists('$(DnuToolPath)') and '$(OsEnvironment)'=='Unix'" />
+  </Target>
+  
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
   <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
