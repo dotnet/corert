@@ -1881,15 +1881,17 @@ namespace Internal.JitInterface
         private void* getTailCallCopyArgsThunk(IntPtr _this, CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
         { throw new NotImplementedException("getTailCallCopyArgsThunk"); }
 
-        private delegate IntPtr _ClrVirtualAlloc(IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect);
-        private static IntPtr ClrVirtualAlloc(IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect)
+        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        private delegate IntPtr _ClrVirtualAlloc(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect);
+        private static IntPtr ClrVirtualAlloc(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect)
         {
             return Marshal.AllocCoTaskMem((int)dwSize);
         }
         private _ClrVirtualAlloc _clrVirtualAlloc;
 
-        private delegate bool _ClrVirtualFree(IntPtr lpAddress, IntPtr dwSize, uint dwFreeType);
-        private static bool ClrVirtualFree(IntPtr lpAddress, IntPtr dwSize, uint dwFreeType)
+        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        private delegate bool _ClrVirtualFree(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint dwFreeType);
+        private static bool ClrVirtualFree(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint dwFreeType)
         {
             Marshal.FreeCoTaskMem(lpAddress);
             return true;
@@ -1907,7 +1909,7 @@ namespace Internal.JitInterface
             IntPtr* vtable = (IntPtr*)Marshal.AllocCoTaskMem(sizeof(IntPtr) * vtableSlots);
             for (int i = 0; i < vtableSlots; i++) vtable[i] = new IntPtr(0);
 
-            // JIT only ever uses ClrVirtualAlloc/ClrVirtualFree
+            // JIT only ever uses IEEMemoryManager::ClrVirtualAlloc/IEEMemoryManager::ClrVirtualFree
             vtable[3] = Marshal.GetFunctionPointerForDelegate<_ClrVirtualAlloc>(_clrVirtualAlloc = new _ClrVirtualAlloc(ClrVirtualAlloc));
             vtable[4] = Marshal.GetFunctionPointerForDelegate<_ClrVirtualFree>(_clrVirtualFree = new _ClrVirtualFree(ClrVirtualFree));
 
