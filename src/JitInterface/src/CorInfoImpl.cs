@@ -61,16 +61,16 @@ namespace Internal.JitInterface
             public int LineNumber;
         }
 
-        private MethodDesc _methodBeingCompiled;
+        private MethodCodeNode _methodCodeNode;
 
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
         {
             try
             {
-                _methodBeingCompiled = methodCodeNodeNeedingCode.Method;
+                _methodCodeNode = methodCodeNodeNeedingCode;
 
                 CORINFO_METHOD_INFO methodInfo;
-                Get_CORINFO_METHOD_INFO(_methodBeingCompiled, out methodInfo);
+                Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
                 uint flags = (uint)(
                     CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
@@ -82,7 +82,7 @@ namespace Internal.JitInterface
                 if (!_compilation.Options.NoLineNumbers)
                 {
                     CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(_methodBeingCompiled);
+                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
                     if (ilSequencePoints != null)
                     {
                         Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
@@ -98,7 +98,7 @@ namespace Internal.JitInterface
                 uint codeSize;
                 _compile(_jit, _comp, ref methodInfo, flags, out nativeEntry, out codeSize);
 
-                PublishCode(methodCodeNodeNeedingCode);
+                PublishCode();
             }
             finally
             {
@@ -106,7 +106,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void PublishCode(MethodCodeNode methodCodeNodeNeedingCode)
+        private void PublishCode()
         {
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
@@ -114,12 +114,20 @@ namespace Internal.JitInterface
             var objectData = new ObjectNode.ObjectData(_code,
                                                        relocs,
                                                        _compilation.NodeFactory.Target.MinimumFunctionAlignment,
-                                                       new ISymbolNode[] { methodCodeNodeNeedingCode });
+                                                       new ISymbolNode[] { _methodCodeNode });
 
-            methodCodeNodeNeedingCode.SetCode(objectData);
+            _methodCodeNode.SetCode(objectData);
 
-            methodCodeNodeNeedingCode.InitializeFrameInfos(_frameInfos);
-            methodCodeNodeNeedingCode.InitializeDebugLocInfos(_debugLocInfos);
+            _methodCodeNode.InitializeFrameInfos(_frameInfos);
+            _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
+        }
+
+        private MethodDesc MethodBeingCompiled
+        {
+            get
+            {
+                return _methodCodeNode.Method;
+            }
         }
 
         private int PointerSize
@@ -130,7 +138,6 @@ namespace Internal.JitInterface
             }
         }
 
-        // TODO: Free pins at the end of the compilation
         private Dictionary<Object, GCHandle> _pins = new Dictionary<object, GCHandle>();
 
         private IntPtr GetPin(Object obj)
@@ -149,7 +156,7 @@ namespace Internal.JitInterface
                 pin.Value.Free();
             _pins.Clear();
 
-            _methodBeingCompiled = null;
+            _methodCodeNode = null;
 
             _code = null;
             _coldCode = null;
@@ -1955,7 +1962,7 @@ namespace Internal.JitInterface
                 _roData = new byte[roDataSize];
 
                 _roDataBlob = _compilation.NodeFactory.ReadOnlyDataBlob(
-                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(_methodBeingCompiled),
+                    "__readonlydata_" + _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled),
                     _roData, alignment);
 
                 roDataBlock = (void*)GetPin(_roData);
@@ -2107,8 +2114,8 @@ namespace Internal.JitInterface
             switch (targetBlock)
             {
                 case BlockType.Code:
-                    // TODO: Arbitrary relocs
-                    throw new NotImplementedException("Arbitrary relocs");
+                    reloc.Target = _methodCodeNode;
+                    break;
 
                 case BlockType.ColdCode:
                     // TODO: Arbitrary relocs

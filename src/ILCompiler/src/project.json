@@ -19,7 +19,7 @@
     "System.Collections.Immutable": "1.1.37",
     "System.Reflection.Metadata": "1.0.22",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-23409",
-    "Microsoft.DotNet.RyuJit": "1.0.1-prerelease-00002",
+    "Microsoft.DotNet.RyuJit": "1.0.2-prerelease-00002",
     "Microsoft.DotNet.ObjectWriter": "1.0.3-prerelease-00001",
   },
   "frameworks": {

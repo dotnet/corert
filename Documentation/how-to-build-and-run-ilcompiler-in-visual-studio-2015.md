@@ -2,8 +2,7 @@ _Please ensure that [pre-requisites](prerequisites-for-building.md) are installe
 
 _Note_:
 
-* Instructions below assume C:\corert is the repo root.
-* Build the repo using build.cmd. Binaries are binplaced to ```<repo_root>\bin\Product\<OS>.<arch>.<Config>```
+* Instructions below assume `c:\corert` is the repo root.
 
 ### JIT CodeGen
 
@@ -12,18 +11,18 @@ _Note_:
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r c:\corert\bin\tests\package\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.2-prerelease-00002\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.obj`
+`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r C:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.2-prerelease-00002\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.obj`
 
-  - Copy ryujit.dll from `c:\corert\bin\tests\package\toolchain.win7-x64.Microsoft.DotNet.RyuJit\1.0.*\runtimes\win7-x64\native\ryujit.dll` to `c:\corert\src\ILCompiler\desktop\bin\Debug`
-  - Copy objwriter.dll from `c:\corert\bin\tests\package\toolchain.win7-x64.Microsoft.DotNet.ObjectWriter\1.0.*\runtimes\win7-x64\native\objwriter.dll` to `c:\corert\src\ILCompiler\desktop\bin\Debug`
+  - Copy ryujit.dll from `c:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\ryujit.dll` to `c:\corert\src\ILCompiler\desktop\bin\Debug`
+  - Copy objwriter.dll from `c:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\objwriter.dll` to `c:\corert\src\ILCompiler\desktop\bin\Debug`
   - Build & run using **F5**
-    - This will run the compiler. The output is c:\corert\src\ILCompiler\reproNative\repro.obj file.
+    - This will run the compiler. The output is `c:\corert\src\ILCompiler\reproNative\repro.obj` file.
 
   - The repro project has a dummy program that you can modify for ad-hoc testing
 
   - To suppress spew from NuGet during the build, go to NuGet Package Manager in Options, and uncheck `Allow NuGet to download missing packages`.
 
-2. Open C:\corert\src\ILCompiler\reproNative\reproNative.vcxproj
+2. Open `c:\corert\src\ILCompiler\reproNative\reproNative.vcxproj`
 
   - Set breakpoint at ```__managed__Main``` in main.cpp
   - Build & run using **F5**
@@ -32,21 +31,21 @@ _Note_:
 
 ### CPP CodeGen
 
-1. Open c:\corert\src\ILCompiler\ILCompiler.sln in VS
+1. Open `c:\corert\src\ILCompiler\ILCompiler.sln` in VS
 
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r c:\corert\bin\tests\package\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.2-prerelease-00002\*.dll -out C:\corert\src\ILCompiler\reproNative\repro.cpp -cpp`
+`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r C:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.2-prerelease-00002\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.cpp -cpp`
 
     - `-nolinenumbers` command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
 
   - Build & run using **F5**
-    - This will run the compiler. The output is C:\corert\src\ILCompiler\reproNative\repro.cpp file.
+    - This will run the compiler. The output is `c:\corert\src\ILCompiler\reproNative\repro.cpp` file.
 
   - The repro project has a dummy program that you can modify for ad-hoc testing
 
-2. Open C:\corert\src\ILCompiler\reproNative\reproNativeCpp.vcxproj
+2. Open `c:\corert\src\ILCompiler\reproNative\reproNativeCpp.vcxproj`
 
   - Set breakpoint at repro::Program::Main in main.cpp
   - Build, run & step through as with any other C++ program
