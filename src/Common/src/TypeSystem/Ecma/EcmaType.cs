@@ -214,6 +214,7 @@ namespace Internal.TypeSystem.Ecma
                 // All other cases are handled during TypeSystemContext intitialization
             }
 
+            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 
