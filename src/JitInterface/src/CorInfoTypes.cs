@@ -421,6 +421,19 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_Sqrt,
         CORINFO_INTRINSIC_Abs,
         CORINFO_INTRINSIC_Round,
+        CORINFO_INTRINSIC_Cosh,
+        CORINFO_INTRINSIC_Sinh,
+        CORINFO_INTRINSIC_Tan,
+        CORINFO_INTRINSIC_Tanh,
+        CORINFO_INTRINSIC_Asin,
+        CORINFO_INTRINSIC_Acos,
+        CORINFO_INTRINSIC_Atan,
+        CORINFO_INTRINSIC_Atan2,
+        CORINFO_INTRINSIC_Log10,
+        CORINFO_INTRINSIC_Pow,
+        CORINFO_INTRINSIC_Exp,
+        CORINFO_INTRINSIC_Ceiling,
+        CORINFO_INTRINSIC_Floor,
         CORINFO_INTRINSIC_GetChar,              // fetch character out of string
         CORINFO_INTRINSIC_Array_GetDimLength,   // Get number of elements in a given dimension of an array
         CORINFO_INTRINSIC_Array_Get,            // Get the value of an element in an array
