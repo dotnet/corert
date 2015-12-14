@@ -27,7 +27,7 @@ This will result in the following:
 
 * Ensure that you have done a repo build per the instructions above.
 * Create a new folder and switch into it. 
-* Issue the command, `dotnet init`, on the command/shell prompt. This will add a template source file and corresponding project.json. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
+* Issue the command, `dotnet new`, on the command/shell prompt. This will add a template source file and corresponding project.json. If you get an error, please ensure the [pre-requisites](prerequisites-for-building.md) are installed. 
 
 
 ## Using RyuJIT ##
