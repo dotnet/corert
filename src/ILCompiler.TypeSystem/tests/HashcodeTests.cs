@@ -115,15 +115,15 @@ namespace TypeSystemTests
             {
                 // Uninstantiated Generic method
                 MethodDesc genMethod = typeWithGenericMethod.GetMethod("GenericMethod", null);
-                Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashcode(expectedTypeHash, genMethodNameHash), genMethod.GetHashCode());
+                Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashCode(expectedTypeHash, genMethodNameHash), genMethod.GetHashCode());
 
                 // Instantiated over int
                 MethodDesc genMethodI = _context.GetInstantiatedMethod(genMethod, new Instantiation(new TypeDesc[] { intType }));
-                Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashcode(expectedTypeHash, genMethodNameAndIHash), genMethodI.GetHashCode());
+                Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashCode(expectedTypeHash, genMethodNameAndIHash), genMethodI.GetHashCode());
 
                 // Instantiated over string
                 MethodDesc genMethodS = _context.GetInstantiatedMethod(genMethod, new Instantiation(new TypeDesc[] { stringType }));
-                Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashcode(expectedTypeHash, genMethodNameAndSHash), genMethodS.GetHashCode());
+                Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashCode(expectedTypeHash, genMethodNameAndSHash), genMethodS.GetHashCode());
 
                 // Assert they aren't the same as the other hashes
                 Assert.NotEqual(genMethodI.GetHashCode(), genMethodS.GetHashCode());

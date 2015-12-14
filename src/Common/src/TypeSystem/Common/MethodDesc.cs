@@ -223,7 +223,7 @@ namespace Internal.TypeSystem
         /// </summary>
         protected virtual int ComputeHashCode()
         {
-            return TypeHashingAlgorithms.ComputeMethodHashcode(OwningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
+            return TypeHashingAlgorithms.ComputeMethodHashCode(OwningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
         }
 
         public override bool Equals(Object o)

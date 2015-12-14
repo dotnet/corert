@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Threading;
 
 using Internal.TypeSystem;
+using Internal.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -28,14 +29,7 @@ namespace Internal.TypeSystem.Ecma
             // TODO: Determine what a the right hash function should be. Use stable hashcode based on the type name?
             // For now, use the same hash as a SignatureVariable type.
             GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-            if (parameter.Parent.Kind == HandleKind.MethodDefinition)
-            {
-                return parameter.Index * 0x7822381 + 0x54872645;
-            }
-            else
-            {
-                return parameter.Index * 0x5498341 + 0x832424;
-            }
+            return TypeHashingAlgorithms.ComputeSignatureVariableHashCode(parameter.Index, parameter.Parent.Kind == HandleKind.MethodDefinition);
         }
 
         public override TypeSystemContext Context
@@ -54,6 +48,7 @@ namespace Internal.TypeSystem.Ecma
 
             flags |= TypeFlags.GenericParameter;
 
+            Debug.Assert((flags & mask) != 0);
             return flags;
         }
 

@@ -103,9 +103,16 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        // This mask is the fastest way to check if a type is nested from its flags,
+        // but it should not be added to the BCL enum as its semantics can be misleading.
+        // Consider, for example, that (NestedFamANDAssem & NestedMask) == NestedFamORAssem.
+        // Only comparison of the masked value to 0 is meaningful, which is different from
+        // the other masks in the enum.
+        private const TypeAttributes NestedMask = (TypeAttributes)0x00000006;
+
         private static bool IsNested(TypeAttributes flags)
         {
-            return (flags & ((TypeAttributes)0x00000006)) != 0;
+            return (flags & NestedMask) != 0;
         }
     }
 }

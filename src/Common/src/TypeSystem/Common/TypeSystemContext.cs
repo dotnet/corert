@@ -333,7 +333,7 @@ namespace Internal.TypeSystem
             {
                 _methodDef = methodDef;
                 _instantiation = instantiation;
-                _hashcode = TypeHashingAlgorithms.ComputeMethodHashcode(methodDef.OwningType.GetHashCode(),
+                _hashcode = TypeHashingAlgorithms.ComputeMethodHashCode(methodDef.OwningType.GetHashCode(),
                     instantiation.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(methodDef.Name)));
             }
 
@@ -435,7 +435,7 @@ namespace Internal.TypeSystem
             {
                 _typicalMethodDef = typicalMethodDef;
                 _instantiatedType = instantiatedType;
-                _hashcode = TypeHashingAlgorithms.ComputeMethodHashcode(instantiatedType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(typicalMethodDef.Name));
+                _hashcode = TypeHashingAlgorithms.ComputeMethodHashCode(instantiatedType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(typicalMethodDef.Name));
             }
 
             public MethodDesc TypicalMethodDef

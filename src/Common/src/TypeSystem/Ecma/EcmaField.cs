@@ -167,6 +167,7 @@ namespace Internal.TypeSystem.Ecma
 
             _fieldFlags.AddFlags(flags);
 
+            Debug.Assert((flags & mask) != 0);
             return flags & mask;
         }
 

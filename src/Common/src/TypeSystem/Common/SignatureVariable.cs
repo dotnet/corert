@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
@@ -54,7 +55,7 @@ namespace Internal.TypeSystem
 
         public override int GetHashCode()
         {
-            return Index * 0x5498341 + 0x832424;
+            return TypeHashingAlgorithms.ComputeSignatureVariableHashCode(Index, false);
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
@@ -84,7 +85,7 @@ namespace Internal.TypeSystem
 
         public override int GetHashCode()
         {
-            return Index * 0x7822381 + 0x54872645;
+            return TypeHashingAlgorithms.ComputeSignatureVariableHashCode(Index, true);
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
