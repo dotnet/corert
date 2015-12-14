@@ -7,7 +7,7 @@ The following pre-requisites need to be installed for building the repo:
 
 # Windows (Windows 7+)
 
-Install [Visual Studio 2015 RTM](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx). 
+Install [Visual Studio 2015](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx), including Visual C++ support.
 
 # Ubuntu (14.04)
 
