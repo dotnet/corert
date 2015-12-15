@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
     public abstract partial class MetadataType : DefType
     {
         /// <summary>
-        /// The interfaces explicitly declared as implemented by this MetadataType. Duplicates are not permitted.
+        /// The interfaces explicitly declared as implemented by this MetadataType in the type's metadata.
         /// These correspond to the InterfaceImpls of a type in metadata
         /// </summary>
         public abstract DefType[] ExplicitlyImplementedInterfaces

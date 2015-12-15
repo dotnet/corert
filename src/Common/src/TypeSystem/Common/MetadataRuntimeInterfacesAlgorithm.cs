@@ -18,6 +18,9 @@ namespace Internal.TypeSystem
         {
             MetadataType type = (MetadataType)_type;
 
+            // TODO: need to implement deduplication
+            // https://github.com/dotnet/corert/issues/208
+
             if (type.IsInterface)
             {
                 // For interfaces, the set of interfaces implemented directly matches the
