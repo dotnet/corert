@@ -1717,7 +1717,10 @@ namespace Internal.Metadata.NativeFormat
     internal interface IHandle : IEquatable<Handle>, IEquatable<Object>
     {
         int GetHashCode();
-        HandleType GetHandleType(MetadataReader reader);
+        HandleType HandleType
+        {
+            get;
+        } // HandleType
 
         PropertySignatureHandle ToPropertySignatureHandle(MetadataReader reader);
         MethodSemanticsHandle ToMethodSemanticsHandle(MetadataReader reader);

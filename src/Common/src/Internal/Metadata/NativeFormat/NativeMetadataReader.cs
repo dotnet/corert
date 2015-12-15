@@ -110,7 +110,7 @@ namespace Internal.Metadata.NativeFormat
             _value = (int)type << 24 | (int)offset;
         }
 
-        internal HandleType HandleType
+        public HandleType HandleType
         {
             get
             {
@@ -124,11 +124,6 @@ namespace Internal.Metadata.NativeFormat
             {
                 return (this._value & 0x00FFFFFF);
             }
-        }
-
-        public HandleType GetHandleType(MetadataReader reader)
-        {
-            return (reader as MetadataReader).GetHandleType(this);
         }
 
         public bool IsNull(MetadataReader reader)
@@ -196,14 +191,6 @@ namespace Internal.Metadata.NativeFormat
             {
                 return _header.ScopeDefinitions;
             }
-        }
-
-        /// <summary>
-        /// Fetches the HandleType from a given Handle.
-        /// </summary>
-        public HandleType GetHandleType(Handle handle)
-        {
-            return (HandleType)(handle._value >> 24);
         }
 
         /// <summary>
