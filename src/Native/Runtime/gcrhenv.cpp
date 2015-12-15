@@ -169,7 +169,10 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
 #endif // FEATURE_ETW
 
-    InitializeSystemInfo();
+    if (!InitializeSystemInfo())
+    {
+        return false;
+    }
 
     // Initialize the special EEType used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
@@ -479,7 +482,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
     // Carefully attempt to set the global callback function (careful in that we won't overwrite another scan
     // that's being scheduled or in-progress). If someone beat us to it back off and wait for the
     // corresponding GC to complete.
-    while (FastInterlockCompareExchangePointer(&g_pfnHeapScan, pfnScanCallback, NULL) != NULL)
+    while (Interlocked::CompareExchangePointer(&g_pfnHeapScan, pfnScanCallback, NULL) != NULL)
     {
         // Wait in pre-emptive mode to avoid stalling another thread that's attempting a collection.
         Thread * pCurThread = GetThread();
@@ -509,7 +512,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
 
     // Release our hold on the global scanning pointers.
     g_pvHeapScanContext = NULL;
-    FastInterlockExchangePointer(&g_pfnHeapScan, NULL);
+    Interlocked::ExchangePointer(&g_pfnHeapScan, NULL);
 #else
     UNREFERENCED_PARAMETER(pfnScanCallback);
     UNREFERENCED_PARAMETER(pContext);
@@ -992,12 +995,12 @@ bool StartFinalizerThread()
     //
     static volatile Int32 fFinalizerThreadCreated;
 
-    if (FastInterlockExchange(&fFinalizerThreadCreated, 1) != 1)
+    if (Interlocked::Exchange(&fFinalizerThreadCreated, 1) != 1)
     {
         if (!PalStartFinalizerThread(FinalizerStart, (void*)FinalizerThread::GetFinalizerEvent()))
         {
             // Need to try again another time...
-            FastInterlockExchange(&fFinalizerThreadCreated, 0);
+            Interlocked::Exchange(&fFinalizerThreadCreated, 0);
         }
     }
 
@@ -1095,9 +1098,9 @@ bool FinalizerThread::WatchDog()
 
         // Wait for any outstanding finalization run to complete. Time this initial operation so that it forms
         // part of the overall timeout budget.
-        DWORD dwStartTime = GetTickCount();
+        DWORD dwStartTime = PalGetTickCount();
         Wait(dwTimeout);
-        DWORD dwEndTime = GetTickCount();
+        DWORD dwEndTime = PalGetTickCount();
 
         // In the exceedingly rare case that the tick count wrapped then we'll just reset the timeout to its
         // initial value. Otherwise we'll subtract the time we waited from the timeout budget (being mindful
@@ -1156,59 +1159,13 @@ void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
 #ifndef DACCESS_COMPILE
-void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
-{
-    // @TODO: no way to communicate failure
-    PalGlobalMemoryStatusEx(pGCMemStatus);
-}
 
 bool __SwitchToThread(uint32_t /*dwSleepMSec*/, uint32_t /*dwSwitchCount*/)
 {
     return !!PalSwitchToThread();
 }
 
-void * ClrVirtualAlloc(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect)
-{
-    return PalVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
-}
-
-void * ClrVirtualAllocAligned(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect,
-    size_t /*dwAlignment*/)
-{
-    return PalVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
-}
-
-bool ClrVirtualFree(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t dwFreeType)
-{
-    return !!PalVirtualFree(lpAddress, dwSize, dwFreeType);
-}
 #endif // DACCESS_COMPILE
-
-bool
-ClrVirtualProtect(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flNewProtect,
-    uint32_t * lpflOldProtect)
-{
-    UNREFERENCED_PARAMETER(lpAddress);
-    UNREFERENCED_PARAMETER(dwSize);
-    UNREFERENCED_PARAMETER(flNewProtect);
-    UNREFERENCED_PARAMETER(lpflOldProtect);
-    ASSERT(!"ClrVirtualProtect");
-    return false;
-}
 
 MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
@@ -1229,38 +1186,6 @@ void StompWriteBarrierResize(bool /*bReqUpperBoundsCheck*/)
 VOID LogSpewAlways(const char * /*fmt*/, ...)
 {
 }
-
-CLR_MUTEX_COOKIE ClrCreateMutex(CLR_MUTEX_ATTRIBUTES lpMutexAttributes, bool bInitialOwner, LPCWSTR lpName)
-{
-    UNREFERENCED_PARAMETER(lpMutexAttributes);
-    UNREFERENCED_PARAMETER(bInitialOwner);
-    UNREFERENCED_PARAMETER(lpName);
-    ASSERT(!"ClrCreateMutex");
-    return NULL;
-}
-
-void ClrCloseMutex(CLR_MUTEX_COOKIE mutex)
-{
-    UNREFERENCED_PARAMETER(mutex);
-    ASSERT(!"ClrCloseMutex");
-}
-
-bool ClrReleaseMutex(CLR_MUTEX_COOKIE mutex)
-{
-    UNREFERENCED_PARAMETER(mutex);
-    ASSERT(!"ClrReleaseMutex");
-    return true;
-}
-
-uint32_t ClrWaitForMutex(CLR_MUTEX_COOKIE mutex, uint32_t dwMilliseconds, bool bAlertable)
-{
-    UNREFERENCED_PARAMETER(mutex);
-    UNREFERENCED_PARAMETER(dwMilliseconds);
-    UNREFERENCED_PARAMETER(bAlertable);
-    ASSERT(!"ClrWaitForMutex");
-    return WAIT_OBJECT_0;
-}
-
 
 uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
 {

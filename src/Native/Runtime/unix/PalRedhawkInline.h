@@ -17,12 +17,12 @@ FORCEINLINE Int32 PalInterlockedDecrement(_Inout_ _Interlocked_operand_ Int32 vo
 
 FORCEINLINE UInt32 PalInterlockedOr(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
 {
-    return __sync_fetch_and_or(pDst, iValue);
+    return __sync_or_and_fetch(pDst, iValue);
 }
 
 FORCEINLINE UInt32 PalInterlockedAnd(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
 {
-    return __sync_fetch_and_and(pDst, iValue);
+    return __sync_and_and_fetch(pDst, iValue);
 }
 
 FORCEINLINE Int32 PalInterlockedExchange(_Inout_ _Interlocked_operand_ Int32 volatile *pDst, Int32 iValue)

@@ -10,20 +10,13 @@
 #include "holder.h"
 #include "Crst.h"
 
-#ifndef DACCESS_COMPILE
-bool EEThreadId::IsSameThread()
-{
-    return PalGetCurrentThreadId() == m_uiId;
-}
-#endif // DACCESS_COMPILE
-
 void CrstStatic::Init(CrstType eType, CrstFlags eFlags)
 {
     UNREFERENCED_PARAMETER(eType);
     UNREFERENCED_PARAMETER(eFlags);
 #ifndef DACCESS_COMPILE
 #if defined(_DEBUG)
-    m_uiOwnerId = UNOWNED;
+    m_uiOwnerId.Clear();
 #endif // _DEBUG
     PalInitializeCriticalSectionEx(&m_sCritSec, 0, 0);
 #endif // !DACCESS_COMPILE
@@ -42,7 +35,7 @@ void CrstStatic::Enter(CrstStatic *pCrst)
 #ifndef DACCESS_COMPILE
     PalEnterCriticalSection(&pCrst->m_sCritSec);
 #if defined(_DEBUG)
-    pCrst->m_uiOwnerId = PalGetCurrentThreadId();
+    pCrst->m_uiOwnerId.SetToCurrentThread();
 #endif // _DEBUG
 #else
     UNREFERENCED_PARAMETER(pCrst);
@@ -54,7 +47,7 @@ void CrstStatic::Leave(CrstStatic *pCrst)
 {
 #ifndef DACCESS_COMPILE
 #if defined(_DEBUG)
-    pCrst->m_uiOwnerId = UNOWNED;
+    pCrst->m_uiOwnerId.Clear();
 #endif // _DEBUG
     PalLeaveCriticalSection(&pCrst->m_sCritSec);
 #else
@@ -66,7 +59,7 @@ void CrstStatic::Leave(CrstStatic *pCrst)
 bool CrstStatic::OwnedByCurrentThread()
 {
 #ifndef DACCESS_COMPILE
-    return m_uiOwnerId == PalGetCurrentThreadId();
+    return m_uiOwnerId.IsCurrentThread();
 #else
     return false;
 #endif
@@ -74,6 +67,6 @@ bool CrstStatic::OwnedByCurrentThread()
 
 EEThreadId CrstStatic::GetHolderThreadId()
 {
-    return EEThreadId(m_uiOwnerId);
+    return m_uiOwnerId;
 }
 #endif // _DEBUG

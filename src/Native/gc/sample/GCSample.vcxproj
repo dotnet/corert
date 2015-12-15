@@ -50,7 +50,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_X86_;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>.;..;..\env</AdditionalIncludeDirectories>
@@ -67,7 +67,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_X86_;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>.;..;..\env</AdditionalIncludeDirectories>
     </ClCompile>
@@ -83,7 +83,8 @@
     <ClInclude Include="gcenv.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gcenv.cpp" />
+    <ClCompile Include="gcenv.ee.cpp" />
+    <ClCompile Include="gcenv.windows.cpp" />
     <ClCompile Include="GCSample.cpp" />
     <ClCompile Include="..\gccommon.cpp" />
     <ClCompile Include="..\gceewks.cpp" />
@@ -94,7 +95,6 @@
     <ClCompile Include="..\handletablecore.cpp" />
     <ClCompile Include="..\handletablescan.cpp" />
     <ClCompile Include="..\objecthandle.cpp" />
-    <ClCompile Include="..\env\gcenv.windows.cpp" />
     <ClCompile Include="..\env\common.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

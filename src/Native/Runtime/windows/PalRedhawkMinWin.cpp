@@ -19,6 +19,10 @@
 #include <errno.h>
 #include <evntprov.h>
 
+#include "holder.h"
+
+#define PalRaiseFailFastException RaiseFailFastException
+
 uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
 {
     return EventWrite(arg1, arg2, arg3, arg4);
@@ -38,6 +42,20 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 extern "C" UInt32 __stdcall NtGetCurrentProcessorNumber();
 
 static DWORD g_dwPALCapabilities;
+
+GCSystemInfo g_SystemInfo;
+
+bool InitializeSystemInfo()
+{
+    SYSTEM_INFO systemInfo;
+    GetSystemInfo(&systemInfo);
+
+    g_SystemInfo.dwNumberOfProcessors = systemInfo.dwNumberOfProcessors;
+    g_SystemInfo.dwPageSize = systemInfo.dwPageSize;
+    g_SystemInfo.dwAllocationGranularity = systemInfo.dwAllocationGranularity;
+
+    return true;
+}
 
 extern bool PalQueryProcessorTopology();
 REDHAWK_PALEXPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...);
@@ -154,25 +172,6 @@ REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertab
     }
 }
 
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Out_ GCMemoryStatus* pGCMemStatus)
-{
-    MEMORYSTATUSEX memStatus;
-    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
-
-    UInt32_BOOL result = GlobalMemoryStatusEx(&memStatus);
-
-    // Convert Windows struct to abstract struct
-    pGCMemStatus->dwMemoryLoad              = memStatus.dwMemoryLoad           ;
-    pGCMemStatus->ullTotalPhys              = memStatus.ullTotalPhys           ;
-    pGCMemStatus->ullAvailPhys              = memStatus.ullAvailPhys           ;
-    pGCMemStatus->ullTotalPageFile          = memStatus.ullTotalPageFile       ;
-    pGCMemStatus->ullAvailPageFile          = memStatus.ullAvailPageFile       ;
-    pGCMemStatus->ullTotalVirtual           = memStatus.ullTotalVirtual        ;
-    pGCMemStatus->ullAvailVirtual           = memStatus.ullAvailVirtual        ;
-
-    return result;
-}
-
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(UInt32 milliseconds)
 {
     return Sleep(milliseconds);
@@ -181,11 +180,6 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(UInt32 milliseconds)
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread()
 {
     return SwitchToThread();
-}
-
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateMutexW(_In_opt_ LPSECURITY_ATTRIBUTES pMutexAttributes, UInt32_BOOL initialOwner, _In_opt_z_ LPCWSTR pName)
-{
-    return CreateMutexW(pMutexAttributes, initialOwner, pName);
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
@@ -334,22 +328,6 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(
 {
     return CreateFileW(pFileName, desiredAccess, shareMode, (LPSECURITY_ATTRIBUTES)pSecurityAttributes, 
                        creationDisposition, flagsAndAttributes, hTemplateFile);
-}
-
-REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetWriteWatch(
-    UInt32 flags, 
-    _In_ void* pBaseAddress, 
-    UIntNative regionSize, 
-    _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, 
-    _Inout_opt_ UIntNative* pCount, 
-    _Inout_opt_ UInt32* pGranularity)
-{
-    return GetWriteWatch(flags, pBaseAddress, regionSize, pAddresses, (ULONG_PTR *)pCount, (LPDWORD)pGranularity);
-}
-
-REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, UIntNative regionSize)
-{
-    return ResetWriteWatch(pBaseAddress, regionSize);
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateLowMemoryNotification()
@@ -1232,18 +1210,6 @@ void PalDebugBreak()
     __debugbreak();
 }
 
-// Functions called by the GC to obtain our cached values for number of logical processors and cache size.
-REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetLogicalCpuCount()
-{
-    return g_cLogicalCpus;
-}
-
-REDHAWK_PALEXPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize)
-{
-    return bTrueSize ? g_cbLargestOnDieCache
-        : g_cbLargestOnDieCacheAdjusted;
-}
-
 REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, UIntNative size, UInt32 allocationType, UInt32 protect)
 {
     return VirtualAlloc(pAddress, size, allocationType, protect);
@@ -1267,99 +1233,451 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
     return InterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
+typedef uint32_t (WINAPI *GetCurrentProcessorNumber_t)(void);
 
+static GetCurrentProcessorNumber_t g_GetCurrentProcessorNumber = NULL;
+static LARGE_INTEGER performanceFrequency;
 
-//
-// Code seeded from gcenv.windows.cpp
-//
-
-
-#ifdef _X86_
-EXTERN_C long _InterlockedOr(long volatile *, long);
-#pragma intrinsic (_InterlockedOr)
-#define InterlockedOr _InterlockedOr
-
-EXTERN_C long _InterlockedAnd(long volatile *, long);
-#pragma intrinsic(_InterlockedAnd)
-#define InterlockedAnd _InterlockedAnd
-#endif // _X86_
-
-int32_t FastInterlockIncrement(int32_t volatile *lpAddend)
+// Initialize the interface implementation
+bool GCToOSInterface::Initialize()
 {
-    return InterlockedIncrement((LONG *)lpAddend);
+    if (!::QueryPerformanceFrequency(&performanceFrequency))
+    {
+        return false;
+    }
+
+    if (PalHasCapability(GetCurrentProcessorNumberCapability))
+    {
+        g_GetCurrentProcessorNumber = PalGetCurrentProcessorNumber;
+    }
+
+    return true;
 }
 
-int32_t FastInterlockDecrement(int32_t volatile *lpAddend)
+// Shutdown the interface implementation
+void GCToOSInterface::Shutdown()
 {
-    return InterlockedDecrement((LONG *)lpAddend);
 }
 
-int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value)
+// Get numeric id of the current thread if possible on the 
+// current platform. It is indended for logging purposes only.
+// Return:
+//  Numeric id of the current thread or 0 if the 
+uint32_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
-    return InterlockedExchange((LONG *)Target, Value);
+    return ::GetCurrentThreadId();
 }
 
-int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand)
+// Get id of the process
+uint32_t GCToOSInterface::GetCurrentProcessId()
 {
-    return InterlockedCompareExchange((LONG *)Destination, Exchange, Comperand);
+    return ::GetCurrentProcessId();
 }
 
-int32_t FastInterlockExchangeAdd(int32_t volatile *Addend, int32_t Value)
+// Set ideal affinity for the current thread
+// Parameters:
+//  affinity - ideal processor affinity for the thread
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 {
-    return InterlockedExchangeAdd((LONG *)Addend, Value);
+    bool success = true;
+
+    PROCESSOR_NUMBER proc;
+
+    if (affinity->Group != -1)
+    {
+        proc.Group = (WORD)affinity->Group;
+        proc.Number = (BYTE)affinity->Processor;
+        proc.Reserved = 0;
+        
+        success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
+    }
+    else
+    {
+        if (GetThreadIdealProcessorEx(GetCurrentThread(), &proc))
+        {
+            proc.Number = affinity->Processor;
+            success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
+        }        
+    }
+
+    return success;
 }
 
-void * _FastInterlockExchangePointer(void * volatile *Target, void * Value)
+// Get the number of the current processor
+uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
-    return InterlockedExchangePointer(Target, Value);
+    _ASSERTE(GCToOSInterface::CanGetCurrentProcessorNumber());
+    return g_GetCurrentProcessorNumber();
 }
 
-void * _FastInterlockCompareExchangePointer(void * volatile *Destination, void * Exchange, void * Comperand)
+// Check if the OS supports getting current processor number
+bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
-    return InterlockedCompareExchangePointer(Destination, Exchange, Comperand);
+    return g_GetCurrentProcessorNumber != NULL;
 }
 
-void FastInterlockOr(uint32_t volatile *p, uint32_t msk)
+// Flush write buffers of processors that are executing threads of the current process
+void GCToOSInterface::FlushProcessWriteBuffers()
 {
-    InterlockedOr((LONG volatile *)p, msk);
+    ::FlushProcessWriteBuffers();
 }
 
-void FastInterlockAnd(uint32_t volatile *p, uint32_t msk)
+// Break into a debugger
+void GCToOSInterface::DebugBreak()
 {
-    InterlockedAnd((LONG volatile *)p, msk);
+    ::DebugBreak();
 }
 
-
-void UnsafeInitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
+// Get number of logical processors
+uint32_t GCToOSInterface::GetLogicalCpuCount()
 {
-    InitializeCriticalSection(lpCriticalSection);
+    return g_cLogicalCpus;
 }
 
-void UnsafeEEEnterCriticalSection(CRITICAL_SECTION *lpCriticalSection)
+bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
+
+// Causes the calling thread to sleep for the specified number of milliseconds
+// Parameters:
+//  sleepMSec   - time to sleep before switching to another thread
+void GCToOSInterface::Sleep(uint32_t sleepMSec)
 {
-    EnterCriticalSection(lpCriticalSection);
+    __SwitchToThread(sleepMSec, 0);
 }
 
-void UnsafeEELeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
+// Causes the calling thread to yield execution to another thread that is ready to run on the current processor.
+// Parameters:
+//  switchCount - number of times the YieldThread was called in a loop
+void GCToOSInterface::YieldThread(uint32_t switchCount)
 {
-    LeaveCriticalSection(lpCriticalSection);
+    __SwitchToThread(0, switchCount);
 }
 
-void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
+// Reserve virtual memory range.
+// Parameters:
+//  address   - starting virtual address, it can be NULL to let the function choose the starting address
+//  size      - size of the virtual memory range
+//  alignment - requested memory alignment
+//  flags     - flags to control special settings like write watching
+// Return:
+//  Starting virtual address of the reserved range
+void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignment, uint32_t flags)
 {
-    DeleteCriticalSection(lpCriticalSection);
+    DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
+    return ::VirtualAlloc(0, size, memFlags, PAGE_READWRITE);
 }
 
-
-GCSystemInfo g_SystemInfo;
-
-void InitializeSystemInfo()
+// Release virtual memory range previously reserved using VirtualReserve
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 {
-    SYSTEM_INFO systemInfo;
-    GetSystemInfo(&systemInfo);
-
-    g_SystemInfo.dwNumberOfProcessors = systemInfo.dwNumberOfProcessors;
-    g_SystemInfo.dwPageSize = systemInfo.dwPageSize;
-    g_SystemInfo.dwAllocationGranularity = systemInfo.dwAllocationGranularity;
+    UNREFERENCED_PARAMETER(size);
+    return !!::VirtualFree(address, 0, MEM_RELEASE);
 }
 
+// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualCommit(void* address, size_t size)
+{
+    return ::VirtualAlloc(address, size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+}
+
+// Decomit virtual memory range.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
+{
+    return !!::VirtualFree(address, size, MEM_DECOMMIT);
+}
+
+// Reset virtual memory range. Indicates that data in the memory range specified by address and size is no 
+// longer of interest, but it should not be decommitted.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+//  unlock  - true if the memory range should also be unlocked
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
+{
+    bool success = ::VirtualAlloc(address, size, MEM_RESET, PAGE_READWRITE) != NULL;
+    if (success && unlock)
+    {
+        // Remove the page range from the working set
+        ::VirtualUnlock(address, size);
+    }
+
+    return success;
+}
+
+// Check if the OS supports write watching
+bool GCToOSInterface::SupportsWriteWatch()
+{
+    return PalHasCapability(WriteWatchCapability);
+}
+
+// Reset the write tracking state for the specified virtual memory range.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+void GCToOSInterface::ResetWriteWatch(void* address, size_t size)
+{
+    ::ResetWriteWatch(address, size);
+}
+
+// Retrieve addresses of the pages that are written to in a region of virtual memory
+// Parameters:
+//  resetState         - true indicates to reset the write tracking state
+//  address            - starting virtual address
+//  size               - size of the virtual memory range
+//  pageAddresses      - buffer that receives an array of page addresses in the memory region
+//  pageAddressesCount - on input, size of the lpAddresses array, in array elements
+//                       on output, the number of page addresses that are returned in the array.
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size, void** pageAddresses, uintptr_t* pageAddressesCount)
+{
+    uint32_t flags = resetState ? 1 : 0;
+    ULONG granularity;
+
+    bool success = ::GetWriteWatch(flags, address, size, pageAddresses, (ULONG_PTR*)pageAddressesCount, &granularity) == 0;
+    _ASSERTE (granularity == OS_PAGE_SIZE);
+
+    return success;
+}
+
+// Get size of the largest cache on the processor die
+// Parameters:
+//  trueSize - true to return true cache size, false to return scaled up size based on
+//             the processor architecture
+// Return:
+//  Size of the cache
+size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
+{
+    return trueSize ? g_cbLargestOnDieCache : g_cbLargestOnDieCacheAdjusted;
+}
+
+// Get affinity mask of the current process
+// Parameters:
+//  processMask - affinity mask for the specified process
+//  systemMask  - affinity mask for the system
+// Return:
+//  true if it has succeeded, false if it has failed
+// Remarks:
+//  A process affinity mask is a bit vector in which each bit represents the processors that
+//  a process is allowed to run on. A system affinity mask is a bit vector in which each bit
+//  represents the processors that are configured into a system.
+//  A process affinity mask is a subset of the system affinity mask. A process is only allowed
+//  to run on the processors configured into a system. Therefore, the process affinity mask cannot
+//  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
+bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
+{
+    return false;
+}
+
+// Get number of processors assigned to the current process
+// Return:
+//  The number of processors
+uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
+{
+    static int cCPUs = 0;
+
+    if (cCPUs != 0)
+        return cCPUs;
+
+    DWORD_PTR pmask, smask;
+
+    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+        return 1;
+
+    if (pmask == 1)
+        return 1;
+
+    pmask &= smask;
+        
+    int count = 0;
+    while (pmask)
+    {
+        if (pmask & 1)
+            count++;
+                
+        pmask >>= 1;
+    }
+        
+    // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+    // than 64 processors, which would leave us with a count of 0.  Since the GC
+    // expects there to be at least one processor to run on (and thus at least one
+    // heap), we'll return 64 here if count is 0, since there are likely a ton of
+    // processors available in that case.  The GC also cannot (currently) handle
+    // the case where there are more than 64 processors, so we will return a
+    // maximum of 64 here.
+    if (count == 0 || count > 64)
+        count = 64;
+
+    cCPUs = count;
+            
+    return count;
+}
+
+// Get global memory status
+// Parameters:
+//  ms - pointer to the structure that will be filled in with the memory status
+void GCToOSInterface::GetMemoryStatus(GCMemoryStatus* ms)
+{
+    MEMORYSTATUSEX memStatus;
+    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
+
+    // TODO: fail fast if the function call fails?
+    GlobalMemoryStatusEx(&memStatus);
+
+    // Convert Windows struct to abstract struct
+    ms->dwMemoryLoad     = memStatus.dwMemoryLoad;
+    ms->ullTotalPhys     = memStatus.ullTotalPhys;
+    ms->ullAvailPhys     = memStatus.ullAvailPhys;
+    ms->ullTotalPageFile = memStatus.ullTotalPageFile;
+    ms->ullAvailPageFile = memStatus.ullAvailPageFile;
+    ms->ullTotalVirtual  = memStatus.ullTotalVirtual;
+    ms->ullAvailVirtual  = memStatus.ullAvailVirtual;
+}
+
+// Get a high precision performance counter
+// Return:
+//  The counter value
+int64_t GCToOSInterface::QueryPerformanceCounter()
+{
+    LARGE_INTEGER ts;
+    if (!::QueryPerformanceCounter(&ts))
+    {
+        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
+        RhFailFast();
+    }
+
+    return ts.QuadPart;
+}
+
+// Get a frequency of the high precision performance counter
+// Return:
+//  The counter frequency
+int64_t GCToOSInterface::QueryPerformanceFrequency()
+{
+    LARGE_INTEGER frequency;
+    if (!::QueryPerformanceFrequency(&frequency))
+    {
+        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
+        RhFailFast();
+    }
+
+    return frequency.QuadPart;
+}
+
+// Get a time stamp with a low precision
+// Return:
+//  Time stamp in milliseconds
+uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
+{
+    return ::GetTickCount();
+}
+
+// Parameters of the GC thread stub
+struct GCThreadStubParam
+{
+    GCThreadFunction GCThreadFunction;
+    void* GCThreadParam;
+};
+
+// GC thread stub to convert GC thread function to an OS specific thread function
+static DWORD GCThreadStub(void* param)
+{
+    GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
+    GCThreadFunction function = stubParam->GCThreadFunction;
+    void* threadParam = stubParam->GCThreadParam;
+
+    delete stubParam;
+
+    function(threadParam);
+
+    return 0;
+}
+
+// Create a new thread for GC use
+// Parameters:
+//  function - the function to be executed by the thread
+//  param    - parameters of the thread
+//  affinity - processor affinity of the thread
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
+{
+    NewHolder<GCThreadStubParam> stubParam = new (nothrow) GCThreadStubParam();
+    if (stubParam == NULL)
+    {
+        return false;
+    }
+
+    stubParam->GCThreadFunction = function;
+    stubParam->GCThreadParam = param;
+
+    DWORD thread_id;
+    HANDLE gc_thread = ::CreateThread(0, 4096, GCThreadStub, &stubParam, CREATE_SUSPENDED, &thread_id);
+
+    if (!gc_thread)
+    {
+        return false;
+    }
+
+    stubParam.SuppressRelease();
+
+    SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
+
+    ResumeThread(gc_thread);
+    CloseHandle(gc_thread);
+
+    return true;
+}
+
+// Open a file
+// Parameters:
+//  filename - name of the file to open
+//  mode     - mode to open the file in (like in the CRT fopen)
+// Return:
+//  FILE* of the opened file
+FILE* GCToOSInterface::OpenFile(const WCHAR* filename, const WCHAR* mode)
+{
+    return _wfopen(filename, mode);
+}
+
+// Initialize the critical section
+void CLRCriticalSection::Initialize()
+{
+    InitializeCriticalSection(&m_cs);
+}
+
+// Destroy the critical section
+void CLRCriticalSection::Destroy()
+{
+    DeleteCriticalSection(&m_cs);
+}
+
+// Enter the critical section. Blocks until the section can be entered.
+void CLRCriticalSection::Enter()
+{
+    EnterCriticalSection(&m_cs);
+}
+
+// Leave the critical section
+void CLRCriticalSection::Leave()
+{
+    LeaveCriticalSection(&m_cs);
+}
