@@ -74,37 +74,20 @@ download_file()
     fi
 }
 
-install_dotnet_cli()
+setup_dotnet_cli_env()
 {
-    echo "Installing the dotnet/cli..."
     local __tools_dir=${__scriptpath}/bin/tools
     local __cli_dir=${__tools_dir}/cli
-    
-    if [ ! -d "${__cli_dir}" ]; then
-        mkdir -p "${__cli_dir}"
-    fi
-    if [ ! -f "${__cli_dir}/bin/dotnet" ]; then
-        local __build_os_lowercase=$(echo "${__BuildOS}" | tr '[:upper:]' '[:lower:]')
-        local __build_arch_lowercase=$(echo "${__BuildArch}" | tr '[:upper:]' '[:lower:]')
-        local __cli_tarball=dotnet-${__build_os_lowercase}-${__build_arch_lowercase}.latest.tar.gz
-        local __cli_tarball_path=${__tools_dir}/${__cli_tarball}
-        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/${__cli_tarball}"
-        tar -xzf ${__cli_tarball_path} -C ${__cli_dir}
-        export DOTNET_HOME=${__cli_dir}
-        #
-        # Workaround: Setting "HOME" for now to a dir in repo, as "dotnet restore"
-        # depends on "HOME" to be set for its .dnx cache.
-        #
-        # See https://github.com/dotnet/cli/blob/5f5e3ad74c0c1de7071ba1309dca2ea289691163/scripts/ci_build.sh#L24
-        #     https://github.com/dotnet/cli/issues/354
-        #
-        if [ -n ${HOME:+1} ]; then
-            export HOME=${__tools_dir}
-        fi
-    fi
-    if [ ! -f "${__cli_dir}/bin/dotnet" ]; then
-        echo "CLI could not be installed or not present."
-        exit 1
+    export DOTNET_HOME=${__cli_dir}
+    #
+    # Workaround: Setting "HOME" for now to a dir in repo, as "dotnet restore"
+    # depends on "HOME" to be set for its .dnx cache.
+    #
+    # See https://github.com/dotnet/cli/blob/5f5e3ad74c0c1de7071ba1309dca2ea289691163/scripts/ci_build.sh#L24
+    #     https://github.com/dotnet/cli/issues/354
+    #
+    if [ -n ${HOME:+1} ]; then
+        export HOME=${__tools_dir}
     fi
 }
 
@@ -139,8 +122,8 @@ prepare_managed_build()
         fi
     fi
 
-    # Obtain dotnet CLI to perform restore
-    install_dotnet_cli
+    # Set env variables for CLI to work correctly.
+    setup_dotnet_cli_env
 }
 
 prepare_native_build()
