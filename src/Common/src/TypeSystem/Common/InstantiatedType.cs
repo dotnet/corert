@@ -285,6 +285,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override ModuleDesc Module
+        {
+            get
+            {
+                return _typeDef.Module;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);

@@ -96,7 +96,7 @@ namespace Internal.TypeSystem.Ecma
                 int i = 0;
                 foreach (var genericParameterHandle in genericParameterHandles)
                 {
-                    genericParameters[i++] = new EcmaGenericParameter(this.Module, genericParameterHandle);
+                    genericParameters[i++] = new EcmaGenericParameter(_module, genericParameterHandle);
                 }
                 Interlocked.CompareExchange(ref _genericParameters, genericParameters, null);
             }
@@ -116,7 +116,15 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public EcmaModule Module
+        public override ModuleDesc Module
+        {
+            get
+            {
+                return _module;
+            }
+        }
+
+        public EcmaModule EcmaModule
         {
             get
             {
@@ -257,7 +265,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetMethods())
             {
-                yield return (MethodDesc)this.Module.GetObject(handle);
+                yield return (MethodDesc)_module.GetObject(handle);
             }
         }
 
@@ -270,7 +278,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
-                    MethodDesc method = (MethodDesc)this.Module.GetObject(handle);
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
                     if (signature == null || signature.Equals(method.Signature))
                         return method;
                 }
@@ -290,7 +298,7 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodDefinition.Attributes & MethodAttributes.SpecialName) != 0 &&
                     stringComparer.Equals(methodDefinition.Name, ".cctor"))
                 {
-                    MethodDesc method = (MethodDesc)this.Module.GetObject(handle);
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
                     return method;
                 }
             }
@@ -328,7 +336,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetFields())
             {
-                var field = (EcmaField)this.Module.GetObject(handle);
+                var field = (EcmaField)_module.GetObject(handle);
                 yield return field;
             }
         }
@@ -342,7 +350,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (stringComparer.Equals(metadataReader.GetFieldDefinition(handle).Name, name))
                 {
-                    var field = (EcmaField)this.Module.GetObject(handle);
+                    var field = (EcmaField)_module.GetObject(handle);
                     return field;
                 }
             }
@@ -354,7 +362,7 @@ namespace Internal.TypeSystem.Ecma
         {
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
-                yield return (MetadataType)this.Module.GetObject(handle);
+                yield return (MetadataType)_module.GetObject(handle);
             }
         }
 
@@ -366,7 +374,7 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
                 if (stringComparer.Equals(metadataReader.GetTypeDefinition(handle).Name, name))
-                    return (MetadataType)this.Module.GetObject(handle);
+                    return (MetadataType)_module.GetObject(handle);
             }
 
             return null;
@@ -400,7 +408,7 @@ namespace Internal.TypeSystem.Ecma
 
         public override string ToString()
         {
-            return "[" + Module.GetName().Name + "]" + this.GetFullName();
+            return "[" + _module.GetName().Name + "]" + this.GetFullName();
         }
 
         public override ClassLayoutMetadata GetClassLayout()
@@ -439,7 +447,7 @@ namespace Internal.TypeSystem.Ecma
                     //       to FieldAndOffset.InvalidOffset.
                     Debug.Assert(FieldAndOffset.InvalidOffset == -1);
                     result.Offsets[index] =
-                        new FieldAndOffset((FieldDesc)this.Module.GetObject(handle), fieldDefinition.GetOffset());
+                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), fieldDefinition.GetOffset());
 
                     index++;
                 }
@@ -478,7 +486,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return Module.GetGlobalModuleType() == this;
+                return _module.GetGlobalModuleType() == this;
             }
         }
 
