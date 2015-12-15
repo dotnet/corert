@@ -26,6 +26,7 @@ namespace ILCompiler.Metadata
         private Action<Cts.ByRefType, TypeSpecification> _initByRef;
         private Action<Cts.PointerType, TypeSpecification> _initPointer;
         private Action<Cts.InstantiatedType, TypeSpecification> _initTypeInst;
+        private Action<Cts.GenericParameterDesc, TypeSpecification> _initTypeVar;
 
         public override MetadataRecord HandleType(Cts.TypeDesc type)
         {
@@ -53,7 +54,8 @@ namespace ILCompiler.Metadata
             }
             else if (type is Cts.GenericParameterDesc)
             {
-                throw new NotImplementedException();
+                var genericParameter = (Cts.GenericParameterDesc)type;
+                rec = _types.GetOrCreate(genericParameter, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
             }
             else if (type is Cts.InstantiatedType)
             {
@@ -112,6 +114,28 @@ namespace ILCompiler.Metadata
             };
         }
 
+        private void InitializeTypeVariable(Cts.GenericParameterDesc entity, TypeSpecification record)
+        {
+            MetadataRecord sig;
+            if (entity.Kind == Cts.GenericParameterKind.Type)
+            {
+                sig = new TypeVariableSignature
+                {
+                    Number = entity.Index
+                };
+            }
+            else
+            {
+                Debug.Assert(entity.Kind == Cts.GenericParameterKind.Method);
+                sig = new MethodTypeVariableSignature
+                {
+                    Number = entity.Index
+                };
+            }
+
+            record.Signature = sig;
+        }
+
         private void InitializeTypeInstance(Cts.InstantiatedType entity, TypeSpecification record)
         {
             var args = new List<MetadataRecord>(entity.Instantiation.Length);
@@ -135,8 +159,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                // TODO: Lift Module to MetadataType and remove the cast
-                record.ParentNamespaceOrType = HandleNamespaceDefinition(((Cts.Ecma.EcmaType)entity).Module, entity.Namespace);
+                record.ParentNamespaceOrType = HandleNamespaceDefinition(entity.Module, entity.Namespace);
             }
 
             record.TypeName = HandleString(entity.Name);
@@ -154,8 +177,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                // TODO: Lift Module to MetadataType and remove the cast
-                var namespaceDefinition = HandleNamespaceDefinition(((Cts.Ecma.EcmaType)entity).Module, entity.Namespace);
+                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.Namespace);
                 record.NamespaceDefinition = namespaceDefinition;
                 namespaceDefinition.TypeDefinitions.Add(record);
             }

@@ -30,6 +30,7 @@
     <Compile Include="ILCompiler\Metadata\IMetadataPolicy.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Namespace.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Parameter.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Scope.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.String.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Type.cs" />

@@ -25,11 +25,10 @@ namespace ILCompiler.Metadata
 
         private void InitializeScopeDefinition(Cts.ModuleDesc module, ScopeDefinition scopeDefinition)
         {
-            // TODO: IAssemblyDesc
-            var ecmaModule = module as Cts.Ecma.EcmaModule;
-            if (ecmaModule != null)
+            var assemblyDesc = module as Cts.IAssemblyDesc;
+            if (assemblyDesc != null)
             {
-                var assemblyName = ecmaModule.GetName();
+                var assemblyName = assemblyDesc.GetName();
 
                 scopeDefinition.Name = HandleString(assemblyName.Name);
                 scopeDefinition.Culture = HandleString(assemblyName.CultureName);
@@ -53,7 +52,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("Multi-module assemblies");
             }
 
             scopeDefinition.RootNamespaceDefinition = new NamespaceDefinition
@@ -73,11 +72,10 @@ namespace ILCompiler.Metadata
 
         private void InitializeScopeReference(Cts.ModuleDesc module, ScopeReference scopeReference)
         {
-            // TODO: IAssemblyDesc
-            var ecmaModule = module as Cts.Ecma.EcmaModule;
-            if (ecmaModule != null)
+            var assemblyDesc = module as Cts.IAssemblyDesc;
+            if (assemblyDesc != null)
             {
-                var assemblyName = ecmaModule.GetName();
+                var assemblyName = assemblyDesc.GetName();
 
                 scopeReference.Name = HandleString(assemblyName.Name);
                 scopeReference.Culture = HandleString(assemblyName.CultureName);
@@ -95,11 +93,14 @@ namespace ILCompiler.Metadata
                     scopeReference.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
                 }
 
-                scopeReference.PublicKeyOrToken = assemblyName.GetPublicKey();
+                if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
+                    scopeReference.PublicKeyOrToken = assemblyName.GetPublicKey();
+                else
+                    scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
             }
             else
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("Multi-module assemblies");
             }
         }
     }
