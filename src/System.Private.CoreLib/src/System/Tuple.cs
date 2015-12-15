@@ -100,7 +100,7 @@ namespace System
 
     public class Tuple<T1> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
 
@@ -186,8 +186,8 @@ namespace System
 
     public class Tuple<T1, T2> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
-        private readonly T2 m_Item2;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T2 m_Item2;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
         public T2 Item2 { get { return m_Item2; } }
@@ -283,9 +283,9 @@ namespace System
 
     public class Tuple<T1, T2, T3> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
-        private readonly T2 m_Item2;
-        private readonly T3 m_Item3;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T2 m_Item2;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T3 m_Item3;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
         public T2 Item2 { get { return m_Item2; } }
@@ -389,10 +389,10 @@ namespace System
 
     public class Tuple<T1, T2, T3, T4> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
-        private readonly T2 m_Item2;
-        private readonly T3 m_Item3;
-        private readonly T4 m_Item4;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T2 m_Item2;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T3 m_Item3;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T4 m_Item4;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
         public T2 Item2 { get { return m_Item2; } }
@@ -504,11 +504,11 @@ namespace System
 
     public class Tuple<T1, T2, T3, T4, T5> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
-        private readonly T2 m_Item2;
-        private readonly T3 m_Item3;
-        private readonly T4 m_Item4;
-        private readonly T5 m_Item5;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T2 m_Item2;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T3 m_Item3;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T4 m_Item4;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T5 m_Item5;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
         public T2 Item2 { get { return m_Item2; } }
@@ -628,12 +628,12 @@ namespace System
 
     public class Tuple<T1, T2, T3, T4, T5, T6> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
-        private readonly T2 m_Item2;
-        private readonly T3 m_Item3;
-        private readonly T4 m_Item4;
-        private readonly T5 m_Item5;
-        private readonly T6 m_Item6;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T2 m_Item2;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T3 m_Item3;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T4 m_Item4;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T5 m_Item5;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T6 m_Item6;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
         public T2 Item2 { get { return m_Item2; } }
@@ -761,13 +761,13 @@ namespace System
 
     public class Tuple<T1, T2, T3, T4, T5, T6, T7> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
-        private readonly T2 m_Item2;
-        private readonly T3 m_Item3;
-        private readonly T4 m_Item4;
-        private readonly T5 m_Item5;
-        private readonly T6 m_Item6;
-        private readonly T7 m_Item7;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T2 m_Item2;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T3 m_Item3;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T4 m_Item4;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T5 m_Item5;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T6 m_Item6;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T7 m_Item7;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
         public T2 Item2 { get { return m_Item2; } }
@@ -903,14 +903,14 @@ namespace System
 
     public class Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> : IStructuralEquatable, IStructuralComparable, IComparable, ITuple
     {
-        private readonly T1 m_Item1;
-        private readonly T2 m_Item2;
-        private readonly T3 m_Item3;
-        private readonly T4 m_Item4;
-        private readonly T5 m_Item5;
-        private readonly T6 m_Item6;
-        private readonly T7 m_Item7;
-        private readonly TRest m_Rest;
+        private readonly T1 m_Item1;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T2 m_Item2;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T3 m_Item3;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T4 m_Item4;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T5 m_Item5;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T6 m_Item6;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly T7 m_Item7;    // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private readonly TRest m_Rest;  // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public T1 Item1 { get { return m_Item1; } }
         public T2 Item2 { get { return m_Item2; } }

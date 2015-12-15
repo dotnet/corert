@@ -40,8 +40,8 @@ namespace System.Collections.Generic
     // and IReadOnlyDictionary<TKey, TValue>.
     public struct KeyValuePair<TKey, TValue>
     {
-        private TKey key;
-        private TValue value;
+        private TKey key;       // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private TValue value;   // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public KeyValuePair(TKey key, TValue value)
         {
