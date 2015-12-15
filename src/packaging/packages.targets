@@ -235,8 +235,8 @@
         <MakeDir Directories="$(Stage0ProjectDir)" Condition="!Exists('$(Stage0ProjectDir)')" />
         <WriteLinesToFile File="$(Stage0ProjectJsonFile)" Lines="$(Stage0ProjectJsonLines)" Overwrite="true" />
         <WriteLinesToFile File="$(Stage0ProjectDir)/Program.cs" Lines="class Program { public static void Main() { } }" Overwrite="true" />
-        <Exec Command="&quot;$(DnuToolPath)&quot; restore -s &quot;$(ProductPackageDir)&quot; $(DnuRestoreSource) &quot;$(Stage0ProjectDir)&quot;" />
-        <Exec Command="&quot;$(DnuToolPath)&quot; publish &quot;$(Stage0ProjectDir)&quot; -o &quot;$(Stage0PublishDir)&quot; -f &quot;dnxcore50&quot; -r &quot;$(NuPkgRid)&quot;" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; restore -s &quot;$(ProductPackageDir)&quot; $(DnuRestoreSource) &quot;$(Stage0ProjectDir)&quot; --runtime &quot;$(NuPkgRid)&quot;" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; publish &quot;$(Stage0ProjectDir)&quot; -o &quot;$(Stage0PublishDir)&quot; -f &quot;dnxcore50&quot; --runtime &quot;$(NuPkgRid)&quot;" />
 
         <!-- =================== self-host ================= -->
         <!-- Use stage0 ilc.exe/corerun to compile stage1 runtime libs -->
@@ -281,8 +281,8 @@
         <MakeDir Directories="$(Stage1ProjectDir)" Condition="!Exists('$(Stage1ProjectDir)')" />
         <WriteLinesToFile File="$(Stage1ProjectJsonFile)" Lines="$(Stage1ProjectJsonLines)" Overwrite="true" />
         <WriteLinesToFile File="$(Stage1ProjectDir)/Program.cs" Lines="class Program { public static void Main() { } }" Overwrite="true" />
-        <Exec Command="&quot;$(DnuToolPath)&quot; restore -s &quot;$(ProductPackageDir)&quot; $(DnuRestoreSource) &quot;$(Stage1ProjectDir)&quot;" />
-        <Exec Command="&quot;$(DnuToolPath)&quot; publish &quot;$(Stage1ProjectDir)&quot; -o &quot;$(Stage1PublishDir)&quot; -f &quot;dnxcore50&quot; -r &quot;$(NuPkgRid)&quot;" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; restore -s &quot;$(ProductPackageDir)&quot; $(DnuRestoreSource) &quot;$(Stage1ProjectDir)&quot; --runtime &quot;$(NuPkgRid)&quot;" />
+        <Exec Command="&quot;$(DnuToolPath)&quot; publish &quot;$(Stage1ProjectDir)&quot; -o &quot;$(Stage1PublishDir)&quot; -f &quot;dnxcore50&quot; --runtime &quot;$(NuPkgRid)&quot;" />
 
     </Target>
 </Project>
