@@ -14,8 +14,8 @@ namespace System.Collections.ObjectModel
     [DebuggerDisplay("Count = {Count}")]
     public class ReadOnlyCollection<T> : IList<T>, IList, IReadOnlyList<T>
     {
-        private IList<T> list;
-        private Object _syncRoot;
+        private IList<T> list;      // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private Object _syncRoot;   // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public ReadOnlyCollection(IList<T> list)
         {
