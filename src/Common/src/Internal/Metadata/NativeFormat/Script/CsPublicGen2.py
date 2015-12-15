@@ -303,7 +303,7 @@ def CsEmitSource():
     
     Ty.IMetadataReader = CreateReader('IMetadataReader', recs, hnds)
     Ty.MetadataReader = ClassDef('MetadataReader', flags = TypeFlags.Partial, interfaces = [Ty.IMetadataReader])
-    Ty.IHandle.members.add(MethodDef('GetHandleType', sig = [Ty.HandleType, [(Ty.MetadataReader, 'reader')]]))
+    Ty.IHandle.members.add(PropertyDef('HandleType', Ty.HandleType, getter = PropertyGetter()))
     ns.members.add(Ty.IMetadataReader)
     ns.members.add(Ty.MetadataReader)
 
