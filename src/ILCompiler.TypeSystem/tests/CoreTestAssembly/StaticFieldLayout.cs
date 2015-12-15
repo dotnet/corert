@@ -50,6 +50,14 @@ namespace StaticFieldLayout
         static string string3;
     }
 
+    class LiteralFieldsDontAffectLayout
+    {
+        const int IntConstant = 0;
+        const string StringConstant = null;
+        static int Int1;
+        static string String1;
+    }
+
     class RvaTestClass
     {
         static void RvaTest()

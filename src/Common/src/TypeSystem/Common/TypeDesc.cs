@@ -359,14 +359,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public virtual string Name
-        {
-            get
-            {
-                return null;
-            }
-        }
-
         public virtual bool HasStaticConstructor
         {
             get

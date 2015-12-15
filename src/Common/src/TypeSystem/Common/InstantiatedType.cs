@@ -112,6 +112,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override string Namespace
+        {
+            get
+            {
+                return _typeDef.Namespace;
+            }
+        }
+
         public override IEnumerable<MethodDesc> GetMethods()
         {
             foreach (var typicalMethodDef in _typeDef.GetMethods())
@@ -280,6 +288,15 @@ namespace Internal.TypeSystem
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
+        }
+
+        public override MetadataType ContainingType
+        {
+            get
+            {
+                // Return the result from the typical type definition.
+                return _typeDef.ContainingType;
+            }
         }
 
         public override MetadataType GetNestedType(string name)

@@ -19,7 +19,9 @@ namespace ILCompiler
         public static IntrinsicMethodKind GetIntrinsicMethodClassification(MethodDesc method)
         {
             // TODO: make this reliable
-            if (method.Name == "InitializeArray" && method.OwningType.Name == "System.Runtime.CompilerServices.RuntimeHelpers")
+            MetadataType owningMdType = method.OwningType as MetadataType;
+
+            if (owningMdType != null && method.Name == "InitializeArray" && owningMdType.Name == "RuntimeHelpers" && owningMdType.Namespace == "System.Runtime.CompilerServices")
             {
                 return IntrinsicMethodKind.RuntimeHelpersInitializeArray;
             }

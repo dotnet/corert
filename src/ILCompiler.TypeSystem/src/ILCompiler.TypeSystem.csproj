@@ -33,6 +33,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\ByRefType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldForInstantiatedType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldDesc.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldDesc.FieldLayout.cs" />

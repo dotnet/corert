@@ -1436,7 +1436,7 @@ namespace Internal.JitInterface
             {
                 EcmaType ecmaType = method.OwningType.GetTypeDefinition() as EcmaType;
                 if (ecmaType != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(ecmaType.Name));
+                    *moduleName = (byte*)GetPin(StringToUTF8(ecmaType.GetFullName()));
                 else
                     *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
             }

@@ -214,5 +214,14 @@ namespace Internal.TypeSystem
 
             return method;
         }
+
+        /// <summary>
+        /// Retrieves the namespace qualified name of a <see cref="MetadataType"/>.
+        /// </summary>
+        public static string GetFullName(this MetadataType metadataType)
+        {
+            string ns = metadataType.Namespace;
+            return ns.Length > 0 ? String.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+        }
     }
 }
