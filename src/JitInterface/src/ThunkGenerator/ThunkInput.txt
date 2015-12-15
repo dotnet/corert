@@ -33,123 +33,123 @@
 ;
 NORMALTYPES
 void
-IEEMemoryManager*,void*
-LPVOID,void*
+IEEMemoryManager*,void*,void*
+LPVOID,void*,void*
 void*
 const void *,void*
-HRESULT
-SIZE_T*
+HRESULT,,int
+SIZE_T*,,size_t*
 int
-INT,int
-INT32,int
-ULONG32,uint
-ULONG,uint
-DWORD,uint
+INT,int,int
+INT32,int,int
+ULONG32,uint,unsigned int
+ULONG,uint,unsigned int
+DWORD,uint,unsigned int
 unsigned,uint
 unsigned int, uint
 size_t,UIntPtr
-SIZE_T,UIntPtr
-WORD,ushort
-BOOL,[MarshalAs(UnmanagedType.Bool)]bool
+SIZE_T,UIntPtr,size_t
+WORD,ushort,unsigned short
+BOOL,[MarshalAs(UnmanagedType.Bool)]bool,bool
 bool,[MarshalAs(UnmanagedType.I1)]bool
 const char *,byte*
-mdMethodDef,mdToken
-mdToken
-BYTE*,byte*
-GSCookie*
-GSCookie**
+mdMethodDef,mdToken,unsigned int
+mdToken,,unsigned int
+BYTE*,byte*,unsigned char*
+GSCookie*,,void*
+GSCookie**,,void**
 
-BOOL*,[MarshalAs(UnmanagedType.Bool)] ref bool
+BOOL*,[MarshalAs(UnmanagedType.Bool)] ref bool,int*
 bool*,[MarshalAs(UnmanagedType.U1)] ref bool
-ULONG*,ref uint
+ULONG*,ref uint,unsigned long*
 void **,ref void*
 VOIDSTARSTAR,void **,void **
-ULONG32*,ref uint
-LONG*,int*
+ULONG32*,ref uint,unsigned int*
+LONG*,int*,long*
 char*,byte*
 const char**,byte**
-WCHAR**,short**
-LPCSTR,byte*
-LPWSTR,short*
-LPCWSTR,short*
+WCHAR**,short**,wchar_t**
+LPCSTR,byte*,const char*
+LPWSTR,short*,wchar_t*
+LPCWSTR,short*,const wchar_t*
 wchar_t*,short*
 const wchar_t*,String
 
-DWORD**,ref uint*
+DWORD**,ref uint*,unsigned int**
 unsigned*,ref uint
-DWORD*,ref uint
-CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP
-CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE
-const CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE
-CORINFO_SIG_INFO*
-CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN
-CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*
-CORINFO_EE_INFO*,ref CORINFO_EE_INFO
-CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT
-CORINFO_METHOD_INFO*,ref CORINFO_METHOD_INFO
-CORINFO_FIELD_INFO*,ref CORINFO_FIELD_INFO
-CORINFO_CALL_INFO*,ref CORINFO_CALL_INFO
-DelegateCtorArgs*,ref DelegateCtorArgs
-ICorDynamicInfo*,IntPtr
+DWORD*,ref uint,unsigned int*
+CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP,void*
+CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
+const CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
+CORINFO_SIG_INFO*,,void*
+CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN,void*
+CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,void*
+CORINFO_EE_INFO*,ref CORINFO_EE_INFO,void*
+CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT,void*
+CORINFO_METHOD_INFO*,ref CORINFO_METHOD_INFO,void*
+CORINFO_FIELD_INFO*,ref CORINFO_FIELD_INFO,void*
+CORINFO_CALL_INFO*,ref CORINFO_CALL_INFO,void*
+DelegateCtorArgs*,ref DelegateCtorArgs,void*
+ICorDynamicInfo*,IntPtr,void*
 va_list,IntPtr
-CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC
-const CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC
+CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC,void*
+const CORINFO_HELPER_DESC*,ref CORINFO_HELPER_DESC,const void*
 int*,ref int
 unsigned int*,ref uint
 
-CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_**
+CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_**,void**
 
-ICorJitInfo::ProfileBuffer**,ref ProfileBuffer*
+ICorJitInfo::ProfileBuffer**,ref ProfileBuffer*,void**
 
 ; Enums
-CorInfoCanSkipVerificationResult
-CorInfoClassId
-CorInfoHelperTailCallSpecialHandling
-CorInfoHelpFunc
-CorInfoInitClassResult
-CorInfoInline
-CorInfoInstantiationVerification
-CorInfoIntrinsics
-CorInfoIsAccessAllowedResult
-CorInfoMethodRuntimeFlags
-CorInfoTailCall
-CorInfoType
-CorInfoTypeWithMod
-CorInfoUnmanagedCallConv
-InfoAccessType
+CorInfoCanSkipVerificationResult,,int
+CorInfoClassId,,int
+CorInfoHelperTailCallSpecialHandling,,int
+CorInfoHelpFunc,,int
+CorInfoInitClassResult,,int
+CorInfoInline,,int
+CorInfoInstantiationVerification,,int
+CorInfoIntrinsics,,int
+CorInfoIsAccessAllowedResult,,int
+CorInfoMethodRuntimeFlags,,int
+CorInfoTailCall,,int
+CorInfoType,,int
+CorInfoTypeWithMod,,int
+CorInfoUnmanagedCallConv,,int
+InfoAccessType,,int
 CORINFO_LOOKUP_KIND
-CORINFO_ACCESS_FLAGS
-CORINFO_CALLINFO_FLAGS
-CorJitAllocMemFlag
-CorJitFuncKind
-CorJitResult
+CORINFO_ACCESS_FLAGS,,int
+CORINFO_CALLINFO_FLAGS,,int
+CorJitAllocMemFlag,,int
+CorJitFuncKind,,int
+CorJitResult,,int
 
 ; Handle types
-CORINFO_MODULE_HANDLE,CORINFO_MODULE_STRUCT_*
-CORINFO_METHOD_HANDLE,CORINFO_METHOD_STRUCT_*
-CORINFO_FIELD_HANDLE,CORINFO_FIELD_STRUCT_*
-CORINFO_CLASS_HANDLE,CORINFO_CLASS_STRUCT_*
-CORINFO_ASSEMBLY_HANDLE,CORINFO_ASSEMBLY_STRUCT_*
-CORINFO_JUST_MY_CODE_HANDLE,CORINFO_JUST_MY_CODE_HANDLE_*
-CORINFO_MODULE_HANDLE*,ref CORINFO_MODULE_STRUCT_*
-CORINFO_MODULE_HANDLE_STAR,CORINFO_MODULE_STRUCT_**,CORINFO_MODULE_STRUCT_**
-CORINFO_CLASS_HANDLE*,ref CORINFO_CLASS_STRUCT_*
-CORINFO_ARG_LIST_HANDLE,CORINFO_ARG_LIST_STRUCT_*
-CORINFO_VARARGS_HANDLE,IntPtr
-CORINFO_CONTEXT_HANDLE,CORINFO_CONTEXT_STRUCT*
-SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*
+CORINFO_MODULE_HANDLE,CORINFO_MODULE_STRUCT_*,void*
+CORINFO_METHOD_HANDLE,CORINFO_METHOD_STRUCT_*,void*
+CORINFO_FIELD_HANDLE,CORINFO_FIELD_STRUCT_*,void*
+CORINFO_CLASS_HANDLE,CORINFO_CLASS_STRUCT_*,void*
+CORINFO_ASSEMBLY_HANDLE,CORINFO_ASSEMBLY_STRUCT_*,void*
+CORINFO_JUST_MY_CODE_HANDLE,CORINFO_JUST_MY_CODE_HANDLE_*,void*
+CORINFO_MODULE_HANDLE*,ref CORINFO_MODULE_STRUCT_*,void*
+CORINFO_MODULE_HANDLE_STAR,CORINFO_MODULE_STRUCT_**,void*
+CORINFO_CLASS_HANDLE*,ref CORINFO_CLASS_STRUCT_*,void*
+CORINFO_ARG_LIST_HANDLE,CORINFO_ARG_LIST_STRUCT_*,void*
+CORINFO_VARARGS_HANDLE,IntPtr,void*
+CORINFO_CONTEXT_HANDLE,CORINFO_CONTEXT_STRUCT*,void*
+SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*,void*
 
-ICorDebugInfo::OffsetMapping*,OffsetMapping*
-ICorDebugInfo::ILVarInfo**,ILVarInfo**
-ICorDebugInfo::NativeVarInfo*,NativeVarInfo*
-ICorDebugInfo::BoundaryTypes*,BoundaryTypes*
+ICorDebugInfo::OffsetMapping*,OffsetMapping*,void*
+ICorDebugInfo::ILVarInfo**,ILVarInfo**,void*
+ICorDebugInfo::NativeVarInfo*,NativeVarInfo*,void*
+ICorDebugInfo::BoundaryTypes*,BoundaryTypes*,void*
 
-struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*
+struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*,void*
 
 RETURNTYPES
-BOOL,[return: MarshalAs(UnmanagedType.Bool)]bool
+BOOL,[return: MarshalAs(UnmanagedType.Bool)]bool,bool
 bool,[return: MarshalAs(UnmanagedType.I1)]bool
-LPCWSTR,[return: MarshalAs(UnmanagedType.LPWStr)]string
+LPCWSTR,[return: MarshalAs(UnmanagedType.LPWStr)]string,const wchar_t*
 ; NOTE in managed SIZE_T is an enum that is 64bits in size, and returning one of those causing mcg to do the wrong thing.
 size_t,byte*,size_t
 
@@ -249,7 +249,7 @@ FUNCTIONS
     CorInfoType getHFAType(CORINFO_CLASS_HANDLE hClass);
     HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);
     ULONG GetErrorMessage(LPWSTR buffer, ULONG bufferLength);
-    int FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
+    [ManualNativeWrapper] int FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
     void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
     void ThrowExceptionForJitResult(HRESULT result);
     void ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper);
@@ -277,7 +277,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE   handle, void                  **ppIndirection);
     CORINFO_FIELD_HANDLE embedFieldHandle(CORINFO_FIELD_HANDLE    handle, void                  **ppIndirection);
     void embedGenericHandle(CORINFO_RESOLVED_TOKEN *        pResolvedToken, BOOL fEmbedParent, CORINFO_GENERICHANDLE_RESULT *  pResult);
-    CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
+    [ManualNativeWrapper] [ReturnAsParm] CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
     void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE   method, void                  **ppIndirection);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE   method, void                  **ppIndirection);
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void           ** ppIndirection);

@@ -235,25 +235,6 @@ namespace ILCompiler
             }
         }
 
-        // List of methods that are known to throw an exception during compilation.
-        // On Windows it's fine to throw it because we have a catchall block.
-        // On Linux, throwing a managed exception to native code will bring down the process.
-        // https://github.com/dotnet/corert/issues/162
-        private HashSet<TypeAndMethod> _skipJitList = new HashSet<TypeAndMethod>
-        {
-            new TypeAndMethod("System.SR", "GetResourceString"),
-            new TypeAndMethod("System.Text.StringBuilder", "AppendFormatHelper"),
-            new TypeAndMethod("System.Collections.Concurrent.ConcurrentUnifier`2", "GetOrAdd"),
-            new TypeAndMethod("System.Globalization.NumberFormatInfo", "GetInstance"),
-            new TypeAndMethod("System.Collections.Concurrent.ConcurrentUnifierW`2", "GetOrAdd"),
-            new TypeAndMethod("System.Collections.Generic.LowLevelDictionary`2", "Find"),
-            new TypeAndMethod("System.Collections.Generic.LowLevelDictionary`2", "GetBucket"),
-            new TypeAndMethod("System.Collections.Generic.ArraySortHelper`1", "InternalBinarySearch"),
-            new TypeAndMethod("System.RuntimeExceptionHelpers", "SerializeExceptionsForDump"),
-            new TypeAndMethod("System.InvokeUtils", "CheckArgument"),
-            new TypeAndMethod("System.Runtime.InteropServices.ExceptionHelpers", "GetMappingExceptionForHR"),
-        };
-
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
@@ -268,17 +249,11 @@ namespace ILCompiler
 
                 try
                 {
-                    MetadataType owningType = method.OwningType as MetadataType;
-                    if (owningType != null && Path.DirectorySeparatorChar != '\\' && _skipJitList.Contains(new TypeAndMethod(owningType.GetFullName(), method.Name)))
-                    {
-                        throw new NotImplementedException("SkipJIT");
-                    }
-
                     _corInfo.CompileMethod(methodCodeNodeNeedingCode);
                 }
                 catch (Exception e)
                 {
-                    Log.WriteLine("*** " + e.Message + " (" + method + ")");
+                    Log.WriteLine("*** " + method + ": " + e.Message);
 
                     // Call the __not_yet_implemented method
                     DependencyAnalysis.X64.X64Emitter emit = new DependencyAnalysis.X64.X64Emitter(_nodeFactory);
