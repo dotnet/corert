@@ -96,7 +96,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return _type.Module;
+                return _type.EcmaModule;
             }
         }
 

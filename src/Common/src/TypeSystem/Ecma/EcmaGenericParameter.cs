@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Reflection.Metadata;
 using Internal.NativeFormat;
 
@@ -58,6 +59,32 @@ namespace Internal.TypeSystem.Ecma
             {
                 Debug.Assert(parameter.Parent.Kind == HandleKind.TypeDefinition);
                 return typeInstantiation[parameter.Index];
+            }
+        }
+
+        public override GenericParameterKind Kind
+        {
+            get
+            {
+                GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+                if (parameter.Parent.Kind == HandleKind.MethodDefinition)
+                {
+                    return GenericParameterKind.Method;
+                }
+                else
+                {
+                    Debug.Assert(parameter.Parent.Kind == HandleKind.TypeDefinition);
+                    return GenericParameterKind.Type;
+                }
+            }
+        }
+
+        public override int Index
+        {
+            get
+            {
+                GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+                return parameter.Index;
             }
         }
 

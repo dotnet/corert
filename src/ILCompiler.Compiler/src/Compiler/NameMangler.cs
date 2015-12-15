@@ -90,7 +90,7 @@ namespace ILCompiler
         {
             if (type is EcmaType)
             {
-                string prependAssemblyName = SanitizeName(((EcmaType)type).Module.GetName().Name);
+                string prependAssemblyName = SanitizeName(((EcmaType)type).EcmaModule.GetName().Name);
 
                 var deduplicator = new HashSet<string>();
 
@@ -98,7 +98,7 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (MetadataType t in ((EcmaType)type).Module.GetAllTypes())
+                    foreach (MetadataType t in ((EcmaType)type).EcmaModule.GetAllTypes())
                     {
                         string name = t.GetFullName();
 

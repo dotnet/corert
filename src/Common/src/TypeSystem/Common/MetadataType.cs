@@ -66,6 +66,11 @@ namespace Internal.TypeSystem
         public abstract bool IsModuleType { get; }
 
         /// <summary>
+        /// Gets the module that defines this type.
+        /// </summary>
+        public abstract ModuleDesc Module { get; }
+
+        /// <summary>
         /// Same as <see cref="TypeDesc.BaseType"/>, but the result is a MetadataType (avoids casting).
         /// </summary>
         public abstract MetadataType MetadataBaseType { get; }

@@ -639,21 +639,15 @@ namespace Internal.IL
                         var arraySlot = Pop();
 
                         var fieldDesc = (TypeSystem.Ecma.EcmaField)fieldSlot.Value.Aux;
-                        int addr = fieldDesc.MetadataReader.GetFieldDefinition(fieldDesc.Handle).GetRelativeVirtualAddress();
-                        var memBlock = fieldDesc.Module.PEReader.GetSectionData(addr).GetContent();
-
-                        var fieldType = (TypeSystem.Ecma.EcmaType)fieldDesc.FieldType;
-                        int size = fieldType.MetadataReader.GetTypeDefinition(fieldType.Handle).GetLayout().Size;
-                        if (size == 0)
-                            throw new NotImplementedException();
-
+                        var memBlock = TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(fieldDesc);
+                        
                         // TODO: Need to do more for arches with different endianness?
                         var preinitDataHolder = NewTempName();
                         Append("static const char ");
                         Append(preinitDataHolder);
                         Append("[] = { ");
 
-                        for (int i = 0; i < size; i++)
+                        for (int i = 0; i < memBlock.Length; i++)
                         {
                             if (i != 0)
                                 Append(", ");
@@ -667,7 +661,7 @@ namespace Internal.IL
                         Append(" + ARRAY_BASE, ");
                         Append(preinitDataHolder);
                         Append(", ");
-                        Append(size.ToString());
+                        Append(memBlock.Length.ToString());
                         Append(")");
 
                         Finish();
