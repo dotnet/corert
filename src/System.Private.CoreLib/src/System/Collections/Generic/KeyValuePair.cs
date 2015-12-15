@@ -40,23 +40,23 @@ namespace System.Collections.Generic
     // and IReadOnlyDictionary<TKey, TValue>.
     public struct KeyValuePair<TKey, TValue>
     {
-        private TKey _key;
-        private TValue _value;
+        private TKey key;
+        private TValue value;
 
         public KeyValuePair(TKey key, TValue value)
         {
-            _key = key;
-            _value = value;
+            this.key = key;
+            this.value = value;
         }
 
         public TKey Key
         {
-            get { return _key; }
+            get { return key; }
         }
 
         public TValue Value
         {
-            get { return _value; }
+            get { return value; }
         }
 
         public override string ToString()

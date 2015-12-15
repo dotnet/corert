@@ -14,7 +14,7 @@ namespace System.Collections.ObjectModel
     [DebuggerDisplay("Count = {Count}")]
     public class ReadOnlyCollection<T> : IList<T>, IList, IReadOnlyList<T>
     {
-        private IList<T> _list;
+        private IList<T> list;
         private Object _syncRoot;
 
         public ReadOnlyCollection(IList<T> list)
@@ -23,44 +23,44 @@ namespace System.Collections.ObjectModel
             {
                 throw new ArgumentNullException("list");
             }
-            _list = list;
+            this.list = list;
         }
 
         public int Count
         {
-            get { return _list.Count; }
+            get { return list.Count; }
         }
 
         public T this[int index]
         {
-            get { return _list[index]; }
+            get { return list[index]; }
         }
 
         public bool Contains(T value)
         {
-            return _list.Contains(value);
+            return list.Contains(value);
         }
 
         public void CopyTo(T[] array, int index)
         {
-            _list.CopyTo(array, index);
+            list.CopyTo(array, index);
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            return _list.GetEnumerator();
+            return list.GetEnumerator();
         }
 
         public int IndexOf(T value)
         {
-            return _list.IndexOf(value);
+            return list.IndexOf(value);
         }
 
         protected IList<T> Items
         {
             get
             {
-                return _list;
+                return list;
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Collections.ObjectModel
 
         T IList<T>.this[int index]
         {
-            get { return _list[index]; }
+            get { return list[index]; }
             set
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
@@ -105,7 +105,7 @@ namespace System.Collections.ObjectModel
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable)_list).GetEnumerator();
+            return ((IEnumerable)list).GetEnumerator();
         }
 
         bool ICollection.IsSynchronized
@@ -119,7 +119,7 @@ namespace System.Collections.ObjectModel
             {
                 if (_syncRoot == null)
                 {
-                    ICollection c = _list as ICollection;
+                    ICollection c = list as ICollection;
                     if (c != null)
                     {
                         _syncRoot = c.SyncRoot;
@@ -163,7 +163,7 @@ namespace System.Collections.ObjectModel
             T[] items = array as T[];
             if (items != null)
             {
-                _list.CopyTo(items, index);
+                list.CopyTo(items, index);
             }
             else
             {
@@ -191,12 +191,12 @@ namespace System.Collections.ObjectModel
                     throw new ArgumentException(SR.Argument_InvalidArrayType);
                 }
 
-                int count = _list.Count;
+                int count = list.Count;
                 try
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        objects[index++] = _list[i];
+                        objects[index++] = list[i];
                     }
                 }
                 catch (ArrayTypeMismatchException)
@@ -218,7 +218,7 @@ namespace System.Collections.ObjectModel
 
         object IList.this[int index]
         {
-            get { return _list[index]; }
+            get { return list[index]; }
             set
             {
                 throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
