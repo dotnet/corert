@@ -15,11 +15,13 @@ namespace ILCompiler.DependencyAnalysis
     {
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
+        private bool _cppCodeGen;
 
-        public NodeFactory(CompilerTypeSystemContext context)
+        public NodeFactory(CompilerTypeSystemContext context, bool cppCodeGen)
         {
             _target = context.Target;
             _context = context;
+            _cppCodeGen = cppCodeGen;
             CreateNodeCaches();
         }
 
@@ -109,9 +111,12 @@ namespace ILCompiler.DependencyAnalysis
                     return new ObjectAndOffsetSymbolNode(key.Item1, key.Item2, key.Item3);
                 });
 
-            _methodCode = new NodeCache<MethodDesc, MethodCodeNode>((MethodDesc method) =>
+            _methodCode = new NodeCache<MethodDesc, ISymbolNode>((MethodDesc method) =>
             {
-                return new MethodCodeNode(method);
+                if (_cppCodeGen)
+                   return new CppMethodCodeNode(method);
+                else
+                    return new MethodCodeNode(method);
             });
 
             _jumpStubs = new NodeCache<ISymbolNode, JumpStubNode>((ISymbolNode node) =>
@@ -250,19 +255,22 @@ namespace ILCompiler.DependencyAnalysis
             return _internalSymbols.GetOrAdd(new Tuple<ObjectNode, int, string>(obj, offset, name));
         }
 
-        private NodeCache<MethodDesc, MethodCodeNode> _methodCode;
+        private NodeCache<MethodDesc, ISymbolNode> _methodCode;
         private NodeCache<ISymbolNode, JumpStubNode> _jumpStubs;
 
         public ISymbolNode MethodEntrypoint(MethodDesc method)
         {
-            var kind = method.DetectSpecialMethodKind();
-            if (kind == SpecialMethodKind.PInvoke)
+            if (!_cppCodeGen)
             {
-                return _jumpStubs.GetOrAdd(ExternSymbol(method.GetPInvokeMethodMetadata().Name));
-            }
-            else if (kind == SpecialMethodKind.RuntimeImport)
-            {
-                return ExternSymbol(((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute"));
+                var kind = method.DetectSpecialMethodKind();
+                if (kind == SpecialMethodKind.PInvoke)
+                {
+                    return _jumpStubs.GetOrAdd(ExternSymbol(method.GetPInvokeMethodMetadata().Name));
+                }
+                else if (kind == SpecialMethodKind.RuntimeImport)
+                {
+                    return ExternSymbol(((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute"));
+                }
             }
 
             return _methodCode.GetOrAdd(method);

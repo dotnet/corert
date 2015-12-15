@@ -8,10 +8,13 @@ using System.IO;
 using System.Text;
 using System.Linq;
 
+using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Internal.IL;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler.CppCodeGen
 {
@@ -22,7 +25,7 @@ namespace ILCompiler.CppCodeGen
         private void SetWellKnownTypeSignatureName(WellKnownType wellKnownType, string mangledSignatureName)
         {
             var type = _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
-            _compilation.GetRegisteredType(type).MangledSignatureName = mangledSignatureName;
+            _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
         public CppWriter(Compilation compilation)
@@ -44,30 +47,27 @@ namespace ILCompiler.CppCodeGen
             SetWellKnownTypeSignatureName(WellKnownType.UIntPtr, "uintptr_t");
             SetWellKnownTypeSignatureName(WellKnownType.Single, "float");
             SetWellKnownTypeSignatureName(WellKnownType.Double, "double");
-
-            // TODO: For now, ensure that all types/methods referenced by unmanaged helpers are present
-            var stringType = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String);
-            AddInstanceFields(stringType);
         }
+
+        private Dictionary<TypeDesc, string> _cppSignatureNames = new Dictionary<TypeDesc, string>();
 
         public string GetCppSignatureTypeName(TypeDesc type)
         {
-            var reg = _compilation.GetRegisteredType(type);
-
-            string mangledName = reg.MangledSignatureName;
-            if (mangledName != null)
+            string mangledName;
+            if (_cppSignatureNames.TryGetValue(type, out mangledName))
                 return mangledName;
 
             // TODO: Use friendly names for enums
             if (type.IsEnum)
-                mangledName = _compilation.GetRegisteredType(type.UnderlyingType).MangledSignatureName;
+                mangledName = GetCppSignatureTypeName(type.UnderlyingType);
             else
                 mangledName = GetCppTypeName(type);
 
             if (!type.IsValueType && !type.IsByRef && !type.IsPointer)
                 mangledName += "*";
 
-            reg.MangledSignatureName = mangledName;
+            _cppSignatureNames.Add(type, mangledName);
+
             return mangledName;
         }
 
@@ -293,8 +293,10 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        public void CompileMethod(MethodDesc method)
+        public void CompileMethod(CppMethodCodeNode methodCodeNodeNeedingCode)
         {
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+
             _compilation.Log.WriteLine("Compiling " + method.ToString());
 
             SpecialMethodKind kind = method.DetectSpecialMethodKind();
@@ -302,7 +304,8 @@ namespace ILCompiler.CppCodeGen
             if (kind != SpecialMethodKind.Unknown)
             {
                 string specialMethodCode = CompileSpecialMethod(method, kind);
-                _compilation.GetRegisteredMethod(method).MethodCode = specialMethodCode;
+
+                methodCodeNodeNeedingCode.SetCode(specialMethodCode, Array.Empty<Object>());
                 return;
             }
 
@@ -332,16 +335,16 @@ namespace ILCompiler.CppCodeGen
                 if (parameters != null)
                     ilImporter.SetParameterNames(parameters);
 
-                methodCode = ilImporter.Compile();
+                ilImporter.Compile(methodCodeNodeNeedingCode);
             }
             catch (Exception e)
             {
                 _compilation.Log.WriteLine(e.Message + " (" + method + ")");
 
                 methodCode = GetCppMethodDeclaration(method, true) + " { throw 0xC000C000; }" + Environment.NewLine;
-            }
 
-            _compilation.GetRegisteredMethod(method).MethodCode = methodCode;
+                methodCodeNodeNeedingCode.SetCode(methodCode, Array.Empty<Object>());
+            }
         }
 
         private TextWriter Out
@@ -352,13 +355,72 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
+        private Dictionary<TypeDesc, List<MethodDesc>> _methodLists;
+
         private StringBuilder _statics;
         private StringBuilder _gcStatics;
         private StringBuilder _threadStatics;
         private StringBuilder _gcThreadStatics;
 
         // Base classes and valuetypes has to be emitted before they are used.
-        private HashSet<RegisteredType> _emittedTypes;
+        private HashSet<TypeDesc> _emittedTypes;
+
+        private TypeDesc GetFieldTypeOrPlaceholder(FieldDesc field)
+        {
+            try
+            {
+                return field.FieldType;
+            }
+            catch
+            {
+                // TODO: For now, catch errors due to missing dependencies
+                return _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Boolean);
+            }
+        }
+
+        private void ExpandTypes()
+        {
+            _emittedTypes = new HashSet<TypeDesc>();
+            foreach (var t in _cppSignatureNames.Keys.ToArray())
+            {
+                ExpandType(t);
+            }
+            _emittedTypes = null;
+        }
+
+        private void ExpandType(TypeDesc type)
+        {
+            if (_emittedTypes.Contains(type))
+                return;
+            _emittedTypes.Add(type);
+
+            GetCppSignatureTypeName(type);
+            var baseType = type.BaseType;
+            if (baseType != null)
+            {
+                ExpandType(baseType);
+            }
+
+            foreach (var field in type.GetFields())
+            {
+                ExpandType(GetFieldTypeOrPlaceholder(field));
+            }
+
+            if (type.IsDelegate)
+            {
+                MethodDesc method = type.GetMethod("Invoke", null);
+
+                var sig = method.Signature;
+                ExpandType(sig.ReturnType);
+                for (int i = 0; i < sig.Length; i++)
+                    ExpandType(sig[i]);
+            }
+
+            if (type.IsArray)
+            {
+                ExpandType(((ArrayType)type).ElementType);
+            }
+        }
 
         private void OutputTypes(bool full)
         {
@@ -370,22 +432,20 @@ namespace ILCompiler.CppCodeGen
                 _gcThreadStatics = new StringBuilder();
             }
 
-            if (full)
-                _emittedTypes = new HashSet<RegisteredType>();
-            foreach (var t in _compilation.RegisteredTypes.ToArray())
+            _emittedTypes = new HashSet<TypeDesc>();
+            foreach (var t in _cppSignatureNames.Keys)
             {
-                if (t.Type.IsByRef || t.Type.IsPointer)
+                if (t.IsByRef || t.IsPointer)
                     continue;
 
                 // Base class types and valuetype instantance field types may be emitted out-of-order to make them 
                 // appear before they are used.
-                if (_emittedTypes != null && _emittedTypes.Contains(t))
+                if (_emittedTypes.Contains(t))
                     continue;
 
                 OutputType(t, full);
             }
-            if (full)
-                _emittedTypes = null;
+            _emittedTypes = null;
 
             if (full)
             {
@@ -420,43 +480,38 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        private void OutputType(RegisteredType t, bool full)
+        private void OutputType(TypeDesc t, bool full)
         {
-            if (_emittedTypes != null)
+            _emittedTypes.Add(t);
+
+            if (full)
             {
-                if (!t.Type.IsValueType)
+                if (!t.IsValueType)
                 {
-                    var baseType = t.Type.BaseType;
+                    var baseType = t.BaseType;
                     if (baseType != null)
                     {
-                        var baseRegistration = _compilation.GetRegisteredType(baseType);
-                        if (!_emittedTypes.Contains(baseRegistration))
+                        if (!_emittedTypes.Contains(baseType))
                         {
-                            OutputType(baseRegistration, full);
+                            OutputType(baseType, full);
                         }
                     }
                 }
 
-                foreach (var field in t.Type.GetFields())
+                foreach (var field in t.GetFields())
                 {
-                    if (!_compilation.GetRegisteredField(field).IncludedInCompilation)
-                        continue;
-
-                    var fieldType = field.FieldType;
+                    var fieldType = GetFieldTypeOrPlaceholder(field);
                     if (fieldType.IsValueType && !fieldType.IsPrimitive && !field.IsStatic)
                     {
-                        var fieldTypeRegistration = _compilation.GetRegisteredType(fieldType);
-                        if (!_emittedTypes.Contains(fieldTypeRegistration))
+                        if (!_emittedTypes.Contains(fieldType))
                         {
-                            OutputType(fieldTypeRegistration, full);
+                            OutputType(fieldType, full);
                         }
                     }
                 }
-
-                _emittedTypes.Add(t);
             }
 
-            string mangledName = GetCppTypeName(t.Type);
+            string mangledName = GetCppTypeName(t);
 
             int nesting = 0;
             int current = 0;
@@ -475,48 +530,53 @@ namespace ILCompiler.CppCodeGen
             if (full)
             {
                 Out.Write("class " + mangledName.Substring(current));
-                if (!t.Type.IsValueType)
+                if (!t.IsValueType)
                 {
-                    var baseType = t.Type.BaseType;
+                    var baseType = t.BaseType;
                     if (baseType != null)
                     {
                         Out.Write(" : public " + GetCppTypeName(baseType));
                     }
                 }
                 Out.WriteLine(" { public:");
-                if (t.IncludedInCompilation)
+
+                // TODO: Enable once the dependencies are tracked for arrays
+                // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
+                if (!t.IsPointer && !t.IsByRef)
                 {
                     Out.WriteLine("static MethodTable * __getMethodTable();");
                 }
-                if (t.VirtualSlots != null)
+
+                List<MethodDesc> virtualSlots;
+                _compilation.NodeFactory.VirtualSlots.TryGetValue(t, out virtualSlots);
+                if (virtualSlots != null)
                 {
                     int baseSlots = 0;
-                    var baseType = t.Type.BaseType;
+                    var baseType = t.BaseType;
                     while (baseType != null)
                     {
-                        var baseReg = _compilation.GetRegisteredType(baseType);
-                        if (baseReg.VirtualSlots != null)
-                            baseSlots += baseReg.VirtualSlots.Count;
+                        List<MethodDesc> baseVirtualSlots;
+                        _compilation.NodeFactory.VirtualSlots.TryGetValue(baseType, out baseVirtualSlots);
+                        if (baseVirtualSlots != null)
+                            baseSlots += baseVirtualSlots.Count;
                         baseType = baseType.BaseType;
                     }
 
-                    for (int slot = 0; slot < t.VirtualSlots.Count; slot++)
+                    for (int slot = 0; slot < virtualSlots.Count; slot++)
                     {
-                        MethodDesc virtualMethod = t.VirtualSlots[slot];
+                        MethodDesc virtualMethod = virtualSlots[slot];
                         Out.WriteLine(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
                     }
                 }
-                if (t.Type.IsDelegate)
+                if (t.IsDelegate)
                 {
-                    Out.WriteLine(GetCodeForDelegate(t.Type));
+                    Out.WriteLine(GetCodeForDelegate(t));
                 }
-                foreach (var field in t.Type.GetFields())
+                foreach (var field in t.GetFields())
                 {
-                    if (!_compilation.GetRegisteredField(field).IncludedInCompilation)
-                        continue;
                     if (field.IsStatic)
                     {
-                        TypeDesc fieldType = field.FieldType;
+                        TypeDesc fieldType = GetFieldTypeOrPlaceholder(field);
                         StringBuilder builder;
                         if (!fieldType.IsValueType)
                         {
@@ -533,20 +593,20 @@ namespace ILCompiler.CppCodeGen
                     }
                     else
                     {
-                        Out.WriteLine(GetCppSignatureTypeName(field.FieldType) + " " + GetCppFieldName(field) + ";");
+                        Out.WriteLine(GetCppSignatureTypeName(GetFieldTypeOrPlaceholder(field)) + " " + GetCppFieldName(field) + ";");
                     }
                 }
-                if (t.Type.GetMethod(".cctor", null) != null)
+                if (t.HasStaticConstructor)
                 {
-                    _statics.AppendLine("bool __cctor_" + GetCppTypeName(t.Type).Replace("::", "__") + ";");
+                    _statics.AppendLine("bool __cctor_" + GetCppTypeName(t).Replace("::", "__") + ";");
                 }
 
-                if (t.Methods != null)
+                List<MethodDesc> methodList;
+                if (_methodLists.TryGetValue(t, out methodList))
                 {
-                    foreach (var m in t.Methods)
+                    foreach (var m in methodList)
                     {
-                        if (m.IncludedInCompilation)
-                            OutputMethod(m);
+                        OutputMethod(m);
                     }
                 }
                 Out.Write("};");
@@ -564,9 +624,9 @@ namespace ILCompiler.CppCodeGen
             Out.WriteLine();
         }
 
-        private void OutputMethod(RegisteredMethod m)
+        private void OutputMethod(MethodDesc m)
         {
-            Out.WriteLine(GetCppMethodDeclaration(m.Method, false));
+            Out.WriteLine(GetCppMethodDeclaration(m, false));
         }
 
         private void AppendSlotTypeDef(StringBuilder sb, MethodDesc method)
@@ -654,19 +714,27 @@ namespace ILCompiler.CppCodeGen
             if (baseType != null)
                 AppendVirtualSlots(sb, implType, baseType);
 
-            var reg = _compilation.GetRegisteredType(declType);
-            if (reg.VirtualSlots != null)
+            List<MethodDesc> virtualSlots;
+            _compilation.NodeFactory.VirtualSlots.TryGetValue(declType, out virtualSlots);
+            if (virtualSlots != null)
             {
-                for (int i = 0; i < reg.VirtualSlots.Count; i++)
+                for (int i = 0; i < virtualSlots.Count; i++)
                 {
-                    MethodDesc declMethod = reg.VirtualSlots[i];
+                    MethodDesc declMethod = virtualSlots[i];
                     MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
 
-                    sb.Append("(void*)&");
-                    sb.Append(GetCppTypeName(implMethod.OwningType));
-                    sb.Append("::");
-                    sb.Append(GetCppMethodName(implMethod));
-                    sb.Append(",");
+                    if (implMethod.IsAbstract)
+                    {
+                        sb.Append("NULL,");
+                    }
+                    else
+                    {
+                        sb.Append("(void*)&");
+                        sb.Append(GetCppTypeName(implMethod.OwningType));
+                        sb.Append("::");
+                        sb.Append(GetCppMethodName(implMethod));
+                        sb.Append(",");
+                    }
                 }
             }
         }
@@ -676,12 +744,14 @@ namespace ILCompiler.CppCodeGen
             StringBuilder sb = new StringBuilder();
 
             int totalSlots = 0;
+
             TypeDesc t = type;
             while (t != null)
             {
-                var reg = _compilation.GetRegisteredType(t);
-                if (reg.VirtualSlots != null)
-                    totalSlots += reg.VirtualSlots.Count;
+                List<MethodDesc> virtualSlots;
+                _compilation.NodeFactory.VirtualSlots.TryGetValue(t, out virtualSlots);
+                if (virtualSlots != null)
+                    totalSlots += virtualSlots.Count;
                 t = t.BaseType;
             }
 
@@ -753,7 +823,7 @@ namespace ILCompiler.CppCodeGen
             sb.AppendLine("},");
 
             // virtual slots
-            if (_compilation.GetRegisteredType(type).Constructed)
+            if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(type)).Marked)
                 AppendVirtualSlots(sb, type, type);
 
             sb.AppendLine("};");
@@ -763,28 +833,42 @@ namespace ILCompiler.CppCodeGen
             return sb.ToString();
         }
 
-        private void AddInstanceFields(TypeDesc type)
+        private void BuildMethodLists(IEnumerable<DependencyNode> nodes)
         {
-            foreach (var field in type.GetFields())
+            _methodLists = new Dictionary<TypeDesc, List<MethodDesc>>();
+            foreach (var node in nodes)
             {
-                if (!field.IsStatic)
+                if (node is CppMethodCodeNode)
                 {
-                    _compilation.AddField(field);
-                    var fieldType = field.FieldType;
-                    if (fieldType.IsValueType && !fieldType.IsPrimitive)
-                        AddInstanceFields(fieldType);
+                    CppMethodCodeNode methodCodeNode = (CppMethodCodeNode)node;
+
+                    var method = methodCodeNode.Method;
+                    var type = method.OwningType;
+
+                    List<MethodDesc> methodList;
+                    if (!_methodLists.TryGetValue(type, out methodList))
+                    {
+                        GetCppSignatureTypeName(type);
+
+                        methodList = new List<MethodDesc>();
+                        _methodLists.Add(type, methodList);
+                    }
+
+                    methodList.Add(method);
+                }
+                else
+                if (node is EETypeNode)
+                {
+                    GetCppSignatureTypeName(((EETypeNode)node).Type);
                 }
             }
         }
 
-        public void OutputCode()
+        public void OutputCode(IEnumerable<DependencyNode> nodes)
         {
-            foreach (var t in _compilation.RegisteredTypes.ToArray())
-            {
-                // Add all instance fields for valuetype types
-                if (t.Type.IsValueType)
-                    AddInstanceFields(t.Type);
-            }
+            BuildMethodLists(nodes);
+
+            ExpandTypes();
 
             Out.WriteLine("#include \"common.h\"");
             Out.WriteLine();
@@ -794,19 +878,22 @@ namespace ILCompiler.CppCodeGen
             OutputTypes(true);
             Out.WriteLine();
 
-            foreach (var t in _compilation.RegisteredTypes)
+            foreach (var t in _cppSignatureNames.Keys)
             {
-                if (t.IncludedInCompilation)
+                // TODO: Enable once the dependencies are tracked for arrays
+                // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
+                if (!t.IsPointer && !t.IsByRef)
                 {
-                    Out.WriteLine(GetCodeForType(t.Type));
+                    Out.WriteLine(GetCodeForType(t));
                 }
 
-                if (t.Methods != null)
+                List<MethodDesc> methodList;
+                if (_methodLists.TryGetValue(t, out methodList))
                 {
-                    foreach (var m in t.Methods)
+                    foreach (var m in methodList)
                     {
-                        if (m.MethodCode != null)
-                            Out.WriteLine(m.MethodCode);
+                        var methodCodeNode = (CppMethodCodeNode)_compilation.NodeFactory.MethodEntrypoint(m);
+                        Out.WriteLine(methodCodeNode.CppCode);
                     }
                 }
             }

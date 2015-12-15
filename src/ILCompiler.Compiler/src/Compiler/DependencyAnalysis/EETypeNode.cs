@@ -406,22 +406,32 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            TypeDesc relatedType = _type.BaseType;
+            ISymbolNode relatedTypeNode = null;
+
             if (_type.IsArray || _type.IsPointer)
             {
-                relatedType = ((ParameterizedType)_type).ParameterType;
+                var parameterType = ((ParameterizedType)_type).ParameterType;
+                relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+            }
+            else
+            {
+                TypeDesc baseType = _type.BaseType;
+                if (baseType != null)
+                {
+                    if (_constructed)
+                    {
+                        relatedTypeNode = factory.ConstructedTypeSymbol(baseType);
+                    }
+                    else
+                    {
+                        relatedTypeNode = factory.NecessaryTypeSymbol(baseType);
+                    }
+                }
             }
 
-            if (relatedType != null)
+            if (relatedTypeNode != null)
             {
-                if (_constructed)
-                {
-                    objData.EmitPointerReloc(factory.ConstructedTypeSymbol(relatedType));
-                }
-                else
-                {
-                    objData.EmitPointerReloc(factory.NecessaryTypeSymbol(relatedType));
-                }
+                objData.EmitPointerReloc(relatedTypeNode);
             }
             else
             {
