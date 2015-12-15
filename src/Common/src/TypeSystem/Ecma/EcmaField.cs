@@ -213,7 +213,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public bool IsLiteral
+        public override bool IsLiteral
         {
             get
             {

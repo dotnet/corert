@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 
 using Internal.TypeSystem;
 
@@ -192,6 +193,42 @@ namespace TypeSystemTests
                         Assert.Equal(0, field.Offset);
                         break;
                     case "string3":
+                        Assert.Equal(8, field.Offset);
+                        break;
+                    default:
+                        throw new Exception(field.Name);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestLiteralFieldsDontAffectLayout()
+        {
+            //
+            // Test that literal fields are not laid out.
+            //
+
+            MetadataType t = _testModule.GetType("StaticFieldLayout", "LiteralFieldsDontAffectLayout");
+
+            Assert.Equal(4, t.GetFields().Count());
+
+            foreach (var field in t.GetFields())
+            {
+                if (!field.IsStatic)
+                    continue;
+
+                switch (field.Name)
+                {
+                    case "IntConstant":
+                    case "StringConstant":
+                        Assert.True(field.IsStatic);
+                        Assert.True(field.IsLiteral);
+                        Assert.Throws<BadImageFormatException>(() => field.Offset);
+                        break;
+                    case "Int1":
+                        Assert.Equal(0, field.Offset);
+                        break;
+                    case "String1":
                         Assert.Equal(8, field.Offset);
                         break;
                     default:

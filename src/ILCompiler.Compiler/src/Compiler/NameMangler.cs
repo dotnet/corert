@@ -98,16 +98,16 @@ namespace ILCompiler
                 // they are compiled
                 lock (this)
                 {
-                    foreach (var t in ((EcmaType)type).Module.GetAllTypes())
+                    foreach (MetadataType t in ((EcmaType)type).Module.GetAllTypes())
                     {
-                        string name = t.Name;
+                        string name = t.GetFullName();
 
                         // Include encapsulating type
-                        TypeDesc containingType = ((EcmaType)t).ContainingType;
+                        MetadataType containingType = t.ContainingType;
                         while (containingType != null)
                         {
-                            name = containingType.Name + "_" + name;
-                            containingType = ((EcmaType)containingType).ContainingType;
+                            name = containingType.GetFullName() + "_" + name;
+                            containingType = containingType.ContainingType;
                         }
 
                         name = SanitizeName(name, true);
@@ -171,7 +171,7 @@ namespace ILCompiler
                     }
                     else
                     {
-                        mangledName = SanitizeName(type.Name, true);
+                        mangledName = SanitizeName(((MetadataType)type).GetFullName(), true);
                     }
                     break;
             }

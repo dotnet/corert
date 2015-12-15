@@ -161,7 +161,7 @@ namespace Internal.TypeSystem
 
             foreach (var field in type.GetFields())
             {
-                if (!field.IsStatic || field.HasRva)
+                if (!field.IsStatic || field.HasRva || field.IsLiteral)
                     continue;
 
                 numStaticFields++;
@@ -186,8 +186,8 @@ namespace Internal.TypeSystem
 
             foreach (var field in type.GetFields())
             {
-                // Nonstatic fields and RVA mapped fields don't participate in layout
-                if (!field.IsStatic || field.HasRva)
+                // Nonstatic fields, literal fields, and RVA mapped fields don't participate in layout
+                if (!field.IsStatic || field.HasRva || field.IsLiteral)
                     continue;
 
                 StaticsBlock* block =

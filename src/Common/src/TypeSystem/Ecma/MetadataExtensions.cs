@@ -110,7 +110,7 @@ namespace Internal.TypeSystem.Ecma
         // the other masks in the enum.
         private const TypeAttributes NestedMask = (TypeAttributes)0x00000006;
 
-        private static bool IsNested(TypeAttributes flags)
+        public static bool IsNested(this TypeAttributes flags)
         {
             return (flags & NestedMask) != 0;
         }

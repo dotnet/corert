@@ -25,7 +25,7 @@ namespace Internal.TypeSystem
 
                     if (_offset == FieldAndOffset.InvalidOffset)
                     {
-                        // Must be a field that doesn't participate in layout (literal?)
+                        // Must be a field that doesn't participate in layout (literal or RVA mapped)
                         throw new BadImageFormatException();
                     }
                 }

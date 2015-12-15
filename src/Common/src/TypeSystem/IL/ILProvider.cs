@@ -29,8 +29,11 @@ namespace Internal.IL
             // but an intrinsic e.g. recognized by codegen.
 
             Debug.Assert(method.IsIntrinsic);
+            MetadataType owningType = method.OwningType as MetadataType;
+            if (owningType == null)
+                return null;
 
-            if (method.Name == "UncheckedCast" && method.OwningType.Name == "System.Runtime.CompilerServices.RuntimeHelpers")
+            if (method.Name == "UncheckedCast" && owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices")
             {
                 return new ILStubMethodIL(new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }

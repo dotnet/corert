@@ -27,6 +27,16 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets the name of the type as represented in the metadata.
+        /// </summary>
+        public abstract string Name { get; }
+
+        /// <summary>
+        /// Gets the namespace of the type.
+        /// </summary>
+        public abstract string Namespace { get; }
+
+        /// <summary>
         /// Gets metadata that controls instance layout of this type.
         /// </summary>
         public abstract ClassLayoutMetadata GetClassLayout();
@@ -69,6 +79,11 @@ namespace Internal.TypeSystem
         /// Returns true if the type has given custom attribute.
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
+
+        /// <summary>
+        /// Gets the containing type of this type or null if the type is not nested.
+        /// </summary>
+        public abstract MetadataType ContainingType { get; }
 
         /// <summary>
         /// Get all of the types nested in this type.

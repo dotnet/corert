@@ -268,7 +268,8 @@ namespace ILCompiler
 
                 try
                 {
-                    if (Path.DirectorySeparatorChar != '\\' && _skipJitList.Contains(new TypeAndMethod(method.OwningType.Name, method.Name)))
+                    MetadataType owningType = method.OwningType as MetadataType;
+                    if (owningType != null && Path.DirectorySeparatorChar != '\\' && _skipJitList.Contains(new TypeAndMethod(owningType.GetFullName(), method.Name)))
                     {
                         throw new NotImplementedException("SkipJIT");
                     }

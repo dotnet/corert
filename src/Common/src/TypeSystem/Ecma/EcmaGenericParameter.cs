@@ -1,19 +1,14 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Threading;
-
-using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed partial class EcmaGenericParameter : TypeDesc
+    public sealed partial class EcmaGenericParameter : GenericParameterDesc
     {
         private EcmaModule _module;
         private GenericParameterHandle _handle;

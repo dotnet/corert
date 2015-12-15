@@ -80,6 +80,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsLiteral
+        {
+            get
+            {
+                return _fieldDef.IsLiteral;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _fieldDef.HasCustomAttribute(attributeNamespace, attributeName);
