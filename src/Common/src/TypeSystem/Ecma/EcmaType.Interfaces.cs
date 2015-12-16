@@ -43,8 +43,6 @@ namespace Internal.TypeSystem.Ecma
                 implementedInterfaces[i++] = (DefType)_module.GetType(interfaceImplementation.Interface);
             }
 
-            // TODO Add duplicate detection
-
             return (_implementedInterfaces = implementedInterfaces);
         }
     }
