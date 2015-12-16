@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 using Internal.IL;
 
@@ -1006,7 +1005,9 @@ namespace Internal.JitInterface
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)
-        { throw new NotImplementedException("getHelperName"); }
+        {
+            return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));
+        }
 
         private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context, [MarshalAs(UnmanagedType.Bool)]bool speculative)
         {
@@ -1181,7 +1182,11 @@ namespace Internal.JitInterface
             var field = HandleToObject(ftn);
             if (moduleName != null)
             {
-                throw new NotImplementedException("getFieldName");
+                MetadataType typeDef = field.OwningType.GetTypeDefinition() as MetadataType;
+                if (typeDef != null)
+                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
+                else
+                    *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
             }
 
             return (byte*)GetPin(StringToUTF8(field.Name));
@@ -1474,9 +1479,9 @@ namespace Internal.JitInterface
 
             if (moduleName != null)
             {
-                EcmaType ecmaType = method.OwningType.GetTypeDefinition() as EcmaType;
-                if (ecmaType != null)
-                    *moduleName = (byte*)GetPin(StringToUTF8(ecmaType.GetFullName()));
+                MetadataType typeDef = method.OwningType.GetTypeDefinition() as MetadataType;
+                if (typeDef != null)
+                    *moduleName = (byte*)GetPin(StringToUTF8(typeDef.GetFullName()));
                 else
                     *moduleName = (byte*)GetPin(StringToUTF8("unknown"));
             }
