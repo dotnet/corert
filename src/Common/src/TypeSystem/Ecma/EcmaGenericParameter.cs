@@ -2,10 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 using Internal.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
+using GenericParameterAttributes = System.Reflection.GenericParameterAttributes;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -88,24 +90,48 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-#if CCIGLUE
-        public TypeDesc DefiningType
+        public override GenericVariance Variance
         {
             get
             {
-                var genericParameter = _module.MetadataReader.GetGenericParameter(_handle);
-                return _module.GetObject(genericParameter.Parent) as TypeDesc;
+                Debug.Assert((int)GenericVariance.Contravariant == (int)GenericParameterAttributes.Contravariant);
+                GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+                return (GenericVariance)(parameter.Attributes & GenericParameterAttributes.VarianceMask);
             }
         }
 
-        public MethodDesc DefiningMethod
+        public override GenericConstraints Constraints
         {
             get
             {
-                var genericParameter = _module.MetadataReader.GetGenericParameter(_handle);
-                return _module.GetObject(genericParameter.Parent) as MethodDesc;
+                Debug.Assert((int)GenericConstraints.DefaultConstructorConstraint == (int)GenericParameterAttributes.DefaultConstructorConstraint);
+                GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
+                return (GenericConstraints)(parameter.Attributes & GenericParameterAttributes.SpecialConstraintMask);
             }
         }
-#endif
+        
+        public override IEnumerable<TypeDesc> TypeConstraints
+        {
+            get
+            {
+                MetadataReader reader = _module.MetadataReader;
+
+                GenericParameter parameter = reader.GetGenericParameter(_handle);
+                GenericParameterConstraintHandleCollection constraintHandles = parameter.GetConstraints();
+
+                if (constraintHandles.Count == 0)
+                    return Array.Empty<TypeDesc>();
+
+                TypeDesc[] constraintTypes = new TypeDesc[constraintHandles.Count];
+
+                for (int i = 0; i < constraintTypes.Length; i++)
+                {
+                    GenericParameterConstraint constraint = reader.GetGenericParameterConstraint(constraintHandles[i]);
+                    constraintTypes[i] = _module.GetType(constraint.Type);
+                };
+
+                return constraintTypes;
+            }
+        }
     }
 }
