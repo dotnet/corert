@@ -62,6 +62,17 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish0\jitinterface.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish0\objwriter.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish0\ryujit.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
