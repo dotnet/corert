@@ -26,7 +26,8 @@ namespace ILCompiler.Metadata
         private Action<Cts.ByRefType, TypeSpecification> _initByRef;
         private Action<Cts.PointerType, TypeSpecification> _initPointer;
         private Action<Cts.InstantiatedType, TypeSpecification> _initTypeInst;
-        private Action<Cts.GenericParameterDesc, TypeSpecification> _initTypeVar;
+        private Action<Cts.SignatureTypeVariable, TypeSpecification> _initTypeVar;
+        private Action<Cts.SignatureMethodVariable, TypeSpecification> _initMethodVar;
 
         public override MetadataRecord HandleType(Cts.TypeDesc type)
         {
@@ -52,10 +53,15 @@ namespace ILCompiler.Metadata
                 var pointerType = (Cts.PointerType)type;
                 rec = _types.GetOrCreate(pointerType, _initPointer ?? (_initPointer = InitializePointer));
             }
-            else if (type is Cts.GenericParameterDesc)
+            else if (type is Cts.SignatureTypeVariable)
             {
-                var genericParameter = (Cts.GenericParameterDesc)type;
-                rec = _types.GetOrCreate(genericParameter, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
+                var variable = (Cts.SignatureTypeVariable)type;
+                rec = _types.GetOrCreate(variable, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
+            }
+            else if (type is Cts.SignatureMethodVariable)
+            {
+                var variable = (Cts.SignatureMethodVariable)type;
+                rec = _types.GetOrCreate(variable, _initMethodVar ?? (_initMethodVar = InitializeMethodVariable));
             }
             else if (type is Cts.InstantiatedType)
             {
@@ -114,26 +120,20 @@ namespace ILCompiler.Metadata
             };
         }
 
-        private void InitializeTypeVariable(Cts.GenericParameterDesc entity, TypeSpecification record)
+        private void InitializeTypeVariable(Cts.SignatureTypeVariable entity, TypeSpecification record)
         {
-            MetadataRecord sig;
-            if (entity.Kind == Cts.GenericParameterKind.Type)
+            record.Signature = new TypeVariableSignature
             {
-                sig = new TypeVariableSignature
-                {
-                    Number = entity.Index
-                };
-            }
-            else
-            {
-                Debug.Assert(entity.Kind == Cts.GenericParameterKind.Method);
-                sig = new MethodTypeVariableSignature
-                {
-                    Number = entity.Index
-                };
-            }
+                Number = entity.Index
+            };
+        }
 
-            record.Signature = sig;
+        private void InitializeMethodVariable(Cts.SignatureMethodVariable entity, TypeSpecification record)
+        {
+            record.Signature = new MethodTypeVariableSignature
+            {
+                Number = entity.Index
+            };
         }
 
         private void InitializeTypeInstance(Cts.InstantiatedType entity, TypeSpecification record)
@@ -173,7 +173,9 @@ namespace ILCompiler.Metadata
                 record.EnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
 
-                // TODO: NamespaceDefinition?
+                var namespaceDefinition =
+                    HandleNamespaceDefinition(entity.ContainingType.Module, entity.ContainingType.Namespace);
+                record.NamespaceDefinition = namespaceDefinition;
             }
             else
             {
@@ -190,14 +192,60 @@ namespace ILCompiler.Metadata
             record.Flags = GetTypeAttributes(entity);
 
             if (entity.HasBaseType)
+            {
                 record.BaseType = HandleType(entity.BaseType);
+            }
 
-            record.Interfaces = entity.ExplicitlyImplementedInterfaces
-                .Where(i => !IsBlocked(i))
-                .Select(i => HandleType(i)).ToList();
+            if (entity.ExplicitlyImplementedInterfaces.Length > 0)
+            {
+                record.Interfaces = entity.ExplicitlyImplementedInterfaces
+                    .Where(i => !IsBlocked(i))
+                    .Select(i => HandleType(i)).ToList();
+            }
 
-            // TODO: GenericParameters
-            // TODO: CustomAttributes
+            if (entity.HasInstantiation)
+            {
+                var genericParams = new List<GenericParameter>(entity.Instantiation.Length);
+                foreach (var p in entity.Instantiation)
+                    genericParams.Add(HandleGenericParameter((Cts.GenericParameterDesc)p));
+                record.GenericParameters = genericParams;
+            }
+
+            var fields = new List<Field>();
+            foreach (var field in entity.GetFields())
+            {
+                if (_policy.GeneratesMetadata(field))
+                {
+                    fields.Add(HandleFieldDefinition(field));
+                }
+            }
+            record.Fields = fields;
+
+            var methods = new List<Method>();
+            foreach (var method in entity.GetMethods())
+            {
+                if (_policy.GeneratesMetadata(method))
+                {
+                    methods.Add(HandleMethodDefinition(method));
+                }
+            }
+            record.Methods = methods;
+
+            var ecmaEntity = entity as Cts.Ecma.EcmaType;
+            if (ecmaEntity != null)
+            {
+                Ecma.TypeDefinition ecmaRecord = ecmaEntity.MetadataReader.GetTypeDefinition(ecmaEntity.Handle);
+                foreach (var property in ecmaRecord.GetProperties())
+                {
+                    Property prop = HandleProperty(ecmaEntity.EcmaModule, property);
+                    if (prop != null)
+                        record.Properties.Add(prop);
+                }
+
+                // Events
+
+                // TODO: CustomAttributes
+            }
         }
 
         private TypeAttributes GetTypeAttributes(Cts.MetadataType type)
