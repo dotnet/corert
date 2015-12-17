@@ -22,23 +22,21 @@ private:
 // -----------------------------------------------------------------------------------------------------------
 //
 // Minimal Crst implementation based on CRITICAL_SECTION. Doesn't support much except for the basic locking
-// functionality (in particular there is no rank violation checking, but then again there's only one Crst type
-// used currently).
+// functionality (in particular there is no rank violation checking).
 //
 
 enum CrstType
 {
     CrstHandleTable,
-    CrstThreadStore,
     CrstDispatchCache,
     CrstAllocHeap,
-    CrstModuleList,
     CrstGenericInstHashtab,
     CrstMemAccessMgr,
     CrstInterfaceDispatchGlobalLists,
     CrstStressLog,
     CrstRestrictedCallouts,
     CrstGcStressControl,
+    CrstSuspendEE,
 };
 
 enum CrstFlags

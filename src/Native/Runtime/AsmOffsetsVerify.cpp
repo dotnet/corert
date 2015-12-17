@@ -23,6 +23,8 @@
 
 class AsmOffsets
 {
+    static_assert(sizeof(Thread::m_rgbAllocContextBuffer) >= sizeof(alloc_context), "Thread::m_rgbAllocContextBuffer is not big enough to hold an alloc_context");
+
 #define PLAT_ASM_OFFSET(offset, cls, member) \
     static_assert((offsetof(cls, member) == 0x##offset) || (offsetof(cls, member) > 0x##offset), "Bad asm offset for '" #cls "." #member "', the actual offset is smaller than 0x" #offset "."); \
     static_assert((offsetof(cls, member) == 0x##offset) || (offsetof(cls, member) < 0x##offset), "Bad asm offset for '" #cls "." #member "', the actual offset is larger than 0x" #offset ".");

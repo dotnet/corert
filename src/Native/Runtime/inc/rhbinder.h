@@ -651,11 +651,13 @@ struct PInvokeTransitionFrame
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
 #ifdef _TARGET_AMD64_
-#define OFFSETOF__Thread__m_pTransitionFrame 0x30
+#define OFFSETOF__Thread__m_pTransitionFrame 0x40
+#elif defined(_TARGET_ARM64_)
+#define OFFSETOF__Thread__m_pTransitionFrame 0x40
 #elif defined(_TARGET_X86_)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x20
+#define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #elif defined(_TARGET_ARM_)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x20
+#define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #endif
 
 #ifdef RHDUMP
