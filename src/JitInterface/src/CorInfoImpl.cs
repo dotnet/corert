@@ -505,8 +505,8 @@ namespace Internal.JitInterface
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
         {
-            // TODO: Inlining
-            return CorInfoInline.INLINE_NEVER;
+            // No restrictions on inlining
+            return CorInfoInline.INLINE_PASS;
         }
 
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
@@ -1850,7 +1850,6 @@ namespace Internal.JitInterface
 
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
-            pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
             pResult._nullInstanceCheck = (uint)(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) ? 1 : 0);
 
             // TODO: Support Generics
@@ -1865,12 +1864,15 @@ namespace Internal.JitInterface
 
             pResult._exactContextNeedsRuntimeLookup = 0;
 
-            // TODO: CORINFO_VIRTUALCALL_STUB
-            // TODO: CORINFO_CALL_CODE_POINTER
-            pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
             if (!directCall)
             {
+                // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
+                // call that should not be inlined.
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+
                 pResult.codePointerOrStubLookup.constLookup.addr =
                     (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
 
@@ -1887,8 +1889,9 @@ namespace Internal.JitInterface
                     targetMethod = IntrinsicMethods.GetStringInitializer(targetMethod);
                 }
 
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
                 pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
-
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
