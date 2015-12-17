@@ -123,12 +123,34 @@ extern "C" void* __ldelema_ref(System::Array * pArray, unsigned idx, MethodTable
     return &(((Object **)(pArray->GetArrayData()))[idx]);
 }
 
+void PrintStringObject(System::String *pStringToPrint)
+{
+    // Get the number of characters in managed string (stored as UTF16)
+    int32_t length = *((int32_t*)((char*)(pStringToPrint)+sizeof(intptr_t)));
+
+    // Get the pointer to the start of the character array
+    uint16_t *pString = (uint16_t*)((char*)(pStringToPrint)+sizeof(intptr_t) + sizeof(int32_t));
+    
+    // Loop to display the string
+    int32_t index = 0;
+    while (index < length)
+    {
+        putwchar(*pString);
+        pString++;
+        index++;
+    }   
+}
 extern "C" void __not_yet_implemented(System::String * pMethodName, System::String * pMessage)
 {
     printf("ILCompiler failed generating code for this method; execution cannot continue.\n");
     printf("This is likely because of a feature that is not yet implemented in the compiler.\n");
-    wprintf(L"Method: %ls\n", (wchar_t*)((char*)(pMethodName)+12));
-    wprintf(L"Reason: %ls\n", (wchar_t*)((char*)(pMessage)+12));
+    printf("Method: ");
+    PrintStringObject(pMethodName);
+    printf("\n\n");
+    printf("Reason: ");
+    PrintStringObject(pMessage);
+    printf("\n");
+
     exit(-1);
 }
 

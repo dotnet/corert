@@ -379,6 +379,16 @@ namespace Internal.JitInterface
             }
         }
 
+        private CORINFO_CONTEXT_STRUCT* contextFromMethod(MethodDesc method)
+        {
+            return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(method)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);
+        }
+
+        private CORINFO_CONTEXT_STRUCT* contextFromType(TypeDesc type)
+        {
+            return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(type)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS);
+        }
+
         private MethodDesc methodFromContext(CORINFO_CONTEXT_STRUCT* contextStruct)
         {
             if (((ulong)contextStruct & (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK) == (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_CLASS)
@@ -1843,9 +1853,17 @@ namespace Internal.JitInterface
             pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
             pResult._nullInstanceCheck = (uint)(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) ? 1 : 0);
 
-            // TODO: Generics
-            // pResult.contextHandle;
-            // pResult._exactContextNeedsRuntimeLookup
+            // TODO: Support Generics
+            if (targetMethod.HasInstantiation)
+            {
+                pResult.contextHandle = contextFromMethod(targetMethod);
+            }
+            else
+            {
+                pResult.contextHandle = contextFromType(targetMethod.OwningType);
+            }
+
+            pResult._exactContextNeedsRuntimeLookup = 0;
 
             // TODO: CORINFO_VIRTUALCALL_STUB
             // TODO: CORINFO_CALL_CODE_POINTER
