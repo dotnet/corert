@@ -51,6 +51,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodForInstantiatedType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\ParameterizedType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\PointerType.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\PropertySignature.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\SignatureVariable.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\TargetDetails.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\ThreadSafeFlags.cs" />
