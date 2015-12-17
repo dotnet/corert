@@ -30,6 +30,22 @@ namespace Internal.TypeSystem.Ecma
             return TypeHashingAlgorithms.ComputeSignatureVariableHashCode(parameter.Index, parameter.Parent.Kind == HandleKind.MethodDefinition);
         }
 
+        public GenericParameterHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        }
+
+        public MetadataReader MetadataReader
+        {
+            get
+            {
+                return _module.MetadataReader;
+            }
+        }
+
         public override TypeSystemContext Context
         {
             get
