@@ -178,6 +178,36 @@ namespace Internal.TypeSystem.Ecma
             return new MethodSignature(flags, arity, returnType, parameters);
         }
 
+        public PropertySignature ParsePropertySignature()
+        {
+            SignatureHeader header = _reader.ReadSignatureHeader();
+            if (header.Kind != SignatureKind.Property)
+                throw new BadImageFormatException();
+
+            bool isStatic = !header.IsInstance;
+
+            int count = _reader.ReadCompressedInteger();
+
+            TypeDesc returnType = ParseType();
+            TypeDesc[] parameters;
+
+            if (count > 0)
+            {
+                // Get all of the parameters.
+                parameters = new TypeDesc[count];
+                for (int i = 0; i < count; i++)
+                {
+                    parameters[i] = ParseType();
+                }
+            }
+            else
+            {
+                parameters = TypeDesc.EmptyTypes;
+            }
+
+            return new PropertySignature(isStatic, parameters, returnType);
+        }
+
         public TypeDesc ParseFieldSignature()
         {
             if (_reader.ReadSignatureHeader().Kind != SignatureKind.Field)
