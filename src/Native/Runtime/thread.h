@@ -10,14 +10,19 @@ class ThreadStore;
 class CLREventStatic;
 class Thread;
 
+// The offsets of some fields in the thread (in particular, m_pTransitionFrame) are known to the compiler and get 
+// inlined into the code.  Let's make sure they don't change just because we enable/disable server GC in a particular
+// runtime build.
+#define KEEP_THREAD_LAYOUT_CONSTANT
+
 #if defined(_X86_) || defined(_ARM_)
-# ifdef FEATURE_SVR_GC
+# if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
 #  define SIZEOF_ALLOC_CONTEXT 40
 # else // FEATURE_SVR_GC
 #  define SIZEOF_ALLOC_CONTEXT 28
 # endif // FEATURE_SVR_GC
 #elif defined(_AMD64_) || defined(_ARM64_)
-# ifdef FEATURE_SVR_GC
+# if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
 #  define SIZEOF_ALLOC_CONTEXT 56
 # else // FEATURE_SVR_GC
 #  define SIZEOF_ALLOC_CONTEXT 40

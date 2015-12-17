@@ -1343,6 +1343,11 @@ public:
     PER_HEAP
     BOOL is_mark_set (uint8_t* o);
 
+#ifdef FEATURE_BASICFREEZE
+    PER_HEAP_ISOLATED
+    bool frozen_object_p(Object* obj);
+#endif // FEATURE_BASICFREEZE
+
 protected:
 
     PER_HEAP
@@ -1814,7 +1819,11 @@ protected:
     PER_HEAP
     void mark_array_clear_marked (uint8_t* add);
     PER_HEAP
-    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only=TRUE);
+    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only=TRUE
+#ifdef FEATURE_BASICFREEZE
+        , BOOL read_only=FALSE
+#endif // FEATURE_BASICFREEZE
+        );
 #ifdef BACKGROUND_GC
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);

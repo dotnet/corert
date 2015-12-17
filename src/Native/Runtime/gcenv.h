@@ -98,6 +98,8 @@ public:
     UInt32 GetRequiredAlignment() const { return sizeof(void*); }
 #endif // FEATURE_BARTOK
 #endif // FEATURE_STRUCTALIGN
+    bool RequiresAlign8() { return ((EEType*)this)->RequiresAlign8(); }
+    bool IsValueType() { return ((EEType*)this)->get_IsValueType(); }
     UInt32_BOOL SanityCheck() { return ((EEType*)this)->Validate(); }
     // TODO: remove this method after the __isinst_class is gone
     MethodTable* GetParent()

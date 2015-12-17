@@ -147,6 +147,12 @@ UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
 // success or false if a subsystem failed to initialize.
 
 #ifndef DACCESS_COMPILE
+CrstStatic g_SuspendEELock;
+#ifdef _MSC_VER
+#pragma warning(disable:4815) // zero-sized array in stack object will have no elements
+#endif // _MSC_VER
+EEType g_FreeObjectEEType;
+
 // static 
 bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 {
@@ -167,13 +173,15 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     InitializeSystemInfo();
 
     // Initialize the special EEType used to mark free list entries in the GC heap.
-    EEType *pFreeObjectType = new (nothrow) EEType();      //@TODO: remove 'new'
-    pFreeObjectType->InitializeAsGcFreeType();
+    g_FreeObjectEEType.InitializeAsGcFreeType();
 
     // Place the pointer to this type in a global cell (typed as the structurally equivalent MethodTable
     // that the GC understands).
-    g_pFreeObjectMethodTable = (MethodTable *)pFreeObjectType;
-    g_pFreeObjectEEType = pFreeObjectType;
+    g_pFreeObjectMethodTable = (MethodTable *)&g_FreeObjectEEType;
+    g_pFreeObjectEEType = &g_FreeObjectEEType;
+
+    if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
+        return false;
 
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
@@ -802,6 +810,8 @@ void GCToEEInterface::SuspendEE(GCToEEInterface::SUSPEND_REASON reason)
 
     FireEtwGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
 
+    g_SuspendEELock.Enter();
+
     g_TrapReturningThreads = TRUE;
     GCHeap::GetGCHeap()->SetGCInProgress(TRUE);
 
@@ -824,7 +834,9 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     GetThreadStore()->ResumeAllThreads(GCHeap::GetGCHeap()->GetWaitForGCEvent());
     GCHeap::GetGCHeap()->SetGCInProgress(FALSE);
 
-    g_TrapReturningThreads = FALSE; // @TODO: map this to something meaningful in the new algorithm
+    g_TrapReturningThreads = FALSE;
+
+    g_SuspendEELock.Leave();
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 }

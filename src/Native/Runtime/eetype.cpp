@@ -45,7 +45,7 @@ bool EEType::Validate(bool assertOnFail /* default: true */)
     case CanonicalEEType:
     {
         // If the parent type is NULL this had better look like Object.
-        if (m_RelatedType.m_pBaseType == NULL)
+        if (!IsInterface() && (m_RelatedType.m_pBaseType == NULL))
         {
             if (IsRelatedTypeViaIAT() ||
                 get_IsValueType() ||
