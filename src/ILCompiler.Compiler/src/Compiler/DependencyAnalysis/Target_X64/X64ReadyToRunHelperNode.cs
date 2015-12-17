@@ -28,8 +28,8 @@ namespace ILCompiler.DependencyAnalysis
                     if (relocsOnly)
                         break;
 
-                    AddrMode loadFromRcx = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                    encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRcx);
+                    AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                    encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
 
                     {
                         int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, (MethodDesc)Target);
