@@ -3749,7 +3749,11 @@ public:
 #endif
         if (fSmallObjectHeapPtr)
         {
+#ifdef FEATURE_BASICFREEZE
             _ASSERTE(!GCHeap::GetGCHeap()->IsLargeObject(pMT) || GCHeap::GetGCHeap()->IsInFrozenSegment(this));
+#else
+            _ASSERTE(!GCHeap::GetGCHeap()->IsLargeObject(pMT));
+#endif
         }
     }
 
@@ -36850,10 +36854,10 @@ inline void testGCShadow(Object** ptr)
 
         if(*shadow!=INVALIDGCVALUE)
         {
-#ifdef FEATURE_REDHAWK
-            // Under Redhawk write barriers for stores of references to frozen objects may be optimized away.
+#ifdef FEATURE_BASICFREEZE
+            // Write barriers for stores of references to frozen objects may be optimized away.
             if (!gc_heap::frozen_object_p(*ptr))
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_BASICFREEZE
             {
                 _ASSERTE(!"Pointer updated without using write barrier");
             }
