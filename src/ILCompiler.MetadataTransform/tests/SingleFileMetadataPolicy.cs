@@ -5,7 +5,7 @@ using System;
 using ILCompiler.Metadata;
 using Internal.TypeSystem;
 
-namespace ILCompiler.MetadataTransform.Tests
+namespace MetadataTransformTests
 {
     struct SingleFileMetadataPolicy : IMetadataPolicy
     {

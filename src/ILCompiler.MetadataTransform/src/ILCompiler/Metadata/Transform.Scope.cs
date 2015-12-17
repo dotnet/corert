@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
@@ -15,7 +16,8 @@ namespace ILCompiler.Metadata
 {
     public partial class Transform<TPolicy>
     {
-        private EntityMap<Cts.ModuleDesc, ScopeDefinition> _scopeDefs;
+        private EntityMap<Cts.ModuleDesc, ScopeDefinition> _scopeDefs
+            = new EntityMap<Cts.ModuleDesc, ScopeDefinition>(EqualityComparer<Cts.ModuleDesc>.Default);
         private Action<Cts.ModuleDesc, ScopeDefinition> _initScopeDef;
 
         private ScopeDefinition HandleScopeDefinition(Cts.ModuleDesc module)
@@ -48,11 +50,11 @@ namespace ILCompiler.Metadata
 
                 scopeDefinition.PublicKey = assemblyName.GetPublicKey();
 
-                // TODO: custom attributes
+                // TODO: CustomAttributes
             }
             else
             {
-                throw new NotImplementedException("Multi-module assemblies");
+                throw new NotSupportedException("Multi-module assemblies");
             }
 
             scopeDefinition.RootNamespaceDefinition = new NamespaceDefinition
@@ -100,7 +102,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                throw new NotImplementedException("Multi-module assemblies");
+                throw new NotSupportedException("Multi-module assemblies");
             }
         }
     }

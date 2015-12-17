@@ -14,6 +14,9 @@ namespace ILCompiler.Metadata
 
         private ConstantStringValue HandleString(string s)
         {
+            if (s == null)
+                return null;
+
             ConstantStringValue result;
             if (!_strings.TryGetValue(s, out result))
             {

@@ -100,7 +100,8 @@ namespace ILCompiler.Metadata
             {
                 ElementType = HandleType(entity.ElementType),
                 Rank = entity.Rank,
-                // TODO: sizes and lower bounds
+                // TODO: LowerBounds
+                // TODO: Sizes
             };
         }
 
@@ -242,7 +243,7 @@ namespace ILCompiler.Metadata
                         record.Properties.Add(prop);
                 }
 
-                // Events
+                // TODO: Events
 
                 // TODO: CustomAttributes
             }
@@ -272,6 +273,9 @@ namespace ILCompiler.Metadata
                     result |= TypeAttributes.Sealed;
                 if (type.IsBeforeFieldInit)
                     result |= TypeAttributes.BeforeFieldInit;
+
+                // Not set: Abstract, Ansi/Unicode/Auto, HasSecurity, Import, visibility, Serializable,
+                //          WindowsRuntime, HasSecurity, SpecialName, RTSpecialName
             }
 
             return result;

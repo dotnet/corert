@@ -23,6 +23,10 @@
       <Project>{a965ea82-219d-48f7-ad51-bc030c16cc6f}</Project>
       <Name>ILCompiler.MetadataTransform</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
+      <Project>{D66338D4-F9E4-4051-B302-232C6BFB6EF6}</Project>
+      <Name>ILCompiler.MetadataWriter</Name>
+    </ProjectReference>
     <ProjectReference Include="PrimaryMetadataAssembly\PrimaryMetadataAssembly.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
@@ -34,6 +38,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SimpleTests.cs" />
     <Compile Include="SingleFileMetadataPolicy.cs" />
     <Compile Include="TestTypeSystemContext.cs" />
   </ItemGroup>

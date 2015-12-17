@@ -41,6 +41,7 @@ namespace ILCompiler.Metadata
 
         private Field HandleFieldDefinition(Cts.FieldDesc field)
         {
+            Debug.Assert(field.GetTypicalFieldDefinition() == field);
             Debug.Assert(_policy.GeneratesMetadata(field));
             return (Field)_fields.GetOrCreate(field, _initFieldDef ?? (_initFieldDef = InitializeFieldDefinition));
         }

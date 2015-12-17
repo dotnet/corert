@@ -11,7 +11,7 @@ using Internal.TypeSystem.Ecma;
 using System.Reflection.PortableExecutable;
 using System.IO;
 
-namespace TypeSystemTests
+namespace MetadataTransformTests
 {
     class TestTypeSystemContext : TypeSystemContext
     {
@@ -51,11 +51,6 @@ namespace TypeSystemTests
         EcmaModule _systemModule;
 
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
-
-        public TestTypeSystemContext(TargetArchitecture arch)
-            : base(new TargetDetails(arch, TargetOS.Unknown))
-        {
-        }
 
         public override DefType GetWellKnownType(WellKnownType wellKnownType)
         {
