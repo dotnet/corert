@@ -3,7 +3,6 @@ The following pre-requisites need to be installed for building the repo:
 # Common Pre-requisites
 
 1. CMake is used for the build system and needs to be installed and present on the path. You can download it from [here](http://www.cmake.org/download/).
-2. Download and install the .NET CLI package, specific to your operating system, from [here](https://github.com/dotnet/cli/).
 
 # Windows (Windows 7+)
 

@@ -13,6 +13,15 @@ This will result in the following:
 - Restore nuget packages required for building
 - Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\Product\<OS>.<arch>.<Config>\.nuget\publish1`.
 - Build and run tests
+- Installs the latest CLI tools at `<repo_root>\bin\tools\cli`
+
+# Setup CLI
+To consume the CLI tools installed as part of the build, do the following:
+
+* Add `<repo_root>\bin\tools\cli\bin` to the path
+* set `DOTNET_HOME` environment variable to `<repo_root>\bin\tools\cli`
+
+You should now be able to use the `dotnet` commands of the CLI tools.
 
 # Compiling source to native code using the ILCompiler you built#
 
