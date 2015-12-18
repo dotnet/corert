@@ -171,11 +171,8 @@ __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 for json in $(find src -iname 'project.json')
 do
     __restore=1
-    # Disable RyuJIT for OSX.
-    if [ ${__BuildOsLowcase} != "osx" ]; then
-        run_test_dir ${json} ${__restore} "Jit"
-        __restore=0
-    fi
+    run_test_dir ${json} ${__restore} "Jit"
+    __restore=0
     run_test_dir ${json} ${__restore} "Cpp"
 done
 
@@ -196,11 +193,8 @@ echo "</assemblies>"  >> ${__CoreRTTestBinDir}/testResults.xml
 echo "JIT - TOTAL: ${__JitTotalTests} PASSED: ${__JitPassedTests}"
 echo "CPP - TOTAL: ${__CppTotalTests} PASSED: ${__CppPassedTests}"
 
-# Disable RyuJIT for OSX.
-if [ ${__BuildOsLowcase} != "osx" ]; then
-    if [ ${__JitTotalTests} == 0 ]; then
-        exit 1
-    fi
+if [ ${__JitTotalTests} == 0 ]; then
+    exit 1
 fi
 
 if [ ${__CppTotalTests} == 0 ]; then

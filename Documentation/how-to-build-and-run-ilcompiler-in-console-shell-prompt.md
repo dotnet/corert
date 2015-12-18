@@ -32,8 +32,6 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 ## Using RyuJIT ##
 
-**Note: Support for Mac OSX is coming soon!**
-
 This approach uses the same code-generator (RyuJIT), as [CoreCLR](https://github.com/dotnet/coreclr), for compiling the application. Linking is done using the platform specific linker.
 
 From the shell/command prompt, issue the following commands, from the folder containing your source file and project.json, to generate the native executable
