@@ -310,7 +310,6 @@
     <Compile Include="System\Reflection\Missing.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
     <Compile Include="System\Reflection\ProcessorArchitecture.cs" />
-    <Compile Include="System\Runtime\commandline.cs" />
     <Compile Include="System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
@@ -485,6 +484,8 @@
       <Compile Include="System\Globalization\TextInfo.Win32.cs" />
       <Compile Include="System\Globalization\CalendarData.Win32.cs" />
 
+      <Compile Include="System\Runtime\CommandLine.Win32.cs" />
+
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.EnvironmentVariables.UWP.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.EnvironmentVariables.Win32.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />
@@ -525,6 +526,31 @@
     <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" />
     <Compile Include="..\..\Common\src\System\__HResults.cs" />
     <Compile Include="CoverageSupport.cs" />
+  </ItemGroup>
+
+  <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\DispatchResolve.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\GCStress.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\BinderIntrinsics.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\__Finalizer.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CalliIntrinsics.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\EEType.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InternalCalls.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExports.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs" />
+    <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
-    public static class RuntimeExports
+    internal static class RuntimeExports
     {
         //
         // internalcalls for System.Runtime.InteropServices.GCHandle.

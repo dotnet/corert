@@ -279,86 +279,39 @@ extern "C" void Buffer_BlockCopy(class System::Array * src, int srcOfs, class Sy
     memmove((uint8_t*)dst + 2 * sizeof(void*) + dstOfs, (uint8_t*)src + 2 * sizeof(void*) + srcOfs, count);
 }
 
-extern "C" Object* RhMemberwiseClone(Object*)
-{
-    throw "RhMemberwiseClone";
-}
-
-extern "C" uint8_t RhGetCorElementType(MethodTable*)
-{
-    throw "RhGetCorElementType";
-}
-
-extern "C" MethodTable* RhGetRelatedParameterType(MethodTable*)
-{
-    throw "RhGetRelatedParameterType";
-}
-
-extern "C" uint16_t RhGetComponentSize(MethodTable*)
-{
-    throw "RhGetComponentSize";
-}
-
-extern "C" uint8_t RhHasReferenceFields(MethodTable*)
-{
-    throw "RhHasReferenceFields";
-}
-
-extern "C" uint8_t RhIsValueType(MethodTable*)
-{
-    throw "RhIsValueType";
-}
-
-extern "C" uint8_t RhIsArray(MethodTable*)
-{
-    throw "RhIsArray";
-}
-
-extern "C" int32_t RhGetEETypeHash(MethodTable*)
-{
-    throw "RhGetEETypeHash";
-}
-
-extern "C" uint8_t RhTypeCast_AreTypesEquivalent(MethodTable*, MethodTable*)
-{
-    throw "RhTypeCast_AreTypesEquivalent";
-}
-
-extern "C" uint8_t RhTypeCast_AreTypesAssignable(MethodTable*, MethodTable*)
-{
-    throw "RhTypeCast_AreTypesAssignable";
-}
-
 extern "C" void RhGetCurrentThreadStackTrace()
 {
     throw "RhGetCurrentThreadStackTrace";
 }
 
-extern "C" intptr_t RhHandleAlloc(Object * pObject, int type)
+extern "C" void RhpGetDispatchCellInfo()
 {
-    return (intptr_t)CreateTypedHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
+    throw "RhpGetDispatchCellInfo";
 }
-
-extern "C" intptr_t RhHandleAllocDependent(Object* pPrimary, Object* pSecondary)
+extern "C" void RhpUpdateDispatchCellCache()
 {
-    return (intptr_t)CreateDependentHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pPrimary, pSecondary);
+    throw "RhpUpdateDispatchCellCache";
 }
-
-extern "C" void RhGetNonArrayBaseType()
+extern "C" void RhpSearchDispatchCellCache()
 {
-    throw "RhGetNonArrayBaseType";
+    throw "RhpSearchDispatchCellCache";
 }
-
-extern "C" void RhGetEETypeClassification()
-{
-    throw "RhGetEETypeClassification";
-}
-
 extern "C" void RhCollect()
 {
     throw "RhCollect";
 }
-
+extern "C" void RhpCallCatchFunclet()
+{
+    throw "RhpCallCatchFunclet";
+}
+extern "C" void RhpCallFilterFunclet()
+{
+    throw "RhpCallFilterFunclet";
+}
+extern "C" void RhpCallFinallyFunclet()
+{
+    throw "RhpCallFinallyFunclet";
+}
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
@@ -367,38 +320,13 @@ extern "C" void RhpFailFastForPInvokeExceptionPreemp()
 {
     throw "RhpFailFastForPInvokeExceptionPreemp";
 }
-extern "C" void RhpFailFastForPInvokeExceptionCoop()
-{
-    throw "RhpFailFastForPInvokeExceptionCoop";
-}
 extern "C" void RhpThrowHwEx()
 {
     throw "RhpThrowHwEx";
 }
-
-extern "C" void RhExceptionHandling_FailedAllocation()
+extern "C" void RhpEtwExceptionThrown()
 {
-    throw "RhExceptionHandling_FailedAllocation";
-}
-extern "C" void RhIsNullable()
-{
-    throw "RhIsNullable";
-}
-extern "C" void RhpCalculateStackTraceWorker()
-{
-    throw "RhpCalculateStackTraceWorker";
-}
-extern "C" void RhThrowHwEx()
-{
-    throw "RhThrowHwEx";
-}
-extern "C" void RhThrowEx()
-{
-    throw "RhThrowEx";
-}
-extern "C" void RhRethrow()
-{
-    throw "RhRethrow";
+    throw "RhpEtwExceptionThrown";
 }
 
 #ifndef CPPCODEGEN

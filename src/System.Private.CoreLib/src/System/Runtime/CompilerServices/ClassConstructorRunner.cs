@@ -29,7 +29,9 @@ namespace System.Runtime.CompilerServices
         //
         // No attempt is made to detect or break deadlocks due to other synchronization mechanisms.
         //==============================================================================================================
+#if !CORERT // CORERT-TODO: Use full cctor helper
         [RuntimeExport("CheckStaticClassConstruction")]
+#endif
         public static unsafe void* EnsureClassConstructorRun(void* returnValue, StaticClassConstructionContext* pContext)
         {
             IntPtr pfnCctor = pContext->cctorMethodAddress;

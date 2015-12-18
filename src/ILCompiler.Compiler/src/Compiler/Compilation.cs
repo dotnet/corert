@@ -200,20 +200,27 @@ namespace ILCompiler
             foreach (var inputFile in _typeSystemContext.InputFilePaths)
             {
                 var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
-                foreach (var type in module.GetAllTypes())
+                AddCompilationRootsForRuntimeExports(module);
+           }
+
+            AddCompilationRootsForRuntimeExports((EcmaModule)_typeSystemContext.SystemModule);
+        }
+
+        private void AddCompilationRootsForRuntimeExports(EcmaModule module)
+        {
+            foreach (var type in module.GetAllTypes())
+            {
+                foreach (var method in type.GetMethods())
                 {
-                    foreach (var method in type.GetMethods())
+                    if (method.HasCustomAttribute("System.Runtime", "RuntimeExportAttribute"))
                     {
-                        if (method.HasCustomAttribute("System.Runtime", "RuntimeExportAttribute"))
-                        {
-                            string exportName = ((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeExportAttribute");
-                            AddCompilationRoot(method, "Runtime export", exportName);
-                        }
+                        string exportName = ((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeExportAttribute");
+                        AddCompilationRoot(method, "Runtime export", exportName);
                     }
                 }
             }
         }
-
+ 
         private void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
         {
             var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
