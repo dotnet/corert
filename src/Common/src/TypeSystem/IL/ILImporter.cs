@@ -411,7 +411,7 @@ namespace Internal.IL
                         ImportCall(opCode, ReadILToken());
                         break;
                     case ILOpcode.calli:
-                        ImportCall(opCode, ReadILToken());
+                        ImportCalli(ReadILToken());
                         break;
                     case ILOpcode.ret:
                         ImportReturn();

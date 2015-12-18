@@ -671,25 +671,33 @@ namespace ILCompiler.CppCodeGen
 
         private void AppendSlotTypeDef(StringBuilder sb, MethodDesc method)
         {
-            var methodSignature = method.Signature;
+            MethodSignature methodSignature = method.Signature;
 
+            TypeDesc thisArgument = null;
+            if (!methodSignature.IsStatic)
+                thisArgument = method.OwningType;
+
+            AppendSignatureTypeDef(sb, "__slot__" + GetCppMethodName(method), methodSignature, thisArgument);
+        }
+
+        internal void AppendSignatureTypeDef(StringBuilder sb, string name, MethodSignature methodSignature, TypeDesc thisArgument)
+        {
             sb.Append("typedef ");
             sb.Append(GetCppSignatureTypeName(methodSignature.ReturnType));
-            sb.Append("(*__slot__");
-            sb.Append(GetCppMethodName(method));
+            sb.Append("(*");
+            sb.Append(name);
             sb.Append(")(");
 
-            bool hasThis = !methodSignature.IsStatic;
             int argCount = methodSignature.Length;
-            if (hasThis)
+            if (thisArgument != null)
                 argCount++;
             for (int i = 0; i < argCount; i++)
             {
-                if (hasThis)
+                if (thisArgument != null)
                 {
                     if (i == 0)
                     {
-                        sb.Append(GetCppSignatureTypeName(method.OwningType));
+                        sb.Append(GetCppSignatureTypeName(thisArgument));
                     }
                     else
                     {

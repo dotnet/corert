@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 
 using Internal.TypeSystem;
 using Internal.IL.Stubs;
@@ -285,10 +286,15 @@ namespace Internal.IL
             }
         }
 
+        private static string IntToString(int x)
+        {
+            return x.ToString(CultureInfo.InvariantCulture);
+        }
+
         private int _currentTemp = 1;
         private string NewTempName()
         {
-            return "_" + (_currentTemp++).ToString();
+            return "_" + IntToString(_currentTemp++);
         }
 
         private void PushTemp(StackValueKind kind, TypeDesc type = null)
@@ -335,7 +341,7 @@ namespace Internal.IL
             SpillSlot spillSlot = new SpillSlot();
             spillSlot.Kind = kind;
             spillSlot.Type = type;
-            spillSlot.Name = "_s" + _spillSlots.Count.ToString();
+            spillSlot.Name = "_s" + IntToString(_spillSlots.Count);
 
             _spillSlots.Add(spillSlot);
 
@@ -365,7 +371,7 @@ namespace Internal.IL
                 return _writer.SanitizeCppVarName(_parameterIndexToNameMap[index]);
             }
 
-            return (argument ? "_a" : "_l") + index.ToString();
+            return (argument ? "_a" : "_l") + IntToString(index);
         }
 
         private TypeDesc GetVarType(int index, bool argument)
@@ -414,7 +420,7 @@ namespace Internal.IL
             _builder.AppendLine();
 
             Append("#line ");
-            Append(sequencePoint.LineNumber.ToString());
+            Append(IntToString(sequencePoint.LineNumber));
             Append(" \"");
             Append(sequencePoint.Document.Replace("\\", "\\\\"));
             Append("\"");
@@ -439,7 +445,7 @@ namespace Internal.IL
                 var sequencePoint = _sequencePoints[0];
 
                 Append("#line ");
-                Append(sequencePoint.LineNumber.ToString());
+                Append(IntToString(sequencePoint.LineNumber));
                 Append(" \"");
                 Append(sequencePoint.Document.Replace("\\", "\\\\"));
                 Append("\"");
@@ -495,7 +501,7 @@ namespace Internal.IL
                 if (r.ReturnLabels != 0)
                 {
                     _builder.Append("int __finallyReturn");
-                    _builder.Append(i.ToString());
+                    _builder.Append(IntToString(i));
                     _builder.Append("=0;");
                 }
             }
@@ -506,7 +512,7 @@ namespace Internal.IL
                 if (basicBlock != null)
                 {
                     _builder.Append("_bb");
-                    _builder.Append(i.ToString());
+                    _builder.Append(IntToString(i));
                     _builder.AppendLine(": {");
                     _builder.Append(basicBlock.Code);
                     // _builder.AppendLine("}");
@@ -519,9 +525,9 @@ namespace Internal.IL
                 var r = _exceptionRegions[i];
                 if (r.ReturnLabels != 0)
                 {
-                    _builder.AppendLine("__endFinally" + i.ToString() + ": switch(__finallyReturn" + i.ToString() + ") {");
+                    _builder.AppendLine("__endFinally" + IntToString(i) + ": switch(__finallyReturn" + IntToString(i) + ") {");
                     for (int j = 1; j <= r.ReturnLabels; j++)
-                        _builder.AppendLine("case " + j.ToString() + ": goto __returnFromFinally" + i.ToString() + "_" + j.ToString() + ";");
+                        _builder.AppendLine("case " + IntToString(j) + ": goto __returnFromFinally" + IntToString(i) + "_" + IntToString(j) + ";");
                     _builder.AppendLine("default: " + (_msvc ? "__assume(0)" : "__builtin_unreachable()") + "; }");
                 }
             }
@@ -651,7 +657,7 @@ namespace Internal.IL
                         {
                             if (i != 0)
                                 Append(", ");
-                            Append(String.Format("0x{0:X}", memBlock[i]));
+                            Append(String.Format(CultureInfo.InvariantCulture, "0x{0:X}", memBlock[i]));
                         }
                         Append(" }");
                         Finish();
@@ -661,7 +667,7 @@ namespace Internal.IL
                         Append(" + ARRAY_BASE, ");
                         Append(preinitDataHolder);
                         Append(", ");
-                        Append(memBlock.Length.ToString());
+                        Append(IntToString(memBlock.Length));
                         Append(")");
 
                         Finish();
@@ -687,9 +693,6 @@ namespace Internal.IL
                 return;
             }
 
-            if (opcode == ILOpcode.calli)
-                throw new NotImplementedException();
-
             TypeDesc constrained = null;
             if (opcode != ILOpcode.newobj)
             {
@@ -703,10 +706,11 @@ namespace Internal.IL
                 }
             }
 
+            TypeDesc owningType = method.OwningType;
+
             TypeDesc retType = null;
 
             {
-                TypeDesc owningType = method.OwningType;
                 if (opcode == ILOpcode.newobj)
                     retType = owningType;
 
@@ -861,19 +865,14 @@ namespace Internal.IL
                 Append(_writer.GetCppMethodName(method));
             }
 
-
+            TypeDesc thisArgument = null;
             Append("(");
-            int count = methodSignature.Length;
-            bool hasThis = !methodSignature.IsStatic;
-            if (hasThis)
-                count++;
             if (mdArrayCreate)
             {
                 Append(_writer.GetCppTypeName(method.OwningType));
                 Append("::__getMethodTable(), ");
-                Append(((ArrayType)method.OwningType).Rank.ToString());
+                Append(IntToString(((ArrayType)method.OwningType).Rank));
                 Append(", ");
-                count--;
             }
             else if (opcode == ILOpcode.newobj)
             {
@@ -890,20 +889,38 @@ namespace Internal.IL
                     Append(")");
                     Append(temp);
                 }
-                count--;
-                if (count > 0)
+                if (methodSignature.Length > 0)
                     Append(", ");
             }
-            for (int i = 0; i < count; i++)
+            else
             {
-                var op = _stack[_stackTop - count + i];
-                int argIndex = methodSignature.Length - (count - i);
+                if (!methodSignature.IsStatic)
+                {
+                    thisArgument = owningType;
+                    if (thisArgument.IsValueType)
+                        thisArgument = thisArgument.MakeByRefType();
+                }
+            }
+            PassCallArguments(methodSignature, thisArgument);
+            Append(")");
+
+            if (temp != null)
+                Push(retKind, new Value(temp), retType);
+            Finish();
+        }
+
+        private void PassCallArguments(MethodSignature methodSignature, TypeDesc thisArgument)
+        {
+            int signatureLength = methodSignature.Length;
+            int argumentsCount = (thisArgument != null) ? (signatureLength + 1) : signatureLength;
+            for (int i = 0; i < argumentsCount; i++)
+            {
+                var op = _stack[_stackTop - argumentsCount + i];
+                int argIndex = signatureLength - (argumentsCount - i);
                 TypeDesc argType;
                 if (argIndex == -1)
                 {
-                    argType = method.OwningType;
-                    if (argType.IsValueType)
-                        argType = argType.MakeByRefType();
+                    argType = thisArgument;
                 }
                 else
                 {
@@ -911,14 +928,60 @@ namespace Internal.IL
                 }
                 AppendCastIfNecessary(argType, op.Kind);
                 Append(op.Value.Name);
-                if (i != count - 1)
+                if (i + 1 != argumentsCount)
                     Append(", ");
             }
-            _stackTop -= count;
+            _stackTop -= argumentsCount;
+        }
+
+        private void ImportCalli(int token)
+        {
+            MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
+
+            TypeDesc thisArgument = null;
+            if (!methodSignature.IsStatic)
+            {
+                thisArgument = GetWellKnownType(WellKnownType.Object);
+                if (thisArgument.IsValueType)
+                    thisArgument = thisArgument.MakeByRefType();
+            }
+
+            string typeDefName = "__calli__" + token.ToString("X8", CultureInfo.InvariantCulture);
+            _writer.AppendSignatureTypeDef(_builder, typeDefName, methodSignature, thisArgument);
+
+            TypeDesc retType = methodSignature.ReturnType;
+            StackValueKind retKind = StackValueKind.Unknown;
+
+            string temp = null;
+
+            if (!retType.IsVoid)
+            {
+                retKind = GetStackValueKind(retType);
+                temp = NewTempName();
+
+                Append(GetStackValueKindCPPTypeName(retKind, retType));
+                Append(" ");
+                Append(temp);
+                Append("=");
+
+                if (retType.IsPointer)
+                {
+                    Append("(intptr_t)");
+                }
+            }
+
+            var fnPtrValue = Pop();
+            Append("((");
+            Append(typeDefName);
+            Append(")");
+            Append(fnPtrValue.Value.Name);
+            Append(")(");
+            PassCallArguments(methodSignature, thisArgument);
             Append(")");
 
             if (temp != null)
                 Push(retKind, new Value(temp), retType);
+
             Finish();
         }
 
@@ -1058,7 +1121,7 @@ namespace Internal.IL
                 Append("case " + i + ": ");
                 ImportFallthrough(target);
                 Append("goto _bb");
-                Append(target.StartOffset.ToString());
+                Append(IntToString(target.StartOffset));
                 Append("; break; ");
             }
             Append("}");
@@ -1190,7 +1253,7 @@ namespace Internal.IL
             Append("{ ");
             ImportFallthrough(target);
             Append("goto _bb");
-            Append(target.StartOffset.ToString());
+            Append(IntToString(target.StartOffset));
             Append("; }");
             Finish();
 
@@ -1690,7 +1753,7 @@ namespace Internal.IL
         private static string AddReturnLabel(ExceptionRegion r)
         {
             r.ReturnLabels++;
-            return r.ReturnLabels.ToString();
+            return IntToString(r.ReturnLabels);
         }
 
         private void ImportLeave(BasicBlock target)
@@ -1713,17 +1776,17 @@ namespace Internal.IL
                     string returnLabel = AddReturnLabel(r);
 
                     Append("__finallyReturn");
-                    Append(i.ToString());
+                    Append(IntToString(i));
                     Append("=");
                     Append(returnLabel);
                     Finish();
 
                     Append("goto _bb");
-                    Append(r.ILRegion.HandlerOffset.ToString());
+                    Append(IntToString(r.ILRegion.HandlerOffset));
                     Finish();
 
                     Append("__returnFromFinally");
-                    Append(i.ToString());
+                    Append(IntToString(i));
                     Append("_");
                     Append(returnLabel);
                     Append(":");
@@ -1734,7 +1797,7 @@ namespace Internal.IL
             }
 
             Append("goto _bb");
-            Append(target.StartOffset.ToString());
+            Append(IntToString(target.StartOffset));
             Finish();
 
             MarkBasicBlock(target);
@@ -1765,7 +1828,7 @@ namespace Internal.IL
             int finallyIndex = FindNearestFinally(_currentOffset - 1);
 
             Append("goto __endFinally");
-            Append(finallyIndex.ToString());
+            Append(IntToString(finallyIndex));
             Finish();
         }
 

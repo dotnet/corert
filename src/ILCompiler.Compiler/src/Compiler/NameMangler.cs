@@ -336,7 +336,7 @@ namespace ILCompiler
             return mangledName;
         }
 
-        private string _compilationUnixPrefix;
+        private string _compilationUnitPrefix;
 
         /// <summary>
         /// Prefix to prepend to compilation unit global symbols to make them disambiguated between different .obj files.
@@ -345,21 +345,21 @@ namespace ILCompiler
         {
             get
             {
-                if (_compilationUnixPrefix == null)
+                if (_compilationUnitPrefix == null)
                 {
                     string systemModuleName = ((EcmaModule)_compilation.TypeSystemContext.SystemModule).GetName().Name;
 
                     // TODO: just something to get Runtime.Base compiled
                     if (systemModuleName != "System.Private.CoreLib")
                     {
-                        _compilationUnixPrefix = systemModuleName.Replace(".", "_");
+                        _compilationUnitPrefix = systemModuleName.Replace(".", "_");
                     }
                     else
                     {
-                        _compilationUnixPrefix = "";
+                        _compilationUnitPrefix = "";
                     }
                 }
-                return _compilationUnixPrefix;
+                return _compilationUnitPrefix;
             }
         }
     }
