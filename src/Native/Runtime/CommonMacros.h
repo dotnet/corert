@@ -44,6 +44,7 @@ char (*COUNTOF_helper(_CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
 
 #ifndef GCENV_INCLUDED
 #define FORCEINLINE __forceinline
+#endif // GCENV_INCLUDED
 
 inline UIntNative ALIGN_UP(UIntNative val, UIntNative alignment);
 template <typename T>
@@ -56,7 +57,6 @@ inline T* ALIGN_DOWN(T* val, UIntNative alignment);
 inline bool IS_ALIGNED(UIntNative val, UIntNative alignment);
 template <typename T>
 inline bool IS_ALIGNED(T* val, UIntNative alignment);
-#endif // GCENV_INCLUDED
 
 #ifndef DACCESS_COMPILE
 //

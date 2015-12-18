@@ -467,173 +467,6 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     return pCodeOrg;
 }
 
-FORCEINLINE void ForwardGCSafeCopy(void * dest, const void *src, size_t len)
-{
-    // All parameters must be pointer-size-aligned
-    ASSERT(IS_ALIGNED(dest, sizeof(size_t)));
-    ASSERT(IS_ALIGNED(src, sizeof(size_t)));
-    ASSERT(IS_ALIGNED(len, sizeof(size_t)));
-
-    size_t size = len;
-    UInt8 * dmem = (UInt8 *)dest;
-    UInt8 * smem = (UInt8 *)src;
-
-    // regions must be non-overlapping
-    ASSERT(dmem <= smem || smem + size <= dmem);
-
-    // copy 4 pointers at a time 
-    while (size >= 4 * sizeof(size_t))
-    {
-        size -= 4 * sizeof(size_t);
-        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
-        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
-        ((size_t *)dmem)[2] = ((size_t *)smem)[2];
-        ((size_t *)dmem)[3] = ((size_t *)smem)[3];
-        smem += 4 * sizeof(size_t);
-        dmem += 4 * sizeof(size_t);
-    }
-
-    // copy 2 trailing pointers, if needed
-    if ((size & (2 * sizeof(size_t))) != 0)
-    {
-        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
-        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
-        smem += 2 * sizeof(size_t);
-        dmem += 2 * sizeof(size_t);
-    }
-
-    // finish with one pointer, if needed
-    if ((size & sizeof(size_t)) != 0)
-    {
-        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
-    }
-}
-
-FORCEINLINE void BackwardGCSafeCopy(void * dest, const void *src, size_t len)
-{
-    // All parameters must be pointer-size-aligned
-    ASSERT(IS_ALIGNED(dest, sizeof(size_t)));
-    ASSERT(IS_ALIGNED(src, sizeof(size_t)));
-    ASSERT(IS_ALIGNED(len, sizeof(size_t)));
-
-    size_t size = len;
-    UInt8 * dmem = (UInt8 *)dest + len;
-    UInt8 * smem = (UInt8 *)src + len;
-
-    // regions must be non-overlapping
-    ASSERT(smem <= dmem || dmem + size <= smem);
-
-    // copy 4 pointers at a time 
-    while (size >= 4 * sizeof(size_t))
-    {
-        size -= 4 * sizeof(size_t);
-        smem -= 4 * sizeof(size_t);
-        dmem -= 4 * sizeof(size_t);
-        ((size_t *)dmem)[3] = ((size_t *)smem)[3];
-        ((size_t *)dmem)[2] = ((size_t *)smem)[2];
-        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
-        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
-    }
-
-    // copy 2 trailing pointers, if needed
-    if ((size & (2 * sizeof(size_t))) != 0)
-    {
-        smem -= 2 * sizeof(size_t);
-        dmem -= 2 * sizeof(size_t);
-        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
-        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
-    }
-
-    // finish with one pointer, if needed
-    if ((size & sizeof(size_t)) != 0)
-    {
-        smem -= sizeof(size_t);
-        dmem -= sizeof(size_t);
-        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
-    }
-}
-
-// This function fills a piece of memory in a GC safe way.  It makes the guarantee
-// that it will fill memory in at least pointer sized chunks whenever possible.
-// Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
-// We must make this guarantee whenever we clear memory in the GC heap that could contain 
-// object references.  The GC or other user threads can read object references at any time, 
-// clearing them bytewise can result in a read on another thread getting incorrect data.  
-FORCEINLINE void GCSafeFillMemory(void * mem, size_t size, size_t pv)
-{
-    UInt8 * memBytes = (UInt8 *)mem;
-    UInt8 * endBytes = &memBytes[size];
-
-    // handle unaligned bytes at the beginning 
-    while (!IS_ALIGNED(memBytes, sizeof(void *)) && (memBytes < endBytes))
-        *memBytes++ = (UInt8)pv;
-
-    // now write pointer sized pieces 
-    size_t nPtrs = (endBytes - memBytes) / sizeof(void *);
-    UIntNative* memPtr = (UIntNative*)memBytes;
-    for (size_t i = 0; i < nPtrs; i++)
-        *memPtr++ = pv;
-
-    // handle remaining bytes at the end 
-    memBytes = (UInt8*)memPtr;
-    while (memBytes < endBytes)
-        *memBytes++ = (UInt8)pv;
-}
-
-// This is a GC-safe variant of memcpy.  It guarantees that the object references in the GC heap are updated atomically.
-// This is required for type safety and proper operation of the background GC.
-//
-// USAGE:   1) The caller is responsible for performing the appropriate bulk write barrier.
-//          2) The caller is responsible for hoisting any null reference exceptions to a place where the hardware 
-//             exception can be properly translated to a managed exception.  This is handled by RhpCopyMultibyte.
-//          3) The caller must ensure that all three parameters are pointer-size-aligned.  This should be the case for
-//             value types which contain GC refs anyway, so if you want to copy structs without GC refs which might be
-//             unaligned, then you must use RhpCopyMultibyteNoGCRefs.
-COOP_PINVOKE_CDECL_HELPER(void *, memcpyGCRefs, (void * dest, const void *src, size_t len))
-{ 
-    // null pointers are not allowed (they are checked by RhpCopyMultibyte)
-    ASSERT(dest != nullptr);
-    ASSERT(src != nullptr);
-
-    ForwardGCSafeCopy(dest, src, len);
-
-    // memcpy returns the destination buffer
-    return dest;
-}
-
-// This function clears a piece of memory in a GC safe way.  It makes the guarantee that it will clear memory in at 
-// least pointer sized chunks whenever possible.  Unaligned memory at the beginning and remaining bytes at the end are 
-// written bytewise. We must make this guarantee whenever we clear memory in the GC heap that could contain object 
-// references.  The GC or other user threads can read object references at any time, clearing them bytewise can result 
-// in a read on another thread getting incorrect data.
-//
-// USAGE:  The caller is responsible for hoisting any null reference exceptions to a place where the hardware exception
-//         can be properly translated to a managed exception.
-COOP_PINVOKE_CDECL_HELPER(void *, RhpInitMultibyte, (void * mem, int c, size_t size))
-{ 
-    // The caller must do the null-check because we cannot take an AV in the runtime and translate it to managed.
-    ASSERT(mem != nullptr); 
-
-    UIntNative  bv = (UInt8)c;
-    UIntNative  pv = 0;
-
-    if (bv != 0)
-    {
-        pv = 
-#if (POINTER_SIZE == 8)
-            bv << 7*8 | bv << 6*8 | bv << 5*8 | bv << 4*8 |
-#endif
-            bv << 3*8 | bv << 2*8 | bv << 1*8 | bv;
-    }
-
-    GCSafeFillMemory(mem, size, pv);
-
-    // memset returns the destination buffer
-    return mem;
-} 
-
-EXTERN_C void * __cdecl memmove(void *, const void *, size_t);
-
 //
 // Return true if the array slice is valid
 //
@@ -683,9 +516,9 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIn
     if (pArrayType->HasReferenceFields())
     {
         if (pDestinationData <= pSourceData || pSourceData + size <= pDestinationData)
-            ForwardGCSafeCopy(pDestinationData, pSourceData, size);
+            InlineForwardGCSafeCopy(pDestinationData, pSourceData, size);
         else
-            BackwardGCSafeCopy(pDestinationData, pSourceData, size);
+            InlineBackwardGCSafeCopy(pDestinationData, pSourceData, size);
 
         InlinedBulkWriteBarrier(pDestinationData, (UInt32)size);
     }
@@ -719,7 +552,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayClear, (Array * pArray, Int32 index, Int32 
     if (length == 0)
         return true;
 
-    GCSafeFillMemory((UInt8 *)pArray->GetArrayData() + index * componentSize, length * componentSize, 0);
+    InlineGCSafeFillMemory((UInt8 *)pArray->GetArrayData() + index * componentSize, length * componentSize, 0);
 
     return true;
 }

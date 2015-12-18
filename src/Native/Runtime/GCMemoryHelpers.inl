@@ -7,6 +7,123 @@
 // Unmanaged GC memory helpers
 //
 
+// This function fills a piece of memory in a GC safe way.  It makes the guarantee
+// that it will fill memory in at least pointer sized chunks whenever possible.
+// Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
+// We must make this guarantee whenever we clear memory in the GC heap that could contain 
+// object references.  The GC or other user threads can read object references at any time, 
+// clearing them bytewise can result in a read on another thread getting incorrect data.  
+FORCEINLINE void InlineGCSafeFillMemory(void * mem, size_t size, size_t pv)
+{
+    UInt8 * memBytes = (UInt8 *)mem;
+    UInt8 * endBytes = &memBytes[size];
+
+    // handle unaligned bytes at the beginning 
+    while (!IS_ALIGNED(memBytes, sizeof(void *)) && (memBytes < endBytes))
+        *memBytes++ = (UInt8)pv;
+
+    // now write pointer sized pieces 
+    size_t nPtrs = (endBytes - memBytes) / sizeof(void *);
+    UIntNative* memPtr = (UIntNative*)memBytes;
+    for (size_t i = 0; i < nPtrs; i++)
+        *memPtr++ = pv;
+
+    // handle remaining bytes at the end 
+    memBytes = (UInt8*)memPtr;
+    while (memBytes < endBytes)
+        *memBytes++ = (UInt8)pv;
+}
+
+// These functions copy memory in a GC safe way.  They makes the guarantee
+// that the memory is copies in at least pointer sized chunks.
+
+FORCEINLINE void InlineForwardGCSafeCopy(void * dest, const void *src, size_t len)
+{
+    // All parameters must be pointer-size-aligned
+    ASSERT(IS_ALIGNED(dest, sizeof(size_t)));
+    ASSERT(IS_ALIGNED(src, sizeof(size_t)));
+    ASSERT(IS_ALIGNED(len, sizeof(size_t)));
+
+    size_t size = len;
+    UInt8 * dmem = (UInt8 *)dest;
+    UInt8 * smem = (UInt8 *)src;
+
+    // regions must be non-overlapping
+    ASSERT(dmem <= smem || smem + size <= dmem);
+
+    // copy 4 pointers at a time 
+    while (size >= 4 * sizeof(size_t))
+    {
+        size -= 4 * sizeof(size_t);
+        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
+        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
+        ((size_t *)dmem)[2] = ((size_t *)smem)[2];
+        ((size_t *)dmem)[3] = ((size_t *)smem)[3];
+        smem += 4 * sizeof(size_t);
+        dmem += 4 * sizeof(size_t);
+    }
+
+    // copy 2 trailing pointers, if needed
+    if ((size & (2 * sizeof(size_t))) != 0)
+    {
+        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
+        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
+        smem += 2 * sizeof(size_t);
+        dmem += 2 * sizeof(size_t);
+    }
+
+    // finish with one pointer, if needed
+    if ((size & sizeof(size_t)) != 0)
+    {
+        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
+    }
+}
+
+FORCEINLINE void InlineBackwardGCSafeCopy(void * dest, const void *src, size_t len)
+{
+    // All parameters must be pointer-size-aligned
+    ASSERT(IS_ALIGNED(dest, sizeof(size_t)));
+    ASSERT(IS_ALIGNED(src, sizeof(size_t)));
+    ASSERT(IS_ALIGNED(len, sizeof(size_t)));
+
+    size_t size = len;
+    UInt8 * dmem = (UInt8 *)dest + len;
+    UInt8 * smem = (UInt8 *)src + len;
+
+    // regions must be non-overlapping
+    ASSERT(smem <= dmem || dmem + size <= smem);
+
+    // copy 4 pointers at a time 
+    while (size >= 4 * sizeof(size_t))
+    {
+        size -= 4 * sizeof(size_t);
+        smem -= 4 * sizeof(size_t);
+        dmem -= 4 * sizeof(size_t);
+        ((size_t *)dmem)[3] = ((size_t *)smem)[3];
+        ((size_t *)dmem)[2] = ((size_t *)smem)[2];
+        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
+        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
+    }
+
+    // copy 2 trailing pointers, if needed
+    if ((size & (2 * sizeof(size_t))) != 0)
+    {
+        smem -= 2 * sizeof(size_t);
+        dmem -= 2 * sizeof(size_t);
+        ((size_t *)dmem)[1] = ((size_t *)smem)[1];
+        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
+    }
+
+    // finish with one pointer, if needed
+    if ((size & sizeof(size_t)) != 0)
+    {
+        smem -= sizeof(size_t);
+        dmem -= sizeof(size_t);
+        ((size_t *)dmem)[0] = ((size_t *)smem)[0];
+    }
+}
+
+
 #ifndef DACCESS_COMPILE
 #ifdef WRITE_BARRIER_CHECK
 extern uint8_t* g_GCShadow;
