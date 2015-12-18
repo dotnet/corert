@@ -85,7 +85,12 @@ namespace System.Runtime
         }
     }
 
+#if CORERT
     internal unsafe static class EH
+#else
+    // NUTC respects NativeCallable exports in public types only
+    public unsafe static class EH
+#endif
     {
         internal static UIntPtr MaxSP
         {
@@ -100,10 +105,10 @@ namespace System.Runtime
             RH_EH_CLAUSE_TYPED = 0,
             RH_EH_CLAUSE_FAULT = 1,
 
-            #region CLR Exceptions
+#region CLR Exceptions
             RH_EH_CLAUSE_FILTER = 2,
             RH_EH_CLAUSE_UNUSED = 3,
-            #endregion
+#endregion
         }
 
         private struct RhEHClause
@@ -321,7 +326,7 @@ namespace System.Runtime
         }
 
 #if !CORERT
-        #region ItWouldBeNiceToRemoveThese
+#region ItWouldBeNiceToRemoveThese
         // These four functions are used to implement the special THROW_* MDIL instructions.
         [MethodImpl(MethodImplOptions.NoInlining)]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
@@ -386,7 +391,7 @@ namespace System.Runtime
             BinderIntrinsics.TailCall_RhpThrowEx(e);
             throw e;
         }
-        #endregion // ItWouldBeNiceToRemoveThese
+#endregion // ItWouldBeNiceToRemoveThese
 #endif
 
         // This function is used to throw exceptions out of our fast allocation helpers, implemented in asm. We tail-call
