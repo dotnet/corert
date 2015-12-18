@@ -601,6 +601,31 @@ COOP_PINVOKE_CDECL_HELPER(void *, memcpyGCRefs, (void * dest, const void *src, s
     return dest;
 }
 
+EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize);
+
+// This is a GC-safe variant of memcpy.  It guarantees that the object references in the GC heap are updated atomically.
+// This is required for type safety and proper operation of the background GC.
+// Writebarrier is included.
+//
+// USAGE:
+//          1) The caller is responsible for hoisting any null reference exceptions to a place where the hardware 
+//             exception can be properly translated to a managed exception.  This is handled by RhpCopyMultibyte.
+//          2) The caller must ensure that all three parameters are pointer-size-aligned.  This should be the case for
+//             value types which contain GC refs anyway, so if you want to copy structs without GC refs which might be
+//             unaligned, then you must use RhpCopyMultibyteNoGCRefs.
+COOP_PINVOKE_CDECL_HELPER(void *, memcpyGCRefsWithWriteBarrier, (void * dest, const void *src, size_t len))
+{
+    // null pointers are not allowed (they are checked by RhpCopyMultibyteWithWriteBarrier)
+    ASSERT(dest != nullptr);
+    ASSERT(src != nullptr);
+
+    ForwardGCSafeCopy(dest, src, len);
+    RhpBulkWriteBarrier(dest, (UInt32)len);
+
+    // memcpy returns the destination buffer
+    return dest;
+}
+
 // This function clears a piece of memory in a GC safe way.  It makes the guarantee that it will clear memory in at 
 // least pointer sized chunks whenever possible.  Unaligned memory at the beginning and remaining bytes at the end are 
 // written bytewise. We must make this guarantee whenever we clear memory in the GC heap that could contain object 
@@ -632,8 +657,6 @@ COOP_PINVOKE_CDECL_HELPER(void *, RhpInitMultibyte, (void * mem, int c, size_t s
     return mem;
 } 
 
-EXTERN_C void * __cdecl memmove(void *, const void *, size_t);
-
 //
 // Return true if the array slice is valid
 //
@@ -645,6 +668,8 @@ FORCEINLINE bool CheckArraySlice(Array * pArray, Int32 index, Int32 length)
            (0 <= length) && (length <= arrayLength) &&
            (length <= arrayLength - index);
 }
+
+EXTERN_C void * __cdecl memmove(void *, const void *, size_t);
 
 //
 // This function handles all cases of Array.Copy that do not require conversions or casting. It returns false if the copy cannot be performed, leaving

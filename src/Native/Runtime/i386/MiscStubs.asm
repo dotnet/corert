@@ -14,6 +14,7 @@ EXTERN @RhpShutdownHelper@4     : PROC
 EXTERN @GetClasslibCCtorCheck@4 : PROC
 EXTERN _memcpy                  : PROC
 EXTERN _memcpyGCRefs            : PROC
+EXTERN _memcpyGCRefsWithWriteBarrier  : PROC
 
 ;;
 ;; Currently called only from a managed executable once Main returns, this routine does whatever is needed to
@@ -256,4 +257,48 @@ NothingToCopy:
         ret
 
 _RhpCopyMultibyte ENDP
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; void* __cdecl RhpCopyMultibyteWithWriteBarrier(void*, void*, size_t)
+;;
+;; The purpose of this wrapper is to hoist the potential null reference exceptions of copying memory up to a place where
+;; the stack unwinder and exception dispatch can properly transform the exception into a managed exception and dispatch
+;; it to managed code.
+;; Runs a card table update via RhpBulkWriteBarrier after the copy
+;;
+_RhpCopyMultibyteWithWriteBarrier PROC PUBLIC
+
+        ;    #locals, num_params, prolog bytes, #regs saved, use ebp, frame type (0 == FRAME_FPO)
+        .FPO(      0,          3,            0,           0,       0,          0)
+
+        ; [esp + 0] return address
+        ; [esp + 4] dest
+        ; [esp + 8] src
+        ; [esp + c] count
+
+        cmp         dword ptr [esp + 0Ch], 0        ; check for a zero-length copy
+        jz          NothingToCopy
+
+        mov         ecx, [esp + 4]  ; ecx <- dest
+        mov         edx, [esp + 8]  ; edx <- src
+
+        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
+        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be 
+        ; translated to a managed exception as usual.
+ALTERNATE_ENTRY RhpCopyMultibyteWithWriteBarrierDestAVLocation
+        cmp         byte ptr [ecx], 0
+ALTERNATE_ENTRY RhpCopyMultibyteWithWriteBarrierSrcAVLocation
+        cmp         byte ptr [edx], 0
+
+        ; tail-call to the GC-safe memcpy implementation
+        ; NOTE: this is also a __cdecl function
+        jmp         _memcpyGCRefsWithWriteBarrier
+
+NothingToCopy:
+        mov         eax, [esp + 4]                  ; return dest
+        ret
+
+_RhpCopyMultibyteWithWriteBarrier ENDP
+
 end

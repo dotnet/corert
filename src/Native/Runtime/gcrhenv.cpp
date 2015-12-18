@@ -648,6 +648,11 @@ UInt32 RedhawkGCInterface::GetGCDescSize(void * pType)
     return (UInt32)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();
 }
 
+void ForwardGCSafeCopy(void * dest, const void *src, size_t len);
+void BackwardGCSafeCopy(void * dest, const void *src, size_t len);
+EXTERN_C void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize);
+
+
 COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobjSrc))
 {
     SIZE_T cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
@@ -655,8 +660,17 @@ COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobj
     if (cbSrc != cbDest)
         return;
 
-    memcpy(pobjDest, pobjSrc, cbDest);
-    GCHeap::GetGCHeap()->SetCardsAfterBulkCopy((Object**) pobjDest, cbDest);
+    ASSERT(pobjDest->get_EEType()->HasReferenceFields() == pobjSrc->get_EEType()->HasReferenceFields());
+
+    if (pobjDest->get_EEType()->HasReferenceFields())
+    {
+        ForwardGCSafeCopy(pobjDest, pobjSrc, cbDest);
+        GCHeap::GetGCHeap()->SetCardsAfterBulkCopy((Object**)pobjDest, cbDest);
+    }
+    else
+    {
+        memcpy(pobjDest, pobjSrc, cbDest);
+    }
 }
 
 // Move memory, in a way that is compatible with a move onto the heap, but
@@ -664,7 +678,11 @@ COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobj
 
 COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* pSrc, int cbDest))
 {
-    memmove(pDest, pSrc, cbDest);
+    if (pDest <= pSrc || pSrc + cbDest <= pDest)
+        ForwardGCSafeCopy(pDest, pSrc, cbDest);
+    else
+        BackwardGCSafeCopy(pDest, pSrc, cbDest);
+
     // Use RhpBulkWriteBarrier here instead of SetCardsAfterBulkCopy as RhpBulkWriteBarrier
     // is both faster, and is compatible with a destination that isn't the GC heap.
     InlinedBulkWriteBarrier(pDest, cbDest);
@@ -687,11 +705,16 @@ COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
     UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
 
     // Copy the unboxed value type data into the new object.
-    memcpy(pbFields, pData, cbFields);
-
     // Perform any write barriers necessary for embedded reference fields.
     if (pEEType->HasReferenceFields())
+    {
+        ForwardGCSafeCopy(pbFields, pData, cbFields);
         GCHeap::GetGCHeap()->SetCardsAfterBulkCopy((Object**)pbFields, cbFields);
+    }
+    else
+    {
+        memcpy(pbFields, pData, cbFields);
+    }
 }
 
 COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnboxToEEType))
@@ -737,15 +760,25 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
     SIZE_T cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
     UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
 
-    // Copy the boxed fields into the new location.
-    memcpy(pData, pbFields, cbFields);
-
     // Perform any write barriers necessary for embedded reference fields. SetCardsAfterBulkCopy doesn't range
     // check the address we pass it and in this case we don't know whether pData really points into the GC
     // heap or not. If we call it with an address outside of the GC range we could end up setting a card
     // outside of the allocated range of the card table, i.e. corrupt memory.
-    if (pEEType->HasReferenceFields() && (pData >= g_lowest_address) && (pData < g_highest_address))
-        GCHeap::GetGCHeap()->SetCardsAfterBulkCopy((Object**)pData, cbFields);
+    if (pEEType->HasReferenceFields())
+    {
+        // Copy the boxed fields into the new location in a GC safe manner
+        ForwardGCSafeCopy(pData, pbFields, cbFields);
+
+        if ((pData >= g_lowest_address) && (pData < g_highest_address))
+        {
+            GCHeap::GetGCHeap()->SetCardsAfterBulkCopy((Object**)pData, cbFields);
+        }
+    }
+    else
+    {
+        // Copy the boxed fields into the new location.
+        memcpy(pData, pbFields, cbFields);
+    }
 }
 
 #endif // !DACCESS_COMPILE
