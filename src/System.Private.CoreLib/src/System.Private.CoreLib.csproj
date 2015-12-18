@@ -528,11 +528,14 @@
     <Compile Include="CoverageSupport.cs" />
   </ItemGroup>
 
-  <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(RazzleToolPath)' == ''">
+    <InPlaceRuntime>true</InPlaceRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs" />
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\DispatchResolve.cs" />
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\GCStress.cs" />
@@ -549,7 +552,7 @@
     <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs" />
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
 
