@@ -24,6 +24,7 @@ if /i "%1" == "/buildextrepo" (set CoreRT_BuildExtRepo=%2&shift&shift&goto ArgLo
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/nocache" (set CoreRT_NuGetOptions=-nocache&shift&goto ArgLoop)
+if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2\bin&shift&shift&goto ArgLoop)
 
 echo Invalid command line argument: %1
 goto :Usage

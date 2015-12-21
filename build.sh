@@ -79,6 +79,12 @@ install_dotnet_cli()
     echo "Installing the dotnet/cli..."
     local __tools_dir=${__scriptpath}/bin/tools
     local __cli_dir=${__tools_dir}/cli
+    if [ ! -z "${__dotnetclipath}" ]; then
+        __cli_dir = ${__dotnetclipath}
+    else
+        __dotnetclipath=${__cli_dir}
+    fi
+
     
     if [ ! -d "${__cli_dir}" ]; then
         mkdir -p "${__cli_dir}"
@@ -164,7 +170,7 @@ build_managed_corert()
         ToolchainMilestone=testing
     fi
 
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} "$@"
+    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -228,6 +234,7 @@ __ToolNugetRuntimeId=ubuntu.14.04-x64
 __TestNugetRuntimeId=ubuntu.14.04-x64
 __buildmanaged=true
 __buildnative=true
+__dotnetclipath=""
 
 # Workaround to enable nuget package restoration work successully on Mono
 export TZ=UTC 
@@ -309,9 +316,8 @@ __ClangMajorVersion=3
 __ClangMinorVersion=5
 __CrossBuild=0
 
-for i in "$@"
-    do
-        lowerI="$(echo $i | awk '{print tolower($0)}')"
+while [ "$1" != "" ]; do
+        lowerI="$(echo $1 | awk '{print tolower($0)}')"
         case $lowerI in
         -h|--help)
             usage
@@ -361,10 +367,15 @@ for i in "$@"
             ;;
         cross)
             __CrossBuild=1
+            ;;
+        -dotnetclipath) 
+            shift
+            __dotnetclipath=$1
         ;;
         *)
-          __UnprocessedBuildArgs="$__UnprocessedBuildArgs $i"
+          __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
     esac
+    shift
 done
 
 # If neither managed nor native are passed as arguments, default to building native only
@@ -440,7 +451,7 @@ if [ $BUILDERRORLEVEL != 0 ]; then
 fi
 
 pushd ${__scriptpath}/tests
-source ${__scriptpath}/tests/runtest.sh $__BuildOS $__BuildArch $__BuildType
+source ${__scriptpath}/tests/runtest.sh $__BuildOS $__BuildArch $__BuildType -dotnetclipath $__dotnetclipath
 TESTERRORLEVEL=$?
 popd
 

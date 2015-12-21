@@ -20,6 +20,7 @@ set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
 set __SkipTestBuild=
 set __ToolchainMilestone=testing
+set __DotNetCliPath=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -35,6 +36,7 @@ if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptestbuild" (set __SkipTestBuild=1&shift&goto Arg_Loop)
 if /i "%1" == "/milestone" (set __ToolchainMilestone=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "/dotnetclipath" (set __DotNetCliPath=%2&shift&shift&goto Arg_Loop)
 
 echo Invalid command line argument: %1
 goto Usage
@@ -147,6 +149,8 @@ set Platform=
 :: Obtain dotnet CLI tools to perform restore packages/test runs
 :GetDotNetCli
 
+if NOT "%__DotNetCliPath%" == "" goto SetupManagedBuild
+
 set "__DotNetCliPath=%__RootBinDir%\tools\cli"
 if not exist "%__DotNetCliPath%" (
     for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools""') do (
@@ -159,6 +163,7 @@ if not exist "%__DotNetCliPath%" (
 )
 
 :: Set the environment for the managed build
+:SetupManagedBuild
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
@@ -176,7 +181,7 @@ exit /b 1
 if defined __SkipTestBuild exit /b 0
 
 pushd "%__ProjectDir%\tests"
-call "runtest.cmd" %__BuildType% %__BuildArch%
+call "runtest.cmd" %__BuildType% %__BuildArch% /dotnetclipath %__DotNetCliPath%
 set TEST_EXIT_CODE=%ERRORLEVEL%
 popd
 exit /b %TEST_EXIT_CODE%
