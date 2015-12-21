@@ -19,7 +19,7 @@
         <!-- Property needed for creating nupkgs -->
         <PropertyGroup>
             <ToolchainMilestone Condition="'$(ToolchainMilestone)'==''">prerelease</ToolchainMilestone>
-            <ToolchainVersion>1.0.3-$(ToolchainMilestone)-00002</ToolchainVersion>
+            <ToolchainVersion>1.0.4-$(ToolchainMilestone)-00001</ToolchainVersion>
             <RuntimeSdkVersion>$(ToolchainVersion)</RuntimeSdkVersion>
             <NuPkgRid>$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform)</NuPkgRid>
             
@@ -60,14 +60,37 @@
             <ILCompilerSdkFiles Include="bootstrappercpp" />
             <ILCompilerSdkFiles Include="System.Private.CoreLib.Native" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
+            <!-- ILCompiler.SDK Cpp Codegen support files -->
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/etmdummy.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.base.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.object.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.sync.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gc.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcdesc.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/sample/gcenv.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcimpl.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcpriv.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcrecord.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/gcscan.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/handletable.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/handletable.inl" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/handletablepriv.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/gc/objecthandle.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/common.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/platform.h" />
+
             <ILCompilerSdkFilesManaged Include="System.Private.CoreLib" />
+
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
                 <Text><![CDATA[        <file src="../lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFilesManaged)">
                 <Text><![CDATA[        <file src="../%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
-
+            <ILCompilerSdkBinPlace Include="@(ILCompilerSdkCppCodegenFiles)">
+                <Text><![CDATA[        <file src="../../../../src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+            
             <!-- ILCompiler nuspec file -->
             <NuSpecFile Include="$(ToolchainPackageName)">
                 <Stage>0</Stage>

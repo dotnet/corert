@@ -74,6 +74,7 @@ CoreRT_TestRun=true
 CoreRT_TestCompileMode=ryujit
 CoreRT_TestExtRepo=
 CoreRT_BuildExtRepo=
+__dotnetclipath=""
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -96,9 +97,8 @@ case $OSName in
         ;;
 esac
 
-for i in "$@"
-    do
-        lowerI="$(echo $i | awk '{print tolower($0)}')"
+while [ "$1" != "" ]; do
+        lowerI="$(echo $1 | awk '{print tolower($0)}')"
         case $lowerI in
         -?|-h|--help)
             usage
@@ -124,22 +124,27 @@ for i in "$@"
             ;;
         -extrepo)
             shift
-            CoreRT_TestExtRepo=$i
+            CoreRT_TestExtRepo=$1
             ;;
         -mode)
             shift
-            CoreRT_TestCompileMode=$i
+            CoreRT_TestCompileMode=$1
             ;;
         -runtest)
             shift
-            CoreRT_TestRun=$i
+            CoreRT_TestRun=$1
             ;;
         -nocache)
             CoreRT_NuGetOptions=-nocache
             ;;
+        -dotnetclipath) 
+            shift
+            __dotnetclipath=$1
+            ;;
         *)
             ;;
     esac
+    shift
 done
 
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
