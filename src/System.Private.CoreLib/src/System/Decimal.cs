@@ -179,16 +179,14 @@ namespace System
         //
         public Decimal(float value)
         {
-            if (DecCalc.VarDecFromR4(value, out this) < 0)
-                throw new OverflowException(SR.Overflow_Decimal);
+            DecCalc.VarDecFromR4(value, out this);
         }
 
         // Constructs a Decimal from a double value.
         //
         public Decimal(double value)
         {
-            if (DecCalc.VarDecFromR8(value, out this) < 0)
-                throw new OverflowException(SR.Overflow_Decimal);
+            DecCalc.VarDecFromR8(value, out this);
         }
 
         // Constructs a Decimal from an integer array containing a binary
@@ -363,8 +361,7 @@ namespace System
         //
         public unsafe override int GetHashCode()
         {
-            double dbl;
-            DecCalc.VarR8FromDec(ref this, out dbl);
+            double dbl = DecCalc.VarR8FromDec(ref this);
             if (dbl == 0.0)
                 // Ensure 0 and -0 have the same hash code
                 return 0;
@@ -537,12 +534,9 @@ namespace System
         [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Multiply(Decimal d1, Decimal d2)
         {
-            Decimal decRes = new Decimal();
-            if (DecCalc.VarDecMul(ref d1, ref d2, out decRes) < 0)
-                throw new OverflowException(SR.Overflow_Decimal);
-
-            d1 = decRes;
-            return d1;
+            Decimal decRes;
+            DecCalc.VarDecMul(ref d1, ref d2, out decRes);
+            return decRes;
         }
 
         // Returns the negated value of the given Decimal. If d is non-zero,
@@ -669,10 +663,7 @@ namespace System
         //
         public static double ToDouble(Decimal d)
         {
-            double result = 0.0;
-            // Note: this can fail if the input is an invalid decimal, but for compatibility we should return 0
-            DecCalc.VarR8FromDec(ref d, out result);
-            return result;
+            return DecCalc.VarR8FromDec(ref d);
         }
 
         // Converts a Decimal to an integer. The Decimal value is rounded towards
@@ -783,10 +774,7 @@ namespace System
         //
         public static float ToSingle(Decimal d)
         {
-            float result = 0.0f;
-            // Note: this can fail if the input is an invalid decimal, but for compatibility we should return 0
-            DecCalc.VarR4FromDec(ref d, out result);
-            return result;
+            return DecCalc.VarR4FromDec(ref d);
         }
 
         // Truncates a Decimal to an integer value. The Decimal argument is rounded
