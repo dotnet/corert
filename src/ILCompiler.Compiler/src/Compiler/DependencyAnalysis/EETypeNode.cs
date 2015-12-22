@@ -217,125 +217,18 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData)
         {
+            UInt16 flags = EETypeBuilderHelpers.ComputeFlags(_type);
+
             // Todo: RelatedTypeViaIATFlag when we support cross-module EETypes
             // Todo: GenericVarianceFlag when we support variance
             // Todo: Generic Type Definition EETypes
-
-            UInt16 flags = (UInt16)EETypeKind.CanonicalEEType;
-
-            if (_type.IsArray || _type.IsPointer)
-            {
-                flags = (UInt16)EETypeKind.ParameterizedEEType;
-            }
-
-            if (_type.IsValueType)
-            {
-                flags |= (UInt16)EETypeFlags.ValueTypeFlag;
-            }
-
-            if (_type.HasFinalizer)
-            {
-                flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
-            }
-
-            if (_type is MetadataType && ((MetadataType)_type).ContainsPointers)
-            {
-                flags |= (UInt16)EETypeFlags.HasPointersFlag;
-            }
-            else if (_type.IsArray)
-            {
-                ArrayType arrayType = _type as ArrayType;
-                if ((arrayType.ElementType.IsValueType && ((DefType)arrayType.ElementType).ContainsPointers) ||
-                    !arrayType.ElementType.IsValueType)
-                {
-                    flags |= (UInt16)EETypeFlags.HasPointersFlag;
-                }
-            }
-
-            if (_type.IsInterface)
-            {
-                flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
-            }
-
-            if (_type.HasInstantiation)
-            {
-                flags |= (UInt16)EETypeFlags.IsGenericFlag;
-            }
 
             if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
             {
                 flags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
             }
 
-            int corElementType = 0;
-
-            // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
-            if (_type.IsEnum)
-            {
-                TypeDesc underlyingType = _type.UnderlyingType;
-                Debug.Assert(TypeFlags.SByte <= underlyingType.Category && underlyingType.Category <= TypeFlags.UInt64);
-                corElementType = ComputeRhCorElementType(underlyingType);
-            }
-            else if (_type.IsPrimitive)
-            {
-                corElementType = ComputeRhCorElementType(_type);
-            }
-            else if (_type.IsArray)
-            {
-                corElementType = 0x14; // ELEMENT_TYPE_ARRAY
-            }
-
-            if (corElementType > 0)
-            {
-                flags |= (UInt16)(corElementType << (UInt16)EETypeFlags.CorElementTypeShift);
-            }
-
             objData.EmitShort((short)flags);
-        }
-
-        private static int ComputeRhCorElementType(TypeDesc type)
-        {
-            Debug.Assert(type.IsPrimitive);
-            Debug.Assert(type.Category != TypeFlags.Unknown);
-
-            switch (type.Category)
-            {
-                case TypeFlags.Void:
-                    return 0x00;
-                case TypeFlags.Boolean:
-                    return 0x02;
-                case TypeFlags.Char:
-                    return 0x03;
-                case TypeFlags.SByte:
-                    return 0x04;
-                case TypeFlags.Byte:
-                    return 0x05;
-                case TypeFlags.Int16:
-                    return 0x06;
-                case TypeFlags.UInt16:
-                    return 0x07;
-                case TypeFlags.Int32:
-                    return 0x08;
-                case TypeFlags.UInt32:
-                    return 0x09;
-                case TypeFlags.Int64:
-                    return 0x0A;
-                case TypeFlags.UInt64:
-                    return 0x0B;
-                case TypeFlags.IntPtr:
-                    return 0x18;
-                case TypeFlags.UIntPtr:
-                    return 0x19;
-                case TypeFlags.Single:
-                    return 0x0C;
-                case TypeFlags.Double:
-                    return 0x0D;
-                default:
-                    break;
-            }
-
-            Debug.Assert(false, "Primitive type value expected.");
-            return 0;
         }
 
         private static bool ComputeRequiresAlign8(TypeDesc type)
@@ -627,7 +520,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(defType != null);
 
             uint valueTypeFieldPadding = checked((uint)(defType.InstanceByteCount - defType.InstanceByteCountUnaligned));
-            uint valueTypeFieldPaddingEncoded = EEType.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment);
+            uint valueTypeFieldPaddingEncoded = EETypeBuilderHelpers.ComputeValueTypeFieldPaddingFieldValue(valueTypeFieldPadding, (uint)defType.InstanceFieldAlignment);
 
             if (valueTypeFieldPaddingEncoded != 0)
             {

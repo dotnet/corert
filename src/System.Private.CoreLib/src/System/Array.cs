@@ -247,10 +247,6 @@ namespace System
         //
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-#if CORERT
-            // CORERT-TODO This depends on a lot of stuff that we do not handle yet
-            throw new NotSupportedException();
-#else
             if (sourceArray == null)
                 throw new ArgumentNullException("sourceArray");
             if (destinationArray == null)
@@ -313,7 +309,6 @@ namespace System
                     CopyImplPrimitiveTypeWithWidening(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                 }
             }
-#endif
         }
 
         private static bool IsSourceElementABaseClassOrInterfaceOfDestinationValueType(EETypePtr sourceElementEEType, EETypePtr destinationElementEEType)

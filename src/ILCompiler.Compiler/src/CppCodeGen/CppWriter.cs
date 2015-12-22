@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -12,6 +13,8 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using Internal.Runtime;
 
 using Internal.IL;
 using ILCompiler.DependencyAnalysis;
@@ -612,30 +615,9 @@ namespace ILCompiler.CppCodeGen
                 {
                     Out.WriteLine(GetCodeForDelegate(t));
                 }
-                foreach (var field in t.GetFields())
-                {
-                    if (field.IsStatic)
-                    {
-                        TypeDesc fieldType = GetFieldTypeOrPlaceholder(field);
-                        StringBuilder builder;
-                        if (!fieldType.IsValueType)
-                        {
-                            _gcStatics.Append(GetCppSignatureTypeName(fieldType));
-                            builder = _gcStatics;
-                        }
-                        else
-                        {
-                            // TODO: Valuetype statics with GC references
-                            _statics.Append(GetCppSignatureTypeName(fieldType));
-                            builder = _statics;
-                        }
-                        builder.AppendLine(" " + GetCppStaticFieldName(field) + ";");
-                    }
-                    else
-                    {
-                        Out.WriteLine(GetCppSignatureTypeName(GetFieldTypeOrPlaceholder(field)) + " " + GetCppFieldName(field) + ";");
-                    }
-                }
+
+                OutputTypeFields(t);
+
                 if (t.HasStaticConstructor)
                 {
                     _statics.AppendLine("bool __cctor_" + GetCppTypeName(t).Replace("::", "__") + ";");
@@ -664,6 +646,67 @@ namespace ILCompiler.CppCodeGen
             Out.WriteLine();
         }
 
+        private void OutputTypeFields(TypeDesc t)
+        {
+            bool explicitLayout = false;
+            ClassLayoutMetadata classLayoutMetadata = default(ClassLayoutMetadata);
+
+            if (t.IsValueType)
+            {
+                MetadataType metadataType = (MetadataType)t;
+                if (metadataType.IsExplicitLayout)
+                {
+                    explicitLayout = true;
+                    classLayoutMetadata = metadataType.GetClassLayout();
+                }
+            }
+
+            int instanceFieldIndex = 0;
+
+            if (explicitLayout)
+                Out.WriteLine("union {");
+
+            foreach (var field in t.GetFields())
+            {
+                if (field.IsStatic)
+                {
+                    TypeDesc fieldType = GetFieldTypeOrPlaceholder(field);
+                    StringBuilder builder;
+                    if (!fieldType.IsValueType)
+                    {
+                        _gcStatics.Append(GetCppSignatureTypeName(fieldType));
+                        builder = _gcStatics;
+                    }
+                    else
+                    {
+                        // TODO: Valuetype statics with GC references
+                        _statics.Append(GetCppSignatureTypeName(fieldType));
+                        builder = _statics;
+                    }
+                    builder.AppendLine(" " + GetCppStaticFieldName(field) + ";");
+                }
+                else
+                {
+                    if (explicitLayout)
+                    {
+                        Out.WriteLine("struct {");
+                        int offset = classLayoutMetadata.Offsets[instanceFieldIndex].Offset;
+                        if (offset > 0)
+                            Out.WriteLine("char __pad" + instanceFieldIndex + "[" + offset + "];");
+                    }
+                    Out.WriteLine(GetCppSignatureTypeName(GetFieldTypeOrPlaceholder(field)) + " " + GetCppFieldName(field) + ";");
+                    if (explicitLayout)
+                    {
+                        Out.WriteLine("};");
+                    }
+                    instanceFieldIndex++;
+                }
+            }
+
+            if (explicitLayout)
+                Out.WriteLine("};");
+        }
+
         private void OutputMethod(MethodDesc m)
         {
             Out.WriteLine(GetCppMethodDeclaration(m, false));
@@ -671,25 +714,33 @@ namespace ILCompiler.CppCodeGen
 
         private void AppendSlotTypeDef(StringBuilder sb, MethodDesc method)
         {
-            var methodSignature = method.Signature;
+            MethodSignature methodSignature = method.Signature;
 
+            TypeDesc thisArgument = null;
+            if (!methodSignature.IsStatic)
+                thisArgument = method.OwningType;
+
+            AppendSignatureTypeDef(sb, "__slot__" + GetCppMethodName(method), methodSignature, thisArgument);
+        }
+
+        internal void AppendSignatureTypeDef(StringBuilder sb, string name, MethodSignature methodSignature, TypeDesc thisArgument)
+        {
             sb.Append("typedef ");
             sb.Append(GetCppSignatureTypeName(methodSignature.ReturnType));
-            sb.Append("(*__slot__");
-            sb.Append(GetCppMethodName(method));
+            sb.Append("(*");
+            sb.Append(name);
             sb.Append(")(");
 
-            bool hasThis = !methodSignature.IsStatic;
             int argCount = methodSignature.Length;
-            if (hasThis)
+            if (thisArgument != null)
                 argCount++;
             for (int i = 0; i < argCount; i++)
             {
-                if (hasThis)
+                if (thisArgument != null)
                 {
                     if (i == 0)
                     {
-                        sb.Append(GetCppSignatureTypeName(method.OwningType));
+                        sb.Append(GetCppSignatureTypeName(thisArgument));
                     }
                     else
                     {
@@ -795,6 +846,17 @@ namespace ILCompiler.CppCodeGen
                 t = t.BaseType;
             }
 
+            UInt16 flags = 0;
+            try
+            {
+                flags = EETypeBuilderHelpers.ComputeFlags(type);
+            }
+            catch
+            {
+                // TODO: Handling of missing dependencies
+                flags = 0;
+            }
+
             sb.Append("MethodTable * ");
             sb.Append(GetCppTypeName(type));
             sb.AppendLine("::__getMethodTable() {");
@@ -813,30 +875,37 @@ namespace ILCompiler.CppCodeGen
             if (type.IsString)
             {
                 // String has non-standard layout
-                // component size = 2, flags = 0, base size = 2 ptrs + dword + first char
-                sb.Append("{ sizeof(uint16_t), 0, 2 * sizeof(void*) + sizeof(int32_t) + 2, ");
+                sb.Append("{ sizeof(uint16_t), 0x");                            // EEType::_usComponentSize
+                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
+                sb.Append(", 2 * sizeof(void*) + sizeof(int32_t) + 2, ");       // EEType::_uBaseSize
             }
             else
             if (type.IsArray && ((ArrayType)type).Rank == 1)
             {
                 sb.Append("{ sizeof(");
-                sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // component size
-                sb.Append("), 4 /* MTFlag_IsArray */, 3 * sizeof(void*), "); // flags, baseSize
+                sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // EEType::_usComponentSize
+                sb.Append("), 0x");
+                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
+                sb.Append(", 3 * sizeof(void*), "); // EEType::_uBaseSize
             }
             else
             if (type.IsArray)
             {
                 Debug.Assert(((ArrayType)type).Rank > 1);
                 sb.Append("{ sizeof(");
-                sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // component size
-                sb.Append("), 4 /* MTFlag_IsArray */, 3 * sizeof(void*) + "); // flags, baseSize
+                sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // EEType::_usComponentSize
+                sb.Append("), 0x");
+                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
+                sb.Append(", 3 * sizeof(void*) + ");                            // EEType::_uBaseSize
                 sb.Append(((ArrayType)type).Rank.ToString());
                 sb.Append("* sizeof(int32_t) * 2, ");
             }
             else
             {
                 // sizeof(void*) == size of object header
-                sb.Append("{ 0, 0, AlignBaseSize(sizeof(void*)+sizeof("); // component size, flags, baseSize
+                sb.Append("{ 0, 0x");                                           // EEType::_usComponentSize
+                sb.Append(flags.ToString("x", CultureInfo.InvariantCulture));   // EEType::_usFlags
+                sb.Append(", AlignBaseSize(sizeof(void*)+sizeof(");             // EEType::_uBaseSize
                 sb.Append(GetCppTypeName(type));
                 sb.Append(")), ");
             }

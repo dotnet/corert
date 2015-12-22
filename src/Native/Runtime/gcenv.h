@@ -101,11 +101,6 @@ public:
     bool RequiresAlign8() { return ((EEType*)this)->RequiresAlign8(); }
     bool IsValueType() { return ((EEType*)this)->get_IsValueType(); }
     UInt32_BOOL SanityCheck() { return ((EEType*)this)->Validate(); }
-    // TODO: remove this method after the __isinst_class is gone
-    MethodTable* GetParent()
-    {
-        return (MethodTable*)((EEType*)this)->get_BaseType();
-    }
 };
 
 class EEConfig

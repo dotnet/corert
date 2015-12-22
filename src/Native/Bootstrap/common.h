@@ -111,7 +111,7 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment)
 
 #define RAW_MIN_OBJECT_SIZE (3*sizeof(void*))
 
-#define AlignBaseSize(s) ((s < RAW_MIN_OBJECT_SIZE) ? RAW_MIN_OBJECT_SIZE : ((s + (sizeof(intptr_t)-1) & ~(sizeof(intptr_t)-1))))
+#define AlignBaseSize(s) ((s < RAW_MIN_OBJECT_SIZE) ? RAW_MIN_OBJECT_SIZE : ((s + (sizeof(void*)-1) & ~(sizeof(void*)-1))))
 
 #define ARRAY_BASE (2*sizeof(void*))
 
