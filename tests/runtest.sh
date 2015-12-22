@@ -74,7 +74,6 @@ CoreRT_TestRun=true
 CoreRT_TestCompileMode=ryujit
 CoreRT_TestExtRepo=
 CoreRT_BuildExtRepo=
-__dotnetclipath=""
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -139,7 +138,7 @@ while [ "$1" != "" ]; do
             ;;
         -dotnetclipath) 
             shift
-            __dotnetclipath=$1
+            CoreRT_CliBinDir=$1/bin
             ;;
         *)
             ;;
