@@ -11,30 +11,17 @@ internal partial class Interop
     {
         WaitObject0 = 0x0u,
         SOk = 0x0u,
-        ErrorSuccess = 0x0u,
         FailFastGenerateExceptionAddress = 0x1u,
         ExceptionNonContinuable = 0x1u,
         CreateMutexInitialOwner = 0x1u,
         CreateEventManualReset = 0x1u,
         MutexModifyState = 0x1u,
         CreateEventInitialSet = 0x2u,
-        ErrorFileNotFound = 0x2u,
         DuplicateSameAccess = 0x2u,
         SemaphoreModifyState = 0x2u,
         EventModifyState = 0x2u,
         FileTypeChar = 0x2u,
-        ErrorPathNotFound = 0x3u,
-        ErrorAccessDenied = 0x5u,
-        ErrorInvalidHandle = 0x6u,
-        ErrorNotEnoughMemory = 0x8u,
-        ErrorInvalidDrive = 0xFu,
-        ErrorSharingViolation = 0x20u,
-        ErrorInvalidParameter = 0x57u,
-        ErrorInvalidName = 0x7Bu,
         WaitAbandoned0 = 0x80u,
-        ErrorBadPathname = 0xA1u,
-        ErrorAlreadyExists = 0xB7u,
-        ErrorFilenameExcedRange = 0xCEu,
         WaitTimeout = 0x102u,
         MaxPath = 0x104u,
         Synchronize = 0x100000u,
@@ -42,9 +29,6 @@ internal partial class Interop
         EventAllAccess = 0x1F0003u,
         EFail = 0x80004005u,
         CoENotInitialized = 0x800401F0u,
-        StdErrorHandle = 0xFFFFFFF4u,
-        StdOutputHandle = 0xFFFFFFF5u,
-        StdInputHandle = 0xFFFFFFF6u,
         WaitFailed = 0xFFFFFFFFu,
     }
 
@@ -981,11 +965,6 @@ internal partial class Interop
             else
                 s_sleepHandle.WaitOne((int)milliseconds);
         }
-
-        // constants for EnumDynamicTimeZone return values
-        internal const uint ERROR_NO_MORE_ITEMS = 259;
-        internal const uint ERROR_INVALID_PARAMETERS = 87;
-        internal const uint ERROR_SUCCESS = 0;
     }
 
     internal partial class mincore_obsolete

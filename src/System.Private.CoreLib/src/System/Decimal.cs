@@ -569,8 +569,7 @@ namespace System
             if (decimals < 0 || decimals > 28)
                 throw new ArgumentOutOfRangeException("decimals", SR.ArgumentOutOfRange_DecimalRound);
 
-            if (DecCalc.VarDecRound(ref d, decimals, ref result) < 0)
-                throw new OverflowException(SR.Overflow_Decimal);
+            DecCalc.VarDecRound(ref d, decimals, ref result);
 
             d = result;
             return d;
@@ -588,9 +587,7 @@ namespace System
             if (mode == MidpointRounding.ToEven)
             {
                 Decimal result = new Decimal();
-                if (DecCalc.VarDecRound(ref d, decimals, ref result) < 0)
-                    throw new OverflowException(SR.Overflow_Decimal);
-
+                DecCalc.VarDecRound(ref d, decimals, ref result);
                 d = result;
             }
             else

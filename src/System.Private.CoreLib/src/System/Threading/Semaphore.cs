@@ -44,9 +44,9 @@ namespace System.Threading
 
             if (myHandle.IsInvalid)
             {
-                uint errorCode = Interop.mincore.GetLastError();
+                int errorCode = (int)Interop.mincore.GetLastError();
 
-                if (null != name && 0 != name.Length && (uint)Interop.Constants.ErrorInvalidHandle == errorCode)
+                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 throw ExceptionFromCreationError(errorCode, name);
@@ -80,14 +80,14 @@ namespace System.Threading
             SafeWaitHandle myHandle;
             myHandle = new SafeWaitHandle(Interop.mincore.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, (uint)(Interop.Constants.SemaphoreModifyState | Interop.Constants.Synchronize)), true);
 
-            uint errorCode = Interop.mincore.GetLastError();
+            int errorCode = (int)Interop.mincore.GetLastError();
             if (myHandle.IsInvalid)
             {
-                if (null != name && 0 != name.Length && (uint)Interop.Constants.ErrorInvalidHandle == errorCode)
+                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 throw ExceptionFromCreationError(errorCode, name);
             }
-            createdNew = errorCode != (uint)Interop.Constants.ErrorAlreadyExists;
+            createdNew = errorCode != Interop.mincore.Errors.ERROR_ALREADY_EXISTS;
 
             SafeWaitHandle = myHandle;
         }
@@ -142,13 +142,13 @@ namespace System.Threading
 
             if (myHandle.IsInvalid)
             {
-                uint errorCode = Interop.mincore.GetLastError();
+                int errorCode = (int)Interop.mincore.GetLastError();
 
-                if ((uint)Interop.Constants.ErrorFileNotFound == errorCode || (uint)Interop.Constants.ErrorInvalidName == errorCode)
+                if (Interop.mincore.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.mincore.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
-                if ((uint)Interop.Constants.ErrorPathNotFound == errorCode)
+                if (Interop.mincore.Errors.ERROR_PATH_NOT_FOUND == errorCode)
                     return OpenExistingResult.PathNotFound;
-                if (null != name && 0 != name.Length && (uint)Interop.Constants.ErrorInvalidHandle == errorCode)
+                if (null != name && 0 != name.Length && Interop.mincore.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
                 //this is for passed through NativeMethods Errors
                 throw ExceptionFromCreationError(errorCode, name);

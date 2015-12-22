@@ -2248,7 +2248,7 @@ namespace System
             //**********************************************************************
             // VarDecRound - Decimal Round
             //**********************************************************************
-            internal static uint VarDecRound(ref Decimal input, int decimals, ref Decimal result)
+            internal static void VarDecRound(ref Decimal input, int decimals, ref Decimal result)
             {
                 uint[] tmpNum = new uint[3];
                 uint remainder;
@@ -2256,8 +2256,7 @@ namespace System
                 uint power;
                 int scale;
 
-                if (decimals < 0)
-                    return (uint)Interop.Constants.ErrorInvalidParameter;
+                System.Diagnostics.Debug.Assert(decimals >= 0);
 
                 scale = input.Scale - decimals;
                 if (scale > 0)
@@ -2294,11 +2293,9 @@ namespace System
                     result._mid = tmpNum[1];
                     result._hi = tmpNum[2];
                     result.Scale = decimals;
-                    return 0;
                 }
 
                 result = input;
-                return 0;
             }
 
             //**********************************************************************

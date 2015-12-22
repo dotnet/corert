@@ -486,6 +486,8 @@
 
       <Compile Include="System\Runtime\CommandLine.Win32.cs" />
 
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs" />
+
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.EnvironmentVariables.UWP.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.EnvironmentVariables.Win32.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />

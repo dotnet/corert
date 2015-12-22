@@ -361,24 +361,24 @@ namespace System.Threading
             GC.SuppressFinalize(this);
         }
 
-        internal static Exception ExceptionFromCreationError(uint errorCode, string path)
+        internal static Exception ExceptionFromCreationError(int errorCode, string path)
         {
-            switch ((Interop.Constants)errorCode)
+            switch (errorCode)
             {
-                case Interop.Constants.ErrorPathNotFound:
+                case Interop.mincore.Errors.ERROR_PATH_NOT_FOUND:
                     return new IOException(SR.Format(SR.IO_PathNotFound_Path, path));
 
-                case Interop.Constants.ErrorAccessDenied:
+                case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
                     return new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, path));
 
-                case Interop.Constants.ErrorAlreadyExists:
+                case Interop.mincore.Errors.ERROR_ALREADY_EXISTS:
                     return new IOException(SR.Format(SR.IO_AlreadyExists_Name, path));
 
-                case Interop.Constants.ErrorFilenameExcedRange:
+                case Interop.mincore.Errors.ERROR_FILENAME_EXCED_RANGE:
                     return new PathTooLongException();
 
                 default:
-                    return new IOException(SR.Arg_IOException, (int)errorCode);
+                    return new IOException(SR.Arg_IOException, errorCode);
             }
         }
     }

@@ -68,21 +68,21 @@ namespace System.Threading
 
             if (result == WAIT_FAILED)
             {
-                uint error = Interop.mincore.GetLastError();
+                int error = (int)Interop.mincore.GetLastError();
                 switch (error)
                 {
-                    case (uint)Interop.Constants.ErrorInvalidParameter:
+                    case Interop.mincore.Errors.ERROR_INVALID_PARAMETER:
                         throw new ArgumentException();
 
-                    case (uint)Interop.Constants.ErrorAccessDenied:
+                    case Interop.mincore.Errors.ERROR_ACCESS_DENIED:
                         throw new UnauthorizedAccessException();
 
-                    case (uint)Interop.Constants.ErrorNotEnoughMemory:
+                    case Interop.mincore.Errors.ERROR_NOT_ENOUGH_MEMORY:
                         throw new OutOfMemoryException();
 
                     default:
                         Exception ex = new Exception();
-                        ex.SetErrorCode((int)error);
+                        ex.SetErrorCode(error);
                         throw ex;
                 }
             }
