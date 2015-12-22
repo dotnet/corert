@@ -5,7 +5,7 @@ using System;
 
 internal static partial class Interop
 {
-    internal static class Libraries
+    internal static partial class Libraries
     {
         internal const string SystemPrivateCoreLibNative = "System.Private.CoreLib.Native";
     }

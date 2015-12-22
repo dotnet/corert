@@ -56,7 +56,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <!-- TODO: For now, drop DEBUG define comming from central location - asserts compiled 
+    <!-- CORERT-TODO: For now, drop DEBUG define comming from central location - asserts compiled 
          into DEBUG builds use interfaces that we are not able to handle yet -->
     <!-- <DefineConstants>CORERT;$(DefineConstants)</DefineConstants> -->
     <DefineConstants>CORERT</DefineConstants>
@@ -486,11 +486,18 @@
 
       <Compile Include="System\Runtime\CommandLine.Win32.cs" />
 
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs" />
-
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.EnvironmentVariables.UWP.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.EnvironmentVariables.Win32.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />
+  </ItemGroup>
+  <ItemGroup>
+      <!-- CORERT-TODO: Port to Unix -->
+      <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MEMORY_BASIC_INFORMATION.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">

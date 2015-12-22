@@ -70,7 +70,7 @@ namespace System
             get
             {
                 // @TODO: can we finally fix this to return the actual number of processors when there are >64?
-                Interop._SYSTEM_INFO info = new Interop._SYSTEM_INFO();
+                Interop.mincore.SYSTEM_INFO info;
                 Interop.mincore.GetNativeSystemInfo(out info);
                 return (int)info.dwNumberOfProcessors;
             }

@@ -6362,13 +6362,13 @@ namespace System.Threading.Tasks
             {
                 // If not we need to query it from GetSystemInfo()
                 // Note that this happens only once for the process lifetime                
-                Interop._SYSTEM_INFO sysInfo;
+                Interop.mincore.SYSTEM_INFO sysInfo;
                 Interop.mincore.GetNativeSystemInfo(out sysInfo);
 
                 s_pageSize = pageSize = (int)sysInfo.dwPageSize;
             }
 
-            Interop._MEMORY_BASIC_INFORMATION stackInfo = new Interop._MEMORY_BASIC_INFORMATION();
+            Interop.mincore.MEMORY_BASIC_INFORMATION stackInfo = new Interop.mincore.MEMORY_BASIC_INFORMATION();
 
             // We subtract one page for our request. VirtualQuery rounds UP to the next page.
             // Unfortunately, the stack grows down. If we're on the first page (last page in the
@@ -6383,7 +6383,7 @@ namespace System.Threading.Tasks
                 return true;
 
             // Actual stack probe. P/Invoke to query for the current stack allocation information.            
-            Interop.mincore.VirtualQuery((IntPtr)currentAddr, out stackInfo, (UIntPtr)(sizeof(Interop._MEMORY_BASIC_INFORMATION)));
+            Interop.mincore.VirtualQuery((IntPtr)currentAddr, out stackInfo, (UIntPtr)(sizeof(Interop.mincore.MEMORY_BASIC_INFORMATION)));
 
             // If the current address minus the base (remember: the stack grows downward in the
             // address space) is greater than the number of bytes requested plus the reserved

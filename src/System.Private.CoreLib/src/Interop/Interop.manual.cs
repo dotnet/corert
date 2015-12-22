@@ -177,36 +177,10 @@ internal partial class Interop
         internal int DaylightBias;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct _SYSTEM_INFO
-    {
-        internal int dwOemId;
-        internal int dwPageSize;
-        internal IntPtr lpMinimumApplicationAddress;
-        internal IntPtr lpMaximumApplicationAddress;
-        internal IntPtr dwActiveProcessorMask;
-        internal int dwNumberOfProcessors;
-        internal int dwProcessorType;
-        internal int dwAllocationGranularity;
-        internal short wProcessorLevel;
-        internal short wProcessorRevision;
-    }
-
     internal struct _FILETIME
     {
         internal uint dwLowDateTime;
         internal uint dwHighDateTime;
-    }
-
-    internal struct _MEMORY_BASIC_INFORMATION
-    {
-        internal IntPtr BaseAddress;
-        internal IntPtr AllocationBase;
-        internal uint AllocationProtect;
-        internal UIntPtr RegionSize;
-        internal uint State;
-        internal uint Protect;
-        internal uint Type;
     }
 
     internal unsafe struct InlineArray_ULONG_PTR_15
@@ -464,9 +438,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, IntPtr lpLCData, int cchData);
 
-        [DllImport("api-ms-win-core-sysinfo-l1-2-0.dll")]
-        internal extern static void GetNativeSystemInfo(out _SYSTEM_INFO lpSystemInfo);
-
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal extern static IntPtr GetProcessHeap();
 
@@ -555,9 +526,6 @@ internal partial class Interop
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int LCMapStringEx(string lpLocaleName, uint dwMapFlags, string lpSrcStr, int cchSrc, IntPtr lpDestStr, int cchDest, IntPtr lpVersionInformation, IntPtr lpReserved, IntPtr sortHandle);
-
-        [DllImport("api-ms-win-core-memory-l1-1-0.dll")]
-        internal extern static UIntPtr VirtualQuery(IntPtr lpAddress, out _MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
 
         [DllImport("api-ms-win-core-localization-l2-1-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int EnumCalendarInfoExEx(IntPtr pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, IntPtr lParam);
