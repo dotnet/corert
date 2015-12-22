@@ -670,6 +670,9 @@ namespace ILCompiler.CppCodeGen
             {
                 if (field.IsStatic)
                 {
+                    if (field.IsLiteral)
+                        continue;
+
                     TypeDesc fieldType = GetFieldTypeOrPlaceholder(field);
                     StringBuilder builder;
                     if (!fieldType.IsValueType)
