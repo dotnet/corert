@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class mincore
     {
         [DllImport(Interop.Libraries.Memory)]
-        internal extern static UIntPtr VirtualQuery(IntPtr lpAddress, out Interop._MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
+        internal extern static UIntPtr VirtualQuery(IntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
     }
 }

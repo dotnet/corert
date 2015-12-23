@@ -828,7 +828,7 @@ namespace System
             // DecAddSub adds or subtracts two decimal values.  On return, d1 contains the result
             // of the operation.  Passing in true for bSign means subtract and false means add.
             // 
-            // Resturns true if we overflow otherwise false.
+            // Returns true if we overflow otherwise false.
             private static bool DecAddSub(ref Decimal d1, ref Decimal d2, bool bSign)
             {
                 uint[] rgulNum = new uint[6];
@@ -1287,7 +1287,7 @@ namespace System
             //**********************************************************************
             // VarDecMul - Decimal Multiply
             //**********************************************************************
-            internal static int VarDecMul(ref Decimal pdecL, ref Decimal pdecR, out Decimal pdecRes)
+            internal static void VarDecMul(ref Decimal pdecL, ref Decimal pdecR, out Decimal pdecRes)
             {
                 Split64 sdlTmp = new Split64();
                 Split64 sdlTmp2 = new Split64();
@@ -1317,7 +1317,7 @@ namespace System
                         if (iScale > 19)
                         {
                             //DECIMAL_SETZERO(*pdecRes);
-                            return 0;
+                            return;
                         }
                         if (iScale > MaxInt32Scale)
                         {
@@ -1440,12 +1440,12 @@ namespace System
                     {
                         iHiProd--;
                         if (iHiProd < 0)
-                            return 0;
+                            return;
                     }
 
                     iScale = ScaleResult(rgulProd, iHiProd, iScale);
                     if (iScale == -1)
-                        return __HResults.COR_E_OVERFLOW;
+                        throw new OverflowException(SR.Overflow_Decimal);
 
                     pdecRes.Low = rgulProd[0];
                     pdecRes.Mid = rgulProd[1];
@@ -1454,13 +1454,12 @@ namespace System
 
                 pdecRes.Sign = pdecR.Sign ^ pdecL.Sign;
                 pdecRes.Scale = (char)iScale;
-                return 0;
             }
 
             //**********************************************************************
             // VarDecFromR4 - Convert float to Decimal
             //**********************************************************************
-            internal static int VarDecFromR4(float input, out Decimal pdecOut)
+            internal static void VarDecFromR4(float input, out Decimal pdecOut)
             {
                 int iExp;    // number of bits to left of binary point
                 int iPower;
@@ -1478,10 +1477,10 @@ namespace System
                 //
                 iExp = (int)(GetExponent(input) - SNGBIAS);
                 if (iExp < -94)
-                    return 0; // result should be zeroed out
+                    return; // result should be zeroed out
 
                 if (iExp > 96)
-                    return __HResults.COR_E_OVERFLOW;
+                    throw new OverflowException(SR.Overflow_Decimal);
 
                 // Round the input to a 7-digit integer.  The R4 format has
                 // only 7 digits of precision, and we want to keep garbage digits
@@ -1529,7 +1528,7 @@ namespace System
                     ulMant++;
 
                 if (ulMant == 0)
-                    return 0;  // result should be zeroed out
+                    return;  // result should be zeroed out
 
                 if (iPower < 0)
                 {
@@ -1553,7 +1552,7 @@ namespace System
                             sdlHi.int64 = tmplong;
 
                             if (sdlHi.High32 != 0)
-                                return __HResults.COR_E_OVERFLOW;
+                                throw new OverflowException(SR.Overflow_Decimal);
                         }
                         else
                         {
@@ -1607,13 +1606,13 @@ namespace System
                 }
 
                 pdecOut.Sign = input < 0;
-                return 0;
             }
 
             //**********************************************************************
             // VarDecFromR8 - Convert double to Decimal
+            // Returns true if we overflow otherwise false.
             //**********************************************************************
-            internal static int VarDecFromR8(double input, out Decimal pdecOut)
+            internal static void VarDecFromR8(double input, out Decimal pdecOut)
             {
                 int iExp;    // number of bits to left of binary point
                 int iPower;  // power-of-10 scale factor
@@ -1632,10 +1631,10 @@ namespace System
                 //
                 iExp = (int)(GetExponent(input) - DBLBIAS);
                 if (iExp < -94)
-                    return 0;  // result should be zeroed out
+                    return;  // result should be zeroed out
 
                 if (iExp > 96)
-                    return __HResults.COR_E_OVERFLOW;
+                    throw new OverflowException(SR.Overflow_Decimal);
                 dbl = input;
                 if (dbl < 0)
                     dbl *= -1;
@@ -1684,7 +1683,7 @@ namespace System
                     sdlMant.int64++;
 
                 if (sdlMant.int64 == 0)
-                    return 0;  // result should be zeroed out
+                    return;  // result should be zeroed out
 
                 if (iPower < 0)
                 {
@@ -1709,7 +1708,7 @@ namespace System
                         sdlMant.int64 = tmpValue;
 
                         if (sdlMant.High32 != 0)
-                            return __HResults.COR_E_OVERFLOW;
+                            throw new OverflowException(SR.Overflow_Decimal);
                     }
                     pdecOut.Low64 = sdlLo.int64;
                     pdecOut.High = sdlMant.Low32;
@@ -1769,28 +1768,20 @@ namespace System
                 }
 
                 pdecOut.Sign = input < 0;
-
-                return 0;
             }
 
             //**********************************************************************
             // VarR4ToDec - Convert Decimal to float
             //**********************************************************************
-            internal static int VarR4FromDec(ref Decimal pdecIn, out float pfltOut)
+            internal static float VarR4FromDec(ref Decimal pdecIn)
             {
-                double dbl;
-
-                // Can't overflow; no errors possible.
-                //
-                VarR8FromDec(ref pdecIn, out dbl);
-                pfltOut = (float)dbl;
-                return 0;
+                return (float)VarR8FromDec(ref pdecIn);
             }
 
             //**********************************************************************
             // VarR8ToDec - Convert Decimal to double
             //**********************************************************************
-            internal static int VarR8FromDec(ref Decimal pdecIn, out double pdblOut)
+            internal static double VarR8FromDec(ref Decimal pdecIn)
             {
                 double dbl = ((double)pdecIn.Low64 +
                     (double)pdecIn.High * ds2to64) / GetDoublePower10(pdecIn.Scale);
@@ -1798,8 +1789,7 @@ namespace System
                 if (pdecIn.Sign)
                     dbl = -dbl;
 
-                pdblOut = dbl;
-                return 0;
+                return dbl;
             }
 
             // VarDecAdd divides two decimal values.  On return, d1 contains the result
@@ -2248,7 +2238,7 @@ namespace System
             //**********************************************************************
             // VarDecRound - Decimal Round
             //**********************************************************************
-            internal static uint VarDecRound(ref Decimal input, int decimals, ref Decimal result)
+            internal static void VarDecRound(ref Decimal input, int decimals, ref Decimal result)
             {
                 uint[] tmpNum = new uint[3];
                 uint remainder;
@@ -2256,8 +2246,7 @@ namespace System
                 uint power;
                 int scale;
 
-                if (decimals < 0)
-                    return (uint)Interop.Constants.ErrorInvalidParameter;
+                System.Diagnostics.Debug.Assert(decimals >= 0);
 
                 scale = input.Scale - decimals;
                 if (scale > 0)
@@ -2294,11 +2283,9 @@ namespace System
                     result._mid = tmpNum[1];
                     result._hi = tmpNum[2];
                     result.Scale = decimals;
-                    return 0;
                 }
 
                 result = input;
-                return 0;
             }
 
             //**********************************************************************

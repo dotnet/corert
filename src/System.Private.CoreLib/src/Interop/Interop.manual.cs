@@ -11,30 +11,17 @@ internal partial class Interop
     {
         WaitObject0 = 0x0u,
         SOk = 0x0u,
-        ErrorSuccess = 0x0u,
         FailFastGenerateExceptionAddress = 0x1u,
         ExceptionNonContinuable = 0x1u,
         CreateMutexInitialOwner = 0x1u,
         CreateEventManualReset = 0x1u,
         MutexModifyState = 0x1u,
         CreateEventInitialSet = 0x2u,
-        ErrorFileNotFound = 0x2u,
         DuplicateSameAccess = 0x2u,
         SemaphoreModifyState = 0x2u,
         EventModifyState = 0x2u,
         FileTypeChar = 0x2u,
-        ErrorPathNotFound = 0x3u,
-        ErrorAccessDenied = 0x5u,
-        ErrorInvalidHandle = 0x6u,
-        ErrorNotEnoughMemory = 0x8u,
-        ErrorInvalidDrive = 0xFu,
-        ErrorSharingViolation = 0x20u,
-        ErrorInvalidParameter = 0x57u,
-        ErrorInvalidName = 0x7Bu,
         WaitAbandoned0 = 0x80u,
-        ErrorBadPathname = 0xA1u,
-        ErrorAlreadyExists = 0xB7u,
-        ErrorFilenameExcedRange = 0xCEu,
         WaitTimeout = 0x102u,
         MaxPath = 0x104u,
         Synchronize = 0x100000u,
@@ -42,9 +29,6 @@ internal partial class Interop
         EventAllAccess = 0x1F0003u,
         EFail = 0x80004005u,
         CoENotInitialized = 0x800401F0u,
-        StdErrorHandle = 0xFFFFFFF4u,
-        StdOutputHandle = 0xFFFFFFF5u,
-        StdInputHandle = 0xFFFFFFF6u,
         WaitFailed = 0xFFFFFFFFu,
     }
 
@@ -193,36 +177,10 @@ internal partial class Interop
         internal int DaylightBias;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct _SYSTEM_INFO
-    {
-        internal int dwOemId;
-        internal int dwPageSize;
-        internal IntPtr lpMinimumApplicationAddress;
-        internal IntPtr lpMaximumApplicationAddress;
-        internal IntPtr dwActiveProcessorMask;
-        internal int dwNumberOfProcessors;
-        internal int dwProcessorType;
-        internal int dwAllocationGranularity;
-        internal short wProcessorLevel;
-        internal short wProcessorRevision;
-    }
-
     internal struct _FILETIME
     {
         internal uint dwLowDateTime;
         internal uint dwHighDateTime;
-    }
-
-    internal struct _MEMORY_BASIC_INFORMATION
-    {
-        internal IntPtr BaseAddress;
-        internal IntPtr AllocationBase;
-        internal uint AllocationProtect;
-        internal UIntPtr RegionSize;
-        internal uint State;
-        internal uint Protect;
-        internal uint Type;
     }
 
     internal unsafe struct InlineArray_ULONG_PTR_15
@@ -480,9 +438,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, IntPtr lpLCData, int cchData);
 
-        [DllImport("api-ms-win-core-sysinfo-l1-2-0.dll")]
-        internal extern static void GetNativeSystemInfo(out _SYSTEM_INFO lpSystemInfo);
-
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal extern static IntPtr GetProcessHeap();
 
@@ -571,9 +526,6 @@ internal partial class Interop
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int LCMapStringEx(string lpLocaleName, uint dwMapFlags, string lpSrcStr, int cchSrc, IntPtr lpDestStr, int cchDest, IntPtr lpVersionInformation, IntPtr lpReserved, IntPtr sortHandle);
-
-        [DllImport("api-ms-win-core-memory-l1-1-0.dll")]
-        internal extern static UIntPtr VirtualQuery(IntPtr lpAddress, out _MEMORY_BASIC_INFORMATION lpBuffer, UIntPtr dwLength);
 
         [DllImport("api-ms-win-core-localization-l2-1-0.dll", CharSet = CharSet.Unicode)]
         internal extern static int EnumCalendarInfoExEx(IntPtr pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, IntPtr lParam);
@@ -981,11 +933,6 @@ internal partial class Interop
             else
                 s_sleepHandle.WaitOne((int)milliseconds);
         }
-
-        // constants for EnumDynamicTimeZone return values
-        internal const uint ERROR_NO_MORE_ITEMS = 259;
-        internal const uint ERROR_INVALID_PARAMETERS = 87;
-        internal const uint ERROR_SUCCESS = 0;
     }
 
     internal partial class mincore_obsolete

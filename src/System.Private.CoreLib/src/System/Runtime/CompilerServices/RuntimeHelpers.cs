@@ -151,10 +151,10 @@ namespace System.Runtime.CompilerServices
             // We need to first ensure that the current stack page has been written to, so that it has the same attributes all higher stack pages.
             // This way info.RegionSize will include the whole stack written so far.
             //
-            Interop._MEMORY_BASIC_INFORMATION info = new Interop._MEMORY_BASIC_INFORMATION();
+            Interop.mincore.MEMORY_BASIC_INFORMATION info = new Interop.mincore.MEMORY_BASIC_INFORMATION();
             Volatile.Write(ref info.BaseAddress, IntPtr.Zero); // Extra paranoid write, to avoid optimizations.
 
-            Interop.mincore.VirtualQuery((IntPtr)(&info), out info, (UIntPtr)(uint)sizeof(Interop._MEMORY_BASIC_INFORMATION));
+            Interop.mincore.VirtualQuery((IntPtr)(&info), out info, (UIntPtr)(uint)sizeof(Interop.mincore.MEMORY_BASIC_INFORMATION));
 
             byte* lower = (byte*)info.AllocationBase;
             byte* upper = (byte*)info.BaseAddress + info.RegionSize.ToUInt64();

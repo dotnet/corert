@@ -194,7 +194,7 @@ namespace System
                 LowLevelListWithIList<TimeZoneInfo> enumeratedTimeZoneList = new LowLevelListWithIList<TimeZoneInfo>();
                 uint index = 0;
                 Interop._TIME_DYNAMIC_ZONE_INFORMATION tdzi;
-                while (Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi) != Interop.mincore.ERROR_NO_MORE_ITEMS)
+                while (Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi) != Interop.mincore.Errors.ERROR_NO_MORE_ITEMS)
                 {
                     TimeZoneInformation timeZoneInformation = new TimeZoneInformation(tdzi);
                     TimeZoneInfo value;
