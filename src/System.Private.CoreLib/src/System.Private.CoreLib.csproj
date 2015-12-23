@@ -59,7 +59,7 @@
     <!-- CORERT-TODO: For now, drop DEBUG define comming from central location - asserts compiled 
          into DEBUG builds use interfaces that we are not able to handle yet -->
     <!-- <DefineConstants>CORERT;$(DefineConstants)</DefineConstants> -->
-    <DefineConstants>CORERT</DefineConstants>
+    <DefineConstants>CORERT</DefineConstants>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Platform)' == 'amd64'">

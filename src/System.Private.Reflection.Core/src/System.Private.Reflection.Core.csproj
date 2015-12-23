@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Reflection.Core</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{999BB20D-A032-4836-A587-627D243C1668}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWinRT>true</EnableWinRT>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+ 
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection\src\System.Private.Reflection.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+    
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />  
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="System\DBNull.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.StrongName.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeNormalCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimePseudoCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DefaultDispenserPolicy.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\Dispenser.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserAlgorithm.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserFactory.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserPolicy.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserScenario.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatAlwaysCreates.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatAlwaysReuses.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsKeyIsAlive.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsValueIsAlive.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatLatchesTypeInfosInsideTypes.cs" />
+    <Compile Include="System\Reflection\Runtime\EventInfos\RuntimeEventInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\FieldInfos\LiteralFieldAccessor.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
+    <Compile Include="System\Reflection\Runtime\General\RuntimeNamespaceInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\General\RuntimeTypeExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\General\RuntimeTypeUnifierEx.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeResolver.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimePlainConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeNamedMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeFatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimePropertyIndexParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeThinMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeSyntheticParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\PropertyInfos\RuntimePropertyInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\Tracing\ReflectionEventSource.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeArrayTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeHasElementTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNamedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNoMetadataNamedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeBlockedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\TypeInfoCachedData.cs" />
+    <Compile Include="System\Reflection\Runtime\Types\RuntimeGenericParameterType.cs" />
+    <Compile Include="System\Reflection\Runtime\Types\RuntimeGenericParameterTypeForTypes.cs" />
+    <Compile Include="System\Reflection\Runtime\Types\RuntimeGenericParameterTypeForMethods.cs" />
+    <Compile Include="System\Reflection\Runtime\Types\RuntimeInspectionOnlyNamedType.cs" />
+    <Compile Include="System\Reflection\Runtime\Types\ShadowRuntimeInspectionOnlyNamedType.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeParser.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
+    <Compile Include="Internal\Reflection\Core\FoundationTypes.cs" />
+    <Compile Include="Internal\Reflection\Core\ReflectionDomain.cs" />
+    <Compile Include="Internal\Reflection\Core\ReflectionDomainSetup.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Core\Execution\ExecutionDomain.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\ExecutionEnvironment.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\InvokerOptions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
+    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.Events.cs" />
+    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Internal.cs" />
+    <Compile Include="Internal\Reflection\Tracing\ITraceableTypeMember.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="...\..\common\src\System\CommonRuntimeTypes.cs" />
+    <Compile Include="...\..\common\src\System\NotImplemented.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Generic\LowLevelList.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Generic\LowLevelDictionary.cs" />
+    <Compile Include="...\..\common\src\System\Linq\LowLevelEnumerable.cs" />
+    <Compile Include="...\..\common\src\System\Collections\HashHelpers.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Generic\EnumerableExtensions.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Generic\Empty.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Concurrent\ConcurrentUnifier.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs" />
+    <Compile Include="...\..\common\src\System\Collections\Concurrent\IKeyedItem.cs" />
+    <Compile Include="...\..\common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
