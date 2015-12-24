@@ -122,19 +122,19 @@
     <Compile Include="Internal\Reflection\Tracing\ITraceableTypeMember.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="...\..\common\src\System\CommonRuntimeTypes.cs" />
-    <Compile Include="...\..\common\src\System\NotImplemented.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Generic\LowLevelList.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Generic\LowLevelDictionary.cs" />
-    <Compile Include="...\..\common\src\System\Linq\LowLevelEnumerable.cs" />
-    <Compile Include="...\..\common\src\System\Collections\HashHelpers.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Generic\EnumerableExtensions.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Generic\Empty.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Concurrent\ConcurrentUnifier.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs" />
-    <Compile Include="...\..\common\src\System\Collections\Concurrent\IKeyedItem.cs" />
-    <Compile Include="...\..\common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" />
+    <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" />
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs" />
+    <Compile Include="..\..\Common\src\System\Linq\LowLevelEnumerable.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\EnumerableExtensions.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\Empty.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\IKeyedItem.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
