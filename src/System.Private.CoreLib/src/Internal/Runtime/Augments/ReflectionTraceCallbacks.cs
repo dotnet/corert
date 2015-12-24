@@ -8,9 +8,7 @@ namespace Internal.Runtime.Augments
     public abstract class ReflectionTraceCallbacks
     {
         public abstract bool Enabled { get; }
-#if DEBUG
         public abstract String GetTraceString(Type type);
-#endif
 
         public abstract void Type_MakeGenericType(Type type, Type[] typeArguments);
         public abstract void Type_MakeArrayType(Type type);

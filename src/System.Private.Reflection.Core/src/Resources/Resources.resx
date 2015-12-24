@@ -1,0 +1,210 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Bif_InvalidMetadata" xml:space="preserve">
+    <value>A problem was found in this image's metadata.</value>
+  </data>
+  <data name="Acc_CreateAbstEx" xml:space="preserve">
+    <value>Cannot create an instance of {0} because it is an abstract class.</value>
+  </data>
+  <data name="Acc_NotClassInit" xml:space="preserve">
+    <value>Type initializer was not callable.</value>
+  </data>
+  <data name="Acc_ReadOnly" xml:space="preserve">
+    <value>Cannot set a constant field.</value>
+  </data>
+  <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
+    <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
+  </data>
+  <data name="Arg_NotGenericParameter" xml:space="preserve">
+    <value>Method may only be called on a Type for which Type.IsGenericParameter is true.</value>
+  </data>
+  <data name="Arg_TypeLoadNullStr" xml:space="preserve">
+    <value>A null or zero length string does not represent a valid Type.</value>
+  </data>
+  <data name="Argument_NotEnoughGenArguments" xml:space="preserve">
+    <value>The type or method has {1} generic parameter(s), but {0} generic argument(s) were provided. A generic argument must be provided for each generic parameter.</value>
+  </data>
+  <data name="Reflection_CustomReflectionObjectsNotSupported" xml:space="preserve">
+    <value>The object '{0}' was created by a custom ReflectionContext and cannot be used here.</value>
+  </data>
+  <data name="TypeLoad_TypeNotFoundByGetType" xml:space="preserve">
+    <value>The type '{0}' cannot be found.</value>
+  </data>
+  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
+    <value>The type '{0}' cannot be found in the metadata for '{1}'.</value>
+  </data>
+  <data name="TypeLoad_BadEscape" xml:space="preserve">
+    <value>An invalid escape sequence was found inside a type name.</value>
+  </data>
+  <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
+    <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
+  </data>
+  <data name="Format_StringZeroLength" xml:space="preserve">
+    <value>String cannot have zero length.</value>
+  </data>
+  <data name="Arg_HTCapacityOverflow" xml:space="preserve">
+    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
+  </data>
+  <data name="NotSupported_ByRefReturn" xml:space="preserve">
+    <value>ByRef return value not supported in reflection invocation.</value>
+  </data>
+  <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
+    <value>Invalid assembly public key.</value>
+  </data>
+  <data name="Arg_DlgtTargMeth" xml:space="preserve">
+    <value>Cannot bind to the target method because its signature is not compatible with that of the delegate type.</value>
+  </data>
+  <data name="Arg_MustBeDelegate" xml:space="preserve">
+    <value>Type must derive from Delegate.</value>
+  </data>
+  <data name="Arg_InvokeMethodMissingMetadata" xml:space="preserve">
+    <value>Cannot create a delegate on type '{0}' as it is missing metadata for the Invoke method. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616867</value>
+  </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added.</value>
+  </data>
+  <data name="Argument_InvalidHandle" xml:space="preserve">
+    <value>The handle is invalid.</value>
+  </data>
+  <data name="Argument_ResolveMethodHandle" xml:space="preserve">
+    <value>Type handle '{0}' and method handle with declaring type '{1}' are incompatible. Get RuntimeMethodHandle and declaring RuntimeTypeHandle off the same MethodBase.</value>
+  </data>
+  <data name="Argument_ResolveFieldHandle" xml:space="preserve">
+    <value>Type handle '{0}' and field handle with declaring type '{1}' are incompatible. Get RuntimeFieldHandle and declaring RuntimeTypeHandle off the same FieldInfo.</value>
+  </data>
+  <data name="Argument_MethodDeclaringTypeGeneric" xml:space="preserve">
+    <value>Cannot resolve method {0} because the declaring type of the method handle is generic. Explicitly provide the declaring type to GetMethodFromHandle.</value>
+  </data>
+  <data name="Argument_FieldDeclaringTypeGeneric" xml:space="preserve">
+    <value>Cannot resolve field {0} because the declaring type of the field handle is generic. Explicitly provide the declaring type to GetFieldFromHandle.</value>
+  </data>
+  <data name="Arg_UnboundGenParam" xml:space="preserve">
+    <value>Late bound operations cannot be performed on types or methods for which ContainsGenericParameters is true.</value>
+  </data>
+  <data name="Argument_AssemblyGetTypeCannotSpecifyAssembly" xml:space="preserve">
+    <value>Type names passed to Assembly.GetType() must not specify an assembly.</value>
+  </data>
+  <data name="InvalidOperation_NoPublicAddMethod" xml:space="preserve">
+    <value>Cannot add the event handler since no public add method exists for the event.</value>
+  </data>
+  <data name="InvalidOperation_NoPublicRemoveMethod" xml:space="preserve">
+    <value>Cannot remove the event handler since no public remove method exists for the event.</value>
+  </data>
+</root>
