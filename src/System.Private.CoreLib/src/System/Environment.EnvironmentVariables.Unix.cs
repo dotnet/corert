@@ -57,30 +57,17 @@ namespace System
             if (variable == null)
                 throw new ArgumentNullException("variable");
 
-            // CORERT-TODO: remove this Hello World workaround
-            // https://github.com/dotnet/corert/issues/213
-            if (variable == "LC_ALL" || variable == "LC_MESSAGES" || variable == "LANG")
+            IntPtr result;
+            int size = Interop.Sys.GetEnvironmentVariable(variable, out result);
+
+            // The size can be -1 if the environment variable's size overflows an integer
+            if (size == -1)
+                throw new OverflowException();
+
+            if (result == IntPtr.Zero)
                 return null;
 
-            byte[] variableAsBytes = Interop.StringHelper.GetBytesFromUTF8string(variable);
-            fixed (byte* pVar = variableAsBytes)
-            {
-                IntPtr result;
-                int size = Interop.Sys.GetEnvironmentVariable(pVar, out result);
-
-                // The size can be -1 if the environment variable's size overflows an integer
-                if (size == -1)
-                {
-                    throw new OverflowException();
-                }
-
-                if (result != IntPtr.Zero)
-                {
-                    return Encoding.UTF8.GetString((byte*)result, size);
-                }
-
-                return null;
-            }
+            return Encoding.UTF8.GetString((byte*)result, size);
         }
     }
 }
