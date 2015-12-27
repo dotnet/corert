@@ -235,9 +235,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private IntPtr _nativeObjectWriter = IntPtr.Zero;
 
-        public ObjectWriter(string outputPath, NodeFactory factory)
+        public ObjectWriter(string objectFilePath, NodeFactory factory)
         {
-            _nativeObjectWriter = InitObjWriter(outputPath);
+            _nativeObjectWriter = InitObjWriter(objectFilePath);
             if (_nativeObjectWriter == IntPtr.Zero)
             {
                 throw new IOException("Fail to initialize Native Object Writer");
@@ -274,9 +274,9 @@ namespace ILCompiler.DependencyAnalysis
             Dispose(false);
         }
 
-        public static void EmitObject(string OutputPath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
+        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory)
         {
-            using (ObjectWriter objectWriter = new ObjectWriter(OutputPath, factory))
+            using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
                 string currentSection = "";
 

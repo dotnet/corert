@@ -6,6 +6,7 @@
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
+    "System.IO.MemoryMappedFiles": "4.0.0-beta-23419",
     "System.Collections": "4.0.10",
     "System.Text.Encoding": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",
