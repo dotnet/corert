@@ -6,6 +6,7 @@
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
+    "System.IO.MemoryMappedFiles": "4.0.0-beta-23419",
     "System.Collections": "4.0.10",
     "System.Text.Encoding": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",
@@ -20,7 +21,7 @@
     "System.Reflection.Metadata": "1.0.22",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-beta-23409",
     "Microsoft.DotNet.RyuJit": "1.0.2-prerelease-00002",
-    "Microsoft.DotNet.ObjectWriter": "1.0.3-prerelease-00001",
+    "Microsoft.DotNet.ObjectWriter": "1.0.3-prerelease-00001"
   },
   "frameworks": {
     "dotnet": {

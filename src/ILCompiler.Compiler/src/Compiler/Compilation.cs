@@ -3,16 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 using System.IO;
-using System.Linq;
-using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Internal.IL;
-using Internal.IL.Stubs;
 
 using Internal.JitInterface;
 using ILCompiler.DependencyAnalysis;
@@ -20,8 +17,18 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
-    public struct CompilationOptions
+    public class CompilationOptions
     {
+        public IReadOnlyDictionary<string, string> InputFilePaths;
+        public IReadOnlyDictionary<string, string> ReferenceFilePaths;
+
+        public string OutputFilePath;
+
+        public string SystemModuleName;
+
+        public TargetOS TargetOS;
+        public TargetArchitecture TargetArchitecture;
+
         public bool IsCppCodeGen;
         public bool NoLineNumbers;
         public string DgmlLog;
@@ -41,10 +48,15 @@ namespace ILCompiler
 
         private ILCompiler.CppCodeGen.CppWriter _cppWriter = null;
 
-        public Compilation(CompilerTypeSystemContext typeSystemContext, CompilationOptions options)
+        public Compilation(CompilationOptions options)
         {
-            _typeSystemContext = typeSystemContext;
             _options = options;
+
+            _typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(options.TargetArchitecture, options.TargetOS));
+            _typeSystemContext.InputFilePaths = options.InputFilePaths;
+            _typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
+
+            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(options.SystemModuleName));
 
             _nameMangler = new NameMangler(this);
         }
@@ -79,18 +91,6 @@ namespace ILCompiler
             set;
         }
 
-        public string OutputPath
-        {
-            get;
-            set;
-        }
-
-        public TextWriter Out
-        {
-            get;
-            set;
-        }
-
         private MethodDesc _mainMethod;
 
         internal MethodDesc MainMethod
@@ -117,19 +117,21 @@ namespace ILCompiler
             }
         }
 
-        private ILProvider _ilProvider = new ILProvider();
+        private ILProvider _methodILCache = new ILProvider();
 
         public MethodIL GetMethodIL(MethodDesc method)
         {
-            return _ilProvider.GetMethodIL(method);
+            // Flush the cache when it grows too big
+            if (_methodILCache.Count > 1000)
+                _methodILCache= new ILProvider();
+
+            return _methodILCache.GetMethodIL(method);
         }
 
         private CorInfoImpl _corInfo;
 
-        public void CompileSingleFile(MethodDesc mainMethod)
+        public void CompileSingleFile()
         {
-            _mainMethod = mainMethod;
-
             NodeFactory.NameMangler = NameMangler;
 
             _nodeFactory = new NodeFactory(_typeSystemContext, _options.IsCppCodeGen);
@@ -177,7 +179,7 @@ namespace ILCompiler
 
                 var nodes = _dependencyGraph.MarkedNodeList;
 
-                ObjectWriter.EmitObject(OutputPath, nodes, _nodeFactory);
+                ObjectWriter.EmitObject(_options.OutputFilePath, nodes, _nodeFactory);
             }
 
             if (_options.DgmlLog != null)
@@ -192,18 +194,28 @@ namespace ILCompiler
 
         private void AddCompilationRoots()
         {
-            if (_mainMethod != null)
-            {
-                AddCompilationRoot(_mainMethod, "Main method", "__managed__Main");
-            }
-
             foreach (var inputFile in _typeSystemContext.InputFilePaths)
             {
                 var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
+
+                if (module.PEReader.PEHeaders.IsExe)
+                    AddCompilationRootsForMainMethod(module);
+
                 AddCompilationRootsForRuntimeExports(module);
            }
 
             AddCompilationRootsForRuntimeExports((EcmaModule)_typeSystemContext.SystemModule);
+        }
+
+        private void AddCompilationRootsForMainMethod(EcmaModule module)
+        {
+            if (_mainMethod != null)
+                throw new Exception("Multiple entrypoint modules");
+
+            int entryPointToken = module.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress;
+            _mainMethod = module.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
+
+            AddCompilationRoot(_mainMethod, "Main method", "__managed__Main");
         }
 
         private void AddCompilationRootsForRuntimeExports(EcmaModule module)
@@ -250,7 +262,7 @@ namespace ILCompiler
                 string methodName = method.ToString();
                 Log.WriteLine("Compiling " + methodName);
 
-                var methodIL = _ilProvider.GetMethodIL(method);
+                var methodIL = GetMethodIL(method);
                 if (methodIL == null)
                     return;
 

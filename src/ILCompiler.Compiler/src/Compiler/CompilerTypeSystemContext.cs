@@ -3,12 +3,13 @@
 
 using System;
 using System.IO;
-using System.Linq;
+using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -59,27 +60,83 @@ namespace ILCompiler
 
         private MetadataStringDecoder _metadataStringDecoder;
 
-        private Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
-
         private class ModuleData
         {
-            public string Path;
+            public string SimpleName;
+            public string FilePath;
+
+            public EcmaModule Module;
+            public MemoryMappedViewAccessor MappedViewAccessor;
+
             public Microsoft.DiaSymReader.ISymUnmanagedReader PdbReader;
         }
-        private Dictionary<EcmaModule, ModuleData> _moduleData = new Dictionary<EcmaModule, ModuleData>();
+
+        private class ModuleHashtable : LockFreeReaderHashtable<EcmaModule, ModuleData>
+        {
+            protected override int GetKeyHashCode(EcmaModule key)
+            {
+                return key.GetHashCode();
+            }
+            protected override int GetValueHashCode(ModuleData value)
+            {
+                return value.Module.GetHashCode();
+            }
+            protected override bool CompareKeyToValue(EcmaModule key, ModuleData value)
+            {
+                return Object.ReferenceEquals(key, value.Module);
+            }
+            protected override bool CompareValueToValue(ModuleData value1, ModuleData value2)
+            {
+                return Object.ReferenceEquals(value1.Module, value2.Module);
+            }
+            protected override ModuleData CreateValueFromKey(EcmaModule key)
+            {
+                Debug.Assert(false, "CreateValueFromKey not supported");
+                return null;
+            }
+        }
+        private ModuleHashtable _moduleHashtable = new ModuleHashtable();
+
+        private class SimpleNameHashtable : LockFreeReaderHashtable<string, ModuleData>
+        {
+            StringComparer _comparer = StringComparer.OrdinalIgnoreCase;
+
+            protected override int GetKeyHashCode(string key)
+            {
+                return _comparer.GetHashCode(key);
+            }
+            protected override int GetValueHashCode(ModuleData value)
+            {
+                return _comparer.GetHashCode(value.SimpleName);
+            }
+            protected override bool CompareKeyToValue(string key, ModuleData value)
+            {
+                return _comparer.Equals(key, value.SimpleName);
+            }
+            protected override bool CompareValueToValue(ModuleData value1, ModuleData value2)
+            {
+                return _comparer.Equals(value1.SimpleName, value2.SimpleName);
+            }
+            protected override ModuleData CreateValueFromKey(string key)
+            {
+                Debug.Assert(false, "CreateValueFromKey not supported");
+                return null;
+            }
+        }
+        private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
 
         public CompilerTypeSystemContext(TargetDetails details)
             : base(details)
         {
         }
 
-        public IDictionary<string, string> InputFilePaths
+        public IReadOnlyDictionary<string, string> InputFilePaths
         {
             get;
             set;
         }
 
-        public IDictionary<string, string> ReferenceFilePaths
+        public IReadOnlyDictionary<string, string> ReferenceFilePaths
         {
             get;
             set;
@@ -113,9 +170,9 @@ namespace ILCompiler
 
         public EcmaModule GetModuleForSimpleName(string simpleName)
         {
-            EcmaModule existingModule;
-            if (_modules.TryGetValue(simpleName, out existingModule))
-                return existingModule;
+            ModuleData existing;
+            if (_simpleNameHashtable.TryGetValue(simpleName, out existing))
+                return existing.Module;
 
             string filePath;
             if (!InputFilePaths.TryGetValue(simpleName, out filePath))
@@ -124,51 +181,101 @@ namespace ILCompiler
                     throw new FileNotFoundException("Assembly not found: " + simpleName);
             }
 
-            EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(filePath)));
-
-            MetadataReader metadataReader = module.MetadataReader;
-            string actualSimpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
-            if (!actualSimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase))
-                throw new FileNotFoundException("Assembly name does not match filename " + filePath);
-
-            AddModule(simpleName, filePath, module);
-
-            return module;
+            return AddModule(filePath, simpleName);
         }
 
         public EcmaModule GetModuleFromPath(string filePath)
         {
             // This method is not expected to be called frequently. Linear search is acceptable.
-            foreach (var entry in _moduleData)
+            foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
             {
-                if (entry.Value.Path == filePath)
-                    return entry.Key;
+                if (entry.FilePath == filePath)
+                    return entry.Module;
             }
 
-            EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(filePath)));
-
-            MetadataReader metadataReader = module.MetadataReader;
-            string simpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
-            if (_modules.ContainsKey(simpleName))
-                throw new FileNotFoundException("Module with same simple name already exists " + filePath);
-
-            AddModule(simpleName, filePath, module);
-
-            return module;
+            return AddModule(filePath, null);
         }
 
-        private void AddModule(string simpleName, string filePath, EcmaModule module)
+        private unsafe static PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
         {
-            _modules.Add(simpleName, module);
+            // System.Reflection.Metadata has heuristic that tries to save virtual address space. This heuristic does not work
+            // well for us since it can make IL access very slow (call to OS for each method IL query). We will map the file
+            // ourselves to get the desired performance characteristics reliably.
 
-            ModuleData moduleData = new ModuleData()
+            MemoryMappedFile mappedFile = null;
+            MemoryMappedViewAccessor accessor = null;
+
+            try
             {
-                Path = filePath
-            };
+                mappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+                accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
 
-            InitializeSymbolReader(moduleData);
+                var safeBuffer = accessor.SafeMemoryMappedViewHandle;
+                var peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
 
-            _moduleData.Add(module, moduleData);
+                // MemoryMappedFile does not need to be kept around. MemoryMappedViewAccessor is enough.
+
+                mappedViewAccessor = accessor;
+                accessor = null;
+
+                return peReader;
+            }
+            finally
+            {
+                if (accessor != null)
+                    accessor.Dispose();
+                if (mappedFile != null)
+                    mappedFile.Dispose();
+            }
+        }
+
+        private EcmaModule AddModule(string filePath, string expectedSimpleName)
+        {
+            MemoryMappedViewAccessor mappedViewAccessor = null;
+            try
+            {
+                PEReader peReader = OpenPEFile(filePath, out mappedViewAccessor);
+
+                EcmaModule module = new EcmaModule(this, peReader);
+
+                MetadataReader metadataReader = module.MetadataReader;
+                string simpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
+
+                if (expectedSimpleName != null && !simpleName.Equals(expectedSimpleName, StringComparison.OrdinalIgnoreCase))
+                    throw new FileNotFoundException("Assembly name does not match filename " + filePath);
+
+                ModuleData moduleData = new ModuleData()
+                {
+                    SimpleName = simpleName,
+                    FilePath = filePath,
+                    Module = module,
+                    MappedViewAccessor = mappedViewAccessor
+                };
+
+                lock (this)
+                {
+                    ModuleData actualModuleData = _simpleNameHashtable.AddOrGetExisting(moduleData);
+                    if (actualModuleData != moduleData)
+                    {
+                        if (actualModuleData.FilePath != filePath)
+                            throw new FileNotFoundException("Module with same simple name already exists " + filePath);
+                        return actualModuleData.Module;
+                    }
+                    mappedViewAccessor = null; // Ownership has been transfered
+
+                    _moduleHashtable.AddOrGetExisting(moduleData);
+                }
+
+                // TODO: Thread-safety for symbol reading
+                InitializeSymbolReader(moduleData);
+
+                return module;
+            }
+            finally
+            {
+                if (mappedViewAccessor != null)
+                    mappedViewAccessor.Dispose();
+            }
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -208,7 +315,7 @@ namespace ILCompiler
             if (_pdbSymbolProvider == null)
                 _pdbSymbolProvider = new PdbSymbolProvider();
 
-            moduleData.PdbReader = _pdbSymbolProvider.GetSymbolReaderForFile(moduleData.Path);
+            moduleData.PdbReader = _pdbSymbolProvider.GetSymbolReaderForFile(moduleData.FilePath);
         }
 
         public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodDesc method)
@@ -217,7 +324,10 @@ namespace ILCompiler
             if (ecmaMethod == null)
                 return null;
 
-            ModuleData moduleData = _moduleData[ecmaMethod.Module];
+            ModuleData moduleData;
+            _moduleHashtable.TryGetValue(ecmaMethod.Module, out moduleData);
+            Debug.Assert(moduleData != null);
+
             if (moduleData.PdbReader == null)
                 return null;
 
@@ -230,7 +340,10 @@ namespace ILCompiler
             if (ecmaMethod == null)
                 return null;
 
-            ModuleData moduleData = _moduleData[ecmaMethod.Module];
+            ModuleData moduleData;
+            _moduleHashtable.TryGetValue(ecmaMethod.Module, out moduleData);
+            Debug.Assert(moduleData != null);
+
             if (moduleData.PdbReader == null)
                 return null;
 

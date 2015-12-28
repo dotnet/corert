@@ -14,10 +14,8 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
-    internal class ILProvider
+    internal sealed class ILProvider : LockFreeReaderHashtable<MethodDesc, ILProvider.MethodILData>
     {
-        // TODO: Caching
-
         public ILProvider()
         {
         }
@@ -41,7 +39,7 @@ namespace Internal.IL
             return null;
         }
 
-        public MethodIL GetMethodIL(MethodDesc method)
+        private MethodIL CreateMethodIL(MethodDesc method)
         {
             if (method is EcmaMethod)
             {
@@ -100,6 +98,37 @@ namespace Internal.IL
             {
                 return null;
             }
+        }
+
+        internal class MethodILData
+        {
+            public MethodDesc Method;
+            public MethodIL MethodIL;
+        }
+        protected override int GetKeyHashCode(MethodDesc key)
+        {
+            return key.GetHashCode();
+        }
+        protected override int GetValueHashCode(MethodILData value)
+        {
+            return value.Method.GetHashCode();
+        }
+        protected override bool CompareKeyToValue(MethodDesc key, MethodILData value)
+        {
+            return Object.ReferenceEquals(key, value.Method);
+        }
+        protected override bool CompareValueToValue(MethodILData value1, MethodILData value2)
+        {
+            return Object.ReferenceEquals(value1.Method, value2.Method);
+        }
+        protected override MethodILData CreateValueFromKey(MethodDesc key)
+        {
+            return new MethodILData() { Method = key, MethodIL = CreateMethodIL(key) };
+        }
+
+        public MethodIL GetMethodIL(MethodDesc method)
+        {
+            return GetOrCreateValue(method).MethodIL;
         }
     }
 }

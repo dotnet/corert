@@ -27,31 +27,13 @@ namespace Internal.IL
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)
                 return null;
-            return new EcmaMethodIL(method.Module, method.Module.PEReader.GetMethodBody(rva));
+            return new EcmaMethodIL(method.Module, rva);
         }
 
-        public EcmaMethodIL(EcmaModule module, MethodBodyBlock methodBody)
+        private EcmaMethodIL(EcmaModule module, int rva)
         {
             _module = module;
-            _methodBody = methodBody;
-        }
-
-        // Avoid unnecessary copy
-        private static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
-        {
-            var union = new ByteArrayUnion();
-            union.ImmutableArray = array;
-            return union.UnderlyingArray;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        private struct ByteArrayUnion
-        {
-            [FieldOffset(0)]
-            internal byte[] UnderlyingArray;
-
-            [FieldOffset(0)]
-            internal ImmutableArray<byte> ImmutableArray;
+            _methodBody = module.PEReader.GetMethodBody(rva);
         }
 
         public override byte[] GetILBytes()
@@ -59,7 +41,7 @@ namespace Internal.IL
             if (_ilBytes != null)
                 return _ilBytes;
 
-            byte[] ilBytes = DangerousGetUnderlyingArray(_methodBody.GetILContent());
+            byte[] ilBytes = _methodBody.GetILBytes();
             return (_ilBytes = ilBytes);
         }
 
