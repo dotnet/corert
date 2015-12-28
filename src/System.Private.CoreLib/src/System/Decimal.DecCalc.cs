@@ -2283,6 +2283,7 @@ namespace System
                     result._mid = tmpNum[1];
                     result._hi = tmpNum[2];
                     result.Scale = decimals;
+                    return;
                 }
 
                 result = input;
