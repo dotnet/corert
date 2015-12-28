@@ -1610,7 +1610,6 @@ namespace System
 
             //**********************************************************************
             // VarDecFromR8 - Convert double to Decimal
-            // Returns true if we overflow otherwise false.
             //**********************************************************************
             internal static void VarDecFromR8(double input, out Decimal pdecOut)
             {
