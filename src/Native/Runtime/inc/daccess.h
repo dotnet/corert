@@ -789,13 +789,6 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer);
 #ifdef __cplusplus 
 }
 
-#if defined(_WIN64) && defined GCRH_WINDOWS_INCLUDED
-struct _UNWIND_INFO * DacGetUnwindInfo(TADDR taUnwindInfo);
-
-// virtually unwind a CONTEXT out-of-process
-BOOL DacUnwindStackFrame(CONTEXT * pContext);
-#endif // defined(_WIN64)
-
 //
 // Computes (taBase + (dwIndex * dwElementSize()), with overflow checks.
 //

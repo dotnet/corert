@@ -89,7 +89,7 @@ static RhConfig g_sRhConfig;
 RhConfig * g_pRhConfig = &g_sRhConfig;
 
 
-#if defined(FEATURE_ETW) && !defined(USE_PORTABLE_HELPERS)
+#ifdef FEATURE_ETW
 //
 // -----------------------------------------------------------------------------------------------------------
 //
@@ -157,7 +157,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 {
     g_pConfig->Construct();
 
-#if defined(FEATURE_ETW) && !defined(USE_PORTABLE_HELPERS)
+#ifdef FEATURE_ETW
     MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
     MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
 

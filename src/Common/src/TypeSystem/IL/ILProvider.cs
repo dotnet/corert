@@ -31,9 +31,17 @@ namespace Internal.IL
             if (owningType == null)
                 return null;
 
-            if (method.Name == "UncheckedCast" && owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices")
+            string methodName = method.Name;
+
+            if (methodName == "UncheckedCast" && owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices")
             {
                 return new ILStubMethodIL(new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+            }
+            else
+            if ((methodName == "CompareExchange" || methodName == "Exchange") && method.HasInstantiation && owningType.Name == "Interlocked" && owningType.Namespace == "System.Threading")
+            {
+                // TODO: Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
+                return InterlockedIntrinsic.EmitIL(method);
             }
 
             return null;

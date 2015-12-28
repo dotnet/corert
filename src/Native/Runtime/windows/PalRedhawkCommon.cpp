@@ -23,7 +23,7 @@
 #include "CommonMacros.h"
 #include "assert.h"
 
-#ifdef USE_PORTABLE_HELPERS
+#ifdef CORERT // @TODO: Collisions between assert.h headers
 #define assert(expr) ASSERT(expr)
 #endif
 
@@ -344,8 +344,7 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
     return true;
 }
 
-#ifndef USE_PORTABLE_HELPERS
-#ifdef APP_LOCAL_RUNTIME
+#ifndef _INC_WINDOWS
 
 typedef struct _UNICODE_STRING {
     USHORT Length;
@@ -412,8 +411,7 @@ typedef struct _TEB {
     PVOID TlsExpansionSlots;
 } TEB, *PTEB;
 
-#endif // APP_LOCAL_RUNTIME
-#endif // USE_PORTABLE_HELPERS
+#endif // _INC_WINDOWS
 
 // retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the 
 // executable module of the current process.

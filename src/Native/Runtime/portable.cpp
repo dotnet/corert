@@ -8,6 +8,8 @@
 #include "CommonMacros.h"
 #include "daccess.h"
 #include "PalRedhawkCommon.h"
+#include "CommonMacros.inl"
+#include "Volatile.h"
 #include "PalRedhawk.h"
 #include "assert.h"
 
@@ -28,6 +30,9 @@
 
 #include "eetype.h"
 #include "ObjectLayout.h"
+
+#include "GCMemoryHelpers.h"
+#include "GCMemoryHelpers.inl"
 
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
 
@@ -264,54 +269,53 @@ COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-// TODO: The C++ write barrier helpers colide with assembly definitions in full runtime. Re-enable
-// once this file is built for portable runtime only.
-#if 0
-
-//
-// Write barriers
-//
-
-#ifdef BIT64
-// Card byte shift is different on 64bit.
-#define card_byte_shift     11
-#else
-#define card_byte_shift     10
-#endif
-
-#define card_byte(addr) (((size_t)(addr)) >> card_byte_shift)
+#ifdef USE_PORTABLE_HELPERS
 
 COOP_PINVOKE_HELPER(void, RhpAssignRef, (Object ** dst, Object * ref))
 {
+    // @TODO: USE_PORTABLE_HELPERS - Null check
     *dst = ref;
-
-    if ((uint8_t*)ref >= g_ephemeral_low && (uint8_t*)ref < g_ephemeral_high)
-    {
-        // volatile is used here to prevent fetch of g_card_table from being reordered 
-        // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
-        uint8_t * pCardByte = (uint8_t *)*(volatile uint8_t **)(&g_card_table) + card_byte((uint8_t *)dst);
-        if (*pCardByte != 0xFF)
-            *pCardByte = 0xFF;
-    }
+    InlineWriteBarrier(dst, ref);
 }
 
 COOP_PINVOKE_HELPER(void, RhpCheckedAssignRef, (Object ** dst, Object * ref))
 {
+    // @TODO: USE_PORTABLE_HELPERS - Null check
     *dst = ref;
-
-    // if the dst is outside of the heap (unboxed value classes) then we
-    //      simply exit
-    if (((uint8_t*)dst < g_lowest_address) || ((uint8_t*)dst >= g_highest_address))
-        return;
-
-    if ((uint8_t*)ref >= g_ephemeral_low && (uint8_t*)ref < g_ephemeral_high)
-    {
-        // volatile is used here to prevent fetch of g_card_table from being reordered 
-        // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
-        uint8_t* pCardByte = (uint8_t *)*(volatile uint8_t **)(&g_card_table) + card_byte((uint8_t *)dst);
-        if (*pCardByte != 0xFF)
-            *pCardByte = 0xFF;
-    }
+    InlineCheckedWriteBarrier(dst, ref);
 }
 
-#endif
+COOP_PINVOKE_HELPER(Object *, RhpCheckedLockCmpXchg, (Object ** location, Object * value, Object * comparand))
+{
+    // @TODO: USE_PORTABLE_HELPERS - Null check
+    Object * ret = (Object *)PalInterlockedCompareExchangePointer((void * volatile *)location, value, comparand);
+    InlineCheckedWriteBarrier(location, value);
+    return ret;
+}
+
+COOP_PINVOKE_HELPER(Object *, RhpCheckedXchg, (Object ** location, Object * value))
+{
+    // @TODO: USE_PORTABLE_HELPERS - Null check
+    Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
+    InlineCheckedWriteBarrier(location, value);
+    return ret;
+}
+
+COOP_PINVOKE_HELPER(Int32, RhpLockCmpXchg32, (Int32 * location, Int32 value, Int32 comparand))
+{
+    // @TODO: USE_PORTABLE_HELPERS - Null check
+    return PalInterlockedCompareExchange(location, value, comparand);
+}
+
+COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int32 comparand))
+{
+    // @TODO: USE_PORTABLE_HELPERS - Null check
+    return PalInterlockedCompareExchange64(location, value, comparand);
+}
+
+#endif // USE_PORTABLE_HELPERS
+
+COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
+{
+    PalMemoryBarrier();
+}

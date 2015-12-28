@@ -30,7 +30,7 @@
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
-#if !defined(USE_PORTABLE_HELPERS) // these are (currently) only implemented in assembly helpers
+#if !defined(CORERT) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
 // When we use a thunk to call out to managed code from the runtime the following label is the instruction
 // immediately following the thunk's call instruction. As such it can be used to identify when such a callout
 // has occured as we are walking the stack.
@@ -61,7 +61,7 @@ EXTERN_C void * RhpThrowHwEx2;
 GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowHwEx2Addr, &RhpThrowHwEx2);
 EXTERN_C void * RhpRethrow2;
 GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
-#endif //!defined(USE_PORTABLE_HELPERS)
+#endif //!defined(CORERT)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
 // assign them to globals. However it is more performant in the runtime to compare
@@ -458,9 +458,9 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
 // It's also used to disambiguate exceptionally- and non-exceptionally-invoked funclets.
 bool StackFrameIterator::HandleFuncletInvokeThunk()
 {
-#if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
+#if defined(CORERT) // @TODO: CORERT: Currently no funclet invoke defined in a portable way
     return false;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(CORERT)
 
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
@@ -577,7 +577,7 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from funclet invoke stub failed");
 
     return true;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(CORERT)
 }
 
 #ifdef _AMD64_
@@ -629,9 +629,9 @@ bool StackFrameIterator::HandleCallDescrThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // Corresponding helper code is only defined in assembly code
+#if defined(CORERT) // @TODO: CORERT: Corresponding helper code is only defined in assembly code
     return false;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(CORERT)
     if (true
 #if defined(FEATURE_DYNAMIC_CODE)
         && !EQUALS_CODE_ADDRESS(m_ControlPC, ReturnFromCallDescrThunk)
@@ -703,16 +703,16 @@ bool StackFrameIterator::HandleCallDescrThunk()
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from CallDescrThunkStub failed");
 
     return true;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(CORERT)
 }
 
 bool StackFrameIterator::HandleThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
+#if defined(CORERT) // @TODO: CORERT: no portable version of throw helpers
     return false;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(CORERT)
     if (!EQUALS_CODE_ADDRESS(m_ControlPC, RhpThrowEx2) && 
         !EQUALS_CODE_ADDRESS(m_ControlPC, RhpThrowHwEx2) &&
         !EQUALS_CODE_ADDRESS(m_ControlPC, RhpRethrow2))
@@ -769,7 +769,7 @@ bool StackFrameIterator::HandleThrowSiteThunk()
     ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC) && "unwind from throw site stub failed");
 
     return true;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(CORERT)
 }
 
 // If our control PC indicates that we're in one of the thunks we use to make managed callouts from the
@@ -785,9 +785,9 @@ bool StackFrameIterator::HandleManagedCalloutThunk()
 
 bool StackFrameIterator::HandleManagedCalloutThunk(PTR_VOID controlPC, UIntNative framePointer)
 {
-#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of managed callout defined
+#if defined(CORERT) // @TODO: CORERT: no portable version of managed callout defined
     return false;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(CORERT)
     if (EQUALS_CODE_ADDRESS(controlPC,ReturnFromManagedCallout2)
 
 #if defined(FEATURE_DYNAMIC_CODE)
@@ -848,7 +848,7 @@ bool StackFrameIterator::HandleManagedCalloutThunk(PTR_VOID controlPC, UIntNativ
 #endif
 
     return false;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(CORERT)
 }
 
 bool StackFrameIterator::IsValid()
@@ -1075,7 +1075,7 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_RtuObjectRef * pLoca
 
 bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
 {
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of these helpers defined
+#if !defined(CORERT) // @TODO: CORERT: no portable version of these helpers defined
     // These are return addresses into functions that call into managed (non-funclet) code, so we might see
     // them as hijacked return addresses.
 
@@ -1096,7 +1096,7 @@ bool StackFrameIterator::IsValidReturnAddress(PTR_VOID pvAddress)
     {
         return true;
     }
-#endif // !defined(USE_PORTABLE_HELPERS)
+#endif // !defined(CORERT)
 
     return (NULL != GetRuntimeInstance()->FindCodeManagerByAddress(pvAddress));
 }

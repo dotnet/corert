@@ -1,108 +1,304 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
     public static class Interlocked
     {
+#if CORERT
+
         #region CompareExchange
 
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            if (oldValue == comparand)
-                location1 = value;
-            return oldValue;
-#else
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return CompareExchange(ref location1, value, comparand);
-#endif
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            if (oldValue == comparand)
-                location1 = value;
-            return oldValue;
-#else
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return CompareExchange(ref location1, value, comparand);
-#endif
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            if (oldValue == comparand)
-                location1 = value;
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+        }
+
+        [Intrinsic]
+        public static unsafe float CompareExchange(ref float location1, float value, float comparand)
+        {
+            float ret;
+            fixed (float * pLocation = &location1)
+                *(int*)&ret = CompareExchange(ref *(int*)pLocation, *(int*)&value, *(int*)&comparand);
+            return ret;
+        }
+
+        [Intrinsic]
+        public static unsafe double CompareExchange(ref double location1, double value, double comparand)
+        {
+            double ret;
+            fixed (double * pLocation = &location1)
+                *(long*)&ret = CompareExchange(ref *(long*)pLocation, *(long*)&value, *(long*)&comparand);
+            return ret;
+        }
+
+        [Intrinsic]
+        [NonVersionable]
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
+        {
+            // This method is implemented elsewhere in the toolchain for now
+            // Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
+            throw new PlatformNotSupportedException();
+        }
+
+        [Intrinsic]
+        internal static T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class
+        {
+            // This method is implemented elsewhere in the toolchain for now
+            // Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
+            throw new PlatformNotSupportedException();
+        }
+
+        [Intrinsic]
+        public static object CompareExchange(ref object location1, object value, object comparand)
+        {
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+        }
+
+        #endregion
+
+        #region Exchange
+
+        [Intrinsic]
+        public static int Exchange(ref int location1, int value)
+        {
+            int oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
+
             return oldValue;
-#else
+        }
+
+        [Intrinsic]
+        public static long Exchange(ref long location1, long value)
+        {
+            long oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
+
+            return oldValue;
+        }
+
+        [Intrinsic]
+        public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
+        {
+            IntPtr oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
+
+            return oldValue;
+        }
+
+        [Intrinsic]
+        public static unsafe float Exchange(ref float location1, float value)
+        {
+            float ret;
+            fixed (float * pLocation = &location1)
+                *(int*)&ret = Exchange(ref *(int*)pLocation, *(int*)&value);
+            return ret;
+        }
+
+        [Intrinsic]
+        public static unsafe double Exchange(ref double location1, double value)
+        {
+            double ret;
+            fixed (double* pLocation = &location1)
+                *(long*)&ret = Exchange(ref *(long*)pLocation, *(long*)&value);
+            return ret;
+        }
+
+        [Intrinsic]
+        [NonVersionable]
+        public static T Exchange<T>(ref T location1, T value) where T : class
+        {
+            // This method is implemented elsewhere in the toolchain for now
+            // Implementat directly once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
+            throw new PlatformNotSupportedException();
+        }
+
+        [Intrinsic]
+        internal static T Exchange<T>(IntPtr location1, T value) where T : class
+        {
+            // This method is implemented elsewhere in the toolchain for now
+            // Implementat directly once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
+            throw new PlatformNotSupportedException();
+        }
+
+        [Intrinsic]
+        public static object Exchange(ref object location1, object value)
+        {
+            return RuntimeImports.InterlockedExchange(ref location1, value);
+        }
+
+        #endregion
+
+        #region Increment
+
+        [Intrinsic]
+        public static int Increment(ref int location)
+        {
+            return ExchangeAdd(ref location, 1) + 1;
+        }
+
+        [Intrinsic]
+        public static long Increment(ref long location)
+        {
+            return ExchangeAdd(ref location, 1) + 1;
+        }
+
+        #endregion
+
+        #region Decrement
+
+        [Intrinsic]
+        public static int Decrement(ref int location)
+        {
+            return ExchangeAdd(ref location, -1) - 1;
+        }
+
+        [Intrinsic]
+        public static long Decrement(ref long location)
+        {
+            return ExchangeAdd(ref location, -1) - 1;
+        }
+
+        #endregion
+
+        #region Add
+
+        [Intrinsic]
+        public static int Add(ref int location1, int value)
+        {
+            return ExchangeAdd(ref location1, value) + value;
+        }
+
+        [Intrinsic]
+        public static long Add(ref long location1, long value)
+        {
+            return ExchangeAdd(ref location1, value) + value;
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ExchangeAdd(ref int location1, int value)
+        {
+            int oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, oldValue + value, oldValue) != oldValue);
+
+            return oldValue;
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static long ExchangeAdd(ref long location1, long value)
+        {
+            long oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, oldValue + value, oldValue) != oldValue);
+
+            return oldValue;
+        }
+
+        #endregion
+
+        #region MemoryBarrier
+        [Intrinsic]
+        public static void MemoryBarrier()
+        {
+            RuntimeImports.MemoryBarrier();
+        }
+        #endregion
+
+        #region Read
+        public static long Read(ref long location)
+        {
+            return CompareExchange(ref location, 0, 0);
+        }
+        #endregion
+
+#else // CORERT
+
+        #region CompareExchange
+
+        [Intrinsic]
+        public static int CompareExchange(ref int location1, int value, int comparand)
+        {
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
-#endif
+        }
+
+        [Intrinsic]
+        public static long CompareExchange(ref long location1, long value, long comparand)
+        {
+            // This is actually an intrinsic and not a recursive function call.
+            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
+            return CompareExchange(ref location1, value, comparand);
+        }
+
+        [Intrinsic]
+        public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
+        {
+            // This is actually an intrinsic and not a recursive function call.
+            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
+            return CompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
         public static float CompareExchange(ref float location1, float value, float comparand)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            if (oldValue == comparand)
-                location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
-#endif
         }
 
         [Intrinsic]
         public static double CompareExchange(ref double location1, double value, double comparand)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            if (oldValue == comparand)
-                location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange(ref location1, value, comparand);
-#endif
         }
 
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            if (oldValue == comparand)
-                location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return CompareExchange<T>(ref location1, value, comparand);
-#endif
         }
 
         public static object CompareExchange(ref object location1, object value, object comparand)
@@ -120,16 +316,9 @@ namespace System.Threading
         [Intrinsic]
         public static int Exchange(ref int location1, int value)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
-#endif
         }
 
 #if X86
@@ -149,47 +338,26 @@ namespace System.Threading
         [Intrinsic]
         public static long Exchange(ref long location1, long value)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
-#endif
         }
 #endif
 
         [Intrinsic]
         public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
-#endif
         }
 
         [Intrinsic]
         public static float Exchange(ref float location1, float value)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
-#endif
         }
 
 #if X86
@@ -209,32 +377,18 @@ namespace System.Threading
         [Intrinsic]
         public static double Exchange(ref double location1, double value)
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange(ref location1, value);
-#endif
         }
 #endif
 
         [Intrinsic]
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-            var oldValue = location1;
-            location1 = value;
-            return oldValue;
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange<T>(ref location1, value);
-#endif
         }
 
         [Intrinsic]
@@ -356,13 +510,9 @@ namespace System.Threading
         [Intrinsic]
         public static void MemoryBarrier()
         {
-#if CORERT
-            // CORERT-TODO: Implement interlocked intrinsics
-#else
             // This is actually an intrinsic and not a recursive function call.
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             MemoryBarrier();
-#endif
         }
         #endregion
 
@@ -372,5 +522,7 @@ namespace System.Threading
             return Interlocked.CompareExchange(ref location, 0, 0);
         }
         #endregion
+
+#endif // CORERT
     }
 }

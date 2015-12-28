@@ -26,12 +26,7 @@
 #include "PalRedhawk.h"
 #include "gcrhinterface.h"
 
-#ifdef CORERT // no real ETW in CoreRT yet
-
-    #include "etmdummy.h"
-    #define ETW_EVENT_ENABLED(e,f) false
-
-#else
+#ifdef FEATURE_ETW
 
     // @TODO: ETW update required -- placeholders
     #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) 0
@@ -50,7 +45,13 @@
 
     #include "etwevents.h"
     #include "eventtrace.h"
-#endif
+
+#else // FEATURE_ETW
+
+    #include "etmdummy.h"
+    #define ETW_EVENT_ENABLED(e,f) false
+
+#endif // FEATURE_ETW
 
 // Adapter for GC's view of Array
 class ArrayBase : Array

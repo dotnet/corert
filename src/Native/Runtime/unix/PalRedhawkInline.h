@@ -30,6 +30,11 @@ FORCEINLINE Int32 PalInterlockedExchange(_Inout_ _Interlocked_operand_ Int32 vol
     return __sync_swap(pDst, iValue);
 }
 
+FORCEINLINE Int64 PalInterlockedExchange64(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValue)
+{
+    return __sync_swap(pDst, iValue);
+}
+
 FORCEINLINE Int32 PalInterlockedCompareExchange(_Inout_ _Interlocked_operand_ Int32 volatile *pDst, Int32 iValue, Int32 iComperand)
 {
     return __sync_val_compare_and_swap(pDst, iComperand, iValue);
@@ -65,3 +70,19 @@ FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_
     ((void *)PalInterlockedCompareExchange((Int32 volatile *)(_pDst), (Int32)(size_t)(_pValue), (Int32)(size_t)(_pComperand)))
 
 #endif // BIT64
+
+
+FORCEINLINE void PalYieldProcessor()
+{
+#if defined(_X86_) || defined(_AMD64_)
+    __asm__ __volatile__(
+        "rep\n"
+        "nop"
+        );
+#endif
+}
+
+FORCEINLINE void PalMemoryBarrier()
+{
+    __sync_synchronize();
+}

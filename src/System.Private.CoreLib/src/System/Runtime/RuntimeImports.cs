@@ -549,6 +549,44 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEtwExceptionThrown")]
         internal extern static unsafe void RhpEtwExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
 
+#if CORERT
+        //
+        // Interlocked helpers
+        //
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+        internal extern static int InterlockedCompareExchange(ref int location1, int value, int comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
+        internal extern static long InterlockedCompareExchange(ref long location1, long value, long comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if BIT64
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
+#else
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+#endif
+        internal extern static IntPtr InterlockedCompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpCheckedLockCmpXchg")]
+        internal extern static object InterlockedCompareExchange(ref object location1, object value, object comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
+        internal extern static object InterlockedExchange(ref object location1, object value);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
+        internal extern static void MemoryBarrier();
+
+        [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "fabs")]
+        internal static extern double fabs(double x);
+#endif // CORERT
+
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "_copysign")]

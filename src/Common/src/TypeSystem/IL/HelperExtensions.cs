@@ -3,7 +3,6 @@
 
 using System;
 
-using ILCompiler;
 using Internal.TypeSystem;
 using Internal.IL.Stubs;
 
@@ -13,6 +12,36 @@ namespace Internal.IL
 {
     internal static class HelperExtensions
     {
+        /// <summary>
+        /// NEWOBJ operation on String type is actually a call to a static method that returns a String
+        /// instance (i.e. there's an explicit call to the runtime allocator from the static method body).
+        /// This method returns the alloc+init helper corresponding to a given string constructor.
+        /// </summary>
+        public static MethodDesc GetStringInitializer(this MethodDesc constructorMethod)
+        {
+            Debug.Assert(constructorMethod.IsConstructor);
+            Debug.Assert(constructorMethod.OwningType.IsString);
+
+            var constructorSignature = constructorMethod.Signature;
+
+            // There's an extra (useless) Object as the first arg to match RyuJIT expectations.
+            var parameters = new TypeDesc[constructorSignature.Length + 1];
+            parameters[0] = constructorMethod.Context.GetWellKnownType(WellKnownType.Object);
+            for (int i = 0; i < constructorSignature.Length; i++)
+                parameters[i + 1] = constructorSignature[i];
+
+            MethodSignature sig = new MethodSignature(
+                MethodSignatureFlags.Static, 0, constructorMethod.OwningType, parameters);
+
+            MethodDesc result = constructorMethod.OwningType.GetMethod("Ctor", sig);
+
+            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
+            if (result == null)
+                throw new NotImplementedException();
+
+            return result;
+        }
+
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {
             MetadataType helperType = context.SystemModule.GetType("Internal.Runtime.CompilerHelpers", name, false);

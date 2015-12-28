@@ -369,9 +369,9 @@ void * ThreadStore::CreateCurrentThreadBuffer()
 {
     void * pvBuffer = &tls_CurrentThread;
 
-#if !defined(USE_PORTABLE_HELPERS) // No assembly routine defined to verify against.
+#if !defined(CORERT) // @TODO: CORERT: No assembly routine defined to verify against.
     ASSERT(RhpGetThread() == pvBuffer);
-#endif // !defined(USE_PORTABLE_HELPERS)
+#endif // !defined(CORERT)
 
     return pvBuffer;
 }

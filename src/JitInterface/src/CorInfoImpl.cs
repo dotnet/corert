@@ -368,17 +368,6 @@ namespace Internal.JitInterface
             return corInfoType;
         }
 
-        private CorInfoIntrinsics asCorInfoIntrinsic(IntrinsicMethodKind methodKind)
-        {
-            switch (methodKind)
-            {
-                case IntrinsicMethodKind.RuntimeHelpersInitializeArray:
-                    return CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray;
-                default:
-                    return CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal;
-            }
-        }
-
         private CORINFO_CONTEXT_STRUCT* contextFromMethod(MethodDesc method)
         {
             return (CORINFO_CONTEXT_STRUCT*)(((ulong)ObjectToHandle(method)) | (ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_METHOD);
@@ -548,11 +537,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodModule"); }
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection)
         { throw new NotImplementedException("getMethodVTableOffset"); }
-        private CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_STRUCT_* method)
-        {
-            var md = HandleToObject(method);
-            return asCorInfoIntrinsic(IntrinsicMethods.GetIntrinsicMethodClassification(md));
-        }
 
         [return: MarshalAs(UnmanagedType.I1)]
         private bool isInSIMDModule(CORINFO_CLASS_STRUCT_* classHnd)
@@ -1886,7 +1870,7 @@ namespace Internal.JitInterface
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    targetMethod = IntrinsicMethods.GetStringInitializer(targetMethod);
+                    targetMethod = targetMethod.GetStringInitializer();
                 }
 
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;

@@ -141,6 +141,28 @@ extern "C" {
 }
 static const UInt32 INVALIDGCVALUE = 0xcccccccd;
 
+FORCEINLINE void InlineWriteBarrier(void * dst, void * ref)
+{
+    if (((uint8_t*)ref >= g_ephemeral_low) && ((uint8_t*)ref < g_ephemeral_high))
+    {
+        // volatile is used here to prevent fetch of g_card_table from being reordered 
+        // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
+        uint8_t* pCardByte = (uint8_t *)VolatileLoadWithoutBarrier(&g_card_table) + ((size_t)dst >> LOG2_CLUMP_SIZE);
+        if (*pCardByte != 0xFF)
+            *pCardByte = 0xFF;
+    }
+}
+
+FORCEINLINE void InlineCheckedWriteBarrier(void * dst, void * ref)
+{
+    // if the dst is outside of the heap (unboxed value classes) then we
+    //      simply exit
+    if (((uint8_t*)dst < g_lowest_address) || ((uint8_t*)dst >= g_highest_address))
+        return;
+
+    InlineWriteBarrier(dst, ref);
+}
+
 FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
 {
     // Check whether the writes were even into the heap. If not there's no card update required.
