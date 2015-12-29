@@ -15,8 +15,7 @@
 	.endif
 
     // If g_GCShadow is 0, don't perform the check.
-    PREPARE_EXTERNAL_VAR g_GCShadow, rax
-    cmp     qword ptr [rax], 0
+    cmp     qword ptr [C_VAR(g_GCShadow)], 0
     je      \BASENAME\()_UpdateShadowHeap_Done_\REFREG
 
     // Save DESTREG since we're about to modify it (and we need the original value both within the macro and
@@ -31,13 +30,10 @@
     push    \DESTREG
 
     // Transform DESTREG into the equivalent address in the shadow heap.
-    PREPARE_EXTERNAL_VAR g_lowest_address, rax
-    sub     \DESTREG, [rax]
+    sub     \DESTREG, [C_VAR(g_lowest_address)]
     jb      \BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG
-    PREPARE_EXTERNAL_VAR g_GCShadow, rax
-    add     \DESTREG, [rax]
-    PREPARE_EXTERNAL_VAR g_GCShadowEnd, rax
-    cmp     \DESTREG, [rax]
+    add     \DESTREG, [C_VAR(g_GCShadow)]
+    cmp     \DESTREG, [C_VAR(g_GCShadowEnd)]
     ja      \BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG
 
     // Update the shadow heap.
@@ -95,11 +91,9 @@
 
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
-    PREPARE_EXTERNAL_VAR g_ephemeral_low, rax
-    cmp     \REFREG, [rax]
+    cmp     \REFREG, [C_VAR(g_ephemeral_low)]
     jb      \BASENAME\()_NoBarrierRequired_\REFREG
-    PREPARE_EXTERNAL_VAR g_ephemeral_high, rax
-    cmp     \REFREG, [rax]
+    cmp     \REFREG, [C_VAR(g_ephemeral_high)]
     jae     \BASENAME\()_NoBarrierRequired_\REFREG
 
     // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
@@ -107,8 +101,7 @@
     // an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     // the byte if it hasn't already been done since writes are expensive and impact scaling.
     shr     rdi, 11
-    PREPARE_EXTERNAL_VAR g_card_table, rax
-    add     rdi, [rax]
+    add     rdi, [C_VAR(g_card_table)]
     cmp     byte ptr [rdi], 0FFh
     jne     \BASENAME\()_UpdateCardTable_\REFREG
 
@@ -167,11 +160,9 @@ DEFINE_UNCHECKED_WRITE_BARRIER RSI, ESI
 
     // The location being updated might not even lie in the GC heap (a handle or stack location for instance),
     // in which case no write barrier is required.
-    PREPARE_EXTERNAL_VAR g_lowest_address, rax
-    cmp     rdi, [rax]
+    cmp     rdi, [C_VAR(g_lowest_address)]
     jb      \BASENAME\()_NoBarrierRequired_\REFREG
-    PREPARE_EXTERNAL_VAR g_highest_address, rax
-    cmp     rdi, [rax]
+    cmp     rdi, [C_VAR(g_highest_address)]
     jae     \BASENAME\()_NoBarrierRequired_\REFREG
 
     DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG
@@ -262,11 +253,9 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
-    PREPARE_EXTERNAL_VAR g_ephemeral_low, rax
-    cmp     rcx, [rax]
+    cmp     rcx, [C_VAR(g_ephemeral_low)]
     jb      RhpByRefAssignRef_NotInHeap
-    PREPARE_EXTERNAL_VAR g_ephemeral_high, rax
-    cmp     rcx, [rax]
+    cmp     rcx, [C_VAR(g_ephemeral_high)]
     jae     RhpByRefAssignRef_NotInHeap
 
     // move current rdi value into rcx and then increment the pointers
@@ -279,8 +268,7 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
     // an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     // the byte if it hasn't already been done since writes are expensive and impact scaling.
     shr     rcx, 11
-    PREPARE_EXTERNAL_VAR g_card_table, rax
-    add     rcx, [rax]
+    add     rcx, [C_VAR(g_card_table)]
     cmp     byte ptr [rcx], 0FFh
     jne     RhpByRefAssignRef_UpdateCardTable
     ret

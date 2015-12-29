@@ -4,6 +4,7 @@
 //
 
 #include "corinfoexception.h"
+#include "dllexport.h"
 
 class Jit
 {
@@ -16,7 +17,7 @@ public:
         void* nativeSizeOfCode) = 0;
 };
 
-extern "C" int JitWrapper(
+DLL_EXPORT int JitWrapper(
     CorInfoException **ppException,
     Jit* pJit,
     void* compHnd,
