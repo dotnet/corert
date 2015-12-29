@@ -27,7 +27,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.StringHelper.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Write.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\libc\Interop.FileDescriptors.cs" />
