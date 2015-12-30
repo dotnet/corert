@@ -4,6 +4,7 @@
 //
 
 #include "jitinterface.h"
+#include "dllexport.h"
 
 enum CORINFO_RUNTIME_LOOKUP_KIND { };
 struct CORINFO_LOOKUP_KIND
@@ -31,7 +32,7 @@ CORINFO_LOOKUP_KIND JitInterfaceWrapper::getLocationOfThisType(void* context)
 
 static JitInterfaceWrapper instance;
 
-extern "C" void* GetJitInterfaceWrapper(IJitInterface *pCorInfo)
+DLL_EXPORT void* GetJitInterfaceWrapper(IJitInterface *pCorInfo)
 {
     instance._pCorInfo = pCorInfo;
     return &instance;

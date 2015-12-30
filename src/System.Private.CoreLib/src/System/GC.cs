@@ -121,11 +121,9 @@ namespace System
         }
 
         [Intrinsic]
+        [MethodImplAttribute(MethodImplOptions.NoInlining)] // disable optimizations
         public static void KeepAlive(Object obj)
         {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            KeepAlive(obj);
         }
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.

@@ -89,3 +89,53 @@ FORCEINLINE void * PalInterlockedCompareExchangePointer(_Inout_ _Interlocked_ope
 
 #endif // BIT64
 
+
+#if defined(_X86_)
+
+EXTERN_C void _mm_pause();
+#pragma intrinsic(_mm_pause)
+#define PalYieldProcessor() _mm_pause()
+
+FORCEINLINE void PalMemoryBarrier()
+{
+    long Barrier;
+    _InterlockedOr(&Barrier, 0);
+}
+
+#elif defined(_AMD64_)
+
+EXTERN_C void _mm_pause();
+#pragma intrinsic(_mm_pause)
+#define PalYieldProcessor() _mm_pause()
+
+EXTERN_C void __faststorefence();
+#pragma intrinsic(__faststorefence)
+#define PalMemoryBarrier() __faststorefence()
+
+#elif defined(_ARM_)
+
+#pragma intrinsic(__yield)
+#pragma intrinsic(__dmb)
+FORCEINLINE void PalYieldProcessor()
+{
+    __dmb(_ARM_BARRIER_ISHST);
+    __yield();
+}
+
+#define PalMemoryBarrier() __dmb(_ARM_BARRIER_SY)
+
+#elif defined(_ARM64_)
+
+#pragma intrinsic(__yield)
+#pragma intrinsic(__dmb)
+FORCEINLINE void PalYieldProcessor()
+{
+    __dmb(_ARM_BARRIER64_ISHST);
+    __yield();
+}
+
+#define PalMemoryBarrier() __dmb(_ARM64_BARRIER_SY)
+
+#else
+#error Unsupported architecture
+#endif

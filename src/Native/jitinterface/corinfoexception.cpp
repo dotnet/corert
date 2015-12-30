@@ -4,18 +4,19 @@
 //
 
 #include "corinfoexception.h"
+#include "dllexport.h"
 
-extern "C" CorInfoException* AllocException(const WCHAR* message, int messageLength)
+DLL_EXPORT CorInfoException* AllocException(const WCHAR* message, int messageLength)
 {
     return new CorInfoException(message, messageLength);
 }
 
-extern "C" void FreeException(CorInfoException* pException)
+DLL_EXPORT void FreeException(CorInfoException* pException)
 {
     delete pException;
 }
 
-extern "C" const WCHAR* GetExceptionMessage(const CorInfoException* pException)
+DLL_EXPORT const WCHAR* GetExceptionMessage(const CorInfoException* pException)
 {
     return pException->GetMessage();
 }

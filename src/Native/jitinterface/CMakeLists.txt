@@ -6,10 +6,6 @@ set(NATIVE_SOURCES
     corinfoexception.cpp
 )
 
-if (WIN32)
-    list(APPEND NATIVE_SOURCES jitinterface.def)
-endif ()
-
 add_library(jitinterface
     SHARED
     ${NATIVE_SOURCES}

@@ -68,7 +68,7 @@ using std::nullptr_t;
 
 #include "gcenv.structs.h"
 
-#ifdef USE_PORTABLE_HELPERS
+#ifdef CORERT // @TODO: Collisions between assert.h headers
 #define assert(expr) ASSERT(expr)
 #endif
 

@@ -693,8 +693,6 @@ REDHAWK_PALIMPORT Int32 REDHAWK_PALAPI PalGetProcessCpuCount();
 
 REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_ const WCHAR *, _Out_ char * buff, _In_ UInt32 maxBytesToRead);
 
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalYieldProcessor();
-
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than 
 // the maximum bounds.
@@ -730,7 +728,6 @@ inline UInt8 * PalNtCurrentTeb()
 #elif defined(_ARM_)
     return (UInt8*)_MoveFromCoprocessor(15, 0, 13,  0, 2);
 #elif defined(_ARM64_)
-    // The calling convention recommend using X18 for storing TEB
     return (UInt8*)__getReg(18);
 #else
 #error Unsupported architecture
@@ -738,15 +735,10 @@ inline UInt8 * PalNtCurrentTeb()
 }
 
 // Offsets of ThreadLocalStoragePointer in the TEB.
-#if defined(_X86_) || defined(_ARM_)
-#define OFFSETOF__TEB__ThreadLocalStoragePointer 0x2c
-#elif defined(_AMD64_)
-#define OFFSETOF__TEB__ThreadLocalStoragePointer 0x58
-#elif defined(_ARM64_)
-// @TODO: Find out what the offset is for ARM64
+#if defined(BIT64)
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x58
 #else
-#error Unsupported architecture
+#define OFFSETOF__TEB__ThreadLocalStoragePointer 0x2c
 #endif
 
 //
@@ -759,46 +751,6 @@ inline UInt8 * PalNtCurrentTeb()
 
 EXTERN_C void * __cdecl _alloca(size_t);
 #pragma intrinsic(_alloca)
-
-#if defined(_X86_)
-
-#define PalYieldProcessor() __asm { rep nop }
-
-FORCEINLINE void PalMemoryBarrier()
-{
-    Int32 Barrier;
-    __asm {
-        xchg Barrier, eax
-    }
-}
-
-#elif defined(_AMD64_)
-
-EXTERN_C void _mm_pause();
-#pragma intrinsic(_mm_pause)
-#define PalYieldProcessor() _mm_pause()
-
-EXTERN_C void __faststorefence();
-#pragma intrinsic(__faststorefence)
-#define PalMemoryBarrier() __faststorefence()
-
-#elif defined(_ARM_)
-
-FORCEINLINE void PalYieldProcessor() {}
-
-EXTERN_C void __emit(const unsigned __int32 opcode);
-#pragma intrinsic(__emit)
-#define PalMemoryBarrier() { __emit(0xF3BF); __emit(0x8F5F); }
-
-#elif defined(_ARM64_)
-
-FORCEINLINE void PalYieldProcessor() {}
-// Using Urcu memory barrier
-#define PalMemoryBarrier() cmm_mb()
-
-#else
-#error Unsupported architecture
-#endif
 
 //
 // Export PAL blessed versions of *printf functions we use (mostly debug only).

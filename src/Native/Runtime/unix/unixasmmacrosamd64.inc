@@ -3,6 +3,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 
+#define C_VAR(Name) rip + C_FUNC(Name)
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -55,16 +57,6 @@ C_FUNC(\Name\()_End):
         .size \Name, .-\Name
 #endif
         .cfi_endproc
-.endm
-
-.macro TAILJMP_RAX
-        .byte 0x48
-        .byte 0xFF
-        .byte 0xE0
-.endm
-
-.macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        mov \HelperReg, [rip + C_FUNC(\Name)@GOTPCREL]
 .endm
 
 .macro push_nonvol_reg Register

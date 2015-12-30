@@ -336,6 +336,8 @@ EXTERN_C void * RhpAssignRefAVLocation;
 EXTERN_C void * RhpCheckedAssignRefAVLocation;
 EXTERN_C void * RhpCheckedLockCmpXchgAVLocation;
 EXTERN_C void * RhpCheckedXchgAVLocation;
+EXTERN_C void * RhpLockCmpXchg32AVLocation;
+EXTERN_C void * RhpLockCmpXchg64AVLocation;
 EXTERN_C void * RhpCopyMultibyteDestAVLocation;
 EXTERN_C void * RhpCopyMultibyteSrcAVLocation;
 EXTERN_C void * RhpCopyMultibyteNoGCRefsDestAVLocation;
@@ -352,12 +354,17 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
         (UIntNative)&RhpCheckedAssignRefAVLocation,
         (UIntNative)&RhpCheckedLockCmpXchgAVLocation,
         (UIntNative)&RhpCheckedXchgAVLocation,
+#ifdef CORERT
+        (UIntNative)&RhpLockCmpXchg32AVLocation,
+        (UIntNative)&RhpLockCmpXchg64AVLocation,
+#else
         (UIntNative)&RhpCopyMultibyteDestAVLocation,
         (UIntNative)&RhpCopyMultibyteSrcAVLocation,
         (UIntNative)&RhpCopyMultibyteNoGCRefsDestAVLocation,
         (UIntNative)&RhpCopyMultibyteNoGCRefsSrcAVLocation,
         (UIntNative)&RhpCopyMultibyteWithWriteBarrierDestAVLocation,
         (UIntNative)&RhpCopyMultibyteWithWriteBarrierSrcAVLocation,
+#endif
     };
 
     // compare the IP against the list of known possible AV locations in the write barrier helpers

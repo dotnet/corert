@@ -52,6 +52,9 @@ set(FULL_RUNTIME_SOURCES
     AsmOffsetsVerify.cpp
 )
 
+set(RUNTIME_SOURCES_ARCH_ASM
+)
+
 set(PORTABLE_RUNTIME_SOURCES
 )
 
@@ -70,6 +73,10 @@ if(WIN32)
     set(ARCH_SOURCES_DIR amd64)
     set(ASM_SUFFIX asm)
   endif()
+
+  list(APPEND RUNTIME_SOURCES_ARCH_ASM
+    ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX}
+  )
 
 else()
 
@@ -92,8 +99,9 @@ else()
 
 endif()
 
-set(RUNTIME_SOURCES_ARCH_ASM
+list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
 )
 
 # Add architecture specific folder for looking up headers.

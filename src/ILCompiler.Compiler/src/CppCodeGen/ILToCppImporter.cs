@@ -635,18 +635,29 @@ namespace Internal.IL
             Finish();
         }
 
-        private void ImportIntrinsicCall(IntrinsicMethodKind intrinsicClassification)
+        private static bool IsTypeName(MethodDesc method, string typeNamespace, string typeName)
         {
-            switch (intrinsicClassification)
+            var metadataType = method.OwningType as MetadataType;
+            if (metadataType == null)
+                return false;
+            return metadataType.Namespace == typeNamespace && metadataType.Name == typeName;
+        }
+
+        private bool ImportIntrinsicCall(MethodDesc method)
+        {
+            Debug.Assert(method.IsIntrinsic);
+
+            switch (method.Name)
             {
-                case IntrinsicMethodKind.RuntimeHelpersInitializeArray:
+                case "InitializeArray":
+                    if (IsTypeName(method, "System.Runtime.CompilerServices", "RuntimeHelpers"))
                     {
                         var fieldSlot = Pop();
                         var arraySlot = Pop();
 
                         var fieldDesc = (TypeSystem.Ecma.EcmaField)fieldSlot.Value.Aux;
                         var memBlock = TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(fieldDesc);
-                        
+
                         // TODO: Need to do more for arches with different endianness?
                         var preinitDataHolder = NewTempName();
                         Append("static const char ");
@@ -671,10 +682,13 @@ namespace Internal.IL
                         Append(")");
 
                         Finish();
-                        break;
+                        return true;
                     }
-                default: throw new NotImplementedException();
+                    break;
+                default:
+                    break;
             }
+            return false;
         }
 
         private void ImportCall(ILOpcode opcode, int token)
@@ -686,11 +700,10 @@ namespace Internal.IL
 
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
 
-            var intrinsicClassification = IntrinsicMethods.GetIntrinsicMethodClassification(method);
-            if (intrinsicClassification != IntrinsicMethodKind.None)
+            if (method.IsIntrinsic)
             {
-                ImportIntrinsicCall(intrinsicClassification);
-                return;
+                if (ImportIntrinsicCall(method))
+                    return;
             }
 
             TypeDesc constrained = null;
@@ -719,7 +732,7 @@ namespace Internal.IL
                     if (owningType.IsString)
                     {
                         // String constructors actually look like regular method calls
-                        method = IntrinsicMethods.GetStringInitializer(method);
+                        method = method.GetStringInitializer();
                         opcode = ILOpcode.call;
 
                         // WORKAROUND: the static method expects an extra arg

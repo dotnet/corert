@@ -79,6 +79,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fms-extensions)
 
     add_compile_options(-fPIC)
+    add_compile_options(-fvisibility=hidden)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM)

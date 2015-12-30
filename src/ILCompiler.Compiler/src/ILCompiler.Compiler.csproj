@@ -29,9 +29,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeMarshallingILEmitter.cs">
-      <Link>IL\Stubs\PInvokeMarshallingThunk.cs</Link>
-    </Compile>
     <Compile Include="Compiler\AsmStringWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
@@ -75,7 +72,6 @@
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
     <Compile Include="Compiler\PdbSymbolProvider.cs" />
-    <Compile Include="Compiler\IntrinsicMethods.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
   </ItemGroup>
@@ -130,11 +126,17 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliIntrinsic.cs">
       <Link>IL\Stubs\CalliIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\InterlockedIntrinsic.cs">
+      <Link>IL\Stubs\InterlockedIntrinsic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateThunks.cs">
       <Link>IL\Stubs\DelegateThunks.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeMarshallingILEmitter.cs">
+      <Link>IL\Stubs\PInvokeMarshallingThunk.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +148,9 @@
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
       <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.Intrinsics.cs">
+      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
       <Link>JitInterface\CorInfoTypes.cs</Link>

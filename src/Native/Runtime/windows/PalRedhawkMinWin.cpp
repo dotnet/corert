@@ -28,7 +28,7 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #include "gcenv.h"
 
 
-#ifdef USE_PORTABLE_HELPERS
+#ifdef CORERT // @TODO: Collisions between assert.h headers
 #define assert(expr) ASSERT(expr)
 #endif
 
