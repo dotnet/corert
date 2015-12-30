@@ -178,7 +178,7 @@
     <value>Cannot create a delegate on type '{0}' as it is missing metadata for the Invoke method. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616867</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added.</value>
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Argument_InvalidHandle" xml:space="preserve">
     <value>The handle is invalid.</value>

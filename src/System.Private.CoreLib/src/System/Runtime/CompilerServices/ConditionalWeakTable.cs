@@ -71,7 +71,7 @@ namespace System.Runtime.CompilerServices
                 int entryIndex = _container.FindEntry(key, out otherValue);
                 if (entryIndex != -1)
                 {
-                    throw new ArgumentException(SR.Argument_AddingDuplicate);
+                    throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                 }
 
                 CreateEntry(key, value);
