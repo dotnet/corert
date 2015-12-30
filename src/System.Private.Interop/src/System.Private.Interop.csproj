@@ -6,12 +6,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{A85709C9-22D5-4704-8B7A-73751BB4386A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);TARGET_CORE_API_SET</DefineConstants>    
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
-    <!-- <NoWarn>618</NoWarn> -->
+    <DefineConstants>$(DefineConstants);TARGET_CORE_API_SET</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -169,7 +164,10 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\filetime.cs" />
   </ItemGroup>
 
+  <!-- TODO: Unix port
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  -->
+  <ItemGroup>
     <Compile Include="Interop\Interop.Memory.Windows.cs" />
     <Compile Include="Interop\Interop.String.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" />
@@ -180,11 +178,13 @@
     <Compile Include="System\__HResults.cs" />       
   </ItemGroup>
 
+  <!-- TODO: Unix port
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <Compile Include="Interop\Interop.Memory.Unix.cs" />
     <Compile Include="Interop\Interop.String.Unix.cs" />
     <Compile Include="Interop\Interop.Common.Unix.cs" />
   </ItemGroup>
+  -->
 
   <!--TODO : Not sure how this get shared with RHTest.This target never seem to execute when open.target is included 
   (see System.Private.Interop.NetNative.csproj) since open.target does it's own resource generation and the resource strings 
