@@ -1425,7 +1425,13 @@ namespace Internal.JitInterface
         }
 
         private void HandleException(_EXCEPTION_POINTERS* pExceptionPointers)
-        { throw new NotImplementedException("HandleException"); }
+        {
+            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
+            // and should never reach the managed implementation.
+            Debug.Assert(false, "CorInfoImpl.HandleException should not be called");
+            throw new NotSupportedException("HandleException");
+        }
+
         private void ThrowExceptionForJitResult(HRESULT result)
         { throw new NotImplementedException("ThrowExceptionForJitResult"); }
         private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)

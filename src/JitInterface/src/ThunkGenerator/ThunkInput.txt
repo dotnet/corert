@@ -250,7 +250,7 @@ FUNCTIONS
     HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);
     ULONG GetErrorMessage(LPWSTR buffer, ULONG bufferLength);
     [ManualNativeWrapper] int FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
+    [ManualNativeWrapper] void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
     void ThrowExceptionForJitResult(HRESULT result);
     void ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);

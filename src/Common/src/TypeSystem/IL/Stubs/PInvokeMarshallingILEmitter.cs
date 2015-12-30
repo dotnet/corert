@@ -24,6 +24,7 @@ namespace Internal.IL.Stubs
 
         private ILEmitter _emitter;
         private ILCodeStream _marshallingCodeStream;
+        private ILCodeStream _returnValueMarshallingCodeStream;
 
         private PInvokeMarshallingILEmitter(MethodDesc targetMethod)
         {
@@ -35,6 +36,7 @@ namespace Internal.IL.Stubs
 
             _emitter = null;
             _marshallingCodeStream = null;
+            _returnValueMarshallingCodeStream = null;
         }
 
         /// <summary>
@@ -102,7 +104,7 @@ namespace Internal.IL.Stubs
         }
 
         /// <summary>
-        /// Marshals an array. Expects the array referene on the stack. Pushes a pinned
+        /// Marshals an array. Expects the array reference on the stack. Pushes a pinned
         /// managed reference to the first element on the stack or null if the array was
         /// null or empty.
         /// </summary>
@@ -159,7 +161,7 @@ namespace Internal.IL.Stubs
         }
 
         /// <summary>
-        /// Marshals a string. Expects the string referene on the stack. Pushes a pointer
+        /// Marshals a string. Expects the string reference on the stack. Pushes a pointer
         /// to the stack that is safe to pass out to native code.
         /// </summary>
         /// <returns>The type the string was marshalled into.</returns>
@@ -287,31 +289,60 @@ namespace Internal.IL.Stubs
             return _targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr);
         }
 
+        /// <summary>
+        /// Marshals a boolean.
+        /// </summary>
+        /// <returns>The type the boolean was marshalled into.</returns>
+        private TypeDesc EmitBooleanMarshalling()
+        {
+            _marshallingCodeStream.EmitLdc(0);
+            _marshallingCodeStream.Emit(ILOpcode.ceq);
+            _marshallingCodeStream.EmitLdc(0);
+            _marshallingCodeStream.Emit(ILOpcode.ceq);
+
+            return _targetMethod.Context.GetWellKnownType(WellKnownType.Int32);
+        }
+
+        /// <summary>
+        /// Marshals a boolean return value.
+        /// </summary>
+        /// <returns>The type the boolean was marshalled from.</returns>
+        private TypeDesc EmitBooleanReturnValueMarshalling()
+        {
+            _returnValueMarshallingCodeStream.EmitLdc(0);
+            _returnValueMarshallingCodeStream.Emit(ILOpcode.ceq);
+            _returnValueMarshallingCodeStream.EmitLdc(0);
+            _returnValueMarshallingCodeStream.Emit(ILOpcode.ceq);
+
+            return _targetMethod.Context.GetWellKnownType(WellKnownType.Int32);
+        }
+
         public MethodIL EmitIL()
         {
+            MethodSignature targetMethodSignature = _targetMethod.Signature;
+
             // We have two code streams - one is used to convert each argument into a native type
             // and store that into the local. The other is used to load each previously generated local
             // and call the actual target native method.
             _emitter = new ILEmitter();
             _marshallingCodeStream = _emitter.NewCodeStream();
             ILCodeStream callsiteSetupCodeStream = _emitter.NewCodeStream();
+            _returnValueMarshallingCodeStream = _emitter.NewCodeStream();
 
-            // TODO: throw if SetLastError is true
-            // TODO: throw if there's custom marshalling
-            TypeDesc nativeReturnType = _targetMethod.Signature.ReturnType;
-            if (!IsBlittableType(nativeReturnType) && !nativeReturnType.IsVoid)
-                throw new NotSupportedException();
+            TypeDesc[] nativeParameterTypes = new TypeDesc[targetMethodSignature.Length];
 
-            TypeDesc[] nativeParameterTypes = new TypeDesc[_targetMethod.Signature.Length];
+            //
+            // Parameter marshalling
+            //
 
             //
             // Convert each argument to something we can pass to native and store it in a local.
             // Then load the local in the second code stream.
             //
-            for (int i = 0; i < _targetMethod.Signature.Length; i++)
+            for (int i = 0; i < targetMethodSignature.Length; i++)
             {
                 // TODO: throw if there's custom marshalling
-                TypeDesc parameterType = _targetMethod.Signature[i];
+                TypeDesc parameterType = targetMethodSignature[i];
 
                 _marshallingCodeStream.EmitLdArg(i);
 
@@ -327,6 +358,10 @@ namespace Internal.IL.Stubs
                 else if (parameterType.IsString)
                 {
                     nativeType = EmitStringMarshalling();
+                }
+                else if (parameterType.Category == TypeFlags.Boolean)
+                {
+                    nativeType = EmitBooleanMarshalling();
                 }
                 else
                 {
@@ -344,8 +379,33 @@ namespace Internal.IL.Stubs
                 callsiteSetupCodeStream.EmitLdLoc(vMarshalledTypeTemp);
             }
 
+            //
+            // Return value marshalling
+            //
+
+            // TODO: throw if SetLastError is true
+            // TODO: throw if there's custom marshalling
+            TypeDesc returnType = targetMethodSignature.ReturnType;
+
+            TypeDesc nativeReturnType;
+            if (returnType.IsVoid)
+            {
+                nativeReturnType = returnType;
+            }
+            else if (returnType.Category == TypeFlags.Boolean)
+            {
+                nativeReturnType = EmitBooleanReturnValueMarshalling();
+            }
+            else
+            {
+                if (!IsBlittableType(returnType))
+                    throw new NotSupportedException();
+
+                nativeReturnType = returnType;
+            }
+
             MethodSignature nativeSig = new MethodSignature(
-                _targetMethod.Signature.Flags, 0, nativeReturnType, nativeParameterTypes);
+                targetMethodSignature.Flags, 0, nativeReturnType, nativeParameterTypes);
             MethodDesc nativeMethod =
                 new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, _importMetadata);
 
