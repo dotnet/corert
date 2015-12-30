@@ -403,7 +403,7 @@
     <value>The value '{0}' is not of type '{1}' and cannot be used in this generic collection.</value>
   </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
-    <value>An item with the same key has already been added.</value>
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="Argument_AddingDuplicate__" xml:space="preserve">
     <value>Item has already been added. Key in dictionary: '{0}'  Key being added: '{1}'</value>
