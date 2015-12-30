@@ -18,6 +18,10 @@ int JitInterfaceWrapper::FilterException(void* pExceptionPointers)
     return 1; // EXCEPTION_EXECUTE_HANDLER
 }
 
+void JitInterfaceWrapper::HandleException(void* pExceptionPointers)
+{
+}
+
 CORINFO_LOOKUP_KIND JitInterfaceWrapper::getLocationOfThisType(void* context)
 {
     CorInfoException* pException = nullptr;

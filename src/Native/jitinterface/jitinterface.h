@@ -1111,15 +1111,7 @@ public:
         return _ret;
     }
     virtual int FilterException(void* pExceptionPointers);
-    virtual void HandleException(void* pExceptionPointers)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->HandleException(&pException, pExceptionPointers);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
+    virtual void HandleException(void* pExceptionPointers);
     virtual void ThrowExceptionForJitResult(int result)
     {
         CorInfoException* pException = nullptr;
