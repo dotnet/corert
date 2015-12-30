@@ -1,0 +1,215 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Interop</AssemblyName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{A85709C9-22D5-4704-8B7A-73751BB4386A}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);TARGET_CORE_API_SET</DefineConstants>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|arm' ">
+    <PlatformTarget>arm</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|arm' ">
+    <PlatformTarget>arm</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>    
+    
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Threading\src\System.Private.Threading.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection\src\System.Private.Reflection.csproj" />
+
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Handles.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Extensions.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.TypeExtensions.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Contracts.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Debug.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Threading.Tasks.dll" />    
+  </ItemGroup>
+ 
+  <!-- TODO  We should not include anything from CompilerServices directly -->
+  <ItemGroup>
+    <Compile Include="System\RhBaseName.cs" />
+    <Compile Include="System\Runtime\CompilerServices\UnmanagedValueTypeConstraintAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\McgResource.cs" />
+    <Compile Include="System\Runtime\CompilerServices\ModuleConstructorAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IgnoresAccessChecksToAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\FunctionPointerHelpers.cs" />    
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs" />
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs" />
+    
+    <Compile Include="Shared\__ComObject.cs" />
+    <Compile Include="Shared\ComCallableObject.cs" />
+    <Compile Include="Shared\ComException.cs" />
+    <Compile Include="Shared\ComInterop.cs" />
+    <Compile Include="Shared\DebugAnnotations.cs" />
+    <Compile Include="Shared\Dictionary.cs" />
+    <Compile Include="Shared\DictionaryBase.cs" />
+    <Compile Include="Shared\EventRegistrationToken.cs" />
+    <Compile Include="Shared\FixedHashTable.cs" />
+    <Compile Include="Shared\GCEventProvider.cs" />
+    <Compile Include="Shared\HashSet.cs" />
+    <Compile Include="Shared\InternalModule.cs" />
+    <Compile Include="Shared\Interop.Manual.cs" />
+    <Compile Include="Shared\List.cs" />
+    <Compile Include="Shared\Marshal.cs" />
+    <Compile Include="Shared\McgAccessorAttribute.cs" />
+    <Compile Include="Shared\McgComCallableAttribute.cs" />
+    <Compile Include="Shared\McgComHelpers.cs" />
+    <Compile Include="Shared\McgData.cs" />
+    <Compile Include="Shared\McgGeneratedAssemblyAttribute.cs" />
+    <Compile Include="Shared\McgGeneratedMarshallingCodeAttribute.cs" />
+    <Compile Include="Shared\McgGeneratedNativeCallCodeAttribute.cs" />
+    <Compile Include="Shared\McgHelpers.cs" />
+    <Compile Include="Shared\McgIntrinsics.cs" />
+    <Compile Include="Shared\McgMarshal.cs" />
+    <Compile Include="Shared\McgMethodNameAttribute.cs" />
+    <Compile Include="Shared\McgModule.cs" />
+    <Compile Include="Shared\McgModuleManager.cs" />
+    <Compile Include="Shared\McgPInvokeMarshalStubAttribute.cs" />
+    <Compile Include="Shared\McgredirectedMethodAttribute.cs" />
+    <Compile Include="Shared\McgRedirectedTypeAttribute.cs" />
+    <Compile Include="Shared\McgRemovedType.cs" />
+    <Compile Include="Shared\McgRootsTypeAttribute.cs" />
+    <Compile Include="Shared\McgTypeHelpers.cs" />    
+    <Compile Include="Shared\RCWWalker.cs" />
+    <Compile Include="Shared\StandardInterfaces.cs" />
+    <Compile Include="Shared\StringPool.cs" />      
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Runtime\InteropServices\ArrayWithOffset.cs" />
+    <Compile Include="System\Runtime\InteropServices\BestFitMappingAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\BStrWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ClassInterfaceType.cs" />
+    <Compile Include="System\Runtime\InteropServices\CoClassAttribute.cs" />    
+    <Compile Include="System\Runtime\InteropServices\ComDefaultInterfaceAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComEventInterfaceAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComEventsHelper.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComInterfaceType.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComMemberType.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComSourceInterfacesAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\CriticalHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\CurrencyWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\CustomQueryInterfaceMode.cs" />
+    <Compile Include="System\Runtime\InteropServices\CustomQueryInterfaceResult.cs" />
+    <Compile Include="System\Runtime\InteropServices\DefaultCharSetAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\DefaultDllImportSearchPathAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\DispatchWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\DispIdAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\DllImportSearchPath.cs" />
+    <Compile Include="System\Runtime\InteropServices\ErrorWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\InteropEventProvider.cs" />
+    <Compile Include="System\Runtime\InteropServices\GuidAttribute.cs" />    
+    <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ICustomAdapter.cs" />
+    <Compile Include="System\Runtime\InteropServices\ICustomQueryInterface.cs" />
+    <Compile Include="System\Runtime\InteropServices\InterfaceTypeAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\InvalidComObjectException.cs" />
+    <Compile Include="System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
+    <Compile Include="System\Runtime\InteropServices\LCIDConversionAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalAsAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalDirectiveException.cs" />
+    <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
+    <Compile Include="System\Runtime\InteropServices\OptionalAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\PreserveSigAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeBuffer.cs" />
+    <Compile Include="System\Runtime\InteropServices\SEHException.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnmanagedType.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnknownWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\VarEnum.cs" />
+    <Compile Include="System\Runtime\InteropServices\Variant.cs" />
+    <Compile Include="System\Runtime\InteropServices\VariantWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--TODO:Disable under FEATURE_COMN switch , now we need these to compile S.P.Interop.dll-->
+    <Compile Include="System\Runtime\InteropServices\ComTypes\statstg.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\filetime.cs" />
+  </ItemGroup>
+
+  <!-- TODO: Unix port
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  -->
+  <ItemGroup>
+    <Compile Include="Interop\Interop.Memory.Windows.cs" />
+    <Compile Include="Interop\Interop.String.Windows.cs" />
+    <Compile Include="Interop\Interop.WinRT.cs" />
+    <Compile Include="Interop\Interop.Localization.Windows.cs" />
+    <Compile Include="Interop\Interop.Sync.Windows.cs" />
+    <Compile Include="Interop\Interop.COM.Windows.cs" />
+    <Compile Include="Interop\Interop.Common.Windows.cs" /> 
+    <Compile Include="System\__HResults.cs" />       
+  </ItemGroup>
+
+  <!-- TODO: Unix port
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
+    <Compile Include="Interop\Interop.Memory.Unix.cs" />
+    <Compile Include="Interop\Interop.String.Unix.cs" />
+    <Compile Include="Interop\Interop.Common.Unix.cs" />
+  </ItemGroup>
+  -->
+
+  <!--TODO : Not sure how this get shared with RHTest.This target never seem to execute when open.target is included 
+  (see System.Private.Interop.NetNative.csproj) since open.target does it's own resource generation and the resource strings 
+  appear in N binary.Also have to split the resource strings between N and CoreRT.We don't probably need many of the 
+  N specific resource strings in CoreRT-->
+  <Target Name="AfterBuild" DependsOnTargets="SystemInteropCoreCLR_PreparePostBuildResourceGeneration;SystemInteropCoreCLR_PostBuildResourceGeneration" />
+  <Target Name="SystemInteropCoreCLR_PreparePostBuildResourceGeneration">
+    <!-- Generate SR.cs under InterIncAPICandidate\Interop path and always using /debug switch -->
+    <!-- to force generating the English strings which are required in rhtestcl                -->
+    <PropertyGroup>
+      <InteropResInputFileFullPath>$(MSBuildProjectDirectory)\Resources\Strings.resx</InteropResInputFileFullPath>
+      <InteropResOutputFileDirectory>$(FXInterIncCandidatePath)\Interop\</InteropResOutputFileDirectory>
+      <InteropResOutputFileFullPath>$(InteropResOutputFileDirectory)SR.cs</InteropResOutputFileFullPath>
+      <_IntermediateResOutputFileFullPath>$(IntermediateOutputPath)SR.cs</_IntermediateResOutputFileFullPath>
+      <InteropResArgs>/debug</InteropResArgs>
+      <InteropResArgs>$(InteropResArgs) $(InteropResInputFileFullPath)</InteropResArgs>
+      <InteropResArgs>$(InteropResArgs) $(_IntermediateResOutputFileFullPath)</InteropResArgs>
+      <InteropResArgs>$(InteropResArgs) $(AssemblyName)</InteropResArgs>
+      <InteropResCmd>$(ResPath) $(InteropResArgs)</InteropResCmd>
+    </PropertyGroup>
+   
+  </Target>
+  <Target Name="SystemInteropCoreCLR_PostBuildResourceGeneration" Inputs="$(InteropResInputFileFullPath)" Outputs="$(_IntermediateResOutputFileFullPath)">
+    <MakeDir Directories="$(InteropResOutputFileDirectory)" />
+    <Exec Command="$(InteropResCmd)" StandardOutputImportance="low" />
+  </Target>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
