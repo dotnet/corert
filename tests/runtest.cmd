@@ -136,9 +136,13 @@ goto :eof
     rmdir /s /q !__SourceFolder!\obj
 
     setlocal
+    set additionalCompilerFlags=
+    if /i "%CoreRT_BuildType%" == "debug" (
+        if /i "%__Mode%" == "cpp" set additionalCompilerFlags=--cppcompilerflags /D_DEBUG
+    )
     REM TODO: Add AppDepSDK argument after CLI build picks up: PR dotnet/cli #336
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
-    "%CoreRT_CliDir%\dotnet" compile --native --ilcpath "%CoreRT_ToolchainDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType%
+    "%CoreRT_CliDir%\dotnet" compile --native --ilcpath "%CoreRT_ToolchainDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType% %additionalCompilerFlags%
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%

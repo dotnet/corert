@@ -79,18 +79,18 @@ install_dotnet_cli()
     echo "Installing the dotnet/cli..."
     local __tools_dir=${__scriptpath}/bin/tools
     local __cli_dir=${__tools_dir}/cli
-    if [ ! -z "${__dotnetclipath}" ]; then
-        __cli_dir = ${__dotnetclipath}
-    else
-        __dotnetclipath=${__cli_dir}
-    fi
-
     
     if [ ! -d "${__cli_dir}" ]; then
         mkdir -p "${__cli_dir}"
     fi
     if [ ! -f "${__cli_dir}/bin/dotnet" ]; then
         local __build_os_lowercase=$(echo "${__BuildOS}" | tr '[:upper:]' '[:lower:]')
+
+        # For Linux, we currently only support Ubuntu.
+        if [ "${__build_os_lowercase}" == "linux" ]; then
+            __build_os_lowercase="ubuntu"
+        fi
+        
         local __build_arch_lowercase=$(echo "${__BuildArch}" | tr '[:upper:]' '[:lower:]')
         local __cli_tarball=dotnet-${__build_os_lowercase}-${__build_arch_lowercase}.latest.tar.gz
         local __cli_tarball_path=${__tools_dir}/${__cli_tarball}
@@ -108,6 +108,14 @@ install_dotnet_cli()
             export HOME=${__tools_dir}
         fi
     fi
+    
+    if [ ! -z "${__dotnetclipath}" ]; then
+        __cli_dir=${__dotnetclipath}
+        export DOTNET_HOME=${__cli_dir}
+    else
+        __dotnetclipath=${__cli_dir}
+    fi
+
     if [ ! -f "${__cli_dir}/bin/dotnet" ]; then
         echo "CLI could not be installed or not present."
         exit 1
@@ -234,7 +242,7 @@ __ToolNugetRuntimeId=ubuntu.14.04-x64
 __TestNugetRuntimeId=ubuntu.14.04-x64
 __buildmanaged=true
 __buildnative=true
-__dotnetclipath=""
+__dotnetclipath=
 
 # Workaround to enable nuget package restoration work successully on Mono
 export TZ=UTC 
