@@ -32,25 +32,33 @@ namespace System
         public const double PI = 3.14159265358979323846;
         public const double E = 2.7182818284590452354;
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Acos(double d)
         {
             return RuntimeImports.acos(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Asin(double d)
         {
             return RuntimeImports.asin(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Atan(double d)
         {
             return RuntimeImports.atan(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Atan2(double y, double x)
         {
             if (Double.IsInfinity(x) && Double.IsInfinity(y))
@@ -63,19 +71,25 @@ namespace System
             return Decimal.Ceiling(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Ceiling(double a)
         {
             return RuntimeImports.ceil(a);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Cos(double d)
         {
             return RuntimeImports.cos(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Cosh(double value)
         {
             return RuntimeImports.cosh(value);
@@ -86,7 +100,9 @@ namespace System
             return Decimal.Floor(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Floor(double d)
         {
             return RuntimeImports.floor(d);
@@ -116,31 +132,41 @@ namespace System
             return value;
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Sin(double a)
         {
             return RuntimeImports.sin(a);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Tan(double a)
         {
             return RuntimeImports.tan(a);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Sinh(double value)
         {
             return RuntimeImports.sinh(value);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Tanh(double value)
         {
             return RuntimeImports.tanh(value);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Round(double a)
         {
             // If the number has no fractional part do nothing
@@ -219,25 +245,33 @@ namespace System
             return RuntimeImports.modf(d, &d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Sqrt(double d)
         {
             return RuntimeImports.sqrt(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Log(double d)
         {
             return RuntimeImports.log(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Log10(double d)
         {
             return RuntimeImports.log10(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Exp(double d)
         {
             if (Double.IsInfinity(d))
@@ -249,7 +283,9 @@ namespace System
             return RuntimeImports.exp(d);
         }
 
+#if CORERT
         [Intrinsic]
+#endif
         public static double Pow(double x, double y)
         {
             if (Double.IsNaN(y))
