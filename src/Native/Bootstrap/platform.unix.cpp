@@ -17,6 +17,8 @@ int UTF8ToWideChar(char* bytes, int len, unsigned short* buffer, int bufLen)
     return len;
 }
 
+extern "C" {
+
 void LCMapStringEx(void*, uint32_t, void*, int32_t, intptr_t, int32_t, intptr_t, intptr_t, intptr_t)
 {
     throw 42;
@@ -27,7 +29,7 @@ int32_t WideCharToMultiByte(uint32_t CodePage, uint32_t dwFlags, uint16_t* lpWid
     throw 42;
 }
 
-extern "C" int32_t MultiByteToWideChar(uint32_t CodePage, uint32_t dwFlags, const uint8_t * lpMultiByteStr, int32_t cbMultiByte, uint16_t* lpWideCharStr, int32_t cchWideChar)
+int32_t MultiByteToWideChar(uint32_t CodePage, uint32_t dwFlags, const uint8_t * lpMultiByteStr, int32_t cbMultiByte, uint16_t* lpWideCharStr, int32_t cchWideChar)
 {
     throw 42;
 }
@@ -67,7 +69,9 @@ int32_t ResolveLocaleName(intptr_t, intptr_t, int32_t)
 	throw 42;
 }
 
-extern "C" void CoCreateGuid() { }
-extern "C" void CoGetApartmentType() { }
-extern "C" void CreateEventExW() { }
-extern "C" void GetNativeSystemInfo() { }
+void CoCreateGuid() { throw 42; }
+void CoGetApartmentType() { throw 42; }
+void CreateEventExW() { throw 42; }
+void GetNativeSystemInfo() { throw 42; }
+
+}
