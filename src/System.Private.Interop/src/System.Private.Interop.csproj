@@ -186,30 +186,5 @@
   </ItemGroup>
   -->
 
-  <!--TODO : Not sure how this get shared with RHTest.This target never seem to execute when open.target is included 
-  (see System.Private.Interop.NetNative.csproj) since open.target does it's own resource generation and the resource strings 
-  appear in N binary.Also have to split the resource strings between N and CoreRT.We don't probably need many of the 
-  N specific resource strings in CoreRT-->
-  <Target Name="AfterBuild" DependsOnTargets="SystemInteropCoreCLR_PreparePostBuildResourceGeneration;SystemInteropCoreCLR_PostBuildResourceGeneration" />
-  <Target Name="SystemInteropCoreCLR_PreparePostBuildResourceGeneration">
-    <!-- Generate SR.cs under InterIncAPICandidate\Interop path and always using /debug switch -->
-    <!-- to force generating the English strings which are required in rhtestcl                -->
-    <PropertyGroup>
-      <InteropResInputFileFullPath>$(MSBuildProjectDirectory)\Resources\Strings.resx</InteropResInputFileFullPath>
-      <InteropResOutputFileDirectory>$(FXInterIncCandidatePath)\Interop\</InteropResOutputFileDirectory>
-      <InteropResOutputFileFullPath>$(InteropResOutputFileDirectory)SR.cs</InteropResOutputFileFullPath>
-      <_IntermediateResOutputFileFullPath>$(IntermediateOutputPath)SR.cs</_IntermediateResOutputFileFullPath>
-      <InteropResArgs>/debug</InteropResArgs>
-      <InteropResArgs>$(InteropResArgs) $(InteropResInputFileFullPath)</InteropResArgs>
-      <InteropResArgs>$(InteropResArgs) $(_IntermediateResOutputFileFullPath)</InteropResArgs>
-      <InteropResArgs>$(InteropResArgs) $(AssemblyName)</InteropResArgs>
-      <InteropResCmd>$(ResPath) $(InteropResArgs)</InteropResCmd>
-    </PropertyGroup>
-   
-  </Target>
-  <Target Name="SystemInteropCoreCLR_PostBuildResourceGeneration" Inputs="$(InteropResInputFileFullPath)" Outputs="$(_IntermediateResOutputFileFullPath)">
-    <MakeDir Directories="$(InteropResOutputFileDirectory)" />
-    <Exec Command="$(InteropResCmd)" StandardOutputImportance="low" />
-  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
