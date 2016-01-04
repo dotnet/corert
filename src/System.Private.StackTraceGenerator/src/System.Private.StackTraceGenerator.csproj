@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.StackTraceGenerator</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <ProjectGuid>{35A616DA-EEC6-49C4-BD06-AD27938DC94B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
