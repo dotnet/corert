@@ -242,7 +242,9 @@ namespace System
 
         public static unsafe double Truncate(double d)
         {
-            return RuntimeImports.modf(d, &d);
+            double intpart;
+            RuntimeImports.modf(d, &intpart);
+            return intpart;
         }
 
 #if CORERT
