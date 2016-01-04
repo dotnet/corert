@@ -6,33 +6,12 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{F9EF39E7-C8E4-4776-A952-FEF7A1FC2D3B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
-    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
-    <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
-    <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConnector.cs" />
-    <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConsole.cs" />
-  </ItemGroup>
-  
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Console.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.HandleTypes.cs" />
-    <Compile Include="Internal\DeveloperExperience\ConsolePal.Windows.cs" />
-  </ItemGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Write.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\libc\Interop.FileDescriptors.cs" />
-    <Compile Include="Internal\DeveloperExperience\ConsolePal.Unix.cs" />
-  </ItemGroup>
- 
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
@@ -46,6 +25,24 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
     
     <ProjectReference Include="..\..\System.Private.StackTraceGenerator\src\System.Private.StackTraceGenerator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConnector.cs" />
+    <Compile Include="Internal\DeveloperExperience\DeveloperExperienceConsole.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Console.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.HandleTypes.cs" />
+    <Compile Include="Internal\DeveloperExperience\ConsolePal.Windows.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Write.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\libc\Interop.FileDescriptors.cs" />
+    <Compile Include="Internal\DeveloperExperience\ConsolePal.Unix.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

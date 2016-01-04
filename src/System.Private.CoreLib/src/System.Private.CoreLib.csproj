@@ -1,55 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-
   <PropertyGroup>
+    <AssemblyName>System.Private.CoreLib</AssemblyName>
     <ProjectGuid>{BE95C560-B508-4588-8907-F9FC5BC1A0CF}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AssemblyName>System.Private.CoreLib</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
     <IsCoreAssembly>true</IsCoreAssembly>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!--
-      Need to avoid target platform being empty because that would drag in an mscorlib design-time
-      facade into the references and break us.
-    -->
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
-    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
-    <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
-    <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- The properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
-         though still use the 'x64' output path -->
-    <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
-  </PropertyGroup>
-
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|arm' ">
-    <PlatformTarget>arm</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|arm' ">
-    <PlatformTarget>arm</PlatformTarget>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm'" />
 
   <PropertyGroup>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
@@ -62,7 +28,7 @@
     <DefineConstants>CORERT</DefineConstants>    
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Platform)' == 'amd64'">
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
@@ -566,15 +532,27 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" >
-        <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
+      <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
+  <!-- 
+  	Workarounds https://github.com/dotnet/buildtools/pull/380 can be consumed.
+
+  	Once this that buildtools version is updated with that PR then these workarounds can be 
+  	turned into the following properties at the top of this project file.
+
+  <PropertyGroup>
+	<ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+	<ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
+  </PropertyGroup>
+  -->
   <PropertyGroup>
     <!-- Exclude AssemblyInfoPartialFile -->
     <AssemblyInfoPartialFile></AssemblyInfoPartialFile>
   </PropertyGroup>
+  <Target Name="AddDesignTimeFacadeReferences" />
 
 </Project>

@@ -6,9 +6,12 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{999BB20D-A032-4836-A587-627D243C1668}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableWinRT>true</EnableWinRT>
     <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
+
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
   <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
