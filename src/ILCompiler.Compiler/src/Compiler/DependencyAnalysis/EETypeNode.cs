@@ -108,6 +108,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public void SetDispatchMapIndex(uint index)
+        {
+            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.DispatchMap, index);
+        }
+
         int ISymbolNode.Offset
         {
             get
@@ -137,8 +142,9 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitZeroPointer();
                 return objData.ToObjectData();
             }
-            
+
             ComputeOptionalEETypeFields(factory);
+
             if (null == _optionalFieldsNode)
             {
                 _optionalFieldsNode = factory.EETypeOptionalFields(_optionalFieldsBuilder);
@@ -155,12 +161,25 @@ namespace ILCompiler.DependencyAnalysis
             if (_constructed)
             {
                 OutputVirtualSlots(factory, ref objData, _type, _type);
+                OutputInterfaceMap(factory, ref objData);
                 OutputFinalizerMethod(factory, ref objData);
                 OutputOptionalFields(factory, ref objData);
                 OutputNullableTypeParameter(factory, ref objData);
             }
 
             return objData.ToObjectData();
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList dependencyList = new DependencyNodeCore<NodeFactory>.DependencyList();
+            if (_type is MetadataType && _constructed)
+            {
+                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+            }
+
+            dependencyList.Add(factory.EETypeOptionalFields(_optionalFieldsBuilder), "EEType optional fields");
+            return dependencyList;
         }
 
         public override bool HasConditionalStaticDependencies
@@ -179,6 +198,11 @@ namespace ILCompiler.DependencyAnalysis
                         return true;
                 }
 
+                // If the type implements at least one interface, calls against that interface could result in this type's
+                // implementation being used.
+                if (_type.RuntimeInterfaces.Length > 0)
+                    return true;
+
                 return false;
             }
         }
@@ -193,6 +217,24 @@ namespace ILCompiler.DependencyAnalysis
                     if (impl.OwningType == _type && !impl.IsAbstract)
                     {
                         yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl), factory.VirtualMethodUse(decl), "Virtual method");
+                    }
+                }
+
+                // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
+                // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
+                // possible for any IFoo object to actually be an instance of T.
+                foreach (DefType interfaceType in _type.RuntimeInterfaces)
+                {
+                    Debug.Assert(interfaceType.IsInterface);
+
+                    foreach (MethodDesc interfaceMethod in interfaceType.GetMethods())
+                    {
+                        Debug.Assert(interfaceMethod.IsVirtual);
+                        MethodDesc implMethod = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, _type.GetClosestMetadataType());
+                        if (implMethod != null)
+                        {
+                            yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
+                        }
                     }
                 }
             }
@@ -335,9 +377,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             objData.EmitShort(checked((short)virtualSlotCount));
-
-            // Todo: Number of slots of EEInterfaceInfo when we add interface support
-            objData.EmitShort(0);
+            objData.EmitShort(checked((short)_type.RuntimeInterfaces.Length));
         }
 
         private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType)
@@ -361,6 +401,14 @@ namespace ILCompiler.DependencyAnalysis
                     else
                         objData.EmitZeroPointer();
                 }
+            }
+        }
+
+        private void OutputInterfaceMap(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            foreach (var itf in _type.RuntimeInterfaces)
+            {
+                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(itf));
             }
         }
 
@@ -391,12 +439,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         /// <summary>
-        /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required. Returns true iff
-        /// at least one optional field was set.
+        /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
         private void ComputeOptionalEETypeFields(NodeFactory factory)
         {
-            // Todo: DispatchMap table index when we support interface dispatch maps
             ComputeRareFlags();
             ComputeNullableValueOffset();
             ComputeICastableVirtualMethodSlots(factory);

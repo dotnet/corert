@@ -132,6 +132,14 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
 
+                case ReadyToRunHelperId.InterfaceDispatch:
+                    {
+                        encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
+                        AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                    }
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }

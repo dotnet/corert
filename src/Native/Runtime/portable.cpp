@@ -230,10 +230,53 @@ COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank
     return pObject;
 }
 
+#if defined(USE_PORTABLE_HELPERS) || !defined(WIN32)
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+
+COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch1, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch2, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch4, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch8, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch16, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch32, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+#endif
 
 // finalizer.cs
 COOP_PINVOKE_HELPER(void, ProcessFinalizers, ())

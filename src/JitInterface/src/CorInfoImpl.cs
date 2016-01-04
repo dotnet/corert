@@ -1826,11 +1826,7 @@ namespace Internal.JitInterface
                     directCall = true;
                 }
             }
-
-            // TODO: Interface methods
-            if (targetMethod.IsVirtual && targetMethod.OwningType.IsInterface)
-                throw new NotImplementedException("Interface method");
-
+            
             pResult.hMethod = ObjectToHandle(targetMethod);
             pResult.methodFlags = getMethodAttribsInternal(targetMethod);
 
@@ -1867,8 +1863,21 @@ namespace Internal.JitInterface
             pResult._exactContextNeedsRuntimeLookup = 0;
 
             pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
+            
+            if (directCall)
+            {
+                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
+                {
+                    // Calling a string constructor doesn't call the actual constructor.
+                    targetMethod = targetMethod.GetStringInitializer();
+                }
 
-            if (!directCall)
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                pResult.nullInstanceCheck = resolvedCallVirt;
+            }
+            else if (!targetMethod.OwningType.IsInterface)
             {
                 // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
                 // call that should not be inlined.
@@ -1885,17 +1894,13 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
-                {
-                    // Calling a string constructor doesn't call the actual constructor.
-                    targetMethod = targetMethod.GetStringInitializer();
-                }
-
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                pResult.nullInstanceCheck = true;
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
 
-                pResult.nullInstanceCheck = resolvedCallVirt;
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, targetMethod));
             }
 
             // TODO: Generics

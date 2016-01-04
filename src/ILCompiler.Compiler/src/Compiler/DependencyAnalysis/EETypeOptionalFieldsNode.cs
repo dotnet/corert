@@ -56,12 +56,21 @@ namespace ILCompiler.DependencyAnalysis
             return ((ISymbolNode)this).MangledName;
         }
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            return !_fieldBuilder.IsAtLeastOneFieldUsed();
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
             objData.RequirePointerAlignment();
             objData.DefinedSymbols.Add(this);
-            objData.EmitBytes(_fieldBuilder.GetBytes());
+
+            if (!relocsOnly)
+            {
+                objData.EmitBytes(_fieldBuilder.GetBytes());
+            }
             
             return objData.ToObjectData();
         }

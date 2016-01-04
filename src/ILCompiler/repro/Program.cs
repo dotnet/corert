@@ -10,4 +10,3 @@ internal class Program
         Console.WriteLine("Hello world");
     }
 }
-

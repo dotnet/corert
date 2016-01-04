@@ -44,8 +44,10 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedMethod.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.Interfaces.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.MethodImpls.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.Interfaces.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataType.MethodImpls.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodForInstantiatedType.cs" />
@@ -64,7 +66,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualFunctionResolution.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.cs" />
-    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.MethodImpls.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.Interfaces.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.FieldLayout.cs" />
