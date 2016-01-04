@@ -156,15 +156,11 @@ namespace System.Globalization
             }
 
             GCHandle contextHandle = GCHandle.Alloc(data);
-
             try
             {
-                Interop.mincore_private.EnumCalendarInfoExExCallback callback = new Interop.mincore_private.EnumCalendarInfoExExCallback(EnumCalendarsCallback);
-                Interop.mincore_private.LParamCallbackContext context = new Interop.mincore_private.LParamCallbackContext();
-                context.lParam = (IntPtr)contextHandle;
-
                 // Now call the enumeration API. Work is done by our callback function
-                Interop.mincore_private.EnumCalendarInfoExEx(callback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, context);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarsCallback);
+                Interop.mincore.EnumCalendarInfoExEx(callback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, (IntPtr)contextHandle);
             }
             finally
             {
@@ -338,9 +334,10 @@ namespace System.Globalization
         }
 
         // EnumCalendarInfoExEx callback itself.
-        private static unsafe bool EnumCalendarInfoCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr pReserved, Interop.mincore_private.LParamCallbackContext contextHandle)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumCalendarInfoCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr pReserved, IntPtr lParam)
         {
-            EnumData context = (EnumData)((GCHandle)contextHandle.lParam).Target;
+            EnumData context = (EnumData)((GCHandle)lParam).Target;
             try
             {
                 string calendarInfo = new string((char*)lpCalendarInfoString);
@@ -349,11 +346,11 @@ namespace System.Globalization
                 if (context.userOverride != calendarInfo)
                     context.strings.Add(calendarInfo);
 
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 
@@ -393,12 +390,9 @@ namespace System.Globalization
             GCHandle contextHandle = GCHandle.Alloc(context);
             try
             {
-                Interop.mincore_private.EnumCalendarInfoExExCallback callback = new Interop.mincore_private.EnumCalendarInfoExExCallback(EnumCalendarInfoCallback);
-                Interop.mincore_private.LParamCallbackContext ctx = new Interop.mincore_private.LParamCallbackContext();
-                ctx.lParam = (IntPtr)contextHandle;
-
                 // Now call the enumeration API. Work is done by our callback function
-                Interop.mincore_private.EnumCalendarInfoExEx(callback, localeName, (uint)calendar, null, calType, ctx);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarInfoCallback);
+                Interop.mincore.EnumCalendarInfoExEx(callback, localeName, (uint)calendar, null, calType, (IntPtr)contextHandle);
             }
             finally
             {
@@ -499,20 +493,21 @@ namespace System.Globalization
             public LowLevelList<int> calendars;      // list of calendars found so far
         }
 
-        private static bool EnumCalendarsCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr reserved, Interop.mincore_private.LParamCallbackContext cxt)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static Interop.BOOL EnumCalendarsCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr reserved, IntPtr lParam)
         {
-            EnumCalendarsData context = (EnumCalendarsData)((GCHandle)cxt.lParam).Target;
+            EnumCalendarsData context = (EnumCalendarsData)((GCHandle)lParam).Target;
             try
             {
                 // If we had a user override, check to make sure this differs
                 if (context.userOverride != calendar)
                     context.calendars.Add((int)calendar);
 
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 

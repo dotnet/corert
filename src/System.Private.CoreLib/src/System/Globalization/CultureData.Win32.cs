@@ -248,11 +248,8 @@ namespace System.Globalization
             GCHandle contextHandle = GCHandle.Alloc(context);
             try
             {
-                Interop.mincore_obsolete.EnumLocalesProcEx callback = new Interop.mincore_obsolete.EnumLocalesProcEx(EnumSystemLocalesProc);
-                Interop.mincore_private.LParamCallbackContext ctx = new Interop.mincore_private.LParamCallbackContext();
-                ctx.lParam = (IntPtr)contextHandle;
-
-                Interop.mincore_obsolete.EnumSystemLocalesEx(callback, LOCALE_SPECIFICDATA | LOCALE_SUPPLEMENTAL, ctx, IntPtr.Zero);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, Interop.BOOL>>(EnumSystemLocalesProc);
+                Interop.mincore.EnumSystemLocalesEx(callback, LOCALE_SPECIFICDATA | LOCALE_SUPPLEMENTAL, (IntPtr)contextHandle, IntPtr.Zero);
             }
             finally
             {
@@ -474,9 +471,10 @@ namespace System.Globalization
         }
 
         // EnumSystemLocaleEx callback.
-        private static unsafe bool EnumSystemLocalesProc(IntPtr lpLocaleString, uint flags, Interop.mincore_private.LParamCallbackContext contextHandle)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumSystemLocalesProc(IntPtr lpLocaleString, uint flags, IntPtr contextHandle)
         {
-            EnumLocaleData context = (EnumLocaleData)((GCHandle)contextHandle.lParam).Target;
+            EnumLocaleData context = (EnumLocaleData)((GCHandle)contextHandle).Target;
             try
             {
                 string cultureName = new string((char*)lpLocaleString);
@@ -484,14 +482,14 @@ namespace System.Globalization
                 if (regionName != null && regionName.Equals(context.regionName, StringComparison.OrdinalIgnoreCase))
                 {
                     context.cultureName = cultureName;
-                    return false; // we found a match, then stop the enumeration
+                    return Interop.BOOL.FALSE; // we found a match, then stop the enumeration
                 }
 
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 
@@ -502,18 +500,19 @@ namespace System.Globalization
         }
 
         // EnumTimeFormatsEx callback itself.
-        private static unsafe bool EnumTimeCallback(IntPtr lpTimeFormatString, Interop.mincore_private.LParamCallbackContext contextHandle)
+        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumTimeCallback(IntPtr lpTimeFormatString, IntPtr lParam)
         {
-            EnumData context = (EnumData)((GCHandle)contextHandle.lParam).Target;
+            EnumData context = (EnumData)((GCHandle)lParam).Target;
 
             try
             {
                 context.strings.Add(new string((char*)lpTimeFormatString));
-                return true;
+                return Interop.BOOL.TRUE;
             }
             catch (Exception)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
         }
 
@@ -526,15 +525,11 @@ namespace System.Globalization
             data.strings = new LowLevelList<string>();
 
             GCHandle dataHandle = GCHandle.Alloc(data);
-
             try
             {
-                Interop.mincore_private.EnumTimeFormatsProcEx callback = new Interop.mincore_private.EnumTimeFormatsProcEx(EnumTimeCallback);
-                Interop.mincore_private.LParamCallbackContext cxt = new Interop.mincore_private.LParamCallbackContext();
-                cxt.lParam = (IntPtr)dataHandle;
-
                 // Now call the enumeration API. Work is done by our callback function
-                Interop.mincore_private.EnumTimeFormatsEx(callback, localeName, (uint)dwFlags, cxt);
+                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, IntPtr, Interop.BOOL>>(EnumTimeCallback);
+                Interop.mincore.EnumTimeFormatsEx(callback, localeName, (uint)dwFlags, (IntPtr)dataHandle);
             }
             finally
             {
