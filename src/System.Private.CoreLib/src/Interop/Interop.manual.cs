@@ -438,6 +438,9 @@ internal partial class Interop
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, IntPtr lpLCData, int cchData);
 
+        [DllImport("api-ms-win-core-localization-l1-2-1.dll")]
+        internal extern static bool EnumSystemLocalesEx(IntPtr lpLocaleEnumProcEx, uint dwFlags, IntPtr lParam, IntPtr lpReserved);
+
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal extern static IntPtr GetProcessHeap();
 
@@ -780,151 +783,6 @@ internal partial class Interop
             return (IntPtr)(-2);
         }
 
-        //
-        // Wrappers for encoding 
-        //
-        internal const uint ERROR_INSUFFICIENT_BUFFER = 122;
-
-        [DllImport("api-ms-win-core-string-l1-1-0.dll")]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal extern unsafe static int WideCharToMultiByte(
-                    int CodePage,
-                    uint dwFlags,
-                    char* lpWideCharStr,
-                    int cchWideChar,
-                    byte* lpMultiByteStr,
-                    int cbMultiByte,
-                    byte* lpDefaultChar,
-                    int* lpUsedDefaultChar);
-
-        [DllImport("api-ms-win-core-string-l1-1-0.dll")]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal extern unsafe static int MultiByteToWideChar(
-                    int CodePage,
-                    uint dwFlags,
-                    byte* lpMultiByteStr,
-                    int cbMultiByte,
-                    char* lpWideCharStr,
-                    int cchWideChar);
-
-        [DllImport("api-ms-win-core-localization-l1-2-0.dll")]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal extern unsafe static int GetCPInfoExW(int codepage, uint flag, byte* pCodePageInfo);
-
-        private static unsafe int GetByteCount(int codepage, Char* pChars, int count)
-        {
-            if (count == 0) return 0;
-
-            int result = WideCharToMultiByte(codepage, 0, pChars, count, null, 0, null, null);
-            if (result <= 0)
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
-            return result;
-        }
-
-        internal static unsafe int GetByteCount(int codepage, char[] chars, int index, int count)
-        {
-            fixed (char* pChars = &chars[index])
-            {
-                return GetByteCount(codepage, pChars, count);
-            }
-        }
-
-        internal static unsafe int GetByteCount(int codepage, string s)
-        {
-            fixed (char* pChars = s)
-            {
-                return GetByteCount(codepage, pChars, s.Length);
-            }
-        }
-
-        private static unsafe int GetBytes(int codepage, char* pChars, int charCount, byte* pBytes, int byteCount)
-        {
-            if (charCount == 0)
-                return 0;
-
-            int result = WideCharToMultiByte(codepage, 0, pChars, charCount, pBytes, byteCount, null, null);
-            if (result <= 0)
-            {
-                uint lastErroro = Interop.mincore.GetLastError();
-                if (lastErroro == ERROR_INSUFFICIENT_BUFFER)
-                    throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowBytes);
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
-            }
-            return result;
-        }
-
-        internal unsafe static int GetBytes(int codepage, char[] chars, int index, int count, byte[] bytes, int byteIndex)
-        {
-            fixed (byte* pBytes = &bytes[byteIndex])
-            fixed (char* pChars = &chars[index])
-            {
-                return GetBytes(codepage, pChars, count, pBytes, bytes.Length - byteIndex);
-            }
-        }
-
-        internal unsafe static int GetBytes(int codepage, string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
-        {
-            fixed (byte* pBytes = &bytes[byteIndex])
-            fixed (char* pChars = s)
-            {
-                return GetBytes(codepage, pChars + charIndex, charCount, pBytes, bytes.Length - byteIndex);
-            }
-        }
-
-        internal static unsafe int GetCharCount(int codepage, byte* pBytes, int count)
-        {
-            if (count == 0) return 0;
-
-            int result = MultiByteToWideChar(codepage, 0, pBytes, count, null, 0);
-            if (result <= 0)
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
-            return result;
-        }
-
-        internal static unsafe int GetCharCount(int codepage, byte[] bytes, int index, int count)
-        {
-            fixed (byte* pBytes = &bytes[index])
-            {
-                return GetCharCount(codepage, pBytes, count);
-            }
-        }
-
-        internal static unsafe int GetChars(int codepage, byte* bytes, int byteCount, char* chars, int charsCount)
-        {
-            if (byteCount == 0)
-                return 0;
-
-            int result = MultiByteToWideChar(codepage, 0, bytes, byteCount, chars, charsCount);
-            if (result <= 0)
-            {
-                uint lastErroro = Interop.mincore.GetLastError();
-                if (lastErroro == ERROR_INSUFFICIENT_BUFFER)
-                    throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowChars);
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
-            }
-            return result;
-        }
-
-        internal static unsafe int GetChars(int codepage, byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
-        {
-            if (byteCount == 0)
-                return 0;
-
-            fixed (byte* pBytes = &bytes[byteIndex])
-            fixed (char* pChars = &chars[charIndex])
-            {
-                int result = MultiByteToWideChar(codepage, 0, pBytes, byteCount, pChars, chars.Length - charIndex);
-                if (result <= 0)
-                {
-                    uint lastErroro = Interop.mincore.GetLastError();
-                    if (lastErroro == ERROR_INSUFFICIENT_BUFFER)
-                        throw new ArgumentOutOfRangeException(SR.Argument_EncodingConversionOverflowChars);
-                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex);
-                }
-                return result;
-            }
-        }
-
         private readonly static System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
         static internal void Sleep(uint milliseconds)
         {
@@ -933,35 +791,6 @@ internal partial class Interop
             else
                 s_sleepHandle.WaitOne((int)milliseconds);
         }
-    }
-
-    internal partial class mincore_obsolete
-    {
-        [DllImport("api-ms-win-core-localization-l1-2-1.dll")]
-        internal extern static bool EnumSystemLocalesEx(EnumLocalesProcEx lpLocaleEnumProcEx, uint dwFlags, mincore_private.LParamCallbackContext lParam, IntPtr lpReserved);
-
-        internal delegate bool EnumLocalesProcEx(IntPtr arg0, uint arg1, mincore_private.LParamCallbackContext arg2);
-    }
-    // declare the specialized callback context type, deriving from the CallbackContext type that MCG expects the class library to implement.  
-    internal partial class mincore_private
-    {
-#pragma warning disable 649
-        internal class LParamCallbackContext : CallbackContext
-        {
-            // Put any user data to pass to the callback here.  The user code being called back will get the instance of this class that was passed to the API originally.
-            internal IntPtr lParam;
-        }
-
-        [DllImport("api-ms-win-core-localization-l2-1-0.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumCalendarInfoExEx(EnumCalendarInfoExExCallback pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, mincore_private.LParamCallbackContext lParam);
-
-        [DllImport("api-ms-win-core-localization-l2-1-0.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, mincore_private.LParamCallbackContext lParam);
-
-        internal delegate bool EnumCalendarInfoExExCallback(IntPtr arg0, uint arg1, IntPtr arg2, mincore_private.LParamCallbackContext arg3);
-
-        // Unmanaged Function Pointer - Calling Convention StdCall
-        internal delegate bool EnumTimeFormatsProcEx(IntPtr arg0, mincore_private.LParamCallbackContext arg1);
     }
     internal unsafe partial class WinRT
     {
