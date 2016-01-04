@@ -1220,7 +1220,7 @@ namespace System.Globalization
                 char* dig = number.digits;
                 char ch;
 
-                section = FindSection(format, number.digits[0] == 0 ? 2 : number.sign ? 1 : 0);
+                section = FindSection(format, dig[0] == 0 ? 2 : number.sign ? 1 : 0);
 
                 while (true)
                 {
@@ -1403,6 +1403,8 @@ namespace System.Globalization
 
                 fixed (char* pFormat = format)
                 {
+                    char * cur = dig;
+
                     while ((ch = pFormat[src++]) != 0 && ch != ';')
                     {
                         if (adjust > 0)
@@ -1416,7 +1418,7 @@ namespace System.Globalization
                                     {
                                         // digPos will be one greater than thousandsSepPos[thousandsSepCtr] since we are at
                                         // the character after which the groupSeparator needs to be appended.
-                                        sb.Append(*dig != 0 ? *dig++ : '0');
+                                        sb.Append(*cur != 0 ? *cur++ : '0');
                                         if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
                                         {
                                             if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
@@ -1444,7 +1446,7 @@ namespace System.Globalization
                                     }
                                     else
                                     {
-                                        ch = *dig != 0 ? *dig++ : digPos > lastDigit ? '0' : '\0';
+                                        ch = *cur != 0 ? *cur++ : digPos > lastDigit ? '0' : '\0';
                                     }
                                     if (ch != 0)
                                     {
@@ -1470,7 +1472,7 @@ namespace System.Globalization
                                         break;
                                     }
                                     // If the format has trailing zeros or the format has a decimal and digits remain
-                                    if (lastDigit < 0 || (decimalPos < digitCount && *dig != 0))
+                                    if (lastDigit < 0 || (decimalPos < digitCount && *cur != 0))
                                     {
                                         sb.Append(info.NumberDecimalSeparator);
                                         decimalWritten = true;
