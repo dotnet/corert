@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.Reflection</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <ProjectGuid>{81E98FD5-EEED-4F03-8449-E5CCF51AAA2D}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
