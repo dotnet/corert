@@ -372,7 +372,7 @@ namespace ILCompiler.CppCodeGen
                         ilImporter.SetSequencePoints(sequencePoints);
                 }
 
-                IEnumerable<LocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method);
+                IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method);
                 if (localVariables != null)
                     ilImporter.SetLocalVariables(localVariables);
 
