@@ -75,8 +75,7 @@ namespace System
 #endif
 
 #if CORERT
-        // CORERT-TODO: RuntimeTypeHandle
-        // [Intrinsic]
+        [Intrinsic]
 #endif
         public Type GetType()
         {

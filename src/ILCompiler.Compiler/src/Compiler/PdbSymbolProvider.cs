@@ -168,7 +168,7 @@ namespace ILCompiler
         //
         // Gather the local details in a scope and then recurse to child scopes
         //
-        private void ProbeScopeForLocals(List<LocalVariable> variables, ISymUnmanagedScope scope)
+        private void ProbeScopeForLocals(List<ILLocalVariable> variables, ISymUnmanagedScope scope)
         {
             int localCount;
             ThrowExceptionForHR(scope.GetLocalCount(out localCount));
@@ -193,7 +193,7 @@ namespace ILCompiler
                 int attributes;
                 ThrowExceptionForHR(local.GetAttributes(out attributes));
 
-                variables.Add(new LocalVariable() { Slot = slot, Name = new String(nameBuffer, 0, nameLength - 1), CompilerGenerated = (attributes & 0x1) != 0 });
+                variables.Add(new ILLocalVariable() { Slot = slot, Name = new String(nameBuffer, 0, nameLength - 1), CompilerGenerated = (attributes & 0x1) != 0 });
             }
 
             int childrenCount;
@@ -213,7 +213,7 @@ namespace ILCompiler
         // and names for all of them.  This assumes a CSC-like compiler that doesn't re-use
         // local slots in the same method across scopes.
         //
-        public IEnumerable<LocalVariable> GetLocalVariableNamesForMethod(ISymUnmanagedReader reader, int methodToken)
+        public IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(ISymUnmanagedReader reader, int methodToken)
         {
             ISymUnmanagedMethod symbolMethod;
             if (reader.GetMethod(methodToken, out symbolMethod) < 0)
@@ -222,7 +222,7 @@ namespace ILCompiler
             ISymUnmanagedScope rootScope;
             ThrowExceptionForHR(symbolMethod.GetRootScope(out rootScope));
 
-            var variables = new List<LocalVariable>();
+            var variables = new List<ILLocalVariable>();
             ProbeScopeForLocals(variables, rootScope);
             return variables;
         }

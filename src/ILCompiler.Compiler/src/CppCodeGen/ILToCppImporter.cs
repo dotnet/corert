@@ -25,7 +25,7 @@ namespace Internal.IL
         // TODO: The remaining info
     }
 
-    public struct LocalVariable
+    public struct ILLocalVariable
     {
         public int Slot;
         public string Name;
@@ -55,7 +55,7 @@ namespace Internal.IL
             public int LineNumber;
         }
         private SequencePoint[] _sequencePoints;
-        private Dictionary<int, LocalVariable> _localSlotToInfoMap;
+        private Dictionary<int, ILLocalVariable> _localSlotToInfoMap;
         private Dictionary<int, string> _parameterIndexToNameMap;
 
         private class ExceptionRegion
@@ -154,15 +154,15 @@ namespace Internal.IL
             }
         }
 
-        public void SetLocalVariables(IEnumerable<LocalVariable> localVariables)
+        public void SetLocalVariables(IEnumerable<ILLocalVariable> localVariables)
         {
             try
             {
                 HashSet<string> names = new HashSet<string>();
-                var localSlotToInfoMap = new Dictionary<int, LocalVariable>();
+                var localSlotToInfoMap = new Dictionary<int, ILLocalVariable>();
                 foreach (var v in localVariables)
                 {
-                    LocalVariable modifiedLocal = v;
+                    ILLocalVariable modifiedLocal = v;
                     modifiedLocal.Name = _compilation.NameMangler.SanitizeName(modifiedLocal.Name);
                     if (!names.Add(v.Name))
                     {

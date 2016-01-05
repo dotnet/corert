@@ -334,7 +334,7 @@ namespace ILCompiler
             return _pdbSymbolProvider.GetSequencePointsForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
         }
 
-        public IEnumerable<LocalVariable> GetLocalVariableNamesForMethod(MethodDesc method)
+        public IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(MethodDesc method)
         {
             EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
             if (ecmaMethod == null)

@@ -6,7 +6,7 @@
     "System.Diagnostics.Debug": "4.0.10",
     "System.IO": "4.0.10",
     "System.IO.FileSystem": "4.0.0",
-    "System.IO.MemoryMappedFiles": "4.0.0-beta-23419",
+    "System.IO.MemoryMappedFiles": "4.0.0-rc2-23616",
     "System.Collections": "4.0.10",
     "System.Text.Encoding": "4.0.10",
     "System.Runtime.InteropServices": "4.0.20",
@@ -21,6 +21,7 @@
     "Microsoft.DiaSymReader": "1.0.6"
   },
   "frameworks": {
+    "dnxcore50": { },
     "dotnet": {
       "imports": "portable-net452"
     }
