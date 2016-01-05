@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24620.0
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler", "src\ILCompiler.csproj", "{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}"
 EndProject
@@ -47,10 +47,10 @@ Global
 		{B2C35178-5E42-4010-A72A-938711D7F8F0}.Debug|x64.Build.0 = Debug|x64
 		{B2C35178-5E42-4010-A72A-938711D7F8F0}.Release|x64.ActiveCfg = Release|x64
 		{B2C35178-5E42-4010-A72A-938711D7F8F0}.Release|x64.Build.0 = Release|x64
-		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Debug|x64.ActiveCfg = Debug|amd64
-		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Debug|x64.Build.0 = Debug|amd64
-		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x64.ActiveCfg = Release|amd64
-		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x64.Build.0 = Release|amd64
+		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Debug|x64.ActiveCfg = Debug|x64
+		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Debug|x64.Build.0 = Debug|x64
+		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x64.ActiveCfg = Release|x64
+		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
