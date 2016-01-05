@@ -1,0 +1,209 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using global::System;
+using global::System.Reflection;
+using global::System.Diagnostics;
+using global::System.Text;
+using global::System.Collections.Generic;
+
+using global::Internal.Metadata.NativeFormat;
+
+using global::Internal.Runtime.Augments;
+
+using global::Internal.Reflection.Core;
+using global::Internal.Reflection.Core.Execution;
+
+namespace Internal.Reflection.Execution.PayForPlayExperience
+{
+    internal static class DiagnosticMappingTables
+    {
+        // Get the diagnostic name string for a type. This attempts to reformat the string into something that is essentially human readable.
+        //  Returns true if the function is successful.
+        //  runtimeTypeHandle represents the type to get a name for
+        //  diagnosticName is the name that is returned
+        //
+        // the genericParameterOffsets list is an optional parameter that contains the list of the locations of where generic parameters may be inserted
+        // to make the string represent an instantiated generic.
+        //
+        // For example for Dictionary<K,V>, metadata names the type Dictionary`2, but this function will return Dictionary<,>
+        // For consumers of this function that will be inserting generic arguments, the genericParameterOffsets list is used to find where to insert the generic parameter name.
+        //
+        // That isn't all that interesting for Dictionary, but it becomes substantially more interesting for nested generic types, or types which are compiler named as
+        // those may contain embedded <> pairs and such.
+        public static bool TryGetDiagnosticStringForNamedType(RuntimeTypeHandle runtimeTypeHandle, out String diagnosticName, List<int> genericParameterOffsets)
+        {
+            diagnosticName = null;
+            ExecutionEnvironmentImplementation executionEnvironment = ReflectionExecution.ExecutionEnvironment;
+
+            MetadataReader reader;
+            TypeReferenceHandle typeReferenceHandle;
+            if (executionEnvironment.TryGetTypeReferenceForNamedType(runtimeTypeHandle, out reader, out typeReferenceHandle))
+            {
+                diagnosticName = GetTypeFullNameFromTypeRef(typeReferenceHandle, reader, genericParameterOffsets);
+                return true;
+            }
+
+            TypeDefinitionHandle typeDefinitionHandle;
+            if (executionEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out reader, out typeDefinitionHandle))
+            {
+                diagnosticName = GetTypeFullNameFromTypeDef(typeDefinitionHandle, reader, genericParameterOffsets);
+                return true;
+            }
+            return false;
+        }
+
+
+        private static String GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader, List<int> genericParameterOffsets)
+        {
+            String s = "";
+
+            TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
+            s = typeReference.TypeName.GetString(reader);
+            Handle parentHandle = typeReference.ParentNamespaceOrType;
+            HandleType parentHandleType = parentHandle.HandleType;
+            if (parentHandleType == HandleType.TypeReference)
+            {
+                String containingTypeName = GetTypeFullNameFromTypeRef(parentHandle.ToTypeReferenceHandle(reader), reader, genericParameterOffsets);
+                s = containingTypeName + "." + s;
+            }
+            else if (parentHandleType == HandleType.NamespaceReference)
+            {
+                NamespaceReferenceHandle namespaceReferenceHandle = parentHandle.ToNamespaceReferenceHandle(reader);
+                for (; ;)
+                {
+                    NamespaceReference namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
+                    String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
+                    if (namespacePart == null)
+                        break; // Reached the root namespace.
+                    s = namespacePart + "." + s;
+                    if (namespaceReference.ParentScopeOrNamespace.HandleType != HandleType.NamespaceReference)
+                        break; // Should have reached the root namespace first but this helper is for ToString() - better to
+                    // return partial information than crash.
+                    namespaceReferenceHandle = namespaceReference.ParentScopeOrNamespace.ToNamespaceReferenceHandle(reader);
+                }
+            }
+            else
+            {
+                // If we got here, the metadata is illegal but this helper is for ToString() - better to 
+                // return something partial than throw.
+            }
+            return ConvertBackTickNameToNameWithReducerInputFormat(s, genericParameterOffsets);
+        }
+
+        public static String ConvertBackTickNameToNameWithReducerInputFormat(String typename, List<int> genericParameterOffsets)
+        {
+            int indexOfBackTick = typename.LastIndexOf('`');
+            if (indexOfBackTick != -1)
+            {
+                string typeNameSansBackTick = typename.Substring(0, indexOfBackTick);
+                if ((indexOfBackTick + 1) < typename.Length)
+                {
+                    string textAfterBackTick = typename.Substring(indexOfBackTick + 1);
+                    int genericParameterCount;
+                    if (Int32.TryParse(textAfterBackTick, out genericParameterCount) && (genericParameterCount > 0))
+                    {
+                        // Replace the `Number with <,,,> where the count of ',' is one less than Number.
+                        StringBuilder genericTypeName = new StringBuilder();
+                        genericTypeName.Append(typeNameSansBackTick);
+                        genericTypeName.Append('<');
+                        if (genericParameterOffsets != null)
+                        {
+                            genericParameterOffsets.Add(genericTypeName.Length);
+                        }
+                        for (int i = 1; i < genericParameterCount; i++)
+                        {
+                            genericTypeName.Append(',');
+                            if (genericParameterOffsets != null)
+                            {
+                                genericParameterOffsets.Add(genericTypeName.Length);
+                            }
+                        }
+                        genericTypeName.Append('>');
+                        return genericTypeName.ToString();
+                    }
+                }
+            }
+            return typename;
+        }
+
+        private static String GetTypeFullNameFromTypeDef(TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader, List<int> genericParameterOffsets)
+        {
+            String s = "";
+
+            TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
+            s = typeDefinition.Name.GetString(reader);
+
+            TypeDefinitionHandle enclosingTypeDefHandle = typeDefinition.EnclosingType;
+            if (!enclosingTypeDefHandle.IsNull(reader))
+            {
+                String containingTypeName = GetTypeFullNameFromTypeDef(enclosingTypeDefHandle, reader, genericParameterOffsets);
+                s = containingTypeName + "." + s;
+            }
+            else
+            {
+                NamespaceDefinitionHandle namespaceHandle = typeDefinition.NamespaceDefinition;
+                for (; ;)
+                {
+                    NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
+                    String namespacePart = namespaceDefinition.Name.GetStringOrNull(reader);
+                    if (namespacePart == null)
+                        break; // Reached the root namespace.
+                    s = namespacePart + "." + s;
+                    if (namespaceDefinition.ParentScopeOrNamespace.HandleType != HandleType.NamespaceDefinition)
+                        break; // Should have reached the root namespace first but this helper is for ToString() - better to
+                    // return partial information than crash.
+                    namespaceHandle = namespaceDefinition.ParentScopeOrNamespace.ToNamespaceDefinitionHandle(reader);
+                }
+            }
+            return ConvertBackTickNameToNameWithReducerInputFormat(s, genericParameterOffsets);
+        }
+
+        public static bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
+        {
+            elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
+            return true;
+        }
+
+        public static bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle)
+        {
+            elementTypeHandle = default(RuntimeTypeHandle);
+            if (rank != 2)
+                return false;
+
+            // Rank 2 arrays are really generic type of type MDArrayRank2<T>.
+            RuntimeTypeHandle genericTypeDefinitionHandle;
+            RuntimeTypeHandle[] genericTypeArgumentHandles;
+            if (!DiagnosticMappingTables.TryGetConstructedGenericTypeComponents(arrayTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
+                return false;
+            // This should really be an assert but this is used for generating diagnostic info so it's better to persevere and hope something useful gets printed out.
+            if (genericTypeArgumentHandles.Length != 1)
+                return false;
+            elementTypeHandle = genericTypeArgumentHandles[0];
+            return true;
+        }
+
+        public static bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        {
+            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
+            return true;
+        }
+
+        public static bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
+        {
+            genericTypeDefinitionHandle = default(RuntimeTypeHandle);
+            genericTypeArgumentHandles = null;
+
+            // Check the regular tables first.
+            if (ReflectionExecution.ExecutionEnvironment.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
+                return true;
+
+            // Now check the diagnostic tables.
+            if (ReflectionExecution.ExecutionEnvironment.TryGetConstructedGenericTypeComponentsDiag(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
+                return true;
+
+            return false;
+        }
+    }
+}
+
