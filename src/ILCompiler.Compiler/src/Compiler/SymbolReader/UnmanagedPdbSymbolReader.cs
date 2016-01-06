@@ -3,18 +3,16 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
-
-using Internal.IL;
 
 using Microsoft.DiaSymReader;
 
-namespace ILCompiler
+namespace ILCompiler.SymbolReader
 {
-    // For now, open PDB files using legacy desktop SymBinder
-
-    internal class PdbSymbolProvider
+    /// <summary>
+    ///  Provides PdbSymbolReader via unmanaged SymBinder from full .NET Framework
+    /// </summary>
+    internal sealed class UnmanagedPdbSymbolReader : PdbSymbolReader
     {
         [Guid("809c652e-7396-11d2-9771-00a0c9b4d50c")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -60,11 +58,7 @@ namespace ILCompiler
             Marshal.ThrowExceptionForHR(hr, new IntPtr(-1));
         }
 
-        private IMetaDataDispenser _metadataDispenser;
-
-        private ISymUnmanagedBinder _symBinder;
-
-        public PdbSymbolProvider()
+        static UnmanagedPdbSymbolReader()
         {
             try
             {
@@ -74,32 +68,29 @@ namespace ILCompiler
                 object objDispenser;
                 if (MetaDataGetDispenser(ref dispenserClassID, ref dispenserIID, out objDispenser) < 0)
                     return;
-                _metadataDispenser = (IMetaDataDispenser)objDispenser;
+                s_metadataDispenser = (IMetaDataDispenser)objDispenser;
 
                 Guid symBinderClassID = new Guid(0x0A29FF9E, 0x7F9C, 0x4437, 0x8B, 0x11, 0xF4, 0x24, 0x49, 0x1E, 0x39, 0x31); // CLSID_CorSymBinder
                 Guid symBinderIID = new Guid(0xAA544d42, 0x28CB, 0x11d3, 0xbd, 0x22, 0x00, 0x00, 0xf8, 0x08, 0x49, 0xbd); // IID_ISymUnmanagedBinder
                 object objBinder;
                 if (CoCreateInstance(ref symBinderClassID,
-                                 IntPtr.Zero, // pUnkOuter
-                                 1, // CLSCTX_INPROC_SERVER
-                                 ref symBinderIID,
-                                 out objBinder) < 0)
+                                     IntPtr.Zero, // pUnkOuter
+                                     1, // CLSCTX_INPROC_SERVER
+                                     ref symBinderIID,
+                                     out objBinder) < 0)
                     return;
-                _symBinder = (ISymUnmanagedBinder)objBinder;
+                s_symBinder = (ISymUnmanagedBinder)objBinder;
             }
             catch
             {
             }
         }
 
-        public ISymUnmanagedReader GetSymbolReaderForFile(string metadataFileName)
+        private static IMetaDataDispenser s_metadataDispenser;
+        private static ISymUnmanagedBinder s_symBinder;
+
+        public static PdbSymbolReader TryOpenSymbolReaderForMetadataFile(string metadataFileName)
         {
-            if (!File.Exists(Path.ChangeExtension(metadataFileName, ".pdb")))
-                return null;
-
-            if (_metadataDispenser == null || _symBinder == null)
-                return null;
-
             try
             {
                 Guid importerIID = new Guid(0x7dac8207, 0xd3ae, 0x4c75, 0x9b, 0x67, 0x92, 0x80, 0x1a, 0x49, 0x7d, 0x44); // IID_IMetaDataImport
@@ -107,13 +98,14 @@ namespace ILCompiler
                 // Open an metadata importer on the given filename. We'll end up passing this importer straight
                 // through to the Binder.
                 object objImporter;
-                if (_metadataDispenser.OpenScope(metadataFileName, 0x00000010 /* read only */, ref importerIID, out objImporter) < 0)
+                if (s_metadataDispenser.OpenScope(metadataFileName, 0x00000010 /* read only */, ref importerIID, out objImporter) < 0)
                     return null;
 
                 ISymUnmanagedReader reader;
-                if (_symBinder.GetReaderForFile(objImporter, metadataFileName, "", out reader) < 0)
+                if (s_symBinder.GetReaderForFile(objImporter, metadataFileName, "", out reader) < 0)
                     return null;
-                return reader;
+
+                return new UnmanagedPdbSymbolReader(reader);
             }
             catch
             {
@@ -121,30 +113,48 @@ namespace ILCompiler
             }
         }
 
-        private Dictionary<ISymUnmanagedDocument, string> _urlCache = new Dictionary<ISymUnmanagedDocument, string>();
+        private ISymUnmanagedReader _symUnmanagedReader;
+
+        private UnmanagedPdbSymbolReader(ISymUnmanagedReader symUnmanagedReader)
+        {
+            _symUnmanagedReader = symUnmanagedReader;
+        }
+
+        public override void Dispose()
+        {
+            Marshal.ReleaseComObject(_symUnmanagedReader);
+        }
+
+        private Dictionary<ISymUnmanagedDocument, string> _urlCache;
 
         private string GetUrl(ISymUnmanagedDocument doc)
         {
-            string url;
-            if (_urlCache.TryGetValue(doc, out url))
+            lock (this)
+            {
+                if (_urlCache == null)
+                    _urlCache = new Dictionary<ISymUnmanagedDocument, string>();
+
+                string url;
+                if (_urlCache.TryGetValue(doc, out url))
+                    return url;
+
+                int urlLength;
+                ThrowExceptionForHR(doc.GetUrl(0, out urlLength, null));
+
+                // urlLength includes terminating '\0'
+                char[] urlBuffer = new char[urlLength];
+                ThrowExceptionForHR(doc.GetUrl(urlLength, out urlLength, urlBuffer));
+
+                url = new string(urlBuffer, 0, urlLength - 1);
+                _urlCache.Add(doc, url);
                 return url;
-
-            int urlLength;
-            ThrowExceptionForHR(doc.GetUrl(0, out urlLength, null));
-
-            // urlLength includes terminating '\0'
-            char[] urlBuffer = new char[urlLength];
-            ThrowExceptionForHR(doc.GetUrl(urlLength, out urlLength, urlBuffer));
-
-            url = new string(urlBuffer, 0, urlLength - 1);
-            _urlCache.Add(doc, url);
-            return url;
+            }
         }
 
-        public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(ISymUnmanagedReader reader, int methodToken)
+        public override IEnumerable<ILSequencePoint> GetSequencePointsForMethod(int methodToken)
         {
             ISymUnmanagedMethod symbolMethod;
-            if (reader.GetMethod(methodToken, out symbolMethod) < 0)
+            if (_symUnmanagedReader.GetMethod(methodToken, out symbolMethod) < 0)
                 yield break;
 
             int count;
@@ -213,10 +223,10 @@ namespace ILCompiler
         // and names for all of them.  This assumes a CSC-like compiler that doesn't re-use
         // local slots in the same method across scopes.
         //
-        public IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(ISymUnmanagedReader reader, int methodToken)
+        public override IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(int methodToken)
         {
             ISymUnmanagedMethod symbolMethod;
-            if (reader.GetMethod(methodToken, out symbolMethod) < 0)
+            if (_symUnmanagedReader.GetMethod(methodToken, out symbolMethod) < 0)
                 return null;
 
             ISymUnmanagedScope rootScope;

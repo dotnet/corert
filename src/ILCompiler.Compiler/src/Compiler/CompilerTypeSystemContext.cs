@@ -9,11 +9,11 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
+
+using ILCompiler.SymbolReader;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using Internal.IL;
 
 namespace ILCompiler
 {
@@ -68,7 +68,7 @@ namespace ILCompiler
             public EcmaModule Module;
             public MemoryMappedViewAccessor MappedViewAccessor;
 
-            public Microsoft.DiaSymReader.ISymUnmanagedReader PdbReader;
+            public PdbSymbolReader PdbReader;
         }
 
         private class ModuleHashtable : LockFreeReaderHashtable<EcmaModule, ModuleData>
@@ -297,7 +297,7 @@ namespace ILCompiler
             return _metadataRuntimeInterfacesAlgorithm;
         }
 
-        MetadataStringDecoder IMetadataStringDecoderProvider.GetMetadataStringDecoder()
+        public MetadataStringDecoder GetMetadataStringDecoder()
         {
             if (_metadataStringDecoder == null)
                 _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
@@ -308,14 +308,23 @@ namespace ILCompiler
         // Symbols
         //
 
-        private PdbSymbolProvider _pdbSymbolProvider;
-
         private void InitializeSymbolReader(ModuleData moduleData)
         {
-            if (_pdbSymbolProvider == null)
-                _pdbSymbolProvider = new PdbSymbolProvider();
+            // Assume that the .pdb file is next to the binary
+            var pdbFilename = Path.ChangeExtension(moduleData.FilePath, ".pdb");
 
-            moduleData.PdbReader = _pdbSymbolProvider.GetSymbolReaderForFile(moduleData.FilePath);
+            if (!File.Exists(pdbFilename))
+                return;
+
+            // Try to open the symbol file as portable pdb first
+            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFilename, GetMetadataStringDecoder());
+            if (reader == null)
+            {
+                // Fallback to the diasymreader for non-portable pdbs
+                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(moduleData.FilePath);
+            }
+
+            moduleData.PdbReader = reader;
         }
 
         public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodDesc method)
@@ -331,7 +340,7 @@ namespace ILCompiler
             if (moduleData.PdbReader == null)
                 return null;
 
-            return _pdbSymbolProvider.GetSequencePointsForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+            return moduleData.PdbReader.GetSequencePointsForMethod(MetadataTokens.GetToken(ecmaMethod.Handle));
         }
 
         public IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(MethodDesc method)
@@ -347,7 +356,7 @@ namespace ILCompiler
             if (moduleData.PdbReader == null)
                 return null;
 
-            return _pdbSymbolProvider.GetLocalVariableNamesForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+            return moduleData.PdbReader.GetLocalVariableNamesForMethod(MetadataTokens.GetToken(ecmaMethod.Handle));
         }
 
         public IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)

@@ -71,7 +71,9 @@
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
-    <Compile Include="Compiler\PdbSymbolProvider.cs" />
+    <Compile Include="Compiler\SymbolReader\PdbSymbolReader.cs" />
+    <Compile Include="Compiler\SymbolReader\PortablePdbSymbolReader.cs" />
+    <Compile Include="Compiler\SymbolReader\UnmanagedPdbSymbolReader.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
   </ItemGroup>
