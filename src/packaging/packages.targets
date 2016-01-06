@@ -67,6 +67,13 @@
             <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/common.h" />
 
             <ILCompilerSdkFilesManaged Include="System.Private.CoreLib" />
+            <ILCompilerSdkFilesManaged Include="System.Private.DeveloperExperience.Console" />
+            <ILCompilerSdkFilesManaged Include="System.Private.Interop" />
+            <ILCompilerSdkFilesManaged Include="System.Private.Reflection" />
+            <ILCompilerSdkFilesManaged Include="System.Private.Reflection.Core" />
+            <ILCompilerSdkFilesManaged Include="System.Private.Reflection.Metadata" />
+            <ILCompilerSdkFilesManaged Include="System.Private.StackTraceGenerator" />
+            <ILCompilerSdkFilesManaged Include="System.Private.Threading" />
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
                 <Text><![CDATA[        <file src="../lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
