@@ -53,13 +53,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     {
                         System.Diagnostics.Debug.Assert(resolver->ResolverType == OpenMethodResolver.GVMResolve);
 
-                        callTryGetMethod = false;
-                        methodHandle = resolver->Handle.AsMethodHandle();
-
-                        RuntimeTypeHandle declaringTypeHandleIgnored;
-                        MethodNameAndSignature nameAndSignatureIgnored;
-                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out declaringTypeHandleIgnored, out nameAndSignatureIgnored, out genericMethodTypeArgumentHandles))
-                            return null;
+                        throw new NotImplementedException();
                     }
                 }
             }

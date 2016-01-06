@@ -13,16 +13,7 @@ namespace Internal.Reflection.Execution
     {
         public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, uint offset)
         {
-            IntPtr remainingSignature;
-            RuntimeTypeHandle typeHandle;
-
-            IntPtr signatureAddress = parser.Reader.OffsetToAddress(offset);
-            bool success = TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(signatureAddress, null, null, out typeHandle, out remainingSignature);
-
-            // Reset the parser to after the type
-            parser = new NativeParser(parser.Reader, parser.Reader.AddressToOffset(remainingSignature));
-
-            return typeHandle;
+            throw new NotImplementedException();
         }
     }
     
