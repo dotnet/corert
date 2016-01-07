@@ -25,8 +25,8 @@ namespace System.Runtime.InteropServices
         internal enum Indexes : short
         {
             IUnknown = 0,
-#if ENABLE_WINRT
             IInspectable,
+#if ENABLE_WINRT            
             ICustomPropertyProvider,
 #endif
             IWeakReferenceSource,
