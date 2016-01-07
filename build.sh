@@ -79,7 +79,15 @@ install_dotnet_cli()
     echo "Installing the dotnet/cli..."
     local __tools_dir=${__scriptpath}/bin/tools
     local __cli_dir=${__tools_dir}/cli
-    
+    if [ ${__CleanBuild} == 1 ]; then
+        if [ -d "${__cli_dir}" ]; then
+            rm -rf "${__cli_dir}"
+        fi
+        if [ -d "${__cli_dir}" ]; then
+            echo "Exiting... could not clean ${__cli_dir}"
+            exit 1
+        fi
+    fi
     if [ ! -d "${__cli_dir}" ]; then
         mkdir -p "${__cli_dir}"
     fi
@@ -174,7 +182,7 @@ build_managed_corert()
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.$__BuildArch.log
 
-    if [ -n ${ToolchainMilestone:+1} ]; then
+    if [ -z "${ToolchainMilestone}" ]; then
         ToolchainMilestone=testing
     fi
 
