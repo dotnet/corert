@@ -514,35 +514,12 @@ SetSuccess
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpCallFilterFunclet
 
-        PROLOG_PUSH     {r2,r4-r11,lr}  ;; r2 is saved so we have the REGDISPLAY later
+        PROLOG_PUSH     {r2,r7,r11,lr}  ;; r2 is saved so we have the REGDISPLAY later
 #undef rsp_offset_r2
 #define rsp_offset_r2 0
 
-        ;;
-        ;; set preserved regs to the values expected by the funclet
-        ;;
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR4]
-        ldr         r4, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR5]
-        ldr         r5, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR6]
-        ldr         r6, [r12]
         ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR7]
         ldr         r7, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR8]
-        ldr         r8, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR9]
-        ldr         r9, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR10]
-        ldr         r10, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR11]
-        ldr         r11, [r12]
-
-        ;;
-        ;; load vfp preserved regs
-        ;;
-        add         r12, r2, #OFFSETOF__REGDISPLAY__D
-        vldm        r12!, {d8-d15}
 
         ;;
         ;; call the funclet
@@ -551,35 +528,8 @@ SetSuccess
         blx         r1
     LABELED_RETURN_ADDRESS RhpCallFilterFunclet2
 
-        ldr         r2, [sp, #rsp_offset_r2]        ;; reload REGDISPLAY pointer
 
-        ;;
-        ;; save new values of preserved regs into REGDISPLAY
-        ;;
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR4]
-        str         r4, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR5]
-        str         r5, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR6]
-        str         r6, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR7]
-        str         r7, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR8]
-        str         r8, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR9]
-        str         r9, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR10]
-        str         r10, [r12]
-        ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR11]
-        str         r11, [r12]
-
-        ;;
-        ;; store vfp preserved regs
-        ;;
-        add         r12, r2, #OFFSETOF__REGDISPLAY__D
-        vstm        r12!, {d8-d15}
-
-        EPILOG_POP {r1,r4-r11,pc}
+        EPILOG_POP {r1,r7,r11,pc}
 
     NESTED_END RhpCallFilterFunclet
 

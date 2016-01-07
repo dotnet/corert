@@ -416,25 +416,12 @@ FASTCALL_FUNC  RhpCallFilterFunclet, 0
         push        ebp
         mov         ebp, esp
 
-        push        ebx     ;; save preserved registers
-        push        esi     ;; 
-        push        edi     ;; 
-
         push        edx     ;; save filter funclet address
 
         ;;
         ;; load preserved registers for funclet
         ;;
         mov         edx, [ebp + 8]
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRbx]
-        mov         ebx, [eax]
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRsi]
-        mov         esi, [eax]
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRdi]
-        mov         edi, [eax]
-
         mov         eax, [edx + OFFSETOF__REGDISPLAY__pRbp]
         mov         eax, [eax]
 
@@ -446,27 +433,9 @@ FASTCALL_FUNC  RhpCallFilterFunclet, 0
 ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ;; EAX contains the result of the filter execution
-        mov         ecx, eax
-
         mov         edx, [ebp + 8]
 
-        ;;
-        ;; save preserved registers from funclet
-        ;;
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRbx]
-        mov         [eax], ebx
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRsi]
-        mov         [eax], esi
-
-        mov         eax, [edx + OFFSETOF__REGDISPLAY__pRdi]
-        mov         [eax], edi
-
-        mov         eax, ecx
         pop         ecx         ;; pop scratch slot
-        pop         edi
-        pop         esi
-        pop         ebx
         pop         ebp
         ret
 

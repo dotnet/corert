@@ -494,71 +494,97 @@ bool StackFrameIterator::HandleFuncletInvokeThunk()
         );
 #endif
 
+    bool isFilterInvoke = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallFilterFunclet2);
+
 #ifdef _TARGET_AMD64_
-    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-    m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
-    m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
-    m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
-    m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
-    m_funcletPtrs.pR12 = m_RegDisplay.pR12;
-    m_funcletPtrs.pR13 = m_RegDisplay.pR13;
-    m_funcletPtrs.pR14 = m_RegDisplay.pR14;
-    m_funcletPtrs.pR15 = m_RegDisplay.pR15;
+    if (isFilterInvoke)
+    {
+        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x20);
+        m_RegDisplay.pRbp = SP++;
+    }
+    else
+    {
+        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+        m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
+        m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
+        m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
+        m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
+        m_funcletPtrs.pR12 = m_RegDisplay.pR12;
+        m_funcletPtrs.pR13 = m_RegDisplay.pR13;
+        m_funcletPtrs.pR14 = m_RegDisplay.pR14;
+        m_funcletPtrs.pR15 = m_RegDisplay.pR15;
 
-    SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x28);
+        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x28);
 
-    m_RegDisplay.pRbp = SP++;
-    m_RegDisplay.pRdi = SP++;
-    m_RegDisplay.pRsi = SP++;
-    m_RegDisplay.pRbx = SP++;
-    m_RegDisplay.pR12 = SP++;
-    m_RegDisplay.pR13 = SP++;
-    m_RegDisplay.pR14 = SP++;
-    m_RegDisplay.pR15 = SP++;
+        m_RegDisplay.pRbp = SP++;
+        m_RegDisplay.pRdi = SP++;
+        m_RegDisplay.pRsi = SP++;
+        m_RegDisplay.pRbx = SP++;
+        m_RegDisplay.pR12 = SP++;
+        m_RegDisplay.pR13 = SP++;
+        m_RegDisplay.pR14 = SP++;
+        m_RegDisplay.pR15 = SP++;
 
-    // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two  
-    // thunks, but we don't need to know what they are here, so we just skip them.
-    if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
-        SP += 2;
+        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two  
+        // thunks, but we don't need to know what they are here, so we just skip them.
+        if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+            SP += 2;
+    }
 #elif defined(_TARGET_X86_)
-    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-    m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
-    m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
-    m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
-    m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
+    if (isFilterInvoke)
+    {
+        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);
+        m_RegDisplay.pRbp = SP++;
+    }
+    else
+    {
+        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+        m_funcletPtrs.pRbp = m_RegDisplay.pRbp;
+        m_funcletPtrs.pRdi = m_RegDisplay.pRdi;
+        m_funcletPtrs.pRsi = m_RegDisplay.pRsi;
+        m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
 
-    SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);
+        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);
 
-    m_RegDisplay.pRdi = SP++;
-    m_RegDisplay.pRsi = SP++;
-    m_RegDisplay.pRbx = SP++;
-    m_RegDisplay.pRbp = SP++;
-
+        m_RegDisplay.pRdi = SP++;
+        m_RegDisplay.pRsi = SP++;
+        m_RegDisplay.pRbx = SP++;
+        m_RegDisplay.pRbp = SP++;
+    }
 #elif defined(_TARGET_ARM_)
-    // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
-    // thunks, but we don't need to know what they are here, so we just skip them.
-    UIntNative uOffsetToR4 = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 0xC : 0x4;
+    if (isFilterInvoke)
+    {
+        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);
+        m_RegDisplay.pR7 = SP++;
+        m_RegDisplay.pR11 = SP++;
+    }
+    else
+    {
+        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
+        // thunks, but we don't need to know what they are here, so we just skip them.
+        UIntNative uOffsetToR4 = EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 0xC : 0x4;
 
-    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
-    m_funcletPtrs.pR4  = m_RegDisplay.pR4;
-    m_funcletPtrs.pR5  = m_RegDisplay.pR5;
-    m_funcletPtrs.pR6  = m_RegDisplay.pR6;
-    m_funcletPtrs.pR7  = m_RegDisplay.pR7;
-    m_funcletPtrs.pR8  = m_RegDisplay.pR8;
-    m_funcletPtrs.pR9  = m_RegDisplay.pR9;
-    m_funcletPtrs.pR10 = m_RegDisplay.pR10;
-    m_funcletPtrs.pR11 = m_RegDisplay.pR11;
+        // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+        m_funcletPtrs.pR4  = m_RegDisplay.pR4;
+        m_funcletPtrs.pR5  = m_RegDisplay.pR5;
+        m_funcletPtrs.pR6  = m_RegDisplay.pR6;
+        m_funcletPtrs.pR7  = m_RegDisplay.pR7;
+        m_funcletPtrs.pR8  = m_RegDisplay.pR8;
+        m_funcletPtrs.pR9  = m_RegDisplay.pR9;
+        m_funcletPtrs.pR10 = m_RegDisplay.pR10;
+        m_funcletPtrs.pR11 = m_RegDisplay.pR11;
 
-    SP = (PTR_UIntNative)(m_RegDisplay.SP + uOffsetToR4);
+        SP = (PTR_UIntNative)(m_RegDisplay.SP + uOffsetToR4);
 
-    m_RegDisplay.pR4  = SP++;
-    m_RegDisplay.pR5  = SP++;
-    m_RegDisplay.pR6  = SP++;
-    m_RegDisplay.pR7  = SP++;
-    m_RegDisplay.pR8  = SP++;
-    m_RegDisplay.pR9  = SP++;
-    m_RegDisplay.pR10 = SP++;
-    m_RegDisplay.pR11 = SP++;
+        m_RegDisplay.pR4  = SP++;
+        m_RegDisplay.pR5  = SP++;
+        m_RegDisplay.pR6  = SP++;
+        m_RegDisplay.pR7  = SP++;
+        m_RegDisplay.pR8  = SP++;
+        m_RegDisplay.pR9  = SP++;
+        m_RegDisplay.pR10 = SP++;
+        m_RegDisplay.pR11 = SP++;
+    }
 
 #elif defined(_TARGET_ARM64_)
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");

@@ -25,50 +25,39 @@
 #include "thread.h"
 #include "stressLog.h"
 
-// Find the module containing the given address, which is a return address from a managed function. The
+// Find the module containing the given address, which might be a return address from a managed function. The
 // address may be to another managed function, or it may be to an unmanaged function, or it may be to a GC
 // hijack. The address may also refer to an EEType if we've been called from RhpGetClasslibFunction. If it is
 // a GC hijack, we will recgonize that and use the real return address, updating the address passed in.
-static Module * FindModuleRespectingReturnAddressHijacks(void ** pAddress)
+static Module * FindModuleRespectingReturnAddressHijacks(void * address)
 {
     RuntimeInstance * pRI = GetRuntimeInstance();
 
-    // Try looking up the module assuming the address is for code first. Fall back to a read-only data looukp
-    // if that fails. If we have data indicating that the data case is more common then we can reverse the
-    // order of checks. Finally check read/write data: generic EETypes live there since they need to be fixed
-    // up at runtime to support unification.
-    Module * pModule = pRI->FindModuleByCodeAddress(*pAddress);
+    // Try looking up the module assuming the address is for code first. This is expected to be most common.
+    Module * pModule = pRI->FindModuleByCodeAddress(address);
     if (pModule == NULL)
     {
-        pModule = pRI->FindModuleByReadOnlyDataAddress(*pAddress);
+        // Less common, we will look for the address in any of the sections of the module.  This is slower, but is 
+        // necessary for EEType pointers and jump stubs.
+        pModule = pRI->FindModuleByAddress(address);
 
-        if (pModule == NULL)
-            pModule = pRI->FindModuleByDataAddress(*pAddress);
-
-        if (pModule == NULL)
+        // Corner-case: The thread might be hijacked -- @TODO: this is a bit brittle because there is no validation that
+        // the hijacked return address from the thread is actually related to place where the caller got the hijack 
+        // target.  
+        Thread * pCurThread = ThreadStore::GetCurrentThread();
+        if ((pModule == NULL) && pCurThread->IsHijacked() && Thread::IsHijackTarget(address))
         {
-            // Hmmm... we didn't find a managed module for the given PC. We have a return address in unmanaged
-            // code, but it could be because the thread is hijacked for GC suspension. If it is then we should
-            // get the real return address and try again.
-            Thread * pCurThread = ThreadStore::GetCurrentThread();
-        
-            if (!pCurThread->IsHijacked())
-            {
-                // The PC isn't in a managed module, and there is no hijack in place, so we have no EH info.
-                return NULL;
-            }
+            pModule = pRI->FindModuleByCodeAddress(pCurThread->GetHijackedReturnAddress());
 
-            // Update the PC passed in to reflect the correct return address.
-            *pAddress = pCurThread->GetHijackedReturnAddress();
-
-            pModule = pRI->FindModuleByCodeAddress(*pAddress);
+            ASSERT_MSG(pModule != NULL, "expected to find the module for a hijacked return address");
         }
     }
 
     return pModule;
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))
+COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (
+    StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))
 {
     ICodeManager * pCodeManager = pFrameIter->GetCodeManager();
     pEHEnum->m_pCodeManager = pCodeManager;
@@ -79,14 +68,6 @@ COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (StackFrameIte
 COOP_PINVOKE_HELPER(Boolean, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClause))
 {
     return pEHEnum->m_pCodeManager->EHEnumNext(&pEHEnum->m_state, pEHClause);
-}
-
-// The EH dispatch code needs to know the original return address of a method, even if it has been hijacked.
-// We provide this here without modifying the hijack and the EHJump helper will honor the hijack when it
-// attempts to dispatch up the stack.
-COOP_PINVOKE_HELPER(void*, RhpGetUnhijackedReturnAddress, (void** ppvReturnAddressLocation))
-{
-    return ThreadStore::GetCurrentThread()->GetUnhijackedReturnAddress(ppvReturnAddressLocation);
 }
 
 //------------------------------------------------------------------------------------------------------------
@@ -117,7 +98,7 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunction, (void * address, ClasslibFun
     // Find the module contianing the given address, which is an address into some managed module. It could
     // be code, or it could be an EEType. No matter what, it's an address into a managed module in some non-Rtm
     // type system.
-    Module * pModule = FindModuleRespectingReturnAddressHijacks(&address);
+    Module * pModule = FindModuleRespectingReturnAddressHijacks(address);
      
     // If the address isn't in a managed module then we have no classlib function.
     if (pModule == NULL)
@@ -238,6 +219,14 @@ struct DISPATCHER_CONTEXT
     // N.B. There is more here (so this struct isn't the right size), but we ignore everything else
 };
 
+#ifdef _X86_
+struct EXCEPTION_REGISTRATION_RECORD
+{
+    UIntNative Next;
+    UIntNative Handler;
+};
+#endif // _X86_
+
 EXTERN_C void __cdecl RhpFailFastForPInvokeExceptionPreemp(IntNative PInvokeCallsiteReturnAddr, 
                                                            void* pExceptionRecord, void* pContextRecord);
 EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(IntNative PInvokeCallsiteReturnAddr, 
@@ -245,10 +234,11 @@ EXTERN_C void REDHAWK_CALLCONV RhpFailFastForPInvokeExceptionCoop(IntNative PInv
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
 EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
-                                        UIntNative              /*MemoryStackFp*/,
+                                        UIntNative              EstablisherFrame,
                                         PCONTEXT                pContextRecord,
                                         DISPATCHER_CONTEXT *    pDispatcherContext)
 {
+    UNREFERENCED_PARAMETER(EstablisherFrame);
 #ifdef APP_LOCAL_RUNTIME
     UNREFERENCED_PARAMETER(pDispatcherContext);
     //
@@ -274,16 +264,29 @@ EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExcep
     if (pThread->IsDoNotTriggerGcSet())
         RhFailFast();
 
-    IntNative pinvokeCallsiteReturnAddr = (IntNative)pThread->GetCurrentThreadPInvokeReturnAddress();
 
     // We promote exceptions that were not converted to managed exceptions to a FailFast.  However, we have to
     // be careful because we got here via OS SEH infrastructure and, therefore, don't know what GC mode we're
     // currently in.  As a result, since we're calling back into managed code to handle the FailFast, we must
     // correctly call either a NativeCallable or a RuntimeExport version of the same method.
     if (pThread->IsCurrentThreadInCooperativeMode())
-        RhpFailFastForPInvokeExceptionCoop(pinvokeCallsiteReturnAddr, pExceptionRecord, pContextRecord);
+    {
+        // Cooperative mode -- Typically, RhpVectoredExceptionHandler will handle this because the faulting IP will be
+        // in managed code.  But sometimes we AV on a bad call indirect or something similar.  In that situation, we can
+        // use the dispatcher context or exception registration record to find the relevant classlib.
+#ifdef _X86_
+        IntNative classlibBreadcrumb = ((EXCEPTION_REGISTRATION_RECORD*)EstablisherFrame)->Handler;
+#else
+        IntNative classlibBreadcrumb = pDispatcherContext->ControlPc;
+#endif
+        RhpFailFastForPInvokeExceptionCoop(classlibBreadcrumb, pExceptionRecord, pContextRecord);
+    }
     else
+    {
+        // Preemptive mode -- the classlib associated with the last pinvoke owns the fail fast behavior.
+        IntNative pinvokeCallsiteReturnAddr = (IntNative)pThread->GetCurrentThreadPInvokeReturnAddress();
         RhpFailFastForPInvokeExceptionPreemp(pinvokeCallsiteReturnAddr, pExceptionRecord, pContextRecord);
+    }
 
     return 0;
 }
