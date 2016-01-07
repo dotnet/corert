@@ -19,6 +19,11 @@
 C_FUNC(\Name):
 .endm
 
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
         .type \Name, %function
