@@ -319,7 +319,7 @@ $WriteBarrierFunction
     MEND
 
 ;; One day we might have write barriers for all the possible argument registers but for now we have
-;; just one write barrier that assumes the input registers is R1.
+;; just one write barrier that assumes the input register is R1.
         DEFINE_CHECKED_WRITE_BARRIER R0, R1
 
         DEFINE_UNCHECKED_WRITE_BARRIER R0, R1
