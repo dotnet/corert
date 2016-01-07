@@ -535,9 +535,7 @@
 
 #ifdef DACCESS_COMPILE 
 
-//#include "switches.h"
 #include "safemath.h"
-//#include "corerror.h"
 
 #ifdef _TARGET_AMD64_
 typedef UInt64 UIntTarget;
