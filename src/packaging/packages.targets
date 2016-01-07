@@ -71,6 +71,7 @@
             <ILCompilerSdkFilesManaged Include="System.Private.Interop" />
             <ILCompilerSdkFilesManaged Include="System.Private.Reflection" />
             <ILCompilerSdkFilesManaged Include="System.Private.Reflection.Core" />
+            <ILCompilerSdkFilesManaged Include="System.Private.Reflection.Execution" />
             <ILCompilerSdkFilesManaged Include="System.Private.Reflection.Metadata" />
             <ILCompilerSdkFilesManaged Include="System.Private.StackTraceGenerator" />
             <ILCompilerSdkFilesManaged Include="System.Private.Threading" />
