@@ -129,11 +129,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetUnhijackedReturnAddress")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal unsafe extern static void* RhpGetUnhijackedReturnAddress(void** ppvReturnAddressLocation);
-
         [RuntimeImport(Redhawk.BaseName, "RhpGetArrayBaseType")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
