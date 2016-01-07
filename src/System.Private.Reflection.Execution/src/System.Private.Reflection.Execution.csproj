@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Reflection.Execution</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{306A4D48-0ACF-41C4-BBA0-BCDAD9253E2D}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+
+  <!-- Setup the right references -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />  
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />  
+    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />  
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />  
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.TypeExtensions.dll" />  
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection\src\System.Private.Reflection.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Core\src\System.Private.Reflection.Core.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidator.cs" />
+    <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
+    <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionExecutionLogger.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
+    <Compile Include="Internal\Reflection\Execution\FoundationTypesImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\AssemblyBinderImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Interop.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Runtime.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.GVMResolution.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MappingTables.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MetadataTable.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.ManifestResources.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionExecutionDomainCallbacksImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionTraceCallbacksImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\MetadataReaderExtensions.cs" />
+    <Compile Include="Internal\Reflection\Execution\MetadataNameExtensions.cs" />
+    <Compile Include="Internal\Reflection\Execution\EnumInfoImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\DefaultValueParser.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokeInfo.cs" />
+    <Compile Include="Internal\Reflection\Execution\RuntimeHandlesExtensions.cs" />
+    <Compile Include="Internal\Reflection\Execution\SignatureParsing.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\InstanceFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForInstanceFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForThreadStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForUniversalThreadStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\StaticFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForInstanceFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForThreadStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForUniversalThreadStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\MethodInvokerWithMethodInvokeInfo.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\InstanceMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\StaticMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\VirtualMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\StringConstructorMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\IntPtrConstructorMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\NullableInstanceMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\SyntheticMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\MethodInvokerUtils.cs" />
+    <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\DiagnosticMappingTables.cs" />
+    <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\MissingMetadataExceptionCreator.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\DelegateMethodInfoRetriever.cs" />
+    <Compile Include="System\Reflection\MissingRuntimeArtifactException.cs" />
+    <Compile Include="Internal\Reflection\Execution\TypeLoaderDependencies.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Reflection\Execution\Binder\DefaultBinder.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs" />
+    <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" />
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs" />
+    <Compile Include="..\..\Common\src\System\Linq\LowLevelEnumerable.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\Empty.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
