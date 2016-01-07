@@ -221,6 +221,8 @@ public:
     PTR_VOID            GetTransitionFrameForStackTrace();
     void *              GetCurrentThreadPInvokeReturnAddress();
 
+    static bool         IsHijackTarget(void * address);
+
     // -------------------------------------------------------------------------------------------------------
     // LEGACY APIs: do not use except from GC itself
     //

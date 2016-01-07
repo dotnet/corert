@@ -595,48 +595,14 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallFilterFunclet, _TEXT
 
-        push_nonvol_reg r15     ;; save preserved regs for OS stackwalker
-        push_nonvol_reg r14     ;; ...
-        push_nonvol_reg r13     ;; ...
-        push_nonvol_reg r12     ;; ...
-        push_nonvol_reg rbx     ;; ...
-        push_nonvol_reg rsi     ;; ...
-        push_nonvol_reg rdi     ;; ...
-        push_nonvol_reg rbp     ;; ...
-        push_vol_reg    r8      ;; save the regdisplay pointer for later
+        push_nonvol_reg rbp     ;; we'll be setting rbp to the funclet's frame pointer
 
         alloc_stack     20h     ;; outgoing area
 
         END_PROLOGUE
 
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
-        mov     rbx, [rax]
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
         mov     rbp, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRsi]
-        mov     rsi, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRdi]
-        mov     rdi, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR12]
-        mov     r12, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR13]
-        mov     r13, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR14]
-        mov     r14, [rax]
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
-        mov     r15, [rax]
-
-        movdqa  xmm6, [r8 + OFFSETOF__REGDISPLAY__Xmm + 0*10h]
-        movdqa  xmm7, [r8 + OFFSETOF__REGDISPLAY__Xmm + 1*10h]
-        movdqa  xmm8, [r8 + OFFSETOF__REGDISPLAY__Xmm + 2*10h]
-        movdqa  xmm9, [r8 + OFFSETOF__REGDISPLAY__Xmm + 3*10h]
-        movdqa  xmm10,[r8 + OFFSETOF__REGDISPLAY__Xmm + 4*10h]
-
-        movdqa  xmm11,[r8 + OFFSETOF__REGDISPLAY__Xmm + 5*10h]
-        movdqa  xmm12,[r8 + OFFSETOF__REGDISPLAY__Xmm + 6*10h]
-        movdqa  xmm13,[r8 + OFFSETOF__REGDISPLAY__Xmm + 7*10h]
-        movdqa  xmm14,[r8 + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
-        movdqa  xmm15,[r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
         ;; RCX still contains the exception object
         call    rdx
@@ -644,46 +610,8 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ;; RAX contains the result of the filter execution
 
-        mov     r8, [rsp + 20h]    ;; reload regdisplay pointer
-
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rdx]                           , rbx
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rdx]                           , rbp
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rdx]                           , rsi
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rdx]                           , rdi
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rdx]                           , r12
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rdx]                           , r13
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rdx]                           , r14
-        mov     rdx, [r8 + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rdx]                           , r15
-
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 0*10h], xmm6
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 1*10h], xmm7
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 2*10h], xmm8
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 3*10h], xmm9
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 4*10h], xmm10
-
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 5*10h], xmm11
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 6*10h], xmm12
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 7*10h], xmm13
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 8*10h], xmm14
-        movdqa  [r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h], xmm15
-
-        add     rsp, 28h
+        add     rsp, 20h
         pop     rbp
-        pop     rdi
-        pop     rsi
-        pop     rbx
-        pop     r12
-        pop     r13
-        pop     r14
-        pop     r15
 
         ret
 

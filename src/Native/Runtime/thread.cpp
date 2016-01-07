@@ -558,6 +558,24 @@ static void* GcStressHijackTargets[3]   =
 };
 #endif // FEATURE_GC_STRESS
 
+// static
+bool Thread::IsHijackTarget(void * address)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if (NormalHijackTargets[i] == address)
+            return true;
+    }
+#ifdef FEATURE_GC_STRESS
+    for (int i = 0; i < 3; i++)
+    {
+        if (GcStressHijackTargets[i] == address)
+            return true;
+    }
+#endif // FEATURE_GC_STRESS
+    return false;
+}
+
 bool Thread::Hijack()
 {
     ASSERT(ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread());
@@ -689,7 +707,9 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void* HijackTarge
 
             m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
             m_pvHijackedReturnAddress = pvRetAddr;
-            *ppvRetAddrLocation = HijackTargets[retValueKind];
+            void* pvHijackTarget = HijackTargets[retValueKind];
+            ASSERT_MSG(IsHijackTarget(pvHijackTarget), "unexpected method used as hijack target");
+            *ppvRetAddrLocation = pvHijackTarget;
 
             fSuccess = true;
         }
