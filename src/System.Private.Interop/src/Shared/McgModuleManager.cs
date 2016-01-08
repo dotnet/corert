@@ -88,11 +88,7 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-#if ENABLE_WINRT
                 return new McgTypeInfo((int)InternalModule.Indexes.IInspectable, s_internalModule);
-#else
-                throw new PlatformNotSupportedException();
-#endif
             }
         }
 
