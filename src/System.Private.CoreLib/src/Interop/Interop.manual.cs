@@ -17,7 +17,6 @@ internal partial class Interop
         CreateEventManualReset = 0x1u,
         MutexModifyState = 0x1u,
         CreateEventInitialSet = 0x2u,
-        DuplicateSameAccess = 0x2u,
         SemaphoreModifyState = 0x2u,
         EventModifyState = 0x2u,
         FileTypeChar = 0x2u,
@@ -409,14 +408,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-synch-l1-1-0.dll", EntryPoint = "CreateSemaphoreExW", CharSet = CharSet.Unicode)]
         internal static extern IntPtr CreateSemaphoreEx(IntPtr lpSemaphoreAttributes, int lInitialCount, int lMaximumCount, string lpName, uint dwFlags, uint dwDesiredAccess);
 
-        [DllImport("api-ms-win-core-handle-l1-1-0.dll", EntryPoint = "DuplicateHandle", CharSet = CharSet.Unicode)]
-        internal static extern int PInvoke_DuplicateHandle(IntPtr hSourceProcessHandle, IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle, uint dwDesiredAccess, bool bInheritHandle, uint dwOptions);
-
-        internal static bool DuplicateHandle(IntPtr hSourceProcessHandle, IntPtr hSourceHandle, IntPtr hTargetProcessHandle, out IntPtr lpTargetHandle, uint dwDesiredAccess, bool bInheritHandle, uint dwOptions)
-        {
-            return PInvoke_DuplicateHandle(hSourceProcessHandle, hSourceHandle, hTargetProcessHandle, out lpTargetHandle, dwDesiredAccess, bInheritHandle, dwOptions) != 0;
-        }
-
         [DllImport("api-ms-win-core-timezone-l1-1-0.dll")]
         internal extern static uint EnumDynamicTimeZoneInformation(uint dwIndex, out _TIME_DYNAMIC_ZONE_INFORMATION lpTimeZoneInformation);
 
@@ -767,21 +758,6 @@ internal partial class Interop
                     _EXCEPTION_RECORD* pExceptionRecord,
                     _CONTEXT* pContextRecord,
                     uint dwFlags);
-
-
-        //
-        // GetCurrentProcess and GetCurrentThread just return constants.  To avoid making an expensive p/invoke just to 
-        // get a constant, we implement these manually here.
-        //
-        internal static IntPtr GetCurrentProcess()
-        {
-            return (IntPtr)(-1);
-        }
-
-        internal static IntPtr GetCurrentThread()
-        {
-            return (IntPtr)(-2);
-        }
 
         private readonly static System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
         static internal void Sleep(uint milliseconds)
