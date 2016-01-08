@@ -14,6 +14,7 @@ using Internal.TypeSystem;
 using Internal.IL;
 
 using ILCompiler;
+using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysis;
 
 namespace Internal.JitInterface

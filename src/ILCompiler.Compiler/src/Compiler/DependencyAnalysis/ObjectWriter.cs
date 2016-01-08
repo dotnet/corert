@@ -125,6 +125,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public string[] BuildFileInfoMap(IEnumerable<DependencyNode> nodes)
         {
+            // TODO: DebugInfo on Unix https://github.com/dotnet/corert/issues/608
+            if (_targetPlatform.OperatingSystem != TargetOS.Windows)
+                return null;
+
             ArrayBuilder<string> debugFileInfos = new ArrayBuilder<string>();
             foreach (DependencyNode node in nodes)
             {

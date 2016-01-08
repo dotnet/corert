@@ -8,30 +8,15 @@ using System.Diagnostics;
 using System.Globalization;
 
 using Internal.TypeSystem;
-using Internal.IL.Stubs;
 
 using ILCompiler;
 using ILCompiler.CppCodeGen;
+using ILCompiler.SymbolReader;
 
 using ILCompiler.DependencyAnalysis;
 
 namespace Internal.IL
 {
-    public struct ILSequencePoint
-    {
-        public int Offset;
-        public string Document;
-        public int LineNumber;
-        // TODO: The remaining info
-    }
-
-    public struct ILLocalVariable
-    {
-        public int Slot;
-        public string Name;
-        public bool CompilerGenerated;
-    }
-
     internal partial class ILImporter
     {
         private Compilation _compilation;

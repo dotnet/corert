@@ -9,6 +9,7 @@ using System.IO;
 using System.Text;
 using System.Linq;
 
+using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
