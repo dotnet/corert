@@ -152,6 +152,14 @@ set Platform=
 if NOT "%__DotNetCliPath%" == "" goto SetupManagedBuild
 
 set "__DotNetCliPath=%__RootBinDir%\tools\cli"
+if "%__CleanBuild%"=="1" (
+    if exist "%__DotNetCliPath%" (rmdir /s /q "%__DotNetCliPath%")
+    if exist "%__DotNetCliPath%" (
+        echo "Exiting... could not clean %__DotNetCliPath%"
+        exit /b 1
+    )
+)
+
 if not exist "%__DotNetCliPath%" (
     for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools""') do (
         echo "" > nul
