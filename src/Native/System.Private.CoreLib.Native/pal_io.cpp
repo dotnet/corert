@@ -9,7 +9,7 @@
 #include <errno.h>
 #include "pal_utilities.h"
 
-extern "C" int32_t Write2(int32_t fd, const void* buffer, int32_t bufferSize)
+extern "C" int32_t CoreLibNative_Write(int32_t fd, const void* buffer, int32_t bufferSize)
 {
     assert(buffer != nullptr || bufferSize == 0);
     assert(bufferSize >= 0);

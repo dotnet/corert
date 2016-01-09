@@ -6,7 +6,7 @@
 #include <string.h>
 #include <assert.h>
 
-extern "C" int32_t GetEnvironmentVariable(const char* variable, char** result)
+extern "C" int32_t CoreLibNative_GetEnvironmentVariable(const char* variable, char** result)
 {
    assert(result != NULL);
 
