@@ -85,21 +85,31 @@ endm
 ;;
 ;; EAX is trashed by this macro.
 ;;
-PUSH_COOP_PINVOKE_FRAME macro threadReg
+;; If <NoModeSwitch> is set, threadReg is ignored. As a result, <NoModeSwitch> can only be used by helpers
+;; which guarantee that they will never transition into pre-emptive mode and will never examine the m_pThread
+;; field of the frame.
+;;
+PUSH_COOP_PINVOKE_FRAME macro threadReg, NoModeSwitch
     lea         eax, [ebp + 8]                      ; get the ESP of the caller
     push        eax                                 ; save ESP
     push        edi
     push        esi
     push        ebx
     push        PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
+ifb <NoModeSwitch>
     push        threadReg                           ; Thread * (unused by stackwalker)
+else
+    push        0
+endif
     mov         eax, [ebp + 0]                      ; Find previous EBP value
     push        eax                                 ; save EBP
     mov         eax, [ebp + 4]                      ; Find the return address
     push        eax                                 ; save m_RIP
 
     lea         eax, [esp + 0]                      ; EAX == address of frame
+ifb <NoModeSwitch>
     mov         [threadReg + OFFSETOF__Thread__m_pHackPInvokeTunnel], eax ; Link frame to thread
+endif
 endm
 
 ;;
