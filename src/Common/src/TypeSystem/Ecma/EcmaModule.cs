@@ -470,7 +470,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public TypeDesc GetGlobalModuleType()
+        public override TypeDesc GetGlobalModuleType()
         {
             int typeDefinitionsCount = _metadataReader.TypeDefinitions.Count;
             if (typeDefinitionsCount == 0)

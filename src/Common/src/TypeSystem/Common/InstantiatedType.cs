@@ -277,14 +277,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsModuleType
-        {
-            get
-            {
-                return false;
-            }
-        }
-
         public override ModuleDesc Module
         {
             get

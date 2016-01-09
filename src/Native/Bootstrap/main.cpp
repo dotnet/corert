@@ -60,7 +60,6 @@ void __range_check_fail()
 {
     throw "ThrowRangeOverflowException";
 }
-
 #endif // CPPCODEGEN
 
 
@@ -200,33 +199,6 @@ Object * __load_string_literal(const char * string)
     return pString;
 }
 
-OBJECTHANDLE __load_static_string_literal(const uint8_t* utf8, int32_t utf8Len, int32_t strLen)
-{
-    Object * pString = __allocate_string(strLen);
-    uint16_t * buffer = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
-    if (strLen > 0)
-        UTF8ToWideChar((char*)utf8, utf8Len, buffer, strLen);
-    // TODO: OOM handling
-    return (OBJECTHANDLE)RhpHandleAlloc(pString, 2 /* Normal */);
-}
-
-Object * __get_commandline_args(int argc, char * argv[])
-{
-#ifdef CPPCODEGEN
-	 MethodTable * pStringArrayMT = System::String__Array::__getMethodTable();
-#else
-	 MethodTable * pStringArrayMT = (MethodTable*)__EEType_System_Private_CoreLib_System_String__Array;
-#endif
-	System::Array * args = (System::Array *)RhNewArray(pStringArrayMT, argc);
-
-	for (int i = 0; i < argc; i++)
-	{
-		RhpStelemRef(args, i, __load_string_literal(argv[i]));
-	}
-	
-	return (Object *)args;
-}
-
 extern "C" void RhGetCurrentThreadStackTrace()
 {
     throw "RhGetCurrentThreadStackTrace";
@@ -276,108 +248,35 @@ extern "C" void RhReRegisterForFinalize()
 extern "C" void * g_pDispatchMapTemporaryWorkaround;
 void * g_pDispatchMapTemporaryWorkaround;
 
+extern "C" void __StringTableStart();
+extern "C" void __StringTableEnd();
+extern "C" void* GetModuleSection(int id, int* length)
+{
+    struct ModuleSectionSymbol
+    {
+        void* symbolId;
+        size_t length;
+    };
+
+    // TODO: emit this table from the compiler per module.
+    // !!!
+    // The order should be kept in sync with ModuleSectionIds in StartupCodeHelpers.cs in CoreLib.
+    static ModuleSectionSymbol symbols[] = {
+#ifdef CPPCODEGEN
+        { System::String::__getMethodTable(), sizeof(void*) },
+        { nullptr, 0 },
+#else
+        { __EEType_System_Private_CoreLib_System_String, sizeof(void*) },
+        { __StringTableStart, (uint8_t*)__StringTableEnd - (uint8_t*)__StringTableStart },
+#endif
+    };
+
+    *length = (int) symbols[id].length;
+    return symbols[id].symbolId;
+}
+
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
-
-extern "C" int __managed__Main(Object*);
-
-namespace AsmDataFormat
-{
-    typedef uint8_t byte;
-    typedef uint32_t UInt32;
-
-    static UInt32 ReadUInt32(byte **ppStream)
-    {
-        UInt32 result = *(UInt32*)(*ppStream); // Assumes little endian and unaligned access
-        *ppStream += 4;
-        return result;
-    }
-    static int DecodeUnsigned(byte** ppStream, byte* pStreamEnd, UInt32 *pValue)
-    {
-        if (*ppStream >= pStreamEnd)
-            return -1;
-
-        UInt32 value = 0;
-        UInt32 val = **ppStream;
-        if ((val & 1) == 0)
-        {
-            value = (val >> 1);
-            *ppStream += 1;
-        }
-        else if ((val & 2) == 0)
-        {
-            if (*ppStream + 1 >= pStreamEnd)
-                return -1;
-
-            value = (val >> 2) |
-                (((UInt32)*(*ppStream + 1)) << 6);
-            *ppStream += 2;
-        }
-        else if ((val & 4) == 0)
-        {
-            if (*ppStream + 2 >= pStreamEnd)
-                return -1;
-
-            value = (val >> 3) |
-                (((UInt32)*(*ppStream + 1)) << 5) |
-                (((UInt32)*(*ppStream + 2)) << 13);
-            *ppStream += 3;
-        }
-        else if ((val & 8) == 0)
-        {
-            if (*ppStream + 3 >= pStreamEnd)
-                return -1;
-
-            value = (val >> 4) |
-                (((UInt32)*(*ppStream + 1)) << 4) |
-                (((UInt32)*(*ppStream + 2)) << 12) |
-                (((UInt32)*(*ppStream + 3)) << 20);
-            *ppStream += 4;
-        }
-        else if ((val & 16) == 0)
-        {
-            if (*ppStream + 4 >= pStreamEnd)
-                return -1;
-            *ppStream += 1;
-            value = ReadUInt32(ppStream);
-        }
-        else
-        {
-            return -1;
-        }
-
-        *pValue = value;
-        return 0;
-    }
-}
-
-extern "C" void __str_fixup();
-extern "C" void __str_fixup_end();
-int __strings_fixup()
-{
-    for (unsigned** ptr = (unsigned**)__str_fixup;
-         ptr < (unsigned**)__str_fixup_end; ptr++)
-    {
-        int utf8Len;
-        uint8_t* bytes = (uint8_t*) *ptr;
-        if (AsmDataFormat::DecodeUnsigned(&bytes, bytes + 5, (unsigned*)&utf8Len) != 0)
-            return -1;
-
-        assert(bytes <= ((uint8_t*)*ptr) + 5);
-        assert(utf8Len >= 0);
-
-        int strLen = 0;
-        if (utf8Len != 0)
-        {
-            strLen = UTF8ToWideCharLen((char*)bytes, utf8Len);
-            if (strLen <= 0) return -1;
-        }
-
-        *((OBJECTHANDLE*)ptr) = __load_static_string_literal(bytes, utf8Len, strLen);
-        // TODO: This "handle" will leak, deallocate with __unload
-    }
-    return 0;
-}
 
 extern "C" void* __InterfaceDispatchMapTable;
 extern "C" void* __GCStaticRegionStart;
@@ -394,13 +293,19 @@ int __statics_fixup()
     return 0;
 }
 
-int main(int argc, char * argv[]) {
+#if defined(_WIN32)
+extern "C" int __managed__Main(int argc, char* argv[]); // TODO: Use wchar_t
+int main(int argc, char* argv[]) // TODO: Use wmain and wchar_t
+#else
+extern "C" int __managed__Main(int argc, char* argv[]);
+int main(int argc, char* argv[])
+#endif
+{
     if (__initialize_runtime() != 0) return -1;
     __register_module(&__module);
     g_pDispatchMapTemporaryWorkaround = (void*)&__InterfaceDispatchMapTable;
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
-	
-    if (__strings_fixup() != 0) return -1;
+
     if (__statics_fixup() != 0) return -1;
 
     int retval;
@@ -408,8 +313,7 @@ int main(int argc, char * argv[]) {
     {
 		// Managed apps don't see the first args argument (full path of executable) so skip it
 		assert(argc > 0);
-		Object* args = __get_commandline_args(argc - 1, argv + 1);
-		retval = __managed__Main(args);
+		retval = __managed__Main(argc, argv);
     }
     catch (const char* &e)
     {
@@ -423,4 +327,4 @@ int main(int argc, char * argv[]) {
     return retval;
 }
 
-#endif
+#endif // !CPPCODEGEN

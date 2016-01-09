@@ -14,6 +14,7 @@ using Internal.IL;
 using Internal.JitInterface;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.IL.Stubs.StartupCode;
 
 namespace ILCompiler
 {
@@ -91,14 +92,10 @@ namespace ILCompiler
             set;
         }
 
-        private MethodDesc _mainMethod;
-
-        internal MethodDesc MainMethod
+        public MethodDesc StartupCodeMain
         {
-            get
-            {
-                return _mainMethod;
-            }
+            get;
+            set;
         }
 
         internal bool IsCppCodeGen
@@ -209,13 +206,16 @@ namespace ILCompiler
 
         private void AddCompilationRootsForMainMethod(EcmaModule module)
         {
-            if (_mainMethod != null)
+            if (StartupCodeMain != null)
                 throw new Exception("Multiple entrypoint modules");
 
             int entryPointToken = module.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress;
-            _mainMethod = module.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
+            MethodDesc mainMethod = module.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
 
-            AddCompilationRoot(_mainMethod, "Main method", "__managed__Main");
+            var owningType = module.GetGlobalModuleType();
+            StartupCodeMain = new StartupCodeMainMethod(owningType, mainMethod);
+
+            AddCompilationRoot(StartupCodeMain, "Startup Code Main Method", "__managed__Main");
         }
 
         private void AddCompilationRootsForRuntimeExports(EcmaModule module)

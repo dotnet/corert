@@ -482,14 +482,6 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override bool IsModuleType
-        {
-            get
-            {
-                return _module.GetGlobalModuleType() == this;
-            }
-        }
-
         public override bool IsSealed
         {
             get

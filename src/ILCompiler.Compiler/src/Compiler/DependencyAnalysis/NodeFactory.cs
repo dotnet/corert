@@ -393,8 +393,8 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler.CompilationUnitPrefix + "__ThreadStaticRegionEnd", 
             null);
         public ArrayOfEmbeddedDataNode StringTable = new ArrayOfEmbeddedDataNode(
-            NameMangler.CompilationUnitPrefix + "__str_fixup",
-            NameMangler.CompilationUnitPrefix + "__str_fixup_end", 
+            NameMangler.CompilationUnitPrefix + "__StringTableStart",
+            NameMangler.CompilationUnitPrefix + "__StringTableEnd", 
             null);
 
         public InterfaceDispatchMapTableNode DispatchMapTable = new InterfaceDispatchMapTableNode();

@@ -20,6 +20,7 @@ using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Internal.DeveloperExperience;
+using Internal.Runtime.CompilerHelpers;
 
 namespace System
 {
@@ -111,10 +112,36 @@ namespace System
             }
         }
 
+#if CORERT
+        private static string[] s_commandLineArgs;
+
+        internal static void SetCommandLineArgs(string[] args)
+        {
+            s_commandLineArgs = args;
+        }
+
+        public static string[] GetCommandLineArgs()
+        {
+            // TODO: Simply return (string[])s_commandLineArgs.Clone();
+            // when RhUnbox helpers with multiple signatures in CPP
+            // CodeGen is no longer a problem.
+            string[] clone = new string[s_commandLineArgs.Length];
+            for (int i = 0; i < clone.Length; ++i)
+            {
+                clone[i] = s_commandLineArgs[i];
+            }
+            return clone;
+        }
+#endif
+
+#if CORERT
+        // Moved to startup sequence in StartupCodeHelpers.Initialize().
+#else
         static Environment()
         {
             RuntimeImports.RhEnableShutdownFinalization(0xffffffffu);
         }
+#endif
 
         public static String StackTrace
         {
