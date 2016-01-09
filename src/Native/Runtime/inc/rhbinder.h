@@ -630,6 +630,7 @@ struct PInvokeTransitionFrame
     TgtPTR_Void     m_RIP;
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
+                                // can be an invalid pointer in universal transition cases (which never need to call GetThread)
     UInt32          m_dwFlags;  // PInvokeTransitionFrameFlags
 #ifdef _TARGET_AMD64_
     UInt32          m_dwAlignPad2;
