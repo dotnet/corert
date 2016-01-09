@@ -43,14 +43,14 @@
             <ILCompilerFiles Include="ILCompiler.DependencyAnalysisFramework.dll" />
             <ILCompilerFiles Include="ILCompiler.TypeSystem.dll" />
             <ILCompilerBinPlace Include="@(ILCompilerFiles)">
-                <Text><![CDATA[        <file src="../%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <ILCompilerNativeFiles Include="jitinterface.dll" Condition="'$(OSGroup)'=='Windows_NT'" />
             <ILCompilerNativeFiles Include="jitinterface.so" Condition="'$(OSGroup)'=='Linux'" />
             <ILCompilerNativeFiles Include="jitinterface.dylib" Condition="'$(OSGroup)'=='OSX'" />
             <ILCompilerBinPlace Include="@(ILCompilerNativeFiles)">
-                <Text><![CDATA[        <file src="../%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Identity)" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)" target="runtimes/$(NuPkgRid)/native/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <!-- IL.Compiler.SDK target files -->
@@ -77,13 +77,13 @@
             <ILCompilerSdkFilesManaged Include="System.Private.Threading" />
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
-                <Text><![CDATA[        <file src="../lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFilesManaged)">
-                <Text><![CDATA[        <file src="../%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkCppCodegenFiles)">
-                <Text><![CDATA[        <file src="../../../../src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
+                <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
             
             <!-- ILCompiler nuspec file -->
@@ -196,7 +196,7 @@
     %(NuSpecPackageMetadata)
   </metadata>
   <files>
-      <file src="%(RedirPackage).runtime.json" target="runtime.json"></file>
+      <file src="$(RelativeProductBinDir)/.nuget/%(RedirPackage).runtime.json" target="runtime.json"></file>
   </files>
 </package>
 ]]>
@@ -232,7 +232,7 @@
             <Stage0NuSpecs Include="%(NuSpecCollection.RedirFile)" Condition="'%(NuSpecCollection.Stage)'=='0'" />
         </ItemGroup>
 
-        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage0NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage0NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -BasePath &quot;$(RepoPath)&quot; -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
 
         <PropertyGroup>
             <Stage0ProjectDir>$(ProductPackageDir)stage0/</Stage0ProjectDir>
@@ -278,7 +278,7 @@
             <Stage1NuSpecs Include="%(NuSpecCollection.RedirFile)" Condition="'%(NuSpecCollection.Stage)'=='1'" />
         </ItemGroup>
 
-        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage1NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage1NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -BasePath &quot;$(RepoPath)&quot; -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
 
         <PropertyGroup>
             <Stage1ProjectDir>$(ProductPackageDir)stage1/</Stage1ProjectDir>
