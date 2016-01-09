@@ -84,8 +84,6 @@ namespace System
             }
         }
 
-        internal const int ManagedThreadIdNone = 0;
-
         public static bool HasShutdownStarted
         {
             get

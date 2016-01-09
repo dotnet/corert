@@ -286,6 +286,10 @@ extern "C" void RhpEtwExceptionThrown()
 {
     throw "RhpEtwExceptionThrown";
 }
+extern "C" void RhReRegisterForFinalize()
+{
+    throw "RhReRegisterForFinalize";
+}
 
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };

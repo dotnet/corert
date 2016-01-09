@@ -34,6 +34,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private const int ManagedThreadIdNone = Environment.ManagedThreadIdNone;
+        private const int ManagedThreadIdNone = ManagedThreadId.ManagedThreadIdNone;
     }
 }
