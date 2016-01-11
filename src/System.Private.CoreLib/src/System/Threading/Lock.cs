@@ -26,7 +26,15 @@ namespace System.Threading
         // overloads operator == to do the right thing, and b) Lock is sealed, so we
         // don't need to waste time traversing the inheritence heirarchy.
         //
-        internal static bool IsLock(object obj) { return obj.EETypePtr == typeof(Lock).TypeHandle.ToEETypePtr(); }
+        internal static bool IsLock(object obj)
+        {
+#if CORERT
+            // CORERT-TODO
+            return obj is Lock;
+#else
+            return obj.EETypePtr == typeof(Lock).TypeHandle.ToEETypePtr();
+#endif
+        }
 
         //
         // m_state layout:

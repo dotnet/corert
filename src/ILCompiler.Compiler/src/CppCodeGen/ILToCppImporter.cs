@@ -1496,6 +1496,9 @@ namespace Internal.IL
                 Append(thisPtr.Value.Name);
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
+
+                // TODO: Remove
+                _writer.GetCppSignatureTypeName(owningType);
             }
 
             Finish();
@@ -1547,6 +1550,9 @@ namespace Internal.IL
                 Append(thisPtr.Value.Name);
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
+
+                // TODO: Remove
+                _writer.GetCppSignatureTypeName(owningType);
             }
 
             Finish();
@@ -1595,6 +1601,9 @@ namespace Internal.IL
                 Append(thisPtr.Value.Name);
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
+
+                // TODO: Remove
+                _writer.GetCppSignatureTypeName(owningType);
             }
             Append("=");
             if (!fieldType.IsValueType)
