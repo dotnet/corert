@@ -14,6 +14,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.Compiler", "..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj", "{13BB3788-C3EB-4046-8105-A95F8AE49404}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop", "desktop\desktop.csproj", "{B2C35178-5E42-4010-A72A-938711D7F8F0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FBA029C3-B184-4457-AEEC-38D0C2523067} = {FBA029C3-B184-4457-AEEC-38D0C2523067}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.CoreLib", "..\System.Private.CoreLib\src\System.Private.CoreLib.csproj", "{BE95C560-B508-4588-8907-F9FC5BC1A0CF}"
 EndProject
