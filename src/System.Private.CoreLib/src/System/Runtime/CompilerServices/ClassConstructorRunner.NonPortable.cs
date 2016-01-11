@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                return Environment.CurrentManagedThreadId;
+                return ManagedThreadId.Current;
             }
         }
 
