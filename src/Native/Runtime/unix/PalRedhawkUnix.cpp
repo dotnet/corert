@@ -4,7 +4,7 @@
 //
 
 //
-// Implementation of the Redhawk Platform Abstraction Layer (PAL) library when Unix is the platform. 
+// Implementation of the Redhawk Platform Abstraction Layer (PAL) library when Unix is the platform.
 //
 
 #include <stdio.h>
@@ -16,11 +16,14 @@
 #include <sal.h>
 #include "config.h"
 #include "UnixHandle.h"
+#include <pthread.h>
+#include "gcenv.structs.h"
+#include "gcenv.os.h"
+#include "holder.h"
 
 #include <unistd.h>
 #include <sched.h>
 #include <sys/mman.h>
-#include <pthread.h>
 #include <sys/types.h>
 #include <iconv.h>
 #include <dlfcn.h>
@@ -95,29 +98,11 @@ typedef Int32 (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
     );
 
 #define PAGE_NOACCESS           0x01
-#define PAGE_READONLY           0x02
 #define PAGE_READWRITE          0x04
-#define PAGE_WRITECOPY          0x08
-#define PAGE_EXECUTE            0x10
-#define PAGE_EXECUTE_READ       0x20
-#define PAGE_EXECUTE_READWRITE  0x40
-#define PAGE_EXECUTE_WRITECOPY  0x80
-#define PAGE_GUARD              0x100
-#define PAGE_NOCACHE            0x200
-#define PAGE_WRITECOMBINE       0x400
 #define MEM_COMMIT              0x1000
 #define MEM_RESERVE             0x2000
 #define MEM_DECOMMIT            0x4000
 #define MEM_RELEASE             0x8000
-#define MEM_FREE                0x10000
-#define MEM_PRIVATE             0x20000
-#define MEM_MAPPED              0x40000
-#define MEM_RESET               0x80000
-#define MEM_TOP_DOWN            0x100000
-#define MEM_WRITE_WATCH         0x200000
-#define MEM_PHYSICAL            0x400000
-#define MEM_LARGE_PAGES         0x20000000
-#define MEM_4MB_PAGES           0x80000000
 
 #define WAIT_OBJECT_0           0
 #define WAIT_TIMEOUT            258
@@ -277,41 +262,8 @@ public:
     }
 };
 
-class UnixMutex
-{
-    pthread_mutex_t m_mutex;
-
-public:
-
-    UnixMutex()
-    {
-        int st = pthread_mutex_init(&m_mutex, NULL);
-        ASSERT(st == NULL);
-    }
-
-    ~UnixMutex()
-    {
-        int st = pthread_mutex_destroy(&m_mutex);
-        ASSERT(st == NULL);
-    }
-
-    bool Release()
-    {
-        return pthread_mutex_unlock(&m_mutex) == 0;
-    }
-
-    uint32_t Wait(uint32_t milliseconds)
-    {
-        // TODO: implement timed wait if needed
-        ASSERT(milliseconds == INFINITE);
-        int st = pthread_mutex_lock(&m_mutex);
-        return (st == 0) ? WAIT_OBJECT_0 : WAIT_FAILED;
-    }
-};
-
 typedef UnixHandle<UnixHandleType::Event, UnixEvent> EventUnixHandle;
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
-typedef UnixHandle<UnixHandleType::Mutex, UnixMutex> MutexUnixHandle;
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
@@ -342,7 +294,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 
 static const char* const WCharEncoding = "UTF-32LE";
 
-int UTF8ToWideChar(char* bytes, int len, wchar_t* buffer, int bufLen)
+int UTF8ToWideChar(const char* bytes, int len, wchar_t* buffer, int bufLen)
 {
     iconv_t cd = iconv_open(WCharEncoding, "UTF-8");
     if (cd == (iconv_t)-1)
@@ -351,7 +303,7 @@ int UTF8ToWideChar(char* bytes, int len, wchar_t* buffer, int bufLen)
         return 0;
     }
 
-    char* inbuf = bytes;
+    char* inbuf = (char*)bytes;
     char* outbuf = (char*)buffer;
     size_t inbufbytesleft = len;
     size_t outbufbytesleft = bufLen;
@@ -368,7 +320,7 @@ int UTF8ToWideChar(char* bytes, int len, wchar_t* buffer, int bufLen)
     return (bufLen - outbufbytesleft) / sizeof(wchar_t);
 }
 
-int WideCharToUTF8(wchar_t* chars, int len, char* buffer, int bufLen)
+int WideCharToUTF8(const wchar_t* chars, int len, char* buffer, int bufLen)
 {
     iconv_t cd = iconv_open("UTF-8", WCharEncoding);
     if (cd == (iconv_t)-1)
@@ -402,7 +354,7 @@ REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
 
     return (unsigned int)processorNumber;
 #else
-    // TODO: implement for OSX / FreeBSD
+    // UNIXTODO: implement for OSX / FreeBSD
     return 0;
 #endif
 }
@@ -410,90 +362,6 @@ REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Inout_ GCMemoryStatus* pBuffer)
-{
-    pBuffer->dwMemoryLoad = 0;
-    pBuffer->ullTotalPhys = 0;
-    pBuffer->ullAvailPhys = 0;
-    pBuffer->ullTotalPageFile = 0;
-    pBuffer->ullAvailPageFile = 0;
-    pBuffer->ullTotalVirtual = 0;
-    pBuffer->ullAvailVirtual = 0;
-
-    UInt32_BOOL fRetVal = UInt32_FALSE;
-
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    int64_t physical_memory;
-
-    // Get the Physical memory size
-    physical_memory = sysconf( _SC_PHYS_PAGES ) * sysconf( _SC_PAGE_SIZE );
-    pBuffer->ullTotalPhys = (uint64_t)physical_memory;
-    fRetVal = UInt32_TRUE;
-#elif HAVE_SYSCTL
-    int mib[2];
-    int64_t physical_memory;
-    size_t length;
-
-    // Get the Physical memory size
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    length = sizeof(int64_t);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    if (rc != 0)
-    {
-        ASSERT_UNCONDITIONALLY("sysctl failed for HW_MEMSIZE\n");
-    }
-    else
-    {
-        pBuffer->ullTotalPhys = (uint64_t)physical_memory;
-        fRetVal = UInt32_TRUE;
-    }
-#elif // HAVE_SYSINFO
-    // TODO: implement getting memory details via sysinfo. On Linux, it provides swap file details that
-    // we can use to fill in the xxxPageFile members.
-
-#endif // HAVE_SYSCONF
-
-    // Get the physical memory in use - from it, we can get the physical memory available.
-    // We do this only when we have the total physical memory available.
-    if (pBuffer->ullTotalPhys > 0)
-    {
-#ifndef __APPLE__
-        pBuffer->ullAvailPhys = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
-        int64_t used_memory = pBuffer->ullTotalPhys - pBuffer->ullAvailPhys;
-        pBuffer->dwMemoryLoad = (uint32_t)((used_memory * 100) / pBuffer->ullTotalPhys);
-#else
-        vm_size_t page_size;
-        mach_port_t mach_port;
-        mach_msg_type_number_t count;
-        vm_statistics_data_t vm_stats;
-        mach_port = mach_host_self();
-        count = sizeof(vm_stats) / sizeof(natural_t);
-        if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
-        {
-            if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-            {
-                pBuffer->ullAvailPhys = (int64_t)vm_stats.free_count * (int64_t)page_size;
-                int64_t used_memory = ((int64_t)vm_stats.active_count + (int64_t)vm_stats.inactive_count + (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
-                pBuffer->dwMemoryLoad = (uint32_t)((used_memory * 100) / pBuffer->ullTotalPhys);
-            }
-        }
-        mach_port_deallocate(mach_task_self(), mach_port);
-#endif // __APPLE__
-    }
-
-    // There is no API to get the total virtual address space size on 
-    // Unix, so we use a constant value representing 128TB, which is 
-    // the approximate size of total user virtual address space on
-    // the currently supported Unix systems.
-    static const uint64_t _128TB = (1ull << 47); 
-    pBuffer->ullTotalVirtual = _128TB;
-    pBuffer->ullAvailVirtual = pBuffer->ullAvailPhys;
-
-    return fRetVal;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
@@ -520,7 +388,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
 {
-    // sched_yield yields to another thread in the current process. This implementation 
+    // sched_yield yields to another thread in the current process. This implementation
     // won't work well for cross-process synchronization.
     return sched_yield() == 0;
 }
@@ -534,24 +402,10 @@ extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
     return UInt32_TRUE;
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateMutexW(_In_opt_ LPSECURITY_ATTRIBUTES pMutexAttributes, UInt32_BOOL initialOwner, _In_opt_z_ const wchar_t* pName)
-{
-    return new MutexUnixHandle(UnixMutex());
-}
-
-
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const wchar_t* pName)
 {
-    return new EventUnixHandle(UnixEvent(manualReset, initialState));
+    return new (nothrow) EventUnixHandle(UnixEvent(manualReset, initialState));
 }
-
-// This is not needed in the PAL
-#if 0
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-#endif
 
 typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
@@ -651,7 +505,7 @@ REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
     }
 #else
     {
-        struct timeval tv;    
+        struct timeval tv;
         if (gettimeofday(&tv, NULL) == 0)
         {
             retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
@@ -662,44 +516,14 @@ REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
             ASSERT_UNCONDITIONALLY("gettimeofday() failed\n");
         }
     }
-#endif // HAVE_CLOCK_MONOTONIC 
+#endif // HAVE_CLOCK_MONOTONIC
 
-    return retval;    
+    return retval;
 }
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetTickCount()
 {
     return (uint32_t)GetTickCount64();
-}
-
-#if 0
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-#endif
-
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ const WCHAR* pFileName, uint32_t desiredAccess, uint32_t shareMode, _In_opt_ LPSECURITY_ATTRIBUTES pSecurityAttributes, uint32_t creationDisposition, uint32_t flagsAndAttributes, HANDLE hTemplateFile)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-REDHAWK_PALEXPORT _Success_(return == 0)
-uint32_t REDHAWK_PALAPI PalGetWriteWatch(_In_ uint32_t flags, _In_ void* pBaseAddress, _In_ size_t regionSize, _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, _Inout_opt_ uintptr_t* pCount, _Out_opt_ uint32_t* pGranularity)
-{
-    // There is no write watching feature available on Unix other than a possibility to emulate 
-    // it using read only pages and page fault handler. 
-    *pAddresses = NULL;
-    *pCount = 0;
-    // Return non-zero value as an indicator of failure
-    return 1;
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, size_t regionSize)
-{
-    // There is no write watching feature available on Unix.
-    // Return non-zero value as an indicator of failure. 
-    return 1;
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
@@ -715,11 +539,6 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return moduleHandle;
 }
 
-REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
 bool QueryCacheSize()
 {
     bool success = true;
@@ -729,7 +548,7 @@ bool QueryCacheSize()
     DIR* cpuDir = opendir("/sys/devices/system/cpu");
     if (cpuDir == nullptr)
     {
-        ASSERT_UNCONDITIONALLY("opendir on /sys/devices/system/cpu failed\n");        
+        ASSERT_UNCONDITIONALLY("opendir on /sys/devices/system/cpu failed\n");
         return false;
     }
 
@@ -897,7 +716,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
     // Align size to whole pages
     size = (size + (OS_PAGE_SIZE - 1)) & ~(OS_PAGE_SIZE - 1);
     int unixProtect = W32toUnixAccessControl(protect);
-    
+
     if (allocationType & MEM_RESERVE)
     {
         // For Windows compatibility, let the PalVirtualAlloc reserve memory with 64k alignment.
@@ -926,7 +745,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
 
             pRetVal = pAlignedRetVal;
         }
-         
+
         return pRetVal;
     }
 
@@ -960,6 +779,11 @@ extern "C" HANDLE GetCurrentProcess()
     return (HANDLE)-1;
 }
 
+extern "C" uint32_t GetCurrentProcessId()
+{
+    return getpid();
+}
+
 extern "C" HANDLE GetCurrentThread()
 {
     return (HANDLE)-2;
@@ -978,7 +802,7 @@ extern "C" UInt32_BOOL DuplicateHandle(
     ASSERT(hSourceProcessHandle == GetCurrentProcess());
     ASSERT(hTargetProcessHandle == GetCurrentProcess());
     ASSERT(hSourceHandle == GetCurrentThread());
-    *lpTargetHandle = new ThreadUnixHandle(pthread_self());
+    *lpTargetHandle = new (nothrow) ThreadUnixHandle(pthread_self());
 
     return lpTargetHandle != nullptr;
 }
@@ -1208,7 +1032,7 @@ __thread void* pStackHighOut = NULL;
 __thread void* pStackLowOut = NULL;
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
-// not get the current dynamic bounds of the stack, which can be significantly smaller than 
+// not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
 REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
@@ -1253,7 +1077,7 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
     return true;
 }
 
-// retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the 
+// retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the
 // executable module of the current process.
 //
 // Return value:  number of characters in name string
@@ -1276,68 +1100,44 @@ void PalDebugBreak()
 
 GCSystemInfo g_SystemInfo;
 
-void InitializeSystemInfo()
+// Initialize the g_SystemInfo
+bool InitializeSystemInfo()
 {
-    // TODO: Implement
-    g_SystemInfo.dwNumberOfProcessors = 4;
+    long pagesize = getpagesize();
+    g_SystemInfo.dwPageSize = pagesize;
+    g_SystemInfo.dwAllocationGranularity = pagesize;
 
-    g_SystemInfo.dwPageSize = OS_PAGE_SIZE;
-    g_SystemInfo.dwAllocationGranularity = OS_PAGE_SIZE;
+    int nrcpus = 0;
+
+#if HAVE_SYSCONF
+    nrcpus = sysconf(_SC_NPROCESSORS_ONLN);
+    if (nrcpus < 1)
+    {
+        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_ONLN\n");
+        return false;
+    }
+#elif HAVE_SYSCTL
+    int mib[2];
+
+    size_t sz = sizeof(nrcpus);
+    mib[0] = CTL_HW;
+    mib[1] = HW_NCPU;
+    int rc = sysctl(mib, 2, &nrcpus, &sz, NULL, 0);
+    if (rc != 0)
+    {
+        ASSERT_UNCONDITIONALLY("sysctl failed for HW_NCPU\n");
+        return false;
+    }
+#endif // HAVE_SYSCONF
+
+    g_SystemInfo.dwNumberOfProcessors = nrcpus;
+
+    return true;
 }
 
 extern "C" void FlushProcessWriteBuffers()
 {
     // UNIXTODO: Implement
-}
-
-extern "C" uint32_t GetTickCount()
-{
-    return PalGetTickCount();
-}
-
-int32_t FastInterlockIncrement(int32_t volatile *lpAddend)
-{
-    return __sync_add_and_fetch(lpAddend, 1);
-}
-
-int32_t FastInterlockDecrement(int32_t volatile *lpAddend)
-{
-    return __sync_sub_and_fetch(lpAddend, 1);
-}
-
-int32_t FastInterlockExchange(int32_t volatile *Target, int32_t Value)
-{
-    return __sync_swap(Target, Value);
-}
-
-int32_t FastInterlockCompareExchange(int32_t volatile *Destination, int32_t Exchange, int32_t Comperand)
-{
-    return __sync_val_compare_and_swap(Destination, Comperand, Exchange);
-}
-
-int32_t FastInterlockExchangeAdd(int32_t volatile *Addend, int32_t Value)
-{
-    return __sync_fetch_and_add(Addend, Value);
-}
-
-void * _FastInterlockExchangePointer(void * volatile *Target, void * Value)
-{
-    return __sync_swap(Target, Value);
-}
-
-void * _FastInterlockCompareExchangePointer(void * volatile *Destination, void * Exchange, void * Comperand)
-{
-    return __sync_val_compare_and_swap(Destination, Comperand, Exchange);
-}
-
-void FastInterlockOr(uint32_t volatile *p, uint32_t msk)
-{
-    __sync_fetch_and_or(p, msk);
-}
-
-void FastInterlockAnd(uint32_t volatile *p, uint32_t msk)
-{
-    __sync_fetch_and_and(p, msk);
 }
 
 extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
@@ -1364,16 +1164,6 @@ extern "C" uint32_t GetCurrentThreadId()
 {
     // UNIXTODO: Implement
     return 1;
-}
-
-extern "C" uint32_t SetFilePointer(
-    HANDLE hFile,
-    int32_t lDistanceToMove,
-    int32_t * lpDistanceToMoveHigh,
-    uint32_t dwMoveMethod)
-{
-    // TODO: Reimplement callers using CRT
-    return 0;
 }
 
 extern "C" UInt32_BOOL FlushFileBuffers(
@@ -1408,62 +1198,505 @@ extern "C" uint32_t GetLastError()
     return 1;
 }
 
-extern "C" uint32_t GetWriteWatch(
-    uint32_t dwFlags,
-    void* lpBaseAddress,
-    size_t dwRegionSize,
-    void** lpAddresses,
-    uintptr_t * lpdwCount,
-    uint32_t * lpdwGranularity
-    )
-{
-    // TODO: Implement for background GC
-    *lpAddresses = NULL;
-    *lpdwCount = 0;
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
-}
-
-extern "C" uint32_t ResetWriteWatch(
-    void* lpBaseAddress,
-    size_t dwRegionSize
-    )
-{
-    // TODO: Implement for background GC
-    // Until it is implemented, return non-zero value as an indicator of failure
-    return 1;
-}
-
-extern "C" UInt32_BOOL VirtualUnlock(
-    void* lpAddress,
-    size_t dwSize
-    )
-{
-    // TODO: Implement
-    return UInt32_FALSE;
-}
-
-void UnsafeInitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    InitializeCriticalSection(lpCriticalSection);
-}
-
-void UnsafeEEEnterCriticalSection(CRITICAL_SECTION *lpCriticalSection)
-{
-    EnterCriticalSection(lpCriticalSection);
-}
-
-void UnsafeEELeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    LeaveCriticalSection(lpCriticalSection);
-}
-
-void UnsafeDeleteCriticalSection(CRITICAL_SECTION *lpCriticalSection)
-{
-    DeleteCriticalSection(lpCriticalSection);
-}
-
 extern "C" UInt32 WaitForMultipleObjectsEx(UInt32, HANDLE *, UInt32_BOOL, UInt32, UInt32_BOOL)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+}
+
+// Initialize the interface implementation
+bool GCToOSInterface::Initialize()
+{
+    return true;
+}
+
+// Shutdown the interface implementation
+void GCToOSInterface::Shutdown()
+{
+}
+
+// Get numeric id of the current thread if possible on the 
+// current platform. It is indended for logging purposes only.
+// Return:
+//  Numeric id of the current thread or 0 if the 
+uint32_t GCToOSInterface::GetCurrentThreadIdForLogging()
+{
+    return ::GetCurrentThreadId();
+}
+
+// Get id of the process
+uint32_t GCToOSInterface::GetCurrentProcessId()
+{
+    return ::GetCurrentProcessId();
+}
+
+// Set ideal affinity for the current thread
+// Parameters:
+//  affinity - ideal processor affinity for the thread
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
+{
+    return false;
+}
+
+// Get the number of the current processor
+uint32_t GCToOSInterface::GetCurrentProcessorNumber()
+{
+    // UNIXTODO: implement this method
+    return 0;
+}
+
+// Check if the OS supports getting current processor number
+bool GCToOSInterface::CanGetCurrentProcessorNumber()
+{
+    return false;
+}
+
+// Flush write buffers of processors that are executing threads of the current process
+void GCToOSInterface::FlushProcessWriteBuffers()
+{
+    return ::FlushProcessWriteBuffers();
+}
+
+// Break into a debugger
+void GCToOSInterface::DebugBreak()
+{
+    __debugbreak();
+}
+
+// Get number of logical processors
+uint32_t GCToOSInterface::GetLogicalCpuCount()
+{
+    return g_cLogicalCpus;
+}
+
+// Causes the calling thread to sleep for the specified number of milliseconds
+// Parameters:
+//  sleepMSec   - time to sleep before switching to another thread
+void GCToOSInterface::Sleep(uint32_t sleepMSec)
+{
+    PalSleep(sleepMSec);
+}
+
+// Causes the calling thread to yield execution to another thread that is ready to run on the current processor.
+// Parameters:
+//  switchCount - number of times the YieldThread was called in a loop
+void GCToOSInterface::YieldThread(uint32_t switchCount)
+{
+    // UNIXTODO: handle the switchCount
+    YieldProcessor();
+}
+
+// Reserve virtual memory range.
+// Parameters:
+//  address   - starting virtual address, it can be NULL to let the function choose the starting address
+//  size      - size of the virtual memory range
+//  alignment - requested memory alignment, 0 means no specific alignment requested
+//  flags     - flags to control special settings like write watching
+// Return:
+//  Starting virtual address of the reserved range
+void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignment, uint32_t flags)
+{
+    ASSERT_MSG(!(flags & VirtualReserveFlags::WriteWatch), "WriteWatch not supported on Unix");
+
+    if (alignment == 0)
+    {
+        alignment = OS_PAGE_SIZE;
+    }
+
+    size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
+
+    void * pRetVal = mmap(address, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+
+    if (pRetVal != NULL)
+    {
+        void * pAlignedRetVal = (void *)(((size_t)pRetVal + (alignment - 1)) & ~(alignment - 1));
+        size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
+        if (startPadding != 0)
+        {
+            int ret = munmap(pRetVal, startPadding);
+            ASSERT(ret == 0);
+        }
+
+        size_t endPadding = alignedSize - (startPadding + size);
+        if (endPadding != 0)
+        {
+            int ret = munmap((void *)((size_t)pAlignedRetVal + size), endPadding);
+            ASSERT(ret == 0);
+        }
+
+        pRetVal = pAlignedRetVal;
+    }
+
+    return pRetVal;
+}
+
+// Release virtual memory range previously reserved using VirtualReserve
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualRelease(void* address, size_t size)
+{
+    int ret = munmap(address, size);
+
+    return (ret == 0);
+}
+
+// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualCommit(void* address, size_t size)
+{
+    return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
+}
+
+// Decomit virtual memory range.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
+{
+    return mprotect(address, size, PROT_NONE) == 0;
+}
+
+// Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
+// longer of interest, but it should not be decommitted.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+//  unlock  - true if the memory range should also be unlocked
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
+{
+    // UNIXTODO: Implement this
+    return true;
+}
+
+// Check if the OS supports write watching
+bool GCToOSInterface::SupportsWriteWatch()
+{
+    return PalHasCapability(WriteWatchCapability);
+}
+
+// Reset the write tracking state for the specified virtual memory range.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+void GCToOSInterface::ResetWriteWatch(void* address, size_t size)
+{
+}
+
+// Retrieve addresses of the pages that are written to in a region of virtual memory
+// Parameters:
+//  resetState         - true indicates to reset the write tracking state
+//  address            - starting virtual address
+//  size               - size of the virtual memory range
+//  pageAddresses      - buffer that receives an array of page addresses in the memory region
+//  pageAddressesCount - on input, size of the lpAddresses array, in array elements
+//                       on output, the number of page addresses that are returned in the array.
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size, void** pageAddresses, uintptr_t* pageAddressesCount)
+{
+    return false;
+}
+
+// Get size of the largest cache on the processor die
+// Parameters:
+//  trueSize - true to return true cache size, false to return scaled up size based on
+//             the processor architecture
+// Return:
+//  Size of the cache
+size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
+{
+    // UNIXTODO: implement this
+    return 0;
+}
+
+// Get affinity mask of the current process
+// Parameters:
+//  processMask - affinity mask for the specified process
+//  systemMask  - affinity mask for the system
+// Return:
+//  true if it has succeeded, false if it has failed
+// Remarks:
+//  A process affinity mask is a bit vector in which each bit represents the processors that
+//  a process is allowed to run on. A system affinity mask is a bit vector in which each bit
+//  represents the processors that are configured into a system.
+//  A process affinity mask is a subset of the system affinity mask. A process is only allowed
+//  to run on the processors configured into a system. Therefore, the process affinity mask cannot
+//  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
+bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
+{
+    return false;
+}
+
+// Get number of processors assigned to the current process
+// Return:
+//  The number of processors
+uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
+{
+    return ::PalGetProcessCpuCount();
+}
+
+// Get global memory status
+// Parameters:
+//  ms - pointer to the structure that will be filled in with the memory status
+void GCToOSInterface::GetMemoryStatus(GCMemoryStatus* ms)
+{
+    ms->dwMemoryLoad = 0;
+    ms->ullTotalPhys = 0;
+    ms->ullAvailPhys = 0;
+    ms->ullTotalPageFile = 0;
+    ms->ullAvailPageFile = 0;
+    ms->ullTotalVirtual = 0;
+    ms->ullAvailVirtual = 0;
+
+    UInt32_BOOL fRetVal = UInt32_FALSE;
+
+    // Get the physical memory size
+#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
+    int64_t physical_memory;
+
+    // Get the Physical memory size
+    physical_memory = sysconf( _SC_PHYS_PAGES ) * sysconf( _SC_PAGE_SIZE );
+    ms->ullTotalPhys = (uint64_t)physical_memory;
+    fRetVal = UInt32_TRUE;
+#elif HAVE_SYSCTL
+    int mib[2];
+    int64_t physical_memory;
+    size_t length;
+
+    // Get the Physical memory size
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    length = sizeof(int64_t);
+    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
+    if (rc != 0)
+    {
+        ASSERT_UNCONDITIONALLY("sysctl failed for HW_MEMSIZE\n");
+    }
+    else
+    {
+        ms->ullTotalPhys = (uint64_t)physical_memory;
+        fRetVal = UInt32_TRUE;
+    }
+#elif // HAVE_SYSINFO
+    // TODO: implement getting memory details via sysinfo. On Linux, it provides swap file details that
+    // we can use to fill in the xxxPageFile members.
+
+#endif // HAVE_SYSCONF
+
+    // Get the physical memory in use - from it, we can get the physical memory available.
+    // We do this only when we have the total physical memory available.
+    if (ms->ullTotalPhys > 0)
+    {
+#ifndef __APPLE__
+        ms->ullAvailPhys = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
+        int64_t used_memory = ms->ullTotalPhys - ms->ullAvailPhys;
+        ms->dwMemoryLoad = (uint32_t)((used_memory * 100) / ms->ullTotalPhys);
+#else
+        vm_size_t page_size;
+        mach_port_t mach_port;
+        mach_msg_type_number_t count;
+        vm_statistics_data_t vm_stats;
+        mach_port = mach_host_self();
+        count = sizeof(vm_stats) / sizeof(natural_t);
+        if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+        {
+            if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
+            {
+                ms->ullAvailPhys = (int64_t)vm_stats.free_count * (int64_t)page_size;
+                int64_t used_memory = ((int64_t)vm_stats.active_count + (int64_t)vm_stats.inactive_count + (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
+                ms->dwMemoryLoad = (uint32_t)((used_memory * 100) / ms->ullTotalPhys);
+            }
+        }
+        mach_port_deallocate(mach_task_self(), mach_port);
+#endif // __APPLE__
+    }
+
+    // There is no API to get the total virtual address space size on
+    // Unix, so we use a constant value representing 128TB, which is
+    // the approximate size of total user virtual address space on
+    // the currently supported Unix systems.
+    static const uint64_t _128TB = (1ull << 47);
+    ms->ullTotalVirtual = _128TB;
+    ms->ullAvailVirtual = ms->ullAvailPhys;
+
+    // UNIXTODO: failfast for !fRetVal?
+}
+
+// Get a high precision performance counter
+// Return:
+//  The counter value
+int64_t GCToOSInterface::QueryPerformanceCounter()
+{
+    LARGE_INTEGER ts;
+    if (!::QueryPerformanceCounter(&ts))
+    {
+        DebugBreak();
+        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
+        abort();
+    }
+
+    return ts.QuadPart;
+}
+
+// Get a frequency of the high precision performance counter
+// Return:
+//  The counter frequency
+int64_t GCToOSInterface::QueryPerformanceFrequency()
+{
+    LARGE_INTEGER frequency;
+    if (!::QueryPerformanceFrequency(&frequency))
+    {
+        DebugBreak();
+        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
+        abort();
+    }
+
+    return frequency.QuadPart;
+}
+
+// Get a time stamp with a low precision
+// Return:
+//  Time stamp in milliseconds
+uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
+{
+    return PalGetTickCount();
+}
+
+// Parameters of the GC thread stub
+struct GCThreadStubParam
+{
+    GCThreadFunction GCThreadFunction;
+    void* GCThreadParam;
+};
+
+// GC thread stub to convert GC thread function to an OS specific thread function
+static void* GCThreadStub(void* param)
+{
+    GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
+    GCThreadFunction function = stubParam->GCThreadFunction;
+    void* threadParam = stubParam->GCThreadParam;
+
+    delete stubParam;
+
+    function(threadParam);
+
+    return NULL;
+}
+
+// Create a new thread for GC use
+// Parameters:
+//  function - the function to be executed by the thread
+//  param    - parameters of the thread
+//  affinity - processor affinity of the thread
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
+{
+    NewHolder<GCThreadStubParam> stubParam = new (nothrow) GCThreadStubParam();
+    if (stubParam == NULL)
+    {
+        return false;
+    }
+
+    stubParam->GCThreadFunction = function;
+    stubParam->GCThreadParam = param;
+
+    pthread_attr_t attrs;
+
+    int st = pthread_attr_init(&attrs);
+    ASSERT(st == 0);
+
+    // Create the thread as detached, that means not joinable
+    st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+    ASSERT(st == 0);
+
+    pthread_t threadId;
+    st = pthread_create(&threadId, &attrs, GCThreadStub, stubParam);
+
+    if (st == 0)
+    {
+        stubParam.SuppressRelease();
+    }
+
+    int st2 = pthread_attr_destroy(&attrs);
+    ASSERT(st2 == 0);
+
+    return (st == 0);
+}
+
+// Open a file
+// Parameters:
+//  filename - name of the file to open
+//  mode     - mode to open the file in (like in the CRT fopen)
+// Return:
+//  FILE* of the opened file
+FILE* GCToOSInterface::OpenFile(const WCHAR* filename, const WCHAR* mode)
+{
+    int filenameLen = wcslen(filename);
+    int modeLen = wcslen(mode);
+
+    int charFilenameLen = filenameLen * 3;
+    int charModeLen = modeLen * 3;
+
+    NewArrayHolder<char> charFilename = new (nothrow) char [charFilenameLen + 1];
+    if (charFilename == NULL)
+    {
+        return NULL;
+    }
+
+    NewArrayHolder<char> charMode = new (nothrow) char [charModeLen + 1];
+    if (charMode == NULL)
+    {
+        return NULL;
+    }
+
+    if (WideCharToUTF8(filename, filenameLen + 1, charFilename, charFilenameLen + 1) == 0)
+    {
+        return NULL;
+    }
+
+    if (WideCharToUTF8(mode, modeLen + 1, charMode, charModeLen + 1) == 0)
+    {
+        return NULL;
+    }
+
+    return fopen(charFilename, charMode);
+}
+
+// Initialize the critical section
+void CLRCriticalSection::Initialize()
+{
+    int st = pthread_mutex_init(&m_cs.mutex, NULL);
+    ASSERT(st == 0);
+}
+
+// Destroy the critical section
+void CLRCriticalSection::Destroy()
+{
+    int st = pthread_mutex_destroy(&m_cs.mutex);
+    ASSERT(st == 0);
+}
+
+// Enter the critical section. Blocks until the section can be entered.
+void CLRCriticalSection::Enter()
+{
+    pthread_mutex_lock(&m_cs.mutex);
+}
+
+// Leave the critical section
+void CLRCriticalSection::Leave()
+{
+    pthread_mutex_unlock(&m_cs.mutex);
 }

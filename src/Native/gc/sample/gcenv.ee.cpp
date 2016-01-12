@@ -207,6 +207,17 @@ void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* pa
     }
 }
 
+void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC /*scanProc*/, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
+{
+}
+
+void GCToEEInterface::SyncBlockCacheDemote(int /*max_gen*/)
+{
+}
+
+void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
+{
+}
 
 void FinalizerThread::EnableFinalization()
 {
@@ -219,7 +230,7 @@ bool FinalizerThread::HaveExtraWorkForFinalizer()
     return false;
 }
 
-bool PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
+bool REDHAWK_PALAPI PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext)
 {
     // TODO: Implement for background GC
     return false;
@@ -229,18 +240,6 @@ bool IsGCSpecialThread()
 {
     // TODO: Implement for background GC
     return false;
-}
-
-void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC /*scanProc*/, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
-{
-}
-
-void GCToEEInterface::SyncBlockCacheDemote(int /*max_gen*/)
-{
-}
-
-void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
-{
 }
 
 void StompWriteBarrierEphemeral()

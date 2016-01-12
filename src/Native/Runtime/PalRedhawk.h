@@ -651,6 +651,7 @@ extern GCSystemInfo g_SystemInfo;
 #define REDHAWK_PALAPI __stdcall
 #endif // GCENV_INCLUDED
 
+bool InitializeSystemInfo();
 
 #ifndef DACCESS_COMPILE
 
@@ -773,18 +774,13 @@ REDHAWK_PALIMPORT int __cdecl PalVSprintf(_Out_writes_z_(cchBuffer) char * szBuf
 #define ALLOW_CONSTANT_EXPR_BEGIN __pragma(warning(push)) __pragma(warning(disable:4127))
 #define ALLOW_CONSTANT_EXPR_END __pragma(warning(pop))
 
-struct GCMemoryStatus;
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Out_ GCMemoryStatus* pBuffer);
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, UIntNative size, UInt32 allocationType, UInt32 protect);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, UIntNative size, UInt32 freeType);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(UInt32 milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
-REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateMutexW(_In_opt_ LPSECURITY_ATTRIBUTES pMutexAttributes, UInt32_BOOL initialOwner, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalGetTickCount();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ LPCWSTR pFileName, uint32_t desiredAccess, uint32_t shareMode, _In_opt_ void* pSecurityAttributes, uint32_t creationDisposition, uint32_t flagsAndAttributes, HANDLE hTemplateFile);
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalGetWriteWatch(UInt32 flags, _In_ void* pBaseAddress, UIntNative regionSize, _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, _Inout_opt_ UIntNative* pCount, _Inout_opt_ UInt32* pGranularity);
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, UIntNative regionSize);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateLowMemoryNotification();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(UInt32 exitCode);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);

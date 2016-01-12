@@ -9,9 +9,15 @@
 #pragma warning( disable: 4127 )  // conditional expression is constant -- common in GC
 #endif
 
+typedef wchar_t WCHAR;
+#define W(str) L##str
+
 #include "sal.h"
 #include "gcenv.structs.h"
+#include "gcenv.os.h"
+#include "gcenv.interlocked.h"
 #include "gcenv.base.h"
+#include "gcenv.ee.h"
 
 #include "Crst.h"
 #include "event.h"
@@ -25,6 +31,7 @@
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "gcrhinterface.h"
+#include "gcenv.interlocked.inl"
 
 #ifdef FEATURE_ETW
 
@@ -52,6 +59,12 @@
     #define ETW_EVENT_ENABLED(e,f) false
 
 #endif // FEATURE_ETW
+
+#define MAX_LONGPATH 1024
+
+#ifndef YieldProcessor
+#define YieldProcessor PalYieldProcessor
+#endif
 
 // Adapter for GC's view of Array
 class ArrayBase : Array

@@ -196,12 +196,6 @@ inline UInt32_BOOL PalSetEvent(HANDLE arg1)
     return SetEvent(arg1);
 }
 
-extern "C" UInt32_BOOL __stdcall SetFilePointerEx(HANDLE, LARGE_INTEGER, LARGE_INTEGER *, UInt32);
-inline UInt32_BOOL PalSetFilePointerEx(HANDLE arg1, LARGE_INTEGER arg2, LARGE_INTEGER * arg3, UInt32 arg4)
-{
-    return SetFilePointerEx(arg1, arg2, arg3, arg4);
-}
-
 extern "C" void __stdcall TerminateProcess(HANDLE, UInt32);
 inline void PalTerminateProcess(HANDLE arg1, UInt32 arg2)
 {
