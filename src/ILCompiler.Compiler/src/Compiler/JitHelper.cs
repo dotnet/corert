@@ -143,10 +143,10 @@ namespace ILCompiler
                     break;
 
                 case JitHelperId.Stelem_Ref:
-                    mangledName = "__stelem_ref";
+                    mangledName = "RhpStelemRef";
                     break;
                 case JitHelperId.Ldelema_Ref:
-                    mangledName = "__ldelema_ref";
+                    mangledName = "RhpLdelemaRef";
                     break;
 
                 case JitHelperId.MemCpy:

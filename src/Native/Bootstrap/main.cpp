@@ -15,6 +15,8 @@ extern "C" Object * RhNewObject(MethodTable * pMT);
 extern "C" Object * RhNewArray(MethodTable * pMT, int32_t elements);
 extern "C" void * RhTypeCast_IsInstanceOf(void * pObject, MethodTable * pMT);
 extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
+extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
+extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
 extern "C" __declspec(noreturn) void RhpThrowEx(void * pEx);
 
 #ifdef CPPCODEGEN
@@ -37,6 +39,16 @@ extern "C" Object * __castclass(void * obj, MethodTable * pTargetMT)
 extern "C" Object * __isinst(void * obj, MethodTable * pTargetMT)
 {
     return (Object *)RhTypeCast_IsInstanceOf(obj, pTargetMT);
+}
+
+extern "C" void __stelem_ref(void * pArray, unsigned idx, void * obj)
+{
+    RhpStelemRef(pArray, idx, obj);
+}
+
+extern "C" void* __ldelema_ref(void * pArray, unsigned idx, MethodTable * type)
+{
+    return RhpLdelemaRef(pArray, idx, type);
 }
 
 extern "C" void __throw_exception(void * pEx)
@@ -136,18 +148,6 @@ Object * __allocate_string(int32_t len)
 #endif
 }
 
-extern "C" void __stelem_ref(System::Array * pArray, unsigned idx, Object * val)
-{
-    // TODO: Range checks, writer barrier, etc.
-    ((Object **)(pArray->GetArrayData()))[idx] = val;
-}
-
-extern "C" void* __ldelema_ref(System::Array * pArray, unsigned idx, MethodTable * type)
-{
-    // TODO: Range checks, etc.
-    return &(((Object **)(pArray->GetArrayData()))[idx]);
-}
-
 void PrintStringObject(System::String *pStringToPrint)
 {
     // Get the number of characters in managed string (stored as UTF16)
@@ -221,7 +221,7 @@ Object * __get_commandline_args(int argc, char * argv[])
 
 	for (int i = 0; i < argc; i++)
 	{
-		__stelem_ref(args, i, __load_string_literal(argv[i]));
+		RhpStelemRef(args, i, __load_string_literal(argv[i]));
 	}
 	
 	return (Object *)args;
