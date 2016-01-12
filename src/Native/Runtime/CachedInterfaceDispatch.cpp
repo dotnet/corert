@@ -1,0 +1,550 @@
+//
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+//
+// ==--==
+//
+// Shared (non-architecture specific) portions of a mechanism to perform interface dispatch using an alternate
+// mechanism to VSD that does not require runtime generation of code.
+//
+// ============================================================================
+#include "common.h"
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+
+#include "commontypes.h"
+#include "commonmacros.h"
+#include "daccess.h"
+#include "debugmacrosext.h"
+#include "palredhawkcommon.h"
+#include "palredhawk.h"
+#include "assert.h"
+#include "slist.h"
+#include "holder.h"
+#include "crst.h"
+#include "redhawkwarnings.h"
+#include "targetptrs.h"
+#include "eetype.h"
+#include "range.h"
+#include "memaccessmgr.h"
+#include "allocheap.h"
+#include "rhbinder.h"
+#include "objectlayout.h"
+#include "gcrhinterface.h"
+#include "module.h"
+#include "rwlock.h"
+#include "runtimeinstance.h"
+#include "eetype.inl"
+
+#include "cachedinterfacedispatch.h"
+
+extern "C" UIntTarget __fastcall ManagedCallout2(UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame);
+
+// We always allocate cache sizes with a power of 2 number of entries. We have a maximum size we support,
+// defined below.
+#define CID_MAX_CACHE_SIZE_LOG2 6
+#define CID_MAX_CACHE_SIZE      (1 << CID_MAX_CACHE_SIZE_LOG2)
+
+//#define FEATURE_CID_STATS 1
+
+#ifdef FEATURE_CID_STATS
+
+// Some counters used for debugging and profiling the algorithms.
+extern "C"
+{
+    UInt32 CID_g_cLoadVirtFunc = 0;
+    UInt32 CID_g_cCacheMisses = 0;
+    UInt32 CID_g_cCacheSizeOverflows = 0;
+    UInt32 CID_g_cCacheOutOfMemory = 0;
+    UInt32 CID_g_cCacheReallocates = 0;
+    UInt32 CID_g_cCacheAllocates = 0;
+    UInt32 CID_g_cCacheDiscards = 0;
+    UInt32 CID_g_cInterfaceDispatches = 0;
+    UInt32 CID_g_cbMemoryAllocated = 0;
+    UInt32 CID_g_rgAllocatesBySize[CID_MAX_CACHE_SIZE_LOG2 + 1] = { 0 };
+};
+
+#define CID_COUNTER_INC(_counter_name) CID_g_c##_counter_name++
+
+#else
+
+#define CID_COUNTER_INC(_counter_name)
+
+#endif // FEATURE_CID_STATS
+
+// Helper function for updating two adjacent pointers (which are aligned on a double pointer-sized boundary)
+// atomically.
+//
+// This is used to update interface dispatch cache entries and also the stub/cache pair in
+// interface dispatch indirection cells. The cases have slightly different semantics: cache entry updates
+// (fFailOnNonNull == true) require that the existing values in the location are both NULL whereas indirection
+// cell updates have no such restriction. In both cases we'll try the update once; on failure we'll return the
+// new value of the second pointer and on success we'll the old value of the second pointer.
+//
+// This suits the semantics of both callers. For indirection cell updates the caller needs to know the address
+// of the cache that can now be scheduled for release and the cache pointer is the second one in the pair. For
+// cache entry updates the caller only needs a success/failure indication: on success the return value will be
+// NULL and on failure non-NULL.
+static void * UpdatePointerPairAtomically(void * pPairLocation,
+                                          void * pFirstPointer,
+                                          void * pSecondPointer,
+                                          bool fFailOnNonNull)
+{
+#if defined(_X86_) || defined(_ARM_)
+    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
+    Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
+
+    // Read the old value in the location. If fFailOnNonNull is set we just assume this was zero and we'll
+    // fail below if that's not the case.
+    Int64 iOldValue = fFailOnNonNull ? 0 : *(Int64 volatile *)pPairLocation;
+
+    Int64 iUpdatedOldValue = PalInterlockedCompareExchange64((Int64*)pPairLocation, iNewValue, iOldValue);
+    if (iUpdatedOldValue == iOldValue)
+    {
+        // Successful update. Return the previous value of the second pointer. For cache entry updates
+        // (fFailOnNonNull == true) this is guaranteed to be NULL in this case and the result being being
+        // NULL in the success case is all the caller cares about. For indirection cell updates the second
+        // pointer represents the old cache and the caller needs this data so they can schedule the cache
+        // for deletion once it becomes safe to do so.
+        return (void*)(UInt32)(iOldValue >> 32);
+    }
+
+    // The update failed due to a racing update to the same location. Return the new value of the second
+    // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
+    return pSecondPointer;
+#elif defined(_AMD64_)
+    // The same comments apply to the AMD64 version. The CompareExchange looks a little different since the
+    // API was refactored in terms of Int64 to avoid creating a 128-bit integer type.
+
+    Int64 rgComparand[2] = { 0 , 0 };
+    if (!fFailOnNonNull)
+    {
+        rgComparand[0] = *(Int64 volatile *)pPairLocation;
+        rgComparand[1] = *((Int64 volatile *)pPairLocation + 1);
+    }
+
+    UInt8 bResult = PalInterlockedCompareExchange128((Int64*)pPairLocation, (Int64)pSecondPointer, (Int64)pFirstPointer, rgComparand);
+    if (bResult == 1)
+    {
+        // Success, return old value of second pointer (rgComparand is updated by
+        // PalInterlockedCompareExchange128 with the old pointer values in this case).
+        return (void*)rgComparand[1];
+    }
+
+    // Failure, return the new second pointer value.
+    return pSecondPointer;
+#else
+#error Unsupported architecture
+#endif
+}
+
+// Helper method for updating an interface dispatch cache entry atomically. See comments by the usage of
+// this method for the details of why we need this. If a racing update is detected false is returned and the
+// update abandoned. This is necessary since it's not safe to update a valid cache entry (one with a non-NULL
+// m_pInstanceType field) outside of a GC.
+static bool UpdateCacheEntryAtomically(InterfaceDispatchCacheEntry *pEntry,
+                                       EEType * pInstanceType,
+                                       void * pTargetCode)
+{
+    C_ASSERT(sizeof(InterfaceDispatchCacheEntry) == (sizeof(void*) * 2));
+    C_ASSERT(offsetof(InterfaceDispatchCacheEntry, m_pInstanceType) < offsetof(InterfaceDispatchCacheEntry, m_pTargetCode));
+
+    return UpdatePointerPairAtomically(pEntry, pInstanceType, pTargetCode, true) == NULL;
+}
+
+// Helper method for updating an interface dispatch indirection cell's stub and cache pointer atomically.
+// Returns the value of the cache pointer that is not referenced by the cell after this operation. This can be
+// NULL on the initial cell update, the value of the old cache pointer or the value of the new cache pointer
+// supplied (in the case where another thread raced with us for the update and won). In any case, if the
+// returned pointer is non-NULL it represents a cache that should be scehduled for release.
+static InterfaceDispatchCache * UpdateCellStubAndCache(InterfaceDispatchCell * pCell,
+                                                       void * pStub,
+                                                       InterfaceDispatchCache * pCache)
+{
+    C_ASSERT(offsetof(InterfaceDispatchCell, m_pStub) == 0);
+    C_ASSERT(offsetof(InterfaceDispatchCell, m_pCache) == sizeof(void*));
+
+    UIntNative cacheValue = (UIntNative)UpdatePointerPairAtomically(pCell, pStub, pCache, false);
+
+    if (InterfaceDispatchCell::IsCache(cacheValue))
+    {
+        return (InterfaceDispatchCache *)cacheValue;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
+//
+// Cache allocation logic.
+//
+// We use the existing AllocHeap mechanism as our base allocator for cache blocks. This is because it can
+// provide the required 16-byte alignment with no padding or heap header costs. The downside is that there is
+// no deallocation support (which would be hard to implement without implementing a cache block compaction
+// scheme, which is certainly possible but not necessarily needed at this point).
+//
+// Instead, much like the original VSD algorithm, we keep discarded cache blocks and use them to satisfy new
+// allocation requests before falling back on AllocHeap.
+//
+// We can't re-use discarded cache blocks immediately since there may be code that is still using them.
+// Instead we link them into a global list and then at the next GC (when no code can hold a reference to these
+// any more) we can place them on one of several free lists based on their size.
+//
+
+#ifdef _AMD64_
+
+// Head of the list of discarded cache blocks that can't be re-used just yet.
+InterfaceDispatchCache * g_pDiscardedCacheList; // for AMD64, m_pCell is not used and we can link the discarded blocks themselves
+
+#else // ifdef _AMD64_
+
+struct DiscardedCacheBlock
+{
+    DiscardedCacheBlock *       m_pNext;        // for x86 and ARM, we are short of registers, thus need the m_pCell back pointers
+    InterfaceDispatchCache *    m_pCache;       // and thus need this auxiliary list
+};
+
+// Head of the list of discarded cache blocks that can't be re-used just yet.
+static DiscardedCacheBlock * g_pDiscardedCacheList = NULL;
+
+// Free list of DiscardedCacheBlock items
+static DiscardedCacheBlock * g_pDiscardedCacheFree = NULL;
+
+#endif // ifdef _AMD64_
+
+// Free lists for each cache size up to the maximum. We allocate from these in preference to new memory.
+static InterfaceDispatchCache * g_rgFreeLists[CID_MAX_CACHE_SIZE_LOG2 + 1];
+
+// Lock protecting both g_pDiscardedCacheList and g_rgFreeLists. We don't use the OS SLIST support here since
+// it imposes too much space overhead on list entries on 64-bit (each is actually 16 bytes).
+static CrstStatic g_sListLock;
+
+// The base memory allocator.
+static AllocHeap * g_pAllocHeap = NULL;
+
+// Each cache size has an associated stub used to perform lookup over that cache.
+extern "C" void (*RhpInterfaceDispatch1)();
+extern "C" void (*RhpInterfaceDispatch2)();
+extern "C" void (*RhpInterfaceDispatch4)();
+extern "C" void (*RhpInterfaceDispatch8)();
+extern "C" void (*RhpInterfaceDispatch16)();
+extern "C" void (*RhpInterfaceDispatch32)();
+extern "C" void (*RhpInterfaceDispatch64)();
+
+typedef void (*InterfaceDispatchStub)();
+
+static void * g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
+    &RhpInterfaceDispatch1,
+    &RhpInterfaceDispatch2,
+    &RhpInterfaceDispatch4,
+    &RhpInterfaceDispatch8,
+    &RhpInterfaceDispatch16,
+    &RhpInterfaceDispatch32,
+    &RhpInterfaceDispatch64,
+};
+
+// Map a cache size into a linear index.
+static UInt32 CacheSizeToIndex(UInt32 cCacheEntries)
+{
+    switch (cCacheEntries)
+    {
+    case 1:
+        return 0;
+    case 2:
+        return 1;
+    case 4:
+        return 2;
+    case 8:
+        return 3;
+    case 16:
+        return 4;
+    case 32:
+        return 5;
+    case 64:
+        return 6;
+    default:
+        UNREACHABLE();
+    }
+}
+
+// Allocates and initializes new cache of the given size. If given a previous version of the cache (guaranteed
+// to be smaller) it will also pre-populate the new cache with the contents of the old. Additionally the
+// address of the interface dispatch stub associated with this size of cache is returned.
+static InterfaceDispatchCache * AllocateCache(UInt32 cCacheEntries, InterfaceDispatchCache * pExistingCache, EEType *interfaceType, UInt16 slot, void ** ppStub)
+{
+    ASSERT((cCacheEntries >= 1) && (cCacheEntries <= CID_MAX_CACHE_SIZE));
+    ASSERT((pExistingCache == NULL) || (pExistingCache->m_cEntries < cCacheEntries));
+
+    InterfaceDispatchCache * pCache = NULL;
+
+    // Transform cache size back into a linear index.
+    UInt32 idxCacheSize = CacheSizeToIndex(cCacheEntries);
+
+    // Attempt to allocate the head of the free list of the correct cache size.
+    if (g_rgFreeLists[idxCacheSize] != NULL)
+    {
+        CrstHolder lh(&g_sListLock);
+
+        pCache = g_rgFreeLists[idxCacheSize];
+        if (pCache != NULL)
+        {
+            g_rgFreeLists[idxCacheSize] = pCache->m_pNextFree;
+            CID_COUNTER_INC(CacheReallocates);
+        }
+    }
+
+    if (pCache == NULL)
+    {
+        // No luck with the free list, allocate the cache from via the AllocHeap.
+        pCache = (InterfaceDispatchCache*)g_pAllocHeap->AllocAligned(sizeof(InterfaceDispatchCache) +
+                                                                     (sizeof(InterfaceDispatchCacheEntry) * cCacheEntries),
+                                                                     sizeof(void*) * 2);
+        if (pCache == NULL)
+            return NULL;
+
+        CID_COUNTER_INC(CacheAllocates);
+#ifdef FEATURE_CID_STATS
+        CID_g_cbMemoryAllocated += sizeof(InterfaceDispatchCacheEntry) * cCacheEntries;
+        CID_g_rgAllocatesBySize[idxCacheSize]++;
+#endif
+    }
+
+    // We have a cache block, now initialize it.
+    pCache->m_pNextFree = NULL;
+    pCache->m_cEntries = cCacheEntries;
+    pCache->m_cacheHeader.m_pInterfaceType = interfaceType;
+    pCache->m_cacheHeader.m_slotIndex = slot;
+
+    // Copy over entries from previous version of the cache (if any) and zero the rest.
+    if (pExistingCache)
+    {
+        memcpy(pCache->m_rgEntries,
+               pExistingCache->m_rgEntries,
+               sizeof(InterfaceDispatchCacheEntry) * pExistingCache->m_cEntries);
+        memset(&pCache->m_rgEntries[pExistingCache->m_cEntries],
+               0,
+               (cCacheEntries - pExistingCache->m_cEntries) * sizeof(InterfaceDispatchCacheEntry));
+    }
+    else
+    {
+        memset(pCache->m_rgEntries,
+               0,
+               cCacheEntries * sizeof(InterfaceDispatchCacheEntry));
+    }
+
+    // Pass back the stub the corresponds to this cache size.
+    *ppStub = g_rgDispatchStubs[idxCacheSize];
+
+    return pCache;
+}
+
+// Discards a cache by adding it to a list of caches that may still be in use but will be made available for
+// re-allocation at the next GC.
+static void DiscardCache(InterfaceDispatchCache * pCache)
+{
+    CID_COUNTER_INC(CacheDiscards);
+
+    CrstHolder lh(&g_sListLock);
+
+#ifdef _AMD64_
+
+    // on AMD64, we can thread the list through the blocks directly
+    pCache->m_pNextFree = g_pDiscardedCacheList;
+    g_pDiscardedCacheList = pCache;
+
+#else // _AMD64_
+
+    // on other architectures, we cannot overwrite pCache->m_pNextFree yet
+    // because it shares storage with m_pCell which may still be used as a back
+    // pointer to the dispatch cell.
+
+    // instead, allocate an auxiliary node (with its own auxiliary free list)
+    DiscardedCacheBlock * pDiscardedCacheBlock = g_pDiscardedCacheFree;
+    if (pDiscardedCacheBlock != NULL)
+        g_pDiscardedCacheFree = pDiscardedCacheBlock->m_pNext;
+    else
+        pDiscardedCacheBlock = (DiscardedCacheBlock *)g_pAllocHeap->Alloc(sizeof(DiscardedCacheBlock));
+
+    if (pDiscardedCacheBlock != NULL) // if we did NOT get the memory, we leak the discarded block
+    {
+        pDiscardedCacheBlock->m_pNext = g_pDiscardedCacheList;
+        pDiscardedCacheBlock->m_pCache = pCache;
+
+        g_pDiscardedCacheList = pDiscardedCacheBlock;
+    }
+#endif // _AMD64_
+}
+
+// Called during a GC to empty the list of discarded caches (which we can now guarantee aren't being accessed)
+// and sort the results into the free lists we maintain for each cache size.
+void ReclaimUnusedInterfaceDispatchCaches()
+{
+    // No need for any locks, we're not racing with any other threads any more.
+
+    // Walk the list of discarded caches.
+#ifdef _AMD64_
+
+    // on AMD64, this is threaded directly through the cache blocks
+    InterfaceDispatchCache * pCache = g_pDiscardedCacheList;
+    while (pCache)
+    {
+        InterfaceDispatchCache * pNextCache = pCache->m_pNextFree;
+
+        // Transform cache size back into a linear index.
+        UInt32 idxCacheSize = CacheSizeToIndex(pCache->m_cEntries);
+
+        // Insert the cache onto the head of the correct free list.
+        pCache->m_pNextFree = g_rgFreeLists[idxCacheSize];
+        g_rgFreeLists[idxCacheSize] = pCache;
+
+        pCache = pNextCache;
+    }
+
+#else // _AMD64_
+
+    // on other architectures, we use an auxiliary list instead
+    DiscardedCacheBlock * pDiscardedCacheBlock = g_pDiscardedCacheList;
+    while (pDiscardedCacheBlock)
+    {
+        InterfaceDispatchCache * pCache = pDiscardedCacheBlock->m_pCache;
+
+        // Transform cache size back into a linear index.
+        UInt32 idxCacheSize = CacheSizeToIndex(pCache->m_cEntries);
+
+        // Insert the cache onto the head of the correct free list.
+        pCache->m_pNextFree = g_rgFreeLists[idxCacheSize];
+        g_rgFreeLists[idxCacheSize] = pCache;
+
+        // Insert the container to its own free list
+        DiscardedCacheBlock * pNextDiscardedCacheBlock = pDiscardedCacheBlock->m_pNext;
+        pDiscardedCacheBlock->m_pNext = g_pDiscardedCacheFree;
+        g_pDiscardedCacheFree = pDiscardedCacheBlock;
+        pDiscardedCacheBlock = pNextDiscardedCacheBlock;
+    }
+
+#endif // _AMD64_
+
+    // We processed all the discarded entries, so we can simply NULL the list head.
+    g_pDiscardedCacheList = NULL;
+}
+
+// One time initialization of interface dispatch.
+bool InitializeInterfaceDispatch()
+{
+    g_pAllocHeap = new AllocHeap();
+    if (g_pAllocHeap == NULL)
+        return false;
+
+    if (!g_pAllocHeap->Init())
+        return false;
+
+    g_sListLock.Init(CrstInterfaceDispatchGlobalLists, CRST_DEFAULT);
+
+    return true;
+}
+
+COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell * pCell, PTR_Code pTargetCode, EEType* pInstanceType))
+{
+    // Attempt to update the cache with this new mapping (if we have any cache at all, the initial state
+    // is none).
+    InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();
+    UInt32 cOldCacheEntries = 0;
+    if (pCache != NULL)
+    {
+        InterfaceDispatchCacheEntry * pCacheEntry = pCache->m_rgEntries;
+        for (UInt32 i = 0; i < pCache->m_cEntries; i++, pCacheEntry++)
+        {
+            if (pCacheEntry->m_pInstanceType == NULL)
+            {
+                if (UpdateCacheEntryAtomically(pCacheEntry, pInstanceType, pTargetCode))
+                    return (PTR_Code)pTargetCode;
+            }
+        }
+
+        cOldCacheEntries = pCache->m_cEntries;
+    }
+
+    // Failed to update an existing cache, we need to allocate a new cache. The old one, if any, might
+    // still be in use so we can't simply reclaim it. Instead we keep it around until the next GC at which
+    // point we know no code is holding a reference to it. Particular cache sizes are associated with a
+    // (globally shared) stub which implicitly knows the size of the cache.
+
+    if (cOldCacheEntries == CID_MAX_CACHE_SIZE)
+    {
+        // We already reached the maximum cache size we wish to allocate. For now don't attempt to cache
+        // the mapping we just did: there's no safe way to update the existing cache right now if it
+        // doesn't have an empty entries. There are schemes that would let us do this at the next GC point
+        // but it's not clear whether we should do this or re-tune the cache max size, we need to measure
+        // this.
+        CID_COUNTER_INC(CacheSizeOverflows);
+        return (PTR_Code)pTargetCode;
+    }
+
+    UInt32 cNewCacheEntries = cOldCacheEntries ? cOldCacheEntries * 2 : 1;
+    void *pStub;
+    pCache = AllocateCache(cNewCacheEntries, pCache, pCell->GetInterfaceType(), pCell->GetSlotNumber(), &pStub);
+    if (pCache == NULL)
+    {
+        CID_COUNTER_INC(CacheOutOfMemory);
+        return (PTR_Code)pTargetCode;
+    }
+
+#ifndef _AMD64_
+    // Set back pointer to interface dispatch cell for non-AMD64
+    // for AMD64, we have enough registers to make this trick unnecessary
+    pCache->m_pCell = pCell;
+#endif // _AMD64_
+
+    // Add entry to the first unused slot.
+    InterfaceDispatchCacheEntry * pCacheEntry = &pCache->m_rgEntries[cOldCacheEntries];
+    pCacheEntry->m_pInstanceType = pInstanceType;
+    pCacheEntry->m_pTargetCode = pTargetCode;
+
+    // Publish the new cache by atomically updating both the cache and stub pointers in the indirection
+    // cell. This returns us a cache to discard which may be NULL (no previous cache), the previous cache
+    // value or the cache we just allocated (another thread peformed an update first).
+    InterfaceDispatchCache * pDiscardedCache = UpdateCellStubAndCache(pCell, pStub, pCache);
+    if (pDiscardedCache)
+        DiscardCache(pDiscardedCache);
+
+    return (PTR_Code)pTargetCode;
+}
+
+COOP_PINVOKE_HELPER(PTR_Code, RhpSearchDispatchCellCache, (InterfaceDispatchCell * pCell, EEType* pInstanceType))
+{
+    // This function must be implemented in native code so that we do not take a GC while walking the cache
+    InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();
+    if (pCache != NULL)
+    {
+        InterfaceDispatchCacheEntry * pCacheEntry = pCache->m_rgEntries;
+        for (UInt32 i = 0; i < pCache->m_cEntries; i++, pCacheEntry++)
+            if (pCacheEntry->m_pInstanceType == pInstanceType)
+                return (PTR_Code)pCacheEntry->m_pTargetCode;
+    }
+
+    return nullptr;
+}
+
+// Given a dispatch cell, get the type and slot associated with it. This function MUST be implemented
+// in cooperative native code, as the m_pCache field on the cell is unsafe to access from managed
+// code due to its use of the GC state as a lock, and as lifetime control
+COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell, EEType** ppInterfaceType, UInt16 *slot))
+{
+    *ppInterfaceType = pCell->GetInterfaceType();
+    *slot = pCell->GetSlotNumber();
+}
+
+EXTERN_C PTR_Code FASTCALL RhpCidResolve(Object* pObject, InterfaceDispatchCell* pCell);
+
+// Given an object instance, look up the method on the type of that object that implements the interface
+// method associated with the given InterfaceDispatchCell. This mapping should always exist. Once it's found
+// add the mapping to the currently associated cache. If the cache doesn't yet exist or is full then we
+// allocate one. This version of the routine assumes the cache doesn't already contain the mapping.
+COOP_PINVOKE_HELPER(PTR_Code, RhpResolveInterfaceMethodCacheMiss, (Object * pObject, 
+                                                                   InterfaceDispatchCell * pCell,
+                                                                   PInvokeTransitionFrame * pTransitionFrame))
+{
+    CID_COUNTER_INC(CacheMisses);
+    return (PTR_Code)ManagedCallout2((UIntTarget)pObject, (UIntTarget)pCell, RhpCidResolve, pTransitionFrame);
+}
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
