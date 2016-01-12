@@ -129,7 +129,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = result, source = value)
+                    fixed (char* dest = &result._firstChar, source = value)
                     {
                         wstrcpy(dest, source, value.Length);
                     }
@@ -172,7 +172,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = result, source = value)
+                    fixed (char* dest = &result._firstChar, source = value)
                     {
                         wstrcpy(dest, source + startIndex, length);
                     }
@@ -213,7 +213,7 @@ namespace System
                     return String.Empty;
 
                 String result = FastAllocateString(count);
-                fixed (char* dest = result)
+                fixed (char* dest = &result._firstChar)
                     wstrcpy(dest, ptr, count);
                 return result;
             }
@@ -263,7 +263,7 @@ namespace System
 
             try
             {
-                fixed (char* dest = result)
+                fixed (char* dest = &result._firstChar)
                     wstrcpy(dest, pFrom, length);
                 return result;
             }
@@ -295,7 +295,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = result)
+                    fixed (char* dest = &result._firstChar)
                     {
                         uint cc = (uint)((c << 16) | c);
                         uint* dmem = (uint*)dest;
@@ -522,7 +522,7 @@ namespace System
             }
 
             // Set up the loop variables.
-            fixed (char* pStrA = strA, pStrB = strB)
+            fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)
             {
                 char* strAChars = pStrA + indexA;
                 char* strBChars = pStrB + indexB;
@@ -1094,7 +1094,7 @@ namespace System
         {
             unsafe
             {
-                fixed (char* src = this)
+                fixed (char* src = &_firstChar)
                 {
 #if BIT64
                     int hash1 = 5381;
@@ -2000,7 +2000,7 @@ namespace System
             if (count < 0 || count > Length - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
                 for (int i = 0; i < count; i++)
@@ -2043,7 +2043,7 @@ namespace System
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
             InitializeProbabilisticMap(charMap, anyOf);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
                 for (int i = 0; i < count; i++)
@@ -2213,7 +2213,7 @@ namespace System
             if (count < 0 || count - 1 > startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
                 //We search [startIndex..EndIndex]
@@ -2266,7 +2266,7 @@ namespace System
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
             InitializeProbabilisticMap(charMap, anyOf);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
 
@@ -2656,7 +2656,7 @@ namespace System
         {
             int firstFoundIndex = -1;
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 for (int i = 0; i < Length; i++)
                 {
@@ -2673,7 +2673,7 @@ namespace System
 
             char[] newChars = new char[Length];
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 //Copy the characters, doing the replacement as we go.
                 for (int i = 0; i < firstFoundIndex; i++)
@@ -2705,9 +2705,9 @@ namespace System
 
                 int numOccurrences = 0;
                 int[] replacementIndices = new int[this.Length];
-                fixed (char* pThis = this)
+                fixed (char* pThis = &_firstChar)
                 {
-                    fixed (char* pOldValue = oldValue)
+                    fixed (char* pOldValue = &oldValue._firstChar)
                     {
                         int idx = 0;
                         int lastPossibleMatchIdx = this.Length - oldValue.Length;
@@ -2748,11 +2748,11 @@ namespace System
 
                 int dstLength = checked(this.Length + (newValue.Length - oldValue.Length) * numOccurrences);
                 String dst = FastAllocateString(dstLength);
-                fixed (char* pThis = this)
+                fixed (char* pThis = &_firstChar)
                 {
-                    fixed (char* pDst = dst)
+                    fixed (char* pDst = &dst._firstChar)
                     {
-                        fixed (char* pNewValue = newValue)
+                        fixed (char* pNewValue = &newValue._firstChar)
                         {
                             int dstIdx = 0;
                             int thisIdx = 0;
