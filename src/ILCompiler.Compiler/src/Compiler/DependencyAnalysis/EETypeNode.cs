@@ -239,29 +239,6 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitShort((short)flags);
         }
 
-        private static bool ComputeRequiresAlign8(TypeDesc type)
-        {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
-            {
-                return false;
-            }
-
-            if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment > 4)
-                {
-                    return true;
-                }
-            }
-            else if (type is DefType && ((DefType)type).InstanceByteAlignment > 4)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         private void OutputBaseSize(ref ObjectDataBuilder objData)
         {
             int pointerSize = _type.Context.Target.PointerSize;
@@ -440,7 +417,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }
             
-            if (ComputeRequiresAlign8(_type))
+            if (EETypeBuilderHelpers.ComputeRequiresAlign8(_type))
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }

@@ -611,7 +611,7 @@ namespace Internal.IL
 
             AddTypeReference(type, false);
 
-            Append(opcode == ILOpcode.isinst ? "__isinst_class" : "__castclass_class");
+            Append(opcode == ILOpcode.isinst ? "__isinst" : "__castclass");
             Append("(");
             Append(value.Value.Name);
             Append(", ");

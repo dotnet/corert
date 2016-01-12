@@ -1606,10 +1606,21 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.FltRound; break;
 
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(ftnNum.ToString());
             }
 
-            return (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(JitHelper.GetMangledName(id)));
+            string mangledName;
+            MethodDesc methodDesc;
+            JitHelper.GetEntryPoint(_compilation.TypeSystemContext, id, out mangledName, out methodDesc);
+            Debug.Assert(mangledName != null || methodDesc != null);
+
+            ISymbolNode entryPoint;
+            if (mangledName != null)
+                entryPoint = _compilation.NodeFactory.ExternSymbol(mangledName);
+            else
+                entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
+
+            return (void*)ObjectToHandle(entryPoint);
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
