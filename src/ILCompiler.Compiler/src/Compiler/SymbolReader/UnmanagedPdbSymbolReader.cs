@@ -14,13 +14,50 @@ namespace ILCompiler.SymbolReader
     /// </summary>
     internal sealed class UnmanagedPdbSymbolReader : PdbSymbolReader
     {
+        [DllImport("mscoree.dll")]
+        private static extern int CLRCreateInstance([In] ref Guid clsid, [In] ref Guid riid, [Out, MarshalAs(UnmanagedType.Interface)] out ICLRMetaHost ppInterface);
+
+        [Guid("d332db9e-b9b3-4125-8207-a14884f53216")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [ComVisible(true)]
+        interface ICLRMetaHost
+        {
+            [PreserveSig]
+            int GetRuntime([In, MarshalAs(UnmanagedType.LPWStr)] String pwzVersion, [In] ref Guid riid, [Out, MarshalAs(UnmanagedType.Interface)] out ICLRRuntimeInfo ppRuntime);
+
+            // Don't need any other methods.
+        }
+
+        [Guid("bd39d1d2-ba2f-486a-89b0-b4b0cb466891")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [ComVisible(true)]
+        interface ICLRRuntimeInfo
+        {
+            void GetVersionString_Placeholder();
+            void GetRuntimeDirectory_Placeholder();
+            void IsLoaded_Placeholder();
+            void LoadErrorString_Placeholder();
+            void LoadLibrary_Placeholder();
+            void GetProcAddress_Placeholder();
+
+            [PreserveSig]
+            int GetInterface([In] ref Guid rclsid, [In] ref Guid riid, [Out, MarshalAs(UnmanagedType.IUnknown)] out Object ppUnk);
+
+            void IsLoadable_Placeholder();
+            void SetDefaultStartupFlags_Placeholder();
+            void GetDefaultStartupFlags_Placeholder();
+
+            [PreserveSig]
+            int BindAsLegacyV2Runtime();
+
+            // Don't need any other methods.
+        }
+
         [Guid("809c652e-7396-11d2-9771-00a0c9b4d50c")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         [ComVisible(true)]
         private interface IMetaDataDispenser
         {
-            // We need to be able to call OpenScope, which is the 2nd vtable slot.
-            // Thus we need this one placeholder here to occupy the first slot..
             void DefineScope_Placeholder();
 
             [PreserveSig]
@@ -28,24 +65,6 @@ namespace ILCompiler.SymbolReader
 
             // Don't need any other methods.
         }
-
-        // Since we're just blindly passing this interface through managed code to the Symbinder, we don't care about actually
-        // importing the specific methods.
-        // This needs to be public so that we can call Marshal.GetComInterfaceForObject() on it to get the
-        // underlying metadata pointer.
-        [Guid("7DAC8207-D3AE-4c75-9B67-92801A497D44")]
-        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        [ComVisible(true)]
-        public interface IMetadataImport
-        {
-            // Just need a single placeholder method so that it doesn't complain about an empty interface.
-            void Placeholder();
-        }
-
-        [DllImport("clr.dll")]
-        private static extern int MetaDataGetDispenser([In] ref Guid rclsid,
-                                                       [In] ref Guid riid,
-                                                       [Out, MarshalAs(UnmanagedType.Interface)] out Object ppv);
 
         [DllImport("ole32.dll")]
         private static extern int CoCreateInstance(ref Guid rclsid, IntPtr pUnkOuter,
@@ -62,21 +81,36 @@ namespace ILCompiler.SymbolReader
         {
             try
             {
+                Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+
+                ICLRMetaHost objMetaHost;
+                Guid CLSID_CLRMetaHost = new Guid(0x9280188d, 0x0e8e, 0x4867, 0xb3, 0x0c, 0x7f, 0xa8, 0x38, 0x84, 0xe8, 0xde);
+                Guid IID_CLRMetaHost = new Guid(0xd332db9e, 0xb9b3, 0x4125, 0x82, 0x07, 0xa1, 0x48, 0x84, 0xf5, 0x32, 0x16);
+                if (CLRCreateInstance(ref CLSID_CLRMetaHost, ref IID_CLRMetaHost, out objMetaHost) < 0)
+                    return;
+
+                ICLRRuntimeInfo objRuntime;
+                Guid IID_CLRRuntimeInfo = new Guid(0xbd39d1d2, 0xba2f, 0x486a, 0x89, 0xb0, 0xb4, 0xb0, 0xcb, 0x46, 0x68, 0x91);
+                if (objMetaHost.GetRuntime("v4.0.30319", ref IID_CLRRuntimeInfo, out objRuntime) < 0)
+                    return;
+
+                // To get everything from the v4 runtime
+                objRuntime.BindAsLegacyV2Runtime();
+
                 // Create a COM Metadata dispenser
-                Guid dispenserClassID = new Guid(0xe5cb7a31, 0x7512, 0x11d2, 0x89, 0xce, 0x00, 0x80, 0xc7, 0x92, 0xe5, 0xd8); // CLSID_CorMetaDataDispenser
-                Guid dispenserIID = new Guid(0x809c652e, 0x7396, 0x11d2, 0x97, 0x71, 0x00, 0xa0, 0xc9, 0xb4, 0xd5, 0x0c); // IID_IMetaDataDispenser
                 object objDispenser;
-                if (MetaDataGetDispenser(ref dispenserClassID, ref dispenserIID, out objDispenser) < 0)
+                Guid CLSID_CorMetaDataDispenser = new Guid(0xe5cb7a31, 0x7512, 0x11d2, 0x89, 0xce, 0x00, 0x80, 0xc7, 0x92, 0xe5, 0xd8);
+                if (objRuntime.GetInterface(ref CLSID_CorMetaDataDispenser, ref IID_IUnknown, out objDispenser) < 0)
                     return;
                 s_metadataDispenser = (IMetaDataDispenser)objDispenser;
 
-                Guid symBinderClassID = new Guid(0x0A29FF9E, 0x7F9C, 0x4437, 0x8B, 0x11, 0xF4, 0x24, 0x49, 0x1E, 0x39, 0x31); // CLSID_CorSymBinder
-                Guid symBinderIID = new Guid(0xAA544d42, 0x28CB, 0x11d3, 0xbd, 0x22, 0x00, 0x00, 0xf8, 0x08, 0x49, 0xbd); // IID_ISymUnmanagedBinder
+                // Create a SymBinder
                 object objBinder;
-                if (CoCreateInstance(ref symBinderClassID,
+                Guid CLSID_CorSymBinder = new Guid(0x0a29ff9e, 0x7f9c, 0x4437, 0x8b, 0x11, 0xf4, 0x24, 0x49, 0x1e, 0x39, 0x31);
+                if (CoCreateInstance(ref CLSID_CorSymBinder,
                                      IntPtr.Zero, // pUnkOuter
                                      1, // CLSCTX_INPROC_SERVER
-                                     ref symBinderIID,
+                                     ref IID_IUnknown,
                                      out objBinder) < 0)
                     return;
                 s_symBinder = (ISymUnmanagedBinder)objBinder;
@@ -93,12 +127,12 @@ namespace ILCompiler.SymbolReader
         {
             try
             {
-                Guid importerIID = new Guid(0x7dac8207, 0xd3ae, 0x4c75, 0x9b, 0x67, 0x92, 0x80, 0x1a, 0x49, 0x7d, 0x44); // IID_IMetaDataImport
+                Guid IID_IMetaDataImport = new Guid(0x7dac8207, 0xd3ae, 0x4c75, 0x9b, 0x67, 0x92, 0x80, 0x1a, 0x49, 0x7d, 0x44);
 
                 // Open an metadata importer on the given filename. We'll end up passing this importer straight
                 // through to the Binder.
                 object objImporter;
-                if (s_metadataDispenser.OpenScope(metadataFileName, 0x00000010 /* read only */, ref importerIID, out objImporter) < 0)
+                if (s_metadataDispenser.OpenScope(metadataFileName, 0x00000010 /* read only */, ref IID_IMetaDataImport, out objImporter) < 0)
                     return null;
 
                 ISymUnmanagedReader reader;
