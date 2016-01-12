@@ -93,7 +93,7 @@
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
         <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
-        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.3-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.4-prerelease-00001" />
         <dependency id="Microsoft.DotNet.RyuJit" version="1.0.3-prerelease-00001" />
         <dependency id="System.AppContext" version="4.0.0" />
         <dependency id="System.Collections" version="4.0.10" />
