@@ -130,6 +130,14 @@ namespace ILCompiler.DependencyAnalysis
             objData.Alignment = 16;
             objData.DefinedSymbols.Add(this);
 
+            // Todo: Generic Type Definition EETypes
+            //       Early-out just to prevent crashing at compile time...
+            if (_type.HasInstantiation && _type.IsTypeDefinition)
+            {
+                objData.EmitZeroPointer();
+                return objData.ToObjectData();
+            }
+            
             ComputeOptionalEETypeFields(factory);
             if (null == _optionalFieldsNode)
             {
