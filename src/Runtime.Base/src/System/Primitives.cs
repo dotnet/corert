@@ -376,6 +376,22 @@ namespace System
         public static readonly UIntPtr Zero;
 
         [Intrinsic]
+        public unsafe UIntPtr(uint value)
+        {
+            _value = (void*)value;
+        }
+
+        [Intrinsic]
+        public unsafe UIntPtr(ulong value)
+        {
+#if BIT64
+            _value = (void*)value;
+#else
+            _value = (void*)checked((uint)value);
+#endif
+        }
+
+        [Intrinsic]
         public unsafe UIntPtr(void* value)
         {
             _value = value;
@@ -391,6 +407,22 @@ namespace System
         public static unsafe explicit operator void* (UIntPtr value)
         {
             return value._value;
+        }
+
+        [Intrinsic]
+        public unsafe static explicit operator uint (UIntPtr value)
+        {
+#if BIT64
+            return checked((uint)value._value);
+#else
+            return (uint)value._value;
+#endif
+        }
+
+        [Intrinsic]
+        public unsafe static explicit operator ulong (UIntPtr value)
+        {
+            return (ulong)value._value;
         }
 
         [Intrinsic]
