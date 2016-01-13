@@ -295,9 +295,10 @@ namespace System.Globalization
 
             //
             // The pos should point to a quote character. This method will
-            // get the string encloed by the quote character.
+            // get the length, including beginning and ending quote, of the
+            // quoted string.
             //
-            internal static int ParseQuoteString(String format, int pos, StringBuilder result)
+            internal static int ParseQuoteString(String format, int pos)
             {
                 //
                 // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -324,7 +325,7 @@ namespace System.Globalization
                         // because the second double quote is escaped.
                         if (pos < formatLen)
                         {
-                            result.Append(format[pos++]);
+                            pos++;
                         }
                         else
                         {
@@ -333,10 +334,6 @@ namespace System.Globalization
                             //
                             throw new FormatException(SR.Format_InvalidString);
                         }
-                    }
-                    else
-                    {
-                        result.Append(ch);
                     }
                 }
 
@@ -679,9 +676,8 @@ namespace System.Globalization
                             break;
                         case '\'':
                         case '\"':
-                            StringBuilder enquotedString = new StringBuilder();
-                            tokenLen = ParseQuoteString(format, i, enquotedString);
-                            result.Append(enquotedString);
+                            tokenLen = ParseQuoteString(format, i);
+                            result.Append(format, i + 1, tokenLen - 2);
                             break;
                         case '%':
                             // Optional format character.
