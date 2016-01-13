@@ -13,13 +13,62 @@
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
 extern "C" Object * RhNewArray(MethodTable * pMT, int32_t elements);
+extern "C" void * RhTypeCast_IsInstanceOf(void * pObject, MethodTable * pMT);
+extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
+extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
+extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
+extern "C" __declspec(noreturn) void RhpThrowEx(void * pEx);
+
+#ifdef CPPCODEGEN
+
+extern "C" Object * __allocate_object(MethodTable * pMT)
+{
+    return RhNewObject(pMT);
+}
+
+extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
+{
+    return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
+}
+
+extern "C" Object * __castclass(void * obj, MethodTable * pTargetMT)
+{
+    return (Object *)RhTypeCast_CheckCast(obj, pTargetMT);
+}
+
+extern "C" Object * __isinst(void * obj, MethodTable * pTargetMT)
+{
+    return (Object *)RhTypeCast_IsInstanceOf(obj, pTargetMT);
+}
+
+extern "C" void __stelem_ref(void * pArray, unsigned idx, void * obj)
+{
+    RhpStelemRef(pArray, idx, obj);
+}
+
+extern "C" void* __ldelema_ref(void * pArray, unsigned idx, MethodTable * type)
+{
+    return RhpLdelemaRef(pArray, idx, type);
+}
+
+extern "C" void __throw_exception(void * pEx)
+{
+    RhpThrowEx(pEx);
+}
+
+void __range_check_fail()
+{
+    throw "ThrowRangeOverflowException";
+}
+
+#endif // CPPCODEGEN
+
+
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
 extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
 extern "C" void RhpRegisterSimpleModule(SimpleModuleHeader* pModule);
-extern "C" void * RhHandleAlloc(void * pObject, int handleType);
-extern "C" void * RhTypeCast_IsInstanceOfClass(void * pObject, MethodTable * pMT);
-extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
+extern "C" void * RhpHandleAlloc(void * pObject, int handleType);
 
 #define DLL_PROCESS_ATTACH      1
 extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
@@ -87,15 +136,6 @@ namespace System_Private_CoreLib { namespace System {
 
 using namespace System_Private_CoreLib;
 
-//
-// The fast paths for object allocation and write barriers is performance critical. They are often
-// hand written in assembly code, etc.
-//
-extern "C" Object * __allocate_object(MethodTable * pMT)
-{
-    return RhNewObject(pMT);
-}
-
 extern "C" void __EEType_System_Private_CoreLib_System_String();
 extern "C" void __EEType_System_Private_CoreLib_System_String__Array();
 
@@ -106,23 +146,6 @@ Object * __allocate_string(int32_t len)
 #else
     return RhNewArray((MethodTable*)__EEType_System_Private_CoreLib_System_String, len);
 #endif
-}
-
-extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
-{
-    return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
-}
-
-extern "C" void __stelem_ref(System::Array * pArray, unsigned idx, Object * val)
-{
-    // TODO: Range checks, writer barrier, etc.
-    ((Object **)(pArray->GetArrayData()))[idx] = val;
-}
-
-extern "C" void* __ldelema_ref(System::Array * pArray, unsigned idx, MethodTable * type)
-{
-    // TODO: Range checks, etc.
-    return &(((Object **)(pArray->GetArrayData()))[idx]);
 }
 
 void PrintStringObject(System::String *pStringToPrint)
@@ -156,12 +179,6 @@ extern "C" void __not_yet_implemented(System::String * pMethodName, System::Stri
     exit(-1);
 }
 
-extern "C" void __throw_exception(void * pEx)
-{
-    // TODO: Exception throwing
-    throw "__throw_exception";
-}
-
 extern "C" void __fail_fast()
 {
     // TODO: FailFast
@@ -189,35 +206,8 @@ OBJECTHANDLE __load_static_string_literal(const uint8_t* utf8, int32_t utf8Len, 
     uint16_t * buffer = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     if (strLen > 0)
         UTF8ToWideChar((char*)utf8, utf8Len, buffer, strLen);
-    return (OBJECTHANDLE)RhHandleAlloc(pString, 2 /* Normal */);
-}
-
-extern "C" Object * __castclass_class(void * p, MethodTable * pTargetMT)
-{
-    return (Object *)RhTypeCast_CheckCast(p, pTargetMT);
-}
-
-extern "C" Object * __isinst_class(void * p, MethodTable * pTargetMT)
-{
-    return (Object *)RhTypeCast_IsInstanceOfClass(p, pTargetMT);
-}
-
-__declspec(noreturn)
-__declspec(noinline)
-void ThrowRangeOverflowException()
-{
-    throw "ThrowRangeOverflowException";
-}
-
-void __range_check_fail()
-{
-    ThrowRangeOverflowException();
-}
-
-void __range_check(void * a, size_t elem)
-{
-    if (elem >= *((size_t*)a + 1))
-        ThrowRangeOverflowException();
+    // TODO: OOM handling
+    return (OBJECTHANDLE)RhpHandleAlloc(pString, 2 /* Normal */);
 }
 
 Object * __get_commandline_args(int argc, char * argv[])
@@ -227,11 +217,11 @@ Object * __get_commandline_args(int argc, char * argv[])
 #else
 	 MethodTable * pStringArrayMT = (MethodTable*)__EEType_System_Private_CoreLib_System_String__Array;
 #endif
-	System::Array * args = (System::Array *)__allocate_array(argc, pStringArrayMT);
+	System::Array * args = (System::Array *)RhNewArray(pStringArrayMT, argc);
 
 	for (int i = 0; i < argc; i++)
 	{
-		__stelem_ref(args, i, __load_string_literal(argv[i]));
+		RhpStelemRef(args, i, __load_string_literal(argv[i]));
 	}
 	
 	return (Object *)args;
@@ -277,6 +267,10 @@ extern "C" void RhpUniversalTransition()
 extern "C" void RhpFailFastForPInvokeExceptionPreemp()
 {
     throw "RhpFailFastForPInvokeExceptionPreemp";
+}
+extern "C" void RhpThrowEx(void * pEx)
+{
+    throw "RhpThrowEx";
 }
 extern "C" void RhpThrowHwEx()
 {
@@ -400,8 +394,9 @@ int __statics_fixup()
 {
     for (void** currentBlock = &__GCStaticRegionStart; currentBlock < &__GCStaticRegionEnd; currentBlock++)
     {
-        Object* gcBlock = __allocate_object((MethodTable*)*currentBlock);
-        *currentBlock = RhHandleAlloc(gcBlock, 2 /* Normal */);
+        Object* gcBlock = RhNewObject((MethodTable*)*currentBlock);
+        // TODO: OOM handling
+        *currentBlock = RhpHandleAlloc(gcBlock, 2 /* Normal */);
     }
 
     return 0;

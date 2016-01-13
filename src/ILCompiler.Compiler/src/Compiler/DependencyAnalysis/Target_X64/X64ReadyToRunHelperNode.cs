@@ -20,8 +20,11 @@ namespace ILCompiler.DependencyAnalysis
             switch (Id)
             {
                 case ReadyToRunHelperId.NewHelper:
-                    encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol((TypeDesc)Target));
-                    encoder.EmitJMP(factory.ExternSymbol("__allocate_object"));
+                    {
+                        TypeDesc target = (TypeDesc)Target;
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(target)));
+                    }
                     break;
 
                 case ReadyToRunHelperId.VirtualCall:
@@ -40,33 +43,52 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.IsInstanceOf:
-                    encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol((TypeDesc)Target));
-                    encoder.EmitJMP(factory.ExternSymbol("__isinst_class"));
+                    {
+                        TypeDesc target = (TypeDesc)Target;
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, false)));
+                    }
                     break;
 
                 case ReadyToRunHelperId.CastClass:
-                    encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol((TypeDesc)Target));
-                    encoder.EmitJMP(factory.ExternSymbol("__castclass_class"));
+                    {
+                        TypeDesc target = (TypeDesc)Target;
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, true)));
+                    }
                     break;
 
                 case ReadyToRunHelperId.NewArr1:
-                    encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol((TypeDesc)Target));
-                    encoder.EmitJMP(factory.ExternSymbol("__allocate_array"));
+                    {
+                        TypeDesc target = (TypeDesc)Target;
+
+
+                        // TODO: Swap argument order instead
+                        // mov arg1, arg0
+                        encoder.Builder.EmitByte(0x48);
+                        encoder.Builder.EmitShort((short)((encoder.TargetRegister.Arg0 == Register.RCX) ? 0xD18B : 0xF78B));
+
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.NecessaryTypeSymbol(target));
+                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(target)));
+                    }
                     break;
 
                 case ReadyToRunHelperId.GetNonGCStaticBase:
-                    if (!((MetadataType)Target).HasStaticConstructor)
                     {
-                        Debug.Assert(Id == ReadyToRunHelperId.GetNonGCStaticBase);
-                        encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol((MetadataType)Target));
-                        encoder.EmitRET();
-                    }
-                    else
-                    {
-                        // We need to trigger the cctor before returning the base
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol((MetadataType)Target));
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.TypeNonGCStaticsSymbol((MetadataType)Target));
-                        encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
+                        MetadataType target = (MetadataType)Target;
+                        if (!target.HasStaticConstructor)
+                        {
+                            Debug.Assert(Id == ReadyToRunHelperId.GetNonGCStaticBase);
+                            encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
+                            encoder.EmitRET();
+                        }
+                        else
+                        {
+                            // We need to trigger the cctor before returning the base
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol(target));
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.TypeNonGCStaticsSymbol(target));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
+                        }
                     }
                     break;
 
@@ -75,23 +97,26 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    if (!((MetadataType)Target).HasStaticConstructor)
                     {
-                        encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeGCStaticsSymbol((MetadataType)Target));
-                        AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
-                        encoder.EmitRET();
-                    }
-                    else
-                    {
-                        // We need to trigger the cctor before returning the base
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol((MetadataType)Target));
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.TypeGCStaticsSymbol((MetadataType)Target));
-                        AddrMode loadFromRdx = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromRdx);
-                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromRdx);
-                        encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
+                        MetadataType target = (MetadataType)Target;
+                        if (!target.HasStaticConstructor)
+                        {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeGCStaticsSymbol(target));
+                            AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
+                            encoder.EmitRET();
+                        }
+                        else
+                        {
+                            // We need to trigger the cctor before returning the base
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol(target));
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.TypeGCStaticsSymbol(target));
+                            AddrMode loadFromRdx = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromRdx);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromRdx);
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
+                        }
                     }
                     break;
 

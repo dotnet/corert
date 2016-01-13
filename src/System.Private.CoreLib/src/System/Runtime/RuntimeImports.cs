@@ -106,11 +106,51 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLastGCDuration")]
         internal static extern long RhGetLastGCDuration(int generation);
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
         //
+#if CORERT
+        // Allocate handle.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
+        private static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
 
+        internal static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        {
+            IntPtr h = RhpHandleAlloc(value, type);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+
+        // Allocate handle for dependent handle case where a secondary can be set at the same time.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
+        private static extern IntPtr RhpHandleAllocDependent(Object primary, Object secondary);
+
+        internal static IntPtr RhHandleAllocDependent(Object primary, Object secondary)
+        {
+            IntPtr h = RhpHandleAllocDependent(primary, secondary);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+
+        // Allocate variable handle with its initial type.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAllocVariable")]
+        private static extern IntPtr RhpHandleAllocVariable(Object value, uint type);
+
+        internal static IntPtr RhHandleAllocVariable(Object value, uint type)
+        {
+            IntPtr h = RhHandleAllocVariable(value, type);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+#else // CORERT
         // Allocate handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleAlloc")]
@@ -125,6 +165,7 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleAllocVariable")]
         internal static extern IntPtr RhHandleAllocVariable(Object value, uint type);
+#endif // CORERT
 
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]

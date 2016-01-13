@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
@@ -722,7 +723,6 @@ namespace System.Runtime
             }
         }
 
-
         [RuntimeExport("RhTypeCast_CheckVectorElemAddr")]
         static public unsafe void CheckVectorElemAddr(void* pvElemType, object array)
         {
@@ -749,6 +749,99 @@ namespace System.Runtime
             }
         }
 
+#if CORERT
+        // CORERT-TODO: Remove once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
+        [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        static private unsafe extern void RhpAssignRef(IntPtr * address, object obj);
+
+        // Size of array header in number of IntPtr-sized elements
+        private const int ArrayBaseIndex = 2;
+
+        [RuntimeExport("RhpStelemRef")]
+        static public unsafe void StelemRef(Object array, int index, object obj)
+        {
+            // This is supported only on arrays
+            Debug.Assert(array.EEType->IsArray, "first argument must be an array");
+
+            if (index >= array.GetArrayLength())
+            {
+                IntPtr addr = array.EEType->GetAssociatedModuleAddress();
+                Exception e = EH.GetClasslibException(ExceptionIDs.IndexOutOfRange, addr);
+                throw e;
+            }
+
+            if (obj != null)
+            {
+                EEType* arrayElemType = array.EEType->RelatedParameterType;
+                bool compatible;
+                if (arrayElemType->IsInterface)
+                {
+                    compatible = IsInstanceOfInterface(obj, arrayElemType) != null;
+                }
+                else if (arrayElemType->IsArray)
+                {
+                    compatible = IsInstanceOfArray(obj, arrayElemType) != null;
+                }
+                else
+                {
+                    compatible = IsInstanceOfClass(obj, arrayElemType) != null;
+                }
+
+                if (!compatible)
+                {
+                    // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
+                    // to find the correct classlib.
+
+                    IntPtr addr = array.EEType->GetAssociatedModuleAddress();
+                    Exception e = EH.GetClasslibException(ExceptionIDs.ArrayTypeMismatch, addr);
+
+                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                }
+
+                // Both bounds and type check are ok.
+                fixed (void * pArray = &array.m_pEEType)
+                {
+                    RhpAssignRef((IntPtr*)pArray + ArrayBaseIndex + index, obj);
+                }
+            }
+            else
+            {
+                fixed (void * pArray = &array.m_pEEType)
+                {
+                    // Storing null does not require write barrier
+                    *((IntPtr*)pArray + ArrayBaseIndex + index) = default(IntPtr);
+                }
+            }
+        }
+
+        [RuntimeExport("RhpLdelemaRef")]
+        static public unsafe void * LdelemaRef(Object array, int index, IntPtr elementType)
+        {
+            Debug.Assert(array.EEType->IsArray, "second argument must be an array");
+
+            EEType* elemType = (EEType*)elementType;
+            EEType* arrayElemType = array.EEType->RelatedParameterType;
+
+            if (!AreTypesEquivalentInternal(elemType, arrayElemType))
+            {
+                // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
+                // to find the correct classlib.
+
+                IntPtr addr = array.EEType->GetAssociatedModuleAddress();
+                Exception e = EH.GetClasslibException(ExceptionIDs.ArrayTypeMismatch, addr);
+
+                BinderIntrinsics.TailCall_RhpThrowEx(e);
+            }
+
+            fixed (void * pArray = &array.m_pEEType)
+            {
+                // CORERT-TODO: This code has GC hole - the method return type should really be byref.
+                // Requires byref returns in C# to fix cleanly (https://github.com/dotnet/roslyn/issues/118)
+                return (IntPtr*)pArray + ArrayBaseIndex + index;
+            }
+        }
+#endif
 
         static internal unsafe bool IsDerived(EEType* pDerivedType, EEType* pBaseType)
         {

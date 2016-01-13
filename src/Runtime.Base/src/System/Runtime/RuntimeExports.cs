@@ -12,6 +12,7 @@ namespace System.Runtime
 {
     internal static class RuntimeExports
     {
+#if !CORERT
         //
         // internalcalls for System.Runtime.InteropServices.GCHandle.
         //
@@ -78,6 +79,7 @@ namespace System.Runtime
 
             return h;
         }
+#endif // !CORERT
 
         //
         // internal calls for allocation
@@ -288,6 +290,9 @@ namespace System.Runtime
         [RuntimeExport("RhpReversePInvokeBadTransition")]
         public static void RhpReversePInvokeBadTransition()
         {
+#if CORERT
+            EH.FallbackFailFast(RhFailFastReason.IllegalNativeCallableEntry, null);
+#else
             IntPtr returnAddress = BinderIntrinsics.GetReturnAddress();
             if (returnAddress != IntPtr.Zero)
             {
@@ -303,6 +308,7 @@ namespace System.Runtime
                 EH.FallbackFailFast(RhFailFastReason.InternalError, null);
                 throw EH.GetClasslibException(ExceptionIDs.Arithmetic, returnAddress);
             }
+#endif
         }
 
         // EEType interrogation methods.

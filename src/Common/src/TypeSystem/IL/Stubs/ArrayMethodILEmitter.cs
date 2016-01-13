@@ -145,7 +145,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLabel(rangeExceptionLabel); // Assumes that there is one "int" pushed on the stack
             codeStream.Emit(ILOpcode.pop);
 
-            MethodDesc throwHelper = _method.Context.GetHelperEntryPoint("ArrayMethodILHelpers", "ThrowIndexOutOfRangeException");
+            MethodDesc throwHelper = _method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
             codeStream.EmitCallThrowHelper(_emitter, throwHelper);
 
 #if false

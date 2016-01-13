@@ -61,9 +61,6 @@
             <ILCompilerSdkFiles Include="System.Private.CoreLib.Native" Condition="'$(OsEnvironment)'!='Windows_NT'" />
 
             <!-- ILCompiler.SDK Cpp Codegen support files -->
-            <ILCompilerSdkCppCodegenFiles Include="Native/inc/unix/sal.h" /> 
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.base.h" />
-            <ILCompilerSdkCppCodegenFiles Include="Native/gc/env/gcenv.structs.h" />
             <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/common.h" />
 
             <ILCompilerSdkFilesManaged Include="System.Private.CoreLib" />

@@ -30,8 +30,10 @@ namespace System
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 649
 
-        private EEType* _pEEType;
+        // Marked as internal for now so that some classes can use C#'s fixed statement on objects. 
+        // Wouldn't have to do this if we could directly declared pinned locals.
         // TODO: Consider making this EETypePtr instead of EEType*.
+        internal EEType* m_pEEType;
 
 #pragma warning restore
 
@@ -56,17 +58,17 @@ namespace System
                 // NOTE:  if managed code can be run when the GC has objects marked, then this method is 
                 //        unsafe.  But, generically, we don't expect managed code such as this to be allowed
                 //        to run while the GC is running.
-                return _pEEType;
-                //PREFER _pEEType.ToPointer();
+                return m_pEEType;
+                //PREFER m_pEEType.ToPointer();
             }
         }
 
         internal unsafe int GetArrayLength()
         {
-            Debug.Assert(_pEEType->IsArray, "this is only supported on arrays");
+            Debug.Assert(m_pEEType->IsArray, "this is only supported on arrays");
 
-            // m_numComponents is an int field that is directly after _pEEType
-            fixed (EEType** ptr = &_pEEType)
+            // m_numComponents is an int field that is directly after m_pEEType
+            fixed (EEType** ptr = &m_pEEType)
                 return *(int*)(ptr + 1);
         }
     }
