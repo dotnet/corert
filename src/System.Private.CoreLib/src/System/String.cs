@@ -2034,7 +2034,7 @@ namespace System
                 throw new ArgumentNullException("anyOf");
 
             if (startIndex < 0 || startIndex > Length)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || count > Length - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
