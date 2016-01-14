@@ -21,7 +21,7 @@
     "System.Reflection.Metadata": "1.1.0",
     "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc2-23616",
     "Microsoft.DotNet.RyuJit": "1.0.3-prerelease-00001",
-    "Microsoft.DotNet.ObjectWriter": "1.0.3-prerelease-00001"
+    "Microsoft.DotNet.ObjectWriter": "1.0.4-prerelease-00001"
   },
   "frameworks": {
     "dnxcore50": { },

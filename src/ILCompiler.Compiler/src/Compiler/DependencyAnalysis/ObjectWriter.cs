@@ -88,10 +88,13 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData);
-        public void EmitFrameInfo(string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData)
+        private static extern void EmitFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData,
+                                                 string personalityFunctionName, int LSDASize, byte[] LSDA);
+        public void EmitFrameInfo(string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData,
+                                  string personalityFunctionName = null, int LSDASize = 0, byte[] LSDA = null)
         {
-            EmitFrameInfo(_nativeObjectWriter, methodName, startOffset, endOffset, blobSize, blobData);
+            EmitFrameInfo(_nativeObjectWriter, methodName, startOffset, endOffset, blobSize, blobData,
+                          personalityFunctionName, LSDASize, LSDA);
         }
 
         [DllImport(NativeObjectWriterFileName)]
