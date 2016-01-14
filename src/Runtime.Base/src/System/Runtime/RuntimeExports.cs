@@ -515,9 +515,10 @@ namespace System.Runtime
         // During garbage collection, the GC will inspect the data in this structure, and verify that:
         //  1) _magic is set to the magic number (also hard coded on the GC side)
         //  2) The reported region is valid (checks alignments, size, within bounds of the thread memory, etc...)
-        //  3) The value of the _hash field is the computed hash of _regionPointerLow with _regionPointerHigh
-        //  4) The region must be IntPtr aligned, and have a size which is also IntPtr aligned
-        // If all 3 conditions are satisfied, the region of memory starting at _regionPointerLow and ending at
+        //  3) The ConservativelyReportedRegionDesc pointer must be reported by a frame which does not make a pinvoke transition.
+        //  4) The value of the _hash field is the computed hash of _regionPointerLow with _regionPointerHigh
+        //  5) The region must be IntPtr aligned, and have a size which is also IntPtr aligned
+        // If all conditions are satisfied, the region of memory starting at _regionPointerLow and ending at
         // _regionPointerHigh will be conservatively reported.
         // This can only be used to report memory regions on the current stack and the structure must itself 
         // be located on the stack.

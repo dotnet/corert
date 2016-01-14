@@ -844,6 +844,8 @@ namespace Internal.Runtime.Augments
         }
 
         // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
+        // This function must also not make a p/invoke transition, or the fixed statement reporting of the ConservativelyReportedRegionDesc
+        // will be ignored.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
         {

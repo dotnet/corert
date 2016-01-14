@@ -346,6 +346,10 @@ bool IsOnReadablePortionOfThread(EnumGcRefScanContext * pSc, PTR_VOID pointer)
         return false;
     }
     
+    // If the stack_limit is 0, then it wasn't set properly, and the check below will not
+    // operate correctly.
+    ASSERT(pSc->stack_limit != 0);
+
     // This ensures that the pointer is not in a currently-unused portion of the stack
     // because the above check is only verifying against the entire stack bounds,
     // but stack_limit is describing the current bound of the stack
@@ -399,7 +403,10 @@ bool IsPtrAligned(TADDR value)
 // and if they exist, it will conservatively report a memory region.
 static void ReportExplicitConservativeReportedRegionIfValid(EnumGcRefContext * pCtx, PTR_PTR_VOID pObject)
 {
-    ASSERT(pCtx->sc->stack_limit != 0);
+    // If the stack_limit isn't set (which can only happen for frames which make a p/invoke call
+    // there cannot be a ConservativelyReportedRegionDesc
+    if (pCtx->sc->stack_limit == 0)
+        return;
 
     PTR_ConservativelyReportedRegionDesc conservativeRegionDesc = (PTR_ConservativelyReportedRegionDesc)(*pObject);
 
