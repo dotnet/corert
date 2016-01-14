@@ -20,6 +20,8 @@ To consume the CLI tools installed as part of the build, do the following:
 
 * Add `<repo_root>\bin\tools\cli\bin` to the path
 * set `DOTNET_HOME` environment variable to `<repo_root>\bin\tools\cli`
+* On windows ensure you are using the 'VS2015 x64 Native Tools Command Prompt'
+    (This is distinct from the 'Developer Command Prompt for VS2015')
 
 You should now be able to use the `dotnet` commands of the CLI tools.
 
@@ -53,3 +55,18 @@ From the shell/command prompt, issue the following commands to generate the nati
     dotnet restore
     dotnet compile --native --cpp --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1
 ```
+
+## Workarounds for linker errors on Windows ##
+
+If you are seeing errors such as: 
+
+```
+    LINK : fatal error LNK1104: cannot open file 'kernel32.lib'
+    Linking of intermediate files failed.
+```
+
+There are a few workarounds you might try:
+ - Make sure you run these commands from the 'VS2015 x64 Native Tools Command Prompt' instead of a vanilla command prompt
+ - Search for the missing lib files in your SDK, for example under C:\Program Files (x86)\Windows Kits\10\lib. Make sure the path to these libraries is included in the LIB environment variable. It appears VS 2015 RTM developer command prompt does not correctly set the LIB paths for the 10586 Windows SDK. VS 2015 Update 1 resolves that issue, so installing it is another alternative.
+
+For more details see the discussion in issue #606
