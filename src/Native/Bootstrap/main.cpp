@@ -232,18 +232,6 @@ extern "C" void RhGetCurrentThreadStackTrace()
     throw "RhGetCurrentThreadStackTrace";
 }
 
-extern "C" void RhpGetDispatchCellInfo()
-{
-    throw "RhpGetDispatchCellInfo";
-}
-extern "C" void RhpUpdateDispatchCellCache()
-{
-    throw "RhpUpdateDispatchCellCache";
-}
-extern "C" void RhpSearchDispatchCellCache()
-{
-    throw "RhpSearchDispatchCellCache";
-}
 extern "C" void RhCollect()
 {
     throw "RhCollect";
@@ -284,6 +272,9 @@ extern "C" void RhReRegisterForFinalize()
 {
     throw "RhReRegisterForFinalize";
 }
+
+extern "C" void * g_pDispatchMapTemporaryWorkaround;
+void * g_pDispatchMapTemporaryWorkaround;
 
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
@@ -388,6 +379,7 @@ int __strings_fixup()
     return 0;
 }
 
+extern "C" void* __InterfaceDispatchMapTable;
 extern "C" void* __GCStaticRegionStart;
 extern "C" void* __GCStaticRegionEnd;
 int __statics_fixup()
@@ -405,6 +397,7 @@ int __statics_fixup()
 int main(int argc, char * argv[]) {
     if (__initialize_runtime() != 0) return -1;
     __register_module(&__module);
+    g_pDispatchMapTemporaryWorkaround = (void*)&__InterfaceDispatchMapTable;
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
 	
     if (__strings_fixup() != 0) return -1;

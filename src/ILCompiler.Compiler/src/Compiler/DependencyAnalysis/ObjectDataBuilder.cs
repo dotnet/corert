@@ -101,9 +101,9 @@ namespace ILCompiler.DependencyAnalysis
             _relocs.Add(symbolReloc);
         }
 
-        public void EmitReloc(ISymbolNode symbol, RelocType relocType)
+        public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
         {
-            AddRelocAtOffset(symbol, relocType, _data.Count);
+            AddRelocAtOffset(symbol, relocType, _data.Count, delta);
 
             // And add space for the reloc
             switch (relocType)
@@ -119,11 +119,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void EmitPointerReloc(ISymbolNode symbol)
+        public void EmitPointerReloc(ISymbolNode symbol, int delta = 0)
         {
             if (_target.PointerSize == 8)
             {
-                EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
+                EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64, delta);
             }
             else
             {

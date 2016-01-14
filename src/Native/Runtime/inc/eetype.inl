@@ -152,6 +152,10 @@ inline bool EEType::HasDispatchMap()
     return true;
 }
 
+#ifdef CORERT
+extern "C" void * g_pDispatchMapTemporaryWorkaround;
+#endif
+
 inline DispatchMap * EEType::GetDispatchMap()
 {
     if (!HasInterfaces())
@@ -172,6 +176,11 @@ inline DispatchMap * EEType::GetDispatchMap()
 
     // Determine this EEType's module.
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
+
+#ifdef CORERT
+	return (DispatchMap*)((void**)g_pDispatchMapTemporaryWorkaround)[idxDispatchMap];
+#endif
+
     Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(this);
     if (pModule == NULL)
         pModule = pRuntimeInstance->FindModuleByDataAddress(this);

@@ -148,6 +148,16 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new EETypeOptionalFieldsNode(fieldBuilder);
             });
+
+            _interfaceDispatchCells = new NodeCache<MethodDesc, InterfaceDispatchCellNode>((MethodDesc method) =>
+            {
+                return new InterfaceDispatchCellNode(method);
+            });
+
+            _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
+            {
+                return new InterfaceDispatchMapNode(type);
+            });
         }
 
         private NodeCache<TypeDesc, EETypeNode> _typeSymbols;
@@ -188,6 +198,13 @@ namespace ILCompiler.DependencyAnalysis
         public ThreadStaticsNode TypeThreadStaticsSymbol(MetadataType type)
         {
             return _threadStatics.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, InterfaceDispatchCellNode> _interfaceDispatchCells;
+
+        internal InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method)
+        {
+            return _interfaceDispatchCells.GetOrAdd(method);
         }
 
         private class BoolArrayEqualityComparer : IEqualityComparer<bool[]>
@@ -239,6 +256,13 @@ namespace ILCompiler.DependencyAnalysis
         internal EETypeOptionalFieldsNode EETypeOptionalFields(EETypeOptionalFieldsBuilder fieldBuilder)
         {
             return _typeOptionalFields.GetOrAdd(fieldBuilder);
+        }
+
+        private NodeCache<TypeDesc, InterfaceDispatchMapNode> _interfaceDispatchMaps;
+
+        internal InterfaceDispatchMapNode InterfaceDispatchMap(TypeDesc type)
+        {
+            return _interfaceDispatchMaps.GetOrAdd(type);
         }
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
@@ -373,6 +397,8 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler.CompilationUnitPrefix + "__str_fixup_end", 
             null);
 
+        public InterfaceDispatchMapTableNode DispatchMapTable = new InterfaceDispatchMapTableNode();
+
         public Dictionary<TypeDesc, List<MethodDesc>> VirtualSlots = new Dictionary<TypeDesc, List<MethodDesc>>();
 
         public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
@@ -384,6 +410,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(StringTable, "StringTable is always generated");
+            graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
         }
     }
 

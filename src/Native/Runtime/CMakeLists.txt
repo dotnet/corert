@@ -1,6 +1,7 @@
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
     assert.cpp
+    CachedInterfaceDispatch.cpp
     Crst.cpp
     DebugEventSource.cpp
     dllmain.cpp
@@ -77,6 +78,8 @@ if(WIN32)
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX}
+    ${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
+    ${ARCH_SOURCES_DIR}/ManagedCalloutThunk.${ASM_SUFFIX}
   )
 
 else()
@@ -120,7 +123,7 @@ add_definitions(-DFEATURE_PROFILING)
 add_definitions(-DFEATURE_REDHAWK)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DCORERT)
-
+add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
 
 if(WIN32)
