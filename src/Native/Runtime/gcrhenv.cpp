@@ -442,15 +442,19 @@ static void ReportExplicitConservativeReportedRegionIfValid(EnumGcRefContext * p
         return;
     }
 
+#ifndef DACCESS_COMPILE
+    // This fails for cross-bitness dac compiles and isn't really needed in the DAC anyways.
+
     // Fourth: Compute a hash of the above numbers. Check to see that the hash matches the hash
     // value stored
     if (ConservativelyReportedRegionDesc::CalculateHash(CONSERVATIVE_REGION_MAGIC_NUMBER, 
-                                                        PTR_TO_TADDR(conservativeRegionDesc->regionPointerLow),
-                                                        PTR_TO_TADDR(conservativeRegionDesc->regionPointerHigh)) 
+                                                        (uintptr_t)PTR_TO_TADDR(conservativeRegionDesc->regionPointerLow),
+                                                        (uintptr_t)PTR_TO_TADDR(conservativeRegionDesc->regionPointerHigh)) 
         != conservativeRegionDesc->hash)
     {
         return;
     }
+#endif // DACCESS_COMPILE
 
     // Fifth: Check to see that the region pointed at is within the bounds of the thread
     if (!IsOnReadablePortionOfThread(pCtx->sc, conservativeRegionDesc->regionPointerLow))
