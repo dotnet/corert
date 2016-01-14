@@ -50,6 +50,15 @@ namespace System
             }
         }
 
+        public static string MachineName
+        {
+            get
+            {
+                const string ComputerName = "COMPUTERNAME";
+                return Environment.GetEnvironmentVariable(ComputerName);
+            }
+        }
+
         //// Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
         //// to assign blame for crashes.  Don't mess with this, such as by making it call 
         //// another managed helper method, unless you consult with some CLR Watson experts.
