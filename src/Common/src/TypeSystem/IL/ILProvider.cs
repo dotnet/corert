@@ -56,9 +56,15 @@ namespace Internal.IL
                 //       an MCG attribute on the type itself...
                 if (((MetadataType)method.OwningType).HasCustomAttribute("System.Runtime.InteropServices", "McgIntrinsicsAttribute"))
                 {
-                    if (method.Name == "Call")
+                    var name = method.Name;
+                    if (name == "Call")
                     {
                         return CalliIntrinsic.EmitIL(method);
+                    }
+                    else
+                    if (name == "AddrOf")
+                    {
+                        return AddrOfIntrinsic.EmitIL(method);
                     }
                 }
 
