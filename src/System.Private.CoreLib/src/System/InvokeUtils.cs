@@ -234,6 +234,7 @@ namespace System
         private const int DefaultParamTypeDefault = 10;
         private const int DefaultParamTypeDecimal = 11;
         private const int DefaultParamTypeDateTime = 12;
+        private const int DefaultParamTypeNoneButOptional = 13;
 
         private struct StringDataParser
         {
@@ -413,6 +414,8 @@ namespace System
                     return new Decimal(decimalBits);
                 case DefaultParamTypeDateTime:
                     return new DateTime(dataParser.GetLong());
+                case DefaultParamTypeNoneButOptional:
+                    return System.Reflection.Missing.Value;
             }
         }
 
