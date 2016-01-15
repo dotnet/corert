@@ -50,6 +50,7 @@ typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
 #define CALLBACK            __stdcall
 #define WINAPI              __stdcall
 #define WINBASEAPI          __declspec(dllimport)
+#endif //!GCENV_INCLUDED
 
 typedef struct _GUID {
     unsigned long  Data1;
@@ -57,8 +58,6 @@ typedef struct _GUID {
     unsigned short Data3;
     unsigned char  Data4[8];
 } GUID;
-
-#endif //!GCENV_INCLUDED
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
 

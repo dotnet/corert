@@ -24,7 +24,6 @@ set(COMMON_RUNTIME_SOURCES
     OptionalFieldsRuntime.cpp
     portable.cpp
     profheapwalkhelper.cpp
-    Profiling.cpp
     RestrictedCallouts.cpp
     RHCodeMan.cpp
     RhConfig.cpp
