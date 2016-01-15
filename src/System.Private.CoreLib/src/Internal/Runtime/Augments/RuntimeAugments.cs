@@ -820,6 +820,47 @@ namespace Internal.Runtime.Augments
 
             return s_desktopSupportCallbacks.OpenFileIfExists(path);
         }
+
+        [System.Runtime.InteropServices.McgIntrinsicsAttribute]
+        internal class RawCalliHelper
+        {
+            public static unsafe void Call<T>(System.IntPtr pfn, void* arg1, ref T arg2)
+            {
+                // This will be filled in by an IL transform
+            }
+        }
+
+        /// <summary>
+        /// This method creates a conservatively reported region and calls a function 
+        /// while that region is conservatively reported. 
+        /// </summary>
+        /// <param name="cbBuffer">size of buffer to allocated (buffer size described in bytes)</param>
+        /// <param name="pfnTargetToInvoke">function pointer to execute. Must have the calling convention void(void* pBuffer, ref T context)</param>
+        /// <param name="context">context to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
+        public static void RunFunctionWithConservativelyReportedBuffer<T>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context)
+        {
+            RuntimeImports.ConservativelyReportedRegionDesc regionDesc = new RuntimeImports.ConservativelyReportedRegionDesc();
+            RunFunctionWithConservativelyReportedBufferInternal(cbBuffer, pfnTargetToInvoke, ref context, ref regionDesc);
+        }
+
+        // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
+        // This function must also not make a p/invoke transition, or the fixed statement reporting of the ConservativelyReportedRegionDesc
+        // will be ignored.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
+        {
+            fixed (RuntimeImports.ConservativelyReportedRegionDesc* pRegionDesc = &regionDesc)
+            {
+                int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
+                // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
+                void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
+                RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
+
+                RawCalliHelper.Call<T>(pfnTargetToInvoke, region, ref context);
+
+                RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
+            }
+        }
     }
 }
 
