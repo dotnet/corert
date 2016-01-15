@@ -100,7 +100,7 @@ namespace TypeSystemTests
             return module;
         }
 
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name)
+        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
             return GetModuleForSimpleName(name.Name);
         }

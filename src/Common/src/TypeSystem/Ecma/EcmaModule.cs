@@ -427,7 +427,8 @@ namespace Internal.TypeSystem.Ecma
                 an.SetPublicKeyToken(publicKeyOrToken);
             }
 
-            // TODO: ContentType, Culture - depends on newer version of the System.Reflection contract
+            an.CultureName = _metadataReader.GetString(assemblyReference.Culture);
+            an.ContentType = GetContentTypeFromAssemblyFlags(assemblyReference.Flags);
 
             return Context.ResolveAssembly(an);
         }
@@ -478,6 +479,11 @@ namespace Internal.TypeSystem.Ecma
             return GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
         }
 
+        private static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
+        {
+            return (AssemblyContentType)(((int)flags & 0x0E00) >> 9);
+        }
+
         private AssemblyName _assemblyName;
 
         // Returns cached copy of the name. Caller has to create a clone before mutating the name.
@@ -490,7 +496,8 @@ namespace Internal.TypeSystem.Ecma
                 an.Version = _assemblyDefinition.Version;
                 an.SetPublicKey(_metadataReader.GetBlobBytes(_assemblyDefinition.PublicKey));
 
-                // TODO: ContentType, Culture - depends on newer version of the System.Reflection contract
+                an.CultureName = _metadataReader.GetString(_assemblyDefinition.Culture);
+                an.ContentType = GetContentTypeFromAssemblyFlags(_assemblyDefinition.Flags);
 
                 _assemblyName = an;
             }

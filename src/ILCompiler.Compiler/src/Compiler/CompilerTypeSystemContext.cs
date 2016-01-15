@@ -163,12 +163,12 @@ namespace ILCompiler
             return _wellKnownTypes[(int)wellKnownType - 1];
         }
 
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name)
+        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
-            return GetModuleForSimpleName(name.Name);
+            return GetModuleForSimpleName(name.Name, throwIfNotFound);
         }
 
-        public EcmaModule GetModuleForSimpleName(string simpleName)
+        public EcmaModule GetModuleForSimpleName(string simpleName, bool throwIfNotFound = true)
         {
             ModuleData existing;
             if (_simpleNameHashtable.TryGetValue(simpleName, out existing))
@@ -178,7 +178,11 @@ namespace ILCompiler
             if (!InputFilePaths.TryGetValue(simpleName, out filePath))
             {
                 if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
-                    throw new FileNotFoundException("Assembly not found: " + simpleName);
+                {
+                    if (throwIfNotFound)
+                        throw new FileNotFoundException("Assembly not found: " + simpleName);
+                    return null;
+                }
             }
 
             return AddModule(filePath, simpleName);
