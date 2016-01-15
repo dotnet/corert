@@ -273,6 +273,7 @@ struct DacScanCallbackData
                                               // different references are reported for each
     void* token;                              // the callback data passed to GCScanRoots
     void* pfnUserCallback;                    // the callback passed in to GcScanRoots
+    uintptr_t stack_limit;                    // Lowest point on the thread stack that the scanning logic is permitted to read
 };
 
 typedef DacScanCallbackData EnumGcRefScanContext;

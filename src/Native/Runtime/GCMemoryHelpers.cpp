@@ -116,7 +116,7 @@ void GCSafeCopyMemoryWithWriteBarrier(void * dest, const void *src, size_t len)
 }
 
 #ifdef CORERT
-void RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
+void REDHAWK_CALLCONV RhpBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
 {
     InlinedBulkWriteBarrier(pMemStart, cbMemSize);
 }
