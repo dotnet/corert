@@ -164,7 +164,7 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\filetime.cs" />
   </ItemGroup>
 
-  <!-- TODO: Unix port
+  <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
   -->
   <ItemGroup>
@@ -178,7 +178,7 @@
     <Compile Include="System\__HResults.cs" />       
   </ItemGroup>
 
-  <!-- TODO: Unix port
+  <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
     <Compile Include="Interop\Interop.Memory.Unix.cs" />
     <Compile Include="Interop\Interop.String.Unix.cs" />

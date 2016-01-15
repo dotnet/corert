@@ -281,7 +281,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.Context.IsWellKnownType(this, WellKnownType.Nullable);
+                return this.Context.IsWellKnownType(GetTypeDefinition(), WellKnownType.Nullable);
             }
         }
 
