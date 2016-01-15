@@ -9,5 +9,6 @@ internal static partial class Interop
         internal const string ProcessEnvironment = "api-ms-win-core-processenvironment-l1-1-0.dll";
         internal const string RealTime = "api-ms-win-core-realtime-l1-1-0.dll";
         internal const string SysInfo = "api-ms-win-core-sysinfo-l1-2-0.dll";
+        internal const string Kernel32 = "api-ms-win-core-kernel32-legacy-l1-1-0.dll";
     }
 }

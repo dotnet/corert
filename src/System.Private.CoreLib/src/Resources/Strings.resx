@@ -1389,4 +1389,7 @@
   <data name="Format_UTCOutOfRange" xml:space="preserve">
     <value>The UTC representation of the date falls outside the year range 1-9999.</value>
   </data>
+  <data name="InvalidOperation_ComputerName" xml:space="preserve">
+    <value>Computer name could not be obtained.</value>
+  </data>
 </root>
