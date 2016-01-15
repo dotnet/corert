@@ -39,6 +39,24 @@ inline void PalEnterCriticalSection(CRITICAL_SECTION * arg1)
     EnterCriticalSection(arg1);
 }
 
+extern "C" UInt32 __stdcall EventRegister(const GUID *, void *, void *, REGHANDLE *);
+inline UInt32 PalEventRegister(const GUID * arg1, void * arg2, void * arg3, REGHANDLE * arg4)
+{
+    return EventRegister(arg1, arg2, arg3, arg4);
+}
+
+extern "C" UInt32 __stdcall EventUnregister(REGHANDLE);
+inline UInt32 PalEventUnregister(REGHANDLE arg1)
+{
+    return EventUnregister(arg1);
+}
+
+extern "C" UInt32 __stdcall EventWrite(REGHANDLE, const EVENT_DESCRIPTOR *, UInt32, EVENT_DATA_DESCRIPTOR *);
+inline UInt32 PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, UInt32 arg3, EVENT_DATA_DESCRIPTOR * arg4)
+{
+    return EventWrite(arg1, arg2, arg3, arg4);
+}
+
 extern "C" void __stdcall ExitProcess(UInt32);
 inline void PalExitProcess(UInt32 arg1)
 {

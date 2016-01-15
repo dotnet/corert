@@ -344,7 +344,7 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
     return true;
 }
 
-#ifndef _INC_WINDOWS
+#if !defined(_INC_WINDOWS) || defined(APP_LOCAL_RUNTIME)
 
 typedef struct _UNICODE_STRING {
     USHORT Length;
@@ -411,7 +411,7 @@ typedef struct _TEB {
     PVOID TlsExpansionSlots;
 } TEB, *PTEB;
 
-#endif // _INC_WINDOWS
+#endif // !defined(_INC_WINDOWS) || defined(APP_LOCAL_RUNTIME)
 
 // retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the 
 // executable module of the current process.
