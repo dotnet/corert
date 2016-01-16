@@ -74,7 +74,7 @@ namespace System
         {
             get
             {
-                // UNIXTODO: Not yet implemented.
+                // UNIXTODO: Not yet implemented. Issue: dotnet/corert#650.
                 throw new NotImplementedException();
             }
         }
