@@ -44,6 +44,7 @@ C_FUNC(\Name):
 #if defined(__APPLE__)
         .text
 #else
+        .global C_FUNC(_\Name)
         .type \Name, %function
 #endif
 C_FUNC(\Name):
@@ -214,3 +215,17 @@ C_FUNC(\Name\()_End):
         restore_xmm128  xmm7, \ofs + 0x70
 
 .endm
+
+// Note: these must match the defs in PInvokeTransitionFrameFlags
+#define PTFF_SAVE_RBX            00000001h
+#define PTFF_SAVE_R12            00000010h
+#define PTFF_SAVE_R13            00000020h
+#define PTFF_SAVE_R14            00000040h
+#define PTFF_SAVE_R15            00000080h
+#define PTFF_SAVE_ALL_PRESERVED  000000F1h   // NOTE: RBP is not included in this set!
+#define PTFF_SAVE_RSP            00008000h
+#define PTFF_SAVE_RAX            00000100h   // RAX is saved if it contains a GC ref and we're in hijack handler
+#define PTFF_SAVE_ALL_SCRATCH    00007F00h
+#define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
+#define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
+

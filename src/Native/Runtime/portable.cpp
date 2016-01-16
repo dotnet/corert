@@ -230,7 +230,7 @@ COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank
     return pObject;
 }
 
-#if defined(USE_PORTABLE_HELPERS) || !defined(WIN32)
+#if defined(USE_PORTABLE_HELPERS)
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
@@ -270,11 +270,16 @@ COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+#endif
 
+#if defined(USE_PORTABLE_HELPERS) || !defined(WIN32)
+typedef UIntTarget (*TargetFunc2)(UIntTarget, UIntTarget);
 COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame))
 {
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
+    // @TODO Implement ManagedCallout2 on Unix
+    // https://github.com/dotnet/corert/issues/685
+    TargetFunc2 target = (TargetFunc2)pTargetMethod;
+    return (*target)(argument1, argument2);
 }
 #endif
 

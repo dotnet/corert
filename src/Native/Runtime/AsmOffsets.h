@@ -57,6 +57,7 @@ ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
+ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
 #endif
 
 ASM_OFFSET(    4,     8, StaticClassConstructionContext, m_initialized)
