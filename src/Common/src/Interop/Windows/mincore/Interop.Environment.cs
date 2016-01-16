@@ -17,16 +17,6 @@ internal static partial class Interop
         internal static unsafe extern int ExpandEnvironmentStrings(char* lpSrc, char* lpDst, int nSize);
 
         [DllImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW")]
-        private unsafe static extern int GetComputerName(char* nameBuffer, ref int bufferSize);
-
-        internal unsafe static string GetComputerName()
-        {
-            const int MaxMachineNameLength = 256;
-            char* buf = stackalloc char[MaxMachineNameLength];
-            int len = MaxMachineNameLength;
-            if (Interop.mincore.GetComputerName(buf, ref len) == 0)
-                throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
-            return new String(buf);
-        }
+        internal static unsafe extern int GetComputerName(char* nameBuffer, ref int bufferSize);
     }
 }
