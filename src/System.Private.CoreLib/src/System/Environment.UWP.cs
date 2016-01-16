@@ -36,5 +36,14 @@ namespace System
             // Behave as if the variable was not found in this case.
             return null;
         }
+
+        public static string MachineName
+        {
+            get
+            {
+                // Store apps doesn't support MachineName, Issue: dotnet/corert#650.
+                throw new PlatformNotSupportedException();
+            }
+        }
     }
 }

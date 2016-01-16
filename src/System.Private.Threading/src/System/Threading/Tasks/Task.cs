@@ -5145,8 +5145,6 @@ namespace System.Threading.Tasks
             if (function == null) throw new ArgumentNullException("function");
             Contract.EndContractBlock();
 
-            cancellationToken.ThrowIfSourceDisposed();
-
             // Short-circuit if we are given a pre-canceled token
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCancellation(cancellationToken);

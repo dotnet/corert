@@ -671,7 +671,7 @@ namespace System.Runtime.InteropServices
 
             if (!InteropExtensions.IsInterface(typeHnd))
             {
-                Debug.Assert(obj is __ComObject);
+                Debug.Assert(obj == null || obj is __ComObject);
                 ///
                 /// This code path should be executed only for WinRT classes
                 ///

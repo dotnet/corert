@@ -146,6 +146,9 @@ namespace System
             RuntimeType runtimeElementType = elementType as RuntimeType;
             if (runtimeElementType == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ArrayCreateInstance_NotARuntimeType);
+            if (runtimeElementType.Equals(typeof(void)))
+                throw new NotSupportedException(SR.NotSupported_VoidArray);
+
             try
             {
                 if (multiDim)
@@ -155,8 +158,6 @@ namespace System
             }
             catch
             {
-                if (runtimeElementType.Equals(typeof(void)))
-                    throw new NotSupportedException(SR.NotSupported_VoidArray);
                 if (runtimeElementType.InternalIsOpen)
                     throw new NotSupportedException(SR.NotSupported_OpenType);
                 throw;
