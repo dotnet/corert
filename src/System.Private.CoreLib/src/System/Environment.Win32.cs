@@ -122,5 +122,13 @@ namespace System
 
             return new string(newblob);
         }
+
+        public static string MachineName
+        {
+            get
+            {
+                return Interop.mincore.GetComputerName();
+            }
+        }
     }
 }

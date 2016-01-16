@@ -69,5 +69,14 @@ namespace System
 
             return Encoding.UTF8.GetString((byte*)result, size);
         }
+
+        public static string MachineName
+        {
+            get
+            {
+                // UNIXTODO: Not yet implemented.
+                throw new NotImplementedException();
+            }
+        }
     }
 }

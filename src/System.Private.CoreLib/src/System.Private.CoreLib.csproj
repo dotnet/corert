@@ -452,8 +452,8 @@
 
       <Compile Include="System\Runtime\CommandLine.Win32.cs" />
 
-      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.EnvironmentVariables.UWP.cs" />
-      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.EnvironmentVariables.Win32.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.UWP.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs" />
   </ItemGroup>
@@ -473,7 +473,7 @@
       <Compile Include="System\Globalization\CultureData.Dummy.cs" />
       <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
       <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
-      <Compile Include="System\Environment.EnvironmentVariables.Unix.cs" />
+      <Compile Include="System\Environment.Unix.cs" />
       <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" />
       <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
   </ItemGroup>
