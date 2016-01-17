@@ -55,8 +55,10 @@ namespace Internal.TypeSystem
 
         public abstract DefType GetWellKnownType(WellKnownType wellKnownType);
 
-        public virtual ModuleDesc ResolveAssembly(AssemblyName name)
+        public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
+            if (throwIfNotFound)
+                throw new NotSupportedException();
             return null;
         }
 

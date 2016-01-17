@@ -67,9 +67,18 @@ namespace ILCompiler
 
         public static SpecialMethodKind DetectSpecialMethodKind(this MethodDesc method)
         {
-            if (method.IsPInvoke && !Internal.IL.Stubs.PInvokeMarshallingILEmitter.RequiresMarshalling(method))
+            if (method.IsPInvoke)
             {
-                return SpecialMethodKind.PInvoke;
+                // Marshalling is never required for pregenerated interop code
+                if (Internal.IL.McgInteropSupport.IsPregeneratedInterop(method))
+                {
+                    return SpecialMethodKind.PInvoke;
+                }
+
+                if (!Internal.IL.Stubs.PInvokeMarshallingILEmitter.RequiresMarshalling(method))
+                {
+                    return SpecialMethodKind.PInvoke;
+                }
             }
 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))

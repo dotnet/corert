@@ -77,7 +77,10 @@ namespace Internal.IL
 
                 if (method.IsPInvoke)
                 {
-                    return PInvokeMarshallingILEmitter.EmitIL(method);
+                    var pregenerated = McgInteropSupport.TryGetPregeneratedPInvoke(method);
+                    if (pregenerated == null)
+                        return PInvokeMarshallingILEmitter.EmitIL(method);
+                    method = pregenerated;
                 }
 
                 return EcmaMethodIL.Create((EcmaMethod)method);
