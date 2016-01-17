@@ -22,7 +22,7 @@ Experience
 These benefits open up some new scenarios for .NET developers
 
 - Copy a single file executable from one machine and run on another (of the same kind) without installing a .NET runtime.
-- Create and run a docker image that contains a single file executable (e.g. one file in addition to Ubuntu 14.0.4).
+- Create and run a docker image that contains a single file executable (e.g. one file in addition to Ubuntu 14.04).
 
 Roadmap
 =======
