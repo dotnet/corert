@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Internal.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -27,14 +28,16 @@ namespace System
 
         // New Delegate Implementation
 
-        protected object m_firstParameter;
-        protected object m_helperObject;
-        protected IntPtr m_extraFunctionPointerOrData;
-        protected IntPtr m_functionPointer;
+        internal protected object m_firstParameter;
+        internal protected object m_helperObject;
+        internal protected IntPtr m_extraFunctionPointerOrData;
+        internal protected IntPtr m_functionPointer;
 
         [ThreadStatic]
         protected static string s_DefaultValueString;
 
+        // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
+        // Do not change their values without updating the values in the calling convention converter component
         protected const int MulticastThunk = 0;
         protected const int ClosedStaticThunk = 1;
         protected const int OpenStaticThunk = 2;
@@ -43,11 +46,31 @@ namespace System
         protected const int OpenInstanceThunk = 5;        // This may not exist
         protected const int ReversePinvokeThunk = 6;       // This may not exist
         protected const int ObjectArrayThunk = 7;         // This may not exist
-        protected const int DelegateDefaultValueString = 8; // This may not exist
 
         //
         // If the thunk does not exist, the function will return IntPtr.Zero.
-        protected virtual IntPtr GetThunk(int whichThunk) { return IntPtr.Zero; }
+        protected virtual IntPtr GetThunk(int whichThunk) 
+        {
+#if DEBUG
+            // The GetThunk function should be overriden on all delegate types, except for universal
+            // canonical delegates which use calling convention converter thunks to marshal arguments
+            // for the delegate call. If we execute this version of GetThunk, we can at least assert
+            // that the current delegate type is a generic type.
+            unsafe
+            {
+                fixed (IntPtr* pTargetEEType = &this.m_pEEType)
+                {
+                    Debug.Assert(Internal.Runtime.Augments.RuntimeAugments.IsGenericType(*(RuntimeTypeHandle*)pTargetEEType));
+                }
+            }
+#endif
+            return TypeLoaderExports.GetDelegateThunk(this, whichThunk);
+        }
+
+        //
+        // If there is a default value string, the overridden function should set the 
+        // s_DefaultValueString field and return true.
+        protected virtual bool LoadDefaultValueString() { return false; }
 
         /// <summary>
         /// Used by various parts of the runtime as a replacement for Delegate.Method
@@ -265,13 +288,12 @@ namespace System
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
 
-                // The GetThunk(DelegateDefaultValueString) has the following contract
-                // If it returns 0, the delegate invoke does not have default values.
-                // If it returns 1, then the s_DefaultValueString variable is set to 
+                // The LoadDefaultValueString() has the following contract
+                // If it returns false, the delegate invoke does not have default values.
+                // If it returns true, then the s_DefaultValueString variable is set to 
                 // describe the default values for this invoke.
-                int defaultValueStringExists = (int)this.GetThunk(DelegateDefaultValueString);
                 string defaultValueString = null;
-                if (defaultValueStringExists != 0)
+                if (LoadDefaultValueString())
                 {
                     defaultValueString = s_DefaultValueString;
                 }
