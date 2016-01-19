@@ -83,9 +83,6 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
       <Link>Common\Interop\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MEMORY_BASIC_INFORMATION.cs">
-      <Link>Common\Interop\Interop.MEMORY_BASIC_INFORMATION.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
       <Link>Common\Interop\Interop.GetNativeSystemInfo.cs</Link>
     </Compile>

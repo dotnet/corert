@@ -1285,7 +1285,7 @@ namespace System
             // how extensively it checks for known values.
             Contract.Ensures(Contract.Result<Guid>() != Guid.Empty);
 
-            Interop._GUID g;
+            Guid g;
             int hr = Interop.mincore.CoCreateGuid(out g);
             // We don't expect that this will ever throw an error, none are even documented, and so we don't want to pull 
             // in the HR to ComException mappings into the core library just for this so we will try a generic exception if 
@@ -1296,10 +1296,7 @@ namespace System
                 ex.SetErrorCode(hr);
                 throw ex;
             }
-
-            return new Guid(g.Data1, g.Data2, g.Data3,
-                g.Data4[0], g.Data4[1], g.Data4[2], g.Data4[3],
-                g.Data4[4], g.Data4[5], g.Data4[6], g.Data4[7]);
+            return g;
         }
 
         public String ToString(String format)
