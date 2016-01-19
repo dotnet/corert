@@ -20,6 +20,7 @@ using System;
 using System.Runtime;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.NonPortable;
@@ -178,6 +179,14 @@ namespace Internal.Runtime.Augments
         public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver)
         {
             return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver);
+        }
+
+        public static void GetDelegateData(Delegate delegateObj, out object firstParameter, out object helperObject, out IntPtr extraFunctionPointerOrData, out IntPtr functionPointer)
+        {
+            firstParameter = delegateObj.m_firstParameter;
+            helperObject = delegateObj.m_helperObject;
+            extraFunctionPointerOrData = delegateObj.m_extraFunctionPointerOrData;
+            functionPointer = delegateObj.m_functionPointer;
         }
 
         public static int GetLoadedModules(IntPtr[] resultArray)
@@ -775,6 +784,12 @@ namespace Internal.Runtime.Augments
             return ConvertIntPtrToObjectReference(pointerToObject);
         }
 
+        public unsafe static RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
+        {
+            IntPtr type = obj.EETypePtr.RawValue;
+            return *((RuntimeTypeHandle*)&type);
+        }
+
         public static int GetCorElementType(RuntimeTypeHandle type)
         {
             return (int)RuntimeImports.RhGetCorElementType(type.ToEETypePtr());
@@ -791,6 +806,18 @@ namespace Internal.Runtime.Augments
         public static IntPtr GetUniversalTransitionThunk()
         {
             return RuntimeImports.RhGetUniversalTransitionThunk();
+        }
+
+        public static unsafe IntPtr GetRawAddrOfPinnedObject(IntPtr gcHandleAsIntPtr)
+        {
+            GCHandle gcHandle = (GCHandle)gcHandleAsIntPtr;
+            Debug.Assert(gcHandle.IsPinned());
+
+            Object target = gcHandle.Target;
+            fixed (IntPtr* pTargetEEType = &target.m_pEEType)
+            {
+                return (IntPtr)pTargetEEType;
+            }
         }
 
         [System.Diagnostics.DebuggerStepThrough]
@@ -819,6 +846,11 @@ namespace Internal.Runtime.Augments
             }
 
             return s_desktopSupportCallbacks.OpenFileIfExists(path);
+        }
+
+        public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object[], object> invoker)
+        {
+            return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
         }
 
         [System.Runtime.InteropServices.McgIntrinsicsAttribute]
