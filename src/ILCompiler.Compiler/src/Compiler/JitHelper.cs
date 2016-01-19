@@ -138,6 +138,17 @@ namespace ILCompiler
                     mangledName = "RhpByRefAssignRef";
                     break;
 
+                case JitHelperId.Box:
+                case JitHelperId.Box_Nullable:
+                    mangledName = "RhBox";
+                    break;
+                case JitHelperId.Unbox:
+                    mangledName = "RhUnbox2";
+                    break;
+                case JitHelperId.Unbox_Nullable:
+                    mangledName = "RhUnboxNullable";
+                    break;
+
                 case JitHelperId.NewMultiDimArr:
                     mangledName = "RhNewMDArray";
                     break;
@@ -160,6 +171,16 @@ namespace ILCompiler
                 case JitHelperId.GetRuntimeMethodHandle:
                 case JitHelperId.GetRuntimeFieldHandle:
                     mangledName = "__fail_fast";
+                    break;
+
+                case JitHelperId.Dbl2IntOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
+                    break;
+                case JitHelperId.Dbl2LngOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
+                    break;
+                case JitHelperId.Dbl2ULngOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2ULngOvf");
                     break;
 
                 default:

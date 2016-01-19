@@ -17,61 +17,63 @@ int UTF8ToWideChar(char* bytes, int len, unsigned short* buffer, int bufLen)
     return len;
 }
 
-extern "C" {
-
-void LCMapStringEx(void*, uint32_t, void*, int32_t, intptr_t, int32_t, intptr_t, intptr_t, intptr_t)
+// UNIXTODO: Port System.Private.Interop to Unix https://github.com/dotnet/corert/issues/669
+extern "C"
 {
-    throw 42;
+    int32_t WideCharToMultiByte(uint32_t CodePage, uint32_t dwFlags, uint16_t* lpWideCharStr, int32_t cchWideChar, intptr_t lpMultiByteStr, int32_t cbMultiByte, intptr_t lpDefaultChar, intptr_t lpUsedDefaultChar)
+    {
+        throw "WideCharToMultiByte";
+    }
+
+    int32_t MultiByteToWideChar(uint32_t CodePage, uint32_t dwFlags, const uint8_t * lpMultiByteStr, int32_t cbMultiByte, uint16_t* lpWideCharStr, int32_t cchWideChar)
+    {
+        throw "MultiByteToWideChar";
+    }
+
+    void CoTaskMemFree(void* m)
+    {
+        free(m);
+    }
+
+    intptr_t CoTaskMemAlloc(intptr_t size)
+    {
+        return (intptr_t)malloc(size);
+    }
 }
 
-int32_t WideCharToMultiByte(uint32_t CodePage, uint32_t dwFlags, uint16_t* lpWideCharStr, int32_t cchWideChar, intptr_t lpMultiByteStr, int32_t cbMultiByte, intptr_t lpDefaultChar, intptr_t lpUsedDefaultChar)
+// UNIXTODO: Unix port of _ecvt_s and _copysign https://github.com/dotnet/corert/issues/670
+extern "C"
 {
-    throw 42;
+    void _ecvt_s()
+    {
+        throw "ecvt_s";
+    }
+
+    void _copysign()
+    {
+        throw "_copysign";
+    }
 }
 
-int32_t MultiByteToWideChar(uint32_t CodePage, uint32_t dwFlags, const uint8_t * lpMultiByteStr, int32_t cbMultiByte, uint16_t* lpWideCharStr, int32_t cchWideChar)
+extern "C"
 {
-    throw 42;
-}
+    void CoCreateGuid()
+    {
+        throw "CoCreateGuid";
+    }
 
-void CoTaskMemFree(void* m)
-{
-    free(m);
-}
+    void CoGetApartmentType()
+    {
+        throw "CoGetApartmentType";
+    }
 
-intptr_t CoTaskMemAlloc(intptr_t size)
-{
-    return (intptr_t)malloc(size);
-}
+    void CreateEventExW()
+    {
+        throw "CreateEventExW";
+    }
 
-int32_t CompareStringEx(int16_t*, uint32_t, int16_t*, int32_t, int16_t*, int32_t, void*, void*, intptr_t)
-{
-	throw 42;
-}
-
-int32_t CompareStringOrdinal(int16_t*, int32_t, int16_t*, int32_t, int32_t)
-{
-	throw 42;
-}
-
-int32_t FindNLSStringEx(int16_t*, uint32_t, int16_t*, int32_t, int16_t*, int32_t, int32_t*, void*, void*, intptr_t)
-{
-	throw 42;
-}
-
-int32_t GetLocaleInfoEx(intptr_t, uint32_t, intptr_t, int32_t)
-{
-	throw 42;
-}
-
-int32_t ResolveLocaleName(intptr_t, intptr_t, int32_t)
-{
-	throw 42;
-}
-
-void CoCreateGuid() { throw 42; }
-void CoGetApartmentType() { throw 42; }
-void CreateEventExW() { throw 42; }
-void GetNativeSystemInfo() { throw 42; }
-
+    void GetNativeSystemInfo()
+    {
+        throw "GetNativeSystemInfo";
+    }
 }
