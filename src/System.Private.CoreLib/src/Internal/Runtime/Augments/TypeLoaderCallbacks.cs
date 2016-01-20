@@ -13,5 +13,6 @@ namespace Internal.Runtime.Augments
         public abstract IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult);
         public abstract bool GetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs);
         public abstract bool CompareMethodSignatures(IntPtr signature1, IntPtr signature2);
+        public abstract IntPtr GetDelegateThunk(Delegate delegateObject, int thunkKind);
     }
 }

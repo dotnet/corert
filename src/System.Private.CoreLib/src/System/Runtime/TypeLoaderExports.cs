@@ -145,6 +145,16 @@ namespace System.Runtime
             return RawCalliHelper.Call<Object>(entry.Result, arg, entry.AuxResult);
         }
 
+        public unsafe static IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
+        {
+            Entry entry = LookupInCache(s_cache, delegateObj.m_pEEType, new IntPtr(whichThunk));
+            if (entry == null)
+            {
+                entry = CacheMiss(delegateObj.m_pEEType, new IntPtr(whichThunk), SignatureKind.GenericDelegateThunk, delegateObj);
+            }
+            return entry.Result;
+        }
+
         public unsafe static IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             Entry entry = LookupInCache(s_cache, obj.m_pEEType, *(IntPtr*)&slot);
@@ -186,6 +196,7 @@ namespace System.Runtime
             GenericVirtualMethod,
             OpenInstanceResolver,
             DefaultConstructor,
+            GenericDelegateThunk,
             Count
         }
 
@@ -276,6 +287,9 @@ namespace System.Runtime
                             if (result == IntPtr.Zero)
                                 result = RuntimeAugments.GetFallbackDefaultConstructor();
                         }
+                        break;
+                    case SignatureKind.GenericDelegateThunk:
+                        result = RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature);
                         break;
                     default:
                         result = RawCalliHelper.Call<IntPtr>(s_resolutionFunctionPointers[(int)signatureKind], context, signature, contextObject, out auxResult);

@@ -528,6 +528,19 @@ namespace System
             s_nullableCopyBackObjects = null;
         }
 
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public static void DynamicInvokeArgSetupPtrComplete(IntPtr argSetupStatePtr)
+        {
+            // Intrinsic filled by the ImplementLibraryDynamicInvokeHelpers transform.
+            // argSetupStatePtr is a pointer to a *pinned* ArgSetupState object
+
+            // ldarg.0
+            // call void System.InvokeUtils.DynamicInvokeArgSetupComplete(ref ArgSetupState)
+            // ret
+
+            throw new PlatformNotSupportedException();
+        }
+
         internal static object CallIHelperThisCall(object thisPtr, IntPtr methodToCall, object thisPtrForDynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperMethod, ref ArgSetupState argSetupState)
         {
             // Calli the dynamicInvokeHelper method with a bunch of parameters  As this can't actually be defined in C# there is an IL transform that fills this in.
@@ -797,7 +810,7 @@ namespace System
             return finalObjectToReturn;
         }
 
-        internal static object DynamicInvokeParamHelperCore(RuntimeTypeHandle type, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType paramType)
+        public static object DynamicInvokeParamHelperCore(RuntimeTypeHandle type, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType paramType)
         {
             index = s_curIndex++;
             int parametersLength = s_parameters != null ? s_parameters.Length : 0;
