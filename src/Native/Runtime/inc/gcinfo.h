@@ -243,7 +243,7 @@ private:
     UInt16  hasFunclets              : 1; // 0 [6]
     UInt16  fixedEpilogSize          : 6; // 0 [7] + 1 [0:4]  '0' encoding implies that epilog size varies and is encoded for each epilog
     UInt16  epilogCountSmall         : 2; // 1 [5:6] '3' encoding implies the number of epilogs is encoded separately
-    UInt16  dynamicAlign             : 1; // 1 [7]
+    UInt16  hasExtraData             : 1; // 1 [7]   1: frame uses dynamic alignment or/and GS cookie
 
 #ifdef _TARGET_ARM_
     UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
@@ -267,7 +267,7 @@ private:
                                                             // X86        X64
     UInt8  calleeSavedRegMask       : NUM_PRESERVED_REGS;   // 2 [4:7]    3 [0:7]
 
-#ifndef _TARGET_AMD64_
+#ifdef _TARGET_X86_
     UInt8  x86_argCountLow          : 5; // 3 [0-4]  expressed in pointer-sized units    // @TODO: steal more bits here?
     UInt8  x86_argCountIsLarge      : 1; // 3 [5]    if this bit is set, then the high 8 bits are encoded in x86_argCountHigh
     UInt8  x86_hasStackChanges      : 1; // 3 [6]    x86-only, !ebpFrame-only, this method has pushes 
@@ -324,12 +324,27 @@ private:
     UInt8       arm_vfpRegPushedCount;
 #endif
     //
-    // OPTIONAL: only encoded if dynamicAlign = 1
-    UInt8 logStackAlignment;
+    // OPTIONAL: only encoded if hasExtraData = 1
+    union
+    {
+        struct
+        {
+            UInt8 logStackAlignment : 4;    // [0:3]    binary logarithm of frame alignment (3..15) or 0
+            UInt8 hasGSCookie       : 1;    // [4]      1: frame uses GS cookie
+            UInt8 extraDataUnused   : 3;    // [5:7]    unused bits
+#pragma warning(suppress:4201) // nameless struct
+        };
+        UInt8 extraDataHeader;
+    };
+
+    // OPTIONAL: only encoded if logStackAlignment != 0
     UInt8 paramPointerReg;
 
-    // OPTIONAL: only encoded if epilogCountSmall == 3
+    // OPTIONAL: only encoded if epilogCountSmall = 3
     UInt16 epilogCount;
+
+    // OPTIONAL: only encoded if gsCookie = 1
+    UInt32 gsCookieOffset;      // expressed in pointer-sized units away from the frame pointer
 
     //
     // OPTIONAL: only encoded if hasFunclets = 1
@@ -453,16 +468,26 @@ public:
         ASSERT(logByteAlignment >= 4); // 8 byte aligned frames
 #endif
 
-        dynamicAlign = 1;
+        hasExtraData = 1;
         logStackAlignment = logByteAlignment;
+        ASSERT(logStackAlignment == logByteAlignment);
         paramPointerReg = RN_NONE;
+    }
+
+    void SetGSCookieOffset(UInt32 offsetInBytes)
+    {
+        ASSERT(offsetInBytes != 0);
+        ASSERT(0 == (offsetInBytes % POINTER_SIZE));
+        hasExtraData = 1;
+        hasGSCookie = 1;
+        gsCookieOffset = offsetInBytes / POINTER_SIZE;
     }
 
     void SetParamPointer(RegNumber regNum, UInt32 offsetInBytes, bool isOffsetFromSP = false)
     {
         UNREFERENCED_PARAMETER(offsetInBytes);
         UNREFERENCED_PARAMETER(isOffsetFromSP);
-        ASSERT(dynamicAlign==1); // only expected for dynamic aligned frames
+        ASSERT(HasDynamicAlignment()); // only expected for dynamic aligned frames
         ASSERT(offsetInBytes==0); // not yet supported
 
         paramPointerReg = (UInt8)regNum;
@@ -682,12 +707,23 @@ public:
 
     bool HasDynamicAlignment()
     {
-        return dynamicAlign;
+        return !!logStackAlignment;
     }
 
     UInt32 GetDynamicAlignment()
     {
         return 1 << logStackAlignment;
+    }
+
+    bool HasGSCookie()
+    {
+        return hasGSCookie;
+    }
+
+    UInt32 GetGSCookieOffset()
+    {
+        ASSERT(hasGSCookie);
+        return gsCookieOffset * POINTER_SIZE;
     }
 
 #if defined(RHDUMP) && !defined(_TARGET_AMD64_)
@@ -886,11 +922,18 @@ public:
         }
 #endif
 
-        // encode dynamic alignment information
-        if (dynamicAlign)
+        // encode dynamic alignment and GS cookie information
+        if (hasExtraData)
         {
-            size += WriteUnsigned(pDest, logStackAlignment);
+            size += WriteUnsigned(pDest, extraDataHeader);
+        }
+        if (HasDynamicAlignment())
+        {
             size += WriteUnsigned(pDest, paramPointerReg);
+        }
+        if (hasGSCookie)
+        {
+            size += WriteUnsigned(pDest, gsCookieOffset);
         }
 
         if (epilogCountSmall == EC_MaxEpilogCountSmall)
@@ -1047,8 +1090,9 @@ public:
         }
 #endif
 
-        logStackAlignment = dynamicAlign ? ToUInt8(VarInt::ReadUnsigned(pbDecode)) : 0;
-        paramPointerReg = dynamicAlign ? ToUInt8(VarInt::ReadUnsigned(pbDecode)) : (UInt8)RN_NONE;
+        extraDataHeader = hasExtraData ? ToUInt8(VarInt::ReadUnsigned(pbDecode)) : 0;
+        paramPointerReg = HasDynamicAlignment() ? ToUInt8(VarInt::ReadUnsigned(pbDecode)) : (UInt8)RN_NONE;
+        gsCookieOffset = hasGSCookie ? VarInt::ReadUnsigned(pbDecode) : 0;
 
         epilogCount = epilogCountSmall < EC_MaxEpilogCountSmall ? epilogCountSmall : ToUInt16(VarInt::ReadUnsigned(pbDecode));
 
@@ -1137,7 +1181,9 @@ public:
         PTR_UInt8 pbDecode = pbHeaderEncoding + EC_SizeOfFixedHeader;
         if (hasFrameSize) { VarInt::SkipUnsigned(pbDecode); }
         if (returnKind == MRK_ReturnsToNative)  { VarInt::SkipUnsigned(pbDecode); }
-        if (dynamicAlign) { VarInt::SkipUnsigned(pbDecode); VarInt::SkipUnsigned(pbDecode); }
+        if (hasExtraData) { VarInt::SkipUnsigned(pbDecode); }
+        if (HasDynamicAlignment()) { VarInt::SkipUnsigned(pbDecode); }
+        if (hasGSCookie) { VarInt::SkipUnsigned(pbDecode); }
 
 #ifdef _TARGET_AMD64_
         if (x64_framePtrOffsetSmall == 0x3) { VarInt::SkipUnsigned(pbDecode); }
@@ -1300,11 +1346,15 @@ public:
         printf("  | regMask:    %04X"  "  {", calleeSavedRegMask);
         PrintCalleeSavedRegs(calleeSavedRegMask);
         printf(" }\n");
-        if (dynamicAlign)
+        if (HasDynamicAlignment())
         {
-            printf("  | stackAlign:   %02X""  | paramPtrReg:  ", 1<<logStackAlignment);
+            printf("  | stackAlign:   %02X""  | paramPtrReg:  ", GetDynamicAlignment());
             PrintRegNumber(paramPointerReg);
             printf("\n");
+        }
+        if (hasGSCookie)
+        {
+            printf("  | gsCookieOffset:   %04X\n", GetGSCookieOffset());
         }
 #ifdef _TARGET_ARM_
         if (arm_areParmOrVfpRegsPushed)
