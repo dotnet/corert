@@ -39,8 +39,8 @@ enum GCRefKind : unsigned char
 //
 class MethodInfo
 {
-    TADDR dummyPtrs[6];
-    Int32 dummyInts[6];
+    TADDR dummyPtrs[5];
+    Int32 dummyInts[8];
 };
 
 class EHEnumState
