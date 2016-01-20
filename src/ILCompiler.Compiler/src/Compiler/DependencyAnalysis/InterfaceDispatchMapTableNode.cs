@@ -2,15 +2,18 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     public class InterfaceDispatchMapTableNode : ObjectNode, ISymbolNode
     {
         List<InterfaceDispatchMapNode> _dispatchMaps = new List<InterfaceDispatchMapNode>();
-        
-        public InterfaceDispatchMapTableNode()
+        TargetDetails _target;
+
+        public InterfaceDispatchMapTableNode(TargetDetails target)
         {
+            _target = target;
         }
 
         public string MangledName
@@ -38,7 +41,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "rdata";
+                if (_target.IsWindows)
+                    return "rdata";
+                else
+                    return "data";
             }
         }
 

@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = context.Target;
             _context = context;
             _cppCodeGen = cppCodeGen;
+            DispatchMapTable = new InterfaceDispatchMapTableNode(this.Target);
             CreateNodeCaches();
         }
 
@@ -146,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _typeOptionalFields = new NodeCache<EETypeOptionalFieldsBuilder, EETypeOptionalFieldsNode>((EETypeOptionalFieldsBuilder fieldBuilder) =>
             {
-                return new EETypeOptionalFieldsNode(fieldBuilder);
+                return new EETypeOptionalFieldsNode(fieldBuilder, this.Target);
             });
 
             _interfaceDispatchCells = new NodeCache<MethodDesc, InterfaceDispatchCellNode>((MethodDesc method) =>
@@ -397,7 +398,7 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler.CompilationUnitPrefix + "__str_fixup_end", 
             null);
 
-        public InterfaceDispatchMapTableNode DispatchMapTable = new InterfaceDispatchMapTableNode();
+        public InterfaceDispatchMapTableNode DispatchMapTable;
 
         public Dictionary<TypeDesc, List<MethodDesc>> VirtualSlots = new Dictionary<TypeDesc, List<MethodDesc>>();
 

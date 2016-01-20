@@ -61,7 +61,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "data";
+                if (_type.Context.Target.IsWindows)
+                    return "rdata";
+                else
+                    return "data";
             }
         }
 
