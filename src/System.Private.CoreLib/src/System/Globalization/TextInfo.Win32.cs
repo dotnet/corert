@@ -24,8 +24,7 @@ namespace System.Globalization
             _textInfoName = _cultureData.STEXTINFO;
 
             long handle;
-            int ret = Interop.mincore.LCMapStringEx(_textInfoName, LCMAP_SORTHANDLE, null, 0, (IntPtr)(&handle), IntPtr.Size, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-
+            int ret = Interop.mincore.LCMapStringEx(_textInfoName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
             _sortHandle = ret > 0 ? (IntPtr)handle : IntPtr.Zero;
         }
 
@@ -62,10 +61,10 @@ namespace System.Globalization
                                                            toUpper ? LCMAP_UPPERCASE | linguisticCasing : LCMAP_LOWERCASE | linguisticCasing,
                                                            s,
                                                            nLengthInput,
-                                                           (IntPtr)pBuffer,
+                                                           pBuffer,
                                                            nLengthInput,
-                                                           IntPtr.Zero,
-                                                           IntPtr.Zero,
+                                                           null,
+                                                           null,
                                                            _sortHandle);
                 }
 
@@ -90,10 +89,10 @@ namespace System.Globalization
                                           toUpper ? LCMAP_UPPERCASE | linguisticCasing : LCMAP_LOWERCASE | linguisticCasing,
                                           new string(c, 1),
                                           1,
-                                          (IntPtr)(&retVal),
+                                          &retVal,
                                           1,
-                                          IntPtr.Zero,
-                                          IntPtr.Zero,
+                                          null,
+                                          null,
                                           _sortHandle);
 
             return retVal;

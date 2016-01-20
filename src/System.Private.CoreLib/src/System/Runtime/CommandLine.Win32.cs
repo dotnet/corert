@@ -12,14 +12,14 @@ namespace System.Runtime
     internal static class CommandLine
     {
         [RuntimeExport("CreateCommandLine")]
-        public static string[] InternalCreateCommandLine()
+        public unsafe static string[] InternalCreateCommandLine()
         {
-            string cmdLine = Interop.mincore.GetCommandLine();
-            int nArgs = SegmentCommandLine(cmdLine, null);
+            char * pCmdLine = Interop.mincore.GetCommandLine();
+
+            int nArgs = SegmentCommandLine(pCmdLine, null);
 
             string[] argArray = new string[nArgs];
-            SegmentCommandLine(cmdLine, argArray);
-
+            SegmentCommandLine(pCmdLine, argArray);
             return argArray;
         }
 
@@ -30,7 +30,7 @@ namespace System.Runtime
         //
         // This functions interface mimics the CommandLineToArgvW api.
         //
-        private unsafe static int SegmentCommandLine(string cmdLine, string[] argArray)
+        private unsafe static int SegmentCommandLine(char * pCmdLine, string[] argArray)
         {
             int nArgs = 0;
             char c;
@@ -40,60 +40,57 @@ namespace System.Runtime
             // the first whitespace outside a quoted subtring is accepted. Backslashes are treated as normal 
             // characters.
 
-            fixed (char* psrcCmdLine = cmdLine)
+            char* psrc = pCmdLine;
+
+            inquote = false;
+            do
             {
-                char* psrc = psrcCmdLine;
-
-                inquote = false;
-                do
+                if (*psrc == '"')
                 {
-                    if (*psrc == '"')
-                    {
-                        inquote = !inquote;
-                        c = *psrc++;
-                        continue;
-                    }
-
+                    inquote = !inquote;
                     c = *psrc++;
-                } while ((c != '\0' && (inquote || (c != ' ' && c != '\t'))));
-
-                if (c == '\0')
-                {
-                    psrc--;
+                    continue;
                 }
 
-                inquote = false;
+                c = *psrc++;
+            } while ((c != '\0' && (inquote || (c != ' ' && c != '\t'))));
 
-                // loop on each argument
-                for (;;)
+            if (c == '\0')
+            {
+                psrc--;
+            }
+
+            inquote = false;
+
+            // loop on each argument
+            for (;;)
+            {
+                if (*psrc != '\0')
                 {
-                    if (*psrc != '\0')
+                    while (*psrc == ' ' || *psrc == '\t')
                     {
-                        while (*psrc == ' ' || *psrc == '\t')
-                        {
-                            ++psrc;
-                        }
+                        ++psrc;
                     }
-
-                    if (*psrc == '\0')
-                        break;              // end of args
-
-                    // scan an argument
-
-                    char* psrcOrig = psrc;
-                    bool inquoteOrig = inquote;
-
-                    int argLen = ScanArgument(ref psrc, ref inquote, null);
-
-                    if (argArray != null)
-                    {
-                        char[] arg = new char[argLen];
-                        ScanArgument(ref psrcOrig, ref inquoteOrig, arg);
-                        argArray[nArgs] = new string(arg);
-                    }
-
-                    nArgs++;
                 }
+
+                if (*psrc == '\0')
+                    break;              // end of args
+
+                // scan an argument
+
+                char* psrcOrig = psrc;
+                bool inquoteOrig = inquote;
+
+                int argLen = ScanArgument(ref psrc, ref inquote, null);
+
+                if (argArray != null)
+                {
+                    char[] arg = new char[argLen];
+                    ScanArgument(ref psrcOrig, ref inquoteOrig, arg);
+                    argArray[nArgs] = new string(arg);
+                }
+
+                nArgs++;
             }
 
             return nArgs;

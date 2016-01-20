@@ -450,22 +450,26 @@
       <Compile Include="System\Globalization\CultureData.Win32.cs" />
       <Compile Include="System\Globalization\TextInfo.Win32.cs" />
       <Compile Include="System\Globalization\CalendarData.Win32.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs" />
 
-      <Compile Include="System\Runtime\CommandLine.Win32.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Win32.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs" />
 
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.UWP.cs" />
+
       <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />
-      <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" />
   </ItemGroup>
   <ItemGroup>
       <!-- CORERT-TODO: Port to Unix -->
       <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs" />
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MEMORY_BASIC_INFORMATION.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
