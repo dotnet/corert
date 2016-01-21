@@ -375,4 +375,7 @@
   <data name="MissingMetadataType" xml:space="preserve">
     <value>Unknown (Missing metadata for type)</value>
   </data>
+  <data name="DirectUI_Empty" xml:space="preserve">
+    <value>Empty.</value>
+  </data>
 </root>

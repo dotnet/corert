@@ -576,16 +576,24 @@ namespace System.Runtime.InteropServices
                     break;
 #if ENABLE_WINRT
                 case __HResults.E_XAMLPARSEFAILED:
-                        exception = new Windows.UI.Xaml.Markup.XamlParseException();
+                    exception = ConstructExceptionUsingReflection(
+                        "Windows.UI.Xaml.Markup.XamlParseException, System.Runtime.WindowsRuntime.UI.Xaml, Version=4.0.0.0",
+                        message);
                     break;
                 case __HResults.E_ELEMENTNOTAVAILABLE:
-                        exception = new Windows.UI.Xaml.Automation.ElementNotAvailableException();
+                    exception = ConstructExceptionUsingReflection(
+                        "Windows.UI.Xaml.Automation.ElementNotAvailableException, System.Runtime.WindowsRuntime.UI.Xaml, Version=4.0.0.0",
+                        message);
                     break;
                 case __HResults.E_ELEMENTNOTENABLED:
-                        exception = new Windows.UI.Xaml.Automation.ElementNotEnabledException();
+                    exception = ConstructExceptionUsingReflection(
+                        "Windows.UI.Xaml.Automation.ElementNotEnabledException, System.Runtime.WindowsRuntime.UI.Xaml, Version=4.0.0.0", 
+                        message);
                     break;
                 case __HResults.E_LAYOUTCYCLE:
-                    exception = new Windows.UI.Xaml.LayoutCycleException();
+                    exception = ConstructExceptionUsingReflection(
+                        "Windows.UI.Xaml.LayoutCycleException, System.Runtime.WindowsRuntime.UI.Xaml, Version=4.0.0.0", 
+                        message);
                     break;
 #endif // ENABLE_WINRT
                 case __HResults.COR_E_AMBIGUOUSMATCH: // AmbiguousMatchException
