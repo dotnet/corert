@@ -162,10 +162,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 OutputVirtualSlots(factory, ref objData, _type, _type);
                 OutputInterfaceMap(factory, ref objData);
-                OutputFinalizerMethod(factory, ref objData);
-                OutputOptionalFields(factory, ref objData);
-                OutputNullableTypeParameter(factory, ref objData);
             }
+
+            OutputFinalizerMethod(factory, ref objData);
+            OutputOptionalFields(factory, ref objData);
+            OutputNullableTypeParameter(factory, ref objData);
 
             return objData.ToObjectData();
         }
@@ -361,6 +362,13 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputVirtualSlotAndInterfaceCount(NodeFactory factory, ref ObjectDataBuilder objData)
         {
+            if (!_constructed)
+            {
+                objData.EmitShort(0);
+                objData.EmitShort(0);
+                return;
+            }
+
             int virtualSlotCount = 0;
             TypeDesc currentTypeSlice = _type;
 
