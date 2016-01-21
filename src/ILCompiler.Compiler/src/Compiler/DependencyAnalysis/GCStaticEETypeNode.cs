@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -14,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private int[] _runLengths; // First is offset to first gc field, second is length of gc static run, third is length of non-gc data, etc
         private int _targetPointerSize;
+        private TargetDetails _target;
 
         public GCStaticEETypeNode(bool[] gcDesc, NodeFactory factory)
         {
@@ -35,6 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             runLengths.Add(currentPointerCount);
             _runLengths = runLengths.ToArray();
             _targetPointerSize = factory.Target.PointerSize;
+            _target = factory.Target;
         }
 
         public override string GetName()
@@ -46,7 +49,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "data";
+                if (_target.IsWindows)
+                    return "rdata";
+                else
+                    return "data";
             }
         }
 

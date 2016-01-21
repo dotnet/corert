@@ -173,5 +173,16 @@ namespace Internal.TypeSystem
                     throw new NotImplementedException();
             }
         }
+
+        /// <summary>
+        /// Returns True if compiling for Windows
+        /// </summary>
+        public bool IsWindows
+        {
+            get
+            {
+                return OperatingSystem == TargetOS.Windows;
+            }
+        }
     }
 }

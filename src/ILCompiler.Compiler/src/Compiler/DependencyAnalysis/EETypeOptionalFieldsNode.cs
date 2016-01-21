@@ -13,17 +13,22 @@ namespace ILCompiler.DependencyAnalysis
     internal class EETypeOptionalFieldsNode : ObjectNode, ISymbolNode
     {
         EETypeOptionalFieldsBuilder _fieldBuilder = new EETypeOptionalFieldsBuilder();
+        TargetDetails _target;
 
-        public EETypeOptionalFieldsNode(EETypeOptionalFieldsBuilder fieldBuilder)
+        public EETypeOptionalFieldsNode(EETypeOptionalFieldsBuilder fieldBuilder, TargetDetails target)
         {
             _fieldBuilder = fieldBuilder;
+            _target = target;
         }
 
         public override string Section
         {
             get
             {
-                return "data";
+                if (_target.IsWindows)
+                    return "rdata";
+                else
+                    return "data";
             }
         }
 
