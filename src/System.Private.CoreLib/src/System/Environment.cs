@@ -122,15 +122,7 @@ namespace System
 
         public static string[] GetCommandLineArgs()
         {
-            // TODO: Simply return (string[])s_commandLineArgs.Clone();
-            // when RhUnbox helpers with multiple signatures in CPP
-            // CodeGen is no longer a problem.
-            string[] clone = new string[s_commandLineArgs.Length];
-            for (int i = 0; i < clone.Length; ++i)
-            {
-                clone[i] = s_commandLineArgs[i];
-            }
-            return clone;
+            return (string[])s_commandLineArgs.Clone();
         }
 #endif
 

@@ -133,17 +133,20 @@ namespace ILCompiler.CppCodeGen
                 argCount++;
 
             List<string> parameterNames = null;
-            IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
-            if (parameters != null)
+            if (method != null)
             {
-                parameterNames = new List<string>(parameters);
-                if (parameterNames.Count != 0)
+                IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+                if (parameters != null)
                 {
-                    System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
-                }
-                else
-                {
-                    parameterNames = null;
+                    parameterNames = new List<string>(parameters);
+                    if (parameterNames.Count != 0)
+                    {
+                        System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
+                    }
+                    else
+                    {
+                        parameterNames = null;
+                    }
                 }
             }
 
@@ -298,14 +301,10 @@ namespace ILCompiler.CppCodeGen
                         }
                         else
                         {
+                            _externCSignatureMap.Add(importName, methodSignature);
                             externCSignature = methodSignature;
                         }
 
-                        // TODO: hacky special-case
-                        if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
-                        {
-                            builder.AppendLine(GetCppMethodDeclaration(method, false, importName, externCSignature));
-                        }
                         builder.AppendLine(GetCppMethodDeclaration(method, true));
                         builder.AppendLine("{");
 
@@ -994,6 +993,16 @@ namespace ILCompiler.CppCodeGen
             Out.WriteLine();
             OutputTypes(true);
             Out.WriteLine();
+
+            foreach (var externC in _externCSignatureMap)
+            {
+                string importName = externC.Key;
+                // TODO: hacky special-case
+                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
+                {
+                    Out.WriteLine(GetCppMethodDeclaration(null, false, importName, externC.Value));
+                }
+            }
 
             foreach (var t in _cppSignatureNames.Keys)
             {
