@@ -869,6 +869,7 @@ namespace Internal.Runtime.Augments
         /// <param name="cbBuffer">size of buffer to allocated (buffer size described in bytes)</param>
         /// <param name="pfnTargetToInvoke">function pointer to execute. Must have the calling convention void(void* pBuffer, ref T context)</param>
         /// <param name="context">context to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
+        [DebuggerGuidedStepThroughAttribute]
         public static void RunFunctionWithConservativelyReportedBuffer<T>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context)
         {
             RuntimeImports.ConservativelyReportedRegionDesc regionDesc = new RuntimeImports.ConservativelyReportedRegionDesc();
@@ -878,6 +879,7 @@ namespace Internal.Runtime.Augments
         // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
         // This function must also not make a p/invoke transition, or the fixed statement reporting of the ConservativelyReportedRegionDesc
         // will be ignored.
+        [DebuggerGuidedStepThroughAttribute]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
         {
