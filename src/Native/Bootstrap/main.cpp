@@ -345,7 +345,6 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
 #if defined (__APPLE__)
     InitializeModules(&__registeredModules[0], __registeredModules.size());
 #else
@@ -364,7 +363,6 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 
-    __reverse_pinvoke_return(&frame);
     __shutdown_runtime();
     return retval;
 }

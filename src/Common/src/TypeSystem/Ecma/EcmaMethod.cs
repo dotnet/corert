@@ -25,10 +25,11 @@ namespace Internal.TypeSystem.Ecma
             public const int NoInlining             = 0x0020;
             public const int AggressiveInlining     = 0x0040;
             public const int RuntimeImplemented     = 0x0080;
+            public const int InternalCall           = 0x0100;
 
-            public const int AttributeMetadataCache = 0x0100;
-            public const int Intrinsic              = 0x0200;
-            public const int InternalCall           = 0x0400;
+            public const int AttributeMetadataCache = 0x1000;
+            public const int Intrinsic              = 0x2000;
+            public const int NativeCallable         = 0x4000;
         };
 
         private EcmaType _type;
@@ -176,6 +177,14 @@ namespace Internal.TypeSystem.Ecma
                             flags |= MethodFlags.Intrinsic;
                         }
                     }
+                    else
+                    if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.InteropServices"))
+                    {
+                        if (metadataReader.StringComparer.Equals(nameHandle, "NativeCallableAttribute"))
+                        {
+                            flags |= MethodFlags.NativeCallable;
+                        }
+                    }
                 }
 
                 flags |= MethodFlags.AttributeMetadataCache;
@@ -265,6 +274,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.InternalCall) & MethodFlags.InternalCall) != 0;
+            }
+        }
+
+        public override bool IsNativeCallable
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.NativeCallable) & MethodFlags.NativeCallable) != 0;
             }
         }
 

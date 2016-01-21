@@ -55,9 +55,20 @@ struct alloc_context
     int            alloc_count;
 };
 
+#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
 // PInvoke
 //
+COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
+{
+    // TODO: RhpPInvoke
+}
+
+COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
+{
+    // TODO: RhpReversePInvokeReturn
+}
+
 COOP_PINVOKE_HELPER(void, RhpReversePInvoke2, (ReversePInvokeFrame* pFrame))
 {
     Thread* pCurThread = ThreadStore::RawGetCurrentThread();
@@ -73,7 +84,6 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame* pFrame)
     pFrame->m_savedThread->ReversePInvokeReturn(pFrame);
 }
 
-#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
 // Allocations
 //

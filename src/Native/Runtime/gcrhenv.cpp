@@ -1098,10 +1098,6 @@ CLREventStatic* hEventFinalizerDone = nullptr;
 // Finalizer method implemented by redhawkm.
 extern "C" void __cdecl ProcessFinalizers();
 
-#ifdef CORERT // @TODO: CORERT GC transitions
-extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
-#endif
-
 // Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
 // finalizer thread we're still executing the DllMain for RedhawkU. At that point we can't run managed code
 // successfully (in particular module initialization code has not run for RedhawkM). Instead this method waits
@@ -1131,11 +1127,6 @@ UInt32 WINAPI FinalizerStart(void* pContext)
 
     // Run the managed portion of the finalizer. Until we implement (non-process) shutdown this call will
     // never return.
-
-#ifdef CORERT // @TODO: CORERT GC transitions
-    // Manually transition to cooperative mode for now
-    ReversePInvokeFrame frame; RhpReversePInvoke2(&frame);
-#endif
 
     ProcessFinalizers();
 
