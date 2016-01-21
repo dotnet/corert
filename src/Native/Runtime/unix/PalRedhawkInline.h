@@ -48,8 +48,7 @@ FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ 
 #if defined(_AMD64_)
 FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComperand)
 {
-    ASSERT_UNCONDITIONALLY("NYI");
-    return 0;
+    return __sync_val_compare_and_swap((__int128_t volatile*)pDst, *(__int128_t*)pComperand, ((__int128_t)iValueHigh << 64) + iValueLow);
 }
 #endif // _AMD64_
 

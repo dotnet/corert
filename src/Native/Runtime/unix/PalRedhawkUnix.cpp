@@ -723,7 +723,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
     size = (size + (OS_PAGE_SIZE - 1)) & ~(OS_PAGE_SIZE - 1);
     int unixProtect = W32toUnixAccessControl(protect);
 
-    if (allocationType & MEM_RESERVE)
+    if (allocationType & (MEM_RESERVE | MEM_COMMIT))
     {
         // For Windows compatibility, let the PalVirtualAlloc reserve memory with 64k alignment.
         static const size_t Alignment = 64 * 1024;

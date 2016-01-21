@@ -13,7 +13,7 @@ Install [Visual Studio 2015](https://www.visualstudio.com/en-us/products/visual-
 Install basic dependency packages:
 
 ```
-sudo apt-get install llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev
+sudo apt-get install llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev liblttng-ust liblttng-ust-dev uuid uuid-dev
 ```
 
 
