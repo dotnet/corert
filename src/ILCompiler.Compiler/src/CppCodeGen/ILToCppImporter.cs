@@ -603,9 +603,6 @@ namespace Internal.IL
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
-            if (type.IsInterface || type.IsArray)
-                throw new NotImplementedException();
-
             var value = Pop();
             PushTemp(StackValueKind.ObjRef, type);
 
