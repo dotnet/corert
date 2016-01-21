@@ -23,5 +23,10 @@ namespace Internal.TypeSystem
         /// Gets a type in this module with the specified name.
         /// </summary>
         public abstract MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true);
+
+        /// <summary>
+        /// Gets the global &lt;Module&gt; type.
+        /// </summary>
+        public abstract TypeDesc GetGlobalModuleType();
     }
 }

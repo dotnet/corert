@@ -9,7 +9,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsCoreAssembly>true</IsCoreAssembly>
   </PropertyGroup>
-
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'" />
@@ -17,18 +16,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm'" />
-
   <PropertyGroup>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <!-- CORERT-TODO: For now, drop DEBUG define comming from central location - asserts compiled 
          into DEBUG builds use interfaces that we are not able to handle yet -->
     <!-- <DefineConstants>CORERT;$(DefineConstants)</DefineConstants> -->
-    <DefineConstants>CORERT</DefineConstants>    
+    <DefineConstants>CORERT</DefineConstants>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -41,16 +37,19 @@
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
+      <Link>Internal\Runtime\CompilerHelpers\StartupCode\NativeFormatReader.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\SR.Core.cs">
       <Link>Resources\Common</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\LowLevelUTF8Encoding.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
@@ -194,7 +193,7 @@
     <Compile Include="System\Double.cs" />
     <Compile Include="System\Enum.cs" />
     <Compile Include="System\Environment.cs" />
-    <Compile Include="System\Environment.EnvironmentVariables.cs" />    
+    <Compile Include="System\Environment.EnvironmentVariables.cs" />
     <Compile Include="System\EventArgs.cs" />
     <Compile Include="System\EventHandler.cs" />
     <Compile Include="System\FormatException.cs" />
@@ -442,7 +441,6 @@
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
-
   <!-- Windows is default build -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
       <Compile Include="System\Globalization\CultureInfo.Win32.cs" />
@@ -471,18 +469,16 @@
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-      <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
-      <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
-      <Compile Include="System\Globalization\CultureData.Dummy.cs" />
-      <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
-      <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
-      <Compile Include="System\Environment.Unix.cs" />
-      <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" />
-      <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
+    <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CultureData.Dummy.cs" />
+    <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
+    <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <Compile Include="System\Environment.Unix.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.Events.cs" />
@@ -507,7 +503,6 @@
     <Compile Include="..\..\Common\src\System\__HResults.cs" />
     <Compile Include="CoverageSupport.cs" />
   </ItemGroup>
-
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(RazzleToolPath)' == ''">
     <InPlaceRuntime>true</InPlaceRuntime>
@@ -535,15 +530,12 @@
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
-
   <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" >
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml">
       <LogicalName>Resources.$(AssemblyName).rd.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
   <!-- 
   	Workarounds https://github.com/dotnet/buildtools/pull/380 can be consumed.
 
@@ -560,5 +552,4 @@
     <AssemblyInfoPartialFile></AssemblyInfoPartialFile>
   </PropertyGroup>
   <Target Name="AddDesignTimeFacadeReferences" />
-
 </Project>

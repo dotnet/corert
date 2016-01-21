@@ -1034,37 +1034,38 @@ namespace ILCompiler.CppCodeGen
                 }
             }
 
-            if (_compilation.MainMethod != null)
+            if (_compilation.StartupCodeMain != null)
             {
-                var mainMethod = _compilation.MainMethod;
+                var startupCodeMain = _compilation.StartupCodeMain;
 
                 // Stub for main method
-                Out.WriteLine("int main(int argc, char * argv[]) { ");
+                if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+                {
+                    // TODO: Use wmain and wchar_t
+                    Out.WriteLine("int main(int argc, char * argv[]) { ");
+                }
+                else
+                {
+                    Out.WriteLine("int main(int argc, char * argv[]) { ");
+                }
+
 
                 Out.WriteLine("if (__initialize_runtime() != 0) return -1;");
                 Out.WriteLine("__register_module(&__module);");
                 Out.WriteLine("ReversePInvokeFrame frame; __reverse_pinvoke(&frame);");
                 Out.WriteLine();
 
-                bool voidReturn = mainMethod.Signature.ReturnType.IsVoid;
-                if (!voidReturn) Out.Write("int ret = ");
-                Out.Write(GetCppTypeName(mainMethod.OwningType));
+                Out.Write("int ret = ");
+                Out.Write(GetCppTypeName(startupCodeMain.OwningType));
                 Out.Write("::");
-                Out.Write(GetCppMethodName(mainMethod));
-                if (mainMethod.Signature.Length > 0)
-                {
-                    var stringType = mainMethod.Context.GetWellKnownType(WellKnownType.String);
-                    var arrayOfStringType = stringType.Context.GetArrayType(stringType);
-                    Out.WriteLine("((" + GetCppSignatureTypeName(arrayOfStringType) + ")__get_commandline_args(argc-1,argv+1));");
-                }
-                else
-                    Out.WriteLine("();");
+                Out.Write(GetCppMethodName(startupCodeMain));
+                Out.WriteLine("(argc-1,(intptr_t)(argv+1));");
                 Out.WriteLine();
 
                 Out.WriteLine("__reverse_pinvoke_return(&frame);");
                 Out.WriteLine("__shutdown_runtime();");
 
-                Out.WriteLine(voidReturn ? "return 0;" : "return ret;");
+                Out.WriteLine("return ret;");
                 Out.WriteLine("}");
             }
 
