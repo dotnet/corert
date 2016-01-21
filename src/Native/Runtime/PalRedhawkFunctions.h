@@ -75,12 +75,6 @@ inline UInt32_BOOL PalFlsSetValue(UInt32 arg1, void * arg2)
     return FlsSetValue(arg1, arg2);
 }
 
-extern "C" UInt32_BOOL __stdcall FlushFileBuffers(HANDLE);
-inline UInt32_BOOL PalFlushFileBuffers(HANDLE arg1)
-{
-    return FlushFileBuffers(arg1);
-}
-
 extern "C" void __stdcall FlushProcessWriteBuffers();
 inline void PalFlushProcessWriteBuffers()
 {
