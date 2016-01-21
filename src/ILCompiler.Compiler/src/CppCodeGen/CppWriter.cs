@@ -296,84 +296,58 @@ namespace ILCompiler.CppCodeGen
             return varName;
         }
 
-        private string CompileSpecialMethod(MethodDesc method, SpecialMethodKind kind)
+        private void CompileExternMethod(CppMethodCodeNode methodCodeNodeNeedingCode, string importName)
         {
-            var builder = new CppGenerationBuffer();
-            switch (kind)
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+            MethodSignature methodSignature = method.Signature;
+
+            bool slotCastRequired = false;
+
+            MethodSignature externCSignature;
+            if (_externCSignatureMap.TryGetValue(importName, out externCSignature))
             {
-                case SpecialMethodKind.PInvoke:
-                case SpecialMethodKind.RuntimeImport:
-                    {
-                        EcmaMethod ecmaMethod = method as EcmaMethod;
-
-                        string importName = kind == SpecialMethodKind.PInvoke ?
-                            method.GetPInvokeMethodMetadata().Name : ecmaMethod.GetRuntimeImportName();
-
-                        if (importName == null)
-                            importName = method.Name;
-
-                        MethodSignature methodSignature = method.Signature;
-                        bool slotCastRequired = false;
-
-                        MethodSignature externCSignature;
-                        if (_externCSignatureMap.TryGetValue(importName, out externCSignature))
-                        {
-                            slotCastRequired = !externCSignature.Equals(method.Signature);
-                        }
-                        else
-                        {
-                            _externCSignatureMap.Add(importName, methodSignature);
-                            externCSignature = methodSignature;
-                        }
-
-                        builder.AppendLine();
-                        builder.Append(GetCppMethodDeclaration(method, true));
-                        builder.AppendLine();
-                        builder.Append("{");
-                        builder.Indent();
-
-                        if (slotCastRequired)
-                        {
-                            AppendSlotTypeDef(builder, method);
-                        }
-
-                        builder.AppendLine();
-                        if (!method.Signature.ReturnType.IsVoid)
-                        {
-                            builder.Append("return ");
-                        }
-
-                        if (slotCastRequired)
-                            builder.Append("((__slot__" + GetCppMethodName(method) + ")");
-                        builder.Append("::");
-                        builder.Append(importName);
-                        if (slotCastRequired)
-                            builder.Append(")");
-
-                        builder.Append("(");
-                        builder.Append(GetCppMethodCallParamList(method));
-                        builder.Append(");");
-                        builder.Exdent();
-                        builder.AppendLine();
-                        builder.Append("}");
-
-                        return builder.ToString();
-                    }
-
-                default:
-                    builder.AppendLine();
-                    builder.Append(GetCppMethodDeclaration(method, true));
-                    builder.AppendLine();
-                    builder.Append("{");
-                    builder.Indent();
-                    builder.AppendLine();
-                    builder.Append("throw 0xC000C000;");
-                    builder.Exdent();
-                    builder.AppendLine();
-                    builder.Append("}");
-
-                    return builder.ToString();
+                slotCastRequired = !externCSignature.Equals(methodSignature);
             }
+            else
+            {
+                _externCSignatureMap.Add(importName, methodSignature);
+                externCSignature = methodSignature;
+            }
+
+            var builder = new CppGenerationBuffer();
+
+            builder.AppendLine();
+            builder.Append(GetCppMethodDeclaration(method, true));
+            builder.AppendLine();
+            builder.Append("{");
+            builder.Indent();
+
+            if (slotCastRequired)
+            {
+                AppendSlotTypeDef(builder, method);
+            }
+
+            builder.AppendLine();
+            if (!method.Signature.ReturnType.IsVoid)
+            {
+                builder.Append("return ");
+            }
+
+            if (slotCastRequired)
+                builder.Append("((__slot__" + GetCppMethodName(method) + ")");
+            builder.Append("::");
+            builder.Append(importName);
+            if (slotCastRequired)
+                builder.Append(")");
+
+            builder.Append("(");
+            builder.Append(GetCppMethodCallParamList(method));
+            builder.Append(");");
+            builder.Exdent();
+            builder.AppendLine();
+            builder.Append("}");
+
+            methodCodeNodeNeedingCode.SetCode(builder.ToString(), Array.Empty<Object>());
         }
 
         public void CompileMethod(CppMethodCodeNode methodCodeNodeNeedingCode)
@@ -382,13 +356,15 @@ namespace ILCompiler.CppCodeGen
 
             _compilation.Log.WriteLine("Compiling " + method.ToString());
 
-            SpecialMethodKind kind = method.DetectSpecialMethodKind();
-
-            if (kind != SpecialMethodKind.Unknown)
+            if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
-                string specialMethodCode = CompileSpecialMethod(method, kind);
+                CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
+                return;
+            }
 
-                methodCodeNodeNeedingCode.SetCode(specialMethodCode, Array.Empty<Object>());
+            if (method.IsRawPInvoke())
+            {
+                CompileExternMethod(methodCodeNodeNeedingCode, method.GetPInvokeMethodMetadata().Name ?? method.Name);
                 return;
             }
 

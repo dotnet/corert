@@ -152,6 +152,7 @@ namespace Internal.IL
             }
             else
             {
+                Debug.Assert(!(method is PInvokeTargetNativeMethod), "Who is asking for IL of PInvokeTargetNativeMethod?");
                 return null;
             }
         }
