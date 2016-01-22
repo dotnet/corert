@@ -48,7 +48,6 @@ namespace ILCompiler.DependencyAnalysis
         private TypeDesc _type;
         private bool _constructed;
         EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
-        EETypeOptionalFieldsNode _optionalFieldsNode;
 
         public EETypeNode(TypeDesc type, bool constructed)
         {
@@ -147,12 +146,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             ComputeOptionalEETypeFields(factory);
-
-            if (null == _optionalFieldsNode)
-            {
-                _optionalFieldsNode = factory.EETypeOptionalFields(_optionalFieldsBuilder);
-            }
-
+            
             OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
             OutputBaseSize(ref objData);
@@ -177,7 +171,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = new DependencyNodeCore<NodeFactory>.DependencyList();
-            if (_type is MetadataType && _constructed)
+            if (_type is MetadataType && _constructed && _type.RuntimeInterfaces.Length > 0)
             {
                 dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
             }
@@ -437,7 +431,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if(_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
             {
-                objData.EmitPointerReloc(_optionalFieldsNode);
+                objData.EmitPointerReloc(factory.EETypeOptionalFields(_optionalFieldsBuilder));
             }
         }
 
@@ -568,6 +562,24 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
+        }
+        
+        public override bool HasDynamicDependencies
+        {
+            get
+            {
+                // This node's EETypeOptionalFields node may change if this EEType implements interfaces
+                // that are used since the dispatch map table index is computed once we know the interface
+                // layout later on in compilation.
+                return _type.RuntimeInterfaces.Length > 0 && _constructed;
+            }
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        {
+            List<CombinedDependencyListEntry> dynamicNodes = new List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
+            dynamicNodes.Add(new CombinedDependencyListEntry(context.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
+            return dynamicNodes;
         }
     }
 }

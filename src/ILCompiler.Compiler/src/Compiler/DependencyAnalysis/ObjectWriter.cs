@@ -39,6 +39,10 @@ namespace ILCompiler.DependencyAnalysis
         // Nodefactory for which ObjectWriter is instantiated for.
         private NodeFactory _nodeFactory;
 
+#if DEBUG
+        static HashSet<string> _previouslyWrittenNodeNames = new HashSet<string>();
+#endif
+
         [DllImport(NativeObjectWriterFileName)]
         private static extern IntPtr InitObjWriter(string objectFilePath);
 
@@ -303,6 +307,9 @@ namespace ILCompiler.DependencyAnalysis
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
+#if DEBUG
+                    Debug.Assert(_previouslyWrittenNodeNames.Add(node.GetName()), "Duplicate node name emitted to file", "Node {0} has already been written to the output object file {1}", node.GetName(), objectFilePath);
+#endif
                     ObjectNode.ObjectData nodeContents = node.GetData(factory);
 
                     if (currentSection != node.Section)
