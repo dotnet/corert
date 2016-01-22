@@ -177,7 +177,9 @@ do
     __restore=1
     run_test_dir ${json} ${__restore} "Jit"
     __restore=0
-    run_test_dir ${json} ${__restore} "Cpp"
+    if [ ! -e `dirname ${json}`/no_cpp ]; then
+        run_test_dir ${json} ${__restore} "Cpp"
+    fi
 done
 
 __TotalTests=$((${__JitTotalTests} + ${__CppTotalTests}))

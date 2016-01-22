@@ -77,9 +77,11 @@ for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
         call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
         set /a __JitTotalTests=!__JitTotalTests!+1
 
-        set __Mode=Cpp
-        call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath! --cpp
-        set /a __CppTotalTests=!__CppTotalTests!+1
+        if not exist "!__SourceFolder!\no_cpp" (
+            set __Mode=Cpp
+            call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath! --cpp
+            set /a __CppTotalTests=!__CppTotalTests!+1
+        )
     )
 )
 set /a __CppFailedTests=%__CppTotalTests%-%__CppPassedTests%
