@@ -295,6 +295,7 @@ case $OSName in
 
     FreeBSD)
         __BuildOS=FreeBSD
+        # TODO: Add proper FreeBSD target
         __ToolNugetRuntimeId=osx.10.10-x64
         __TestNugetRuntimeId=osx.10.10-x64
         ;;
@@ -305,6 +306,7 @@ case $OSName in
 
     NetBSD)
         __BuildOS=NetBSD
+        # TODO: Add proper NetBSD target
         __ToolNugetRuntimeId=osx.10.10-x64
         __TestNugetRuntimeId=osx.10.10-x64
         ;;
