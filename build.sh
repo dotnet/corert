@@ -303,6 +303,12 @@ case $OSName in
         __BuildOS=Linux
         ;;
 
+    NetBSD)
+        __BuildOS=NetBSD
+        __ToolNugetRuntimeId=osx.10.10-x64
+        __TestNugetRuntimeId=osx.10.10-x64
+        ;;
+
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         __BuildOS=Linux
