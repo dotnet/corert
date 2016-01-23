@@ -78,16 +78,16 @@ CoreRT_BuildExtRepo=
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case $OSName in
-    Linux)
-        CoreRT_BuildOS=Linux
-        ;;
-
     Darwin)
         CoreRT_BuildOS=OSX
         ;;
 
     FreeBSD)
         CoreRT_BuildOS=FreeBSD
+        ;;
+
+    Linux)
+        CoreRT_BuildOS=Linux
         ;;
 
     *)
@@ -212,5 +212,3 @@ if [ ${__CppTotalTests} -gt ${__CppPassedTests} ]; then
 fi
 
 exit 0
-
-
