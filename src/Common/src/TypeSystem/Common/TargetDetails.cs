@@ -28,6 +28,7 @@ namespace Internal.TypeSystem
         Linux,
         OSX,
         FreeBSD,
+        NetBSD,
     }
 
     /// <summary>
