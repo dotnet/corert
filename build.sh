@@ -287,10 +287,6 @@ esac
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case $OSName in
-    Linux)
-        __BuildOS=Linux
-        ;;
-
     Darwin)
         __BuildOS=OSX
         __ToolNugetRuntimeId=osx.10.10-x64
@@ -301,6 +297,10 @@ case $OSName in
         __BuildOS=FreeBSD
         __ToolNugetRuntimeId=osx.10.10-x64
         __TestNugetRuntimeId=osx.10.10-x64
+        ;;
+
+    Linux)
+        __BuildOS=Linux
         ;;
 
     *)
