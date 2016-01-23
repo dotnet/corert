@@ -90,6 +90,10 @@ case $OSName in
         CoreRT_BuildOS=Linux
         ;;
 
+    NetBSD)
+        CoreRT_BuildOS=NetBSD
+        ;;
+
     *)
         echo "Unsupported OS $OSName detected, configuring as if for Linux"
         CoreRT_BuildOS=Linux
