@@ -67,7 +67,6 @@
 
 #cmakedefine01 HAVE_YIELD_SYSCALL
 #cmakedefine01 HAVE_INFTIM
-#cmakedefine01 HAVE_CHAR_BIT
 #cmakedefine01 USER_H_DEFINES_DEBUG
 #cmakedefine01 HAVE__SC_PHYS_PAGES
 #cmakedefine01 HAVE__SC_AVPHYS_PAGES
