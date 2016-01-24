@@ -445,7 +445,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         {
             // Get the module handle for this runtime. Do this by passing an address definitely within the
             // module (the address of this function) to GetModuleHandleEx with the "from address" flag.
-            HANDLE hRuntimeModule = PalGetModuleHandleFromPointer(RhpVectoredExceptionHandler);
+            HANDLE hRuntimeModule = PalGetModuleHandleFromPointer(reinterpret_cast<void*>(RhpVectoredExceptionHandler));
             if (!hRuntimeModule)
             {
                 ASSERT_UNCONDITIONALLY("Failed to locate our own module handle");
