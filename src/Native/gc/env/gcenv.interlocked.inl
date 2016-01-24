@@ -193,7 +193,7 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
 #endif
 #else
-    return (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
+    return (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, (void*)comparand, (void*)exchange);
 #endif
 }
 

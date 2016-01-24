@@ -717,7 +717,7 @@ void RedhawkGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnS
     sContext.m_pfnCallback = pfnScanCallback;
     sContext.m_pContext = pContext;
 
-    pThread->GcScanRoots(ScanRootsCallbackWrapper, &sContext);
+    pThread->GcScanRoots(reinterpret_cast<void*>(ScanRootsCallbackWrapper), &sContext);
 #else
     UNREFERENCED_PARAMETER(pThread);
     UNREFERENCED_PARAMETER(pfnScanCallback);
@@ -735,7 +735,7 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
     sContext.m_pfnCallback = pfnScanCallback;
     sContext.m_pContext = pContext;
 
-    GetRuntimeInstance()->EnumAllStaticGCRefs(ScanRootsCallbackWrapper, &sContext);
+    GetRuntimeInstance()->EnumAllStaticGCRefs(reinterpret_cast<void*>(ScanRootsCallbackWrapper), &sContext);
 #else
     UNREFERENCED_PARAMETER(pfnScanCallback);
     UNREFERENCED_PARAMETER(pContext);
