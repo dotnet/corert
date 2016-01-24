@@ -63,6 +63,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
         {
+            // Ensure that no duplicate EETypeOptionalFieldsNodes are emitted by letting the node Factory
+            // pick a winner for each given EETypeOptionalFieldsBuilder
+            if (factory.EETypeOptionalFields(_fieldBuilder) != this)
+                return true;
+
             return !_fieldBuilder.IsAtLeastOneFieldUsed();
         }
 
