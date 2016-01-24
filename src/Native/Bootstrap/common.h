@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
 #include <assert.h>
@@ -23,7 +24,6 @@
 
 #ifndef WIN32
 #include <pthread.h>
-#include <alloca.h>
 #endif
 
 using namespace std;
