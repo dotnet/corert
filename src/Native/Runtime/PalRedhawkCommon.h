@@ -17,7 +17,6 @@
 
 #include "assert.h"
 
-#ifndef GCENV_INCLUDED
 // We define the notion of capabilities: optional functionality that the PAL may expose. Use
 // PalHasCapability() with the constants below to determine what is supported at runtime.
 enum PalCapability
@@ -26,7 +25,6 @@ enum PalCapability
     LowMemoryNotificationCapability     = 0x00000002,   // CreateMemoryResourceNotification() and friends
     GetCurrentProcessorNumberCapability = 0x00000004,   // GetCurrentProcessorNumber()
 };
-#endif // !GCENV_INCLUDED
 
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 

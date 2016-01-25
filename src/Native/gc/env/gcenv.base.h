@@ -93,8 +93,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
-#define INVALID_HANDLE_VALUE    ((HANDLE)-1)
-
 #ifdef PLATFORM_UNIX
 #define  _vsnprintf vsnprintf
 #define sprintf_s snprintf
@@ -123,12 +121,12 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 #if defined(_MSC_VER) 
  #if defined(_ARM_)
-  
+
   __forceinline void YieldProcessor() { }
   extern "C" void __emit(const unsigned __int32 opcode);
   #pragma intrinsic(__emit)
   #define MemoryBarrier() { __emit(0xF3BF); __emit(0x8F5F); }
-  
+
  #elif defined(_ARM64_)
 
   extern "C" void __yield(void);
@@ -150,17 +148,17 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   _mm_mfence (
       void
       );
-  
+
   #pragma intrinsic(_mm_pause)
   #pragma intrinsic(_mm_mfence)
   
   #define YieldProcessor _mm_pause
   #define MemoryBarrier _mm_mfence
-  
+
  #elif defined(_X86_)
   
   #define YieldProcessor() __asm { rep nop }
-  
+
   __forceinline void MemoryBarrier()
   {
       int32_t Barrier;
@@ -168,7 +166,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
           xchg Barrier, eax
       }
   }
-  
+
  #else // !_ARM_ && !_AMD64_ && !_X86_
   #error Unsupported architecture
  #endif
@@ -465,15 +463,6 @@ public:
 #ifdef FEATURE_REDHAWK
 typedef uint32_t (__stdcall *BackgroundCallback)(void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(BackgroundCallback callback, void* pCallbackContext);
-
-enum PalCapability
-{
-    WriteWatchCapability                = 0x00000001,   // GetWriteWatch() and friends
-    LowMemoryNotificationCapability     = 0x00000002,   // CreateMemoryResourceNotification() and friends
-    GetCurrentProcessorNumberCapability = 0x00000004,   // GetCurrentProcessorNumber()
-};
-
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability);
 #endif // FEATURE_REDHAWK
 
 void DestroyThread(Thread * pThread);

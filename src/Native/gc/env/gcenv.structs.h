@@ -53,7 +53,7 @@ class EEThreadId
     // Indicates whether the m_id is valid or not. pthread_t doesn't have any
     // portable "invalid" value.
     bool m_isValid;
-    
+
 public:
     bool IsCurrentThread()
     {

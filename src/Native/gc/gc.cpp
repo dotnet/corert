@@ -1458,7 +1458,7 @@ void write_watch_api_supported()
 
 #endif //!DACCESS_COMPILE
 
-inline BOOL can_use_write_watch()
+inline bool can_use_write_watch()
 {
     return write_watch_capability;
 }
@@ -4939,7 +4939,7 @@ public:
         return best_heap;
     }
 
-    static BOOL can_find_heap_fast()
+    static bool can_find_heap_fast()
     {
         return GCToOSInterface::CanGetCurrentProcessorNumber();
     }
@@ -6498,22 +6498,22 @@ class card_table_info
 {
 public:
     unsigned    recount;
-    uint8_t*       lowest_address;
-    uint8_t*       highest_address;
+    uint8_t*    lowest_address;
+    uint8_t*    highest_address;
     short*      brick_table;
 
 #ifdef CARD_BUNDLE
-    uint32_t*      card_bundle_table;
+    uint32_t*   card_bundle_table;
 #endif //CARD_BUNDLE
 
     // mark_array is always at the end of the data structure because we
     // want to be able to make one commit call for everything before it.
 #ifdef MARK_ARRAY
-    uint32_t*      mark_array;
+    uint32_t*   mark_array;
 #endif //MARK_ARRAY
 
     size_t      size;
-    uint32_t*      next_card_table;
+    uint32_t*   next_card_table;
 };
 
 //These are accessors on untranslated cardtable
@@ -6880,7 +6880,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 
     // mark array will be committed separately (per segment).
     size_t commit_size = alloc_size - ms;
-        
+
     if (!GCToOSInterface::VirtualCommit ((uint8_t*)ct, commit_size))
     {
         dprintf (2, ("Table commit failed"));
@@ -9193,7 +9193,7 @@ void gc_heap::update_card_table_bundle()
             size_t region_size = align_on_page (high_address) - base_address;
             dprintf (3,("Probing card table pages [%Ix, %Ix[", (size_t)base_address, (size_t)base_address+region_size));
             bool success = GCToOSInterface::GetWriteWatch (false /* resetState */ , base_address, region_size,
-                                         (void**)g_addresses,
+                                                           (void**)g_addresses,
                                                            &bcount);
             assert (success);
             dprintf (3,("Found %d pages written", bcount));
@@ -9615,7 +9615,7 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
     GCStatistics::logFileName = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCMixLog);
     if (GCStatistics::logFileName != NULL)
     {
-        GCStatistics::logFile = _tfopen(GCStatistics::logFileName, T("a"));
+        GCStatistics::logFile = _tfopen(GCStatistics::logFileName, _T("a"));
     }
 #endif // GC_STATS
 
@@ -13064,11 +13064,11 @@ try_again:
                         affinity.Group = GCThreadAffinity::None;
 
                         if (!GCToOSInterface::SetCurrentThreadIdealAffinity(&affinity))
-                            {
-                                dprintf (3, ("Failed to set the ideal processor for heap %d.",
-                                            org_hp->heap_number));
-                            }
+                        {
+                            dprintf (3, ("Failed to set the ideal processor for heap %d.",
+                                        org_hp->heap_number));
                         }
+                    }
 #endif // !FEATURE_REDHAWK && !FEATURE_PAL
                     dprintf (3, ("Switching context %p (home heap %d) ", 
                                  acontext,
@@ -14565,9 +14565,9 @@ int gc_heap::generation_to_condemn (int n_initial,
         }
 
         // Need to get it early enough for all heaps to use.
-            available_physical_mem = ms.ullAvailPhys;
-            local_settings->entry_memory_load = ms.dwMemoryLoad;
-        
+        available_physical_mem = ms.ullAvailPhys;
+        local_settings->entry_memory_load = ms.dwMemoryLoad;
+
         // @TODO: Force compaction more often under GCSTRESS
         if (ms.dwMemoryLoad >= high_memory_load_th || low_memory_detected)
         {
@@ -18437,7 +18437,7 @@ void gc_heap::fix_card_table ()
             unsigned int time_start = GetCycleCount32();
 #endif //TIME_WRITE_WATCH
             bool success = GCToOSInterface::GetWriteWatch(reset_watch_state, base_address, region_size,
-                                          (void**)g_addresses,
+                                                          (void**)g_addresses,
                                                           &bcount);
             assert (success);
 
@@ -26237,7 +26237,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
                     dprintf (3, ("h%d: gw: [%Ix(%Id)", heap_number, (size_t)base_address, (size_t)region_size));
 
                     bool success = GCToOSInterface::GetWriteWatch (reset_watch_state, base_address, region_size,
-                                                (void**)background_written_addresses,
+                                                                   (void**)background_written_addresses,
                                                                    &bcount);
 
     //#ifdef _DEBUG
@@ -29109,7 +29109,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
     //reset the elevation state for next time.
     dprintf (2, ("Elevation: elevation = el_none"));
     if (settings.should_lock_elevation && !expand_reused_seg_p())
-    settings.should_lock_elevation = FALSE;
+        settings.should_lock_elevation = FALSE;
 
     heap_segment* new_seg = new_heap_segment;
 
