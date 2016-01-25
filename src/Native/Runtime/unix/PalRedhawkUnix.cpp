@@ -334,7 +334,7 @@ int UTF8ToWideChar(const char* bytes, int len, wchar_t* buffer, int bufLen)
     size_t inbufbytesleft = len;
     size_t outbufbytesleft = bufLen;
 
-    int rc = iconv(cd, &inbuf, &inbufbytesleft, &outbuf, &outbufbytesleft);
+    int rc = iconv(cd, const_cast<const char **>(&inbuf), &inbufbytesleft, &outbuf, &outbufbytesleft);
     if (rc == -1)
     {
         fprintf(stderr, "iconv_open failed with %d\n", errno);
@@ -360,7 +360,7 @@ int WideCharToUTF8(const wchar_t* chars, int len, char* buffer, int bufLen)
     size_t inbufbytesleft = len;
     size_t outbufbytesleft = bufLen;
 
-    int rc = iconv(cd, &inbuf, &inbufbytesleft, &outbuf, &outbufbytesleft);
+    int rc = iconv(cd, const_cast<const char **>(&inbuf), &inbufbytesleft, &outbuf, &outbufbytesleft);
     if (rc == -1)
     {
         fprintf(stderr, "iconv_open failed with %d\n", errno);
