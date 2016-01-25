@@ -9,9 +9,6 @@
 #pragma warning( disable: 4127 )  // conditional expression is constant -- common in GC
 #endif
 
-typedef wchar_t WCHAR;
-#define W(str) L##str
-
 #include "sal.h"
 #include "gcenv.structs.h"
 #include "gcenv.os.h"
@@ -75,7 +72,7 @@ public:
         return m_Length;
     }
 
-    static SIZE_T GetOffsetOfNumComponents()
+    static size_t GetOffsetOfNumComponents()
     {
         return offsetof(ArrayBase, m_Length);
     }

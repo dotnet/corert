@@ -1336,22 +1336,20 @@ uint32_t GCToOSInterface::GetLogicalCpuCount()
     return g_cLogicalCpus;
 }
 
-bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
-
 // Causes the calling thread to sleep for the specified number of milliseconds
 // Parameters:
 //  sleepMSec   - time to sleep before switching to another thread
 void GCToOSInterface::Sleep(uint32_t sleepMSec)
 {
-    __SwitchToThread(sleepMSec, 0);
+    PalSleep(sleepMSec);
 }
 
 // Causes the calling thread to yield execution to another thread that is ready to run on the current processor.
 // Parameters:
 //  switchCount - number of times the YieldThread was called in a loop
-void GCToOSInterface::YieldThread(uint32_t switchCount)
+void GCToOSInterface::YieldThread(uint32_t /*switchCount*/)
 {
-    __SwitchToThread(0, switchCount);
+    PalSwitchToThread();
 }
 
 // Reserve virtual memory range.
@@ -1645,17 +1643,6 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     CloseHandle(gc_thread);
 
     return true;
-}
-
-// Open a file
-// Parameters:
-//  filename - name of the file to open
-//  mode     - mode to open the file in (like in the CRT fopen)
-// Return:
-//  FILE* of the opened file
-FILE* GCToOSInterface::OpenFile(const WCHAR* filename, const WCHAR* mode)
-{
-    return _wfopen(filename, mode);
 }
 
 // Initialize the critical section

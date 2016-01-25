@@ -183,6 +183,7 @@ if(WIN32)
     if(IS_64BIT_BUILD)
         add_definitions(-D_WIN64=1)
     endif()
+    add_definitions(-DUNICODE=1)
     add_compile_options($<$<CONFIG:Debug>:-DDEBUG>)
     add_compile_options(/Zi) # enable debugging information
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS") #shrink pdb size

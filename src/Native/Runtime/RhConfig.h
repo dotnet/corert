@@ -37,8 +37,8 @@ private:
     struct ConfigPair
     {
     public:
-        WCHAR Key[CONFIG_KEY_MAXLEN + 1];  //maxlen + null terminator
-        WCHAR Value[CONFIG_VAL_MAXLEN + 1]; //maxlen + null terminator
+        TCHAR Key[CONFIG_KEY_MAXLEN + 1];  //maxlen + null terminator
+        TCHAR Value[CONFIG_VAL_MAXLEN + 1]; //maxlen + null terminator
     };
 
     //g_iniSettings is a buffer of ConfigPair structs which when initialized is of length RCV_Count
@@ -61,7 +61,7 @@ public:
     {                                                   \
         if (m_uiConfigValuesRead & (1 << RCV_##_name))  \
             return m_uiConfigValues[RCV_##_name];       \
-        UInt32 uiValue = ReadConfigValue(L"RH_" L ## #_name, defaultVal); \
+        UInt32 uiValue = ReadConfigValue(_T("RH_") _T(#_name), defaultVal); \
         m_uiConfigValues[RCV_##_name] = uiValue;        \
         m_uiConfigValuesRead |= 1 << RCV_##_name;       \
         return uiValue;                                 \
@@ -85,7 +85,7 @@ public:
 
 private:
 
-    UInt32 ReadConfigValue(_In_z_ const WCHAR *wszName, UInt32 uiDefault);
+    UInt32 ReadConfigValue(_In_z_ const TCHAR *wszName, UInt32 uiDefault);
 
     enum RhConfigValue
     {
@@ -105,7 +105,7 @@ private:
 #define CONFIG_FILE_MAXLEN RCV_Count * sizeof(ConfigPair) + 2000  
 
 private:
-    _Ret_maybenull_z_ WCHAR* GetConfigPath();
+    _Ret_maybenull_z_ TCHAR* GetConfigPath();
 
     //Parses one line of rhconfig.ini and populates values in the passed in configPair
     //returns: true if the parsing was successful, false if the parsing failed. 
@@ -122,7 +122,7 @@ private:
     //lazily reads the file so if the file is not yet read, it will read it on first called
     //if the file is not avaliable, or unreadable zero will always be returned
     //cchOuputBuffer is the maximum number of characters to write to outputBuffer
-    UInt32 GetIniVariable(_In_z_ const WCHAR* configName, _Out_writes_all_(cchBuff) WCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer);
+    UInt32 GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchBuff) TCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer);
 
     static bool priv_isspace(char c)
     {

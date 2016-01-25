@@ -38,6 +38,8 @@
 // we have to (in which case these definitions will move to CommonTypes.h).
 typedef WCHAR *             LPWSTR;
 typedef const WCHAR *       LPCWSTR;
+typedef char *              LPSTR;
+typedef const char *        LPCSTR;
 typedef void *              HINSTANCE;
 
 typedef void *              LPSECURITY_ATTRIBUTES;
@@ -691,7 +693,7 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ 
 
 REDHAWK_PALIMPORT Int32 REDHAWK_PALAPI PalGetProcessCpuCount();
 
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_ const WCHAR *, _Out_ char * buff, _In_ UInt32 maxBytesToRead);
+REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_ const TCHAR *, _Out_ char * buff, _In_ UInt32 maxBytesToRead);
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than 
@@ -810,9 +812,15 @@ REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ 
 
 REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
 
-#ifndef _MSC_VER
-REDHAWK_PALIMPORT Int32 __cdecl _wcsicmp(const wchar_t *string1, const wchar_t *string2);
-#endif // _MSC_VER
+#ifdef PLATFORM_UNIX
+REDHAWK_PALIMPORT Int32 __cdecl _stricmp(const char *string1, const char *string2);
+#endif // PLATFORM_UNIX
+
+#ifdef UNICODE
+#define _tcsicmp _wcsicmp
+#else
+#define _tcsicmp _stricmp
+#endif
 
 #include "PalRedhawkInline.h"
 

@@ -80,7 +80,7 @@ void RuntimeInstance::WriteProfileInfo()
             else
                 basicName += 1; // skip past the '\'
             size_t basicNameLength = wcslen(basicName);
-            size_t dirNameLength = PalGetEnvironmentVariableW(L"LOCALAPPDATA", profileName, MAX_PATH);
+            size_t dirNameLength = PalGetEnvironmentVariable(L"LOCALAPPDATA", profileName, MAX_PATH);
 
             // make sure the names are not so long as to cause trouble
             const size_t MAX_SAFE_LENGTH = MAX_PATH - 50;
