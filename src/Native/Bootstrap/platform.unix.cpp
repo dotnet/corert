@@ -5,17 +5,9 @@
 #include <cstring>
 #include <stdint.h>
 
-int UTF8ToWideCharLen(char* bytes, int len)
-{
-    return len;
-}
-
-int UTF8ToWideChar(char* bytes, int len, unsigned short* buffer, int bufLen)
-{
-    for (int i = 0; i < len; i++)
-        buffer[i] = bytes[i];
-    return len;
-}
+//
+// Temporary stubs for Windows PInvoke functions not ported to Unix yet
+//
 
 // UNIXTODO: Port System.Private.Interop to Unix https://github.com/dotnet/corert/issues/669
 extern "C"

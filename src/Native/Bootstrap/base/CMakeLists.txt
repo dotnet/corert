@@ -5,10 +5,7 @@ set(SOURCES
     ../common.cpp
 )
 
-if(WIN32)
-    list(APPEND SOURCES
-        ../platform.windows.cpp)
-elseif(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_PLATFORM_UNIX)
     list(APPEND SOURCES
         ../platform.unix.cpp)
 endif()

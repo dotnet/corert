@@ -95,7 +95,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\Native\Bootstrap\main.cpp" />
-    <ClCompile Include="..\..\Native\Bootstrap\platform.windows.cpp" />
     <ClCompile Include="repro.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
