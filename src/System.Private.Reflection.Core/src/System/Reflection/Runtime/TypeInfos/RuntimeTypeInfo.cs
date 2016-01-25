@@ -6,6 +6,7 @@ using global::System.Linq;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Runtime.CompilerServices;
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.MethodInfos;
@@ -38,6 +39,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //   - Overrides many "NotImplemented" members in TypeInfo with abstracts so failure to implement
     //     shows up as build error.
     //
+    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeTypeInfo : ExtensibleTypeInfo, ITraceableTypeMember
     {
         protected RuntimeTypeInfo()
@@ -811,7 +813,13 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         internal void EstablishDebugName()
         {
+            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
+            populateDebugNames = true;
+#endif
+            if (!populateDebugNames)
+                return;
+
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
@@ -824,7 +832,6 @@ namespace System.Reflection.Runtime.TypeInfos
                     debugName = "";
                 _debugName = debugName;
             }
-#endif
             return;
         }
 
@@ -995,9 +1002,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private volatile TypeInfoCachedData _lazyTypeInfoCachedData;
 
-#if DEBUG
         private String _debugName;
-#endif // DEBUG
     }
 }
 

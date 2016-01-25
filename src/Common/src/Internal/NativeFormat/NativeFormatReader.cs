@@ -613,7 +613,6 @@ namespace Internal.NativeFormat
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         private NativeParser GetParserForBucket(uint bucket, out uint endOffset)
         {
             uint start, end;

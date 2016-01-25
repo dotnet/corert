@@ -497,6 +497,7 @@
     <Compile Include="..\..\Common\src\System\Diagnostics\Debug.cs" />
     <Compile Include="..\..\Common\src\System\Globalization\FormatProvider.Number.cs" />
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs" />
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
     <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
     <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" />
