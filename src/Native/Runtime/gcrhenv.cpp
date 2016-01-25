@@ -1313,8 +1313,13 @@ void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
     PalGlobalMemoryStatusEx(pGCMemStatus);
 }
 
-bool __SwitchToThread(uint32_t /*dwSleepMSec*/, uint32_t /*dwSwitchCount*/)
+bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
 {
+    if (dwSleepMSec > 0)
+    {
+        PalSleep(dwSleepMSec);
+        return true;
+    }
     return !!PalSwitchToThread();
 }
 
