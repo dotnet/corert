@@ -25,7 +25,6 @@
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
-#include <iconv.h>
 #include <dlfcn.h>
 #include <dirent.h>
 #include <string.h>
@@ -317,60 +316,6 @@ bool PalInit()
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 {
     return (g_dwPALCapabilities & (uint32_t)capability) == (uint32_t)capability;
-}
-
-static const char* const WCharEncoding = "UTF-32LE";
-
-int UTF8ToWideChar(const char* bytes, int len, wchar_t* buffer, int bufLen)
-{
-    iconv_t cd = iconv_open(WCharEncoding, "UTF-8");
-    if (cd == (iconv_t)-1)
-    {
-        fprintf(stderr, "iconv_open failed with %d\n", errno);
-        return 0;
-    }
-
-    char* inbuf = (char*)bytes;
-    char* outbuf = (char*)buffer;
-    size_t inbufbytesleft = len;
-    size_t outbufbytesleft = bufLen;
-
-    int rc = iconv(cd, &inbuf, &inbufbytesleft, &outbuf, &outbufbytesleft);
-    if (rc == -1)
-    {
-        fprintf(stderr, "iconv_open failed with %d\n", errno);
-        return 0;
-    }
-
-    iconv_close(cd);
-
-    return (bufLen - outbufbytesleft) / sizeof(wchar_t);
-}
-
-int WideCharToUTF8(const wchar_t* chars, int len, char* buffer, int bufLen)
-{
-    iconv_t cd = iconv_open("UTF-8", WCharEncoding);
-    if (cd == (iconv_t)-1)
-    {
-        fprintf(stderr, "iconv_open failed with %d\n", errno);
-        return 0;
-    }
-
-    char* inbuf = (char*)chars;
-    char* outbuf = buffer;
-    size_t inbufbytesleft = len;
-    size_t outbufbytesleft = bufLen;
-
-    int rc = iconv(cd, &inbuf, &inbufbytesleft, &outbuf, &outbufbytesleft);
-    if (rc == -1)
-    {
-        fprintf(stderr, "iconv_open failed with %d\n", errno);
-        return 0;
-    }
-
-    iconv_close(cd);
-
-    return bufLen - outbufbytesleft;
 }
 
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
@@ -940,7 +885,7 @@ extern "C" UInt32_BOOL ResetEvent(HANDLE event)
     return UInt32_TRUE;
 }
 
-extern "C" UInt32 GetEnvironmentVariableW(const wchar_t* pName, wchar_t* pBuffer, UInt32 size)
+extern "C" UInt32 GetEnvironmentVariableA(const char * pName, char * pBuffer, UInt32 size)
 {
     // UNIXTODO: Implement this function
     *pBuffer = '\0';
@@ -1004,9 +949,9 @@ extern "C" void _mm_pause()
 #endif
 }
 
-extern "C" Int32 _wcsicmp(const wchar_t *string1, const wchar_t *string2)
+extern "C" Int32 _stricmp(const char *string1, const char *string2)
 {
-    return wcscasecmp(string1, string2);
+    return strcasecmp(string1, string2);
 }
 
 REDHAWK_PALEXPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...)
@@ -1055,7 +1000,7 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const WCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
 {
     // UNIXTODO: Implement this function
     return 0;
@@ -1711,45 +1656,6 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     ASSERT(st2 == 0);
 
     return (st == 0);
-}
-
-// Open a file
-// Parameters:
-//  filename - name of the file to open
-//  mode     - mode to open the file in (like in the CRT fopen)
-// Return:
-//  FILE* of the opened file
-FILE* GCToOSInterface::OpenFile(const WCHAR* filename, const WCHAR* mode)
-{
-    int filenameLen = wcslen(filename);
-    int modeLen = wcslen(mode);
-
-    int charFilenameLen = filenameLen * 3;
-    int charModeLen = modeLen * 3;
-
-    NewArrayHolder<char> charFilename = new (nothrow) char [charFilenameLen + 1];
-    if (charFilename == NULL)
-    {
-        return NULL;
-    }
-
-    NewArrayHolder<char> charMode = new (nothrow) char [charModeLen + 1];
-    if (charMode == NULL)
-    {
-        return NULL;
-    }
-
-    if (WideCharToUTF8(filename, filenameLen + 1, charFilename, charFilenameLen + 1) == 0)
-    {
-        return NULL;
-    }
-
-    if (WideCharToUTF8(mode, modeLen + 1, charMode, charModeLen + 1) == 0)
-    {
-        return NULL;
-    }
-
-    return fopen(charFilename, charMode);
 }
 
 // Initialize the critical section

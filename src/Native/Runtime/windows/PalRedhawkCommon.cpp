@@ -291,7 +291,7 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ WCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ TCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
 {
     WIN32_FILE_ATTRIBUTE_DATA attrData;
 

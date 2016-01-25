@@ -27,15 +27,15 @@
 
 #include <string.h>
 
-UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName, UInt32 uiDefaultValue)
+UInt32 RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, UInt32 uiDefaultValue)
 {
-    WCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // 8 hex digits plus a nul terminator.
+    TCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // 8 hex digits plus a nul terminator.
     const UInt32 cchBuffer = sizeof(wszBuffer) / sizeof(wszBuffer[0]);
 
     UInt32 cchResult = 0;
 
 #ifdef RH_ENVIRONMENT_VARIABLE_CONFIG_ENABLED
-    cchResult = PalGetEnvironmentVariableW(wszName, wszBuffer, cchBuffer);
+    cchResult = PalGetEnvironmentVariable(wszName, wszBuffer, cchBuffer);
 #endif // RH_ENVIRONMENT_VARIABLE_CONFIG_ENABLED
 
     //if the config key wasn't found in the environment 
@@ -51,13 +51,13 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName, UInt32 uiDefaultVa
     {
         uiResult <<= 4;
 
-        WCHAR ch = wszBuffer[i];
-        if ((ch >= L'0') && (ch <= L'9'))
-            uiResult += ch - L'0';
-        else if ((ch >= L'a') && (ch <= L'f'))
-            uiResult += (ch - L'a') + 10;
-        else if ((ch >= L'A') && (ch <= L'F'))
-            uiResult += (ch - L'A') + 10;
+        TCHAR ch = wszBuffer[i];
+        if ((ch >= _T('0')) && (ch <= _T('9')))
+            uiResult += ch - _T('0');
+        else if ((ch >= _T('a')) && (ch <= _T('f')))
+            uiResult += (ch - _T('a')) + 10;
+        else if ((ch >= _T('A')) && (ch <= _T('F')))
+            uiResult += (ch - _T('A')) + 10;
         else
             return uiDefaultValue; // parse error, return default
     }
@@ -70,7 +70,7 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const WCHAR *wszName, UInt32 uiDefaultVa
 //if the file is not avaliable, or unreadable zero will always be returned
 //cchOuputBuffer is the maximum number of characters to write to outputBuffer
 //cchOutputBuffer must be a size >= CONFIG_VAL_MAXLEN + 1
-UInt32 RhConfig::GetIniVariable(_In_z_ const WCHAR* configName, _Out_writes_all_(cchBuff) WCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer)
+UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchBuff) TCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer)
 {
     //the buffer needs to be big enough to read the value buffer + null terminator
     if (cchOuputBuffer < CONFIG_VAL_MAXLEN + 1)
@@ -93,7 +93,7 @@ UInt32 RhConfig::GetIniVariable(_In_z_ const WCHAR* configName, _Out_writes_all_
     //find the first name which matches (case insensitive to be compat with environment variable counterpart)
     for (int iSettings = 0; iSettings < RCV_Count; iSettings++)
     {
-        if (_wcsicmp(configName, ((ConfigPair*)g_iniSettings)[iSettings].Key) == 0)
+        if (_tcsicmp(configName, ((ConfigPair*)g_iniSettings)[iSettings].Key) == 0)
         {
             bool nullTerm = FALSE;
 
@@ -127,7 +127,7 @@ void RhConfig::ReadConfigIni()
 {
     if (g_iniSettings == NULL)
     {
-        WCHAR* configPath = GetConfigPath();
+        TCHAR* configPath = GetConfigPath();
 
         //if we couldn't determine the path to the config set g_iniSettings to CONGIF_NOT_AVAIL
         if (configPath == NULL)
@@ -219,15 +219,19 @@ void RhConfig::ReadConfigIni()
 }
 
 //returns the path to the runtime configuration ini
-_Ret_maybenull_z_ WCHAR* RhConfig::GetConfigPath()
+_Ret_maybenull_z_ TCHAR* RhConfig::GetConfigPath()
 {
-
-    WCHAR* exePathBuff;
+    TCHAR* exePathBuff;
 
     //get the path to rhconfig.ini, this file is expected to live along side the app 
     //to build the path get the process executable module full path strip off the file name and 
     //append rhconfig.ini
+#ifdef PLATFORM_UNIX
+    // UNIXTODO: Implement RhConfig::GetConfigPath!
+    Int32 pathLen = 0; exePathBuff = NULL;
+#else
     Int32 pathLen = PalGetModuleFileName(&exePathBuff, NULL);
+#endif
 
     if (pathLen <= 0)
     {
@@ -249,7 +253,7 @@ _Ret_maybenull_z_ WCHAR* RhConfig::GetConfigPath()
         return NULL;
     }
 
-    WCHAR* configPath = new (nothrow) WCHAR[iLastBackslash + 1 + wcslen(CONFIG_INI_FILENAME) + 1];
+    TCHAR* configPath = new (nothrow) TCHAR[iLastBackslash + 1 + wcslen(CONFIG_INI_FILENAME) + 1];
     if (configPath != NULL)
     {
         //copy the path base and file name

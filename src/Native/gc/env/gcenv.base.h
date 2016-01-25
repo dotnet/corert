@@ -37,18 +37,6 @@
 typedef uint32_t BOOL;
 typedef uint32_t DWORD;
 typedef void* LPVOID;
-typedef uint32_t UINT;
-typedef int32_t LONG;
-typedef uintptr_t ULONG_PTR;
-typedef void VOID;
-typedef void* PVOID;
-typedef void * LPSECURITY_ATTRIBUTES;
-typedef void const * LPCVOID;
-typedef wchar_t * PWSTR, *LPWSTR;
-typedef const wchar_t *LPCWSTR, *PCWSTR;
-typedef size_t SIZE_T;
-
-typedef void * HANDLE;
 
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
@@ -113,6 +101,18 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define swprintf_s swprintf
 #endif
 
+#ifdef UNICODE
+#define _tcslen wcslen
+#define _tcscpy wcscpy
+#define _stprintf_s swprintf_s
+#define _tfopen _wfopen
+#else
+#define _tcslen strlen
+#define _tcscpy strcpy
+#define _stprintf_s sprintf_s
+#define _tfopen fopen
+#endif
+
 #define WINAPI __stdcall
 
 typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
@@ -141,14 +141,14 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
  #elif defined(_AMD64_)
   
-  extern "C" VOID
+  extern "C" void
   _mm_pause (
-      VOID
+      void
       );
   
-  extern "C" VOID
+  extern "C" void
   _mm_mfence (
-      VOID
+      void
       );
   
   #pragma intrinsic(_mm_pause)
@@ -530,7 +530,7 @@ namespace ETW
 
 #define LOG(x)
 
-VOID LogSpewAlways(const char *fmt, ...);
+void LogSpewAlways(const char *fmt, ...);
 
 #define LL_INFO10 4
 
@@ -581,7 +581,7 @@ public:
     typedef CLRConfigTypes ConfigStringInfo;
 
     static uint32_t GetConfigValue(ConfigDWORDInfo eType);
-    static HRESULT GetConfigValue(ConfigStringInfo /*eType*/, wchar_t * * outVal);
+    static HRESULT GetConfigValue(ConfigStringInfo /*eType*/, TCHAR * * outVal);
 };
 
 inline bool FitsInU1(uint64_t val)

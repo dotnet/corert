@@ -33,6 +33,20 @@ typedef void * HANDLE;
 
 #ifdef PLATFORM_UNIX
 
+typedef char TCHAR;
+#define _T(s) s
+
+#else
+
+#ifndef _INC_WINDOWS
+typedef wchar_t TCHAR;
+#define _T(s) L##s
+#endif
+
+#endif
+
+#ifdef PLATFORM_UNIX
+
 class EEThreadId
 {
     pthread_t m_id;

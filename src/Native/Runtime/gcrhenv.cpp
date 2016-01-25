@@ -803,8 +803,8 @@ UInt32 RedhawkGCInterface::GetGCDescSize(void * pType)
 
 COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobjSrc))
 {
-    SIZE_T cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
-    SIZE_T cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
+    size_t cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
+    size_t cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
     if (cbSrc != cbDest)
         return;
 
@@ -830,9 +830,9 @@ COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
     // cbObject includes ObjHeader (sync block index) and the EEType* field from Object and is rounded up to
     // suit GC allocation alignment requirements. cbFields on the other hand is just the raw size of the field
     // data.
-    SIZE_T cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-    SIZE_T cbObject = pEEType->get_BaseSize();
-    SIZE_T cbFields = cbObject - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
+    size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
+    size_t cbObject = pEEType->get_BaseSize();
+    size_t cbFields = cbObject - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
     
     UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
 
@@ -861,8 +861,8 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
 
         // Clear the value (in case there were GC references we wish to stop reporting).
         EEType * pEEType = pUnboxToEEType->GetNullableType();
-        SIZE_T cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-        SIZE_T cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
+        size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
+        size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
         GCSafeZeroMemory((UInt8*)pData + pUnboxToEEType->GetNullableValueOffset(), cbFields);
 
         return;
@@ -887,8 +887,8 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
         pData = (UInt8*)pData + pUnboxToEEType->GetNullableValueOffset();
     }
 
-    SIZE_T cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-    SIZE_T cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
+    size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
+    size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
     UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
 
     if (pEEType->HasReferenceFields())
@@ -1339,7 +1339,7 @@ void StompWriteBarrierResize(bool /*bReqUpperBoundsCheck*/)
 {
 }
 
-VOID LogSpewAlways(const char * /*fmt*/, ...)
+void LogSpewAlways(const char * /*fmt*/, ...)
 {
 }
 
@@ -1371,7 +1371,7 @@ uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
     }
 }
 
-HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, wchar_t * * outVal)
+HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, TCHAR * * outVal)
 {
     *outVal = NULL;
     return 0;
