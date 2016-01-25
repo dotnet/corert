@@ -169,10 +169,8 @@ namespace System.Reflection.Runtime.TypeInfos
         internal static RuntimeTypeInfo GetRuntimeTypeInfo(RuntimeType runtimeType)
         {
             RuntimeTypeInfo runtimeTypeInfo = _typeToTypeInfoDispenser.GetOrAdd(runtimeType);
-#if DEBUG
             if (runtimeType != null)
                 runtimeTypeInfo.EstablishDebugName();
-#endif
             return runtimeTypeInfo;
         }
 

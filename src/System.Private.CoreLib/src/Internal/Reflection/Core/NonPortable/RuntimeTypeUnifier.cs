@@ -91,10 +91,8 @@ namespace Internal.Reflection.Core.NonPortable
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static RuntimeType WithDebugName(this RuntimeType runtimeType)
         {
-#if DEBUG
             if (runtimeType != null)
                 runtimeType.EstablishDebugName();
-#endif
             return runtimeType;
         }
     }

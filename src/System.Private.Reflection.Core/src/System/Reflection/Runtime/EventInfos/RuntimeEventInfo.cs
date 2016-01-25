@@ -5,6 +5,7 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Runtime.CompilerServices;
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.MethodInfos;
@@ -22,6 +23,7 @@ namespace System.Reflection.Runtime.EventInfos
     //
     // The runtime's implementation of EventInfo's
     //
+    [DebuggerDisplay("{_debugName}")]
     internal sealed partial class RuntimeEventInfo : ExtensibleEventInfo, ITraceableTypeMember
     {
         //
@@ -236,13 +238,18 @@ namespace System.Reflection.Runtime.EventInfos
 
         private RuntimeEventInfo WithDebugName()
         {
+            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
+            populateDebugNames = true;
+#endif
+            if (!populateDebugNames)
+                return this;
+
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = ((ITraceableTypeMember)this).MemberName;
             }
-#endif
             return this;
         }
 
@@ -253,8 +260,6 @@ namespace System.Reflection.Runtime.EventInfos
         private MetadataReader _reader;
         private Event _event;
 
-#if DEBUG
         private String _debugName;
-#endif
     }
 }

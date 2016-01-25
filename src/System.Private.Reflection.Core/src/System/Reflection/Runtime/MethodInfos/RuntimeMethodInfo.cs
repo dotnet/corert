@@ -5,6 +5,7 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Runtime.CompilerServices;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.ParameterInfos;
 
@@ -20,6 +21,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
+    [DebuggerDisplay("{_debugName}")]
     internal abstract class RuntimeMethodInfo : ExtensibleMethodInfo, ITraceableTypeMember
     {
         protected RuntimeMethodInfo()
@@ -384,19 +386,22 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected RuntimeMethodInfo WithDebugName()
         {
+            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
+            populateDebugNames = true;
+#endif
+            if (!populateDebugNames)
+                return this;
+
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = ((ITraceableTypeMember)this).MemberName;
             }
-#endif
             return this;
         }
 
-#if DEBUG
         private String _debugName;
-#endif
     }
 }
 

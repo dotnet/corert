@@ -6,6 +6,7 @@ using global::System.Text;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Runtime.CompilerServices;
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.MethodInfos;
@@ -26,6 +27,7 @@ namespace System.Reflection.Runtime.PropertyInfos
     //
     // The runtime's implementation of PropertyInfo's
     //
+    [DebuggerDisplay("{_debugName}")]
     internal sealed partial class RuntimePropertyInfo : ExtensiblePropertyInfo, ITraceableTypeMember
     {
         //
@@ -352,13 +354,18 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         private RuntimePropertyInfo WithDebugName()
         {
+            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
+            populateDebugNames = true;
+#endif
+            if (!populateDebugNames)
+                return this;
+
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = ((ITraceableTypeMember)this).MemberName;
             }
-#endif
             return this;
         }
 
@@ -372,9 +379,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         private volatile MethodInvoker _lazyGetterInvoker = null;
         private volatile MethodInvoker _lazySetterInvoker = null;
 
-#if DEBUG
         private String _debugName;
-#endif
     }
 }
 
