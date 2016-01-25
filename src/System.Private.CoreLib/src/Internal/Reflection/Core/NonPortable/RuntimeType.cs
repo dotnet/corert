@@ -20,6 +20,8 @@ namespace Internal.Reflection.Core.NonPortable
     // Mostly, this sets many of the "flavor-specific" properties to return the desktop-compatible "error case" result. 
     // This minimizes the number of methods the subclasses must override.
     //
+
+    [DebuggerDisplay("{_debugName}")]
     public abstract class RuntimeType : ExtensibleType, IEquatable<RuntimeType>
     {
         protected RuntimeType()
@@ -423,7 +425,13 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public void EstablishDebugName()
         {
+            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
+            populateDebugNames = true;
+#endif
+            if (!populateDebugNames)
+                return;
+
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
@@ -440,15 +448,12 @@ namespace Internal.Reflection.Core.NonPortable
                     debugName = "";
                 _debugName = debugName;
             }
-#endif
             return;
         }
 
         private volatile Object _lazyRuntimeTypeInfo;  // This is actually a RuntimeTypeInfo.
 
-#if DEBUG
         private String _debugName;
-#endif
     }
 }
 

@@ -139,6 +139,7 @@
     <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs" />
     <Compile Include="..\..\Common\src\System\Collections\Concurrent\IKeyedItem.cs" />
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

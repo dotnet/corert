@@ -105,10 +105,8 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static RuntimeType WithDebugName(this RuntimeType runtimeType)
         {
-#if DEBUG
             if (runtimeType != null)
                 runtimeType.EstablishDebugName();
-#endif
             return runtimeType;
         }
     }

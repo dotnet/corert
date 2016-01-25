@@ -26,7 +26,6 @@ namespace Internal.Reflection.Tracing
             }
         }
 
-#if DEBUG
         public static String GetTraceString(this Type type)
         {
             ReflectionTraceCallbacks callbacks = s_callbacks;
@@ -34,7 +33,6 @@ namespace Internal.Reflection.Tracing
                 return null;
             return callbacks.GetTraceString(type);
         }
-#endif
 
         public static void Initialize(ReflectionTraceCallbacks callbacks)
         {

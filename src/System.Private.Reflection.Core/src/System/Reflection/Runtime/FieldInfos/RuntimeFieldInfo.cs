@@ -5,6 +5,7 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Runtime.CompilerServices;
 
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
@@ -24,6 +25,7 @@ namespace System.Reflection.Runtime.FieldInfos
     //
     // The Runtime's implementation of fields.
     //
+    [DebuggerDisplay("{_debugName}")]
     internal sealed partial class RuntimeFieldInfo : ExtensibleFieldInfo, ITraceableTypeMember
     {
         //
@@ -230,13 +232,18 @@ namespace System.Reflection.Runtime.FieldInfos
 
         private RuntimeFieldInfo WithDebugName()
         {
+            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
+            populateDebugNames = true;
+#endif
+            if (!populateDebugNames)
+                return this;
+
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = ((ITraceableTypeMember)this).MemberName;
             }
-#endif
             return this;
         }
 
@@ -249,8 +256,6 @@ namespace System.Reflection.Runtime.FieldInfos
 
         private volatile FieldAccessor _lazyFieldAccessor = null;
 
-#if DEBUG
         private String _debugName;
-#endif
     }
 }
