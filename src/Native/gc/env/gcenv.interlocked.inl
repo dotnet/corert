@@ -188,7 +188,7 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
 {
 #ifdef _MSC_VER
 #ifdef BIT64
-    return (T)(TADDR)_InterlockedCompareExchangePointer((void* volatile *)destination, exchange, comparand);
+    return (T)(TADDR)_InterlockedCompareExchangePointer((void* volatile *)destination, (void*)exchange, (void*)comparand);
 #else
     return (T)(TADDR)_InterlockedCompareExchange((long volatile *)(void* volatile *)destination, (long)(void*)exchange, (long)(void*)comparand);
 #endif
