@@ -90,6 +90,31 @@ namespace System.Runtime.InteropServices
 #endif
             return dlg;
         }
+
+        public static bool IsComObject(object o)
+        {
+            return MarshalImpl.IsComObject(o);            
+        }
+
+        public static int ReleaseComObject(object o)
+        {
+            return MarshalImpl.ReleaseComObject(o);            
+        }
+
+        public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        {
+            return MarshalImpl.QueryInterface(pUnk, ref iid, out ppv);
+        }
+
+        public static int AddRef(IntPtr pUnk)
+        {
+            return MarshalImpl.AddRef(pUnk);
+        }
+
+        public static int Release(IntPtr pUnk)
+        {
+            return MarshalImpl.Release(pUnk);
+        }
     }
 #pragma warning restore 618
 }

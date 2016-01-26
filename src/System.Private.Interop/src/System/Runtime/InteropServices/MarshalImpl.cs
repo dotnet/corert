@@ -43,5 +43,40 @@ namespace System.Runtime.InteropServices
             }
             return McgMarshal.ObjectToComInterface(o, mcgTypeInfo);
         }
+        
+        public static bool IsComObject(object o)
+        {
+            if (o == null)
+                throw new ArgumentNullException("o");
+            return McgMarshal.IsCOMObject(o.GetType());
+        }
+        public static int ReleaseComObject(object o)
+        {
+            if (o == null)
+                throw new ArgumentNullException("o");
+            return McgMarshal.Release(o as __ComObject);
+        }
+
+        public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        {
+            int hr = 0;
+            ppv = McgMarshal.ComQueryInterfaceNoThrow(pUnk, ref iid, out hr);
+#if CORECLR
+            if (ppv == default(IntPtr))
+                return Marshal.QueryInterface(pUnk, ref iid, out ppv);
+#endif
+            return hr;
+        }
+
+        public static int AddRef(IntPtr pUnk)
+        {
+            return McgMarshal.ComAddRef(pUnk);
+        }
+
+        public static int Release(IntPtr pUnk)
+        {
+            return McgMarshal.ComRelease(pUnk);
+        }
+
     }
 }
