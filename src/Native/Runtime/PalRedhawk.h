@@ -501,13 +501,11 @@ typedef UInt32 (WINAPI *PTHREAD_START_ROUTINE)(_In_opt_ void* lpThreadParameter)
 typedef IntNative (WINAPI *FARPROC)();
 
 #ifndef GCENV_INCLUDED
-
 #define TRUE                    1
 #define FALSE                   0
+#endif // !GCENV_INCLUDED
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(IntNative)-1)
-
-#endif // !GCENV_INCLUDED
 
 #define DLL_PROCESS_ATTACH      1
 #define DLL_THREAD_ATTACH       2

@@ -424,7 +424,7 @@ BOOL ProfilerShouldTrackConditionalWeakTableElements() {
     return FALSE;
 #endif // defined (GC_PROFILING)
 }
- 
+
 // If GC profiling is enabled, informs the profiler that we are done
 // tracing dependent handles.
 void ProfilerEndConditionalWeakTableElementReferences(void* heapId) {
@@ -432,7 +432,7 @@ void ProfilerEndConditionalWeakTableElementReferences(void* heapId) {
     g_profControlBlock.pProfInterface->EndConditionalWeakTableElementReferences(heapId);
 #endif // defined (GC_PROFILING)
 }
- 
+
 // If GC profiling is enabled, informs the profiler that we are done
 // tracing root references.
 void ProfilerEndRootReferences2(void* heapId) {
@@ -568,7 +568,7 @@ void GCProfileWalkHeap()
     }
 #endif // defined (GC_PROFILING)
 
-#if  defined (GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#if defined (GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     // we need to walk the heap if one of GC_PROFILING or FEATURE_EVENT_TRACE
     // is defined, since both of them make use of the walk heap worker.
     if (!fWalkedHeapForProfiler && 
@@ -576,7 +576,7 @@ void GCProfileWalkHeap()
     {
         GCProfileWalkHeapWorker(FALSE /* fProfilerPinned */, fShouldWalkHeapRootsForEtw, fShouldWalkHeapObjectsForEtw);
     }
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#endif // defined (GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
 BOOL GCHeap::IsGCInProgressHelper (BOOL bConsiderGCStart)
