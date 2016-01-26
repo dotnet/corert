@@ -296,10 +296,10 @@ namespace System.Runtime
             // contra variant then the object can still match if it implements a different instantiation of
             // the interface with type compatible generic arguments.
             //
-            // An additional edge case occurs because of array covariance. This forces us to treat any generic
-            // interfaces implemented by arrays as covariant over their one type parameter.
+            // Interfaces which are only variant for arrays have the HasGenericVariance flag set even if they
+            // are not variant.
             bool fArrayCovariance = pObjType->IsArray;
-            if (pTargetType->HasGenericVariance || (fArrayCovariance && pTargetType->IsGeneric))
+            if (pTargetType->HasGenericVariance)
             {
                 // Grab details about the instantiation of the target generic interface.
                 EETypeRef* pTargetInstantiation;
@@ -319,7 +319,10 @@ namespace System.Runtime
 
                     // We can ignore interfaces which are not also marked as having generic variance
                     // unless we're dealing with array covariance. 
-                    if (pInterfaceType->HasGenericVariance || (fArrayCovariance && pInterfaceType->IsGeneric))
+                    //
+                    // Interfaces which are only variant for arrays have the HasGenericVariance flag set even if they
+                    // are not variant.
+                    if (pInterfaceType->HasGenericVariance)
                     {
                         // Grab instantiation details for the candidate interface.
                         EETypeRef* pInterfaceInstantiation;
