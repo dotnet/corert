@@ -485,6 +485,13 @@ bool Module::UnwindStackFrame(MethodInfo *  pMethodInfo,
     return EECodeManager::UnwindStackFrame(pEEMethodInfo, codeOffset, pRegisterSet);
 }
 
+UIntNative Module::GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
+                                                            REGDISPLAY *   pRegisterSet)
+{
+    EEMethodInfo * pEEMethodInfo = GetEEMethodInfo(pMethodInfo);
+    return EECodeManager::GetConservativeUpperBoundForOutgoingArgs(pEEMethodInfo, pRegisterSet);
+}
+
 bool Module::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                         UInt32          codeOffset,
                                         REGDISPLAY *    pRegisterSet,

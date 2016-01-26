@@ -66,6 +66,9 @@ public:
     static PTR_VOID GetReversePInvokeSaveFrame(EEMethodInfo *   pMethodInfo, 
                                                REGDISPLAY *     pContext);
 
+    static UIntNative GetConservativeUpperBoundForOutgoingArgs(EEMethodInfo *   pMethodInfo, 
+                                                               REGDISPLAY *     pContext);
+
     static PTR_VOID GetFramePointer(EEMethodInfo *  pMethodInfo, 
                                     REGDISPLAY *    pContext);
 

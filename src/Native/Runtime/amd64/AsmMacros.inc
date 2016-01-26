@@ -277,11 +277,7 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 ;; - The macro assumes it is called from a prolog, prior to a frame pointer being setup.
 ;; - All preserved registers remain unchanged from their values in managed code. 
 ;;
-;; If <NoModeSwitch> is set, threadReg is ignored. As a result, <NoModeSwitch> can only be used by helpers
-;; which guarantee that they will never transition into pre-emptive mode and will never examine the m_pThread
-;; field of the frame.
-;;
-PUSH_COOP_PINVOKE_FRAME macro threadReg, trashReg, extraStack, NoModeSwitch
+PUSH_COOP_PINVOKE_FRAME macro threadReg, trashReg, extraStack
     lea             trashReg, [rsp +  8h + extraStack]
     push_vol_reg    trashReg                    ; save caller's RSP
     push_nonvol_reg r15                         ; save preserved registers
@@ -292,11 +288,7 @@ PUSH_COOP_PINVOKE_FRAME macro threadReg, trashReg, extraStack, NoModeSwitch
     push_nonvol_reg rsi                         ;   ..
     push_nonvol_reg rbx                         ;   ..
     push_imm        DEFAULT_FRAME_SAVE_FLAGS    ; save the register bitmask
-ifb <NoModeSwitch>
     push_vol_reg    threadReg                   ; Thread * (unused by stackwalker)
-else
-    push_imm        0
-endif
     push_nonvol_reg rbp                         ; save caller's RBP
     mov             trashReg, [rsp + 11*8 + extraStack]  ; Find the return address
     push_vol_reg    trashReg                    ; save m_RIP
@@ -305,10 +297,8 @@ endif
     ;; allocate scratch space and any required alignment
     alloc_stack     20h + ((extraStack+8) AND (10h-1))
 
-ifb <NoModeSwitch>
     ; link the frame into the Thread
     mov             [threadReg + OFFSETOF__Thread__m_pHackPInvokeTunnel], trashReg
-endif
 endm
 
 ;;
