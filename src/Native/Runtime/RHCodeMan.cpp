@@ -601,6 +601,8 @@ ContinueUnconditionally:
 // the state after the function returns back to caller (IP points to after the call, Frame and Stack pointer 
 // has been reset, callee-saved registers restored, callee-UNsaved registers are trashed) 
 // Returns success of operation.
+// NOTE: When making changes to this function, it is important to check whether corresponding changes
+// are needed in GetConservativeUpperBoundForOutgoingArgs.
 bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
                                      UInt32         codeOffset,
                                      REGDISPLAY *   pContext)
@@ -786,6 +788,87 @@ PTR_VOID EECodeManager::GetReversePInvokeSaveFrame(EEMethodInfo * pMethodInfo, R
     Int32 frameOffset = pHeader->GetReversePinvokeFrameOffset();
 
     return *(PTR_PTR_VOID)(pContext->GetFP() + frameOffset);
+}
+
+// Given a virtual register set that has been unwound back to an active callsite within the
+// supplied method, this function computes an upper bound value that is guaranteed to be at
+// or above the top of the block of stack-passed arguments (if any) that flowed into the
+// callsite when the call was made.  This upper bound helps the runtime apply conservative
+// GC reporting to stack-passed arguments in situations where it has no knowledge of the
+// callsite signature.
+UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(EEMethodInfo * pMethodInfo, REGDISPLAY * pContext)
+{
+    UIntNative upperBound;
+    GCInfoHeader * pInfoHeader = pMethodInfo->GetGCInfoHeader();
+
+    if (pInfoHeader->GetReturnKind() == GCInfoHeader::MRK_ReturnsToNative)
+    {
+        // Reverse PInvoke case.  The embedded reverse PInvoke frame is guaranteed to reside above
+        // all outgoing arguments.
+        upperBound = pContext->GetFP() + pInfoHeader->GetReversePinvokeFrameOffset();
+    }
+    else
+    {
+        if (pInfoHeader->HasFramePointer())
+        {
+#if defined(_TARGET_ARM_)
+
+            // ARM frame pointer case.  The frame size indicates the distance between the frame pointer
+            // and the lowest callee-saved register.  The lowest callee-saved register is guaranteed to
+            // reside above all outgoing arguments.
+            ASSERT(pInfoHeader->GetSavedRegs() != 0);
+            upperBound = pContext->GetFP() + pInfoHeader->GetFrameSize();
+
+#elif defined(_TARGET_ARM64_)
+
+            PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+
+#elif defined(_TARGET_X86_)
+
+            // x86 frame pointer case.  The frame pointer is guaranteed to point to the pushed RBP
+            // value found at the top of the frame.  The pushed RBP value is guaranteed to reside above
+            // all outgoing arguments.
+            upperBound = pContext->GetFP();
+
+#elif defined(_TARGET_AMD64_)
+
+            // amd64 frame pointer case.  Like on x86, it is guaranteed that there is a pushed RBP
+            // value at the top of the frame which resides above all outgoing arguments.  Unlike x86,
+            // the frame pointer generally points to a location that is separated from the pushed RBP
+            // value by an offset that is recorded in the info header.  Recover the address of the
+            // pushed RBP value by subtracting this offset.
+            upperBound = pContext->GetFP() - pInfoHeader->GetFramePointerOffset();
+
+#else
+#error NYI - For this arch
+#endif
+        }
+        else
+        {
+            // No frame pointer is available.  In the absence of a frame pointer, the frame size
+            // indicates the distance between the post-prolog SP and the preserved registers (if any).
+            // Adding the frame size to the SP is guaranteed to yield an address above all outgoing
+            // arguments.
+            //
+            // If this frame contains one or more callee-saved register (guaranteed on ARM since at
+            // least LR is saved in all functions that contain callsites), then the computed address
+            // will point at the lowest callee-saved register (or possibly above it in the x86 case
+            // where registers are saved at the bottom of the frame).
+            //
+            // If the frame contains no callee-saved registers (impossible on ARM), then the computed
+            // address will point to the pushed return address.
+
+            upperBound = pContext->GetSP() + pInfoHeader->GetFrameSize();
+
+#if defined(_TARGET_ARM_)
+            ASSERT(pInfoHeader->GetSavedRegs() != 0);
+#elif defined(_TARGET_ARM64_)
+            PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+#endif
+        }
+    }
+
+    return upperBound;
 }
 
 PTR_VOID EECodeManager::GetFramePointer(EEMethodInfo *  pMethodInfo, 

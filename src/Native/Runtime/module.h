@@ -107,6 +107,9 @@ public:
                           REGDISPLAY *    pRegisterSet,
                           PTR_VOID *      ppPreviousTransitionFrame);
 
+    UIntNative GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
+                                                        REGDISPLAY *   pRegisterSet);
+
     bool GetReturnAddressHijackInfo(MethodInfo *     pMethodInfo,
                                     UInt32           codeOffset,
                                     REGDISPLAY *     pRegisterSet,

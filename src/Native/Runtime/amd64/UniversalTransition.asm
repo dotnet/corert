@@ -20,52 +20,34 @@ endif ;; TRASH_SAVED_ARGUMENT_REGISTERS
 
 SIZEOF_RETADDR                  equ 8h
 
-SIZEOF_PINVOKE_FRAME_PTR        equ 8h
+SIZEOF_ALIGNMENT_PADDING        equ 8h
 
 SIZEOF_RETURN_BLOCK             equ 10h    ; for 16 bytes of conservatively reported space that the callee can
                                            ; use to manage the return value that the call eventually generates
 
 SIZEOF_FP_REGS                  equ 40h    ; xmm0-3
 
-SIZEOF_PINVOKE_FRAME            equ 60h
-
 SIZEOF_OUT_REG_HOMES            equ 20h    ; Callee register spill
 
 ;
-; From CallerSP to ChildSP, the stack frame is composed of the following six adjacent
-; regions:
+; From CallerSP to ChildSP, the stack frame is composed of the following adjacent regions:
 ;
 ;       SIZEOF_RETADDR
-;       SIZEOF_PINVOKE_FRAME_PTR
+;       SIZEOF_ALIGNMENT_PADDING
 ;       SIZEOF_RETURN_BLOCK
 ;       SIZEOF_FP_REGS
-;       SIZEOF_PINVOKE_FRAME
 ;       SIZEOF_OUT_REG_HOMES
 ; 
 
-DISTANCE_FROM_FP_REGS_TO_CALLERSP               equ SIZEOF_FP_REGS + SIZEOF_RETURN_BLOCK + SIZEOF_PINVOKE_FRAME_PTR + SIZEOF_RETADDR
-
-DISTANCE_FROM_CHILDSP_TO_FP_REGS                equ SIZEOF_OUT_REG_HOMES + SIZEOF_PINVOKE_FRAME
+DISTANCE_FROM_CHILDSP_TO_FP_REGS                equ SIZEOF_OUT_REG_HOMES
 
 DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK           equ DISTANCE_FROM_CHILDSP_TO_FP_REGS + SIZEOF_FP_REGS
 
-DISTANCE_FROM_CHILDSP_TO_CALLERSP               equ DISTANCE_FROM_CHILDSP_TO_FP_REGS + DISTANCE_FROM_FP_REGS_TO_CALLERSP
+DISTANCE_FROM_CHILDSP_TO_RETADDR                equ DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK + SIZEOF_RETURN_BLOCK + SIZEOF_ALIGNMENT_PADDING
 
-; RBP is required to point one slot above the PInvoke frame pointer and therefore points
-; to the caller return address.
-DISTANCE_FROM_CHILDSP_TO_RBP                    equ DISTANCE_FROM_CHILDSP_TO_CALLERSP - SIZEOF_RETADDR
+DISTANCE_FROM_CHILDSP_TO_CALLERSP               equ DISTANCE_FROM_CHILDSP_TO_RETADDR + SIZEOF_RETADDR
 
-; Note that the PInvoke frame lies directly below the FP regs area.
-DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_CALLERSP  equ DISTANCE_FROM_FP_REGS_TO_CALLERSP
-DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_RETADDR   equ DISTANCE_FROM_FP_REGS_TO_CALLERSP - SIZEOF_RETADDR
-
-;
-; Note: The distance from the top of the PInvoke frame to the CallerSP must be a multiple
-; of 16.  If not, PUSH_COOP_PINVOKE_FRAME will inject 8 bytes of padding (in order to
-; ensure a 16-byte aligned ChildSP) and will therefore break the expected stack layout.
-;
-
-.errnz DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_CALLERSP mod 16
+.errnz DISTANCE_FROM_CHILDSP_TO_CALLERSP mod 16
 
 ;;
 ;; Defines an assembly thunk used to make a transition from managed code to a callee,
@@ -82,44 +64,32 @@ DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_RETADDR   equ DISTANCE_FROM_FP_REGS_TO_CAL
 ;;
 
 ;
-; Stack frame layout (from lower addresses to higher addresses):
+; Frame layout is:
 ;
-; [callee return]                                   ChildSP-008     CallerSP-0e8
-; [out rcx]                                         ChildSP+000     CallerSP-0e0
-; [out rdx]                                         ChildSP+008     CallerSP-0d8
-; [out r8]                                          ChildSP+010     CallerSP-0d0
-; [out r9]                                          ChildSP+018     CallerSP-0c8
-; [pinvoke frame, 60h]                              ChildSP+020     CallerSP-0c0
-; [XMM regs (argument regs from the caller), 40h]   ChildSP+080     CallerSP-060
-; [ConservativelyReportedReturnBlock 10h]           ChildSP+0c0     CallerSP-020
-; [ptr to pinvoke frame 8h]                         ChildSP+0d0     CallerSP-010
-; [caller return addr]                              ChildSP+0d8     CallerSP-008
-; [in rcx (argument reg from the caller)]           ChildSP+0e0     CallerSP+000
-; [in rdx (argument reg from the caller)]           ChildSP+0e8     CallerSP+008
-; [in r8 (argument reg from the caller)]            ChildSP+0f0     CallerSP+010
-; [in r9 (argument reg from the caller)]            ChildSP+0f8     CallerSP+018
-; [stack-passed arguments from the caller]          ChildSP+100     CallerSP+020
+;   {StackPassedArgs}                           ChildSP+0a0     CallerSP+020
+;   {IntArgRegs (rcx,rdx,r8,r9) (0x20 bytes)}   ChildSP+080     CallerSP+000
+;   {CallerRetaddr}                             ChildSP+078     CallerSP-008
+;   {AlignmentPad (0x8 bytes)}                  ChildSP+070     CallerSP-010
+;   {ReturnBlock (0x10 bytes)}                  ChildSP+060     CallerSP-020
+;   {FpArgRegs (xmm0-xmm3) (0x40 bytes)}        ChildSP+020     CallerSP-060
+;   {CalleeArgumentHomes (0x20 bytes)}          ChildSP+000     CallerSP-080
+;   {CalleeRetaddr}                             ChildSP-008     CallerSP-088
 ;
-; Note: The callee receives a pointer to the base of the conservatively reported return
-; block, and the callee has knowledge of the exact layout of all pieces of the frame
-; that lie at or above the pushed XMM registers.
+; NOTE: If the frame layout ever changes, the C++ UniversalTransitionStackFrame structure
+; must be updated as well.
+;
+; NOTE: The callee receives a pointer to the base of the ReturnBlock, and the callee has
+; knowledge of the exact layout of all pieces of the frame that lie at or above the pushed
+; FpArgRegs.
+;
+; NOTE: The stack walker guarantees that conservative GC reporting will be applied to
+; everything between the base of the ReturnBlock and the top of the StackPassedArgs.
 ;
 
 NESTED_ENTRY RhpUniversalTransition, _TEXT        
 
-        alloc_stack DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_RETADDR
+        alloc_stack DISTANCE_FROM_CHILDSP_TO_RETADDR
         
-        ; Build the frame that the stack walker will use to unwind through this function.  The
-        ; <NoModeSwitch> flag indicates that this function never uses Enable/DisablePreemptiveGC,
-        ; implying that frame address does not need to be recorded in the current thread object.
-        ; This macro trashes rax but does not trash any other registers.
-
-        PUSH_COOP_PINVOKE_FRAME notUsed, rax, DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_RETADDR, <NoModeSwitch>
-
-        ; Note that rax now holds the address of the newly allocated frame.  Also note that, in
-        ; addition to allocating the PInvoke frame, the macro also allocated the outgoing
-        ; arguments area.
-
         save_reg_postrsp    rcx,   0h + DISTANCE_FROM_CHILDSP_TO_CALLERSP
         save_reg_postrsp    rdx,   8h + DISTANCE_FROM_CHILDSP_TO_CALLERSP
         save_reg_postrsp    r8,   10h + DISTANCE_FROM_CHILDSP_TO_CALLERSP
@@ -131,11 +101,6 @@ NESTED_ENTRY RhpUniversalTransition, _TEXT
         save_xmm128_postrsp xmm3, DISTANCE_FROM_CHILDSP_TO_FP_REGS + 30h
         
         END_PROLOGUE
-
-        ; Set rbp to point after our PInvokeTransitionFrame pointer, then store the pointer to this frame
-        ; See StackFrameIterator::HandleManagedCalloutThunk.
-        lea     rbp, [rsp + DISTANCE_FROM_CHILDSP_TO_RBP]
-        mov     [rbp + MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET], rax
 
 if TRASH_SAVED_ARGUMENT_REGISTERS ne 0
 
@@ -177,11 +142,8 @@ LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
         ; epilog
         nop
 
-        ; Pop the outgoing arguments area and the PInvoke frame.
-        POP_COOP_PINVOKE_FRAME DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_RETADDR
-
-        ; Pop the extra space that was allocated between the PInvoke frame and the caller return address.
-        add             rsp, DISTANCE_FROM_TOP_OF_PINVOKE_FRAME_TO_RETADDR
+        ; Pop the space that was allocated between the ChildSP and the caller return address.
+        add             rsp, DISTANCE_FROM_CHILDSP_TO_RETADDR
 
         TAILJMP_RAX
 

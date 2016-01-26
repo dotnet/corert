@@ -54,16 +54,6 @@ public:
     // metadata for every possible managed method that might make such a call we identify a small range of the
     // stack that might contain outgoing arguments. We then report every pointer that looks like it might
     // refer to the GC heap as a fixed interior reference.
-    //
-    // We discover the lower and upper bounds of this region over the processing of two frames: the lower
-    // bound first as we discover the transition frame of the method that entered the runtime (typically as a
-    // result or enumerating from the managed method that the runtime subsequently called out to) and the
-    // upper bound as we unwind that method back to its caller. We could do it in one frame if we could
-    // guarantee that the call into the runtime originated from a managed method with a frame pointer, but we
-    // can't make that guarantee (the current usage of this mechanism involves methods that simply make an
-    // interface call, on the slow path where we might have to make a managed callout on the ICastable
-    // interface). Thus we need to wait for one more unwind to use the caller's SP as a conservative estimate
-    // of the upper bound.
     bool HasStackRangeToReportConservatively();
     void GetStackRangeToReportConservatively(PTR_RtuObjectRef * ppLowerBound, PTR_RtuObjectRef * ppUpperBound);
 
@@ -71,25 +61,32 @@ private:
     // If our control PC indicates that we're in one of the thunks we use to make managed callouts from the
     // runtime we need to adjust the frame state to that of the managed method that previously called into the
     // runtime (i.e. skip the intervening unmanaged frames).
-    bool HandleManagedCalloutThunk();
-    bool HandleManagedCalloutThunk(PTR_VOID controlPC, UIntNative framePointer);
+    // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
+    void UnwindManagedCalloutThunk();
 
     // The invoke of a funclet is a bit special and requires an assembly thunk, but we don't want to break the
     // stackwalk due to this.  So this routine will unwind through the assembly thunks used to invoke funclets.
     // It's also used to disambiguate exceptionally- and non-exceptionally-invoked funclets.
-    bool HandleFuncletInvokeThunk();
-    bool HandleThrowSiteThunk();
+    void UnwindFuncletInvokeThunk();
+    void UnwindThrowSiteThunk();
+
+    // If our control PC indicates that we're in the universal transition thunk that we use to generically
+    // dispatch arbitrary managed calls, then handle the stack walk specially.
+    // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
+    void UnwindUniversalTransitionThunk();
 
     // If our control PC indicates that we're in the call descr thunk that we use to call an arbitrary managed
     // function with an arbitrary signature from a normal managed function handle the stack walk specially.
-    bool HandleCallDescrThunk();
+    void UnwindCallDescrThunk();
 
-    void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame);           // GC stackwalk
+    void EnterInitialInvalidState(Thread * pThreadToWalk);
+
+    void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, UInt32 dwFlags); // GC stackwalk
     void InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx, UInt32 dwFlags);  // EH and hijack stackwalk, and collided unwind
     void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx);             // EH stackwalk
     void InternalInitForStackTrace();  // Environment.StackTrace
 
-    PTR_VOID HandleExCollide(PTR_ExInfo pExInfo, PTR_VOID collapsingTargetFrame);
+    PTR_VOID HandleExCollide(PTR_ExInfo pExInfo);
     void NextInternal();
 
     // This will walk m_pNextExInfo from its current value until it finds the next ExInfo at a higher address
@@ -105,6 +102,22 @@ private:
     // helpers to ApplyReturnAddressAdjustment
     PTR_VOID AdjustReturnAddressForward(PTR_VOID controlPC);
     PTR_VOID AdjustReturnAddressBackward(PTR_VOID controlPC);
+
+    void UnwindNonEHThunkSequence();
+    void PrepareToYieldFrame();
+
+    enum ReturnAddressCategory
+    {
+        InManagedCode,
+        InThrowSiteThunk,
+        InFuncletInvokeThunk,
+        InManagedCalloutThunk,
+        InCallDescrThunk,
+        InUniversalTransitionThunk,
+    };
+
+    static ReturnAddressCategory CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress);
+    static bool IsNonEHThunk(ReturnAddressCategory category);
 
     enum Flags
     {
@@ -128,6 +141,10 @@ private:
 
         // This is a state returned by Next() which indicates that we just unwound a reverse pinvoke method
         UnwoundReversePInvoke = 0x20,
+
+        GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint),
+        EHStackWalkFlags = ApplyReturnAddressAdjustment,
+        StackTraceStackWalkFlags = GcStackWalkFlags
     };
 
     struct PreservedRegPtrs
@@ -166,10 +183,11 @@ protected:
     UInt32              m_codeOffset;
     PTR_RtuObjectRef    m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
-    PTR_RtuObjectRef    m_pConservativeStackRangeLowerBound;
-    PTR_RtuObjectRef    m_pConservativeStackRangeUpperBound;
+    PTR_UIntNative      m_pConservativeStackRangeLowerBound;
+    PTR_UIntNative      m_pConservativeStackRangeUpperBound;
     UInt32              m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
+    PTR_VOID            m_pendingFuncletFramePointer;
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
                                         // preferred because not all StackFrameIterators require this storage 
                                         // space.  However, the implementation simpler by doing it this way.
