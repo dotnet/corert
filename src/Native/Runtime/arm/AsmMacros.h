@@ -113,19 +113,13 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 ;; on the current thread, ready to be used if and when the helper needs to transition to pre-emptive mode.
 ;;
 ;; INVARIANTS
-;; - The macro defines the tail of the method prolog (and commonly defines the entire method prolog in the
-;;   case where it is the first code in the method). The macro therefore must be the last code in a method's
-;;   prolog. The $ExtraStack parameter must be set to the size (in bytes) of the stack allocations, if any,
-;;   which were done in the preceding parts of the method prolog.
+;; - The macro assumes it defines the method prolog, it should typically be the first code in a method and
+;;   certainly appear before any attempt to alter the stack pointer.
 ;; - This macro uses r4 and r5 (after their initial values have been saved in the frame) and upon exit r4
 ;;   will contain the current Thread*.
 ;;
-;; If $NoModeSwitch is set, the current thread is not loaded and r4 is zero on exit. As a result,
-;; $NoModeSwitch can only be used by helpers which guarantee that they will never transition into pre-emptive
-;; mode and will never examine the m_pThread field of the frame.
-;;
     MACRO
-        COOP_PINVOKE_FRAME_PROLOG_TAIL $ExtraStack, $NoModeSwitch
+        COOP_PINVOKE_FRAME_PROLOG
 
         PROLOG_STACK_ALLOC 4        ; Save space for caller's SP
         PROLOG_PUSH {r4-r6,r8-r10}  ; Save preserved registers
@@ -134,14 +128,12 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
         PROLOG_PUSH {r11,lr}        ; Save caller's frame-chain pointer and PC
 
         ; Compute SP value at entry to this method and save it in the last slot of the frame (slot #11).
-        add         r4, sp, #((12 * 4) + $ExtraStack)
+        add         r4, sp, #(12 * 4)
         str         r4, [sp, #(11 * 4)]
 
         ; Record the bitmask of saved registers in the frame (slot #4).
         mov         r4, #DEFAULT_FRAME_SAVE_FLAGS
         str         r4, [sp, #(4 * 4)]
-
-        IF "$NoModeSwitch" == ""
 
         ; Save the current Thread * in the frame (slot #3).
         INLINE_GETTHREAD r4, r5
@@ -149,25 +141,6 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
         ; Store the frame in the thread
         str         sp, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
-
-        ELSE
-
-        ; Clear the m_pThread field in the frame. This is not strictly required for correctness
-        ; but guards against confusion in case the uninitialized content is ever accidentally
-        ; interpreted as a thread pointer (e.g., during debugging).
-        mov         r4, #0
-        str         r4, [sp, #(3 * 4)]
-
-        ENDIF
-
-    MEND
-
-;; Macro used in the common case where PInvoke frame construction constitutes the entire prolog of the
-;; helper and not just the tail end.
-    MACRO
-        COOP_PINVOKE_FRAME_PROLOG
-
-        COOP_PINVOKE_FRAME_PROLOG_TAIL 0
     MEND
 
 ;; Pop the frame and restore register state preserved by COOP_PINVOKE_FRAME_PROLOG but don't return to the
@@ -304,4 +277,3 @@ $Name
         EXTERN $REDHAWKGCINTERFACE__STRESSGC
         EXTERN $THREAD__HIJACKFORGCSTRESS
 #endif ;; FEATURE_GC_STRESS
-

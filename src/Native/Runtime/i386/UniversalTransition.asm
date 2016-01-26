@@ -34,24 +34,26 @@ ifdef FEATURE_DYNAMIC_CODE
 ;;
 
 ;
-; Stack frame layout (from lower addresses to higher addresses):
+; Frame layout is:
 ;
-; [callee return]
-; [pinvoke frame, 20h]
-; [in edx (argument register from the caller)]
-; [in ecx (argument register from the caller)]
-; [ConservativelyReportedScratchSpace 8h]
-;   -- On input (i.e., when control jumps to RhpUniversalTransition), the low 4 bytes of
-;      this area contain the address of the callee and the high 4 bytes of this area contain
-;      the extra argument to pass to the callee.
-; [ptr to pinvoke frame 4h]
-; [saved ebp register]
-; [caller return addr]
-; [stack-passed arguments from the caller]
+;   {StackPassedArgs}                           ChildSP+018     CallerSP+000
+;   {CallerRetaddr}                             ChildSP+014     CallerSP-004
+;   {CallerEBP}                                 ChildSP+010     CallerSP-008
+;   {ReturnBlock (0x8 bytes)}                   ChildSP+008     CallerSP-010
+;    -- On input (i.e., when control jumps to RhpUniversalTransition), the low 4 bytes of
+;       the ReturnBlock area holds the address of the callee and the high 4 bytes holds the
+;       extra argument to pass to the callee.
+;   {IntArgRegs (edx,ecx) (0x8 bytes)}          ChildSP+000     CallerSP-018
+;   {CalleeRetaddr}                             ChildSP-004     CallerSP-01c
 ;
-; Note: The callee receives a pointer to the pushed edx value, and the callee has
-; knowledge of the exact layout of all pieces of the frame that lie at or above the pushed
-; edx value.
+; NOTE: If the frame layout ever changes, the C++ UniversalTransitionStackFrame structure
+; must be updated as well.
+;
+; NOTE: The callee receives a pointer to the base of the pushed IntArgRegs, and the callee
+; has knowledge of the exact layout of the entire frame.
+;
+; NOTE: The stack walker guarantees that conservative GC reporting will be applied to
+; everything between the base of the IntArgRegs and the top of the StackPassedArgs.
 ;
 
 FASTCALL_FUNC RhpUniversalTransition_FAKE_ENTRY, 0        
@@ -60,34 +62,22 @@ FASTCALL_FUNC RhpUniversalTransition_FAKE_ENTRY, 0
         mov         ebp, esp
         push eax
         push eax
-        push eax
 ALTERNATE_ENTRY RhpUniversalTransition@0
         push ecx
         push edx
 
-        ; Build the frame that the stack walker will use to unwind through this function.  The
-        ; <NoModeSwitch> flag indicates that this function never uses Enable/DisablePreemptiveGC,
-        ; implying that frame address does not need to be recorded in the current thread object.
-        PUSH_COOP_PINVOKE_FRAME notUsed, <NoModeSwitch>
-
-        ;; Stash the pinvoke frame's address immediately on top of the old ebp value. This
-        ;; position is important; the stack frame iterator knows about this setup.
-.erre MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET eq -4
-        mov [ebp-4], esp
-
         ;
         ; Call out to the target, while storing and reporting arguments to the GC.
         ;
-        mov  eax, [ebp-0Ch]  ; Get the address of the callee 
-        mov  edx, [ebp-8]    ; Get the extra argument to pass to the callee
-        lea  ecx, [ebp-14h]  ; Get pointer to edx value pushed above
+        mov  eax, [ebp-8]    ; Get the address of the callee 
+        mov  edx, [ebp-4]    ; Get the extra argument to pass to the callee
+        lea  ecx, [ebp-10h]  ; Get pointer to edx value pushed above
         call eax
 LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
 
-        POP_COOP_PINVOKE_FRAME
         pop edx
         pop ecx
-        add esp, 12
+        add esp, 8
         pop ebp
         jmp eax
 

@@ -488,24 +488,17 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
                                            pfnEnumCallback,
                                            pvCallbackData);
         
-            frameIterator.Next();
-        
-            // Iterating to the next frame may reveal a stack range we need to report conservatively (every
-            // pointer aligned value that looks like it might be a GC reference is reported as a pinned interior
-            // reference). This occurs in an edge case where a managed method whose signature the runtime is not
-            // aware of calls into the runtime which subsequently calls back out into managed code (allowing the
-            // possibility of a garbage collection). This can happen in certain interface invocation slow paths for
-            // instance. Since the original managed call may have passed GC references which are unreported by
-            // any managed method on the stack at the time of the GC we identify (again conservatively) the range
-            // of the stack that might contain these references and report everything. Since it should be a very
-            // rare occurance indeed that we actually have to do this this, it's considered a better trade-off
-            // than storing signature metadata for every potential callsite of the type described above.
-            //
-            // Due to the way this situation is detected and the stack range calculated, we will determine the
-            // stack range to report one frame later than you might expect (as we iterate to the method that
-            // called the method that called into the runtime). As such we'll never have a range to report for the
-            // first frame on the stack and we might have one to report after we've reached the base of the stack
-            // (i.e. when frameIterator.IsValid() == false). Hence the placement of this check.
+            // Each enumerated frame (including the first one) may have an associated stack range we need to
+            // report conservatively (every pointer aligned value that looks like it might be a GC reference is
+            // reported as a pinned interior reference). This occurs in an edge case where a managed method whose
+            // signature the runtime is not aware of calls into the runtime which subsequently calls back out
+            // into managed code (allowing the possibility of a garbage collection). This can happen in certain
+            // interface invocation slow paths for instance. Since the original managed call may have passed GC
+            // references which are unreported by any managed method on the stack at the time of the GC we
+            // identify (again conservatively) the range of the stack that might contain these references and
+            // report everything. Since it should be a very rare occurance indeed that we actually have to do
+            // this this, it's considered a better trade-off than storing signature metadata for every potential
+            // callsite of the type described above.
             if (frameIterator.HasStackRangeToReportConservatively())
             {
                 PTR_RtuObjectRef pLowerBound;
@@ -516,6 +509,8 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
                                                                      pfnEnumCallback,
                                                                      pvCallbackData);
             }
+
+            frameIterator.Next();
         }
     }
 
