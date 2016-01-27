@@ -394,9 +394,8 @@ void log_va_msg(const char *fmt, va_list args)
     static char rgchBuffer[BUFFERSIZE];
     char *  pBuffer  = &rgchBuffer[0];
 
-    pBuffer[0] = '\r';
-    pBuffer[1] = '\n';
-    int buffer_start = 2;
+    pBuffer[0] = '\n';
+    int buffer_start = 1;
     int pid_len = sprintf_s (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, "[%5d]", GCToOSInterface::GetCurrentThreadIdForLogging());
     buffer_start += pid_len;
     memset(&pBuffer[buffer_start], '-', BUFFERSIZE - buffer_start);
@@ -413,9 +412,8 @@ void log_va_msg(const char *fmt, va_list args)
         char index_str[8];
         memset (index_str, '-', 8);
         sprintf_s (index_str, _countof(index_str), "%d", (int)gc_buffer_index);
-        gc_log_buffer[gc_log_buffer_offset] = '\r';
-        gc_log_buffer[gc_log_buffer_offset + 1] = '\n';
-        memcpy (gc_log_buffer + (gc_log_buffer_offset + 2), index_str, 8);
+        gc_log_buffer[gc_log_buffer_offset] = '\n';
+        memcpy (gc_log_buffer + (gc_log_buffer_offset + 1), index_str, 8);
 
         gc_buffer_index++;
         if (gc_buffer_index > max_gc_buffers)
@@ -465,9 +463,8 @@ void log_va_msg_config(const char *fmt, va_list args)
     static char rgchBuffer[BUFFERSIZE];
     char *  pBuffer  = &rgchBuffer[0];
 
-    pBuffer[0] = '\r';
-    pBuffer[1] = '\n';
-    int buffer_start = 2;
+    pBuffer[0] = '\n';
+    int buffer_start = 1;
     int msg_len = _vsnprintf (&pBuffer[buffer_start], BUFFERSIZE - buffer_start, fmt, args );
     assert (msg_len != -1);
     msg_len += buffer_start;
