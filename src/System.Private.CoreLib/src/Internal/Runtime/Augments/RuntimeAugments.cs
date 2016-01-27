@@ -814,6 +814,10 @@ namespace Internal.Runtime.Augments
             Debug.Assert(gcHandle.IsPinned());
 
             Object target = gcHandle.Target;
+
+            if (target == null)
+                return IntPtr.Zero;
+
             fixed (IntPtr* pTargetEEType = &target.m_pEEType)
             {
                 return (IntPtr)pTargetEEType;
