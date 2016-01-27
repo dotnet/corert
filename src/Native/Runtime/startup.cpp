@@ -200,11 +200,9 @@ bool UninitDLL(HANDLE /*hModDLL*/)
         AppendInt64(buffer, &len, g_registerModuleTraces[i].End.QuadPart);
     }
 
-    buffer[len++] = '\r';
     buffer[len++] = '\n';
 
-    UInt32 cchWritten;
-    PalWriteFile(PalGetStdHandle(STD_OUTPUT_HANDLE), buffer, len, &cchWritten, NULL);
+    fwrite(buffer, len, 1, stdout);
 #endif // PROFILE_STARTUP
     return true;
 }

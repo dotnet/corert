@@ -58,7 +58,6 @@ bool InitializeSystemInfo()
 }
 
 extern bool PalQueryProcessorTopology();
-REDHAWK_PALEXPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...);
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
@@ -965,13 +964,13 @@ UInt32 CountBits(size_t bfBitfield)
 #ifdef _DEBUG
 void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
 {
-    PalPrintf("----------------\n");
+    printf("----------------\n");
     for (UInt32 i = 0; i < cRecords; i++)
     {
         switch (pProcInfos[i].Relationship)
         {
         case RelationProcessorCore:
-            PalPrintf("    [%2d] Core: %d threads                    0x%04x mask, flags = %d\n",
+            printf("    [%2d] Core: %d threads                    0x%04zx mask, flags = %d\n",
                 i, CountBits(pProcInfos[i].ProcessorMask), pProcInfos[i].ProcessorMask,
                 pProcInfos[i].ProcessorCore.Flags);
             break;
@@ -985,34 +984,34 @@ void DumpCacheTopology(_In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION
             case CacheTrace:        pszCacheType = "[Trace  ]"; break;
             default:                pszCacheType = "[Unk    ]"; break;
             }
-            PalPrintf("    [%2d] Cache: %s 0x%08x bytes  0x%04x mask\n", i, pszCacheType,
+            printf("    [%2d] Cache: %s 0x%08x bytes  0x%04zx mask\n", i, pszCacheType,
                 pProcInfos[i].Cache.Size, pProcInfos[i].ProcessorMask);
             break;
 
         case RelationNumaNode:
-            PalPrintf("    [%2d] NumaNode: #%02d                      0x%04x mask\n",
+            printf("    [%2d] NumaNode: #%02d                      0x%04zx mask\n",
                 i, pProcInfos[i].NumaNode.NodeNumber, pProcInfos[i].ProcessorMask);
             break;
         case RelationProcessorPackage:
-            PalPrintf("    [%2d] Package:                           0x%04x mask\n",
+            printf("    [%2d] Package:                           0x%04zx mask\n",
                 i, pProcInfos[i].ProcessorMask);
             break;
         case RelationAll:
         case RelationGroup:
         default:
-            PalPrintf("    [%2d] unknown: %d\n", i, pProcInfos[i].Relationship);
+            printf("    [%2d] unknown: %d\n", i, pProcInfos[i].Relationship);
             break;
         }
     }
-    PalPrintf("----------------\n");
+    printf("----------------\n");
 }
 void DumpCacheTopologyResults(UInt32 maxCpuId, CpuVendor cpuVendor, _In_reads_(cRecords) SYSTEM_LOGICAL_PROCESSOR_INFORMATION * pProcInfos, UInt32 cRecords)
 {
     DumpCacheTopology(pProcInfos, cRecords);
-    PalPrintf("maxCpuId: %d, %s\n", maxCpuId, (cpuVendor == CpuIntel) ? "CpuIntel" : ((cpuVendor == CpuAMD) ? "CpuAMD" : "CpuUnknown"));
-    PalPrintf("               g_cLogicalCpus:          %d %d          :CLR_GetLogicalCpuCount\n", g_cLogicalCpus, CLR_GetLogicalCpuCount(pProcInfos, cRecords));
-    PalPrintf("        g_cbLargestOnDieCache: 0x%08x 0x%08x :CLR_LargestOnDieCache(TRUE)\n", g_cbLargestOnDieCache, CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords));
-    PalPrintf("g_cbLargestOnDieCacheAdjusted: 0x%08x 0x%08x :CLR_LargestOnDieCache(FALSE)\n", g_cbLargestOnDieCacheAdjusted, CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords));
+    printf("maxCpuId: %d, %s\n", maxCpuId, (cpuVendor == CpuIntel) ? "CpuIntel" : ((cpuVendor == CpuAMD) ? "CpuAMD" : "CpuUnknown"));
+    printf("               g_cLogicalCpus:          %d %d          :CLR_GetLogicalCpuCount\n", g_cLogicalCpus, CLR_GetLogicalCpuCount(pProcInfos, cRecords));
+    printf("        g_cbLargestOnDieCache: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(TRUE)\n", g_cbLargestOnDieCache, CLR_GetLargestOnDieCacheSize(TRUE, pProcInfos, cRecords));
+    printf("g_cbLargestOnDieCacheAdjusted: 0x%08zx 0x%08zx :CLR_LargestOnDieCache(FALSE)\n", g_cbLargestOnDieCacheAdjusted, CLR_GetLargestOnDieCacheSize(FALSE, pProcInfos, cRecords));
 }
 #endif // _DEBUG
 

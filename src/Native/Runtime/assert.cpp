@@ -27,7 +27,7 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
 #else
     if (g_pRhConfig->GetBreakOnAssert())
     {
-        PalPrintf(
+        printf(
             "--------------------------------------------------\n"
             "Debug Assertion Violation\n\n"
             "%s%s%s"
@@ -41,7 +41,7 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
 
         // Flush standard output before failing fast to make sure the assertion failure message
         // is retained when tests are being run with redirected stdout.
-        PalFlushStdout();
+        fflush(stdout);
 
         // If there's no debugger attached, we just FailFast
         if (!PalIsDebuggerPresent())
@@ -54,7 +54,7 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
 
     char buffer[4096];
 
-    PalSprintf(buffer, COUNTOF(buffer),
+    sprintf_s(buffer, COUNTOF(buffer),
            "--------------------------------------------------\n"
            "Debug Assertion Violation\n\n"
            "%s%s%s"

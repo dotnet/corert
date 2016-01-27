@@ -752,27 +752,6 @@ inline UInt8 * PalNtCurrentTeb()
 EXTERN_C void * __cdecl _alloca(size_t);
 #pragma intrinsic(_alloca)
 
-//
-// Export PAL blessed versions of *printf functions we use (mostly debug only).
-//
-REDHAWK_PALIMPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...);
-REDHAWK_PALIMPORT void __cdecl PalFlushStdout();
-
-#ifndef DACCESS_COMPILE
-REDHAWK_PALIMPORT int __cdecl PalSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, ...);
-REDHAWK_PALIMPORT int __cdecl PalVSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, va_list args);
-#else
-#define PalSprintf sprintf_s
-#define PalVSprintf vsprintf_s
-#endif
-
-// An annoying side-effect of enabling full compiler warnings is that it complains about constant expressions
-// in control flow predicates. These happen to be useful in certain macros, such as the va_start definitions
-// below. The following macros will allow the warning to be turned off for the duration of the macro expansion
-// only. If this finds broader use we can consider moving them to a more global location.
-#define ALLOW_CONSTANT_EXPR_BEGIN __pragma(warning(push)) __pragma(warning(disable:4127))
-#define ALLOW_CONSTANT_EXPR_END __pragma(warning(pop))
-
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, UIntNative size, UInt32 allocationType, UInt32 protect);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, UIntNative size, UInt32 freeType);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(UInt32 milliseconds);
