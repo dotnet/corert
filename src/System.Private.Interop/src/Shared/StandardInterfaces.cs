@@ -1891,7 +1891,7 @@ namespace System.Runtime.InteropServices
             return Interop.COM.S_OK;
         }
 
-        #region "NotImplementedException"
+        #region Rest of IStream overrides that are not implemented
         [NativeCallable]
         internal static int Clone(System.IntPtr pComThis, out IntPtr ppstm)
         {
