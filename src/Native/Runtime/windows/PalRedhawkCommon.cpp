@@ -291,14 +291,14 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ TCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ TCHAR* fileName, _Out_writes_all_(maxBytesToRead) char* buff, _In_ UInt32 maxBytesToRead)
 {
     WIN32_FILE_ATTRIBUTE_DATA attrData;
 
     BOOL getAttrSuccess = GetFileAttributesExW(fileName, GetFileExInfoStandard, &attrData);
 
     //if we weren't able to get the file attributes, or the file is larger than maxBytesToRead, or the file size is zero
-    if ((!getAttrSuccess) || (attrData.nFileSizeHigh != 0) || (attrData.nFileSizeLow > (DWORD)cchBuff) || (attrData.nFileSizeLow == 0))
+    if ((!getAttrSuccess) || (attrData.nFileSizeHigh != 0) || (attrData.nFileSizeLow > (DWORD)maxBytesToRead) || (attrData.nFileSizeLow == 0))
     {
         return 0;
     }
@@ -312,7 +312,7 @@ REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ TCHAR* fileName, _Out_writes
 
     UInt32 bytesRead;
 
-    BOOL readSuccess = ReadFile(hFile, buff, (DWORD)cchBuff, (DWORD*)&bytesRead, NULL);
+    BOOL readSuccess = ReadFile(hFile, buff, (DWORD)maxBytesToRead, (DWORD*)&bytesRead, NULL);
 
     CloseHandle(hFile);
 

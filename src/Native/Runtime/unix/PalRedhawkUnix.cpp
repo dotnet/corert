@@ -130,8 +130,6 @@ static const int tccMicroSecondsToNanoSeconds = 1000;
 
 static const uint32_t INFINITE = 0xFFFFFFFF;
 
-extern "C" UInt32 __stdcall NtGetCurrentProcessorNumber();
-
 static uint32_t g_dwPALCapabilities;
 static UInt32 g_cLogicalCpus = 0;
 static size_t g_cbLargestOnDieCache = 0;
@@ -320,15 +318,13 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
 {
-#ifdef __LINUX__
+#if HAVE_SCHED_GETCPU
     int processorNumber = sched_getcpu();
     ASSERT(processorNumber != -1);
-
-    return (unsigned int)processorNumber;
-#else
-    // UNIXTODO: implement for OSX / FreeBSD
+    return processorNumber;
+#else //HAVE_SCHED_GETCPU
     return 0;
-#endif
+#endif //HAVE_SCHED_GETCPU    
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
@@ -885,11 +881,26 @@ extern "C" UInt32_BOOL ResetEvent(HANDLE event)
     return UInt32_TRUE;
 }
 
-extern "C" UInt32 GetEnvironmentVariableA(const char * pName, char * pBuffer, UInt32 size)
+extern "C" UInt32 GetEnvironmentVariableA(const char * name, char * buffer, UInt32 size)
 {
-    // UNIXTODO: Implement this function
-    *pBuffer = '\0';
-    return 0;
+    // Using std::getenv instead of getenv since it is guaranteed to be thread safe w.r.t. other
+    // std::getenv calls in C++11
+    const char* value = std::getenv(name);
+    if (value == NULL)
+    {
+        return 0;
+    }
+
+    size_t valueLen = strlen(value);
+
+    if (valueLen < size)
+    {
+        strcpy(buffer, value);
+        return valueLen;
+    }
+
+    // return required size including the null character or 0 if the size doesn't fit into UInt32
+    return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
 }
 
 extern "C" UInt16 RtlCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3, UInt32* arg4)
@@ -1000,10 +1011,25 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_writes_all_(maxBytesToRead) char* buff, _In_ UInt32 maxBytesToRead)
 {
-    // UNIXTODO: Implement this function
-    return 0;
+    int fd = open(fileName, O_RDONLY);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+
+    UInt32 bytesRead = 0;
+    struct stat fileStats;
+    if ((fstat(fd, &fileStats) == 0) && (fileStats.st_size <= maxBytesToRead))
+    {
+        bytesRead = read(fd, buff, fileStats.st_size);
+    }
+
+    close(fd);
+
+    return bytesRead;
 }
 
 __thread void* pStackHighOut = NULL;
@@ -1188,13 +1214,6 @@ extern "C" uint32_t GetCurrentThreadId()
     return 1;
 }
 
-extern "C" UInt32_BOOL FlushFileBuffers(
-    HANDLE hFile)
-{
-    // TODO: Reimplement callers using CRT
-    return UInt32_FALSE;
-}
-
 extern "C" UInt32_BOOL WriteFile(
     HANDLE hFile,
     const void* lpBuffer,
@@ -1264,14 +1283,13 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 // Get the number of the current processor
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
-    // UNIXTODO: implement this method
-    return 0;
+    return PalGetCurrentProcessorNumber();
 }
 
 // Check if the OS supports getting current processor number
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
-    return false;
+    return HAVE_SCHED_GETCPU;
 }
 
 // Flush write buffers of processors that are executing threads of the current process
