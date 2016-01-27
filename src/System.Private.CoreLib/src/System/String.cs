@@ -687,19 +687,23 @@ namespace System
                 char* a = ap;
                 char* b = bp;
 
-                // unroll the loop
 #if BIT64
+                // Single int read aligns pointers for the following long reads
+                // PERF: No length check needed as there is always an int32 worth of string allocated
+                //       This read can also include the null terminator which both strings will have
+                if (*(int*)a != *(int*)b) return false;
+                length -= 2; a += 2; b += 2;
+
                 // for 64-bit platforms we unroll by 12 and
                 // check 3 qword at a time. This is less code
                 // than the 32 bit case and is a shorter path length
-                // Reads are unaligned
 
                 while (length >= 12)
                 {
                     if (*(long*)a != *(long*)b) return false;
                     if (*(long*)(a + 4) != *(long*)(b + 4)) return false;
                     if (*(long*)(a + 8) != *(long*)(b + 8)) return false;
-                    a += 12; b += 12; length -= 12;
+                    length -= 12; a += 12; b += 12;
                 }
 #else
                 while (length >= 10)
@@ -709,7 +713,7 @@ namespace System
                     if (*(int*)(a + 4) != *(int*)(b + 4)) return false;
                     if (*(int*)(a + 6) != *(int*)(b + 6)) return false;
                     if (*(int*)(a + 8) != *(int*)(b + 8)) return false;
-                    a += 10; b += 10; length -= 10;
+                    length -= 10; a += 10; b += 10;
                 }
 #endif
 
@@ -720,10 +724,65 @@ namespace System
                 while (length > 0)
                 {
                     if (*(int*)a != *(int*)b) break;
-                    a += 2; b += 2; length -= 2;
+                    length -= 2; a += 2; b += 2;
                 }
 
                 return (length <= 0);
+            }
+        }
+
+        private unsafe static bool StartsWithOrdinalHelper(String str, String startsWith)
+        {
+            Debug.Assert(str != null);
+            Debug.Assert(startsWith != null);
+            Debug.Assert(str.Length >= startsWith.Length);
+
+            int length = startsWith.Length;
+
+            fixed (char* ap = &str._firstChar) fixed (char* bp = &startsWith._firstChar)
+            {
+                char* a = ap;
+                char* b = bp;
+
+#if BIT64
+                // Single int read aligns pointers for the following long reads
+                // No length check needed as this method is called when length >= 2
+                Debug.Assert(length >= 2);
+                if (*(int*)a != *(int*)b) goto ReturnFalse;
+                length -= 2; a += 2; b += 2;
+
+                while (length >= 12)
+                {
+                    if (*(long*)a != *(long*)b) goto ReturnFalse;
+                    if (*(long*)(a + 4) != *(long*)(b + 4)) goto ReturnFalse;
+                    if (*(long*)(a + 8) != *(long*)(b + 8)) goto ReturnFalse;
+                    length -= 12; a += 12; b += 12;
+                }
+#else
+                while (length >= 10)
+                {
+                    if (*(int*)a != *(int*)b) goto ReturnFalse;
+                    if (*(int*)(a + 2) != *(int*)(b + 2)) goto ReturnFalse;
+                    if (*(int*)(a + 4) != *(int*)(b + 4)) goto ReturnFalse;
+                    if (*(int*)(a + 6) != *(int*)(b + 6)) goto ReturnFalse;
+                    if (*(int*)(a + 8) != *(int*)(b + 8)) goto ReturnFalse;
+                    length -= 10; a += 10; b += 10;
+                }
+#endif
+
+                while (length >= 2)
+                {
+                    if (*(int*)a != *(int*)b) goto ReturnFalse;
+                    length -= 2; a += 2; b += 2;
+                }
+
+                // PERF: This depends on the fact that the String objects are always zero terminated 
+                // and that the terminating zero is not included in the length. For even string sizes
+                // this compare can include the zero terminator. Bitwise OR avoids a branch.
+                return length == 0 | *a == *b;
+
+                ReturnFalse:
+                return false;
             }
         }
 
@@ -769,9 +828,9 @@ namespace System
                         diffOffset = 8;
                         break;
                     }
+                    length -= 10;
                     a += 10;
                     b += 10;
-                    length -= 10;
                 }
 
                 if (diffOffset != -1)
@@ -799,9 +858,9 @@ namespace System
                     {
                         break;
                     }
+                    length -= 2;
                     a += 2;
                     b += 2;
-                    length -= 2;
                 }
 
                 if (length > 0)
@@ -2471,7 +2530,7 @@ namespace System
                     }
                     return (value.Length == 1) ?
                             true :                 // First char is the same and thats all there is to compare  
-                            (nativeCompareOrdinalEx(this, 0, value, 0, value.Length) == 0);
+                            StartsWithOrdinalHelper(this, value);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if (this.Length < value.Length)
