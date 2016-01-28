@@ -296,7 +296,7 @@ namespace System.Globalization
 
             //
             // The pos should point to a quote character. This method will
-            // get the string encloed by the quote character.
+            // append to the result StringBuilder the string encloed by the quote character.
             //
             internal static int ParseQuoteString(String format, int pos, StringBuilder result)
             {
@@ -680,9 +680,7 @@ namespace System.Globalization
                             break;
                         case '\'':
                         case '\"':
-                            StringBuilder enquotedString = new StringBuilder();
-                            tokenLen = ParseQuoteString(format, i, enquotedString);
-                            result.Append(enquotedString);
+                            tokenLen = ParseQuoteString(format, i, result);
                             break;
                         case '%':
                             // Optional format character.
