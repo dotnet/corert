@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using Internal.JitInterface;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public struct DebugLocInfo
@@ -19,12 +23,33 @@ namespace ILCompiler.DependencyAnalysis
             ColNumber = colNumber;
         }
     }
-
+    
     public interface INodeWithDebugInfo
     {
         DebugLocInfo[] DebugLocInfos
         {
             get;
+        }
+
+        DebugVarInfo[] DebugVarInfos
+        {
+            get;
+        }
+    }
+     
+    public struct DebugVarInfo
+    {
+        public readonly string Name;
+        public readonly uint TypeIndex;
+        public readonly bool IsParam;
+        public List<NativeVarInfo> Ranges;
+
+        public DebugVarInfo(string name, bool isParam, uint typeIndex)
+        {
+            this.Name = name;
+            this.TypeIndex = typeIndex;
+            this.IsParam = isParam;
+            this.Ranges = new List<NativeVarInfo>();
         }
     }
 }

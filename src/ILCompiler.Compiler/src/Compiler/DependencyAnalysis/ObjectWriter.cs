@@ -12,6 +12,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.TypeSystem;
+using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -163,6 +164,32 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitDebugLoc(int nativeOffset, int fileId, int linueNumber, int colNumber)
         {
             EmitDebugLoc(_nativeObjectWriter, nativeOffset, fileId, linueNumber, colNumber);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitDebugVar(IntPtr objWriter, string name, UInt32 typeIndex, bool isParam, Int32 rangeCount, NativeVarInfo[] range);
+
+        public void EmitDebugVar(DebugVarInfo debugVar)
+        {
+            int rangeCount = debugVar.Ranges.Count;
+            EmitDebugVar(_nativeObjectWriter, debugVar.Name, debugVar.TypeIndex, debugVar.IsParam, rangeCount, debugVar.Ranges.ToArray());
+        }
+
+        public void EmitDebugVarInfo(ObjectNode node)
+        {
+            // No interest if it's not a debug node.
+            var nodeWithDebugInfo = node as INodeWithDebugInfo;
+            if (nodeWithDebugInfo != null)
+            {
+                DebugVarInfo[] vars = nodeWithDebugInfo.DebugVarInfos;
+                if (vars != null)
+                {
+                    foreach (var v in vars)
+                    {
+                        EmitDebugVar(v);
+                    }
+                }
+            }
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -536,6 +563,9 @@ namespace ILCompiler.DependencyAnalysis
 
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);
+
+                    // Build debug local var info
+                    objectWriter.EmitDebugVarInfo(node);
 
                     objectWriter.EmitDebugFunctionInfo(nodeContents.Data.Length);
                 }

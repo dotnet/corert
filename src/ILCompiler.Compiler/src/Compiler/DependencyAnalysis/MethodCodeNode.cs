@@ -14,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
         private DebugLocInfo[] _debugLocInfos;
+        private DebugVarInfo[] _debugVarInfos;
 
         public MethodCodeNode(MethodDesc method)
         {
@@ -98,10 +99,24 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public DebugVarInfo[] DebugVarInfos
+        {
+            get
+            {
+                return _debugVarInfos;
+            }
+        }        
+
         public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
         {
             Debug.Assert(_debugLocInfos == null);
             _debugLocInfos = debugLocInfos;
+        }
+
+        public void InitializeDebugVarInfos(DebugVarInfo[] debugVarInfos)
+        {
+            Debug.Assert(_debugVarInfos == null);
+            _debugVarInfos = debugVarInfos;
         }
     }
 }
