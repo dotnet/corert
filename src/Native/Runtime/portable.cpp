@@ -143,10 +143,33 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     alloc_context * acontext = pCurThread->GetAllocContext();
     Array * pObject;
 
-    // TODO: Overflow checks
-    size_t size = 3 * sizeof(UIntNative) + (numElements * pArrayEEType->get_ComponentSize());
-    // Align up
-    size = (size + (sizeof(UIntNative) - 1)) & ~(sizeof(UIntNative) - 1);
+    if (numElements < 0)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+    }
+
+    size_t size;
+#ifndef BIT64
+    // if the element count is <= 0x10000, no overflow is possible because the component size is
+    // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
+    if (numElements > 0x10000)
+    {
+        // Perform the size computation using 64-bit integeres to detect overflow
+        uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
+        size64 = ALIGN_UP(size, sizeof(UIntNative));
+
+        size = (size_t)size64;
+        if (size != size64)
+        {
+            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+        }
+    }
+    else
+#endif // !BIT64
+    {
+        size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
+        size = ALIGN_UP(size, sizeof(UIntNative));
+    }
 
     UInt8* result = acontext->alloc_ptr;
     UInt8* advance = result + size;
