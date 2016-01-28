@@ -1096,35 +1096,6 @@ namespace System.Globalization
                 return s.Equals(nfi.NaNSymbol);
             }
 
-            private static unsafe void DoubleToNumber(double value, int precision, ref NumberBuffer number)
-            {
-                number.precision = precision;
-                if (DoubleHelper.Exponent(value) == 0x7ff)
-                {
-                    number.scale = DoubleHelper.Mantissa(value) != 0 ? SCALE_NAN : SCALE_INF;
-                    number.sign = DoubleHelper.Sign(value);
-                    number.digits[0] = '\0';
-                }
-                else
-                {
-                    byte* src = stackalloc byte[_CVTBUFSIZE];
-                    int sign;
-                    fixed (NumberBuffer* pNumber = &number)
-                    {
-                        RuntimeImports._ecvt_s(src, _CVTBUFSIZE, value, precision, &pNumber->scale, &sign);
-                    }
-                    number.sign = sign != 0;
-
-                    char* dst = number.digits;
-                    if ((char)*src != '0')
-                    {
-                        while (*src != 0)
-                            *dst++ = (char)*src++;
-                    }
-                    *dst = '\0';
-                }
-            }
-
             #region Decimal Number Formatting Helpers
             private static unsafe bool NumberBufferToDecimal(Number.NumberBuffer number, ref Decimal value)
             {
