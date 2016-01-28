@@ -217,7 +217,11 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
         {
+#if CORERT // CORERT-TODO: RuntimeTypeHandle
+            throw new NotImplementedException();
+#else
             return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));
+#endif
         }
 
         public unsafe static IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, IntPtr fieldCookie)
@@ -787,8 +791,7 @@ namespace Internal.Runtime.Augments
 
         public unsafe static RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
-            IntPtr type = obj.EETypePtr.RawValue;
-            return *((RuntimeTypeHandle*)&type);
+            return new RuntimeTypeHandle(obj.EETypePtr);
         }
 
         public static int GetCorElementType(RuntimeTypeHandle type)

@@ -168,9 +168,11 @@ namespace ILCompiler
                     mangledName = "memset"; // TODO: Null reference handling
                     break;
 
-                case JitHelperId.GetRuntimeTypeHandle: // TODO: Reflection
-                case JitHelperId.GetRuntimeMethodHandle:
-                case JitHelperId.GetRuntimeFieldHandle:
+                case JitHelperId.GetRuntimeTypeHandle:
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
+                    break;
+                case JitHelperId.GetRuntimeMethodHandle: // TODO: Reflection
+                case JitHelperId.GetRuntimeFieldHandle: // TODO: Reflection
                     mangledName = "__fail_fast";
                     break;
 

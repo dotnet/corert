@@ -20,10 +20,7 @@
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <!-- CORERT-TODO: For now, drop DEBUG define comming from central location - asserts compiled 
-         into DEBUG builds use interfaces that we are not able to handle yet -->
-    <!-- <DefineConstants>CORERT;$(DefineConstants)</DefineConstants> -->
-    <DefineConstants>CORERT</DefineConstants>
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
@@ -48,10 +45,15 @@
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\LowLevelUTF8Encoding.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs" />
-    <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
@@ -67,6 +69,9 @@
     <Compile Include="Internal\Runtime\Augments\DesktopSupportCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceConnector.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\BlockedRuntimeTypeNameGenerator.cs" />
@@ -89,11 +94,21 @@
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.Internals.cs" />
-    <Compile Include="Internal\Reflection\Extensibility\ExtensibleType.cs" />
-    <Compile Include="Internal\Runtime\Augments\WinRTInterop.cs" />
-    <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
     <Compile Include="Internal\Reflection\MetadataTransformedAttribute.cs" />
+    <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
+    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
+    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.Events.cs" />
+    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Internal.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="Internal\Reflection\CoreRT\RuntimeType.cs" />
+    <Compile Include="Internal\Reflection\CoreRT\ReflectionCoreNonPortable.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Extensibility\ExtensibleType.cs" />
+    <Compile Include="Internal\Runtime\Augments\WinRTInterop.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
@@ -483,11 +498,6 @@
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
-    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.Events.cs" />
-    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Internal.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="..\..\Common\src\System\Collections\LowLevelComparer.cs" />
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs" />
@@ -505,6 +515,7 @@
     <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
     <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" />
     <Compile Include="..\..\Common\src\System\__HResults.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs" />
     <Compile Include="CoverageSupport.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->

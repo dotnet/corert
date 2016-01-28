@@ -277,14 +277,14 @@ namespace System.Runtime
                         result = RuntimeAugments.TypeLoaderCallbacks.GenericLookupFromContextAndSignature(context, signature, out auxResult);
                         break;
                     case SignatureKind.GenericVirtualMethod:
-                        result = Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(*(RuntimeTypeHandle*)&context, *(RuntimeMethodHandle*)&signature);
+                        result = Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature);
                         break;
                     case SignatureKind.OpenInstanceResolver:
                         result = Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject);
                         break;
                     case SignatureKind.DefaultConstructor:
                         {
-                            result = RuntimeAugments.Callbacks.TryGetDefaultConstructorForType(*(RuntimeTypeHandle*)&context);
+                            result = RuntimeAugments.Callbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
                             if (result == IntPtr.Zero)
                                 result = RuntimeAugments.GetFallbackDefaultConstructor();
                         }

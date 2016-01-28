@@ -11,7 +11,6 @@ using System.Text;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    // !!!!
     // This code is primarily copied from UTF8Encoding.cs' GetCharCount and GetChars
     // but has all the string literals removed. The code is used for runtime startup and
     // primarily for loading static string literals. So do not put anything here

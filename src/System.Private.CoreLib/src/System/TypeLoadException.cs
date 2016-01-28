@@ -75,36 +75,5 @@ namespace System
         }
 
         private String _typeName;
-        //// This is called from inside the EE. 
-        //[System.Security.SecurityCritical]  // auto-generated
-        //private TypeLoadException(String className,
-        //                          String assemblyName,
-        //                          String messageArg,
-        //                          int    resourceId)
-        //: base(null)
-        //{
-        //    SetErrorCode(__HResults.COR_E_TYPELOAD);
-        //    ClassName  = className;
-        //    AssemblyName = assemblyName;
-        //    MessageArg = messageArg;
-        //    ResourceId = resourceId;
-
-        //    // Set the _message field eagerly; debuggers look at this field to 
-        //    // display error info. They don't call the Message property.
-        //    SetMessageField();   
-        //}
-
-        //[System.Security.SecurityCritical]  // auto-generated
-        //[DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        //[SuppressUnmanagedCodeSecurity]
-        //private static extern void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
-
-        //// If ClassName != null, GetMessage will construct on the fly using it
-        //// and ResourceId (mscorrc.dll). This allows customization of the
-        //// class name format depending on the language environment.
-        //private String  ClassName;
-        //private String  AssemblyName;
-        //private String  MessageArg;
-        //internal int    ResourceId;
     }
 }
