@@ -343,10 +343,18 @@ namespace System.Runtime.InteropServices
         [NativeCallable]
         static int GarbageCollect__STUB(System.IntPtr pComThis, int flags)
         {
-            GC.Collect(2, GCCollectionMode.Optimized, /* blocking = */ true);
+            try
+            {
+                GC.Collect(2, GCCollectionMode.Optimized, /* blocking = */ true);
 
-            if (InteropEventProvider.IsEnabled())
-                InteropEventProvider.Log.TaskJupiterGarbageCollect();
+                if (InteropEventProvider.IsEnabled())
+                    InteropEventProvider.Log.TaskJupiterGarbageCollect();
+            }
+            catch (Exception ex)
+            {
+                // If we set IErrorInfo/IRestrictedErrorInfo, Jupiter might leak
+                return ex.HResult;
+            }
 
             return Interop.COM.S_OK;
         }
@@ -364,10 +372,18 @@ namespace System.Runtime.InteropServices
         [NativeCallable]
         static int DisconnectRCWsInCurrentApartment__STUB(System.IntPtr pComThis)
         {
-            ContextEntry.RemoveCurrentContext();
+            try
+            {
+                ContextEntry.RemoveCurrentContext();
 
-            if (InteropEventProvider.IsEnabled())
-                InteropEventProvider.Log.TaskJupiterDisconnectRCWsInCurrentApartment();
+                if (InteropEventProvider.IsEnabled())
+                    InteropEventProvider.Log.TaskJupiterDisconnectRCWsInCurrentApartment();
+            }
+            catch (Exception ex)
+            {
+                // If we set IErrorInfo/IRestrictedErrorInfo, Jupiter might leak
+                return ex.HResult;
+            }
 
             return Interop.COM.S_OK;
         }
@@ -399,8 +415,10 @@ namespace System.Runtime.InteropServices
         static int CreateManagedReference__STUB(System.IntPtr pComThis, IntPtr __IntPtr__pJupiterObject,
                         IntPtr __IntPtr__ppNewReference)
         {
-            __com_ICCW** ppNewReference = (__com_ICCW**)__IntPtr__ppNewReference;
-            object comObj = null;
+            try
+            {
+                __com_ICCW** ppNewReference = (__com_ICCW**)__IntPtr__ppNewReference;
+                object comObj = null;
 #if ENABLE_WINRT
             //
             // Converts IJupiterObject * to a RCW with type resolution
@@ -415,28 +433,28 @@ namespace System.Runtime.InteropServices
                 McgComHelpers.CreateComObjectFlags.IsWinRTObject
             );
 #endif
-            //
-            // Create a proxy to the RCW for pJupiterObject
-            // This ensures the object returned only supports standard interfaces and interfaces related to databinding.
-            // Supporting all interfaces that pJupiterObject supports isn't required and causes issues since we return
-            // our vtable instead of pJupiterObject's
-            //
-            IManagedWrapper customPropertyProviderProxy;
-            System.Collections.IList comObjList;
-            System.Collections.IEnumerable comObjEnumerable;
+                //
+                // Create a proxy to the RCW for pJupiterObject
+                // This ensures the object returned only supports standard interfaces and interfaces related to databinding.
+                // Supporting all interfaces that pJupiterObject supports isn't required and causes issues since we return
+                // our vtable instead of pJupiterObject's
+                //
+                IManagedWrapper customPropertyProviderProxy;
+                System.Collections.IList comObjList;
+                System.Collections.IEnumerable comObjEnumerable;
 
-            if ((comObjList = comObj as System.Collections.IList) != null)
-            {
-                customPropertyProviderProxy = new ListCustomPropertyProviderProxy(comObjList);
-            }
-            else if ((comObjEnumerable = comObj as System.Collections.IEnumerable) != null)
-            {
-                customPropertyProviderProxy = new EnumerableCustomPropertyProviderProxy(comObjEnumerable);
-            }
-            else
-            {
-                customPropertyProviderProxy = new StandardCustomPropertyProviderProxy(comObj);
-            }
+                if ((comObjList = comObj as System.Collections.IList) != null)
+                {
+                    customPropertyProviderProxy = new ListCustomPropertyProviderProxy(comObjList);
+                }
+                else if ((comObjEnumerable = comObj as System.Collections.IEnumerable) != null)
+                {
+                    customPropertyProviderProxy = new EnumerableCustomPropertyProviderProxy(comObjEnumerable);
+                }
+                else
+                {
+                    customPropertyProviderProxy = new StandardCustomPropertyProviderProxy(comObj);
+                }
 #if ENABLE_WINRT
             //
             // Then, create a new CCW that points to this RCW
@@ -460,8 +478,14 @@ namespace System.Runtime.InteropServices
 
 #endif //ENABLE_WINRT
 
-            if (InteropEventProvider.IsEnabled())
-                InteropEventProvider.Log.TaskJupiterCreateManagedReference((long)__IntPtr__pJupiterObject, (long)comObj.GetTypeHandle().GetRawValue());
+                if (InteropEventProvider.IsEnabled())
+                    InteropEventProvider.Log.TaskJupiterCreateManagedReference((long)__IntPtr__pJupiterObject, (long)comObj.GetTypeHandle().GetRawValue());
+            }
+            catch (Exception ex)
+            {
+                // If we set IErrorInfo/IRestrictedErrorInfo, Jupiter might leak
+                return ex.HResult;
+            }
 
             return Interop.COM.S_OK;
         }
@@ -469,12 +493,20 @@ namespace System.Runtime.InteropServices
         [NativeCallable]
         static int AddMemoryPressure__STUB(System.IntPtr pComThis, ulong bytesAllocated)
         {
+            try
+            {
 #if !RHTESTCL
-            GC.AddMemoryPressure((long)bytesAllocated);
+                GC.AddMemoryPressure((long)bytesAllocated);
 #endif
 
-            if (InteropEventProvider.IsEnabled())
-                InteropEventProvider.Log.TaskJupiterAddMemoryPressure((long)bytesAllocated);
+                if (InteropEventProvider.IsEnabled())
+                    InteropEventProvider.Log.TaskJupiterAddMemoryPressure((long)bytesAllocated);
+            }
+            catch(Exception ex)
+            {
+                // If we set IErrorInfo/IRestrictedErrorInfo, Jupiter might leak
+                return ex.HResult;
+            }
 
             return Interop.COM.S_OK;
         }
@@ -482,11 +514,19 @@ namespace System.Runtime.InteropServices
         [NativeCallable]
         static int RemoveMemoryPressure__STUB(System.IntPtr pComThis, ulong bytesAllocated)
         {
+            try
+            {
 #if !RHTESTCL
-            GC.RemoveMemoryPressure((long)bytesAllocated);
+                GC.RemoveMemoryPressure((long)bytesAllocated);
 #endif
-            if (InteropEventProvider.IsEnabled())
-                InteropEventProvider.Log.TaskJupiterRemoveMemoryPressure((long)bytesAllocated);
+                if (InteropEventProvider.IsEnabled())
+                    InteropEventProvider.Log.TaskJupiterRemoveMemoryPressure((long)bytesAllocated);
+            }
+            catch (Exception ex)
+            {
+                // If we set IErrorInfo/IRestrictedErrorInfo, Jupiter might leak
+                return ex.HResult;
+            }
 
             return Interop.COM.S_OK;
         }
