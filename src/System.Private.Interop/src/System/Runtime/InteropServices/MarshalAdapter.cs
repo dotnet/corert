@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 //
 // This file provides an implementation of the pieces of the Marshal class which are required by the Interop
@@ -89,6 +90,31 @@ namespace System.Runtime.InteropServices
             }
 #endif
             return dlg;
+        }
+
+        public static bool IsComObject(object o)
+        {
+            return MarshalImpl.IsComObject(o);            
+        }
+
+        public static int ReleaseComObject(object o)
+        {
+            return MarshalImpl.ReleaseComObject(o);            
+        }
+
+        public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        {
+            return MarshalImpl.QueryInterface(pUnk, ref iid, out ppv);
+        }
+
+        public static int AddRef(IntPtr pUnk)
+        {
+            return MarshalImpl.AddRef(pUnk);
+        }
+
+        public static int Release(IntPtr pUnk)
+        {
+            return MarshalImpl.Release(pUnk);
         }
     }
 #pragma warning restore 618
