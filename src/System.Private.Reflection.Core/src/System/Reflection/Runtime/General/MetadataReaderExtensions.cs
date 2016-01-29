@@ -440,6 +440,19 @@ namespace System.Reflection.Runtime.General
             }
         }
 
+        public static Handle GetAttributeTypeHandle(this CustomAttribute customAttribute,
+                                                    MetadataReader reader)
+        {
+            HandleType constructorHandleType = customAttribute.Constructor.HandleType;
+
+            if (constructorHandleType == HandleType.QualifiedMethod)
+                return customAttribute.Constructor.ToQualifiedMethodHandle(reader).GetQualifiedMethod(reader).EnclosingType;
+            else if (constructorHandleType == HandleType.MemberReference)
+                return customAttribute.Constructor.ToMemberReferenceHandle(reader).GetMemberReference(reader).Parent;
+            else
+                throw new BadImageFormatException();
+        }
+
         //
         // Lightweight check to see if a custom attribute's is of a well-known type.
         //
@@ -453,7 +466,7 @@ namespace System.Reflection.Runtime.General
                                                    String name)
         {
             String[] namespaceParts = ns.Split('.');
-            Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).Type;
+            Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
             HandleType handleType = typeHandle.HandleType;
             if (handleType == HandleType.TypeDefinition)
             {

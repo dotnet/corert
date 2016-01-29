@@ -3536,18 +3536,7 @@ namespace Internal.Metadata.NativeFormat
         } // Handle
 
         
-        /// One of: TypeDefinition, TypeReference
-        public Handle Type
-        {
-            get
-            {
-                return _type;
-            }
-        } // Type
-
-        internal Handle _type;
-        
-        /// One of: Method, MemberReference
+        /// One of: QualifiedMethod, MemberReference
         public Handle Constructor
         {
             get
@@ -4556,6 +4545,11 @@ namespace Internal.Metadata.NativeFormat
             return new MethodHandle(this);
         } // ToMethodHandle
 
+        public QualifiedMethodHandle ToQualifiedMethodHandle(MetadataReader reader)
+        {
+            return new QualifiedMethodHandle(this);
+        } // ToQualifiedMethodHandle
+
         public MethodInstantiationHandle ToMethodInstantiationHandle(MetadataReader reader)
         {
             return new MethodInstantiationHandle(this);
@@ -4848,7 +4842,7 @@ namespace Internal.Metadata.NativeFormat
         } // Handle
 
         
-        /// One of: Method, TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification
         public Handle Parent
         {
             get
@@ -4998,6 +4992,7 @@ namespace Internal.Metadata.NativeFormat
             offset = _streamReader.Read(offset, out record._events);
             offset = _streamReader.Read(offset, out record._genericParameters);
             offset = _streamReader.Read(offset, out record._interfaces);
+            offset = _streamReader.Read(offset, out record._methodImpls);
             offset = _streamReader.Read(offset, out record._customAttributes);
             return record;
         } // GetTypeDefinition
@@ -5080,24 +5075,32 @@ namespace Internal.Metadata.NativeFormat
         {
             var record = new Method() { _reader = this, _handle = handle };
             var offset = (uint)handle.Offset;
-            offset = _streamReader.Read(offset, out record._RVA);
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._implFlags);
             offset = _streamReader.Read(offset, out record._name);
             offset = _streamReader.Read(offset, out record._signature);
             offset = _streamReader.Read(offset, out record._parameters);
             offset = _streamReader.Read(offset, out record._genericParameters);
-            offset = _streamReader.Read(offset, out record._methodImpls);
             offset = _streamReader.Read(offset, out record._customAttributes);
             return record;
         } // GetMethod
+
+        public QualifiedMethod GetQualifiedMethod(QualifiedMethodHandle handle)
+        {
+            var record = new QualifiedMethod() { _reader = this, _handle = handle };
+            var offset = (uint)handle.Offset;
+            offset = _streamReader.Read(offset, out record._method);
+            offset = _streamReader.Read(offset, out record._enclosingType);
+            return record;
+        } // GetQualifiedMethod
 
         public MethodInstantiation GetMethodInstantiation(MethodInstantiationHandle handle)
         {
             var record = new MethodInstantiation() { _reader = this, _handle = handle };
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._method);
-            offset = _streamReader.Read(offset, out record._instantiation);
+            offset = _streamReader.Read(offset, out record._genericTypeArguments);
+            offset = _streamReader.Read(offset, out record._customAttributes);
             return record;
         } // GetMethodInstantiation
 
@@ -5154,7 +5157,6 @@ namespace Internal.Metadata.NativeFormat
         {
             var record = new CustomAttribute() { _reader = this, _handle = handle };
             var offset = (uint)handle.Offset;
-            offset = _streamReader.Read(offset, out record._type);
             offset = _streamReader.Read(offset, out record._constructor);
             offset = _streamReader.Read(offset, out record._fixedArguments);
             offset = _streamReader.Read(offset, out record._namedArguments);
@@ -5207,8 +5209,8 @@ namespace Internal.Metadata.NativeFormat
         {
             var record = new MethodImpl() { _reader = this, _handle = handle };
             var offset = (uint)handle.Offset;
+            offset = _streamReader.Read(offset, out record._methodBody);
             offset = _streamReader.Read(offset, out record._methodDeclaration);
-            offset = _streamReader.Read(offset, out record._customAttributes);
             return record;
         } // GetMethodImpl
 
@@ -5230,7 +5232,6 @@ namespace Internal.Metadata.NativeFormat
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._attributes);
             offset = _streamReader.Read(offset, out record._method);
-            offset = _streamReader.Read(offset, out record._customAttributes);
             return record;
         } // GetMethodSemantics
 
@@ -5634,6 +5635,11 @@ namespace Internal.Metadata.NativeFormat
             return new Handle(handle._value);
         } // ToHandle
 
+        internal Handle ToHandle(QualifiedMethodHandle handle)
+        {
+            return new Handle(handle._value);
+        } // ToHandle
+
         internal Handle ToHandle(MethodInstantiationHandle handle)
         {
             return new Handle(handle._value);
@@ -5943,6 +5949,11 @@ namespace Internal.Metadata.NativeFormat
         {
             return new MethodHandle(handle._value);
         } // ToMethodHandle
+
+        internal QualifiedMethodHandle ToQualifiedMethodHandle(Handle handle)
+        {
+            return new QualifiedMethodHandle(handle._value);
+        } // ToQualifiedMethodHandle
 
         internal MethodInstantiationHandle ToMethodInstantiationHandle(Handle handle)
         {
@@ -6259,6 +6270,11 @@ namespace Internal.Metadata.NativeFormat
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull
 
+        internal bool IsNull(QualifiedMethodHandle handle)
+        {
+            return (handle._value & 0x00FFFFFF) == 0;
+        } // IsNull
+
         internal bool IsNull(MethodInstantiationHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
@@ -6550,15 +6566,6 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public uint RVA
-        {
-            get
-            {
-                return _RVA;
-            }
-        } // RVA
-
-        internal uint _RVA;
         public MethodAttributes Flags
         {
             get
@@ -6613,15 +6620,6 @@ namespace Internal.Metadata.NativeFormat
         } // GenericParameters
 
         internal GenericParameterHandle[] _genericParameters;
-        public IEnumerable<MethodImplHandle> MethodImpls
-        {
-            get
-            {
-                return (IEnumerable<MethodImplHandle>)_methodImpls;
-            }
-        } // MethodImpls
-
-        internal MethodImplHandle[] _methodImpls;
         public IEnumerable<CustomAttributeHandle> CustomAttributes
         {
             get
@@ -6735,7 +6733,18 @@ namespace Internal.Metadata.NativeFormat
         } // Handle
 
         
-        /// One of: Method, MemberReference
+        /// One of: QualifiedMethod, MemberReference
+        public Handle MethodBody
+        {
+            get
+            {
+                return _methodBody;
+            }
+        } // MethodBody
+
+        internal Handle _methodBody;
+        
+        /// One of: QualifiedMethod, MemberReference
         public Handle MethodDeclaration
         {
             get
@@ -6745,15 +6754,6 @@ namespace Internal.Metadata.NativeFormat
         } // MethodDeclaration
 
         internal Handle _methodDeclaration;
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
-        {
-            get
-            {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
-            }
-        } // CustomAttributes
-
-        internal CustomAttributeHandle[] _customAttributes;
     } // MethodImpl
 
     /// <summary>
@@ -6858,7 +6858,7 @@ namespace Internal.Metadata.NativeFormat
         } // Handle
 
         
-        /// One of: Method, MemberReference
+        /// One of: QualifiedMethod, MemberReference
         public Handle Method
         {
             get
@@ -6868,15 +6868,26 @@ namespace Internal.Metadata.NativeFormat
         } // Method
 
         internal Handle _method;
-        public MethodSignatureHandle Instantiation
+        
+        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        public IEnumerable<Handle> GenericTypeArguments
         {
             get
             {
-                return _instantiation;
+                return (IEnumerable<Handle>)_genericTypeArguments;
             }
-        } // Instantiation
+        } // GenericTypeArguments
 
-        internal MethodSignatureHandle _instantiation;
+        internal Handle[] _genericTypeArguments;
+        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        {
+            get
+            {
+                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+            }
+        } // CustomAttributes
+
+        internal CustomAttributeHandle[] _customAttributes;
     } // MethodInstantiation
 
     /// <summary>
@@ -6998,15 +7009,6 @@ namespace Internal.Metadata.NativeFormat
         } // Method
 
         internal MethodHandle _method;
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
-        {
-            get
-            {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
-            }
-        } // CustomAttributes
-
-        internal CustomAttributeHandle[] _customAttributes;
     } // MethodSemantics
 
     /// <summary>
@@ -8446,6 +8448,127 @@ namespace Internal.Metadata.NativeFormat
     } // PropertySignatureHandle
 
     /// <summary>
+    /// QualifiedMethod
+    /// </summary>
+    public partial struct QualifiedMethod
+    {
+        internal MetadataReader _reader;
+        internal QualifiedMethodHandle _handle;
+        public QualifiedMethodHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        } // Handle
+
+        public MethodHandle Method
+        {
+            get
+            {
+                return _method;
+            }
+        } // Method
+
+        internal MethodHandle _method;
+        public TypeDefinitionHandle EnclosingType
+        {
+            get
+            {
+                return _enclosingType;
+            }
+        } // EnclosingType
+
+        internal TypeDefinitionHandle _enclosingType;
+    } // QualifiedMethod
+
+    /// <summary>
+    /// QualifiedMethodHandle
+    /// </summary>
+    public partial struct QualifiedMethodHandle
+    {
+        public override bool Equals(object obj)
+        {
+            if (obj is QualifiedMethodHandle)
+                return _value == ((QualifiedMethodHandle)obj)._value;
+            else if (obj is Handle)
+                return _value == ((Handle)obj)._value;
+            else
+                return false;
+        } // Equals
+
+        public bool Equals(QualifiedMethodHandle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public bool Equals(Handle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public override int GetHashCode()
+        {
+            return (int)_value;
+        } // GetHashCode
+
+        internal int _value;
+        internal QualifiedMethodHandle(Handle handle) : this(handle._value)
+        {
+
+        }
+
+        internal QualifiedMethodHandle(int value)
+        {
+            HandleType hType = (HandleType)(value >> 24);
+            if (!(hType == 0 || hType == HandleType.QualifiedMethod || hType == HandleType.Null))
+                throw new ArgumentException();
+            _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedMethod) << 24);
+            _Validate();
+        }
+
+        public static implicit operator  Handle(QualifiedMethodHandle handle)
+        {
+            return new Handle(handle._value);
+        } // Handle
+
+        internal int Offset
+        {
+            get
+            {
+                return (this._value & 0x00FFFFFF);
+            }
+        } // Offset
+
+        public QualifiedMethod GetQualifiedMethod(MetadataReader reader)
+        {
+            return reader.GetQualifiedMethod(this);
+        } // GetQualifiedMethod
+
+        public bool IsNull(MetadataReader reader)
+        {
+            return reader.IsNull(this);
+        } // IsNull
+
+        public Handle ToHandle(MetadataReader reader)
+        {
+            return reader.ToHandle(this);
+        } // ToHandle
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal void _Validate()
+        {
+            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.QualifiedMethod)
+                throw new ArgumentException();
+        } // _Validate
+
+        public override String ToString()
+        {
+            return String.Format("{0:X8}", _value);
+        } // ToString
+    } // QualifiedMethodHandle
+
+    /// <summary>
     /// ReturnTypeSignature
     /// </summary>
     public partial struct ReturnTypeSignature
@@ -9130,7 +9253,7 @@ namespace Internal.Metadata.NativeFormat
         } // Size
 
         internal uint _size;
-        public uint PackingSize
+        public ushort PackingSize
         {
             get
             {
@@ -9138,7 +9261,7 @@ namespace Internal.Metadata.NativeFormat
             }
         } // PackingSize
 
-        internal uint _packingSize;
+        internal ushort _packingSize;
         public TypeDefinitionHandle EnclosingType
         {
             get
@@ -9213,6 +9336,15 @@ namespace Internal.Metadata.NativeFormat
         } // Interfaces
 
         internal Handle[] _interfaces;
+        public IEnumerable<MethodImplHandle> MethodImpls
+        {
+            get
+            {
+                return (IEnumerable<MethodImplHandle>)_methodImpls;
+            }
+        } // MethodImpls
+
+        internal MethodImplHandle[] _methodImpls;
         public IEnumerable<CustomAttributeHandle> CustomAttributes
         {
             get

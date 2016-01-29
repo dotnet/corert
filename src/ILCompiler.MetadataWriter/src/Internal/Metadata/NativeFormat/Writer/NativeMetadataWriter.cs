@@ -758,6 +758,14 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
+    public partial class QualifiedMethod
+    {
+        public override string ToString()
+        {
+            return EnclosingType.ToString(false) + "." + Method.ToString();
+        }
+    }
+
     public partial class Property
     {
         public override string ToString()
@@ -842,9 +850,9 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string str = Type.ToString(false) + "..ctor";
+            string str = Constructor.ToString();
             str += "(" + String.Join(", ", FixedArguments.Select(fa => fa.ToString()).Concat(NamedArguments.Select(na => na.ToString())).ToArray()) + ")";
-            str += "(type: " + Type.Handle.ToString() + ", ctor: " + Constructor.Handle.ToString();
+            str += "(ctor: " + Constructor.Handle.ToString();
             return str;
         }
     }

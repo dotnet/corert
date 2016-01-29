@@ -591,6 +591,36 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out QualifiedMethodHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new QualifiedMethodHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out QualifiedMethodHandle[] values)
+        {
+            uint count;
+            offset = reader.DecodeUnsigned(offset, out count);
+            if (count == 0)
+            {
+                values = s_emptyQualifiedMethodHandleArray;
+            }
+            else
+            {
+                values = new QualifiedMethodHandle[count];
+                for (uint i = 0; i < count; ++i)
+                {
+                    QualifiedMethodHandle tmp;
+                    offset = reader.Read(offset, out tmp);
+                    values[i] = tmp;
+                }
+            }
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out MethodInstantiationHandle handle)
         {
             uint value;
@@ -2258,6 +2288,8 @@ namespace Internal.Metadata.NativeFormat
         private static NamespaceReferenceHandle[] s_emptyNamespaceReferenceHandleArray = new NamespaceReferenceHandle[0];
 
         private static MethodHandle[] s_emptyMethodHandleArray = new MethodHandle[0];
+
+        private static QualifiedMethodHandle[] s_emptyQualifiedMethodHandleArray = new QualifiedMethodHandle[0];
 
         private static MethodInstantiationHandle[] s_emptyMethodInstantiationHandleArray = new MethodInstantiationHandle[0];
 

@@ -126,16 +126,17 @@ namespace Internal.Metadata.NativeFormat
         PointerSignature = 0x33,
         Property = 0x34,
         PropertySignature = 0x35,
-        ReturnTypeSignature = 0x36,
-        SZArraySignature = 0x37,
-        ScopeDefinition = 0x38,
-        ScopeReference = 0x39,
-        TypeDefinition = 0x3a,
-        TypeForwarder = 0x3b,
-        TypeInstantiationSignature = 0x3c,
-        TypeReference = 0x3d,
-        TypeSpecification = 0x3e,
-        TypeVariableSignature = 0x3f,
+        QualifiedMethod = 0x36,
+        ReturnTypeSignature = 0x37,
+        SZArraySignature = 0x38,
+        ScopeDefinition = 0x39,
+        ScopeReference = 0x3a,
+        TypeDefinition = 0x3b,
+        TypeForwarder = 0x3c,
+        TypeInstantiationSignature = 0x3d,
+        TypeReference = 0x3e,
+        TypeSpecification = 0x3f,
+        TypeVariableSignature = 0x40,
     } // HandleType
 
     /// <summary>
@@ -1384,11 +1385,6 @@ namespace Internal.Metadata.NativeFormat
     /// </summary>
     internal interface ICustomAttribute
     {
-        Handle Type
-        {
-            get;
-        } // Type
-
         Handle Constructor
         {
             get;
@@ -1796,6 +1792,7 @@ namespace Internal.Metadata.NativeFormat
         MemberReferenceHandle ToMemberReferenceHandle(MetadataReader reader);
         ArraySignatureHandle ToArraySignatureHandle(MetadataReader reader);
         MethodHandle ToMethodHandle(MetadataReader reader);
+        QualifiedMethodHandle ToQualifiedMethodHandle(MetadataReader reader);
         ConstantUInt32ValueHandle ToConstantUInt32ValueHandle(MetadataReader reader);
         ConstantCharArrayHandle ToConstantCharArrayHandle(MetadataReader reader);
         TypeVariableSignatureHandle ToTypeVariableSignatureHandle(MetadataReader reader);
@@ -1927,6 +1924,7 @@ namespace Internal.Metadata.NativeFormat
         ConstantInt32Value GetConstantInt32Value(ConstantInt32ValueHandle handle);
         ConstantSingleValue GetConstantSingleValue(ConstantSingleValueHandle handle);
         Parameter GetParameter(ParameterHandle handle);
+        QualifiedMethod GetQualifiedMethod(QualifiedMethodHandle handle);
         ConstantUInt16Value GetConstantUInt16Value(ConstantUInt16ValueHandle handle);
         ConstantInt16Value GetConstantInt16Value(ConstantInt16ValueHandle handle);
         ConstantCharArray GetConstantCharArray(ConstantCharArrayHandle handle);
@@ -1984,11 +1982,6 @@ namespace Internal.Metadata.NativeFormat
     /// </summary>
     internal interface IMethod
     {
-        uint RVA
-        {
-            get;
-        } // RVA
-
         MethodAttributes Flags
         {
             get;
@@ -2018,11 +2011,6 @@ namespace Internal.Metadata.NativeFormat
         {
             get;
         } // GenericParameters
-
-        IEnumerable<MethodImplHandle> MethodImpls
-        {
-            get;
-        } // MethodImpls
 
         IEnumerable<CustomAttributeHandle> CustomAttributes
         {
@@ -2063,15 +2051,15 @@ namespace Internal.Metadata.NativeFormat
     /// </summary>
     internal interface IMethodImpl
     {
+        Handle MethodBody
+        {
+            get;
+        } // MethodBody
+
         Handle MethodDeclaration
         {
             get;
         } // MethodDeclaration
-
-        IEnumerable<CustomAttributeHandle> CustomAttributes
-        {
-            get;
-        } // CustomAttributes
 
         MethodImplHandle Handle
         {
@@ -2112,10 +2100,15 @@ namespace Internal.Metadata.NativeFormat
             get;
         } // Method
 
-        MethodSignatureHandle Instantiation
+        IEnumerable<Handle> GenericTypeArguments
         {
             get;
-        } // Instantiation
+        } // GenericTypeArguments
+
+        IEnumerable<CustomAttributeHandle> CustomAttributes
+        {
+            get;
+        } // CustomAttributes
 
         MethodInstantiationHandle Handle
         {
@@ -2160,11 +2153,6 @@ namespace Internal.Metadata.NativeFormat
         {
             get;
         } // Method
-
-        IEnumerable<CustomAttributeHandle> CustomAttributes
-        {
-            get;
-        } // CustomAttributes
 
         MethodSemanticsHandle Handle
         {
@@ -2706,6 +2694,50 @@ namespace Internal.Metadata.NativeFormat
     } // PropertySignatureHandle
 
     /// <summary>
+    /// IQualifiedMethod
+    /// </summary>
+    internal interface IQualifiedMethod
+    {
+        MethodHandle Method
+        {
+            get;
+        } // Method
+
+        TypeDefinitionHandle EnclosingType
+        {
+            get;
+        } // EnclosingType
+
+        QualifiedMethodHandle Handle
+        {
+            get;
+        } // Handle
+    } // IQualifiedMethod
+
+    /// <summary>
+    /// QualifiedMethod
+    /// </summary>
+    public partial struct QualifiedMethod : IQualifiedMethod
+    {
+    } // QualifiedMethod
+
+    /// <summary>
+    /// IQualifiedMethodHandle
+    /// </summary>
+    internal interface IQualifiedMethodHandle : IEquatable<QualifiedMethodHandle>, IEquatable<Handle>, IEquatable<Object>
+    {
+        Handle ToHandle(MetadataReader reader);
+        int GetHashCode();
+    } // IQualifiedMethodHandle
+
+    /// <summary>
+    /// QualifiedMethodHandle
+    /// </summary>
+    public partial struct QualifiedMethodHandle : IQualifiedMethodHandle
+    {
+    } // QualifiedMethodHandle
+
+    /// <summary>
     /// IReturnTypeSignature
     /// </summary>
     internal interface IReturnTypeSignature
@@ -2986,7 +3018,7 @@ namespace Internal.Metadata.NativeFormat
             get;
         } // Size
 
-        uint PackingSize
+        ushort PackingSize
         {
             get;
         } // PackingSize
@@ -3030,6 +3062,11 @@ namespace Internal.Metadata.NativeFormat
         {
             get;
         } // Interfaces
+
+        IEnumerable<MethodImplHandle> MethodImpls
+        {
+            get;
+        } // MethodImpls
 
         IEnumerable<CustomAttributeHandle> CustomAttributes
         {
