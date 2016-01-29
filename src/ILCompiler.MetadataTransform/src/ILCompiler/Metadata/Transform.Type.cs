@@ -190,7 +190,7 @@ namespace ILCompiler.Metadata
 
             Cts.ClassLayoutMetadata layoutMetadata = entity.GetClassLayout();
             record.Size = checked((uint)layoutMetadata.Size);
-            record.PackingSize = checked((uint)layoutMetadata.PackingSize);
+            record.PackingSize = checked((ushort)layoutMetadata.PackingSize);
             record.Flags = GetTypeAttributes(entity);
 
             if (entity.HasBaseType)
