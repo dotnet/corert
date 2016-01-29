@@ -591,6 +591,36 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out QualifiedMethodHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new QualifiedMethodHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out QualifiedMethodHandle[] values)
+        {
+            uint count;
+            offset = reader.DecodeUnsigned(offset, out count);
+            if (count == 0)
+            {
+                values = s_emptyQualifiedMethodHandleArray;
+            }
+            else
+            {
+                values = new QualifiedMethodHandle[count];
+                for (uint i = 0; i < count; ++i)
+                {
+                    QualifiedMethodHandle tmp;
+                    offset = reader.Read(offset, out tmp);
+                    values[i] = tmp;
+                }
+            }
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out MethodInstantiationHandle handle)
         {
             uint value;
@@ -824,6 +854,36 @@ namespace Internal.Metadata.NativeFormat
                 for (uint i = 0; i < count; ++i)
                 {
                     NamedArgumentHandle tmp;
+                    offset = reader.Read(offset, out tmp);
+                    values[i] = tmp;
+                }
+            }
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out ConstantBoxedEnumValueHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new ConstantBoxedEnumValueHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out ConstantBoxedEnumValueHandle[] values)
+        {
+            uint count;
+            offset = reader.DecodeUnsigned(offset, out count);
+            if (count == 0)
+            {
+                values = s_emptyConstantBoxedEnumValueHandleArray;
+            }
+            else
+            {
+                values = new ConstantBoxedEnumValueHandle[count];
+                for (uint i = 0; i < count; ++i)
+                {
+                    ConstantBoxedEnumValueHandle tmp;
                     offset = reader.Read(offset, out tmp);
                     values[i] = tmp;
                 }
@@ -2229,6 +2289,8 @@ namespace Internal.Metadata.NativeFormat
 
         private static MethodHandle[] s_emptyMethodHandleArray = new MethodHandle[0];
 
+        private static QualifiedMethodHandle[] s_emptyQualifiedMethodHandleArray = new QualifiedMethodHandle[0];
+
         private static MethodInstantiationHandle[] s_emptyMethodInstantiationHandleArray = new MethodInstantiationHandle[0];
 
         private static MemberReferenceHandle[] s_emptyMemberReferenceHandleArray = new MemberReferenceHandle[0];
@@ -2244,6 +2306,8 @@ namespace Internal.Metadata.NativeFormat
         private static FixedArgumentHandle[] s_emptyFixedArgumentHandleArray = new FixedArgumentHandle[0];
 
         private static NamedArgumentHandle[] s_emptyNamedArgumentHandleArray = new NamedArgumentHandle[0];
+
+        private static ConstantBoxedEnumValueHandle[] s_emptyConstantBoxedEnumValueHandleArray = new ConstantBoxedEnumValueHandle[0];
 
         private static GenericParameterHandle[] s_emptyGenericParameterHandleArray = new GenericParameterHandle[0];
 

@@ -39,7 +39,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 Type lazyAttributeType = _lazyAttributeType;
                 if (lazyAttributeType == null)
                 {
-                    lazyAttributeType = _lazyAttributeType = _reflectionDomain.Resolve(_reader, _customAttribute.Type, new TypeContext(null, null));
+                    lazyAttributeType = _lazyAttributeType = _reflectionDomain.Resolve(_reader, _customAttribute.GetAttributeTypeHandle(_reader), new TypeContext(null, null));
                 }
                 return lazyAttributeType;
             }
@@ -49,7 +49,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-                return _customAttribute.Type.FormatTypeName(_reader, new TypeContext(null, null), _reflectionDomain);
+                return _customAttribute.GetAttributeTypeHandle(_reader).FormatTypeName(_reader, new TypeContext(null, null), _reflectionDomain);
             }
         }
 
@@ -79,8 +79,8 @@ namespace System.Reflection.Runtime.CustomAttributes
                                 HandleType handleType = _customAttribute.Constructor.HandleType;
                                 switch (handleType)
                                 {
-                                    case HandleType.Method:
-                                        parameterTypeSignatureHandles = _customAttribute.Constructor.ToMethodHandle(_reader).GetMethod(_reader).Signature.GetMethodSignature(_reader).Parameters;
+                                    case HandleType.QualifiedMethod:
+                                        parameterTypeSignatureHandles = _customAttribute.Constructor.ToQualifiedMethodHandle(_reader).GetQualifiedMethod(_reader).Method.GetMethod(_reader).Signature.GetMethodSignature(_reader).Parameters;
                                         break;
 
                                     case HandleType.MemberReference:

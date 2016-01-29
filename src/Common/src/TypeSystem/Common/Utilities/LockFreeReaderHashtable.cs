@@ -332,6 +332,42 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Determine if this collection contains a given value, and returns the value in the hashtable if found. This function is thread-safe, and wait-free.
+        /// </summary>
+        /// <param name="value">Value to search for in the hashtable, must not be null</param>
+        /// <returns>Value from the hashtable if found, otherwise null.</returns>
+        public TValue GetValueIfExists(TValue value)
+        {
+            if (value == null)
+                throw new ArgumentNullException();
+
+            TValue[] hashTableLocal = GetCurrentHashtable();
+            Debug.Assert(hashTableLocal.Length > 0);
+            int mask = hashTableLocal.Length - 1;
+            int hashCode = GetValueHashCode(value);
+            int tableIndex = HashInt1(hashCode) & mask;
+
+            if (hashTableLocal[tableIndex] == null)
+                return null;
+
+            if (CompareValueToValue(value, hashTableLocal[tableIndex]))
+                return hashTableLocal[tableIndex];
+
+            int hash2 = HashInt2(hashCode);
+            tableIndex = (tableIndex + hash2) & mask;
+
+            while (hashTableLocal[tableIndex] != null)
+            {
+                if (CompareValueToValue(value, hashTableLocal[tableIndex]))
+                    return hashTableLocal[tableIndex];
+
+                tableIndex = (tableIndex + hash2) & mask;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Enumerator type for the LockFreeReaderHashtable
         /// This is threadsafe, but is not garaunteed to avoid torn state.
         /// In particular, the enumerator may report some newly added values
