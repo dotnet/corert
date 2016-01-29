@@ -4,6 +4,7 @@ set(NATIVE_SOURCES
     pal_environment.cpp
     pal_memory.cpp
     pal_io.cpp
+    pal_cruntime.cpp
 )
 
 add_library(System.Private.CoreLib.Native

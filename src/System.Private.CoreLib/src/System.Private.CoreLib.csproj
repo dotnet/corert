@@ -448,6 +448,7 @@
       <Compile Include="System\Globalization\CultureData.Win32.cs" />
       <Compile Include="System\Globalization\TextInfo.Win32.cs" />
       <Compile Include="System\Globalization\CalendarData.Win32.cs" />
+      <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Win32.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs" />
 
@@ -475,9 +476,11 @@
     <Compile Include="System\Globalization\CultureData.Dummy.cs" />
     <Compile Include="System\Globalization\TextInfo.Dummy.cs" />
     <Compile Include="System\Globalization\CalendarData.Dummy.cs" />
+    <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
