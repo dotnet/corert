@@ -494,6 +494,131 @@ namespace Internal.Metadata.NativeFormat
     } // ConstantBooleanValueHandle
 
     /// <summary>
+    /// ConstantBoxedEnumValue
+    /// </summary>
+    public partial struct ConstantBoxedEnumValue
+    {
+        internal MetadataReader _reader;
+        internal ConstantBoxedEnumValueHandle _handle;
+        public ConstantBoxedEnumValueHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        } // Handle
+
+        
+        /// One of: ConstantByteValue, ConstantSByteValue, ConstantInt16Value, ConstantUInt16Value, ConstantInt32Value, ConstantUInt32Value, ConstantInt64Value, ConstantUInt64Value
+        public Handle Value
+        {
+            get
+            {
+                return _value;
+            }
+        } // Value
+
+        internal Handle _value;
+        
+        /// One of: TypeDefinition, TypeReference
+        public Handle Type
+        {
+            get
+            {
+                return _type;
+            }
+        } // Type
+
+        internal Handle _type;
+    } // ConstantBoxedEnumValue
+
+    /// <summary>
+    /// ConstantBoxedEnumValueHandle
+    /// </summary>
+    public partial struct ConstantBoxedEnumValueHandle
+    {
+        public override bool Equals(object obj)
+        {
+            if (obj is ConstantBoxedEnumValueHandle)
+                return _value == ((ConstantBoxedEnumValueHandle)obj)._value;
+            else if (obj is Handle)
+                return _value == ((Handle)obj)._value;
+            else
+                return false;
+        } // Equals
+
+        public bool Equals(ConstantBoxedEnumValueHandle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public bool Equals(Handle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public override int GetHashCode()
+        {
+            return (int)_value;
+        } // GetHashCode
+
+        internal int _value;
+        internal ConstantBoxedEnumValueHandle(Handle handle) : this(handle._value)
+        {
+
+        }
+
+        internal ConstantBoxedEnumValueHandle(int value)
+        {
+            HandleType hType = (HandleType)(value >> 24);
+            if (!(hType == 0 || hType == HandleType.ConstantBoxedEnumValue || hType == HandleType.Null))
+                throw new ArgumentException();
+            _value = (value & 0x00FFFFFF) | (((int)HandleType.ConstantBoxedEnumValue) << 24);
+            _Validate();
+        }
+
+        public static implicit operator  Handle(ConstantBoxedEnumValueHandle handle)
+        {
+            return new Handle(handle._value);
+        } // Handle
+
+        internal int Offset
+        {
+            get
+            {
+                return (this._value & 0x00FFFFFF);
+            }
+        } // Offset
+
+        public ConstantBoxedEnumValue GetConstantBoxedEnumValue(MetadataReader reader)
+        {
+            return reader.GetConstantBoxedEnumValue(this);
+        } // GetConstantBoxedEnumValue
+
+        public bool IsNull(MetadataReader reader)
+        {
+            return reader.IsNull(this);
+        } // IsNull
+
+        public Handle ToHandle(MetadataReader reader)
+        {
+            return reader.ToHandle(this);
+        } // ToHandle
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal void _Validate()
+        {
+            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ConstantBoxedEnumValue)
+                throw new ArgumentException();
+        } // _Validate
+
+        public override String ToString()
+        {
+            return String.Format("{0:X8}", _value);
+        } // ToString
+    } // ConstantBoxedEnumValueHandle
+
+    /// <summary>
     /// ConstantByteArray
     /// </summary>
     public partial struct ConstantByteArray
@@ -4471,6 +4596,11 @@ namespace Internal.Metadata.NativeFormat
             return new NamedArgumentHandle(this);
         } // ToNamedArgumentHandle
 
+        public ConstantBoxedEnumValueHandle ToConstantBoxedEnumValueHandle(MetadataReader reader)
+        {
+            return new ConstantBoxedEnumValueHandle(this);
+        } // ToConstantBoxedEnumValueHandle
+
         public GenericParameterHandle ToGenericParameterHandle(MetadataReader reader)
         {
             return new GenericParameterHandle(this);
@@ -5051,6 +5181,15 @@ namespace Internal.Metadata.NativeFormat
             return record;
         } // GetNamedArgument
 
+        public ConstantBoxedEnumValue GetConstantBoxedEnumValue(ConstantBoxedEnumValueHandle handle)
+        {
+            var record = new ConstantBoxedEnumValue() { _reader = this, _handle = handle };
+            var offset = (uint)handle.Offset;
+            offset = _streamReader.Read(offset, out record._value);
+            offset = _streamReader.Read(offset, out record._type);
+            return record;
+        } // GetConstantBoxedEnumValue
+
         public GenericParameter GetGenericParameter(GenericParameterHandle handle)
         {
             var record = new GenericParameter() { _reader = this, _handle = handle };
@@ -5535,6 +5674,11 @@ namespace Internal.Metadata.NativeFormat
             return new Handle(handle._value);
         } // ToHandle
 
+        internal Handle ToHandle(ConstantBoxedEnumValueHandle handle)
+        {
+            return new Handle(handle._value);
+        } // ToHandle
+
         internal Handle ToHandle(GenericParameterHandle handle)
         {
             return new Handle(handle._value);
@@ -5839,6 +5983,11 @@ namespace Internal.Metadata.NativeFormat
         {
             return new NamedArgumentHandle(handle._value);
         } // ToNamedArgumentHandle
+
+        internal ConstantBoxedEnumValueHandle ToConstantBoxedEnumValueHandle(Handle handle)
+        {
+            return new ConstantBoxedEnumValueHandle(handle._value);
+        } // ToConstantBoxedEnumValueHandle
 
         internal GenericParameterHandle ToGenericParameterHandle(Handle handle)
         {
@@ -6146,6 +6295,11 @@ namespace Internal.Metadata.NativeFormat
         } // IsNull
 
         internal bool IsNull(NamedArgumentHandle handle)
+        {
+            return (handle._value & 0x00FFFFFF) == 0;
+        } // IsNull
+
+        internal bool IsNull(ConstantBoxedEnumValueHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull

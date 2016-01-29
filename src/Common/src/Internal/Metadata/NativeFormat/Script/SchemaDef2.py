@@ -224,6 +224,7 @@ __constantArrayRecordSchema = [('Constant' + fName + 'Array', None, RecordDefFla
 __constantRecordSchema = sorted(__constantValueRecordSchema + __constantArrayRecordSchema, key = lambda x: x[0])
 
 #--- Common tuple definitions -----------------------------------------------------------------------------
+EnumConstantValue = ('ConstantByteValue', 'ConstantSByteValue', 'ConstantInt16Value', 'ConstantUInt16Value', 'ConstantInt32Value', 'ConstantUInt32Value', 'ConstantInt64Value', 'ConstantUInt64Value')
 TypeDefOrRef = ('TypeDefinition', 'TypeReference')
 TypeDefOrRefOrSpec = TypeDefOrRef + ('TypeSpecification',)
 TypeSig = ('TypeInstantiationSignature', 'SZArraySignature', 'ArraySignature', 'PointerSignature', 'ByReferenceSignature', 'TypeVariableSignature', 'MethodTypeVariableSignature')
@@ -356,6 +357,10 @@ __recordSchema = [
         ('Flags', 'NamedArgumentMemberKind', MemberDefFlags(0)),
         ('Name', 'ConstantStringValue', MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('Value', 'FixedArgument', MemberDefFlags.RecordRef | MemberDefFlags.Child),
+        ]),
+    ('ConstantBoxedEnumValue', None, RecordDefFlags(0), [
+        ('Value', EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
+        ('Type', TypeDefOrRef, MemberDefFlags.RecordRef)
         ]),
     ('GenericParameter', None, RecordDefFlags(0), [
         ('Number', 'ushort', MemberDefFlags(0)),

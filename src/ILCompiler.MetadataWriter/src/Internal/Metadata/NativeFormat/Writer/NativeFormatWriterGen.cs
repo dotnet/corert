@@ -326,6 +326,90 @@ namespace Internal.Metadata.NativeFormat.Writer
     } // ConstantBooleanValue
 
     /// <summary>
+    /// ConstantBoxedEnumValue
+    /// </summary>
+    public partial class ConstantBoxedEnumValue : MetadataRecord
+    {
+        public override HandleType HandleType
+        {
+            get
+            {
+                return HandleType.ConstantBoxedEnumValue;
+            }
+        } // HandleType
+
+        internal override void Visit(IRecordVisitor visitor)
+        {
+            Value = visitor.Visit(this, Value.AsSingleEnumerable()).FirstOrDefault();
+            Type = visitor.Visit(this, Type);
+        } // Visit
+
+        public override sealed bool Equals(Object obj)
+        {
+            if (Object.ReferenceEquals(this, obj)) return true;
+            var other = obj as ConstantBoxedEnumValue;
+            if (other == null) return false;
+            if (!Object.Equals(Value, other.Value)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
+            return true;
+        } // Equals
+
+        public override sealed int GetHashCode()
+        {
+            if (_hash != 0)
+                return _hash;
+            EnterGetHashCode();
+            int hash = 1942215075;
+            hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            LeaveGetHashCode();
+            _hash = hash;
+            return _hash;
+        } // GetHashCode
+
+        internal override void Save(NativeWriter writer)
+        {
+            Debug.Assert(Value == null ||
+                Value.HandleType == HandleType.ConstantByteValue ||
+                Value.HandleType == HandleType.ConstantSByteValue ||
+                Value.HandleType == HandleType.ConstantInt16Value ||
+                Value.HandleType == HandleType.ConstantUInt16Value ||
+                Value.HandleType == HandleType.ConstantInt32Value ||
+                Value.HandleType == HandleType.ConstantUInt32Value ||
+                Value.HandleType == HandleType.ConstantInt64Value ||
+                Value.HandleType == HandleType.ConstantUInt64Value);
+            writer.Write(Value);
+            Debug.Assert(Type == null ||
+                Type.HandleType == HandleType.TypeDefinition ||
+                Type.HandleType == HandleType.TypeReference);
+            writer.Write(Type);
+        } // Save
+
+        internal static ConstantBoxedEnumValueHandle AsHandle(ConstantBoxedEnumValue record)
+        {
+            if (record == null)
+            {
+                return new ConstantBoxedEnumValueHandle(0);
+            }
+            else
+            {
+                return record.Handle;
+            }
+        } // AsHandle
+
+        internal new ConstantBoxedEnumValueHandle Handle
+        {
+            get
+            {
+                return new ConstantBoxedEnumValueHandle(HandleOffset);
+            }
+        } // Handle
+
+        public MetadataRecord Value;
+        public MetadataRecord Type;
+    } // ConstantBoxedEnumValue
+
+    /// <summary>
     /// ConstantByteArray
     /// </summary>
     public partial class ConstantByteArray : MetadataRecord
