@@ -2247,7 +2247,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             FixedArguments = visitor.Visit(this, FixedArguments.AsEnumerable());
             NamedArguments = visitor.Visit(this, NamedArguments.AsEnumerable());
-            Type = visitor.Visit(this, Type);
             Constructor = visitor.Visit(this, Constructor);
         } // Visit
 
@@ -2261,7 +2260,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             _equalsReentrancyGuard.Value.Push(other);
             try
             {
-            if (!Object.Equals(Type, other.Type)) return false;
             if (!Object.Equals(Constructor, other.Constructor)) return false;
             if (!FixedArguments.SequenceEqual(other.FixedArguments)) return false;
             if (!NamedArguments.SequenceEqual(other.NamedArguments)) return false;
@@ -2281,7 +2279,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 1789737237;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Constructor == null ? 0 : Constructor.GetHashCode());
             if (FixedArguments != null)
             {
@@ -2304,12 +2301,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-            Debug.Assert(Type == null ||
-                Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference);
-            writer.Write(Type);
             Debug.Assert(Constructor == null ||
-                Constructor.HandleType == HandleType.Method ||
+                Constructor.HandleType == HandleType.QualifiedMethod ||
                 Constructor.HandleType == HandleType.MemberReference);
             writer.Write(Constructor);
             writer.Write(FixedArguments);
@@ -2336,7 +2329,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public MetadataRecord Type;
         public MetadataRecord Constructor;
         public List<FixedArgument> FixedArguments = new List<FixedArgument>();
         public List<NamedArgument> NamedArguments = new List<NamedArgument>();
@@ -2982,7 +2974,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Save(NativeWriter writer)
         {
             Debug.Assert(Parent == null ||
-                Parent.HandleType == HandleType.Method ||
                 Parent.HandleType == HandleType.TypeDefinition ||
                 Parent.HandleType == HandleType.TypeReference ||
                 Parent.HandleType == HandleType.TypeSpecification);
@@ -3047,7 +3038,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
             Parameters = visitor.Visit(this, Parameters.AsEnumerable());
             GenericParameters = visitor.Visit(this, GenericParameters.AsEnumerable());
-            MethodImpls = visitor.Visit(this, MethodImpls.AsEnumerable());
             CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
         } // Visit
 
@@ -3056,14 +3046,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as Method;
             if (other == null) return false;
-            if (RVA != other.RVA) return false;
             if (Flags != other.Flags) return false;
             if (ImplFlags != other.ImplFlags) return false;
             if (!Object.Equals(Name, other.Name)) return false;
             if (!Object.Equals(Signature, other.Signature)) return false;
             if (!Parameters.SequenceEqual(other.Parameters)) return false;
             if (!GenericParameters.SequenceEqual(other.GenericParameters)) return false;
-            if (!MethodImpls.SequenceEqual(other.MethodImpls)) return false;
             if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
@@ -3074,7 +3062,6 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = 414302350;
-            hash = ((hash << 13) - (hash >> 19)) ^ RVA.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ ImplFlags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
@@ -3100,14 +3087,12 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-            writer.Write(RVA);
             writer.Write(Flags);
             writer.Write(ImplFlags);
             writer.Write(Name);
             writer.Write(Signature);
             writer.Write(Parameters);
             writer.Write(GenericParameters);
-            writer.Write(MethodImpls);
             writer.Write(CustomAttributes);
         } // Save
 
@@ -3131,14 +3116,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public uint RVA;
         public MethodAttributes Flags;
         public MethodImplAttributes ImplFlags;
         public ConstantStringValue Name;
         public MethodSignature Signature;
         public List<Parameter> Parameters = new List<Parameter>();
         public List<GenericParameter> GenericParameters = new List<GenericParameter>();
-        public List<MethodImpl> MethodImpls = new List<MethodImpl>();
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Method
 
@@ -3157,7 +3140,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            MethodBody = visitor.Visit(this, MethodBody);
             MethodDeclaration = visitor.Visit(this, MethodDeclaration);
         } // Visit
 
@@ -3166,8 +3149,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (Object.ReferenceEquals(this, obj)) return true;
             var other = obj as MethodImpl;
             if (other == null) return false;
+            if (!Object.Equals(MethodBody, other.MethodBody)) return false;
             if (!Object.Equals(MethodDeclaration, other.MethodDeclaration)) return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
@@ -3177,14 +3160,8 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return _hash;
             EnterGetHashCode();
             int hash = -470854868;
+            hash = ((hash << 13) - (hash >> 19)) ^ (MethodBody == null ? 0 : MethodBody.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (MethodDeclaration == null ? 0 : MethodDeclaration.GetHashCode());
-            if (CustomAttributes != null)
-            {
-                for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
-            }
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -3192,11 +3169,14 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
+            Debug.Assert(MethodBody == null ||
+                MethodBody.HandleType == HandleType.QualifiedMethod ||
+                MethodBody.HandleType == HandleType.MemberReference);
+            writer.Write(MethodBody);
             Debug.Assert(MethodDeclaration == null ||
-                MethodDeclaration.HandleType == HandleType.Method ||
+                MethodDeclaration.HandleType == HandleType.QualifiedMethod ||
                 MethodDeclaration.HandleType == HandleType.MemberReference);
             writer.Write(MethodDeclaration);
-            writer.Write(CustomAttributes);
         } // Save
 
         internal static MethodImplHandle AsHandle(MethodImpl record)
@@ -3219,8 +3199,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
+        public MetadataRecord MethodBody;
         public MetadataRecord MethodDeclaration;
-        public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // MethodImpl
 
     /// <summary>
@@ -3238,8 +3218,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             Method = visitor.Visit(this, Method);
-            Instantiation = visitor.Visit(this, Instantiation);
+            GenericTypeArguments = GenericTypeArguments.Select(value => visitor.Visit(this, value)).ToList();
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3248,7 +3229,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             var other = obj as MethodInstantiation;
             if (other == null) return false;
             if (!Object.Equals(Method, other.Method)) return false;
-            if (!Object.Equals(Instantiation, other.Instantiation)) return false;
+            if (!GenericTypeArguments.SequenceEqual(other.GenericTypeArguments)) return false;
+            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
@@ -3259,7 +3241,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             EnterGetHashCode();
             int hash = -1994047112;
             hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
-            hash = ((hash << 13) - (hash >> 19)) ^ (Instantiation == null ? 0 : Instantiation.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -3268,10 +3249,15 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Save(NativeWriter writer)
         {
             Debug.Assert(Method == null ||
-                Method.HandleType == HandleType.Method ||
+                Method.HandleType == HandleType.QualifiedMethod ||
                 Method.HandleType == HandleType.MemberReference);
             writer.Write(Method);
-            writer.Write(Instantiation);
+            Debug.Assert(GenericTypeArguments.TrueForAll(handle => handle == null ||
+                handle.HandleType == HandleType.TypeDefinition ||
+                handle.HandleType == HandleType.TypeReference ||
+                handle.HandleType == HandleType.TypeSpecification));
+            writer.Write(GenericTypeArguments);
+            writer.Write(CustomAttributes);
         } // Save
 
         internal static MethodInstantiationHandle AsHandle(MethodInstantiation record)
@@ -3295,7 +3281,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         } // Handle
 
         public MetadataRecord Method;
-        public MethodSignature Instantiation;
+        public List<MetadataRecord> GenericTypeArguments = new List<MetadataRecord>();
+        public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // MethodInstantiation
 
     /// <summary>
@@ -3313,7 +3300,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             Method = visitor.Visit(this, Method);
         } // Visit
 
@@ -3324,7 +3310,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (other == null) return false;
             if (Attributes != other.Attributes) return false;
             if (!Object.Equals(Method, other.Method)) return false;
-            if (!CustomAttributes.SequenceEqual(other.CustomAttributes)) return false;
             return true;
         } // Equals
 
@@ -3336,13 +3321,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             int hash = 849522319;
             hash = ((hash << 13) - (hash >> 19)) ^ Attributes.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
-            if (CustomAttributes != null)
-            {
-                for (int i = 0; i < CustomAttributes.Count; i++)
-                {
-                    hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
-                }
-            }
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -3352,7 +3330,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             writer.Write(Attributes);
             writer.Write(Method);
-            writer.Write(CustomAttributes);
         } // Save
 
         internal static MethodSemanticsHandle AsHandle(MethodSemantics record)
@@ -3377,7 +3354,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public MethodSemanticsAttributes Attributes;
         public Method Method;
-        public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // MethodSemantics
 
     /// <summary>
@@ -4267,6 +4243,78 @@ namespace Internal.Metadata.NativeFormat.Writer
     } // PropertySignature
 
     /// <summary>
+    /// QualifiedMethod
+    /// </summary>
+    public partial class QualifiedMethod : MetadataRecord
+    {
+        public override HandleType HandleType
+        {
+            get
+            {
+                return HandleType.QualifiedMethod;
+            }
+        } // HandleType
+
+        internal override void Visit(IRecordVisitor visitor)
+        {
+            Method = visitor.Visit(this, Method);
+            EnclosingType = visitor.Visit(this, EnclosingType);
+        } // Visit
+
+        public override sealed bool Equals(Object obj)
+        {
+            if (Object.ReferenceEquals(this, obj)) return true;
+            var other = obj as QualifiedMethod;
+            if (other == null) return false;
+            if (!Object.Equals(Method, other.Method)) return false;
+            if (!Object.Equals(EnclosingType, other.EnclosingType)) return false;
+            return true;
+        } // Equals
+
+        public override sealed int GetHashCode()
+        {
+            if (_hash != 0)
+                return _hash;
+            EnterGetHashCode();
+            int hash = -565292777;
+            hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (EnclosingType == null ? 0 : EnclosingType.GetHashCode());
+            LeaveGetHashCode();
+            _hash = hash;
+            return _hash;
+        } // GetHashCode
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.Write(Method);
+            writer.Write(EnclosingType);
+        } // Save
+
+        internal static QualifiedMethodHandle AsHandle(QualifiedMethod record)
+        {
+            if (record == null)
+            {
+                return new QualifiedMethodHandle(0);
+            }
+            else
+            {
+                return record.Handle;
+            }
+        } // AsHandle
+
+        internal new QualifiedMethodHandle Handle
+        {
+            get
+            {
+                return new QualifiedMethodHandle(HandleOffset);
+            }
+        } // Handle
+
+        public Method Method;
+        public TypeDefinition EnclosingType;
+    } // QualifiedMethod
+
+    /// <summary>
     /// ReturnTypeSignature
     /// </summary>
     public partial class ReturnTypeSignature : MetadataRecord
@@ -4652,6 +4700,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             Properties = visitor.Visit(this, Properties.AsEnumerable());
             Events = visitor.Visit(this, Events.AsEnumerable());
             GenericParameters = visitor.Visit(this, GenericParameters.AsEnumerable());
+            MethodImpls = visitor.Visit(this, MethodImpls.AsEnumerable());
             CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             BaseType = visitor.Visit(this, BaseType);
             NamespaceDefinition = visitor.Visit(this, NamespaceDefinition);
@@ -4708,6 +4757,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 handle.HandleType == HandleType.TypeReference ||
                 handle.HandleType == HandleType.TypeSpecification));
             writer.Write(Interfaces);
+            writer.Write(MethodImpls);
             writer.Write(CustomAttributes);
         } // Save
 
@@ -4736,7 +4786,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public NamespaceDefinition NamespaceDefinition;
         public ConstantStringValue Name;
         public uint Size;
-        public uint PackingSize;
+        public ushort PackingSize;
         public TypeDefinition EnclosingType;
         public List<TypeDefinition> NestedTypes = new List<TypeDefinition>();
         public List<Method> Methods = new List<Method>();
@@ -4745,6 +4795,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<Event> Events = new List<Event>();
         public List<GenericParameter> GenericParameters = new List<GenericParameter>();
         public List<MetadataRecord> Interfaces = new List<MetadataRecord>();
+        public List<MethodImpl> MethodImpls = new List<MethodImpl>();
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // TypeDefinition
 

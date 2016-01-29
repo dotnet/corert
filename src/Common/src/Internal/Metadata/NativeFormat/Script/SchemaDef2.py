@@ -229,6 +229,7 @@ TypeDefOrRef = ('TypeDefinition', 'TypeReference')
 TypeDefOrRefOrSpec = TypeDefOrRef + ('TypeSpecification',)
 TypeSig = ('TypeInstantiationSignature', 'SZArraySignature', 'ArraySignature', 'PointerSignature', 'ByReferenceSignature', 'TypeVariableSignature', 'MethodTypeVariableSignature')
 TypeDefOrRefOrSpecOrConstant = TypeDefOrRefOrSpec + tuple(ct[0] for ct in __constantRecordSchema)
+MethodDefOrRef = ('QualifiedMethod', 'MemberReference')
 
 #--- Metadata records -------------------------------------------------------------------------------------
 # The record schema is defined as a list of tuples, one for each record type.
@@ -243,7 +244,7 @@ __recordSchema = [
         ('NamespaceDefinition', 'NamespaceDefinition', MemberDefFlags.RecordRef | MemberDefFlags.Compare),
         ('Name', 'ConstantStringValue', MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
         ('Size', 'uint', MemberDefFlags(0)),
-        ('PackingSize', 'uint', MemberDefFlags(0)),
+        ('PackingSize', 'ushort', MemberDefFlags(0)),
         ('EnclosingType', 'TypeDefinition', MemberDefFlags.RecordRef | MemberDefFlags.Compare),
         ('NestedTypes', 'TypeDefinition', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('Methods', 'Method', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -252,6 +253,7 @@ __recordSchema = [
         ('Events', 'Event', MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('GenericParameters', 'GenericParameter', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('Interfaces', TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+        ('MethodImpls', 'MethodImpl', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ]),
     ('TypeReference', None, RecordDefFlags(0), [
@@ -299,22 +301,25 @@ __recordSchema = [
         ('Name', 'ConstantStringValue', MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ]),
     ('Method', None, RecordDefFlags(0), [
-        ('RVA', 'uint', MemberDefFlags(0)),
         ('Flags', 'MethodAttributes', MemberDefFlags(0)),
         ('ImplFlags', 'MethodImplAttributes', MemberDefFlags(0)),
         ('Name', 'ConstantStringValue', MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('Signature', 'MethodSignature', MemberDefFlags.RecordRef | MemberDefFlags.Child ),
         ('Parameters', 'Parameter', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
         ('GenericParameters', 'GenericParameter', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
-        ('MethodImpls', 'MethodImpl', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ]),
+    ('QualifiedMethod', None, RecordDefFlags(0), [
+        ('Method', 'Method', MemberDefFlags.RecordRef),
+        ('EnclosingType', 'TypeDefinition', MemberDefFlags.RecordRef),
+    ]),
     ('MethodInstantiation', None, RecordDefFlags(0), [
-        ('Method', ('Method', 'MemberReference'), MemberDefFlags.RecordRef),
-        ('Instantiation', 'MethodSignature', MemberDefFlags.RecordRef),
+        ('Method', MethodDefOrRef, MemberDefFlags.RecordRef),
+        ('GenericTypeArguments', TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+        ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ]),
     ('MemberReference', None, RecordDefFlags(0), [
-        ('Parent', ('Method',) + TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+        ('Parent', TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
         ('Name', 'ConstantStringValue', MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('Signature', ('MethodSignature', 'FieldSignature'), MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -343,8 +348,7 @@ __recordSchema = [
         ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
         ]),
     ('CustomAttribute', None, RecordDefFlags.ReentrantEquals, [
-        ('Type', TypeDefOrRef, MemberDefFlags.RecordRef),
-        ('Constructor', ('Method', 'MemberReference'), MemberDefFlags.RecordRef),
+        ('Constructor', MethodDefOrRef, MemberDefFlags.RecordRef),
         ('FixedArguments', 'FixedArgument', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
         ('NamedArguments', 'NamedArgument', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
         ]),
@@ -371,8 +375,8 @@ __recordSchema = [
         ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
         ]),
     ('MethodImpl', None, RecordDefFlags(0), [
-        ('MethodDeclaration', ('Method', 'MemberReference'), MemberDefFlags.RecordRef),
-        ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
+        ('MethodBody', MethodDefOrRef, MemberDefFlags.RecordRef),
+        ('MethodDeclaration', MethodDefOrRef, MemberDefFlags.RecordRef),
         ]),
     ('Parameter', None, RecordDefFlags(0), [
         ('Flags', 'ParameterAttributes', MemberDefFlags(0)),
@@ -384,7 +388,6 @@ __recordSchema = [
     ('MethodSemantics', None, RecordDefFlags(0), [
         ('Attributes', 'MethodSemanticsAttributes', MemberDefFlags(0)),
         ('Method', 'Method', MemberDefFlags.RecordRef),
-        ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
         ]),
     ('TypeInstantiationSignature', None, RecordDefFlags(0), [
         ('GenericType', TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
