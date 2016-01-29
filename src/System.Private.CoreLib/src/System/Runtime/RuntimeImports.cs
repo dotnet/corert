@@ -756,9 +756,11 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "modf")]
         internal static unsafe extern double modf(double x, double* intptr);
 
+#if !PLATFORM_UNIX
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
         internal static unsafe extern void _ecvt_s(byte* buffer, int sizeInBytes, double value, int count, int* dec, int* sign);
+#endif
 
 #if BIT64
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
