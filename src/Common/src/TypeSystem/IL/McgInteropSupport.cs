@@ -70,7 +70,10 @@ namespace Internal.IL
 
         // Returns null if no matching method is found
         private static MethodDesc GetMatchingMethod(ModuleDesc module, MethodDesc method)
-        {            
+        {
+          // TODO:Enable this once mcg generated code match GetMatchingType
+          // type lookup. 
+          // var matchingType = GetMatchingType(module, method.OwningType);
             var matchingType = TryGetMcgGeneratedType(module);
             if (matchingType == null)
                 return null;
@@ -95,7 +98,7 @@ namespace Internal.IL
             }
         }
 
-        // TODO: This's to work-around the limiltation of mcg code generation.Mcg currently
+        // TODO: This's to work-around the limitation of mcg code generation.Mcg currently
         // do not preserve user pinvoke defining type hierarchy,but dump all pinvoke stub methods 
         // to a type named McgPInvokeMarshaller
         private static TypeDesc TryGetMcgGeneratedType(ModuleDesc module)
