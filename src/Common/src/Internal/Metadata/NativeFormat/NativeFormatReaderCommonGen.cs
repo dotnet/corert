@@ -77,64 +77,65 @@ namespace Internal.Metadata.NativeFormat
         ByReferenceSignature = 0x2,
         ConstantBooleanArray = 0x3,
         ConstantBooleanValue = 0x4,
-        ConstantByteArray = 0x5,
-        ConstantByteValue = 0x6,
-        ConstantCharArray = 0x7,
-        ConstantCharValue = 0x8,
-        ConstantDoubleArray = 0x9,
-        ConstantDoubleValue = 0xa,
-        ConstantHandleArray = 0xb,
-        ConstantInt16Array = 0xc,
-        ConstantInt16Value = 0xd,
-        ConstantInt32Array = 0xe,
-        ConstantInt32Value = 0xf,
-        ConstantInt64Array = 0x10,
-        ConstantInt64Value = 0x11,
-        ConstantReferenceValue = 0x12,
-        ConstantSByteArray = 0x13,
-        ConstantSByteValue = 0x14,
-        ConstantSingleArray = 0x15,
-        ConstantSingleValue = 0x16,
-        ConstantStringArray = 0x17,
-        ConstantStringValue = 0x18,
-        ConstantUInt16Array = 0x19,
-        ConstantUInt16Value = 0x1a,
-        ConstantUInt32Array = 0x1b,
-        ConstantUInt32Value = 0x1c,
-        ConstantUInt64Array = 0x1d,
-        ConstantUInt64Value = 0x1e,
-        CustomAttribute = 0x1f,
-        CustomModifier = 0x20,
-        Event = 0x21,
-        Field = 0x22,
-        FieldSignature = 0x23,
-        FixedArgument = 0x24,
-        GenericParameter = 0x25,
-        MemberReference = 0x26,
-        Method = 0x27,
-        MethodImpl = 0x28,
-        MethodInstantiation = 0x29,
-        MethodSemantics = 0x2a,
-        MethodSignature = 0x2b,
-        MethodTypeVariableSignature = 0x2c,
-        NamedArgument = 0x2d,
-        NamespaceDefinition = 0x2e,
-        NamespaceReference = 0x2f,
-        Parameter = 0x30,
-        ParameterTypeSignature = 0x31,
-        PointerSignature = 0x32,
-        Property = 0x33,
-        PropertySignature = 0x34,
-        ReturnTypeSignature = 0x35,
-        SZArraySignature = 0x36,
-        ScopeDefinition = 0x37,
-        ScopeReference = 0x38,
-        TypeDefinition = 0x39,
-        TypeForwarder = 0x3a,
-        TypeInstantiationSignature = 0x3b,
-        TypeReference = 0x3c,
-        TypeSpecification = 0x3d,
-        TypeVariableSignature = 0x3e,
+        ConstantBoxedEnumValue = 0x5,
+        ConstantByteArray = 0x6,
+        ConstantByteValue = 0x7,
+        ConstantCharArray = 0x8,
+        ConstantCharValue = 0x9,
+        ConstantDoubleArray = 0xa,
+        ConstantDoubleValue = 0xb,
+        ConstantHandleArray = 0xc,
+        ConstantInt16Array = 0xd,
+        ConstantInt16Value = 0xe,
+        ConstantInt32Array = 0xf,
+        ConstantInt32Value = 0x10,
+        ConstantInt64Array = 0x11,
+        ConstantInt64Value = 0x12,
+        ConstantReferenceValue = 0x13,
+        ConstantSByteArray = 0x14,
+        ConstantSByteValue = 0x15,
+        ConstantSingleArray = 0x16,
+        ConstantSingleValue = 0x17,
+        ConstantStringArray = 0x18,
+        ConstantStringValue = 0x19,
+        ConstantUInt16Array = 0x1a,
+        ConstantUInt16Value = 0x1b,
+        ConstantUInt32Array = 0x1c,
+        ConstantUInt32Value = 0x1d,
+        ConstantUInt64Array = 0x1e,
+        ConstantUInt64Value = 0x1f,
+        CustomAttribute = 0x20,
+        CustomModifier = 0x21,
+        Event = 0x22,
+        Field = 0x23,
+        FieldSignature = 0x24,
+        FixedArgument = 0x25,
+        GenericParameter = 0x26,
+        MemberReference = 0x27,
+        Method = 0x28,
+        MethodImpl = 0x29,
+        MethodInstantiation = 0x2a,
+        MethodSemantics = 0x2b,
+        MethodSignature = 0x2c,
+        MethodTypeVariableSignature = 0x2d,
+        NamedArgument = 0x2e,
+        NamespaceDefinition = 0x2f,
+        NamespaceReference = 0x30,
+        Parameter = 0x31,
+        ParameterTypeSignature = 0x32,
+        PointerSignature = 0x33,
+        Property = 0x34,
+        PropertySignature = 0x35,
+        ReturnTypeSignature = 0x36,
+        SZArraySignature = 0x37,
+        ScopeDefinition = 0x38,
+        ScopeReference = 0x39,
+        TypeDefinition = 0x3a,
+        TypeForwarder = 0x3b,
+        TypeInstantiationSignature = 0x3c,
+        TypeReference = 0x3d,
+        TypeSpecification = 0x3e,
+        TypeVariableSignature = 0x3f,
     } // HandleType
 
     /// <summary>
@@ -319,6 +320,50 @@ namespace Internal.Metadata.NativeFormat
     public partial struct ConstantBooleanValueHandle : IConstantBooleanValueHandle
     {
     } // ConstantBooleanValueHandle
+
+    /// <summary>
+    /// IConstantBoxedEnumValue
+    /// </summary>
+    internal interface IConstantBoxedEnumValue
+    {
+        Handle Value
+        {
+            get;
+        } // Value
+
+        Handle Type
+        {
+            get;
+        } // Type
+
+        ConstantBoxedEnumValueHandle Handle
+        {
+            get;
+        } // Handle
+    } // IConstantBoxedEnumValue
+
+    /// <summary>
+    /// ConstantBoxedEnumValue
+    /// </summary>
+    public partial struct ConstantBoxedEnumValue : IConstantBoxedEnumValue
+    {
+    } // ConstantBoxedEnumValue
+
+    /// <summary>
+    /// IConstantBoxedEnumValueHandle
+    /// </summary>
+    internal interface IConstantBoxedEnumValueHandle : IEquatable<ConstantBoxedEnumValueHandle>, IEquatable<Handle>, IEquatable<Object>
+    {
+        Handle ToHandle(MetadataReader reader);
+        int GetHashCode();
+    } // IConstantBoxedEnumValueHandle
+
+    /// <summary>
+    /// ConstantBoxedEnumValueHandle
+    /// </summary>
+    public partial struct ConstantBoxedEnumValueHandle : IConstantBoxedEnumValueHandle
+    {
+    } // ConstantBoxedEnumValueHandle
 
     /// <summary>
     /// IConstantByteArray
@@ -1757,10 +1802,11 @@ namespace Internal.Metadata.NativeFormat
         ConstantCharValueHandle ToConstantCharValueHandle(MetadataReader reader);
         ScopeReferenceHandle ToScopeReferenceHandle(MetadataReader reader);
         MethodSignatureHandle ToMethodSignatureHandle(MetadataReader reader);
-        ConstantSingleValueHandle ToConstantSingleValueHandle(MetadataReader reader);
+        ConstantBoxedEnumValueHandle ToConstantBoxedEnumValueHandle(MetadataReader reader);
         CustomModifierHandle ToCustomModifierHandle(MetadataReader reader);
-        ConstantUInt16ArrayHandle ToConstantUInt16ArrayHandle(MetadataReader reader);
+        ConstantSingleValueHandle ToConstantSingleValueHandle(MetadataReader reader);
         ConstantSByteValueHandle ToConstantSByteValueHandle(MetadataReader reader);
+        ConstantUInt16ArrayHandle ToConstantUInt16ArrayHandle(MetadataReader reader);
         ConstantUInt64ValueHandle ToConstantUInt64ValueHandle(MetadataReader reader);
         TypeDefinitionHandle ToTypeDefinitionHandle(MetadataReader reader);
         ConstantInt32ValueHandle ToConstantInt32ValueHandle(MetadataReader reader);
@@ -1877,6 +1923,7 @@ namespace Internal.Metadata.NativeFormat
         Event GetEvent(EventHandle handle);
         ConstantSByteArray GetConstantSByteArray(ConstantSByteArrayHandle handle);
         ReturnTypeSignature GetReturnTypeSignature(ReturnTypeSignatureHandle handle);
+        ConstantBoxedEnumValue GetConstantBoxedEnumValue(ConstantBoxedEnumValueHandle handle);
         ConstantInt32Value GetConstantInt32Value(ConstantInt32ValueHandle handle);
         ConstantSingleValue GetConstantSingleValue(ConstantSingleValueHandle handle);
         Parameter GetParameter(ParameterHandle handle);

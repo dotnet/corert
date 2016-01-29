@@ -15,6 +15,8 @@ using global::System.Reflection.Runtime.TypeParsing;
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.NonPortable;
 
+using global::Internal.Runtime.Augments;
+
 using global::Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General
@@ -192,6 +194,110 @@ namespace System.Reflection.Runtime.General
             return nameHandle.StringEquals(ConstructorInfo.ConstructorName, reader) || nameHandle.StringEquals(ConstructorInfo.TypeConstructorName, reader);
         }
 
+        private static Exception ParseBoxedEnumConstantValue(this ConstantBoxedEnumValueHandle handle, ReflectionDomain reflectionDomain, MetadataReader reader, out Object value)
+        {
+            if (!(reflectionDomain is Internal.Reflection.Core.Execution.ExecutionDomain))
+                throw new PlatformNotSupportedException(); // Cannot work because boxing enums won't work in non-execution domains.
+
+            ConstantBoxedEnumValue record = handle.GetConstantBoxedEnumValue(reader);
+
+            Exception exception = null;
+            Type enumType = reflectionDomain.TryResolve(reader, record.Type, new TypeContext(null, null), ref exception);
+            if (enumType == null)
+            {
+                value = null;
+                return exception;
+            }
+
+            if (!enumType.GetTypeInfo().IsEnum)
+                throw new BadImageFormatException();
+
+            Type underlyingType = Enum.GetUnderlyingType(enumType);
+
+            // Now box the value as the specified enum type.
+            unsafe
+            {
+                switch (record.Value.HandleType)
+                {
+                    case HandleType.ConstantByteValue:
+                        {
+                            if (underlyingType != typeof(byte))
+                                throw new BadImageFormatException();
+
+                            byte v = record.Value.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    case HandleType.ConstantSByteValue:
+                        {
+                            if (underlyingType != typeof(sbyte))
+                                throw new BadImageFormatException();
+
+                            sbyte v = record.Value.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    case HandleType.ConstantInt16Value:
+                        {
+                            if (underlyingType != typeof(short))
+                                throw new BadImageFormatException();
+
+                            short v = record.Value.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    case HandleType.ConstantUInt16Value:
+                        {
+                            if (underlyingType != typeof(ushort))
+                                throw new BadImageFormatException();
+
+                            ushort v = record.Value.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    case HandleType.ConstantInt32Value:
+                        {
+                            if (underlyingType != typeof(int))
+                                throw new BadImageFormatException();
+
+                            int v = record.Value.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    case HandleType.ConstantUInt32Value:
+                        {
+                            if (underlyingType != typeof(uint))
+                                throw new BadImageFormatException();
+
+                            uint v = record.Value.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    case HandleType.ConstantInt64Value:
+                        {
+                            if (underlyingType != typeof(long))
+                                throw new BadImageFormatException();
+
+                            long v = record.Value.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    case HandleType.ConstantUInt64Value:
+                        {
+                            if (underlyingType != typeof(ulong))
+                                throw new BadImageFormatException();
+
+                            ulong v = record.Value.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value;
+                            value = RuntimeAugments.Box(enumType.TypeHandle, (IntPtr)(&v));
+                            return null;
+                        }
+                    default:
+                        throw new BadImageFormatException();
+                }
+            }
+
+        }
+
         public static Object ParseConstantValue(this Handle handle, ReflectionDomain reflectionDomain, MetadataReader reader)
         {
             Object value;
@@ -256,6 +362,10 @@ namespace System.Reflection.Runtime.General
                 case HandleType.ConstantReferenceValue:
                     value = null;
                     return null;
+                case HandleType.ConstantBoxedEnumValue:
+                    {
+                        return handle.ToConstantBoxedEnumValueHandle(reader).ParseBoxedEnumConstantValue(reflectionDomain, reader, out value);
+                    }
                 default:
                     {
                         Exception exception;
