@@ -18,6 +18,8 @@ namespace Internal.IL
         /// Assembly name suffix for pregenerated interop code.
         /// </summary>
         private const string AssemblyNameSuffix = ".McgInterop";
+        private const string PInvokeContainerTypeNS = "McgInterop";
+        private const string PInvokeMethodContainerType = "McgPInvokeMarshaller";
 
         /// <summary>
         /// Returns true if <paramref name="method"/> is pregenerated interop code
@@ -69,7 +71,10 @@ namespace Internal.IL
         // Returns null if no matching method is found
         private static MethodDesc GetMatchingMethod(ModuleDesc module, MethodDesc method)
         {
-            var matchingType = GetMatchingType(module, method.OwningType);
+          // TODO:Enable this once mcg generated code match GetMatchingType
+          // type lookup. 
+          // var matchingType = GetMatchingType(module, method.OwningType);
+            var matchingType = TryGetMcgGeneratedType(module);
             if (matchingType == null)
                 return null;
             return matchingType.GetMethod(method.Name, method.Signature);
@@ -91,6 +96,15 @@ namespace Internal.IL
             {
                 return module.GetType(metadataType.Namespace, metadataType.Name, false);
             }
+        }
+
+        // TODO: This's to work-around the limitation of mcg code generation.Mcg currently
+        // do not preserve user pinvoke defining type hierarchy,but dump all pinvoke stub methods 
+        // to a type named McgPInvokeMarshaller
+        private static TypeDesc TryGetMcgGeneratedType(ModuleDesc module)
+        {            
+            // this should not fail since we are looking for a well known type.
+            return module.GetType(PInvokeContainerTypeNS, PInvokeMethodContainerType, true);
         }
     }
 }
