@@ -25,6 +25,9 @@
     <!-- <DefineConstants>CORERT;$(DefineConstants)</DefineConstants> -->
     <DefineConstants>CORERT</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
+    <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
