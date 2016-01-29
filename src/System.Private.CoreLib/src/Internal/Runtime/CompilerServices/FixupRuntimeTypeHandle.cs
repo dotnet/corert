@@ -8,17 +8,26 @@ namespace Internal.Runtime.CompilerServices
 {
     public unsafe struct FixupRuntimeTypeHandle
     {
+#if !CORERT
         private IntPtr _value;
+#endif
 
         public FixupRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
         {
+#if CORERT
+            throw new NotImplementedException(); // CORERT-TODO: RuntimeTypeHandle
+#else
             _value = *(IntPtr*)&runtimeTypeHandle;
+#endif
         }
 
         public RuntimeTypeHandle RuntimeTypeHandle
         {
             get
             {
+#if CORERT
+                throw new NotImplementedException(); // CORERT-TODO: RuntimeTypeHandle
+#else
                 // Managed debugger uses this logic to figure out the interface's type
                 // Update managed debugger too whenever this is changed.
                 // See CordbObjectValue::WalkPtrAndTypeData in debug\dbi\values.cpp
@@ -33,6 +42,7 @@ namespace Internal.Runtime.CompilerServices
                     *(IntPtr*)&returnValue = _value;
                     return returnValue;
                 }
+#endif
             }
         }
     }

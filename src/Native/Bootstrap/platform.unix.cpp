@@ -64,4 +64,9 @@ extern "C"
     {
         throw "GetNativeSystemInfo";
     }
+
+    void OutputDebugStringW()
+    {
+        throw "OutputDebugStringW";
+    }
 }
