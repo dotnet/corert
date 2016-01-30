@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -28,9 +28,26 @@ namespace ILCompiler.DependencyAnalysis
         // This is for individual node and should be flushed once node is emitted.
         private Dictionary<int, DebugLocInfo> _offsetToDebugLoc = new Dictionary<int, DebugLocInfo>();
 
-        // This is one to multiple mapping -- we might have multiple symbols at the give offset.
-        // We preserved the original order of ISymbolNode[].
-        private Dictionary<int, List<ISymbolNode>> _offsetToDefSymbol = new Dictionary<int, List<ISymbolNode>>();
+        // Code offset to defined names
+        private Dictionary<int, List<string>> _offsetToDefName = new Dictionary<int, List<string>>();
+
+        // Code offset to Cfi blobs
+        private Dictionary<int, List<byte[]>> _offsetToCfis = new Dictionary<int, List<byte[]>>();
+        // Code offsets that starts a frame
+        private HashSet<int> _offsetToCfiStart = new HashSet<int>();
+        // Code offsets that ends a frame
+        private HashSet<int> _offsetToCfiEnd = new HashSet<int>();
+        // Used to assert whether frames are not overlapped.
+        private bool _frameOpened;
+
+        //  The size of CFI_CODE that RyuJit passes.
+        private const int CfiCodeSize = 8;
+
+        // The section name of the current node being processed.
+        private string _currentSectionName;
+
+        // The first defined symbol name of the current node being processed.
+        private string _currentNodeName;
 
         private const string NativeObjectWriterFileName = "objwriter";
 
@@ -52,9 +69,15 @@ namespace ILCompiler.DependencyAnalysis
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern void SwitchSection(IntPtr objWriter, string sectionName);
-        public void SwitchSection(string sectionName)
+        public void SetSection(string sectionName)
         {
+            _currentSectionName = sectionName;
             SwitchSection(_nativeObjectWriter, sectionName);
+        }
+
+        public void EnsureCurrentSection()
+        {
+            SwitchSection(_nativeObjectWriter, _currentSectionName);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -93,13 +116,39 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData,
+        private static extern void EmitWinFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData,
                                                  string personalityFunctionName, int LSDASize, byte[] LSDA);
-        public void EmitFrameInfo(string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData,
+        public void EmitWinFrameInfo(int startOffset, int endOffset, int blobSize, byte[] blobData,
                                   string personalityFunctionName = null, int LSDASize = 0, byte[] LSDA = null)
         {
-            EmitFrameInfo(_nativeObjectWriter, methodName, startOffset, endOffset, blobSize, blobData,
+            EmitWinFrameInfo(_nativeObjectWriter, _currentNodeName, startOffset, endOffset, blobSize, blobData,
                           personalityFunctionName, LSDASize, LSDA);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitCFIStart(IntPtr objWriter, int nativeOffset);
+        public void EmitCFIStart(int nativeOffset)
+        {
+            Debug.Assert(!_frameOpened);
+            EmitCFIStart(_nativeObjectWriter, nativeOffset);
+            _frameOpened = true;
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitCFIEnd(IntPtr objWriter, int nativeOffset);
+        public void EmitCFIEnd(int nativeOffset)
+        {
+            Debug.Assert(_frameOpened);
+            EmitCFIEnd(_nativeObjectWriter, nativeOffset);
+            _frameOpened = false;
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitCFICode(IntPtr objWriter, int nativeOffset, byte[] blob);
+        public void EmitCFICode(int nativeOffset, byte[] blob)
+        {
+            Debug.Assert(_frameOpened);
+            EmitCFICode(_nativeObjectWriter, nativeOffset, blob);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -118,14 +167,14 @@ namespace ILCompiler.DependencyAnalysis
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern void FlushDebugLocs(IntPtr objWriter, string methodName, int methodSize);
-        public void FlushDebugLocs(string methodName, int methodSize)
+        public void FlushDebugLocs(int methodSize)
         {
             // No interest if there is no debug location emission/map before.
             if (_offsetToDebugLoc.Count == 0)
             {
                 return;
             }
-            FlushDebugLocs(_nativeObjectWriter, methodName, methodSize);
+            FlushDebugLocs(_nativeObjectWriter, _currentNodeName, methodSize);
 
             // Ensure clean up the map for the next node.
             _offsetToDebugLoc.Clear();
@@ -185,6 +234,88 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public void BuildCFIMap(ObjectNode node)
+        {
+            _offsetToCfis.Clear();
+            _offsetToCfiStart.Clear();
+            _offsetToCfiEnd.Clear();
+            _frameOpened = false;
+
+            if (!(node is INodeWithFrameInfo))
+            {
+                return;
+            }
+
+            FrameInfo[] frameInfos = ((INodeWithFrameInfo)node).FrameInfos;
+            if (frameInfos == null)
+            {
+                return;
+            }
+
+            foreach (var frameInfo in frameInfos)
+            {
+                int start = frameInfo.StartOffset;
+                int end = frameInfo.EndOffset;
+                int len = frameInfo.BlobData.Length;
+                byte[] blob = frameInfo.BlobData;
+
+                if (_targetPlatform.OperatingSystem == TargetOS.Windows)
+                {
+                    // For window, just emit the frame blob (UNWIND_INFO) as a whole.
+                    EmitWinFrameInfo(start, end, len, blob);
+                    EnsureCurrentSection();
+                }
+                else
+                {
+                    // For Unix, we build CFI blob map for each offset.
+                    Debug.Assert(len % CfiCodeSize == 0);
+
+                    // Record start/end of frames which shouldn't be overlapped.
+                    _offsetToCfiStart.Add(start);
+                    _offsetToCfiEnd.Add(end);
+                    for (int j = 0; j < len; j += CfiCodeSize)
+                    {
+                        // The first byte of CFI_CODE is offset from the range the frame covers.
+                        // Compute code offset from the root method.
+                        int codeOffset = blob[j] + start;
+                        List<byte[]> cfis;
+                        if (!_offsetToCfis.TryGetValue(codeOffset, out cfis))
+                        {
+                            cfis = new List<byte[]>();
+                            _offsetToCfis.Add(codeOffset, cfis);
+                        }
+                        byte[] cfi = new byte[CfiCodeSize];
+                        Array.Copy(blob, j, cfi, 0, CfiCodeSize);
+                        cfis.Add(cfi);
+                    }
+                }
+            }
+        }
+
+        public void EmitCFICodes(int offset)
+        {
+            // Emit end the old frame before start a frame.
+            if (_offsetToCfiEnd.Contains(offset))
+            {
+                EmitCFIEnd(offset);
+            }
+
+            if (_offsetToCfiStart.Contains(offset))
+            {
+                EmitCFIStart(offset);
+            }
+
+            // Emit individual cfi blob for the given offset
+            List<byte[]> cfis;
+            if (_offsetToCfis.TryGetValue(offset, out cfis))
+            {
+                foreach(byte[] cfi in cfis)
+                {
+                    EmitCFICode(offset, cfi);
+                }
+            }
+        }
+
         public void EmitDebugLocInfo(int offset)
         {
             DebugLocInfo loc;
@@ -200,15 +331,29 @@ namespace ILCompiler.DependencyAnalysis
 
         public void BuildSymbolDefinitionMap(ISymbolNode[] definedSymbols)
         {
-            _offsetToDefSymbol.Clear();
+            _offsetToDefName.Clear();
             foreach (ISymbolNode n in definedSymbols)
             {
-                if (!_offsetToDefSymbol.ContainsKey(n.Offset))
+                if (!_offsetToDefName.ContainsKey(n.Offset))
                 {
-                    _offsetToDefSymbol[n.Offset] = new List<ISymbolNode>();
+                    _offsetToDefName[n.Offset] = new List<string>();
                 }
-                _offsetToDefSymbol[n.Offset].Add(n);
+
+                string symbolToEmit = GetSymbolToEmitForTargetPlatform(n.MangledName);
+                _offsetToDefName[n.Offset].Add(symbolToEmit);
+
+                string alternateName = _nodeFactory.GetSymbolAlternateName(n);
+                if (alternateName != null)
+                {
+                    symbolToEmit = GetSymbolToEmitForTargetPlatform(alternateName);
+                    _offsetToDefName[n.Offset].Add(symbolToEmit);
+                }
             }
+
+            // First entry is the node (entry point) name.
+            _currentNodeName = _offsetToDefName[0][0];
+            // Publish it first.
+            EmitSymbolDef(_currentNodeName);
         }
 
         private string GetSymbolToEmitForTargetPlatform(string symbol)
@@ -227,19 +372,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitSymbolDefinition(int currentOffset)
         {
-            List<ISymbolNode> nodes;
-            if (_offsetToDefSymbol.TryGetValue(currentOffset, out nodes))
+            List<string> nodes;
+            if (_offsetToDefName.TryGetValue(currentOffset, out nodes))
             {
-                foreach (var node in nodes)
+                foreach (var name in nodes)
                 {
-                    string symbolToEmit = GetSymbolToEmitForTargetPlatform(node.MangledName);
-                    EmitSymbolDef(symbolToEmit);
-
-                    string alternateName = _nodeFactory.GetSymbolAlternateName(node);
-                    if (alternateName != null)
+                    if (name != _currentNodeName)
                     {
-                        symbolToEmit = GetSymbolToEmitForTargetPlatform(alternateName);
-                        EmitSymbolDef(symbolToEmit);
+                        EmitSymbolDef(name);
                     }
                 }
             }
@@ -290,8 +430,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
-                string currentSection = "";
-
                 // Build file info map.
                 string[] debugFileInfos = objectWriter.BuildFileInfoMap(nodes);
                 if (debugFileInfos != null)
@@ -312,13 +450,8 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Assert(_previouslyWrittenNodeNames.Add(node.GetName()), "Duplicate node name emitted to file", "Node {0} has already been written to the output object file {1}", node.GetName(), objectFilePath);
 #endif
                     ObjectNode.ObjectData nodeContents = node.GetData(factory);
-
-                    if (currentSection != node.Section)
-                    {
-                        currentSection = node.Section;
-                        objectWriter.SwitchSection(currentSection);
-                    }
-
+                    // Ensure section and alignment for the node.
+                    objectWriter.SetSection(node.Section);
                     objectWriter.EmitAlignment(nodeContents.Alignment);
 
                     Relocation[] relocs = nodeContents.Relocs;
@@ -333,6 +466,9 @@ namespace ILCompiler.DependencyAnalysis
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(nodeContents.DefinedSymbols);
 
+                    // Build CFI map (Unix) or publish unwind blob (Windows).
+                    objectWriter.BuildCFIMap(node);
+
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);
 
@@ -340,6 +476,9 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         // Emit symbol definitions if necessary
                         objectWriter.EmitSymbolDefinition(i);
+
+                        // Emit CFI codes for the given offset.
+                        objectWriter.EmitCFICodes(i);
 
                         // Emit debug loc info if needed.
                         objectWriter.EmitDebugLocInfo(i);
@@ -382,27 +521,10 @@ namespace ILCompiler.DependencyAnalysis
                     // It is possible to have a symbol just after all of the data.
                     objectWriter.EmitSymbolDefinition(nodeContents.Data.Length);
 
-                    // The first definition is the main node name
-                    string nodeName = objectWriter._offsetToDefSymbol[0][0].MangledName;
-                    // Emit frame info for object code.
-                    if (node is INodeWithFrameInfo)
-                    {
-                        FrameInfo[] frameInfos = ((INodeWithFrameInfo)node).FrameInfos;
-                        if (frameInfos != null)
-                        {
-                            foreach (var frameInfo in frameInfos)
-                            {
-                                objectWriter.EmitFrameInfo(nodeName,
-                                    frameInfo.StartOffset,
-                                    frameInfo.EndOffset,
-                                    frameInfo.BlobData.Length,
-                                    frameInfo.BlobData);
-                            }
-                        }
-                    }
+                    // Emit the last CFI to close the frame.
+                    objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
-                    objectWriter.FlushDebugLocs(nodeName, nodeContents.Data.Length);
-                    objectWriter.SwitchSection(currentSection);
+                    objectWriter.FlushDebugLocs(nodeContents.Data.Length);
                 }
             }
         }
