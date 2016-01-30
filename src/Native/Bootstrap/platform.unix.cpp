@@ -34,15 +34,6 @@ extern "C"
     }
 }
 
-// UNIXTODO: Unix port of _ecvt_s and _copysign https://github.com/dotnet/corert/issues/670
-extern "C"
-{
-    void _copysign()
-    {
-        throw "_copysign";
-    }
-}
-
 extern "C"
 {
     void CoCreateGuid()
