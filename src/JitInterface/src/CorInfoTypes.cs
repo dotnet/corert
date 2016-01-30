@@ -1373,6 +1373,7 @@ namespace Internal.JitInterface
         CORJIT_FLG_USE_AVX2            = 0x00000800,
         CORJIT_FLG_USE_AVX_512         = 0x00001000,
         CORJIT_FLG_FEATURE_SIMD        = 0x00002000,
+        CORJIT_FLG_CFI_UNWIND          = 0x00004000,
 
         CORJIT_FLG_READYTORUN          = 0x00010000, // Use version-resilient code generation
 

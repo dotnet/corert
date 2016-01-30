@@ -99,6 +99,10 @@ namespace Internal.JitInterface
                     CorJitFlag.CORJIT_FLG_RELOC |
                     CorJitFlag.CORJIT_FLG_DEBUG_INFO |
                     CorJitFlag.CORJIT_FLG_PREJIT);
+                if (_compilation.Options.TargetOS != TargetOS.Windows)
+                {
+                    flags |= (uint) CorJitFlag.CORJIT_FLG_CFI_UNWIND;
+                }
 
                 if (!_compilation.Options.NoLineNumbers)
                 {
