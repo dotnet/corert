@@ -30,6 +30,7 @@ namespace System.Runtime.InteropServices
             internal const string CORE_LOCALIZATION = "kernel32.dll";
 #endif
         }
+#if !CORECLR
 
         internal struct CPINFO
         {
@@ -137,6 +138,6 @@ namespace System.Runtime.InteropServices
 
             return null;
         }
-
+#endif //CORECLR
     }
 }

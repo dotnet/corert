@@ -37,6 +37,58 @@ namespace System.Runtime.InteropServices
 #endif //TARGET_CORE_API_SET
         }
 
+#if CORECLR
+
+        internal static unsafe uint SysStringLen(void* pBSTR)
+        {
+            throw new PlatformNotSupportedException("SysStringLen");
+        }
+
+        internal static unsafe uint SysStringLen(IntPtr pBSTR)
+        {
+            throw new PlatformNotSupportedException("SysStringLen");
+        }
+
+        unsafe public static int ConvertWideCharToMultiByte(char* wideCharStr, 
+                                                            int   wideCharLen,
+                                                            IntPtr multiByteStr, 
+                                                            int multiByteLen,
+                                                            uint flags,
+                                                            IntPtr usedDefaultChar)
+        {
+            return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen,(byte*)multiByteStr, multiByteLen);
+        }
+
+        unsafe public static int ConvertWideCharToMultiByte(char* wideCharStr, int wideCharLen, IntPtr multiByteStr, int multiByteLen)
+        {
+            return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen,(byte*)multiByteStr, multiByteLen);
+        }
+
+        unsafe public static int GetByteCount(char* wideCharStr, int wideCharLen)
+        {
+            return System.Text.Encoding.UTF8.GetByteCount(wideCharStr, wideCharLen);
+        }
+
+        unsafe public static int ConvertMultiByteToWideChar(IntPtr multiByteStr,
+                                                            int multiByteLen,
+                                                            IntPtr wideCharStr,
+                                                            int wideCharLen)
+        {
+            return System.Text.Encoding.UTF8.GetChars((byte*)multiByteStr, multiByteLen, (char*)wideCharStr, wideCharLen);
+        }
+
+        public static unsafe int GetCharCount(IntPtr multiByteStr, int multiByteLen)
+        {
+            return System.Text.Encoding.UTF8.GetCharCount((byte*)multiByteStr, multiByteLen);
+        }
+        
+        // Do nothing
+        internal static unsafe void OutputDebugString(string outputString)
+        {
+
+        }
+#else 
+
         [DllImport(Libraries.CORE_STRING, CallingConvention = CallingConvention.StdCall)]
         [MethodImpl(MethodImplOptions.NoInlining)]
         [McgGeneratedNativeCallCodeAttribute]
@@ -120,5 +172,6 @@ namespace System.Runtime.InteropServices
                                        usedDefaultChar
                                        );
         }
+#endif //CORECLR
     }
 }
