@@ -94,7 +94,12 @@ namespace System
         {
             if (n1.HasValue)
             {
+#if CORERT
                 if (n2.HasValue) return EqualOnlyComparer<T>.Equals(n1.value, n2.value);
+#else
+                // See comment above Array.GetComparerForReferenceTypesOnly for details
+                if (n2.HasValue) return LowLevelEqualityComparer<T>.Default.Equals(n1.value, n2.value);
+#endif
                 return false;
             }
             if (n2.HasValue) return false;
