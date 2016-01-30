@@ -20,6 +20,35 @@ namespace System.Runtime.InteropServices
 #endif //TARGET_CORE_API_SET
         }
 
+#if CORECLR
+
+        public static  IntPtr MemAlloc(UIntPtr sizeInBytes)
+        {
+            return Marshal.AllocHGlobal(unchecked( (IntPtr) (long)(ulong)sizeInBytes));
+        }
+
+        public static unsafe void MemFree(IntPtr ptr)
+        {
+            Marshal.FreeHGlobal(ptr);
+        }
+
+        public static unsafe IntPtr MemReAlloc(IntPtr ptr, UIntPtr newSize)
+        {
+            return Marshal.ReAllocHGlobal(ptr, unchecked( (IntPtr) (long)(ulong)newSize));
+        }
+
+         internal static IntPtr MemAlloc(UIntPtr sizeInBytes, uint flags)
+        {
+            return MemAlloc(sizeInBytes);
+        }
+
+        internal static IntPtr MemReAlloc(IntPtr ptr, UIntPtr newSize ,uint flags)
+        {
+            return MemReAlloc(ptr, newSize);
+        }
+
+#else
+
         [DllImport(Libraries.CORE_HEAP)]
         [McgGeneratedNativeCallCodeAttribute]
         private static extern IntPtr GetProcessHeap();
@@ -71,5 +100,8 @@ namespace System.Runtime.InteropServices
         {
             return HeapReAlloc(GetProcessHeap(), flags, ptr, newSize);
         }
+
+#endif //CORECLR
+
     }
 }

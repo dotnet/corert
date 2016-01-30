@@ -34,6 +34,13 @@ namespace System.Runtime.InteropServices
         internal const string CORE_ERRORHANDLING = "kernel32.dll";
 #endif //TARGET_CORE_API_SET
         }
+#if CORECLR
+        
+        static internal int GetLastWin32Error()
+        {
+           throw new PlatformNotSupportedException("GetLastWin32Error");
+        }
+#else 
 
         [DllImport(Libraries.CORE_DEBUG, EntryPoint = "OutputDebugStringW")]
         [McgGeneratedNativeCallCodeAttribute]
@@ -57,6 +64,6 @@ namespace System.Runtime.InteropServices
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         static internal extern void SetLastWin32Error(int errorCode);
-
+#endif 
     }
 }

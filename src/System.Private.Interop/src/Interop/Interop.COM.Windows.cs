@@ -35,6 +35,44 @@ namespace System.Runtime.InteropServices
             internal const string CORE_COM_AUT = "OleAut32.dll";
         }
 
+#if CORECLR
+
+        public static unsafe void* CoTaskMemAlloc(IntPtr size)
+        {
+            return Marshal.AllocHGlobal(size).ToPointer();
+        }
+
+        public static unsafe void CoTaskMemFree(void* pv)
+        {
+            Marshal.FreeHGlobal(new IntPtr(pv));
+        }
+
+        static internal void VariantClear(IntPtr pObject)
+        {
+            throw new PlatformNotSupportedException("VariantClear");
+        }
+
+        static internal unsafe int CoGetMarshalSizeMax(out ulong pulSize, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
+        {
+            throw new PlatformNotSupportedException("CoGetMarshalSizeMax");
+        }       
+
+        static internal unsafe int CoGetObjectContext(ref Guid iid, out IntPtr ppv)
+        {
+            throw new PlatformNotSupportedException("CoMarshalInterface");
+        }
+               
+        static internal unsafe int CoMarshalInterface(IntPtr pStream, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
+        {
+            throw new PlatformNotSupportedException("CoMarshalInterface");
+        }
+
+        static internal unsafe int CoUnmarshalInterface(IntPtr pStream, ref Guid iid, out IntPtr ppv)
+        {
+            throw new PlatformNotSupportedException("CoUnmarshalInterface");
+        }
+
+#else 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
         public static extern unsafe void* CoTaskMemAlloc(IntPtr size);
@@ -192,5 +230,6 @@ namespace System.Runtime.InteropServices
             if (pv != null)
                 CoTaskMemFree(pv);
         }
+#endif //CORECLR
     }
 }
