@@ -178,4 +178,20 @@ namespace System.Collections.Generic
             return x.Equals(y);
         }
     }
+#if !CORERT    
+    // Uses of this class's members actually redirect to the real EqualityComparer<T> defined in System.Collections
+    // See comment above Array.GetComparerForReferenceTypesOnly for details
+    internal abstract class LowLevelEqualityComparer<T>
+    {
+        public static LowLevelEqualityComparer<T> Default
+        {
+            get
+            {
+                return null;
+            }
+        }
+        
+        public abstract bool Equals(T x, T y);
+    }
+#endif
 }
