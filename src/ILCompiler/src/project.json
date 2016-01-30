@@ -1,31 +1,13 @@
 {
   "dependencies": {
-    "System.Runtime": "4.0.20",
-    "System.Resources.ResourceManager": "4.0.0",
-    "System.Reflection.Primitives": "4.0.0",
-    "System.Diagnostics.Debug": "4.0.10",
-    "System.IO": "4.0.10",
-    "System.IO.FileSystem": "4.0.0",
+    "NETStandard.Library": "1.0.0-rc2-23704",
     "System.IO.MemoryMappedFiles": "4.0.0-rc2-23616",
-    "System.Collections": "4.0.10",
-    "System.Text.Encoding": "4.0.10",
-    "System.Runtime.InteropServices": "4.0.20",
-    "System.Reflection": "4.0.10",
-    "System.Runtime.Extensions": "4.0.10",
-    "System.Threading": "4.0.10",
-    "System.Text.Encoding.Extensions": "4.0.10",
-    "System.Reflection.Extensions": "4.0.0",
-    "System.Console": "4.0.0-rc2-23616",
-    "System.AppContext": "4.0.0",
-    "System.Collections.Immutable": "1.1.37",
     "System.Reflection.Metadata": "1.1.0",
-    "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-rc2-23616",
     "Microsoft.DotNet.RyuJit": "1.0.3-prerelease-00001",
     "Microsoft.DotNet.ObjectWriter": "1.0.4-prerelease-00001"
   },
   "frameworks": {
-    "dnxcore50": { },
-    "dotnet": {
+    "dnxcore50": {
       "imports": "portable-net452"
     }
   }
