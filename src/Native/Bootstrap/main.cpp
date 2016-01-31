@@ -292,8 +292,8 @@ int __statics_fixup()
 }
 
 #if defined(_WIN32)
-extern "C" int __managed__Main(int argc, char* argv[]); // TODO: Use wchar_t
-int main(int argc, char* argv[]) // TODO: Use wmain and wchar_t
+extern "C" int __managed__Main(int argc, wchar_t* argv[]);
+int wmain(int argc, wchar_t* argv[])
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
 int main(int argc, char* argv[])
