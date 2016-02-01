@@ -643,7 +643,7 @@ namespace Internal.IL
 
                         // TODO: Need to do more for arches with different endianness?
                         var preinitDataHolder = NewTempName();
-                        Append("static const char ");
+                        Append("static const unsigned char ");
                         Append(preinitDataHolder);
                         Append("[] = { ");
 

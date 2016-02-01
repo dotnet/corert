@@ -27,6 +27,10 @@
 #include <pthread.h>
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable:4200) // zero-sized array
+#endif
+
 using namespace std;
 
 class MethodTable;
@@ -113,12 +117,17 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment)
     return IS_ALIGNED(reinterpret_cast<UIntNative>(val), alignment);
 }
 
-#pragma warning(disable:4102)
-
 #define RAW_MIN_OBJECT_SIZE (3*sizeof(void*))
 
 #define AlignBaseSize(s) ((s < RAW_MIN_OBJECT_SIZE) ? RAW_MIN_OBJECT_SIZE : ((s + (sizeof(void*)-1) & ~(sizeof(void*)-1))))
 
 #define ARRAY_BASE (2*sizeof(void*))
+
+#ifdef _MSC_VER
+// Warnings disabled for auto-generated cpp code
+#pragma warning(disable:4102) // unreferenced label
+#pragma warning(disable:4244) // possible loss of data
+#pragma warning(disable:4717) // recursive on all control paths
+#endif
 
 #endif // __COMMON_H
