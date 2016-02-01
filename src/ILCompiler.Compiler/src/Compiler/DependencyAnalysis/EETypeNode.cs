@@ -34,6 +34,8 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// UInt32          | Hash code
     ///                 |
+    /// [Pointer Size]  | Pointer to containing Module indirection cell
+    ///                 |
     /// X * [Ptr Size]  | VTable entries (optional)
     ///                 |
     /// Y * [Ptr Size]  | Pointers to interface map data structures (optional)
@@ -112,9 +114,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void SetDispatchMapIndex(uint index)
+        public void SetDispatchMapIndex(int index)
         {
-            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.DispatchMap, index);
+            _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.DispatchMap, checked((uint)index));
         }
 
         int ISymbolNode.Offset
@@ -156,6 +158,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputVirtualSlotAndInterfaceCount(factory, ref objData);
 
             objData.EmitInt(_type.GetHashCode());
+            objData.EmitPointerReloc(factory.ModuleIndirectionCell);
 
             if (_constructed)
             {
@@ -249,7 +252,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <param name="pointerSize">The size of a pointer in bytes in the target architecture</param>
         public static int GetVTableOffset(int pointerSize)
         {
-            return 16 + pointerSize;
+            return 16 + 2 * pointerSize;
         }
 
         private void OutputComponentSize(ref ObjectDataBuilder objData)

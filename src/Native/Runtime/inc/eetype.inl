@@ -151,10 +151,6 @@ inline bool EEType::HasDispatchMap()
     return true;
 }
 
-#ifdef CORERT
-extern "C" void * g_pDispatchMapTemporaryWorkaround;
-#endif
-
 inline DispatchMap * EEType::GetDispatchMap()
 {
     if (!HasInterfaces())
@@ -177,7 +173,7 @@ inline DispatchMap * EEType::GetDispatchMap()
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
 #ifdef CORERT
-	return (DispatchMap*)((void**)g_pDispatchMapTemporaryWorkaround)[idxDispatchMap];
+    return (*m_ppModuleManager)->GetDispatchMapLookupTable()[idxDispatchMap];
 #endif
 
     Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(this);

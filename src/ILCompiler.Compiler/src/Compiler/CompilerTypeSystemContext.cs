@@ -62,6 +62,8 @@ namespace ILCompiler
 
         private MetadataStringDecoder _metadataStringDecoder;
 
+        private bool _multifileCompilation = false;
+        
         private class ModuleData
         {
             public string SimpleName;
@@ -127,9 +129,10 @@ namespace ILCompiler
         }
         private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
 
-        public CompilerTypeSystemContext(TargetDetails details)
+        public CompilerTypeSystemContext(TargetDetails details, bool multifileCompilation)
             : base(details)
         {
+            _multifileCompilation = multifileCompilation;
         }
 
         public IReadOnlyDictionary<string, string> InputFilePaths

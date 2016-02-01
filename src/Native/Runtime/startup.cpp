@@ -26,6 +26,40 @@
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
 
+#if defined(CORERT)
+typedef void (__cdecl* _PVFV)(void);
+#if defined(_MSC_VER)
+
+#pragma section(".modules$A", read)
+#pragma section(".modules$Z", read)
+extern "C" __declspec(allocate(".modules$A")) _PVFV __modules_a[];
+extern "C" __declspec(allocate(".modules$Z")) _PVFV __modules_z[];
+
+__declspec(allocate(".modules$A")) _PVFV __modules_a[] = { nullptr };
+__declspec(allocate(".modules$Z")) _PVFV __modules_z[] = { nullptr };
+#pragma comment(linker, "/merge:.modules=.rdata")
+
+#else
+// TODO: Once the dotnet compiler is modified to configure the linker to merge sections
+// on OSX / Linux, store these externs in the .modules section and remove work-around
+// in ModuleHeaderNode.cs.
+//extern "C" __attribute((section ("__DATA,.modules$A"))) _PVFV __modules_a[];
+//extern "C" __attribute((section ("__DATA,.modules$Z"))) _PVFV __modules_z[];
+//__attribute((section ("__DATA,.modules$Z"))) _PVFV __modules_a[] = { nullptr };
+//__attribute((section ("__DATA,.modules$Z"))) _PVFV __modules_z[] = { nullptr };
+
+extern "C" _PVFV __modules_a[];
+extern "C" _PVFV __modules_z[];
+
+#if defined(USE_PORTABLE_HELPERS)
+_PVFV __modules_a[] = { nullptr };
+_PVFV __modules_z[] = { nullptr };
+#endif // USE_PORTABLE_HELPERS
+
+#endif // _MSC_VER
+
+#endif // CORERT
+
 #ifndef DACCESS_COMPILE
 
 #ifdef PROFILE_STARTUP
@@ -333,3 +367,10 @@ COOP_PINVOKE_HELPER(void, RhpShutdownHelper, (UInt32 /*uExitCode*/))
 
 #endif // !DACCESS_COMPILE
 
+#if defined(CORERT)
+COOP_PINVOKE_HELPER(void, RhpGetModulesSection, (void** ppStart, void** ppEnd))
+{
+    *ppStart = &__modules_a;
+    *ppEnd = &__modules_z;
+}
+#endif

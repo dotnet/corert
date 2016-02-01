@@ -18,14 +18,15 @@ namespace ILCompiler.DependencyAnalysis
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
         private bool _cppCodeGen;
+        private CompilationModuleGroup _compilationModuleGroup;
 
-        public NodeFactory(CompilerTypeSystemContext context, TypeInitialization typeInitManager, bool cppCodeGen)
+        public NodeFactory(CompilerTypeSystemContext context, TypeInitialization typeInitManager, CompilationModuleGroup compilationModuleGroup, bool cppCodeGen)
         {
             _target = context.Target;
             _context = context;
             _cppCodeGen = cppCodeGen;
+            _compilationModuleGroup = compilationModuleGroup;
             TypeInitializationManager = typeInitManager;
-            DispatchMapTable = new InterfaceDispatchMapTableNode(this.Target);
             CreateNodeCaches();
         }
 
@@ -82,8 +83,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new EETypeNode(type, true);
             });
-
-
+            
             _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>
             {
                 return new NonGCStaticsNode(type, this);
@@ -91,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _GCStatics = new NodeCache<MetadataType, GCStaticsNode>((MetadataType type) =>
             {
-                return new GCStaticsNode(type, this);
+                return new GCStaticsNode(type);
             });
 
             _threadStatics = new NodeCache<MetadataType, ThreadStaticsNode>((MetadataType type) =>
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
             _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
             {
                 return new BlobNode(key.Item1, "text", key.Item2, key.Item3);
-            });
+            }, new BlobTupleEqualityComparer());
 
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
             {
@@ -173,6 +173,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new InterfaceDispatchMapNode(type);
             });
 
+            _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, InterfaceDispatchMapIndirectionNode>((TypeDesc type) =>
+            {
+                return new InterfaceDispatchMapIndirectionNode(type);
+            });
+
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
             {
                 Debug.Assert(method.IsStaticConstructor);
@@ -192,14 +197,29 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode NecessaryTypeSymbol(TypeDesc type)
         {
-            return _typeSymbols.GetOrAdd(type);
+
+            if (_compilationModuleGroup.IsTypeInCompilationGroup(type))
+            {
+                return _typeSymbols.GetOrAdd(type);
+            }
+            else
+            {
+                return ExternSymbol("__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+            }
         }
 
         private NodeCache<TypeDesc, EETypeNode> _constructedTypeSymbols;
 
         public ISymbolNode ConstructedTypeSymbol(TypeDesc type)
         {
-            return _constructedTypeSymbols.GetOrAdd(type);
+            if (_compilationModuleGroup.IsTypeInCompilationGroup(type))
+            {
+                return _constructedTypeSymbols.GetOrAdd(type);
+            }
+            else
+            {
+                return ExternSymbol("__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+            }
         }
 
         private NodeCache<MetadataType, NonGCStaticsNode> _nonGCStatics;
@@ -265,6 +285,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<string, byte[], int>>
+        {
+            bool IEqualityComparer<Tuple<string, byte[], int>>.Equals(Tuple<string, byte[], int> x, Tuple<string, byte[], int> y)
+            {
+                return x.Item1.Equals(y.Item1);
+            }
+
+            int IEqualityComparer<Tuple<string, byte[], int>>.GetHashCode(Tuple<string, byte[], int> obj)
+            {
+                return obj.Item1.GetHashCode();
+            }
+        }
+
         private NodeCache<bool[], GCStaticEETypeNode> _GCStaticEETypes;
 
         public ISymbolNode GCStaticEEType(bool[] gcdesc)
@@ -291,6 +324,13 @@ namespace ILCompiler.DependencyAnalysis
         internal InterfaceDispatchMapNode InterfaceDispatchMap(TypeDesc type)
         {
             return _interfaceDispatchMaps.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, InterfaceDispatchMapIndirectionNode> _interfaceDispatchMapIndirectionNodes;
+
+        internal InterfaceDispatchMapIndirectionNode InterfaceDispatchMapIndirection(TypeDesc type)
+        {
+            return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
         }
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
@@ -332,8 +372,15 @@ namespace ILCompiler.DependencyAnalysis
                     return _unboxingStubs.GetOrAdd(method);
                 }
             }
-
-            return _methodCode.GetOrAdd(method);
+            
+            if (_compilationModuleGroup.IsMethodInCompilationGroup(method))
+            {
+                return _methodCode.GetOrAdd(method);
+            }
+            else
+            {
+                return ExternSymbol(NodeFactory.NameMangler.GetMangledMethodName(method));
+            }
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
@@ -438,16 +485,29 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler.CompilationUnitPrefix + "__StringTableStart",
             NameMangler.CompilationUnitPrefix + "__StringTableEnd", 
             null);
+
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             NameMangler.CompilationUnitPrefix + "__EagerCctorStart",
             NameMangler.CompilationUnitPrefix + "__EagerCctorEnd",
             new EagerConstructorComparer());
 
-        public InterfaceDispatchMapTableNode DispatchMapTable;
+        public ArrayOfEmbeddedDataNode ModuleGlobalData = new ArrayOfEmbeddedDataNode(
+            NameMangler.CompilationUnitPrefix + "__ModuleHeaderStart",
+            NameMangler.CompilationUnitPrefix + "__ModuleHeaderEnd",
+            null);
 
+        public ArrayOfEmbeddedDataNode DispatchMapTable = new ArrayOfEmbeddedDataNode(
+            NameMangler.CompilationUnitPrefix + "__DispatchMapTableStart",
+            NameMangler.CompilationUnitPrefix + "__DispatchMapTableEnd",
+            null);
+
+        public ModuleHeaderNode ModuleHeader = new ModuleHeaderNode();
+        
         public Dictionary<TypeDesc, List<MethodDesc>> VirtualSlots = new Dictionary<TypeDesc, List<MethodDesc>>();
 
         public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
+
+        internal ModuleIndirectionCell ModuleIndirectionCell = new ModuleIndirectionCell();
 
         public static NameMangler NameMangler;
 
@@ -458,6 +518,16 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(StringTable, "StringTable is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
+            graph.AddRoot(ModuleGlobalData, "ModuleGlobalData is always generated");
+            graph.AddRoot(ModuleHeader, "ModuleHeader is always generated");
+            graph.AddRoot(ModuleIndirectionCell, "ModuleIndirectionCell is always generated");
+            
+            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.StringTable, StringTable.StartSymbol, StringTable.EndSymbol));
+            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.GCStaticRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol));
+            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.ThreadStaticRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol));
+            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.InterfaceDispatchTable, DispatchMapTable.StartSymbol));
+            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.ModuleIndirectionCell, ModuleIndirectionCell));
+            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.EagerCctor, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol));
         }
     }
 

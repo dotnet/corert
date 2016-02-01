@@ -65,6 +65,7 @@ namespace ILCompiler
 #endif
 
             _options.TargetArchitecture = TargetArchitecture.X64;
+            _options.MultiFile = false;
         }
 
         // TODO: Use System.CommandLine for command line parsing
@@ -92,6 +93,7 @@ namespace ILCompiler
                 syntax.DefineOption("fulllog", ref _options.FullLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("verbose", ref _options.Verbose, "Enable verbose logging");
                 syntax.DefineOption("systemmodule", ref _options.SystemModuleName, "System module name (default: System.Private.CoreLib)");
+                syntax.DefineOption("multifile", ref _options.MultiFile, "Compile only input files (do not compile referenced assemblies)");
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
             foreach (var input in inputFiles)

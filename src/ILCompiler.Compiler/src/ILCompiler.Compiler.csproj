@@ -34,6 +34,7 @@
     </Compile>
     <Compile Include="Compiler\AsmStringWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
+    <Compile Include="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateInfo.cs" />
@@ -44,10 +45,13 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ModuleHeaderItemNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ModuleHeaderNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ModuleIndirectionCell.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
@@ -79,10 +83,13 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
     <Compile Include="Compiler\FormattingHelpers.cs" />
+    <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
+    <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
+    <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SymbolReader\PdbSymbolReader.cs" />
     <Compile Include="Compiler\SymbolReader\PortablePdbSymbolReader.cs" />
     <Compile Include="Compiler\SymbolReader\UnmanagedPdbSymbolReader.cs" />
@@ -104,6 +111,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>Common\EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs">
+      <Link>Common\ModuleHeaders.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatWriter.Primitives.cs">
       <Link>Common\NativeFormat\NativeFormatWriter.Primitives.cs</Link>

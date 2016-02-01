@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MetadataType _type;
 
-        public GCStaticsNode(MetadataType type, NodeFactory factory)
+        public GCStaticsNode(MetadataType type)
         {
             _type = type;
         }

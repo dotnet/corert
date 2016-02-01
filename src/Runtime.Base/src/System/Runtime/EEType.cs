@@ -42,7 +42,9 @@ namespace System.Runtime
         private UInt16 _usNumVtableSlots;
         private UInt16 _usNumInterfaces;
         private UInt32 _uHashCode;
-
+#if CORERT
+        private IntPtr _ppModuleManager;
+#endif
         // vtable follows
 
 #pragma warning restore

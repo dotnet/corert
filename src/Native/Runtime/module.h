@@ -4,6 +4,7 @@
 #include "ICodeManager.h"
 
 #include "SectionMethodList.h"
+#include "ModuleManager.h"
 
 struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
@@ -178,4 +179,3 @@ private:
     ReaderWriterLock            m_loopHijackMapLock;
     MapSHash<UInt32, void*>     m_loopHijackIndexToTargetMap;
 };
-
