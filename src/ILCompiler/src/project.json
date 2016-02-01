@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "NETStandard.Library": "1.0.0-rc2-23704",
-    "System.IO.MemoryMappedFiles": "4.0.0-rc2-23616",
+    "System.IO.MemoryMappedFiles": "4.0.0-rc2-23704",
     "System.Reflection.Metadata": "1.1.0",
     "Microsoft.DotNet.RyuJit": "1.0.4-prerelease-00001",
     "Microsoft.DotNet.ObjectWriter": "1.0.5-prerelease-00001"

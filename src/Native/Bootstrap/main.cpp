@@ -257,7 +257,6 @@ extern "C" void* GetModuleSection(int id, int* length)
     };
 
     // TODO: emit this table from the compiler per module.
-    // !!!
     // The order should be kept in sync with ModuleSectionIds in StartupCodeHelpers.cs in CoreLib.
     static ModuleSectionSymbol symbols[] = {
 #ifdef CPPCODEGEN
@@ -265,7 +264,7 @@ extern "C" void* GetModuleSection(int id, int* length)
         { nullptr, 0 },
 #else
         { &__EEType_System_Private_CoreLib_System_String, sizeof(void*) },
-        { &__StringTableStart, (uint8_t*)&__StringTableEnd - (uint8_t*)&__StringTableStart },
+        { &__StringTableStart, (size_t)((uint8_t*)&__StringTableEnd - (uint8_t*)&__StringTableStart) },
 #endif
     };
 
