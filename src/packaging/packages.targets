@@ -76,6 +76,10 @@
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
+            <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)" Condition="'$(OsEnvironment)'=='Windows_NT'">
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/lib/$(LibPrefix)%(Identity).pdb" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).pdb" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFilesManaged)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
