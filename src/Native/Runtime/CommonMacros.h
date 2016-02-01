@@ -208,7 +208,7 @@ bool inline FitsInI4(__int64 val)
 
 #ifndef GCENV_INCLUDED
 #if !defined(_INC_WINDOWS) && !defined(BINDER)
-#ifdef WIN32
+#ifdef _WIN32
 // this must exactly match the typedef used by windows.h
 typedef long HRESULT;
 #else

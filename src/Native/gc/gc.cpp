@@ -5665,7 +5665,7 @@ void gc_heap::fix_large_allocation_area (BOOL for_gc_p)
 
 #ifdef _DEBUG
     alloc_context* acontext = 
-#endif // DEBUG    
+#endif // _DEBUG
         generation_alloc_context (large_object_generation);
     assert (acontext->alloc_ptr == 0);
     assert (acontext->alloc_limit == 0); 
@@ -6559,11 +6559,11 @@ uint32_t*& card_table_mark_array (uint32_t* c_table)
     return ((card_table_info*)((uint8_t*)c_table - sizeof (card_table_info)))->mark_array;
 }
 
-#if defined (_TARGET_AMD64_)
+#ifdef BIT64
 #define mark_bit_pitch ((size_t)16)
 #else
 #define mark_bit_pitch ((size_t)8)
-#endif //AMD64
+#endif // BIT64
 #define mark_word_width ((size_t)32)
 #define mark_word_size (mark_word_width * mark_bit_pitch)
 

@@ -294,7 +294,7 @@ COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
 }
 #endif
 
-#if defined(USE_PORTABLE_HELPERS) || !defined(WIN32)
+#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 typedef UIntTarget (*TargetFunc2)(UIntTarget, UIntTarget);
 COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame))
 {
