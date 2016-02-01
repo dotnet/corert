@@ -2473,11 +2473,13 @@ namespace System.Runtime.InteropServices
             m_cookie = cookie;
             m_pObjectContext = IntPtr.Zero;
 
+#if !CORECLR
             int hr = ExternalInterop.CoGetObjectContext(ref Interop.COM.IID_IUnknown, out m_pObjectContext);
             if (hr < 0)
             {
                 throw Marshal.GetExceptionForHR(hr);
             }
+#endif
         }
 
         /// <summary>

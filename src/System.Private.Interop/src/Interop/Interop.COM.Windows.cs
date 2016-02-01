@@ -47,9 +47,25 @@ namespace System.Runtime.InteropServices
             Marshal.FreeHGlobal(new IntPtr(pv));
         }
 
+        public static unsafe IntPtr SysAllocStringLen(char* pStrIn, UInt32 dwSize)
+        {
+            string srcString = new string(pStrIn, 0, checked((int)dwSize));
+            return Marshal.StringToBSTR(srcString);
+        }
+        
+        public static unsafe void SysFreeString(void* pBSTR)
+        {
+          SysFreeString(new IntPtr(pBSTR));
+        }
+
+        public static unsafe void SysFreeString(IntPtr pBSTR)
+        {
+            Marshal.FreeBSTR(pBSTR);
+        }
+
         static internal void VariantClear(IntPtr pObject)
         {
-            throw new PlatformNotSupportedException("VariantClear");
+            //Nop
         }
 
         static internal unsafe int CoGetMarshalSizeMax(out ulong pulSize, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
@@ -59,7 +75,7 @@ namespace System.Runtime.InteropServices
 
         static internal unsafe int CoGetObjectContext(ref Guid iid, out IntPtr ppv)
         {
-            throw new PlatformNotSupportedException("CoMarshalInterface");
+            throw new PlatformNotSupportedException("CoGetObjectContext");
         }
                
         static internal unsafe int CoMarshalInterface(IntPtr pStream, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
@@ -70,6 +86,12 @@ namespace System.Runtime.InteropServices
         static internal unsafe int CoUnmarshalInterface(IntPtr pStream, ref Guid iid, out IntPtr ppv)
         {
             throw new PlatformNotSupportedException("CoUnmarshalInterface");
+        }
+        
+        static internal int CoReleaseMarshalData(IntPtr pStream)
+        {
+            // Nop in CoreCLR
+            return 0;
         }
 
 #else 
