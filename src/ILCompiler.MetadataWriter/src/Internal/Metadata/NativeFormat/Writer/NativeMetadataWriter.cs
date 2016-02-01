@@ -308,7 +308,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         internal MetadataHeader _metadataHeader = new MetadataHeader();
 
-        public List<TypeReference> UnreachableTypeReferences { get; private set; }
+        public List<MetadataRecord> AdditionalRootRecords { get; private set; }
 
         public List<ScopeDefinition> ScopeDefinitions
         {
@@ -319,7 +319,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public MetadataWriter()
         {
-            UnreachableTypeReferences = new List<TypeReference>();
+            AdditionalRootRecords = new List<MetadataRecord>();
         }
 
         public int GetRecordHandle(MetadataRecord rec)
@@ -336,7 +336,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             _visitor = new RecordVisitor();
 
             _visitor.Run(ScopeDefinitions.AsEnumerable());
-            _visitor.Run(UnreachableTypeReferences.AsEnumerable());
+            _visitor.Run(AdditionalRootRecords.AsEnumerable());
 
             IEnumerable<MetadataRecord> records = _visitor.Graph.Vertices.Where(v => v != _visitor.MetaSourceVertex);
 
