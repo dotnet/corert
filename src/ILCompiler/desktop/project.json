@@ -7,7 +7,7 @@
     "Microsoft.DiaSymReader": "1.0.6"
   },
   "frameworks": {
-    "dnxcore50": { 
+    "net46": { 
         "imports": "portable-net451+win8"
     }
   },
