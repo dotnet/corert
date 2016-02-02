@@ -165,14 +165,6 @@ namespace System
             return RuntimeImports.tanh(value);
         }
 
-        internal static double CopySign(double x, double y)
-        {
-            bool xNegative = x < 0;
-            bool yNegative = y < 0;
-            
-            return xNegative == yNegative ? x : -x;
-        }
-
 #if CORERT
         [Intrinsic]
 #endif
@@ -195,14 +187,12 @@ namespace System
                 }
             }
 
-#if !PLATFORM_UNIX
-            flrTempVal = RuntimeImports._copysign(flrTempVal, a);
-#else
-            flrTempVal = CopySign(flrTempVal, a);
-#endif // !PLATFORM_UNIX
+            if (flrTempVal == 0 && Double.IsNegative(a))
+            {
+                flrTempVal = Double.NegativeZero;
+            }
             return flrTempVal;
         }
-
 
         public static double Round(double value, int digits)
         {
