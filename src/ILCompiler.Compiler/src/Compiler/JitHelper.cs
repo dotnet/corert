@@ -176,6 +176,20 @@ namespace ILCompiler
                     mangledName = "__fail_fast";
                     break;
 
+                case JitHelperId.Lng2Dbl:
+                    mangledName = "RhpLng2Dbl";
+                    break;
+                case JitHelperId.ULng2Dbl:
+                    mangledName = "RhpULng2Dbl";
+                    break;
+
+                case JitHelperId.Dbl2Lng:
+                    mangledName = "RhpDbl2Lng";
+                    break;
+                case JitHelperId.Dbl2ULng:
+                    mangledName = "RhpDbl2ULng";
+                    break;
+
                 case JitHelperId.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
                     break;
