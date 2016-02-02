@@ -23,6 +23,8 @@ namespace Internal.DeveloperExperience
         public virtual String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
         {
             ReflectionExecutionDomainCallbacks reflectionCallbacks = RuntimeAugments.CallbacksIfAvailable;
+            String moduleFullFileName = null;
+
             if (reflectionCallbacks != null)
             {
                 IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
@@ -38,14 +40,21 @@ namespace Internal.DeveloperExperience
                     if (!string.IsNullOrEmpty(methodName))
                         return methodName;
                 }
+
+                // If we don't have precise information, try to map it at least back to the right module.
+                IntPtr moduleBase = RuntimeImports.RhGetModuleFromPointer(ip);
+                moduleFullFileName = RuntimeAugments.TryGetFullPathToApplicationModule(moduleBase);
+                
             }
 
-            String fullPathToApplication = RuntimeAugments.TryGetFullPathToMainApplication();
-            if (string.IsNullOrEmpty(fullPathToApplication))
+            // Without any callbacks or the ability to map ip correctly we better admit that we don't know
+            if (string.IsNullOrEmpty(moduleFullFileName))
+            {
                 return "<unknown>";
+            }
 
             StringBuilder sb = new StringBuilder();
-            String fileNameWithoutExtension = GetFileNameWithoutExtension(fullPathToApplication);
+            String fileNameWithoutExtension = GetFileNameWithoutExtension(moduleFullFileName);
             int rva = RuntimeAugments.ConvertIpToRva(ip);
             sb.Append(fileNameWithoutExtension);
             sb.Append("!<BaseAddress>+0x");
