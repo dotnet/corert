@@ -186,10 +186,13 @@ namespace System
                     flrTempVal -= 1.0;
                 }
             }
-            flrTempVal = RuntimeImports._copysign(flrTempVal, a);
+
+            if (flrTempVal == 0 && Double.IsNegative(a))
+            {
+                flrTempVal = Double.NegativeZero;
+            }
             return flrTempVal;
         }
-
 
         public static double Round(double value, int digits)
         {
