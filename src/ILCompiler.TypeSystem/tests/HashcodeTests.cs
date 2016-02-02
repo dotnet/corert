@@ -31,9 +31,9 @@ namespace TypeSystemTests
             DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            ArrayType objectMDArrayRank1 = (ArrayType)_context.GetArrayType(objectType, 1);
-            ArrayType objectMDArrayRank2 = (ArrayType)_context.GetArrayType(objectType, 2);
-            ArrayType objectMDArrayRank3 = (ArrayType)_context.GetArrayType(objectType, 3);
+            ArrayType objectMDArrayRank1 = _context.GetArrayType(objectType, 1);
+            ArrayType objectMDArrayRank2 = _context.GetArrayType(objectType, 2);
+            ArrayType objectMDArrayRank3 = _context.GetArrayType(objectType, 3);
 
             Assert.Equal(TypeHashingAlgorithms.ComputeArrayTypeHashCode(objectType.GetHashCode(), 1), objectMDArrayRank1.GetHashCode());
             Assert.Equal(TypeHashingAlgorithms.ComputeArrayTypeHashCode(objectType.GetHashCode(), 2), objectMDArrayRank2.GetHashCode());
@@ -47,7 +47,7 @@ namespace TypeSystemTests
 
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            ArrayType objectArray = (ArrayType)_context.GetArrayType(objectType);
+            ArrayType objectArray = _context.GetArrayType(objectType);
 
             Assert.Equal(TypeHashingAlgorithms.ComputeArrayTypeHashCode(objectType.GetHashCode(), 1), objectArray.GetHashCode());
         }

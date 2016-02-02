@@ -19,17 +19,17 @@ namespace Internal.TypeSystem
             return methodDef.Context.GetInstantiatedMethod(methodDef, instantiation);
         }
 
-        static public TypeDesc MakeArrayType(this TypeDesc type)
+        static public ArrayType MakeArrayType(this TypeDesc type)
         {
             return type.Context.GetArrayType(type);
         }
 
-        static public TypeDesc MakeByRefType(this TypeDesc type)
+        static public ByRefType MakeByRefType(this TypeDesc type)
         {
             return type.Context.GetByRefType(type);
         }
 
-        static public TypeDesc MakePointerType(this TypeDesc type)
+        static public PointerType MakePointerType(this TypeDesc type)
         {
             return type.Context.GetPointerType(type);
         }

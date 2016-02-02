@@ -110,7 +110,7 @@ namespace ILCompiler
                     mangledName = "RhpThrowEx";
                     break;
                 case JitHelperId.Rethrow:
-                    mangledName = "RhpRethrow";
+                    mangledName = "RhRethrow";
                     break;
 
                 case JitHelperId.Overflow:
