@@ -775,7 +775,8 @@ namespace System
                 //
                 for (int i = startIndex; i < FIXED_CACHE_SIZE; ++i)
                 {
-                    if (!m_cachedInterfaces[i].IsFree)
+                    // ptr field will always be first field to assign value in SimpleComInterfaceCacheItem::Assign
+                    if (m_cachedInterfaces[i].ptr != default(IntPtr))
                     {
                         if (IsJupiterObject)
                             RCWWalker.BeforeRelease(this);
@@ -1084,10 +1085,9 @@ namespace System
                 int i = 0;
                 do
                 {
-                    SimpleComInterfaceCacheItem item = m_cachedInterfaces[i];
-                    if (item.typeHandle.Equals(typeHandle))
+                    if (m_cachedInterfaces[i].IsSameAs(typeHandle))
                     {
-                        return item.ptr;
+                        return m_cachedInterfaces[i].ptr;
                     }
                 } while(++i < m_cachedInterfaces.Length);
             }
@@ -1734,7 +1734,8 @@ namespace System
             //
             for (int i = 0; i < m_cachedInterfaces.Length; ++i)
             {
-                if (!m_cachedInterfaces[i].typeInfo.IsNull)
+                // TypeHandle will be the last field to assign value in SimpleComInterfaceCacheItem::Assign
+                if (!m_cachedInterfaces[i].IsSameAs(default(RuntimeTypeHandle)))
                 {
                     object adapter = FindDynamicAdapterForInterface(requestedType.InterfaceType, m_cachedInterfaces[i].typeInfo.ItfType);
 
@@ -1819,12 +1820,11 @@ namespace System
         internal PropertyInfo GetMatchingProperty(Func<PropertyInfo, bool> matchingDelegate)
         {
             // first check Simple ComInterface Cache
-            foreach (SimpleComInterfaceCacheItem item in m_cachedInterfaces)
+            for (int i = 0; i < m_cachedInterfaces.Length; i++)
             {
-                McgTypeInfo typeInfo = item.typeInfo;
-                if (!typeInfo.IsNull)
+                if (!m_cachedInterfaces[i].typeHandle.Equals(default(RuntimeTypeHandle)))
                 {
-                    Type interfaceType = InteropExtensions.GetTypeFromHandle(typeInfo.ItfType);
+                    Type interfaceType = InteropExtensions.GetTypeFromHandle(m_cachedInterfaces[i].typeInfo.ItfType);
                     foreach (PropertyInfo propertyInfo in interfaceType.GetRuntimeProperties())
                     {
                         if (matchingDelegate(propertyInfo))
@@ -2823,14 +2823,16 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Whether the cache item is free
+        /// Check whether current SimpleComInterfaceCacheItem is same interface as specified
+        /// Note: in SimpleComInterfaceCacheItem::Assign(), typeHandle field is the last field to assign value,
+        /// so if its typeHandle field value equals specified handle, it means that currently SimpleComInterfaceCacheItem is valid and
+        /// all its field are ready to use.
         /// </summary>
-        internal bool IsFree
+        /// <param name="handle">interface type handle</param>
+        /// <returns></returns>
+        internal bool IsSameAs(RuntimeTypeHandle handle)
         {
-            get
-            {
-                return ptr == default(IntPtr);
-            }
+            return typeHandle.Equals(handle);
         }
     }
 
