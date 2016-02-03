@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -882,6 +882,7 @@ namespace Internal.Runtime.Augments
         {
             RuntimeImports.ConservativelyReportedRegionDesc regionDesc = new RuntimeImports.ConservativelyReportedRegionDesc();
             RunFunctionWithConservativelyReportedBufferInternal(cbBuffer, pfnTargetToInvoke, ref context, ref regionDesc);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
         }
 
         // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
@@ -899,6 +900,7 @@ namespace Internal.Runtime.Augments
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T>(pfnTargetToInvoke, region, ref context);
+                System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
 
                 RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
             }
