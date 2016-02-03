@@ -83,9 +83,6 @@ namespace System
                     throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
                 }
 
-                if (hostNameLength == 0)
-                    return String.Empty;
-                
                 return Encoding.UTF8.GetString(hostName, hostNameLength);
             }
         }
