@@ -1511,7 +1511,7 @@ namespace System
                 //
                 // Is there a dynamic adapter for the interface?
                 //
-                if (mcgTypeInfo.HasDynamicAdapterClass && GetDynamicAdapter(mcgTypeInfo) != null)
+                if (mcgTypeInfo.HasDynamicAdapterClass && GetDynamicAdapterInternal(mcgTypeInfo, McgTypeInfo.Null) != null)
                     return true;
 
                 castError = CreateInvalidCastExceptionForFailedQI(mcgTypeInfo, hr);
@@ -1675,15 +1675,28 @@ namespace System
 
         //
         // Get the dynamic adapter object associated with this COM object for the given interface.
+        // If the first typeInfo fails, try the second one. If both fails to get a dynamic adapter
+        // this function throws an InvalidCastException
         //
-        internal unsafe object GetDynamicAdapter(McgTypeInfo requestedType)
+        internal unsafe object GetDynamicAdapter(McgTypeInfo requestedType, McgTypeInfo targetType)
         {
-            Debug.Assert(requestedType.HasDynamicAdapterClass);
+            object result = GetDynamicAdapterInternal(requestedType, targetType);
+            if (result == null)
+            {
+                //
+                // We did not find a suitable dynamic adapter for the type. Throw InvalidCastException
+                //
+                throw new System.InvalidCastException();
+            }
 
+            return result;
+        }
+
+        private unsafe object GetDynamicAdapterUsingQICache(McgTypeInfo requestedType, AdditionalComInterfaceCacheContext[] cacheContext)
+        {
             //
             // Fast path: make a first pass through the cache to find an exact match we've already QI'd for.
             //
-            AdditionalComInterfaceCacheContext[] cacheContext = AcquireAdditionalCacheForRead();
             if (cacheContext != null)
             {
                 for (int i = 0; i < cacheContext.Length; i++)
@@ -1699,6 +1712,18 @@ namespace System
                 }
             }
 
+            //
+            // We may not have QI'd for this interface yet.  Do so now, in case the object directly supports
+            // the requested interface.  If we find it, call ourselves again so our fast path will pick it up.
+            //
+            if (QueryInterface_NoAddRef_Internal(requestedType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr))
+                return GetDynamicAdapterInternal(requestedType, McgTypeInfo.Null);
+
+            return null;
+        }
+
+        private unsafe object GetDynamicAdapterUsingVariance(McgTypeInfo requestedType, AdditionalComInterfaceCacheContext[] cacheContext)
+        {
             //
             // We may have already QI'd for an interface of a *compatible* type.  For example, we may be asking for
             // IEnumerable, and we know the object supports IEnumerable<Foo>.  Or we may be asking for
@@ -1720,12 +1745,6 @@ namespace System
                 }
             }
 
-            //
-            // We may not have QI'd for this interface yet.  Do so now, in case the object directly supports
-            // the requested interface.  If we find it, call ourselves again so our fast path will pick it up.
-            //
-            if (QueryInterface_NoAddRef_Internal(requestedType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr))
-                return GetDynamicAdapter(requestedType);
 
             //
             // We may have already QI'd for an interface of a compatible type, but not a type with a dynamic adapter.
@@ -1766,24 +1785,54 @@ namespace System
             }
 
             //
-            // If this is a strongly-typed RCW, we may statically know of an interface we support, that we haven't QI'd for
-            // yet, but that is compatible with the requested type.
-            //
-            if (!McgMarshal.IsOfType(this, typeof(__ComObject).TypeHandle))
-            {
-                object adapter = FindDynamicAdapterForInterface(requestedType.InterfaceType, typeof(__ComObject).TypeHandle);
-
-                if (adapter != null)
-                    return adapter;
-            }
-
-            //
             // At this point we *could* just go ahead and QI for every known type that is assignable to the requested type.
             // But that is potentially hundreds of types, and we may be making these calls across process boundaries, which
             // would be very expensive.  At any rate, the CLR doesn't do this, so we'll maintain compatibility and simply fail
             // here.
             //
             return null;
+        }
+
+        /// <summary>
+        /// The GetDynamicAdapterInternal searches for the Dynamic Adapter in the following order:
+        /// 1. Search exact match for requestedType in cache and QI
+        /// 2. Search exact match for targetType in cache and QI
+        /// 3. Search cache using variant rules for requestedType
+        /// </summary>
+        private unsafe object GetDynamicAdapterInternal(McgTypeInfo requestedType, McgTypeInfo targetType)
+        {
+            Debug.Assert(requestedType.HasDynamicAdapterClass);
+
+            Debug.Assert(targetType.IsNull || targetType.HasDynamicAdapterClass);
+
+            AdditionalComInterfaceCacheContext[] cacheContext = AcquireAdditionalCacheForRead();
+
+            //
+            //  Try to find an exact match for requestedType in the cache and QI
+            //
+            object dynamicAdapter = GetDynamicAdapterUsingQICache(requestedType, cacheContext);
+
+            if (dynamicAdapter != null)
+                return dynamicAdapter;
+
+            //
+            // If targetType is null or targetType and requestedType are same we don't need 
+            // process targetType because that will not provide us the required dynamic adapter
+            //
+            if (!targetType.IsNull && requestedType != targetType)
+            {
+
+                dynamicAdapter = GetDynamicAdapterUsingQICache(targetType, cacheContext);
+
+                if (dynamicAdapter != null)
+                    return dynamicAdapter;
+            }
+
+            //
+            // Search for exact matche of requestedType and targetType failed. Try to get dynamic
+            // adapter for types using variance.
+            //
+            return GetDynamicAdapterUsingVariance(requestedType, cacheContext);
         }
 
         private object FindDynamicAdapterForInterface(RuntimeTypeHandle requestedType, RuntimeTypeHandle existingType)
@@ -1804,7 +1853,7 @@ namespace System
                             QueryInterface_NoAddRef_Internal(type, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr));
 
                 if (!intermediateType.IsNull)
-                    return GetDynamicAdapter(intermediateType);
+                    return GetDynamicAdapterInternal(intermediateType, McgTypeInfo.Null);
             }
 
             return null;
