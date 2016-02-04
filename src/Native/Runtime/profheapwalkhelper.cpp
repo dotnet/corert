@@ -9,14 +9,12 @@
 // firing ETW events (not for getting a full profapi up on redhawk).
 // 
 
-#if defined(FEATURE_EVENT_TRACE)
+#include "common.h"
+#include "gcenv.h"
+#include "gc.h"
+#include "eventtrace.h"
 
-#include "CommonTypes.h"
-#include "daccess.h"
-#include "DebugMacrosExt.h"
-#include "PalRedhawkCommon.h"
-#include "gcrhenv.h"
-
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 //---------------------------------------------------------------------------------------
 //
@@ -33,7 +31,7 @@
 //                to COR_PRF_GC_ROOT_FLAGS.
 //
 
-void ScanRootsHelper(Object** ppObject, Object** ppObjectRef, ScanContext *pSC, DWORD dwFlags)
+void ScanRootsHelper(Object** ppObject, Object** ppObjectRef, ScanContext * pSC, DWORD dwFlags)
 {
     ProfilingScanContext *pPSC = (ProfilingScanContext *)pSC;
 
@@ -79,6 +77,7 @@ void ScanRootsHelper(Object** ppObject, Object** ppObjectRef, ScanContext *pSC, 
 BOOL CountContainedObjectRef(Object * pBO, void * context)
 {
     LIMITED_METHOD_CONTRACT;
+    UNREFERENCED_PARAMETER(pBO);
     // Increase the count
     (*((size_t *)context))++;
 
@@ -212,4 +211,4 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
     return TRUE;
 }
 
-#endif // defined(FEATURE_EVENT_TRACE)
+#endif // defined(FEATURE_EVENT_TRACE) || defined(GC_PROFILING)
