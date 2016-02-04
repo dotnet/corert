@@ -57,12 +57,6 @@ internal partial class Interop
 
 #pragma warning disable 649
 
-    internal struct _FILETIME
-    {
-        internal uint dwLowDateTime;
-        internal uint dwHighDateTime;
-    }
-
     internal unsafe struct _EXCEPTION_RECORD
     {
         internal uint ExceptionCode;
@@ -151,9 +145,6 @@ internal partial class Interop
 
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal extern static IntPtr GetProcessHeap();
-
-        [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
-        internal extern static void GetSystemTimeAsFileTime(out _FILETIME lpSystemTimeAsFileTime);
 
         [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
         internal extern static ulong GetTickCount64();
