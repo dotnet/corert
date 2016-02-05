@@ -51,7 +51,7 @@ namespace System
             {
                 if (!Object.ReferenceEquals(m_helperObject, d.m_helperObject) ||
                     (!FunctionPointerOps.Compare(m_extraFunctionPointerOrData, d.m_extraFunctionPointerOrData)) ||
-                    (m_functionPointer != d.m_functionPointer))
+                    (!FunctionPointerOps.Compare(m_functionPointer, d.m_functionPointer)))
                 {
                     return false;
                 }
