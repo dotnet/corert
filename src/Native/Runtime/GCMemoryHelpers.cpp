@@ -90,6 +90,23 @@ COOP_PINVOKE_CDECL_HELPER(void *, memcpyGCRefsWithWriteBarrier, (void * dest, co
     return dest;
 }
 
+// Same as memcpyGCRefsWithWriteBarrier, except it checks if memory might contain GC pointers
+// and if so dispatches to memcpyGCRefsWithWriteBarrier and if not uses traditional memcpy
+COOP_PINVOKE_CDECL_HELPER(void *, memcpyAnyWithWriteBarrier, (void * dest, const void *src, size_t len))
+{
+    // null pointers are not allowed (they are checked by RhpCopyMultibyteWithWriteBarrier)
+    ASSERT(dest != nullptr);
+    ASSERT(src != nullptr);
+
+    // Use GC safe copy whenever there might be GC pointers
+    if (IS_ALIGNED(dest, sizeof(size_t)) && IS_ALIGNED(src, sizeof(size_t)) && IS_ALIGNED(len, sizeof(size_t)))
+    {
+        return memcpyGCRefsWithWriteBarrier(dest, src, len);
+    }
+    
+    return memcpy(dest, src, len);
+}
+
 // Move memory, in a way that is compatible with a move onto the heap, but
 // does not require the destination pointer to be on the heap.
 

@@ -346,6 +346,8 @@ EXTERN_C void * RhpCopyMultibyteNoGCRefsDestAVLocation;
 EXTERN_C void * RhpCopyMultibyteNoGCRefsSrcAVLocation;
 EXTERN_C void * RhpCopyMultibyteWithWriteBarrierDestAVLocation;
 EXTERN_C void * RhpCopyMultibyteWithWriteBarrierSrcAVLocation;
+EXTERN_C void * RhpCopyAnyWithWriteBarrierDestAVLocation;
+EXTERN_C void * RhpCopyAnyWithWriteBarrierSrcAVLocation;
 
 static bool InWriteBarrierHelper(UIntNative faultingIP)
 {
@@ -366,6 +368,8 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
         (UIntNative)&RhpCopyMultibyteNoGCRefsSrcAVLocation,
         (UIntNative)&RhpCopyMultibyteWithWriteBarrierDestAVLocation,
         (UIntNative)&RhpCopyMultibyteWithWriteBarrierSrcAVLocation,
+        (UIntNative)&RhpCopyAnyWithWriteBarrierDestAVLocation,
+        (UIntNative)&RhpCopyAnyWithWriteBarrierSrcAVLocation,
 #endif
     };
 
