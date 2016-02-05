@@ -10,11 +10,12 @@
 // 
 
 #include "common.h"
+
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+
 #include "gcenv.h"
 #include "gc.h"
 #include "eventtrace.h"
-
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 //---------------------------------------------------------------------------------------
 //
