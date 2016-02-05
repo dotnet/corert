@@ -3,7 +3,7 @@
 call %~dp0testenv.cmd %*
 
 set CoreRT_AppDepSdkPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.AppDep
-set CoreRT_AppDepSdkVer=1.0.4-prerelease-00001
+set CoreRT_AppDepSdkVer=1.0.5-prerelease-00001
 
 setlocal EnableExtensions
 
