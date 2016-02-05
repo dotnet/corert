@@ -84,11 +84,7 @@ struct ModuleHeader
     UInt32  RraStaticsGCInfo;           // RRA to GC info for module statics (an array of StaticGcDesc structs)
     UInt32  RraThreadStaticsGCInfo;     // RRA to GC info for module thread statics (an array of StaticGcDesc structs)
     UInt32  RraGidsWithGcRootsList;     // RRA to head of list of GenericInstanceDescs which report GC roots
-#ifdef FEATURE_VSD
-    UInt32  RraVSDIndirectionCells;     // RRA to indirection cell array
-    UInt32  CountVSDIndirectionCells;   // Number of (pointer sized) elements in the array pointed to by RraVSDIndirectionCells
-    UInt32  RraVSDInterfaceTargetInfos; // RRA to array of VSDInterfaceTargetInfo, parallel to indirection cell array
-#elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     UInt32  RraInterfaceDispatchCells;  // RRA to array of cache data structures used to dispatch interface calls
     UInt32  CountInterfaceDispatchCells;// Number of elements in above array
 #endif
@@ -169,17 +165,12 @@ struct ModuleHeader
     DEFINE_GET_ACCESSOR(StaticsGCInfo,              RDATA_REGION);
     DEFINE_GET_ACCESSOR(ThreadStaticsGCInfo,        RDATA_REGION);
     DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(GidsWithGcRootsList);
-#ifdef FEATURE_VSD
-    DEFINE_GET_ACCESSOR(VSDInterfaceTargetInfos,    RDATA_REGION);
-#endif
     DEFINE_GET_ACCESSOR(EHInfo,                     RDATA_REGION);
     DEFINE_GET_ACCESSOR(UnwindInfoBlob,             RDATA_REGION);
     DEFINE_GET_ACCESSOR(CallsiteInfoBlob,           RDATA_REGION);
 
     DEFINE_GET_ACCESSOR(StaticsGCDataSection,       DATA_REGION);
-#ifdef FEATURE_VSD
-    DEFINE_GET_ACCESSOR(VSDIndirectionCells,        DATA_REGION);
-#elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     DEFINE_GET_ACCESSOR(InterfaceDispatchCells,     DATA_REGION);
 #endif
     DEFINE_GET_ACCESSOR(FrozenObjects,             DATA_REGION);
@@ -346,100 +337,7 @@ typedef DPTR(StaticGcDesc::GCSeries) PTR_StaticGcDescGCSeries;
 
 class EEType;
 
-#ifdef FEATURE_VSD
-//-------------------------------------------------------------------------------------------------
-// Information about the target interface method of an interface call site.
-// 
-// @TODO: consider replacing the EEType* with a RVA to either the EEType in the image, or to the
-// IAT entry within the image for EETypes in a different image. This would keep this struct at 8 bytes
-// on WIN64 rather than 12. At runtime, we would need to resolve the RVA to a real EEType* in the 
-// resolve stub in order to confirm the cache hit. One possible way to do this is to store these in 
-// chunks, with a RVA to the head of the module at the head of each chunk and chunks on some power of 
-// two boundary. We would take the address of the struct, mask off some number of low bits to recover
-// the chunk head, then use the RVA there to recover the module head, and ultimatley change the RVA
-// into a EEType* or EEType**.
-
-#include <pshpack1.h>  // Stub dispatch relies on the layout of this struct.
-
-struct VSDInterfaceTargetInfo
-{
-    // IMPORTANT: This union must be the first element; this is depended on by the
-    //            resolve stub.
-    union
-    {
-        EEType *   m_pItf;
-        EEType **  m_ppItf;
-#if defined(RHDUMP) || defined(BINDER)
-        UIntTarget m_ptrVal;  // ensure this structure is the right size in cross-build scenarios
-#endif // defined(RHDUMP) || defined(BINDER)
-    };
-
-    // IMPORTANT: This field must be the second element; this is depended on by the
-    //            resolve stub.
-    UInt16 m_slotNumber;
-
-    enum EETypePtrType
-    {
-        EETypeIsPtr     = 0x0,
-        EETypeIsPtrPtr  = 0x1,
-    };
-
-    enum FlagsMasks
-    {
-        EETypePtrTypeMask = 0x1,
-    };
-
-    UInt16 m_flags;
-
-#if !defined(RHDUMP) && !defined(BINDER)
-    VSDInterfaceTargetInfo()
-        : m_flags(EETypeIsPtr), m_pItf(NULL), m_slotNumber((UInt16)(-1))
-        {}
-
-    VSDInterfaceTargetInfo(EEType *pItf, UInt16 slotNumber)
-        : m_flags(EETypeIsPtr), m_pItf(pItf), m_slotNumber(slotNumber)
-        {}
-
-    EETypePtrType GetEETypePtrType() const
-        { return (EETypePtrType)(m_flags & EETypePtrTypeMask); }
-
-    EEType * GetInterfaceType() const
-    {
-        switch (GetEETypePtrType())
-        {
-            case EETypeIsPtr:
-                return m_pItf;
-                break;
-            case EETypeIsPtrPtr:
-                return *m_ppItf;
-                break;
-            default:
-                UNREACHABLE();
-                return NULL;
-                break;
-        }
-    }
-
-    UInt16 GetSlotNumber() const
-        { return m_slotNumber; }
-
-    static bool Equal(const VSDInterfaceTargetInfo& lhs, const VSDInterfaceTargetInfo& rhs)
-    {
-        return lhs.GetInterfaceType() == rhs.GetInterfaceType() &&
-               lhs.m_slotNumber == rhs.m_slotNumber;
-    }
-
-    UIntNative Hash() const
-    {
-        return (reinterpret_cast<UIntNative>(GetInterfaceType()) >> 2) ^
-               static_cast<UIntNative>(GetSlotNumber());
-    }
-#endif
-};
-
-#include <poppack.h>
-
-#elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 struct InterfaceDispatchCacheHeader
 {
@@ -686,20 +584,6 @@ struct EETypeRef
             return *dac_cast<PTR_PTR_EEType>(rawTargetPtr - DOUBLE_INDIR_FLAG);
         else
             return dac_cast<PTR_EEType>(rawTargetPtr);
-    }
-
-    // If this type is referenced indirectly (via an IAT entry) resolve the reference to a direct pointer.
-    // This is only possible at runtime once the IAT has been updated and is used when unifying a generic
-    // instantiation and cutting any arbitrary dependencies to the module which first published this
-    // instantiation. Returns true if the type ref did need to be flattened.
-    bool Flatten()
-    {
-        if ((size_t)pEEType & DOUBLE_INDIR_FLAG)
-        {
-            pEEType = *(EEType **)(rawPtr - DOUBLE_INDIR_FLAG);
-            return true;
-        }
-        return false;
     }
 };
 

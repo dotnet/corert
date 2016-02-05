@@ -6,7 +6,6 @@ typedef DPTR(ThreadStore) PTR_ThreadStore;
 class Module;
 typedef DPTR(Module) PTR_Module;
 class ICodeManager;
-class VirtualCallStubManager;
 struct GenericInstanceDesc;
 typedef SPTR(GenericInstanceDesc) PTR_GenericInstanceDesc;
 struct ModuleHeader;
@@ -45,14 +44,9 @@ class RuntimeInstance
     CodeManagerList             m_CodeManagerList;
 #endif
 
-#ifdef FEATURE_VSD
-    VirtualCallStubManager *    m_pVSDManager;
-#endif
-
     // Indicates whether the runtime is in standalone exe mode where the only Redhawk module that will be
-    // loaded into the process (besides the runtime's own module) is the exe itself. The most important aspect
-    // of this is that generic types don't need to be unified. This flag will be correctly initialized once
-    // the exe module has loaded.
+    // loaded into the process (besides the runtime's own module) is the exe itself. This flag will be 
+    // correctly initialized once the exe module has loaded.
     bool                        m_fStandaloneExeMode;
 
     // If m_fStandaloneExeMode is set this contains a pointer to the exe module. Otherwise it's null.
@@ -64,16 +58,6 @@ class RuntimeInstance
     // To avoid starting the thread more than once, this flag indicates
     // whether the thread has been created already.
     bool                        m_fProfileThreadCreated;
-#endif
-
-    // Generic type unification. Used only if we're not in single standalone exe mode.
-    UnifiedGenericInstance **   m_genericInstHashtab;
-    UnifiedGenericInstance **   m_genericInstHashtabUpdates;
-    UInt32                      m_genericInstHashtabCount;
-    UInt32                      m_genericInstHashtabEntries;
-    CrstStatic                  m_genericInstHashtabLock;
-#ifdef _DEBUG
-    bool                        m_genericInstHashUpdateInProgress;
 #endif
 
     // List of generic instances that have GC references to report. This list is updated under the hash table
@@ -90,10 +74,6 @@ class RuntimeInstance
     bool                        m_conservativeStackReportingEnabled;
 
     RuntimeInstance();
-
-#ifdef FEATURE_VSD
-    static bool CreateVSD(VirtualCallStubManager ** ppVSD);
-#endif
 
     SList<Module>* GetModuleList();
 
@@ -144,18 +124,8 @@ public:
     void EnumGenericStaticGCRefs(PTR_GenericInstanceDesc pInst, void * pfnCallback, void * pvCallbackData, Module *pModule);
     void EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData);
 
-#ifdef FEATURE_VSD
-    VirtualCallStubManager * GetVSDManager() { return m_pVSDManager; }
-#endif
-
     bool ShouldHijackCallsiteForGcStress(UIntNative CallsiteIP);
     bool ShouldHijackLoopForGcStress(UIntNative CallsiteIP);
-
-    bool StartGenericUnification(UInt32 cInstances);
-    UnifiedGenericInstance *UnifyGenericInstance(GenericInstanceDesc *genericInstance, UInt32 uiLocalTlsIndex);
-    void EndGenericUnification();
-
-    void ReleaseGenericInstance(GenericInstanceDesc * pInst);
 
     void EnableGcPollStress();
     void UnsychronizedResetHijackedLoops();

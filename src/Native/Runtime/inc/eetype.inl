@@ -242,49 +242,6 @@ inline bool EEType::DacVerifyWorker(EEType* pThis)
 }
 #endif
 
-//-----------------------------------------------------------------------------------------------------------
-// Transform a (possibly canonical) type into a cloned type pointing to the given type as the canonical type.
-// Used when unifying generic instantiation types.
-inline void EEType::MakeClonedType(EEType ** ppCanonicalType)
-{
-    if (IsCanonical())
-    {
-        m_usFlags &= ~EETypeKindMask;
-        m_usFlags |= ClonedEEType;
-        m_usFlags |= RelatedTypeViaIATFlag;
-    }
-    else
-    {
-        ASSERT(IsRelatedTypeViaIAT());
-    }
-
-    m_RelatedType.m_ppCanonicalTypeViaIAT = ppCanonicalType;
-
-    ASSERT(IsCloned());
-    ASSERT(get_CanonicalEEType() == *ppCanonicalType);
-}
-
-//-----------------------------------------------------------------------------------------------------------
-// If any part of this type is referenced indirectly (via IAT entries) resolve these references to direct
-// pointers. This is only possible at runtime once the IAT has been updated and is currently used only for
-// generics, when unifying a generic instantiation and cutting any arbitrary dependencies to the module which
-// first published this instantiation.
-inline void EEType::Flatten()
-{
-    if (IsRelatedTypeViaIAT())
-    {
-        m_RelatedType.m_pBaseType = *m_RelatedType.m_ppBaseTypeViaIAT;
-        m_usFlags &= ~RelatedTypeViaIATFlag;
-    }
-
-    if (HasInterfaces())
-    {
-        EEInterfaceInfoMap itfMap = GetInterfaceMap();
-        for (UInt16 i = 0; i < GetNumInterfaces(); i++)
-            itfMap[i].Flatten();
-    }
-}
-
 // Initialize an existing EEType as an array type with specific element type. This is another specialized
 // method used only during the unification of generic instantiation types. It might need modification if
 // needed in any other scenario.
@@ -335,10 +292,6 @@ inline PTR_OptionalFields EEType::get_OptionalFields()
 {
     if ((m_usFlags & OptionalFieldsFlag) == 0)
         return NULL;
-
-    // Runtime allocated EETypes don't copy over optional fields. We should be careful to avoid operations
-    // that require them on paths that can handle such cases.
-    ASSERT(!IsRuntimeAllocated());
 
     UInt32 cbOptionalFieldsOffset = GetFieldOffset(ETF_OptionalFieldsPtr);
 #if defined(DACCESS_COMPILE)
