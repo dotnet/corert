@@ -22,7 +22,7 @@ set __NuPkgInstallDir=%CoreRT_TestRoot%\..\bin\Product\%__BuildStr%\.nuget\publi
 if not exist %__NuGetExeDir%\NuGet.exe ((call :Fail "No NuGet.exe found at %__NuGetExeDir%. Specify /nugetexedir option") & exit /b -1)
 
 REM ** Install packages from NuGet
-set __NuGetFeedUrl="https://www.myget.org/F/dotnet/auth/3e4f1dbe-f43a-45a8-b029-3ad4d25605ac/api/v2"
+set __NuGetFeedUrl="https://dotnet.myget.org/F/dotnet-corert/api/v2"
 
 REM ** Install AppDep SDK
 echo.
