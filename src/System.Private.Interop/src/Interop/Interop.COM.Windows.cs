@@ -46,6 +46,13 @@ namespace System.Runtime.InteropServices
         {
             Marshal.FreeHGlobal(new IntPtr(pv));
         }
+       
+        public static unsafe void SafeCoTaskMemFree(void* pv)
+        {
+            // Even though CoTaskMemFree is a no-op for NULLs, skipping the interop call entirely is faster
+            if (pv != null)
+                CoTaskMemFree(pv);
+        }
 
         public static unsafe IntPtr SysAllocStringLen(char* pStrIn, UInt32 dwSize)
         {
@@ -94,7 +101,7 @@ namespace System.Runtime.InteropServices
             return 0;
         }
 
-#else 
+#else
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
         public static extern unsafe void* CoTaskMemAlloc(IntPtr size);

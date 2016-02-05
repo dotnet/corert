@@ -75,6 +75,8 @@ namespace System.Runtime.InteropServices
         {
 #if RHTESTCL
             return false;
+#elif CORECLR
+            return type.GetTypeInfo().IsSubclassOf(typeof(__ComObject));
 #else
             return InteropExtensions.AreTypesAssignable(type.TypeHandle, typeof(__ComObject).TypeHandle);
 #endif

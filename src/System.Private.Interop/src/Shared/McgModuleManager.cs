@@ -883,11 +883,23 @@ namespace System.Runtime.InteropServices
         }
 #endif
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle typeHnd)
+        public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle typeHnd, RuntimeTypeHandle secondTypeHnd = default(RuntimeTypeHandle))
         {
-            McgTypeInfo info = McgModuleManager.GetTypeInfoByHandle(typeHnd);
-            Debug.Assert(!info.IsNull);
-            return obj.GetDynamicAdapter(info);
+            McgTypeInfo typeInfo = McgModuleManager.GetTypeInfoByHandle(typeHnd);
+            Debug.Assert(!typeInfo.IsNull);
+
+            McgTypeInfo secondTypeInfo;
+
+            if (!secondTypeHnd.Equals(default(RuntimeTypeHandle)))
+            {
+                secondTypeInfo = McgModuleManager.GetTypeInfoByHandle(secondTypeHnd);
+                Debug.Assert(!secondTypeInfo.IsNull);
+            }
+            else
+            {
+                secondTypeInfo = McgTypeInfo.Null;
+            }
+            return obj.GetDynamicAdapter(typeInfo, secondTypeInfo);
         }
 
         /// <summary>
