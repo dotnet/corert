@@ -30,7 +30,7 @@ namespace Internal.IL.Stubs
             
             // This helper field is needed to generate proper GC tracking. There is no direct way
             // to create interior pointer. 
-            _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetField("m_pEEType"));
+            _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"));
         }
 
         private void EmitLoadInteriorAddress(ILCodeStream codeStream, int offset)
