@@ -9,6 +9,7 @@ EXTERN GetClasslibCCtorCheck        : PROC
 EXTERN memcpy                       : PROC
 EXTERN memcpyGCRefs                 : PROC
 EXTERN memcpyGCRefsWithWriteBarrier : PROC
+EXTERN memcpyAnyWithWriteBarrier    : PROC
 
 ;;
 ;; Currently called only from a managed executable once Main returns, this routine does whatever is needed to
@@ -266,5 +267,40 @@ NothingToCopy:
         ret
 
 LEAF_END RhpCopyMultibyteWithWriteBarrier, _TEXT
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; void* RhpCopyAnyWithWriteBarrier(void*, void*, size_t)
+;;
+;; The purpose of this wrapper is to hoist the potential null reference exceptions of copying memory up to a place where
+;; the stack unwinder and exception dispatch can properly transform the exception into a managed exception and dispatch
+;; it to managed code.
+;; Runs a card table update via RhpBulkWriteBarrier after the copy if the copy may contain GC pointers
+;;
+LEAF_ENTRY RhpCopyAnyWithWriteBarrier, _TEXT
+
+        ; rcx       dest
+        ; rdx       src
+        ; r8        count
+
+        test        r8, r8              ; check for a zero-length copy
+        jz          NothingToCopy
+
+        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
+        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be 
+        ; translated to a managed exception as usual.
+ALTERNATE_ENTRY RhpCopyAnyWithWriteBarrierDestAVLocation
+        cmp         byte ptr [rcx], 0
+ALTERNATE_ENTRY RhpCopyAnyWithWriteBarrierSrcAVLocation
+        cmp         byte ptr [rdx], 0
+
+        ; tail-call to the GC-safe memcpy implementation
+        jmp         memcpyAnyWithWriteBarrier
+
+NothingToCopy:
+        mov         rax, rcx            ; return dest
+        ret
+
+LEAF_END RhpCopyAnyWithWriteBarrier, _TEXT
 
 end
