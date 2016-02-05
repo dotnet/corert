@@ -412,7 +412,7 @@ namespace System.Runtime.InteropServices
         /// NOTE: This is *NOT* entirely implemented yet
         /// </summary>
         [NativeCallable]
-        static int CreateManagedReference__STUB(System.IntPtr pComThis, IntPtr __IntPtr__pJupiterObject,
+        static int CreateManagedReference__STUB(System.IntPtr pComThis, IntPtr __IntPtr__pUnknown,
                         IntPtr __IntPtr__ppNewReference)
         {
             try
@@ -421,13 +421,13 @@ namespace System.Runtime.InteropServices
                 object comObj = null;
 #if ENABLE_WINRT
             //
-            // Converts IJupiterObject * to a RCW with type resolution
+            // Converts IUnknown * to a RCW with type resolution
             // If it is already there in the cache, we return the existing one. Otherwise, we create a new
             // one, and create the right instance using the return value of GetRuntimeClassName
             //
              comObj = McgComHelpers.ComInterfaceToComObject(
-                __IntPtr__pJupiterObject,
-                McgModuleManager.IJupiterObject,
+                __IntPtr__pUnknown,
+                McgModuleManager.IUnknown,
                 McgClassInfo.Null,
                 ContextCookie.Default,                                  // No restriction on context
                 McgComHelpers.CreateComObjectFlags.IsWinRTObject
@@ -479,7 +479,7 @@ namespace System.Runtime.InteropServices
 #endif //ENABLE_WINRT
 
                 if (InteropEventProvider.IsEnabled())
-                    InteropEventProvider.Log.TaskJupiterCreateManagedReference((long)__IntPtr__pJupiterObject, (long)comObj.GetTypeHandle().GetRawValue());
+                    InteropEventProvider.Log.TaskJupiterCreateManagedReference((long)__IntPtr__pUnknown, (long)comObj.GetTypeHandle().GetRawValue());
             }
             catch (Exception ex)
             {

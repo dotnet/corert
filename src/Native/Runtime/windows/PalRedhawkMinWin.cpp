@@ -1030,8 +1030,10 @@ bool PalQueryProcessorTopology()
             if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
             {
                 if (pProcInfos)
-                    delete[](UInt8*)pProcInfos;
-                pProcInfos = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)new UInt8[cbBuffer];
+                    free(pProcInfos);
+
+                pProcInfos = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION*)malloc(cbBuffer);
+
                 if (pProcInfos == NULL)
                 {
                     // Ran out of memory.
