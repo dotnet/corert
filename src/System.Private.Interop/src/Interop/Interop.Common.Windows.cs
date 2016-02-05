@@ -38,9 +38,9 @@ namespace System.Runtime.InteropServices
         
         static internal int GetLastWin32Error()
         {
-           throw new PlatformNotSupportedException("GetLastWin32Error");
+           return 0;
         }
-#else 
+#else
 
         [DllImport(Libraries.CORE_DEBUG, EntryPoint = "OutputDebugStringW")]
         [McgGeneratedNativeCallCodeAttribute]
