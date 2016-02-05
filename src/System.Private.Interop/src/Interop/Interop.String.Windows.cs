@@ -39,12 +39,12 @@ namespace System.Runtime.InteropServices
 
 #if CORECLR
 
-        internal static unsafe uint SysStringLen(void* pBSTR)
+        public static unsafe uint SysStringLen(void* pBSTR)
         {
             throw new PlatformNotSupportedException("SysStringLen");
         }
 
-        internal static unsafe uint SysStringLen(IntPtr pBSTR)
+        public static unsafe uint SysStringLen(IntPtr pBSTR)
         {
             throw new PlatformNotSupportedException("SysStringLen");
         }

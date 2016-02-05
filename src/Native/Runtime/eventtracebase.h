@@ -29,10 +29,6 @@
 struct EventStructTypeData;
 void InitializeEventTracing();
 
-#if (!defined(FEATURE_PAL) || defined(FEATURE_DTRACE) || defined(FEATURE_REDHAWK)) && !defined(CROSSGEN_COMPILE)
-#define FEATURE_EVENT_TRACE 1
-#endif
-
 #ifdef FEATURE_EVENT_TRACE
 
 // !!!!!!! NOTE !!!!!!!!

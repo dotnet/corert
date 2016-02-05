@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices
                 if (pWinRTItf != default(IntPtr)) McgMarshal.ComRelease(pWinRTItf);
             }
 #else
-            throw new PlatformNotSupportedException("GetRuntimeClassName");
+            return string.Empty;
 #endif
         }
 
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices
                     McgMarshal.FreeHString(new IntPtr(unsafe_hstring));
             }
 #else
-            throw new PlatformNotSupportedException("GetRuntimeClassName");
+            throw new PlatformNotSupportedException("GetRuntimeClassName(IntPtr)");
 #endif
         }
 
