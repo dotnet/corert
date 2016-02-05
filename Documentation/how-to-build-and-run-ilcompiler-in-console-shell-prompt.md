@@ -53,8 +53,10 @@ From the shell/command prompt, issue the following commands to generate the nati
 
 ``` 
     dotnet restore
-    dotnet compile --native --cpp --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1
+    dotnet compile --native --cpp --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1 --cppcompilerflags /MTd
 ```
+
+Omit `--cppcompilerflags /MTd` for release CoreRT build.
 
 ## Workarounds for linker errors on Windows ##
 

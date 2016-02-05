@@ -1,6 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+set __ThisScriptShort=%0
+set __ThisScriptFull="%~f0"
+
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
@@ -24,7 +27,14 @@ set __DotNetCliPath=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
-if /i "%1" == "/?" goto Usage
+
+if /i "%1" == "/?"    goto Usage
+if /i "%1" == "-?"    goto Usage
+if /i "%1" == "/h"    goto Usage
+if /i "%1" == "-h"    goto Usage
+if /i "%1" == "/help" goto Usage
+if /i "%1" == "-help" goto Usage
+
 if /i "%1" == "x64"    (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i "%1" == "x86"    (set __BuildArch=x86&&shift&goto Arg_Loop)
 if /i "%1" == "arm"    (set __BuildArch=arm&&shift&goto Arg_Loop)
@@ -34,7 +44,7 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
-if /i "%1" == "skiptestbuild" (set __SkipTestBuild=1&shift&goto Arg_Loop)
+if /i "%1" == "skiptests" (set __SkipTests=1&shift&goto Arg_Loop)
 if /i "%1" == "/milestone" (set __ToolchainMilestone=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/dotnetclipath" (set __DotNetCliPath=%2&shift&shift&goto Arg_Loop)
 
@@ -187,10 +197,27 @@ exit /b 1
 
 
 :AfterILCompilerBuild
-if defined __SkipTestBuild exit /b 0
+if defined __SkipTests exit /b 0
 
 pushd "%__ProjectDir%\tests"
 call "runtest.cmd" %__BuildType% %__BuildArch% /dotnetclipath %__DotNetCliPath%
 set TEST_EXIT_CODE=%ERRORLEVEL%
 popd
 exit /b %TEST_EXIT_CODE%
+
+:Usage
+echo.
+echo Build the CoreRT repo.
+echo.
+echo Usage:
+echo     %__ThisScriptShort% [option1] [option2] ...
+echo.
+echo All arguments are optional. The options are:
+echo.
+echo./? -? /h -h /help -help: view this message.
+echo Build architecture: one of x64, x86, arm ^(default: x64^).
+echo Build type: one of Debug, Checked, Release ^(default: Debug^).
+echo Visual Studio version: ^(default: VS2015^).
+echo clean: force a clean build ^(default is to perform an incremental build^).
+echo skiptests: skip building tests ^(default: tests are built^).
+exit /b 1

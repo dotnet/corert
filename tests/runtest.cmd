@@ -134,13 +134,13 @@ goto :eof
     if not exist "!__CompileLogPath!" (mkdir !__CompileLogPath!)
     set __SourceFile=!__SourceFolder!\!__SourceFileName!
 
-    rmdir /s /q !__SourceFolder!\bin
-    rmdir /s /q !__SourceFolder!\obj
+    if exist "!__SourceFolder!\bin" rmdir /s /q !__SourceFolder!\bin
+    if exist "!__SourceFolder!\obj" rmdir /s /q !__SourceFolder!\obj
 
     setlocal
     set additionalCompilerFlags=
     if /i "%CoreRT_BuildType%" == "debug" (
-        if /i "%__Mode%" == "cpp" set additionalCompilerFlags=--cppcompilerflags /D_DEBUG
+        if /i "%__Mode%" == "cpp" set additionalCompilerFlags=--cppcompilerflags /MTd
     )
     REM TODO: Add AppDepSDK argument after CLI build picks up: PR dotnet/cli #336
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
