@@ -126,20 +126,48 @@
     <Compile Include="Internal\Reflection\Tracing\ITraceableTypeMember.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" />
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs" />
-    <Compile Include="..\..\Common\src\System\Linq\LowLevelEnumerable.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Generic\EnumerableExtensions.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Generic\Empty.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\IKeyedItem.cs" />
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" />
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs" />
+    <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" >
+      <Link>System\CommonRuntimeTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" >
+      <Link>System\Collections\Generic\LowLevelList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs" >
+      <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Linq\LowLevelEnumerable.cs" >
+      <Link>System\Linq\LowLevelEnumerable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs" >
+      <Link>System\Collections\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\EnumerableExtensions.cs" >
+      <Link>System\Collections\Generic\EnumerableExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\Empty.cs" >
+      <Link>System\Collections\Generic\Empty.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs" >
+      <Link>System\Collections\Concurrent\ConcurrentUnifier.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs" >
+      <Link>System\Collections\Concurrent\ConcurrentUnifierW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs" >
+      <Link>System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\IKeyedItem.cs" >
+      <Link>System\Collections\Concurrent\IKeyedItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" >
+      <Link>System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs" >
+      <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

@@ -28,8 +28,12 @@
     <Compile Include="Internal\Dia\DiaInterfaces.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
+      <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

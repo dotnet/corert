@@ -63,9 +63,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs" />
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs" />
-    
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs" >
+      <Link>Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs" >
+      <Link>Internal\NativeFormat\NativeFormatReader.String.cs</Link>
+    </Compile>
+
     <Compile Include="Shared\__ComObject.cs" />
     <Compile Include="Shared\ComCallableObject.cs" />
     <Compile Include="Shared\ComException.cs" />

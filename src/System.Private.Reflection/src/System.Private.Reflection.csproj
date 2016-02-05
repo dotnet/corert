@@ -36,8 +36,12 @@
     <Compile Include="..\..\Common\src\System\SR.Core.cs">
       <Link>Resources\Common</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs" />
-    <Compile Include="..\..\Common\src\System\__HResults.cs" />
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\__HResults.cs" >
+      <Link>System\__HResults.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\AmbiguousMatchException.cs" />
