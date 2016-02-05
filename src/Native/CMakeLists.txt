@@ -179,9 +179,8 @@ endfunction(convert_to_absolute_path)
 if(WIN32)
     add_definitions(-DUNICODE=1)
     add_compile_options($<$<CONFIG:Debug>:-DDEBUG>)
-    add_compile_options($<$<CONFIG:Debug>:/MTd>)
-    add_compile_options($<$<CONFIG:Release>:/MT>)
     add_compile_options(/Zi) # enable debugging information
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS") #shrink pdb size
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
 else(WIN32)
 string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)

@@ -23,7 +23,7 @@ runtest()
 
 restore()
 {
-    ${CoreRT_CliBinDir}/dotnet restore --quiet $1
+    ${CoreRT_CliBinDir}/dotnet restore $1
 }
 
 compiletest()

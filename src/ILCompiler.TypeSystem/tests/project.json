@@ -1,13 +1,22 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.0.0-rc2-23704", 
+    "System.Collections": "4.0.10",
+    "System.Collections.Concurrent": "4.0.10",
+    "System.Console": "4.0.0-rc2-23616",
+    "System.Diagnostics.Debug": "4.0.10",
+    "System.Diagnostics.Tracing": "4.0.20",
+    "System.Linq": "4.0.0",
+    "System.IO.FileSystem": "4.0.0",
+    "System.Reflection": "4.0.10",
+    "System.Runtime": "4.0.20",
+    "System.Runtime.Extensions": "4.0.10",
+    "System.Threading": "4.0.10",
+    "System.Threading.Tasks": "4.0.10",
     "xunit": "2.1.0",
     "xunit.netcore.extensions": "1.0.0-prerelease-*",
     "System.Reflection.Metadata": "1.0.22"
   },
   "frameworks": {
-    "dnxcore50": { 
-       "imports": "portable-net451+win8"
-    }
-  },
+    "dotnet": {}
+  }
 }
