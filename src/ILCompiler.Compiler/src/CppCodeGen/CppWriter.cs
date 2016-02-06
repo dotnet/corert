@@ -1051,7 +1051,8 @@ namespace ILCompiler.CppCodeGen
                 // Stub for main method
                 if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    Out.WriteLine("int wmain(int argc, wchar_t * argv[]) { ");
+                    // TODO: Use wmain and wchar_t
+                    Out.WriteLine("int main(int argc, char * argv[]) { ");
                 }
                 else
                 {

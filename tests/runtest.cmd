@@ -71,7 +71,7 @@ for /f "delims=" %%a in ('dir /s /aD /b src\*') do (
     set __SourceFileName=%%~na
     set __RelativePath=!__SourceFolder:%CoreRT_TestRoot%=!
     if exist "!__SourceFolder!\project.json" (
-        %CoreRT_CliDir%\dotnet restore --quiet !__SourceFolder!
+        %CoreRT_CliDir%\dotnet restore !__SourceFolder!
 
         set __Mode=Jit
         call :CompileFile !__SourceFolder! !__SourceFileName! %__LogDir%\!__RelativePath!
@@ -140,7 +140,7 @@ goto :eof
     setlocal
     set additionalCompilerFlags=
     if /i "%CoreRT_BuildType%" == "debug" (
-        if /i "%__Mode%" == "cpp" set additionalCompilerFlags=--cppcompilerflags /MTd
+        if /i "%__Mode%" == "cpp" set additionalCompilerFlags=--cppcompilerflags /MDd
     )
     REM TODO: Add AppDepSDK argument after CLI build picks up: PR dotnet/cli #336
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
