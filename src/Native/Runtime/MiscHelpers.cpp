@@ -134,11 +134,6 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromPointer, (PTR_VOID pPointerVal))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
 {
-    // Runtime allocated EETypes have no associated module, but class libraries shouldn't be able to get to
-    // any of these since they're currently only used for the canonical version of a generic EEType and we
-    // provide no means to go from the cloned version to the canonical version.
-    ASSERT(!pEEType->IsRuntimeAllocated());
-
     // For dynamically created types, return the module handle that contains the template type
     if (pEEType->IsDynamicType())
         pEEType = pEEType->get_DynamicTemplateType();

@@ -252,10 +252,7 @@ void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackD
     {
         pModule->EnumStaticGCRefs(pfnCallback, pvCallbackData);
 
-        // If there is no generic unification, we report generic instantiation statics directly from each module (the
-        // runtime and the binary/binaries for the library and the app) since they haven't been unified.
-        if (m_genericInstHashtabCount == 0)
-            EnumGenericStaticGCRefs(pModule->GetGidsWithGcRootsList(), pfnCallback, pvCallbackData, pModule);
+        EnumGenericStaticGCRefs(pModule->GetGidsWithGcRootsList(), pfnCallback, pvCallbackData, pModule);
     }
     END_FOREACH_MODULE
 
@@ -386,8 +383,6 @@ RuntimeInstance::~RuntimeInstance()
         delete m_pThreadStore;
         m_pThreadStore = NULL;
     }
-
-    m_genericInstHashtabLock.Destroy();
 }
 
 HANDLE  RuntimeInstance::GetPalInstance()
@@ -439,12 +434,7 @@ bool RuntimeInstance::RegisterModule(ModuleHeader *pModuleHeader)
         // including the new module.
         // @TODO: This is obviously not ideal, we would be better of by incrementally adding
         //        types in the new module to the existing hashtable. Unfortunately today implementation
-        //        doesn't expect the table to be growable, BuildGenericTypeHashTable starts out
-        //        by calculating the total number of elements to be put there. Additionally, we should 
-        //        revisit the if (m_genericInstHashtabCount == 0) statement in LookupGenericInstance,
-        //        there seems to be a distinction being made between "single-module" and "multi-module"
-        //        apps the boundaries of which might have shifted recently and are likely to continue
-        //        shifting in the near future.
+        //        doesn't expect the table to be growable.
         ReaderWriterLock::WriteHolder write(&m_GenericHashTableLock);
         if (m_pGenericTypeHashTable != nullptr)
         {
@@ -562,27 +552,9 @@ RuntimeInstance * RuntimeInstance::Create(HANDLE hPalInstance)
     if (NULL == pThreadStore)
         return NULL;
 
-#ifdef FEATURE_VSD
-    VirtualCallStubManager * pVSD;
-    if (!CreateVSD(&pVSD))
-        return NULL;
-#endif
-
     pThreadStore.SuppressRelease();
     pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
-
-#ifdef FEATURE_VSD
-    pRuntimeInstance->m_pVSDManager = pVSD;
-#endif
-
-    pRuntimeInstance->m_genericInstHashtab = NULL;
-    pRuntimeInstance->m_genericInstHashtabCount = 0;
-    pRuntimeInstance->m_genericInstHashtabEntries = 0;
-    pRuntimeInstance->m_genericInstHashtabLock.Init(CrstGenericInstHashtab);
-#ifdef _DEBUG
-    pRuntimeInstance->m_genericInstHashUpdateInProgress = false;
-#endif
 
     pRuntimeInstance->m_genericInstReportList = NULL;
 
@@ -621,455 +593,6 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(UIntNative CallsiteIP)
 #endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
 }
 
-// For the given generic instantiation remove any type indirections via IAT entries. This is used during
-// generic instantiation type unification to remove any arbitrary dependencies on the module which happened to
-// publish the instantiation first (an IAT indirection is a module dependency since the IAT cell lives in the
-// module image itself). The indirections are removed by inspecting the current value of the IAT entry and
-// moving the value up into the parent data structure (adjusting whatever flags are necessary to indicate that
-// the datum is no longer accessed via the IAT). We can do this since generic instantiation type unification
-// is performed at runtime after all the IAT entries have been bound to their final values.
-static bool FlattenGenericInstance(UnifiedGenericInstance * pInst)
-{
-    GenericInstanceDesc * pGid = pInst->GetGid();
-    UInt32 cTypeVars = pGid->GetArity();
-
-    // Flatten the instantiated type itself.
-    pGid->GetEEType()->Flatten();
-
-    // Flatten the generic type definition. Not much else to do for this case since the generic type
-    // definition isn't a real EEType (it has virtually no use at runtime).
-    pGid->GetGenericTypeDef().Flatten();
-
-    // Flatten each of the type arguments.
-    for (UInt32 i = 0; i < cTypeVars; i++)
-    {
-        // Note that if a type reference stored in the GenericInstanceDesc was flattened then we're done with
-        // that entry. That's because if the reference was indirected in the first place we can be sure there
-        // are no further (arbitrary) references to the module; the entry refered to a different module and
-        // did so because there was a non-arbitrary dependency on that module.
-        if (!pGid->GetParameterType(i).Flatten())
-        {
-            EETypeRef typeVarRef = pGid->GetParameterType(i);
-            EEType * pTypeVar = typeVarRef.GetValue();
-
-            // The type reference above wasn't indirected to another module. Examine the type to see whether
-            // it contains any arbitrary references to the module which provided it.
-            switch (pTypeVar->get_Kind())
-            {
-            case EEType::CanonicalEEType:
-                // Nothing to do here; a canonical type means this instantiation has a direct, non-arbitrary
-                // dependency on the module anyway. Therefore we don't care if there are any arbitrary
-                // dependencies to the same module as well.
-                break;
-
-            case EEType::GenericTypeDefEEType:
-                // Nothing to do here. GenericTypeDefinitions are local to their defining module
-                break;
-
-            case EEType::ClonedEEType:
-                // For cloned types we can simply replace the type argument with the corresponding canonical
-                // type.
-                typeVarRef.pEEType = pTypeVar->get_CanonicalEEType();
-                pGid->SetParameterType(i, typeVarRef);
-                break;
-
-            case EEType::ParameterizedEEType:
-                // Array types are tricky. They're always declared locally and unified at runtime (during cast
-                // operations) since there's a high degree of structural equivalence and only ever one type
-                // variable. This puts us in the nasty situation where we might have to allocate a whole new
-                // array type which is equivalent but doesn't reside in any one module (e.g. we allocate it
-                // from the NT heap). We can avoid this in the sub-case where the element type is bound to the
-                // providing module (i.e. the module defines the element type) since that would place a
-                // (non-arbitrary) dependence on the module for this generic instantiation anyway).
-                if (pTypeVar->IsRelatedTypeViaIAT())
-                {
-                    // The element type of this array wasn't defined by the module directly. Therefore it is
-                    // likely that continuing to use this definition of the array type would place an
-                    // arbitrary dependence on the module. We need to create a new, module neutral, type in
-                    // this case.
-
-                    // Luckily we only have to create a fairly simplistic type. Since this is only used to
-                    // establish identity between generic instances (i.e. type checks) we only need the base
-                    // EEType, no GC desc, interface map or interface dispatch map.
-                    EEType *pArrayType = new (nothrow) EEType();
-                    if (pArrayType == NULL)
-                        return false;
-
-                    // Initialize the type as an array of the element type we extracted from the original
-                    // array type.
-                    pArrayType->InitializeAsArrayType(pTypeVar->get_RelatedParameterType(), pTypeVar->get_BaseSize());
-
-                    // Mark the type as runtime allocated so we can identify and deallocate it when we no
-                    // longer need it.
-                    pArrayType->SetRuntimeAllocated();
-
-                    // Patch the type variable to point to the module-neutral version of the array type.
-                    typeVarRef.pEEType = pArrayType;
-                    pGid->SetParameterType(i, typeVarRef);
-                }
-                break;
-
-            default:
-                UNREACHABLE();
-            }
-        }
-    }
-
-    return true;
-}
-
-// List of primes used to size the generic instantiation hash table bucket array.
-static const UInt32 s_rgPrimes[] = { 3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353,
-                                     431, 521, 631, 761, 919, 1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049,
-                                     4861, 5839, 7013, 8419, 10103 };
-
-// The cInstances parameter is optional and only used for the first call to StartGenericUnification to
-// determine the initial number of hash chain buckets.
-bool RuntimeInstance::StartGenericUnification(UInt32 cInstances)
-{
-    ASSERT(!m_fStandaloneExeMode);
-
-    // We take the hash table lock here and release it in EndGenericUnification. This avoids re-taking the
-    // lock for every generic instantiation, of which there can be many.
-    Crst::Enter(&m_genericInstHashtabLock);
-
-#ifdef _DEBUG
-    ASSERT(!m_genericInstHashUpdateInProgress);
-    m_genericInstHashUpdateInProgress = true;
-#endif
-
-    // We lazily allocate the hash table.
-    if (m_genericInstHashtab == NULL)
-    {
-        // Base the initial hash table bucket array size on the number of generic instantiations in the first
-        // module that registers such instantiations (this should be the class library since rtm does use any
-        // generic instantiations). This is an arbitrary number but at least in the cases we've seen so far
-        // it's the dominant one (System.Private.CoreLib, roslyn). This way we're at least slightly pay-for-play (the old
-        // scheme had a fixed constant size and we'd either allocate too many buckets for generics light
-        // scenarios such as WCL or too few for heavy scenarios such as System.Private.CoreLib or roslyn).
-        //
-        // Note that we don't yet support dynamically re-sizing the hash table, mainly because the resulting
-        // re-hash has working set implications of its own.
-        //
-        // Round up the number of hash buckets to some prime number (up to some reasonable ceiling).
-        cInstances = max(17, cInstances);
-        UInt32 cHashBuckets = 0;
-
-        UInt32 cPrimes = sizeof(s_rgPrimes) / sizeof(s_rgPrimes[0]);
-        for (UInt32 i = 0; i < cPrimes; i++)
-        {
-            if (s_rgPrimes[i] >= cInstances)
-            {
-                cHashBuckets = s_rgPrimes[i];
-                break;
-            }
-        }
-        if (cHashBuckets == 0)
-            cHashBuckets = s_rgPrimes[cPrimes - 1];
-
-        m_genericInstHashtabCount = cHashBuckets;
-
-        // Allocate a second set of buckets used during updates to temporarily store the newly added items.
-        // This avoids having to search those new entries during subsequent additions within the same update
-        // (since a module will never publish two identical generic instantiations these extra equality checks
-        // are unnecessary as well as expensive).
-        m_genericInstHashtab = new (nothrow) UnifiedGenericInstance*[cHashBuckets * 2];
-        m_genericInstHashtabUpdates = m_genericInstHashtab + cHashBuckets;
-        if (m_genericInstHashtab == NULL)
-        {
-            Crst::Leave(&m_genericInstHashtabLock);
-            return false;
-        }
-        memset(m_genericInstHashtab, 0, m_genericInstHashtabCount * sizeof(m_genericInstHashtab[0]) * 2);
-    }
-
-    // Initialize the temporary update buckets to point to the head of each live bucket. As we unify
-    // instantiations we'll add to the heads of these update buckets so we'll record the new entries without
-    // publishing them in the real table (until EndGenericUnification is called).
-    for (UInt32 i = 0; i < m_genericInstHashtabCount; i++)
-        m_genericInstHashtabUpdates[i] = m_genericInstHashtab[i];
-
-    return true;
-}
-
-UnifiedGenericInstance *RuntimeInstance::UnifyGenericInstance(GenericInstanceDesc * pLocalGid, UInt32 uiLocalTlsIndex)
-{
-    EEType * pLocalEEType = pLocalGid->GetEEType();
-    UnifiedGenericInstance * pCanonicalInst = NULL;
-    GenericInstanceDesc * pCanonicalGid = NULL;
-
-    UInt32 hashCode = pLocalGid->GetHashCode() % m_genericInstHashtabCount;
-    ASSERT(hashCode < m_genericInstHashtabCount);
-    for (pCanonicalInst = m_genericInstHashtab[hashCode];
-         pCanonicalInst != NULL;
-         pCanonicalInst = pCanonicalInst->m_pNext)
-    {
-        if (pCanonicalInst->Equals(pLocalGid))
-        {
-            pCanonicalGid = pCanonicalInst->GetGid();
-
-            // Increment count of modules which depend on this type.
-            pCanonicalInst->m_cRefs++;
-
-            goto Done;
-        }
-    }
-
-    {
-        // No module has previously registered this generic instantiation. We need to allocate and create a new
-        // unified canonical representation for this type.
-
-        // Allocate enough memory for the UnifiedGenericInstance, canonical GenericInstanceDesc, canonical generic
-        // instantiation EEType and static fields (GC and non-GC). Note that we don't have to allocate space for a
-        // GC descriptor, vtable or interface dispatch map for the EEType since this type will never appear in an
-        // object header on the GC heap (we always use module-local EETypes for this so that virtual dispatch is
-        // bound back to the local module).
-        UInt32 cbGid = pLocalGid->GetSize();
-        UInt32 cbPaddedGid = (UInt32)(ALIGN_UP(cbGid, sizeof(void*)));
-        UInt32 cbEEType = EEType::GetSizeofEEType(0,                                      // # of virtuals (no vtable)
-                                                  pLocalEEType->GetNumInterfaces(),
-                                                  false,                                  // HasFinalizer (we don't care)
-                                                  false,                                  // RequiresOptionalFields (we don't care)
-                                                  false,                                  // IsNullable (we don't care)
-                                                  false);                                 // fHasSealedVirtuals (we don't care)
-        UInt32 cbNonGcStaticFields = pLocalGid->GetSizeOfNonGcStaticFieldData();
-        UInt32 cbGcStaticFields = pLocalGid->GetSizeOfGcStaticFieldData();
-        PTR_StaticGcDesc pLocalGcStaticDesc = cbGcStaticFields ? pLocalGid->GetGcStaticFieldDesc() : NULL;
-        UInt32 cbGcDesc = pLocalGcStaticDesc ? pLocalGcStaticDesc->GetSize() : 0;
-
-        // for performance and correctness reasons (at least on ARM), we wish to align the static areas on a
-        // multiple of STATIC_FIELD_ALIGNMENT
-        const UInt32 STATIC_FIELD_ALIGNMENT = 8;
-        UInt32 cbMemory = (UInt32)ALIGN_UP(sizeof(UnifiedGenericInstance) + cbPaddedGid + cbEEType, STATIC_FIELD_ALIGNMENT) +
-                          (UInt32)ALIGN_UP(cbNonGcStaticFields, STATIC_FIELD_ALIGNMENT) +
-                          cbGcStaticFields +
-                          cbGcDesc;
-        // Note: Generic instance unification is not a product feature that we ship in ProjectN, so there is no need to
-        // use safe integers when computing the value of cbMemory.
-        UInt8 * pMemory = new (nothrow) UInt8[cbMemory];
-        if (pMemory == NULL)
-            return NULL;
-
-        // Determine the start of the various individual data structures in the monolithic chunk of memory we
-        // allocated.
-
-        pCanonicalInst = (UnifiedGenericInstance*)pMemory;
-        pMemory += sizeof(UnifiedGenericInstance);
-
-        pCanonicalGid = (GenericInstanceDesc*)pMemory;
-        pMemory += cbPaddedGid;
-
-        EEType * pCanonicalType = (EEType*)pMemory;
-        pMemory = ALIGN_UP(pMemory + cbEEType, STATIC_FIELD_ALIGNMENT);
-
-        UInt8 * pStaticData = pMemory;
-        pMemory += ALIGN_UP(cbNonGcStaticFields, STATIC_FIELD_ALIGNMENT);
-
-        UInt8 * pGcStaticData = pMemory;
-        pMemory += cbGcStaticFields;
-
-        StaticGcDesc * pStaticGcDesc = (StaticGcDesc*)pMemory;
-        pMemory += cbGcDesc;
-
-        // Copy local GenericInstanceDesc.
-        memcpy(pCanonicalGid, pLocalGid, cbGid);
-
-        // Copy local definition of the generic instantiation EEType (no vtable).
-        memcpy(pCanonicalType, pLocalEEType, sizeof(EEType));
-
-        // Set the type as runtime allocated (just for debugging purposes at the moment).
-        pCanonicalType->SetRuntimeAllocated();
-
-        // Copy the interface map directly after the EEType (if there are any interfaces).
-        if (pLocalEEType->HasInterfaces())
-            memcpy(pCanonicalType + 1,
-                   pLocalEEType->GetInterfaceMap().GetRawPtr(),
-                   pLocalEEType->GetNumInterfaces() * sizeof(EEInterfaceInfo));
-
-        // Copy initial static data from the module.
-        if (cbNonGcStaticFields)
-            memcpy(pStaticData, pLocalGid->GetNonGcStaticFieldData(), cbNonGcStaticFields);
-        if (cbGcStaticFields)
-            memcpy(pGcStaticData, pLocalGid->GetGcStaticFieldData(), cbGcStaticFields);
-
-        // If we have any GC static data then we need to copy over GC descriptors for it.
-        if (cbGcDesc)
-            memcpy(pStaticGcDesc, pLocalGcStaticDesc, cbGcDesc);
-
-        // Because we don't store the vtable with our canonical EEType it throws the calculation of the interface
-        // map (which is still required for cast operations) off. We need to clear the count of virtual methods in
-        // the EEType to correct this (this field should not be required for the canonical type).
-        pCanonicalType->SetNumVtableSlots(0);
-
-        // Initialize the UnifiedGenericInstance.
-        pCanonicalInst->m_pNext = m_genericInstHashtabUpdates[hashCode];
-        pCanonicalInst->m_cRefs = 1;
-
-        // Update canonical GenericInstanceDesc with any values that are no longer local to the module.
-        pCanonicalGid->SetEEType(pCanonicalType);
-        if (cbNonGcStaticFields)
-            pCanonicalGid->SetNonGcStaticFieldData(pStaticData);
-        if (cbGcStaticFields)
-            pCanonicalGid->SetGcStaticFieldData(pGcStaticData);
-        if (cbGcDesc)
-            pCanonicalGid->SetGcStaticFieldDesc(pStaticGcDesc);
-
-        // Any generic types with thread static fields need to know the TLS index assigned to the module by the OS
-        // loader for the module that ends up "owning" the unified instance. Note that this breaks the module
-        // unload scenario since when the arbitrarily chosen owning module is unloaded it's TLS index will be
-        // released. Since the OS doesn't provide access to the TLS allocation mechanism used by .tls support
-        // (it's a different system than that used by TlsAlloc) our only alternative here would be to allocate TLS
-        // slots manually and managed the storage ourselves, which is both complicated and would result in lower
-        // performance at the thread static access site (since at a minimum regular TlsAlloc'd TLS indices need to
-        // be range checked to determine how they are used with a TEB).
-        if (pCanonicalGid->HasThreadStaticFields())
-            pCanonicalGid->SetThreadStaticFieldTlsIndex(uiLocalTlsIndex);
-
-        // Attempt to remove any arbitrary dependencies on the module that provided the instantiation. Here
-        // arbitrary refers to references to the module that exist purely because the module used an IAT
-        // indirection to point to non-local types. We can remove most of these in-place by performing the IAT
-        // lookup now and copying the direct pointer up one level of the data structures (see
-        // FlattenGenericInstance above for more details). Unfortunately one edge case in particular might require
-        // us to allocate memory (some generic instantiations over array types) so the call below can fail. So
-        // don't modify any global state (the unification hash table) until this call has succeeded.
-        if (!FlattenGenericInstance(pCanonicalInst))
-        {
-            delete [] pMemory;
-            return NULL;
-        }
-
-        // If this generic instantiation has GC fields to report add it to the list we traverse during garbage
-        // collections.
-        if (cbGcStaticFields || pLocalGid->HasThreadStaticFields())
-        {
-            pCanonicalGid->SetNextGidWithGcRoots(m_genericInstReportList);
-            m_genericInstReportList = pCanonicalGid;
-        }
-
-        // We've built the new unified generic instantiation, publish it in the hash table. But don't put it on
-        // the real bucket chain yet otherwise further additions as part of this same update will needlessly
-        // search it. Instead add it to the head of the update bucket. All updated chains will be published back
-        // to the real buckets at the end of the update.
-        m_genericInstHashtabEntries += 1;
-        m_genericInstHashtabUpdates[hashCode] = pCanonicalInst;
-    }
-  Done:
-
-    // Get here whether we found an existing match for the type or had to create a new entry. All that's left
-    // to do is perform any updates to the module local data structures necessary to reflect the unification.
-
-    // Update the module local EEType to be a cloned type refering back to the unified EEType.
-    EEType ** ppCanonicalType = (EEType**)((UInt8*)pCanonicalGid + pCanonicalGid->GetEETypeOffset());
-    pLocalEEType->MakeClonedType(ppCanonicalType);
-
-    // Update the module local GenericInstanceDesc fields that that module local code still refers to but
-    // which need to be redirected to their unified versions.
-
-    if (pLocalGid->HasNonGcStaticFields())
-        pLocalGid->SetNonGcStaticFieldData(pCanonicalGid->GetNonGcStaticFieldData());
-    if (pLocalGid->HasGcStaticFields())
-        pLocalGid->SetGcStaticFieldData(pCanonicalGid->GetGcStaticFieldData());
-    if (pLocalGid->HasThreadStaticFields())
-    {
-        pLocalGid->SetThreadStaticFieldTlsIndex(pCanonicalGid->GetThreadStaticFieldTlsIndex());
-        pLocalGid->SetThreadStaticFieldStartOffset(pCanonicalGid->GetThreadStaticFieldStartOffset());
-    }
-
-    return pCanonicalInst;
-}
-
-void RuntimeInstance::EndGenericUnification()
-{
-#ifdef _DEBUG
-    ASSERT(m_genericInstHashUpdateInProgress);
-    m_genericInstHashUpdateInProgress = false;
-#endif
-
-    // The update buckets now hold the complete hash chain (since we initialized them to point to the head of
-    // the old chains and we always add at the head). Publish these chain heads back into the real hash table
-    // buckets to make all updates visible.
-    for (UInt32 i = 0; i < m_genericInstHashtabCount; i++)
-        m_genericInstHashtab[i] = m_genericInstHashtabUpdates[i];
-
-    Crst::Leave(&m_genericInstHashtabLock);
-}
-
-// Release one module's interest in the given generic instantiation. If no modules require the instantiation
-// any more release any resources associated with it.
-void RuntimeInstance::ReleaseGenericInstance(GenericInstanceDesc * pInst)
-{
-    CrstHolder hashLock(&m_genericInstHashtabLock);
-
-    // Find the hash chain containing the target instantiation.
-    UInt32 hashCode = pInst->GetHashCode() % m_genericInstHashtabCount;
-    UnifiedGenericInstance *pGlobalInst = m_genericInstHashtab[hashCode];
-    UnifiedGenericInstance *pPrevInst = NULL;
-
-    // Iterate down the hash chain looking for the target instantiation.
-    while (pGlobalInst)
-    {
-        if (pGlobalInst->Equals(pInst))
-        {
-            // Found it, decrement the count of modules interested in this instantiation. If there are still
-            // modules with a reference we can return right now.
-            if (--pGlobalInst->m_cRefs > 0)
-                return;
-
-            // Unlink the GenericInstanceDesc from the hash chain.
-            if (pPrevInst)
-                pPrevInst->m_pNext = pGlobalInst->m_pNext;
-            else
-                m_genericInstHashtab[hashCode] = pGlobalInst->m_pNext;
-
-            GenericInstanceDesc * pGlobalGid = pGlobalInst->GetGid();
-
-            // If the instantiation has GC reference static fields then this descriptor has also been linked
-            // on the global list of instantiations we report to the GC. This list is protected from being
-            // updated by m_genericInstHashtabLock which we already hold.
-            if (pGlobalGid->HasGcStaticFields())
-            {
-                GenericInstanceDesc *pPrevReportGid = NULL;
-                GenericInstanceDesc *pCurrReportGid = m_genericInstReportList;
-                while (pCurrReportGid != NULL)
-                {
-                    if (pCurrReportGid == pGlobalGid)
-                    {
-                        if (pPrevReportGid == NULL)
-                            m_genericInstReportList = pCurrReportGid->GetNextGidWithGcRoots();
-                        else
-                            pPrevReportGid->SetNextGidWithGcRoots(pCurrReportGid->GetNextGidWithGcRoots());
-                        break;
-                    }
-
-                    pPrevReportGid = pCurrReportGid;
-                    pCurrReportGid = pCurrReportGid->GetNextGidWithGcRoots();
-                }
-                ASSERT(pCurrReportGid == pGlobalGid);
-            }
-
-            // Nobody references the GenericInstanceDesc (and it's associated data such as the EEType and
-            // static data), so we can deallocate it. Most data was allocated in one monolithic block and can
-            // be deallocated with a single call, but we might have also allocated some module-neutral array
-            // types in the instantiation type arguments.
-            for (UInt32 i = 0; i < pGlobalGid->GetArity(); i++)
-            {
-                EEType * pTypeVar = pGlobalGid->GetParameterType(i).GetValue();
-                if (pTypeVar->IsRuntimeAllocated())
-                    delete pTypeVar;
-            }
-            delete [] (UInt8*)pGlobalInst;
-
-            return;
-        }
-
-        pPrevInst = pGlobalInst;
-        pGlobalInst = pGlobalInst->m_pNext;
-    }
-
-    // We couldn't find the instantiation in the hash table. This should never happen.
-    UNREACHABLE();
-}
-
 // This method should only be called during DllMain for modules with GcStress enabled.  The locking done by 
 // the loader is used to make it OK to call UnsynchronizedHijackAllLoops.
 void RuntimeInstance::EnableGcPollStress()
@@ -1101,60 +624,36 @@ GenericInstanceDesc * RuntimeInstance::LookupGenericInstance(EEType * pEEType)
     if (pEEType->IsCloned())
         pEEType = pEEType->get_CanonicalEEType();
 
-    if (m_genericInstHashtabCount == 0)
+    if (m_pGenericTypeHashTable == NULL)
     {
-        if (m_pGenericTypeHashTable == NULL)
+        if (!BuildGenericTypeHashTable())
         {
-            if (!BuildGenericTypeHashTable())
-            {
-                // We failed the allocation but we don't want to fail the call (because we build this table lazily
-                // we're doing the allocation at a point the caller doesn't expect can fail). So fall back to the
-                // slow linear scan of all variant GIDs in this case.
+            // We failed the allocation but we don't want to fail the call (because we build this table lazily
+            // we're doing the allocation at a point the caller doesn't expect can fail). So fall back to the
+            // slow linear scan of all variant GIDs in this case.
 
-                FOREACH_MODULE(pModule)
+            FOREACH_MODULE(pModule)
+            {
+                Module::GenericInstanceDescEnumerator gidEnumerator(pModule, Module::GenericInstanceDescKind::VariantGenericInstances);
+                GenericInstanceDesc * pGid;
+                while ((pGid = gidEnumerator.Next()) != NULL)
                 {
-                    Module::GenericInstanceDescEnumerator gidEnumerator(pModule, Module::GenericInstanceDescKind::VariantGenericInstances);
-                    GenericInstanceDesc * pGid;
-                    while ((pGid = gidEnumerator.Next()) != NULL)
-                    {
-                        if (pGid->GetEEType() == pEEType)
-                            return pGid;
-                    }
+                    if (pGid->GetEEType() == pEEType)
+                        return pGid;
                 }
-                END_FOREACH_MODULE;
-
-                // It is not legal to call this API unless you know there is a matching GenericInstanceDesc.
-                UNREACHABLE();
             }
-        }
+            END_FOREACH_MODULE;
 
-        ReaderWriterLock::ReadHolder read(&m_GenericHashTableLock);
-
-        const PTR_GenericInstanceDesc * ppGid = m_pGenericTypeHashTable->LookupPtr(pEEType);
-        if (ppGid != NULL)
-            return *ppGid;
-    }
-    else
-    {
-        // @TODO: In the multi-module case we can't ask the modules to do the lookups due to generic type
-        // unification. If we want to gain the perf benefit here we'll need to build a similar hash table over
-        // the unified GIDs (it will be a little more complex and less compact than the standalone version
-        // since this hash will be dynamically sized). For now we perform a linear search through all the
-        // unified GIDs.
-        CrstHolder hashLock(&m_genericInstHashtabLock);
-
-        UnifiedGenericInstance * pInst = NULL;
-
-        for (UInt32 i = 0; i < m_genericInstHashtabCount; i++)
-        {
-            pInst = m_genericInstHashtab[i];
-            for (; pInst; pInst = pInst->m_pNext)
-            {
-                if (pInst->GetGid()->GetEEType() == pEEType)
-                    return pInst->GetGid();
-            }
+            // It is not legal to call this API unless you know there is a matching GenericInstanceDesc.
+            UNREACHABLE();
         }
     }
+
+    ReaderWriterLock::ReadHolder read(&m_GenericHashTableLock);
+
+    const PTR_GenericInstanceDesc * ppGid = m_pGenericTypeHashTable->LookupPtr(pEEType);
+    if (ppGid != NULL)
+        return *ppGid;
 
     // It is not legal to call this API unless you know there is a matching GenericInstanceDesc.
     UNREACHABLE();
@@ -1333,204 +832,6 @@ COOP_PINVOKE_HELPER(bool, RhSetGenericInstantiation, (EEType *               pEE
                                                          pEETypeDef,
                                                          arity,
                                                          pInstantiation);
-}
-
-/// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-COOP_PINVOKE_HELPER(PTR_VOID *, RhGetDictionary, (EEType * pEEType))
-{
-    // Dictionary slot is the first vtable slot
-
-    EEType * pBaseType = pEEType->get_BaseType();
-    UInt16 dictionarySlot = (pBaseType != NULL) ? pBaseType->GetNumVtableSlots() : 0;
-
-    return (PTR_VOID *)(*(PTR_VOID *)(pEEType->get_SlotPtr(dictionarySlot)));
-}
-
-/// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-COOP_PINVOKE_HELPER(void, RhSetDictionary, (EEType *     pEEType,
-                                            EEType *     pEETypeOfDictionary,
-                                            PTR_VOID *   pDictionary))
-{
-    ASSERT(pEEType->IsDynamicType());
-
-    // Update the base type's vtable slot in pEEType's vtable to point to the 
-    // new dictionary
-    EEType * pBaseType = pEETypeOfDictionary->get_BaseType();
-    UInt16 dictionarySlot = (pBaseType != NULL) ? pBaseType->GetNumVtableSlots() : 0;
-    *(PTR_VOID *)(pEEType->get_SlotPtr(dictionarySlot)) = pDictionary;
-}
-
-/// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-COOP_PINVOKE_HELPER(EEType *, RhCloneType, (EEType *        pTemplate,
-                                            UInt32          arity,
-                                            UInt32          nonGcStaticDataSize,
-                                            UInt32          nonGCStaticDataOffset,
-                                            UInt32          gcStaticDataSize,
-                                            UInt32          threadStaticsOffset,
-                                            StaticGcDesc *  pGcStaticsDesc,
-                                            StaticGcDesc *  pThreadStaticsDesc,
-                                            UInt32          hashcode))
-{
-    // In some situations involving arrays we can find as a template a dynamically generated type.
-    // In that case, the correct template would be the template used to create the dynamic type in the first
-    // place.
-    if (pTemplate->IsDynamicType())
-    {
-        pTemplate = pTemplate->get_DynamicTemplateType();
-    }
-
-    OptionalFieldsRuntimeBuilder optionalFields;
-
-    optionalFields.Decode(pTemplate->get_OptionalFields());
-
-    optionalFields.m_rgFields[OFT_RareFlags].m_fPresent = true;
-    optionalFields.m_rgFields[OFT_RareFlags].m_uiValue |= EEType::IsDynamicTypeFlag;
-
-    // Remove the NullableTypeViaIATFlag flag
-    optionalFields.m_rgFields[OFT_RareFlags].m_uiValue &= ~EEType::NullableTypeViaIATFlag;
-
-    optionalFields.m_rgFields[OFT_DispatchMap].m_fPresent = false; // Dispatch map is fetched from template
-
-    // Compute size of optional fields encoding
-    UInt32 cbOptionalFieldsSize = optionalFields.EncodingSize();
-
-    UInt32 cbEEType = EEType::GetSizeofEEType(pTemplate->GetNumVtableSlots(),
-                                              pTemplate->GetNumInterfaces(),
-                                              pTemplate->HasFinalizer(),
-                                              true /* optional fields are always present */,
-                                              pTemplate->IsNullable(),
-                                              false /* sealed virtual slots come from template */);
-
-    UInt32 cbGCDesc = RedhawkGCInterface::GetGCDescSize(pTemplate);
-
-    UInt32 cbGCDescAligned = (UInt32)ALIGN_UP(cbGCDesc, sizeof(void *));
-
-    // Safe arithmetics note:
-    //  - cbGCDescAligned should typically not exceed 16 MB, which is certainly big enough for anything that actually works
-    //  - cbEEType should never exceed 1 GB (number based on type with 65535 interface, 65535 virtual method slots, and 64-bit pointer sizes)
-    //  - cbOptionalFieldsSize is quite small (6 flags to encode, at most 5 bytes per flag).
-    // Adding up these numbers should never exceed the max value of a signed Int32, so there is no need to use safe integers here.
-    // A simple check is enough to catch out of range values.
-    // Note: this function will be removed soon after RTM and moved to the managed size, where checked integers can be used
-    if (cbOptionalFieldsSize >= 200 || cbEEType >= 2000000000 || cbGCDescAligned >= 0x1000000)
-    {
-        ASSERT_UNCONDITIONALLY("Invalid sizes for dynamic type detected.");
-        RhFailFast();
-    }
-
-    NewArrayHolder<UInt8> pEETypeMemory = new (nothrow) UInt8[cbGCDescAligned + cbEEType + sizeof(EEType *)+cbOptionalFieldsSize];
-    if (pEETypeMemory == NULL)
-        return NULL;
-
-    EEType * pEEType = (EEType *)((UInt8*)pEETypeMemory + cbGCDescAligned);
-
-    UInt32 cbTemplate = EEType::GetSizeofEEType(pTemplate->GetNumVtableSlots(),
-                                                pTemplate->GetNumInterfaces(),
-                                                pTemplate->HasFinalizer(),
-                                                false /* optional fields will be updated later - no need to copy it from template */,
-                                                false /* nullable type will be updated later - no need to copy it from template */,
-                                                false /* sealed virtual slots are not present on dynamic types */);
-
-    memcpy(((UInt8 *)pEEType) - cbGCDesc, ((UInt8 *)pTemplate) - cbGCDesc, cbGCDesc + cbTemplate);
-
-    OptionalFields * pOptionalFields = (OptionalFields *)((UInt8 *)pEEType + cbEEType + sizeof(EEType *));
-
-    // Encode the optional fields for real
-    UInt32 cbActualOptionalFieldsSize;
-    cbActualOptionalFieldsSize = optionalFields.Encode(pOptionalFields);
-    ASSERT(cbActualOptionalFieldsSize == cbOptionalFieldsSize);
-
-    pEEType->set_OptionalFields(pOptionalFields);
-
-    pEEType->set_DynamicTemplateType(pTemplate);
-
-    pEEType->SetHashCode(hashcode);
-
-    if (pEEType->IsGeneric())
-    {
-        NewArrayHolder<UInt32> pGenericVarianceFlags = NULL;
-
-        if (pTemplate->HasGenericVariance())
-        {
-            GenericInstanceDesc * pTemplateGid = GetRuntimeInstance()->LookupGenericInstance(pTemplate);
-            ASSERT(pTemplateGid != NULL && pTemplateGid->HasInstantiation() && pTemplateGid->HasVariance());
-            
-            pGenericVarianceFlags = new (nothrow) UInt32[arity];
-            if (pGenericVarianceFlags == NULL) return NULL;
-
-            for (UInt32 i = 0; i < arity; i++)
-                ((UInt32*)pGenericVarianceFlags)[i] = (UInt32)pTemplateGid->GetParameterVariance(i);
-        }
-
-        if (!GetRuntimeInstance()->CreateGenericInstanceDesc(pEEType, pTemplate, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize, threadStaticsOffset, pGcStaticsDesc, pThreadStaticsDesc, (UInt32*)pGenericVarianceFlags))
-            return NULL;
-    }
-
-    pEETypeMemory.SuppressRelease();
-
-    return pEEType;
-}
-
-/// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-COOP_PINVOKE_HELPER(PTR_VOID, RhAllocateMemory, (UInt32 size))
-{
-    // Generic memory allocation function, for use by managed code
-    // Note: all callers to RhAllocateMemory on the managed side use checked integer arithmetics to catch overflows,
-    // so there is no need to use safe integers here.
-    PTR_VOID pMemory = new (nothrow) UInt8[size];
-    if (pMemory == NULL)
-        return NULL;
-
-#ifdef _DEBUG
-    memset(pMemory, 0, size * sizeof(UInt8));
-#endif
-
-    return pMemory;
-}
-
-/// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-COOP_PINVOKE_HELPER(void, RhSetRelatedParameterType, (EEType * pEEType,
-                                                  EEType * pRelatedParamterType))
-{
-    pEEType->set_RelatedParameterType(pRelatedParamterType);
-}
-
-/// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-COOP_PINVOKE_HELPER(void, RhSetNullableType, (EEType * pEEType, EEType * pTheT))
-{
-    pEEType->SetNullableType(pTheT);
-}
-
-/// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-COOP_PINVOKE_HELPER(bool , RhCreateGenericInstanceDescForType, (EEType *        pEEType,
-                                                                UInt32          arity,
-                                                                UInt32          nonGcStaticDataSize,
-                                                                UInt32          nonGCStaticDataOffset,
-                                                                UInt32          gcStaticDataSize,
-                                                                UInt32          threadStaticsOffset,
-                                                                StaticGcDesc *  pGcStaticsDesc,
-                                                                StaticGcDesc *  pThreadStaticsDesc))
-{
-    ASSERT(pEEType->IsDynamicType());
-
-    EEType * pTemplateType = pEEType->get_DynamicTemplateType();
-
-    NewArrayHolder<UInt32> pGenericVarianceFlags = NULL;
-
-    if (pTemplateType->HasGenericVariance())
-    {
-        GenericInstanceDesc * pTemplateGid = GetRuntimeInstance()->LookupGenericInstance(pTemplateType);
-        ASSERT(pTemplateGid != NULL && pTemplateGid->HasInstantiation() && pTemplateGid->HasVariance());
-
-        pGenericVarianceFlags = new (nothrow) UInt32[arity];
-        if (pGenericVarianceFlags == NULL) return false;
-
-        for (UInt32 i = 0; i < arity; i++)
-            ((UInt32*)pGenericVarianceFlags)[i] = (UInt32)pTemplateGid->GetParameterVariance(i);
-    }
-
-    return GetRuntimeInstance()->CreateGenericInstanceDesc(pEEType, pTemplateType, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize,
-        threadStaticsOffset, pGcStaticsDesc, pThreadStaticsDesc, pGenericVarianceFlags);
 }
 
 COOP_PINVOKE_HELPER(bool, RhCreateGenericInstanceDescForType2, (EEType *        pEEType,

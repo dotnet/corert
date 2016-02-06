@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
 {
@@ -140,7 +141,9 @@ namespace Internal.Runtime.CompilerServices
         {
             if (!IsGenericMethodPointer(functionPointerA))
             {
-                return functionPointerA == functionPointerB;
+                IntPtr codeTargetA = RuntimeAugments.GetCodeTarget(functionPointerA);
+                IntPtr codeTargetB = RuntimeAugments.GetCodeTarget(functionPointerB);
+                return codeTargetA == codeTargetB;
             }
             else
             {
@@ -153,7 +156,9 @@ namespace Internal.Runtime.CompilerServices
                 if (pointerDefA->InstantiationArgument != pointerDefB->InstantiationArgument)
                     return false;
 
-                return pointerDefA->MethodFunctionPointer == pointerDefB->MethodFunctionPointer;
+                IntPtr codeTargetA = RuntimeAugments.GetCodeTarget(pointerDefA->MethodFunctionPointer);
+                IntPtr codeTargetB = RuntimeAugments.GetCodeTarget(pointerDefB->MethodFunctionPointer);
+                return codeTargetA == codeTargetB;
             }
         }
     }

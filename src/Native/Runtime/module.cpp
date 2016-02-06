@@ -113,18 +113,6 @@ Module * Module::Create(ModuleHeader *pModuleHeader)
     Module::DoCustomImports(pModuleHeader);
 #endif // FEATURE_CUSTOM_IMPORTS
 
-#ifdef FEATURE_VSD
-    // VirtualCallStubManager::ApplyPartialPolymorphicCallSiteResetForModule relies on being able to
-    // multiply CountVSDIndirectionCells by up to 100. Instead of trying to handle overflow gracefully
-    // we reject modules that would cause such an overflow. This limits the number of indirection
-    // cells to 1GB in number, which is perfectly reasonable given that this limit implies we'll also
-    // hit (or exceed in the 64bit case) the PE image 4GB file size limit.
-    if (pModuleHeader->CountVSDIndirectionCells > (UInt32_MAX / 100))
-    {
-        return NULL;
-    }
-#endif // FEATURE_VSD
-
 #ifdef _DEBUG
 #ifdef LOG_MODULE_LOAD_VERIFICATION
     printf("\nModule: 0x%p\n", pNewModule->m_hOsModuleHandle);
@@ -703,25 +691,6 @@ void Module::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * 
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_VSD
-
-IndirectionCell * Module::GetIndirectionCellArray()
-{
-    return (IndirectionCell*)m_pModuleHeader->GetVSDIndirectionCells();
-}
-
-UInt32 Module::GetIndirectionCellArrayCount()
-{
-    return m_pModuleHeader->CountVSDIndirectionCells;
-}
-
-VSDInterfaceTargetInfo * Module::GetInterfaceTargetInfoArray()
-{
-    return (VSDInterfaceTargetInfo*)m_pModuleHeader->GetVSDInterfaceTargetInfos();
-}
-
-#endif // FEATURE_VSD
-
 //------------------------------------------------------------------------------------------------------------
 // @TODO: the following functions are related to throwing exceptions out of Rtm. If we did not have to throw
 // out of Rtm, then we would note have to have the code below to get a classlib exception object given
@@ -809,131 +778,10 @@ void * Module::GetClasslibInitializeFinalizerThread()
     return m_pModuleHeader->Get_InitializeFinalizerThread();
 }
 
-// Remove from the system any generic instantiations published by this module and not required by any other
-// module currently loaded.
-void Module::UnregisterGenericInstances()
-{
-    RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
-
-    // There can be up to three segments of GenericInstanceDescs, separated to improve locality.
-    const UInt32 cInstSections = 3;
-    GenericInstanceDesc * rgInstPointers[cInstSections];
-    UInt32 rgInstCounts[cInstSections];
-    rgInstPointers[0] = (GenericInstanceDesc*)m_pModuleHeader->GetGenericInstances();
-    rgInstCounts[0] = m_pModuleHeader->CountGenericInstances;
-    rgInstPointers[1] = (GenericInstanceDesc*)m_pModuleHeader->GetGcRootGenericInstances();
-    rgInstCounts[1] = m_pModuleHeader->CountGcRootGenericInstances;
-    rgInstPointers[2] = (GenericInstanceDesc*)m_pModuleHeader->GetVariantGenericInstances();
-    rgInstCounts[2] = m_pModuleHeader->CountVariantGenericInstances;
-
-    for (UInt32 idxSection = 0; idxSection < cInstSections; idxSection++)
-    {
-        GenericInstanceDesc *pGid = rgInstPointers[idxSection];
-
-        for (UInt32 i = 0; i < rgInstCounts[idxSection]; i++)
-        {
-            // Skip GIDs without an instantiation, they're just padding used to avoid base relocs straddling
-            // page boundaries (which is bad for perf). They're also not included in the GID count, so adjust
-            // that as we see them.
-            if (pGid->HasInstantiation())
-                pRuntimeInstance->ReleaseGenericInstance(pGid);
-            else
-            {
-                ASSERT(pGid->GetFlags() == GenericInstanceDesc::GID_NoFields);
-                rgInstCounts[idxSection]++;
-            }
-
-            pGid = (GenericInstanceDesc *)((UInt8*)pGid + pGid->GetSize());
-        }
-    }
-}
-
-bool Module::RegisterGenericInstances()
-{
-    bool fSuccess = true;
-
-    RuntimeInstance *runtimeInstance = GetRuntimeInstance();
-
-    // There can be up to three segments of GenericInstanceDescs, separated to improve locality.
-    const UInt32 cInstSections = 3;
-    GenericInstanceDesc * rgInstPointers[cInstSections];
-    UInt32 rgInstCounts[cInstSections];
-    rgInstPointers[0] = (GenericInstanceDesc*)m_pModuleHeader->GetGenericInstances();
-    rgInstCounts[0] = m_pModuleHeader->CountGenericInstances;
-    rgInstPointers[1] = (GenericInstanceDesc*)m_pModuleHeader->GetGcRootGenericInstances();
-    rgInstCounts[1] = m_pModuleHeader->CountGcRootGenericInstances;
-    rgInstPointers[2] = (GenericInstanceDesc*)m_pModuleHeader->GetVariantGenericInstances();
-    rgInstCounts[2] = m_pModuleHeader->CountVariantGenericInstances;
-
-    // Registering generic instances with the runtime is performed as a transaction. This allows for some
-    // efficiencies (for instance, no need to continually retake hash table locks around each unification).
-    if (!runtimeInstance->StartGenericUnification(rgInstCounts[0] + rgInstCounts[1] + rgInstCounts[2]))
-        return false;
-
-    UInt32 uiLocalTlsIndex = m_pModuleHeader->PointerToTlsIndex ? *m_pModuleHeader->PointerToTlsIndex : TLS_OUT_OF_INDEXES;
-
-    for (UInt32 idxSection = 0; idxSection < cInstSections; idxSection++)
-    {
-        GenericInstanceDesc *pGid = rgInstPointers[idxSection];
-
-        for (UInt32 i = 0; i < rgInstCounts[idxSection]; i++)
-        {
-            // We can get padding GenericInstanceDescs every so often that are inserted to ensure none of the
-            // base relocs associated with a GID straddle a page boundary (which is very inefficient). These
-            // don't have instantiations. They're also not included in the GID count, so adjust that as we see
-            // them.
-            if (pGid->HasInstantiation())
-            {
-                if (!runtimeInstance->UnifyGenericInstance(pGid, uiLocalTlsIndex))
-                {
-                    fSuccess = false;
-                    goto Finished;
-                }
-            }
-            else
-            {
-                ASSERT(pGid->GetFlags() == GenericInstanceDesc::GID_NoFields);
-                rgInstCounts[idxSection]++;
-            }
-
-            pGid = (GenericInstanceDesc *)((UInt8*)pGid + pGid->GetSize());
-        }
-    }
-
-  Finished:
-    runtimeInstance->EndGenericUnification();
-
-    return fSuccess;
-}
-
-
 // Returns true if this module is part of the OS module specified by hOsHandle.
 bool Module::IsContainedBy(HANDLE hOsHandle)
 {
     return m_hOsModuleHandle == hOsHandle;
-}
-
-// NULL out any GC references held by statics in this module. Note that this is unsafe unless we know that no
-// code is making (or can make) any reference to these statics. Generally this is only true when we are about
-// to unload the module.
-void Module::ClearStaticRoots()
-{
-    StaticGcDesc * pStaticGcInfo = (StaticGcDesc*)m_pModuleHeader->GetStaticsGCInfo();
-    if (!pStaticGcInfo)
-        return;
-
-    UInt8 * pGcStaticsSection = m_pModuleHeader->GetStaticsGCDataSection();
-
-    for (UInt32 idxSeries = 0; idxSeries < pStaticGcInfo->m_numSeries; idxSeries++)
-    {
-        StaticGcDesc::GCSeries * pSeries = &pStaticGcInfo->m_series[idxSeries];
-
-        Object **   pRefLocation = (Object**)(pGcStaticsSection + pSeries->m_startOffset);
-        UInt32      numObjects = pSeries->m_size / sizeof(Object*);
-
-        for (UInt32 idxObj = 0; idxObj < numObjects; idxObj++)
-            pRefLocation[idxObj] = NULL;
-    }
 }
 
 void Module::UnregisterFrozenSection()

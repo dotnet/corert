@@ -417,17 +417,6 @@ namespace System.Runtime
             pEEType->InterfaceMap[index].InterfaceType = pInterfaceEEType;
         }
 
-#if !CORERT
-        /// FUNCTION IS OBSOLETE AND NOT EXPECTED TO BE USED IN NEW CODE
-        [RuntimeExport("RhSetNonArrayBaseType")]
-        public static unsafe void RhSetNonArrayBaseType(EETypePtr ptrEEType, EETypePtr ptrBaseEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            EEType* pBaseEEType = ptrBaseEEType.ToPointer();
-            pEEType->BaseType = pBaseEEType;
-        }
-#endif
-
         [RuntimeExport("RhIsDynamicType")]
         public static unsafe bool RhIsDynamicType(EETypePtr ptrEEType)
         {

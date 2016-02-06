@@ -120,51 +120,6 @@ typename SList<T, Traits>::PTR_T SList<T, Traits>::PopHead()
     return pRet;
 }
 
-#ifdef FEATURE_VSD
-//-------------------------------------------------------------------------------------------------
-// This API is currently used only by VSD and it has a race condition. Possibly not worth fixing since it's
-// hard and we may be getting rid of VSD entirely.
-template <typename T, typename Traits>
-inline
-typename SList<T, Traits>::PTR_T SList<T, Traits>::PopHeadInterlocked()
-{
-    NO_DAC();
-    ASSERT(IS_ALIGNED(&m_pHead, sizeof(void*)));
-
-    T* pRetItem = NULL;
-    while (true)
-    {
-        // The read of m_pHead->m_pNext must be volatile to ensure the compiler reads
-        // the value only once.
-        pRetItem = *reinterpret_cast<T * volatile *>(&m_pHead);
-
-        // It is impossible for
-        // pRetItem->m_pNext to be modified until the link is successfully removed from
-        // the list. If another thread beats us to the remove, then the interlocked operation
-        // will fail (since the value of m_pHead->m_pNext will have been updated by that thread's
-        // interlocked compare exchange), and we'll update pRetItem with the new value and
-        // try again, failing if there are no elements in the list.
-
-        // The above logic has a flaw: we don't guard against the head element being popped, another element
-        // pushed and then the original element being re-pushed in between our initial read of the head
-        // element's next pointer and the interlocked compare exchange operation. Such a sequence would drop
-        // an element on the floor. The OS SLIST implementation uses a much more complex list head to avoid
-        // this problem and imposes double-pointer alignment requirements on both the list head and entries as
-        // a result.
-
-        if (pRetItem == NULL ||
-            PalInterlockedCompareExchangePointer(
-                reinterpret_cast<void * volatile *>(&m_pHead),
-                reinterpret_cast<void *>(*GetNextPtr(pRetItem)),
-                reinterpret_cast<void *>(pRetItem)) == reinterpret_cast<void *>(pRetItem))
-        {
-            break;
-        }
-    }
-    return pRetItem;
-}
-#endif // FEATURE_VSD
-
 //-------------------------------------------------------------------------------------------------
 template <typename T, typename Traits>
 inline

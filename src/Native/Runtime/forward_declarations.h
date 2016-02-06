@@ -37,7 +37,6 @@ FWD_DECL(SyncClean)
 FWD_DECL(SyncState)
 FWD_DECL(Thread)
 FWD_DECL(ThreadStore)
-FWD_DECL(VirtualCallStubManager)
 
 #ifdef FEATURE_RWX_MEMORY
 namespace rh { 
