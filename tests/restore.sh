@@ -65,7 +65,7 @@ if [ ! -f ${__NuGetExeDir}/NuGet.exe ] ; then
     exit -1
 fi
 
-__NuGetFeedUrl="https://www.myget.org/F/dotnet/auth/3e4f1dbe-f43a-45a8-b029-3ad4d25605ac/api/v2"
+__NuGetFeedUrl="https://dotnet.myget.org/F/dotnet-corert/api/v2"
 
 echo Installing CoreRT external dependencies
 mono ${__NuGetExeDir}/NuGet.exe install -Source ${__NuGetFeedUrl} -OutputDir ${__NuPkgInstallDir} -Version ${CoreRT_AppDepSdkVer} ${CoreRT_AppDepSdkPkg} -prerelease ${__NuGetOptions} -nocache

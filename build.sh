@@ -155,7 +155,7 @@ prepare_managed_build()
     # Grab the MSBuild package if we don't have it already
     if [ ! -e "$__msbuildpath" ]; then
         echo "Restoring MSBuild..."
-        mono "$__nugetpath" install $__msbuildpackageid -Version $__msbuildpackageversion -source "https://www.myget.org/F/dotnet-buildtools/" -OutputDirectory "$__packageroot"
+        mono "$__nugetpath" install $__msbuildpackageid -Version $__msbuildpackageversion -source "https://dotnet.myget.org/F/dotnet-buildtools/" -OutputDirectory "$__packageroot"
         if [ $? -ne 0 ]; then
             echo "Failed to restore MSBuild."
             exit 1
