@@ -15,6 +15,7 @@ using ILCompiler.SymbolReader;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.IL;
 
 namespace ILCompiler
 {
@@ -153,7 +154,7 @@ namespace ILCompiler
             // Initialize all well known types - it will save us from checking the name for each loaded type
             for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
             {
-                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex]);
+                MetadataType type = systemModule.GetKnownType("System", s_wellKnownTypeNames[typeIndex]);
                 type.SetWellKnownType((WellKnownType)(typeIndex + 1));
                 _wellKnownTypes[typeIndex] = type;
             }
@@ -292,7 +293,7 @@ namespace ILCompiler
         {
             if (_arrayOfTRuntimeInterfacesAlgorithm == null)
             {
-                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System", "Array`1"));
+                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetKnownType("System", "Array`1"));
             }
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }

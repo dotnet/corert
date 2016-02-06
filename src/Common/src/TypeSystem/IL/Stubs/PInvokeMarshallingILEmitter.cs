@@ -218,8 +218,8 @@ namespace Internal.IL.Stubs
                 TypeDesc byteType = context.GetWellKnownType(WellKnownType.Byte);
                 TypeDesc byteArrayType = byteType.MakeArrayType();
 
-                MethodDesc getLengthMethod = stringType.GetMethod("get_Length", null);
-                MethodDesc getCharsMethod = stringType.GetMethod("get_Chars", null);
+                MethodDesc getLengthMethod = stringType.GetKnownMethod("get_Length", null);
+                MethodDesc getCharsMethod = stringType.GetKnownMethod("get_Chars", null);
 
                 ILCodeLabel lStart = _emitter.NewCodeLabel();
                 ILCodeLabel lNext = _emitter.NewCodeLabel();
@@ -435,7 +435,7 @@ namespace Internal.IL.Stubs
                 TypeSystemContext context = method.Context;
                 MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
                     new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
-                MethodDesc exceptionCtor = method.Context.GetWellKnownType(WellKnownType.Exception).GetMethod(".ctor", ctorSignature);
+                MethodDesc exceptionCtor = method.Context.GetWellKnownType(WellKnownType.Exception).GetKnownMethod(".ctor", ctorSignature);
 
                 ILCodeStream codeStream = emitter.NewCodeStream();
                 codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));

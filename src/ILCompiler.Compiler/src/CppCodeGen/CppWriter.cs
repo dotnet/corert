@@ -456,7 +456,7 @@ namespace ILCompiler.CppCodeGen
 
             if (type.IsDelegate)
             {
-                MethodDesc method = type.GetMethod("Invoke", null);
+                MethodDesc method = type.GetKnownMethod("Invoke", null);
 
                 var sig = method.Signature;
                 ExpandType(sig.ReturnType);
@@ -770,7 +770,7 @@ namespace ILCompiler.CppCodeGen
         {
             StringBuilder sb = new StringBuilder();
 
-            MethodDesc method = delegateType.GetMethod("Invoke", null);
+            MethodDesc method = delegateType.GetKnownMethod("Invoke", null);
 
             AppendSlotTypeDef(sb, method);
 

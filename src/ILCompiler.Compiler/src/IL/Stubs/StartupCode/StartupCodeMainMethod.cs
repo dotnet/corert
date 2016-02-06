@@ -51,15 +51,15 @@ namespace Internal.IL.Stubs.StartupCode
             ILCodeStream codeStream = emitter.NewCodeStream();
             ILLocalVariable returnValue = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
 
-            TypeDesc startup = Context.SystemModule.GetType("Internal.Runtime.CompilerHelpers", "StartupCodeHelpers");
+            MetadataType startup = Context.GetHelperType("StartupCodeHelpers");
             
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetMethod("Initialize", null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetKnownMethod("Initialize", null)));
 
             // Initialize command line args
             string initArgsName = (Context.Target.OperatingSystem == TargetOS.Windows)
                                 ? "InitializeCommandLineArgsW"
                                 : "InitializeCommandLineArgs";
-            MethodDesc initArgs = startup.GetMethod(initArgsName, null);
+            MethodDesc initArgs = startup.GetKnownMethod(initArgsName, null);
             codeStream.Emit(ILOpcode.ldarg_0); // argc
             codeStream.Emit(ILOpcode.ldarg_1); // argv
             codeStream.Emit(ILOpcode.call, emitter.NewToken(initArgs));
@@ -67,8 +67,8 @@ namespace Internal.IL.Stubs.StartupCode
             // Call program Main
             if (_mainMethod.Signature.Length > 0)
             {
-                TypeDesc environ = Context.SystemModule.GetType("System", "Environment");
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(environ.GetMethod("GetCommandLineArgs", null)));
+                TypeDesc environ = Context.SystemModule.GetKnownType("System", "Environment");
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(environ.GetKnownMethod("GetCommandLineArgs", null)));
             }
             codeStream.Emit(ILOpcode.call, emitter.NewToken(_mainMethod));
             if (_mainMethod.Signature.ReturnType.IsVoid)
@@ -77,7 +77,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
             codeStream.EmitStLoc(returnValue);
 
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetMethod("Shutdown", null)));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetKnownMethod("Shutdown", null)));
 
             codeStream.EmitLdLoc(returnValue);
             codeStream.Emit(ILOpcode.ret);

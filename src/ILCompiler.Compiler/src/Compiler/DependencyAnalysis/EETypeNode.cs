@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.IL;
 using Internal.Runtime;
 using Internal.TypeSystem;
 using System;
@@ -494,10 +495,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!_type.IsNullable)
                 return;
 
-            var field = _type.GetField("value");
-
-            // Ensure the definition of Nullable<T> didn't change on us
-            Debug.Assert(field != null);
+            var field = _type.GetKnownField("value");
 
             // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
             Debug.Assert(field.Offset > 0);
@@ -522,9 +520,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (itf == factory.ICastableInterface)
                 {
-                    var isInstMethod = itf.GetMethod("IsInstanceOfInterface", null);
-                    var getImplTypeMethod = itf.GetMethod("GetImplType", null);
-                    Debug.Assert(isInstMethod != null && getImplTypeMethod != null);
+                    var isInstMethod = itf.GetKnownMethod("IsInstanceOfInterface", null);
+                    var getImplTypeMethod = itf.GetKnownMethod("GetImplType", null);
 
                     int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethod);
                     int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethod);

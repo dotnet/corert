@@ -6,6 +6,7 @@ using System;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
+using Internal.IL;
 
 namespace ILCompiler
 {
@@ -29,11 +30,11 @@ namespace ILCompiler
             {
                 this.ShuffleThunk = new DelegateShuffleThunk(target);
 
-                this.Ctor = systemDelegate.GetMethod("InitializeClosedStaticThunk", null);
+                this.Ctor = systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null);
             }
             else
             {
-                this.Ctor = systemDelegate.GetMethod("InitializeClosedInstance", null);
+                this.Ctor = systemDelegate.GetKnownMethod("InitializeClosedInstance", null);
             }
         }
 

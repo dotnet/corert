@@ -27,13 +27,7 @@ namespace Internal.IL.Stubs
 
             codeStream.EmitLdArg(0);
 
-            var fptrField = target.Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType.GetField("m_extraFunctionPointerOrData");
-            if (fptrField == null)
-            {
-                // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
-                throw new NotImplementedException();
-            }
-
+            var fptrField = target.Context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType.GetKnownField("m_extraFunctionPointerOrData");
             codeStream.Emit(ILOpcode.ldfld, emitter.NewToken(fptrField));
 
             codeStream.Emit(ILOpcode.ret);

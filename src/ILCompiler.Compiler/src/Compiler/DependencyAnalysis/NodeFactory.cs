@@ -9,6 +9,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.Runtime;
+using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -321,8 +322,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var entry = s_helperEntrypointNames[index];
 
-                var type = _context.SystemModule.GetType(entry[0], entry[1]);
-                var method = type.GetMethod(entry[2], null);
+                var type = _context.SystemModule.GetKnownType(entry[0], entry[1]);
+                var method = type.GetKnownMethod(entry[2], null);
 
                 symbol = MethodEntrypoint(method);
 
@@ -339,8 +340,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_systemICastableType == null)
                 {
-                    _systemICastableType = _context.SystemModule.GetType("System.Runtime.CompilerServices", "ICastable");
-                    Debug.Assert(_systemICastableType != null);
+                    _systemICastableType = _context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "ICastable");
                 }
                 return _systemICastableType;
             }
