@@ -34,9 +34,6 @@ unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 
 HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance);
 
-#ifdef FEATURE_VSD
-bool RtuInitializeVSD();
-#endif
 
 UInt32 _fls_index = FLS_OUT_OF_INDEXES;
 
@@ -50,14 +47,6 @@ extern RhConfig * g_pRhConfig;
 bool InitDLL(HANDLE hPalInstance)
 {
     CheckForPalFallback();
-
-#ifdef FEATURE_VSD
-    //
-    // init VSD
-    //
-    if (!RtuInitializeVSD())
-        return false;
-#endif
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     //

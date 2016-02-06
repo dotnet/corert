@@ -36,17 +36,6 @@ public:
     static void EnumStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, PTR_StaticGcDesc pStaticGcInfo, PTR_UInt8 pbStaticData);
     void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData);
 
-#ifdef FEATURE_VSD
-
-    //
-    // VSD support
-    //
-    IndirectionCell *           GetIndirectionCellArray();
-    UInt32                      GetIndirectionCellArrayCount();
-    VSDInterfaceTargetInfo *    GetInterfaceTargetInfoArray();
-
-#endif // FEATURE_VSD
-
     // Get the classlib module that this module was compiled against.
     Module * GetClasslibModule();
 
@@ -74,16 +63,7 @@ public:
     // Returns true if this module is part of the OS module specified by hOsHandle.
     bool IsContainedBy(HANDLE hOsHandle);
 
-    // NULL out any GC references held by statics in this module. Note that this is unsafe unless we know that
-    // no code is making (or can make) any reference to these statics. Generally this is only true when we are
-    // about to unload the module.
-    void ClearStaticRoots();
-
     void UnregisterFrozenSection();
-
-    // Remove from the system any generic instantiations published by this module and not required by any
-    // other module currently loaded.
-    void UnregisterGenericInstances();
 
     PTR_UInt8 FindMethodStartAddress(PTR_VOID ControlPC);
 
@@ -168,7 +148,6 @@ public:
 
 private:
     Module(ModuleHeader * pModuleHeader);
-    bool RegisterGenericInstances();
 #ifdef FEATURE_CUSTOM_IMPORTS
     static void DoCustomImports(ModuleHeader * pModuleHeader);
     PTR_UInt8 GetBaseAddress() { return (PTR_UInt8)(size_t)GetOsModuleHandle(); }

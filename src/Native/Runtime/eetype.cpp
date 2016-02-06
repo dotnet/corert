@@ -50,7 +50,6 @@ bool EEType::Validate(bool assertOnFail /* default: true */)
                 get_IsValueType() ||
                 HasFinalizer() ||
                 HasReferenceFields() ||
-                IsRuntimeAllocated() ||
                 HasGenericVariance())
             {
                 REPORT_FAILURE();
@@ -72,8 +71,7 @@ bool EEType::Validate(bool assertOnFail /* default: true */)
         case 0:
         {
             // Cloned generic type.
-            if (!IsRelatedTypeViaIAT() ||
-                IsRuntimeAllocated())
+            if (!IsRelatedTypeViaIAT())
             {
                 REPORT_FAILURE();
             }
@@ -87,7 +85,6 @@ bool EEType::Validate(bool assertOnFail /* default: true */)
                 get_IsValueType() ||
                 HasFinalizer() ||
                 HasReferenceFields() ||
-                IsRuntimeAllocated() ||
                 HasGenericVariance())
             {
                 REPORT_FAILURE();
@@ -117,7 +114,6 @@ bool EEType::Validate(bool assertOnFail /* default: true */)
 
         if (get_IsValueType() ||
             HasFinalizer() ||
-            IsRuntimeAllocated() ||
             HasGenericVariance())
         {
             REPORT_FAILURE();

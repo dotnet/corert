@@ -6,66 +6,6 @@
 
         TEXTAREA
 
-#ifdef FEATURE_VSD
-
-        SETALIAS RESOLVE_WORKER_STATIC, ?ResolveWorkerStatic@VirtualCallStubManager@@CAPAEPAEPAVEEType@@PAPBE@Z
-        SETALIAS BACKPATCH_WORKER_STATIC, ?BackPatchWorkerStatic@VirtualCallStubManager@@CAXPBEPAPBE@Z
-
-        EXTERN $RESOLVE_WORKER_STATIC
-        EXTERN $BACKPATCH_WORKER_STATIC
-
-;; This is the initial and failure entrypoint for VSD. All interface call sites
-;; start off pointing here, and all failed mono- and poly-morphic target lookups
-;; end up here. The purpose is to save the right registers and pass control to
-;; VirtualCallStubManager to find the correct target, change the indirection cell
-;; (if necessary) and populate the poly-morphic cache (if necessary).
-        NESTED_ENTRY VSDResolveWorkerAsmStub
-
-        ;; Save argument registers (including floating point) and the return address.
-        PROLOG_PUSH {r0-r4,lr}  ; Save r4 just for alignment purposes
-        PROLOG_VPUSH {d0-d7}
-
-        ldr     r3, [r0]    ; Extract EEType* from object in r0
-
-        ;; Setup arguments to VirtualCallStubManager::ResolveWorkerStatic (r2, indirCellAddrForRegisterIndirect
-        ;; is never used on ARM)
-        mov     r0, lr      ; Return address
-        mov     r1, r3      ; Object EEType*
-
-        bl      $RESOLVE_WORKER_STATIC
-        orr     r12, r0, #1 ; make sure to set the thumb2 bit
-
-        EPILOG_VPOP {d0-d7}
-        EPILOG_POP {r0-r4,lr}
-
-        EPILOG_BRANCH_REG r12
-
-        NESTED_END VSDResolveWorkerAsmStub
-
-;; Call the callsite back patcher.  The fail stub piece of the resolver is being
-;; call too often, i.e. dispatch stubs are failing the expect MT test too often.
-;; In this stub wraps the call to the BackPatchWorker to take care of any stack magic
-;; needed.
-        NESTED_ENTRY VSDBackPatchWorkerAsmStub
-
-        ;; Save argument registers (including floating point) and the return address.
-        PROLOG_PUSH {r0-r4,lr}  ; Save r4 just for alignment purposes
-        PROLOG_VPUSH {d0-d7}
-
-        ;; Setup arguments to VirtualCallStubManager::BackPatchWorkerStatic (r1, indirCellAddrForRegisterIndirect
-        ;; is never used on ARM)
-        ldr     r0, [sp, #(8*8 + 6*4 + 4)]     ; Return address
-
-        bl      $BACKPATCH_WORKER_STATIC
-
-        EPILOG_VPOP {d0-d7}
-        EPILOG_POP {r0-r4,lr}
-
-        EPILOG_RETURN
-
-        NESTED_END VSDBackPatchWorkerAsmStub
-
-#endif // FEATURE_VSD
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 

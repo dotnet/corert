@@ -30,15 +30,6 @@ class EEInterfaceInfo
                m_pInterfaceEEType;
     }
 
-    // If the interface type is referenced indirectly (via the IAT) update this info to a direct reference.
-    // This is only possible at runtime once the IAT has been updated and is currently used only for generics,
-    // when unifying a generic instantiation and cutting any arbitrary dependencies to the module which first
-    // published this instantiation.
-    void Flatten()
-    {
-        m_pInterfaceEEType = GetInterfaceEEType();
-    }
-
 #ifndef RHDUMP
   private:
 #endif
@@ -253,8 +244,7 @@ private:
         // This type contain gc pointers
         HasPointersFlag         = 0x0020,
 
-        // This type instance was allocated at runtime (rather than being embedded in a module image)
-        RuntimeAllocatedFlag    = 0x0040,
+        // Unused               = 0x0040,
 
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
@@ -471,24 +461,6 @@ public:
     bool DacVerify();
     static bool DacVerifyWorker(EEType* pThis);
 #endif // DACCESS_COMPILE
-
-
-    // Transform a canonical type into a cloned type pointing to the given type as the canonical type. Used
-    // when unifying generic instantiation types.
-    inline void MakeClonedType(EEType ** ppCanonicalType);
-
-    // If any part of this type is referenced indirectly (via IAT entries) resolve these references to direct
-    // pointers. This is only possible at runtime once the IAT has been updated and is currently used only for generics,
-    // when unifying a generic instantiation and cutting any arbitrary dependencies to the module which first
-    // published this instantiation.
-    inline void Flatten();
-
-    // Mark or determine that a type instance was allocated at runtime (currently only used for unification of
-    // generic instantiations). This is sometimes important for memory management or debugging purposes.
-    bool IsRuntimeAllocated()
-        { return (m_usFlags & RuntimeAllocatedFlag) != 0; }
-    void SetRuntimeAllocated()
-        { m_usFlags |= RuntimeAllocatedFlag; }
 
     // Mark or determine that a type is generic and one or more of it's type parameters is co- or
     // contra-variant. This only applies to interface and delegate types.
