@@ -19,7 +19,7 @@ _Note_:
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r C:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.5-prerelease-00001\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.obj`
+`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.*.dll -r C:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.5-prerelease-00001\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.obj`
 
   - Build & run using **F5**
     - This will run the compiler. The output is `c:\corert\src\ILCompiler\reproNative\repro.obj` file.
@@ -42,7 +42,7 @@ _Note_:
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll -r C:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.5-prerelease-00001\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.cpp -cpp`
+`c:\corert\src\ILCompiler\repro\bin\Debug\repro.exe -r c:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.*.dll -r C:\corert\bin\Product\Windows_NT.x64.Debug\.nuget\publish1\toolchain.win7-x64.Microsoft.DotNet.AppDep.1.0.5-prerelease-00001\*.dll -out c:\corert\src\ILCompiler\reproNative\repro.cpp -cpp`
 
     - `-nolinenumbers` command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
 
