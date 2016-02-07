@@ -55,7 +55,6 @@
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -75,7 +74,6 @@
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\gc;..\..\Native\gc\env</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
