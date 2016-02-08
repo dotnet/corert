@@ -17,6 +17,7 @@
 #include "event.h"
 #include "threadstore.h"
 #include "gcrhinterface.h"
+#include "shash.h"
 #include "module.h"
 #include "eetype.h"
 #include "GenericInstance.h"
@@ -36,7 +37,6 @@ enum HijackType { htLoop, htCallsite };
 bool ShouldHijackForGcStress(UIntNative CallsiteIP, HijackType ht);
 #endif // FEATURE_GC_STRESS
 
-#include "shash.h"
 #include "shash.inl"
 
 #ifndef DACCESS_COMPILE

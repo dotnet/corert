@@ -29,8 +29,9 @@
 #include "rhbinder.h"
 #include "objectlayout.h"
 #include "gcrhinterface.h"
-#include "module.h"
+#include "shash.h"
 #include "rwlock.h"
+#include "module.h"
 #include "runtimeinstance.h"
 #include "eetype.inl"
 

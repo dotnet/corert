@@ -72,6 +72,7 @@
 
 
 // disable the "Conditional expression is constant" warning
+#pragma warning(push)
 #pragma warning(disable:4127)
 
 
@@ -626,6 +627,6 @@ public:
 };
 
 
-// restore "Conditional expression is constant" warning to default value
-#pragma warning(default:4127)
+// restore "Conditional expression is constant" warning to previous value
+#pragma warning(pop)
 

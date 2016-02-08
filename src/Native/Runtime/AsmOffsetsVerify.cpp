@@ -17,6 +17,7 @@
 #include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"
+#include "shash.h"
 #include "module.h"
 #include "CallDescr.h"
 

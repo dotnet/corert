@@ -607,6 +607,9 @@ Success
     LEAF_END RhpSuppressGcStress
 #endif ;; FEATURE_GC_STRESS
 
+;; ALLOC_PROBE_FRAME will save the first 4 vfp registers, in order to avoid trashing VFP registers across the loop 
+;; hijack, we must save the rest -- d4-d15 (12) and d16-d31 (16).
+VFP_EXTRA_SAVE_SIZE equ ((12*8) + (16*8))
 
 ;; Helper called from hijacked loops
     LEAF_ENTRY RhpLoopHijack
@@ -621,6 +624,8 @@ Success
 ;;
 
 ;;      save registers
+        PROLOG_VPUSH        {d4-d15}    ;; save scratch fp regs
+        PROLOG_VPUSH        {d16-d31}   ;; ... and more
         ALLOC_PROBE_FRAME
 
         ; save condition codes
@@ -629,30 +634,30 @@ Success
 
         INLINE_GETTHREAD    r4, r1
 
-        INIT_PROBE_FRAME r4, r1, #PROBE_SAVE_FLAGS_EVERYTHING, (PROBE_FRAME_SIZE + 8)
+        INIT_PROBE_FRAME r4, r1, #PROBE_SAVE_FLAGS_EVERYTHING, (PROBE_FRAME_SIZE + VFP_EXTRA_SAVE_SIZE + 8)
 ;;
 ;;      compute the index of the indirection cell
 ;;
-        ldr         r0, [sp,#(PROBE_FRAME_SIZE+0)]
+        ldr         r0, [sp,#(PROBE_FRAME_SIZE + VFP_EXTRA_SAVE_SIZE + 0)]
         bl          $GetLoopIndirCells
         
         ; r0 now has address of the first loop indir cell
         ; subtract that from the address of our cell
         ; and divide by 4 to give the index of our cell
-        ldr         r1, [sp,#(PROBE_FRAME_SIZE+4)]
+        ldr         r1, [sp,#(PROBE_FRAME_SIZE + VFP_EXTRA_SAVE_SIZE + 4)]
         sub         r1, r0
         lsr         r0, r1, #2
 
         ; r0 now has the index
         ; recover the loop hijack target, passing the module header as an additional argument
-        ldr         r1, [sp,#(PROBE_FRAME_SIZE+0)]
+        ldr         r1, [sp,#(PROBE_FRAME_SIZE + VFP_EXTRA_SAVE_SIZE + 0)]
         bl          RecoverLoopHijackTarget
 
         ; store the result as our pinvoke return address
         str         r0, [sp, #OFFSETOF__PInvokeTransitionFrame__m_RIP]
 
         ; also save it in the incoming parameter space for the actual return below
-        str         r0, [sp,#(PROBE_FRAME_SIZE+4)]
+        str         r0, [sp,#(PROBE_FRAME_SIZE + VFP_EXTRA_SAVE_SIZE + 4)]
 
         ; Early out if GC stress is currently suppressed. Do this after we have computed the real address to
         ; return to but before we link the transition frame onto m_pHackPInvokeTunnel (because hitting this
@@ -698,6 +703,8 @@ DoneWaitingForGc
         msr         apsr_nzcvqg, r12
 
         FREE_PROBE_FRAME
+        EPILOG_VPOP {d16-d31}
+        EPILOG_VPOP {d4-d15}
 
         EPILOG_POP {r12,pc}      ; recover the hijack target and jump to it
 

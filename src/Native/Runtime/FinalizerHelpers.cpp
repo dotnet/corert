@@ -13,6 +13,7 @@
 #include "gcrhinterface.h"
 #include "RWLock.h"
 #include "RuntimeInstance.h"
+#include "shash.h"
 #include "module.h"
 
 
