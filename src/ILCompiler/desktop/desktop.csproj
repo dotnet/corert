@@ -12,7 +12,11 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <BaseNuGetRuntimeIdentifier>win7</BaseNuGetRuntimeIdentifier>
+    <!-- AutoGenerateBindingRedirects is not honoring the unification
+         table, and thus breaking unification by explicitly listing
+         bindingRedirects for assemblies that only differ by revision -->
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -57,6 +61,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="App.config" />
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
@@ -65,13 +70,13 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish0\jitinterface.dll">
+    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish1\jitinterface.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish0\objwriter.dll">
+    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish1\objwriter.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish0\ryujit.dll">
+    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\.nuget\publish1\ryujit.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -172,7 +172,7 @@ if "%__CleanBuild%"=="1" (
 )
 
 if not exist "%__DotNetCliPath%" (
-    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools" -version "1.0.0.000973""') do (
+    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools""') do (
         echo "" > nul
     )
 )
