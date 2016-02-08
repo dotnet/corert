@@ -15,6 +15,7 @@
 #include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "gcrhinterface.h"
+#include "shash.h"
 #include "module.h"
 
 // Macro nonsense to get around limitations of the C++ preprocessor.

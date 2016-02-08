@@ -146,12 +146,15 @@ public:
     bool IsFinalizerInitComplete() { return m_fFinalizerInitComplete; }
     void SetFinalizerInitComplete() { m_fFinalizerInitComplete = true; }
 
+    void * RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader);
+
 private:
     Module(ModuleHeader * pModuleHeader);
 #ifdef FEATURE_CUSTOM_IMPORTS
     static void DoCustomImports(ModuleHeader * pModuleHeader);
     PTR_UInt8 GetBaseAddress() { return (PTR_UInt8)(size_t)GetOsModuleHandle(); }
 #endif // FEATURE_CUSTOM_IMPORTS
+
 
     static void UnsynchronizedHijackLoop(void ** ppvIndirectionCell, UInt32 cellIndex, 
                                          void * pvRedirStubsStart, UInt8 * pbDirtyBitmap);
@@ -171,5 +174,8 @@ private:
     PTR_StaticGcDesc            m_pStaticsGCInfo;
     PTR_StaticGcDesc            m_pThreadStaticsGCInfo;
     PTR_UInt8                   m_pStaticsGCDataSection;
+
+    ReaderWriterLock            m_loopHijackMapLock;
+    MapSHash<UInt32, void*>     m_loopHijackIndexToTargetMap;
 };
 
