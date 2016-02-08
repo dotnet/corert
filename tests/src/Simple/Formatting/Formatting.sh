@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-$1/bin/$3/dnxcore50/native/$2
+$1/$2
 if [ $? == 100 ]; then
     echo pass
     exit 0

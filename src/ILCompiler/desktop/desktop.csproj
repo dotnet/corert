@@ -46,8 +46,8 @@
     <Compile Include="..\..\Common\src\CommandLine\CommandLineException.cs">
       <Link>CommandLine\CommandLineException.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\CommandLine\CommandLineParser.cs">
-      <Link>CommandLine\CommandLineParser.cs</Link>
+    <Compile Include="..\..\Common\src\CommandLine\CommandLineHelpers.cs">
+      <Link>CommandLine\CommandLineHelpers.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

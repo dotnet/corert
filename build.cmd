@@ -45,6 +45,7 @@ if /i "%1" == "release"   (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "clean"   (set __CleanBuild=1&shift&goto Arg_Loop)
 
 if /i "%1" == "skiptests" (set __SkipTests=1&shift&goto Arg_Loop)
+if /i "%1" == "skipvsdev" (set __SkipVsDev=1&shift&goto Arg_Loop)
 if /i "%1" == "/milestone" (set __ToolchainMilestone=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "/dotnetclipath" (set __DotNetCliPath=%2&shift&shift&goto Arg_Loop)
 
@@ -200,6 +201,23 @@ exit /b 1
 
 
 :AfterILCompilerBuild
+
+:VsDevGenerateRespFiles
+if defined __SkipVsDev goto :AfterVsDevGenerateRespFiles
+set __GenRespFiles=0
+if not exist "%__ProjectDir%\bin\obj\ryujit.rsp" set __GenRespFiles=1
+if not exist "%__ProjectDir%\bin\obj\cpp.rsp" set __GenRespFiles=1
+if "%__GenRespFiles%"=="1" (
+    "%__DotNetCliPath%\bin\dotnet.exe" restore --quiet --runtime "win7-x64" --source "https://dotnet.myget.org/F/dotnet-core" "%__ProjectDir%\src\ILCompiler\repro"
+    call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
+    "%__DotNetCliPath%\bin\dotnet.exe" compile --native "%__ProjectDir%\src\ILCompiler\repro"
+    copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ProjectDir%\bin\obj\ryujit.rsp"
+    "%__DotNetCliPath%\bin\dotnet.exe" compile --native --cpp "%__ProjectDir%\src\ILCompiler\repro"
+    copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ProjectDir%\bin\obj\cpp.rsp"
+)
+:AfterVsDevGenerateRespFiles
+
+:RunTests
 if defined __SkipTests exit /b 0
 
 pushd "%__ProjectDir%\tests"

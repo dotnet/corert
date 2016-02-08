@@ -1,6 +1,6 @@
 @echo off
 setlocal
-%~dp0\bin\%1\dnxcore50\native\%~n0.exe
+"%1\%2"
 set ErrorCode=%ERRORLEVEL%
 IF "%ErrorCode%"=="100" (
     echo %~n0: pass
