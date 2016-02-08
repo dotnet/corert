@@ -152,10 +152,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitDebugFileInfo(IntPtr objWriter, int fileInfoSize, string[] fileInfos);
-        public void EmitDebugFileInfo(int fileInfoSize, string[] fileInfos)
+        private static extern void EmitDebugFileInfo(IntPtr objWriter, int fileId, string fileName);
+        public void EmitDebugFileInfo(int fileId, string fileName)
         {
-            EmitDebugFileInfo(_nativeObjectWriter, fileInfoSize, fileInfos);
+            EmitDebugFileInfo(_nativeObjectWriter, fileId, fileName);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -166,27 +166,48 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void FlushDebugLocs(IntPtr objWriter, string methodName, int methodSize);
-        public void FlushDebugLocs(int methodSize)
+        private static extern void EmitDebugFunctionInfo(IntPtr objWriter, string methodName, int methodSize);
+        public void EmitDebugFunctionInfo(int methodSize)
         {
-            // No interest if there is no debug location emission/map before.
-            if (_offsetToDebugLoc.Count == 0)
+            if (HasFunctionDebugInfo())
             {
-                return;
+                EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeName, methodSize);
             }
-            FlushDebugLocs(_nativeObjectWriter, _currentNodeName, methodSize);
-
-            // Ensure clean up the map for the next node.
-            _offsetToDebugLoc.Clear();
         }
 
-        public string[] BuildFileInfoMap(IEnumerable<DependencyNode> nodes)
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitDebugModuleInfo(IntPtr objWriter);
+        public void EmitDebugModuleInfo()
+        {
+            if (HasModuleDebugInfo())
+            {
+                EmitDebugModuleInfo(_nativeObjectWriter);
+            }
+        }
+
+        public bool HasModuleDebugInfo()
+        {
+            return _debugFileToId.Count > 0;
+        }
+
+        public bool HasFunctionDebugInfo()
+        {
+            if (_offsetToDebugLoc.Count > 0)
+            {
+                Debug.Assert(HasModuleDebugInfo());
+                return true;
+            }
+
+            return false;
+        }
+
+        public void BuildFileInfoMap(IEnumerable<DependencyNode> nodes)
         {
             // TODO: DebugInfo on Unix https://github.com/dotnet/corert/issues/608
             if (_targetPlatform.OperatingSystem != TargetOS.Windows)
-                return null;
+                return;
 
-            ArrayBuilder<string> debugFileInfos = new ArrayBuilder<string>();
+            int fileId = 1;
             foreach (DependencyNode node in nodes)
             {
                 if (node is INodeWithDebugInfo)
@@ -199,37 +220,37 @@ namespace ILCompiler.DependencyAnalysis
                             string fileName = debugLocInfo.FileName;
                             if (!_debugFileToId.ContainsKey(fileName))
                             {
-                                _debugFileToId.Add(fileName, debugFileInfos.Count);
-                                debugFileInfos.Add(fileName);
+                                _debugFileToId.Add(fileName, fileId++);
                             }
                         }
                     }
                 }
             }
 
-            return debugFileInfos.Count > 0 ? debugFileInfos.ToArray() : null;
+            foreach (var entry in _debugFileToId)
+            {
+                this.EmitDebugFileInfo(entry.Value, entry.Key);
+            }
         }
 
         public void BuildDebugLocInfoMap(ObjectNode node)
         {
-            // No interest if file map is no built before.
-            if (_debugFileToId.Count == 0)
+            if (!HasModuleDebugInfo())
             {
                 return;
             }
 
-            // No interest if it's not a debug node.
-            if (!(node is INodeWithDebugInfo))
+            _offsetToDebugLoc.Clear();
+            INodeWithDebugInfo debugNode = node as INodeWithDebugInfo;
+            if (debugNode != null)
             {
-                return;
-            }
-
-            DebugLocInfo[] locs = (node as INodeWithDebugInfo).DebugLocInfos;
-            if (locs != null)
-            {
-                foreach (var loc in locs)
+                DebugLocInfo[] locs = debugNode.DebugLocInfos;
+                if (locs != null)
                 {
-                    _offsetToDebugLoc.Add(loc.NativeOffset, loc);
+                    foreach (var loc in locs)
+                    {
+                        _offsetToDebugLoc.Add(loc.NativeOffset, loc);
+                    }
                 }
             }
         }
@@ -431,11 +452,7 @@ namespace ILCompiler.DependencyAnalysis
             using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
                 // Build file info map.
-                string[] debugFileInfos = objectWriter.BuildFileInfoMap(nodes);
-                if (debugFileInfos != null)
-                {
-                    objectWriter.EmitDebugFileInfo(debugFileInfos.Length, debugFileInfos);
-                }
+                objectWriter.BuildFileInfoMap(nodes);
 
                 foreach (DependencyNode depNode in nodes)
                 {
@@ -524,8 +541,10 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
-                    objectWriter.FlushDebugLocs(nodeContents.Data.Length);
+                    objectWriter.EmitDebugFunctionInfo(nodeContents.Data.Length);
                 }
+
+                objectWriter.EmitDebugModuleInfo();
             }
         }
     }
