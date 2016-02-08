@@ -142,6 +142,8 @@ void CheckForPalFallback()
 
 void DetectCPUFeatures()
 {
+#if !defined(CORERT) // @TODO: CORERT: DetectCPUFeatures
+
 #ifdef _X86_
     // We depend on fxsave / fxrstor.  These were added to Pentium II and later, so they're pretty well guaranteed to be
     // available, but we double-check anyway and fail fast if they are not supported.
@@ -159,6 +161,8 @@ void DetectCPUFeatures()
     if (cpuInfo.Edx & AMD_FFXSR)
         g_fHasFastFxsave = true;
 #endif
+
+#endif // !CORERT
 }
 
 #ifdef PROFILE_STARTUP
