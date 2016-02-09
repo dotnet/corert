@@ -699,7 +699,9 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.Bool)]
         private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("canInlineTypeCheckWithObjectVTable"); }
+        {
+            return true;
+        }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {

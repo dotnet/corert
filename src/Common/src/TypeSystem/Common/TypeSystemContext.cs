@@ -72,7 +72,7 @@ namespace Internal.TypeSystem
         // Array types
         //
 
-        public TypeDesc GetArrayType(TypeDesc elementType)
+        public ArrayType GetArrayType(TypeDesc elementType)
         {
             return GetArrayType(elementType, -1);
         }
@@ -145,7 +145,7 @@ namespace Internal.TypeSystem
 
         private ArrayTypeKey.ArrayTypeKeyHashtable _arrayTypes;
 
-        public TypeDesc GetArrayType(TypeDesc elementType, int rank)
+        public ArrayType GetArrayType(TypeDesc elementType, int rank)
         {
             return _arrayTypes.GetOrCreateValue(new ArrayTypeKey(elementType, rank));
         }
@@ -183,7 +183,7 @@ namespace Internal.TypeSystem
 
         private ByRefHashtable _byRefTypes;
 
-        public TypeDesc GetByRefType(TypeDesc parameterType)
+        public ByRefType GetByRefType(TypeDesc parameterType)
         {
             return _byRefTypes.GetOrCreateValue(parameterType);
         }
@@ -221,7 +221,7 @@ namespace Internal.TypeSystem
 
         private PointerHashtable _pointerTypes;
 
-        public TypeDesc GetPointerType(TypeDesc parameterType)
+        public PointerType GetPointerType(TypeDesc parameterType)
         {
             return _pointerTypes.GetOrCreateValue(parameterType);
         }
