@@ -99,6 +99,16 @@ namespace Internal.Runtime.Augments
         }
 
         //
+        // Helper API to perform the equivalent of a "newobj" for any EEType.
+        // Unlike the NewObject API, this is the raw version that does not special case any EEType, and should be used with
+        // caution for very specific scenarios.
+        //
+        public static Object RawNewObject(RuntimeTypeHandle typeHandle)
+        {
+            return RuntimeImports.RhNewObject(typeHandle.ToEETypePtr());
+        }
+
+        //
         // Perform the equivalent of a "newarr" The resulting array is zero-initialized.
         //
         public static Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
