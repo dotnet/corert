@@ -203,10 +203,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public void BuildFileInfoMap(IEnumerable<DependencyNode> nodes)
         {
-            // TODO: DebugInfo on Unix https://github.com/dotnet/corert/issues/608
-            if (_targetPlatform.OperatingSystem != TargetOS.Windows)
-                return;
-
             int fileId = 1;
             foreach (DependencyNode node in nodes)
             {
