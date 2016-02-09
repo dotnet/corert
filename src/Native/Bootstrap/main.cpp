@@ -73,8 +73,15 @@ extern "C" void * RhpHandleAlloc(void * pObject, int handleType);
 #define DLL_PROCESS_ATTACH      1
 extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
 
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
+
 int __initialize_runtime()
 {
+    if (!PalInit())
+    {
+        return 1;
+    }
+
     RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL);
 
     RhpEnableConservativeStackReporting();

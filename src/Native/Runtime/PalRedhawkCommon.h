@@ -100,6 +100,6 @@ struct PAL_LIMITED_CONTEXT
 #endif // _ARM_
 };
 
-
+void __stdcall RuntimeThreadShutdown(void* thread);
 
 #endif // __PAL_REDHAWK_COMMON_INCLUDED
