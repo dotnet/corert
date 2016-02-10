@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="CheckRoslyn" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="CheckRoslyn;OverrideBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props') And '$(RepoLocalBuild)'!='true'" Project="..\dir.props" />
 
   <!--
@@ -150,7 +150,6 @@
     <!-- list of directories to perform batch restore -->
   <ItemGroup>
     <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\src&quot;" />
-    <DnuRestoreDir Include="&quot;$(ToolsDir)&quot;" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -161,7 +160,9 @@
 
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>
+    <!-- Disable parallel restore for now https://github.com/dotnet/corert/issues/838 -->
+    <!-- <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) - -parallel</DnuRestoreCommand> -->
+    <DnuRestoreCommand>$(DnuRestoreCommand) --disable-parallel</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
@@ -294,5 +295,20 @@
   <Target Name="CheckRoslyn" Condition="'$(UseRoslynCompiler)'=='true' and '$(MSBuildProjectFile)'!='build.proj'">
     <Warning Condition="!Exists('$(RoslynPropsFile)')"
              Text="The Roslyn targets do not exist- Roslyn will not be used for this build, but the package should be restored if you build again." />
+  </Target>
+
+
+  <Target Name="OverrideBuildTools">
+    <Error Condition="'$(BuildToolsVersion)'!='1.0.25-prerelease-00111'" Text="Confirm below project.json overrides are still compatibile with this version."></Error>
+    <PropertyGroup>
+      <!--
+          These overrides are for $(PackagesDir)\Microsoft.DotNet.BuildTools.1.0.25-prerelease-00111\lib\tool-runtime\project.json and test-runtime\project.json
+          This is similar to how CoreFX handles these files.
+      -->
+      <TestRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.json</TestRuntimeProjectJson>
+      <TestRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
+      <ToolRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/tool-runtime/project.json</ToolRuntimeProjectJson>
+      <ToolRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/tool-runtime/project.lock.json</ToolRuntimeProjectLockJson>
+    </PropertyGroup>
   </Target>
 </Project>

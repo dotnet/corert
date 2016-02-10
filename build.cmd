@@ -172,7 +172,7 @@ if "%__CleanBuild%"=="1" (
 )
 
 if not exist "%__DotNetCliPath%" (
-    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools" -version "1.0.0.000973""') do (
+    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools""') do (
         echo "" > nul
     )
 )
@@ -180,6 +180,9 @@ if not exist "%__DotNetCliPath%" (
     echo DotNet CLI could not be downloaded or installed.
     exit /b 1
 )
+
+echo type "%__DotNetCliPath%\.version"
+type "%__DotNetCliPath%\.version"
 
 :: Set the environment for the managed build
 :SetupManagedBuild

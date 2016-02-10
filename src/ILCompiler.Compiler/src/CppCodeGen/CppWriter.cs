@@ -1211,8 +1211,7 @@ namespace ILCompiler.CppCodeGen
                 sb.AppendLine();
                 if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    // TODO: Use wmain and wchar_t
-                    sb.Append("int main(int argc, char * argv[]) {");
+                    sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
                 }
                 else
                 {
