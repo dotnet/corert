@@ -143,12 +143,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-errorhandling-l1-1-0.dll")]
         internal extern static uint GetLastError();
 
-        [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
-        internal extern static IntPtr GetProcessHeap();
-
-        [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
-        internal extern static IntPtr HeapAlloc(IntPtr hHeap, uint dwFlags, UIntPtr dwBytes);
-
         [DllImport("api-ms-win-core-debug-l1-1-0.dll", EntryPoint = "IsDebuggerPresent", CharSet = CharSet.Unicode)]
         internal extern static bool IsDebuggerPresent();
 
