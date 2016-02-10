@@ -128,6 +128,9 @@ install_dotnet_cli()
         echo "CLI could not be installed or not present."
         exit 1
     fi
+
+    echo "cat ${__cli_dir}/.version"
+    cat "${__cli_dir}/.version"
 }
 
 check_native_prereqs()

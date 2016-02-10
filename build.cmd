@@ -181,6 +181,9 @@ if not exist "%__DotNetCliPath%" (
     exit /b 1
 )
 
+echo type "%__DotNetCliPath%\.version"
+type "%__DotNetCliPath%\.version"
+
 :: Set the environment for the managed build
 :SetupManagedBuild
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
