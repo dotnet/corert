@@ -1653,6 +1653,30 @@ namespace System.Runtime.InteropServices
             return success;
         }
 #endif // DEBUG
+
+
+        internal bool TryGetTypeHandleForICollecton(RuntimeTypeHandle interfaceTypeHandle, out RuntimeTypeHandle firstTypeHandle, out RuntimeTypeHandle secondTypeHandle)
+        {
+            // Loop over our I[ReadOnly]Collection<T1,T2> instantiations to find the type infos for 
+            // I[ReadOnly]List<KeyValuePair<T1,T2>> and I[ReadOnly]Dictionary<T1,T2>
+            //
+            // Note that only one of IList/IDictionary may be present.  
+            if (m_collectionData != null)
+            {
+                int slot = CollectionDataLookup(interfaceTypeHandle);
+
+                if (slot >= 0)
+                {
+                    firstTypeHandle = m_collectionData[slot].FirstType;
+                    secondTypeHandle = m_collectionData[slot].SecondType;
+                    return true;
+                }
+            }
+
+            firstTypeHandle = default(RuntimeTypeHandle);
+            secondTypeHandle = default(RuntimeTypeHandle);
+            return false;
+        }
     }
 
 #if DEBUG

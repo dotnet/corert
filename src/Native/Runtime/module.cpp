@@ -11,6 +11,8 @@
 #include "slist.h"
 #include "holder.h"
 #include "gcrhinterface.h"
+#include "shash.h"
+#include "RWLock.h"
 #include "module.h"
 #include "varint.h"
 #include "rhbinder.h"
@@ -19,7 +21,6 @@
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "event.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "eetype.h"
 #include "ObjectLayout.h"
@@ -28,6 +29,7 @@
 
 #include "CommonMacros.inl"
 #include "slist.inl"
+#include "shash.inl"
 
 #include "gcinfo.h"
 #include "RHCodeMan.h"
@@ -961,6 +963,22 @@ void Module::UnsynchronizedResetHijackedLoops()
 
 EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader)
 {
+    Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pModuleHeader);
+    return pModule->RecoverLoopHijackTarget(entryIndex, pModuleHeader);
+}
+
+void * Module::RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader)
+{
+    // read lock scope
+    {
+        ReaderWriterLock::ReadHolder readHolder(&m_loopHijackMapLock);
+        void * pvLoopTarget;
+        if (m_loopHijackIndexToTargetMap.Lookup(entryIndex, &pvLoopTarget))
+        {
+            return pvLoopTarget;
+        }
+    }
+
     UInt8 * pbTargetsInfoStart  = pModuleHeader->GetLoopTargets();
     UInt8 * pbCurrentChunkPtr   = pbTargetsInfoStart;
 
@@ -981,7 +999,16 @@ EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader
         targetOffset += VarInt::ReadUnsigned(pbCurrentInfo);
     }
 
-    return pModuleHeader->RegionPtr[ModuleHeader::TEXT_REGION] + targetOffset;;
+    void * pvLoopTarget = pModuleHeader->RegionPtr[ModuleHeader::TEXT_REGION] + targetOffset;
+
+    // write lock scope
+    {
+        ReaderWriterLock::WriteHolder writeHolder(&m_loopHijackMapLock);
+        KeyValuePair<UInt32, void *> newEntry = { entryIndex, pvLoopTarget };
+        m_loopHijackIndexToTargetMap.AddOrReplace(newEntry);
+    }
+
+    return pvLoopTarget;
 }
 
 void Module::UnsynchronizedHijackAllLoops()

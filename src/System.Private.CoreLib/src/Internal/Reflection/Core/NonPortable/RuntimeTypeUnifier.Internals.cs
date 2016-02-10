@@ -260,6 +260,9 @@ namespace Internal.Reflection.Core.NonPortable
                 if (!key.GenericTypeDefinition.InternalTryGetTypeHandle(out genericTypeDefinitionHandle))
                     return false;
 
+                if (RuntimeAugments.Callbacks.IsReflectionBlocked(genericTypeDefinitionHandle))
+                    return false;
+
                 RuntimeType[] genericTypeArguments = key.GenericTypeArguments;
                 RuntimeTypeHandle[] genericTypeArgumentHandles = new RuntimeTypeHandle[genericTypeArguments.Length];
                 for (int i = 0; i < genericTypeArguments.Length; i++)

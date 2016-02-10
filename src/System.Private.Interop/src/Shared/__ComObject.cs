@@ -1064,7 +1064,9 @@ namespace System
         /// <returns>A non-AddRef-ed interface pointer that is callable under current context</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal IntPtr QueryInterface_NoAddRef_Internal(
-            RuntimeTypeHandle typeHandle)
+            RuntimeTypeHandle typeHandle,
+            bool cacheOnly = false,
+            bool throwOnQueryInterfaceFailure = true)
         {
 
 #if !RHTESTCL
@@ -1099,8 +1101,8 @@ namespace System
             McgTypeInfo typeInfo = McgModuleManager.GetTypeInfoByHandle(typeHandle);
             // Proceed to the slow path only if we want to do the actual cache look-up.
             //
-            int hr = QueryInterface_NoAddRef_Slow(typeInfo, ref currentCookie, false, out pComPtr, typeHandle);
-            if (pComPtr == default(IntPtr))
+            int hr = QueryInterface_NoAddRef_Slow(typeInfo, ref currentCookie, cacheOnly, out pComPtr, typeHandle);
+            if (throwOnQueryInterfaceFailure && pComPtr == default(IntPtr))
             {
                 throw CreateInvalidCastExceptionForFailedQI(typeInfo, hr);
             }
@@ -1476,33 +1478,46 @@ namespace System
         bool ICastable.IsInstanceOfInterface(RuntimeTypeHandle interfaceType, out Exception castError)
         {
             castError = null;
-
+            IntPtr pComPtr;
             try
             {
-                //
-                // Look up the interface type and get back the corresponding McgTypeInfo
-                //
-                McgTypeInfo secondTypeInfo;
-                McgTypeInfo mcgTypeInfo = McgModuleManager.GetTypeInfoFromTypeHandle(interfaceType, out secondTypeInfo);
 
-                if (mcgTypeInfo.IsNull)
+                //
+                // Check cache first if it is not disposed
+                //
+                if (!m_baseIUnknown.IsDisposed)
                 {
-                    // If we can't find one, it means the type doesn't participate in any interop and we are not
-                    // interested in it
-                    return false;
+                    pComPtr = QueryInterface_NoAddRef_Internal(interfaceType, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
+                    if (pComPtr != default(IntPtr))
+                        return true;
                 }
 
-                if (!secondTypeInfo.IsNull)
+                //
+                // This is typeHandle for ICollection<KeyValuePair<>> which could be
+                // Dictionary or List<KeyValuePair<>>
+                //
+                RuntimeTypeHandle secondTypeHandle;
+                RuntimeTypeHandle firstTypeHandle;
+                if (McgModuleManager.TryGetTypeHandleForICollecton(interfaceType, out firstTypeHandle, out secondTypeHandle))
                 {
-                    // This is typeInfo for ICollection<KeyValuePair<>> which could be
-                    // Dictionary or List<KeyValuePair<>>
-                    return TryGetMcgTypeInfoForICollection(mcgTypeInfo, secondTypeInfo, out mcgTypeInfo);
+                    if (!firstTypeHandle.IsNull() || !secondTypeHandle.IsNull())
+                    {
+                        RuntimeTypeHandle resolvedTypeHandle;
+                        return TryGetMcgTypeDataForICollection(firstTypeHandle, secondTypeHandle, out resolvedTypeHandle);
+                    }
                 }
+
 
                 //
                 // QI for that interfce
                 //
-                IntPtr pComPtr;
+                McgTypeInfo mcgTypeInfo = McgModuleManager.GetTypeInfoByHandle(interfaceType);
+
+                if (mcgTypeInfo.IsNull)
+                {
+                    return false;
+                }
+
                 int hr = QueryInterface_NoAddRef(mcgTypeInfo, /* cacheOnly= */ false, out pComPtr);
 
                 if (pComPtr != default(IntPtr))
@@ -1522,6 +1537,75 @@ namespace System
                 // We are not allowed to leak exception out from here
                 // Instead, set castError to the exception being thrown
                 castError = ex;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// This method resolves the Type for ICollection<KeyValuePair<>> which can't be 
+        /// determined statically. 
+        /// </summary>
+        /// <param name="firstTypeHandle">Type for the Dictionary\ReadOnlyDictionary.</param>
+        /// <param name="secondaryTypeHandle">Type for the List or ReadOnlyList.</param>
+        /// <param name="resolvedTypeHandle">Type for ICollection<KeyValuePair<>> determined at runtime.</param>
+        /// <returns>Success or failure of resolution.</returns>
+        private bool TryGetMcgTypeDataForICollection(RuntimeTypeHandle firstTypeHandle, RuntimeTypeHandle secondaryTypeHandle, out RuntimeTypeHandle resolvedTypeHandle)
+        {
+            IntPtr interfacePtr;
+
+            // In case __ComObject can be type casted to both IDictionary and IList<KeyValuePair<>>
+            // we give IDictionary the preference. first Type point to the RuntimeTypeHandle for IDictionary.
+
+            // We first check in the cache for both.
+            // We then check for IDictionary first and IList later.
+
+            // In case none of them succeeds we return false with resolvedTypeHandle set to null.
+            resolvedTypeHandle = default(RuntimeTypeHandle);
+
+            // We first check the cache for the two interfaces if this does not succeed we then actually
+            // go to the query interface check.
+            if (!firstTypeHandle.IsNull())
+            {
+                interfacePtr = QueryInterface_NoAddRef_Internal(firstTypeHandle, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = firstTypeHandle;
+                    return true;
+                }
+            }
+
+            if (!secondaryTypeHandle.IsNull())
+            {
+                interfacePtr = QueryInterface_NoAddRef_Internal(secondaryTypeHandle, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = secondaryTypeHandle;
+                    return true;
+                }
+            }
+
+            ContextCookie currentCookie = ContextCookie.Current;
+            if (!firstTypeHandle.IsNull())
+            {
+                McgTypeInfo firstTypeInfo = McgModuleManager.GetTypeInfoByHandle(firstTypeHandle);
+                QueryInterface_NoAddRef_SlowNoCacheLookup(firstTypeInfo, currentCookie, out interfacePtr);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = firstTypeHandle;
+                    return true;
+                }
+            }
+
+            if (!secondaryTypeHandle.IsNull())
+            {
+                McgTypeInfo secondTypeInfo = McgModuleManager.GetTypeInfoByHandle(secondaryTypeHandle);
+                QueryInterface_NoAddRef_SlowNoCacheLookup(secondTypeInfo, currentCookie, out interfacePtr);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = secondaryTypeHandle;
+                    return true;
+                }
             }
 
             return false;

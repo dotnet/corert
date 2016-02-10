@@ -27,6 +27,7 @@
 #include "event.h"
 #include "threadstore.h"
 #include "gcrhinterface.h"
+#include "shash.h"
 #include "module.h"
 #include "eetype.h"
 #include "ObjectLayout.h"

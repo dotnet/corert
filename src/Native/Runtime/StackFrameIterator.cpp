@@ -22,6 +22,7 @@
 #include "threadstore.h"
 #include "stressLog.h"
 
+#include "shash.h"
 #include "module.h"
 #include "RuntimeInstance.h"
 #include "rhbinder.h"

@@ -41,8 +41,11 @@ UInt32 _fls_index = FLS_OUT_OF_INDEXES;
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 void __stdcall FiberDetach(void* lpFlsData);
 void CheckForPalFallback();
+void DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
+
+EXTERN_C bool g_fHasFastFxsave = false;
 
 bool InitDLL(HANDLE hPalInstance)
 {
@@ -104,6 +107,8 @@ bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
+    DetectCPUFeatures();
+
     return true;
 }
 
@@ -133,6 +138,31 @@ void CheckForPalFallback()
             RhFailFast();
     }
 #endif // _DEBUG
+}
+
+void DetectCPUFeatures()
+{
+#if !defined(CORERT) // @TODO: CORERT: DetectCPUFeatures
+
+#ifdef _X86_
+    // We depend on fxsave / fxrstor.  These were added to Pentium II and later, so they're pretty well guaranteed to be
+    // available, but we double-check anyway and fail fast if they are not supported.
+    CPU_INFO cpuInfo;
+    PalCpuIdEx(1, 0, &cpuInfo);
+    if (!(cpuInfo.Edx & X86_FXSR))  
+        RhFailFast();
+#endif
+
+#ifdef _AMD64_
+    // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
+    // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
+    CPU_INFO cpuInfo;
+    PalCpuIdEx(0x80000001, 0, &cpuInfo);
+    if (cpuInfo.Edx & AMD_FFXSR)
+        g_fHasFastFxsave = true;
+#endif
+
+#endif // !CORERT
 }
 
 #ifdef PROFILE_STARTUP
