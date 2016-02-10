@@ -1337,5 +1337,27 @@ namespace System.Runtime.InteropServices
             }
 #endif
         }
+
+        /// <summary>
+        /// Try to get ICollectio<T>
+        /// </summary>
+        /// <param name="interfaceTypeHandle"></param>
+        /// <param name="firstTypeHandle"></param>
+        /// <param name="secondTypeHandle"></param>
+        /// <returns></returns>
+        internal static bool TryGetTypeHandleForICollecton(RuntimeTypeHandle interfaceTypeHandle, out RuntimeTypeHandle firstTypeHandle, out RuntimeTypeHandle secondTypeHandle)
+        {
+            for (int i = 0; i < s_moduleCount; i++)
+            {
+                if (s_modules[i].TryGetTypeHandleForICollecton(interfaceTypeHandle, out firstTypeHandle, out secondTypeHandle))
+                    return true;
+            }
+
+            firstTypeHandle = default(RuntimeTypeHandle);
+            secondTypeHandle = default(RuntimeTypeHandle);
+            return false;
+        }
     }
+
+
 }

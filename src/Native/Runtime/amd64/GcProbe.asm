@@ -531,22 +531,27 @@ endif ;; FEATURE_GC_STRESS
 
 EXTERN RecoverLoopHijackTarget : PROC
 EXTERN g_fGcStressStarted : DWORD
+EXTERN g_fHasFastFxsave : BYTE
+
+FXSAVE_SIZE             equ 512
 
 NESTED_ENTRY RhpLoopHijack, _TEXT
 
     sizeof_OutgoingScratchSpace equ 20h
     sizeof_PInvokeFrame         equ OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs + 15*8
     sizeof_XmmAlignPad          equ 8
-    sizeof_ScratchXmmSave       equ 10h*6
+    sizeof_XmmSave              equ FXSAVE_SIZE
     sizeof_MachineFrame         equ 6*8
-    sizeof_ThunkPushedArgs      equ 3*8             ;; ModuleHeader *, chunk starting index, chunk sub-index
-    sizeof_FixedFrame           equ sizeof_OutgoingScratchSpace + sizeof_PInvokeFrame + sizeof_XmmAlignPad + sizeof_ScratchXmmSave + sizeof_MachineFrame
+    sizeof_ThunkPushedArgs      equ 4*8             ;; eflags, ModuleHeader *, chunk starting index, chunk sub-index
+    sizeof_FixedFrame           equ sizeof_OutgoingScratchSpace + sizeof_PInvokeFrame + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame
 
         ;; On the stack on entry: 
         ;;   [rsp     ]  -> ModuleHeader * 
         ;;   [rsp +  8]  -> chunk starting index
         ;;   [rsp + 10]  -> chunk sub-index (0-256)  BEWARE: this has been sign-extended, but it is unsigned
 
+        ;; save eflags before we trash them
+        pushfq
 
         ;; What we want to get to: 
         ;;
@@ -574,22 +579,18 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         ;;
         ;;   [rsp + b8]  -> [XmmAlignPad]
         ;;
-        ;;   [rsp + c0]  -> xmm0 save
-        ;;   [rsp + d0]  -> xmm1 save
-        ;;   [rsp + e0]  -> xmm2 save
-        ;;   [rsp + f0]  -> xmm3 save
-        ;;   [rsp +100]  -> xmm4 save
-        ;;   [rsp +110]  -> xmm5 save
+        ;;   [rsp + c0]  -> FXSAVE area
         ;;
-        ;;   [rsp +120]  | RIP      |
-        ;;   [rsp +128]  | CS       |
-        ;;   [rsp +130]  | EFLAGS   | <-- 'machine frame'
-        ;;   [rsp +138]  | RSP      |
-        ;;   [rsp +140]  | SS       |
-        ;;   [rsp +148]  | padding  |
+        ;;   [rsp +2c0]  | RIP      |
+        ;;   [rsp +2c8]  | CS       |
+        ;;   [rsp +2d0]  | EFLAGS   | <-- 'machine frame'
+        ;;   [rsp +2d8]  | RSP      |
+        ;;   [rsp +2e0]  | SS       |
+        ;;   [rsp +2e8]  | padding  |
         ;;
-        ;;   [rsp +150]  [optional stack alignment]
+        ;;   [rsp +2f0]  [optional stack alignment]
         ;;
+        ;;   [PSP - 20] -> eflags save
         ;;   [PSP - 18] -> ModuleHeader * 
         ;;   [PSP - 10] -> chunk starting index
         ;;   [PSP -  8] -> chunk sub-index (0-256)  BEWARE: this has been sign-extended, but it is unsigned
@@ -598,28 +599,33 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         test        rsp, 0Fh
         jz          AlreadyAligned
 
-        sub         rsp, sizeof_XmmAlignPad + sizeof_ScratchXmmSave + sizeof_MachineFrame + 8  ; +8 to align RSP
+        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8  ; +8 to align RSP
         push        r11                         ; save incoming R11 into save location
-        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_ScratchXmmSave + sizeof_MachineFrame + 8 + sizeof_ThunkPushedArgs]
+        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8 + sizeof_ThunkPushedArgs]
         jmp         PspCalculated
 
     AlreadyAligned:
-        sub         rsp, sizeof_XmmAlignPad + sizeof_ScratchXmmSave + sizeof_MachineFrame
+        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame
         push        r11                         ; save incoming R11 into save location
-        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_ScratchXmmSave + sizeof_MachineFrame + sizeof_ThunkPushedArgs]
+        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + sizeof_ThunkPushedArgs]
 
     PspCalculated:
-        push        r10                         ; save incoming RCX into save location
+        push        r10                         ; save incoming R10 into save location
         xor         r10d, r10d
 
-        mov         [rsp + 120h - 0a8h], r10           ; init RIP to zero
-        mov         [rsp + 128h - 0a8h], r10           ; init CS to zero
-        mov         [rsp + 130h - 0a8h], r10           ; init EFLAGS to zero
-        mov         [rsp + 138h - 0a8h], r11           ; save PSP in the 'machine frame'
-        mov         [rsp + 140h - 0a8h], r10           ; init SS to zero
+        ;;
+        ;; Populate the 'machine frame' in the diagram above.  We have only pushed up to the 'r10 save', so we have not
+        ;; yet pushed 0xA8 bytes of that diagram.
+        ;;
+        ;; [rsp + {offset-in-target-frame-layout-diagram} - {as-yet-unpushed-stack-size}]
+        mov         [rsp + 2c0h - 0a8h], r10           ; init RIP to zero
+        mov         [rsp + 2c8h - 0a8h], r10           ; init CS to zero
+        mov         [rsp + 2d0h - 0a8h], r10           ; init EFLAGS to zero
+        mov         [rsp + 2d8h - 0a8h], r11           ; save PSP in the 'machine frame'
+        mov         [rsp + 2e0h - 0a8h], r10           ; init SS to zero
 
         .pushframe
-        .allocstack sizeof_XmmAlignPad + sizeof_ScratchXmmSave + 2*8    ;; only 2 of the regs from the PInvokeTransitionFrame are on the stack
+        .allocstack sizeof_XmmAlignPad + sizeof_XmmSave + 2*8    ;; only 2 of the regs from the PInvokeTransitionFrame are on the stack
 
         push_vol_reg    r9
         push_vol_reg    r8
@@ -652,13 +658,31 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         ; RBX is PSP
         ; RSI is Thread*
 
-        movdqa      [rsp + 0c0h], xmm0      ; save incoming XMM0 into save location
-        movdqa      [rsp + 0d0h], xmm1      ; save incoming XMM1 into save location
-        movdqa      [rsp + 0e0h], xmm2      ; save incoming XMM2 into save location
-        movdqa      [rsp + 0f0h], xmm3      ; save incoming XMM3 into save location
-        movdqa      [rsp + 100h], xmm4      ; save incoming XMM4 into save location
-        movdqa      [rsp + 110h], xmm5      ; save incoming XMM5 into save location
+        fxsave      [rsp + 0c0h]
 
+        cmp         [g_fHasFastFxsave], 0   ; fast fxsave won't save the xmm registers, so we must do it
+        jz          DontSaveXmmAgain
+
+        ;; 0C0h -> offset of FXSAVE area
+        ;; 0A0h -> offset of xmm0 save area within the FXSAVE area
+        movdqa      [rsp + 0c0h + 0a0h +  0*10h], xmm0
+        movdqa      [rsp + 0c0h + 0a0h +  1*10h], xmm1
+        movdqa      [rsp + 0c0h + 0a0h +  2*10h], xmm2
+        movdqa      [rsp + 0c0h + 0a0h +  3*10h], xmm3
+        movdqa      [rsp + 0c0h + 0a0h +  4*10h], xmm4
+        movdqa      [rsp + 0c0h + 0a0h +  5*10h], xmm5
+        movdqa      [rsp + 0c0h + 0a0h +  6*10h], xmm6
+        movdqa      [rsp + 0c0h + 0a0h +  7*10h], xmm7
+        movdqa      [rsp + 0c0h + 0a0h +  8*10h], xmm8
+        movdqa      [rsp + 0c0h + 0a0h +  9*10h], xmm9
+        movdqa      [rsp + 0c0h + 0a0h + 10*10h], xmm10
+        movdqa      [rsp + 0c0h + 0a0h + 11*10h], xmm11
+        movdqa      [rsp + 0c0h + 0a0h + 12*10h], xmm12
+        movdqa      [rsp + 0c0h + 0a0h + 13*10h], xmm13
+        movdqa      [rsp + 0c0h + 0a0h + 14*10h], xmm14
+        movdqa      [rsp + 0c0h + 0a0h + 15*10h], xmm15
+
+DontSaveXmmAgain:
         xor         ecx, ecx                ; Combine the two indexes 
         mov         cl,  [r11 -  8h]        ; ...
         add         ecx, [r11 - 10h]        ; ...
@@ -668,7 +692,7 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         ;; RDX contains the ModuleHeader*
 
         call        RecoverLoopHijackTarget
-        mov         [rsp + 120h], rax       ; save original target address into 'machine frame'
+        mov         [rsp + 2c0h], rax       ; save original target address into 'machine frame'
         mov         [rsp +  20h], rax       ; save original target address into PInvokeTransitionFrame
 
         mov         [rbx - 8], rax          ; store original target address for our 'return'
@@ -695,7 +719,7 @@ ifdef FEATURE_GC_STRESS
         cmp         [g_fGcStressStarted], eax
         jz          @F
 
-        mov         rdx, [rsp + 120h]
+        mov         rdx, [rsp + 2c0h]
         mov         rcx, [g_pTheRuntimeInstance]
         call        RuntimeInstance__ShouldHijackLoopForGcStress
         cmp         al, 0
@@ -714,13 +738,29 @@ endif ;; FEATURE_GC_STRESS
         mov         [rbx - 10h], rcx        ; store RCX save value into location for popping
         mov         rcx, rbx                ; RCX <- PSP
 
-        movdqa      xmm0, [rsp + 0c0h]
-        movdqa      xmm1, [rsp + 0d0h]
-        movdqa      xmm2, [rsp + 0e0h]
-        movdqa      xmm3, [rsp + 0f0h]
-        movdqa      xmm4, [rsp + 100h]
-        movdqa      xmm5, [rsp + 110h]
+        fxrstor     [rsp + 0c0h]
 
+        cmp         [g_fHasFastFxsave], 0
+        jz          DontRestoreXmmAgain
+
+        movdqa      xmm0 , [rsp + 0c0h + 0a0h +  0*10h]
+        movdqa      xmm1 , [rsp + 0c0h + 0a0h +  1*10h]
+        movdqa      xmm2 , [rsp + 0c0h + 0a0h +  2*10h]
+        movdqa      xmm3 , [rsp + 0c0h + 0a0h +  3*10h]
+        movdqa      xmm4 , [rsp + 0c0h + 0a0h +  4*10h]
+        movdqa      xmm5 , [rsp + 0c0h + 0a0h +  5*10h]
+        movdqa      xmm6 , [rsp + 0c0h + 0a0h +  6*10h]
+        movdqa      xmm7 , [rsp + 0c0h + 0a0h +  7*10h]
+        movdqa      xmm8 , [rsp + 0c0h + 0a0h +  8*10h]
+        movdqa      xmm9 , [rsp + 0c0h + 0a0h +  9*10h]
+        movdqa      xmm10, [rsp + 0c0h + 0a0h + 10*10h]
+        movdqa      xmm11, [rsp + 0c0h + 0a0h + 11*10h]
+        movdqa      xmm12, [rsp + 0c0h + 0a0h + 12*10h]
+        movdqa      xmm13, [rsp + 0c0h + 0a0h + 13*10h]
+        movdqa      xmm14, [rsp + 0c0h + 0a0h + 14*10h]
+        movdqa      xmm15, [rsp + 0c0h + 0a0h + 15*10h]
+
+DontRestoreXmmAgain:
         add         rsp, sizeof_OutgoingScratchSpace
         pop         rax                     ; m_RIP
         pop         rbp                     ; m_FramePointer
@@ -742,9 +782,20 @@ endif ;; FEATURE_GC_STRESS
         pop         r10
         pop         r11
 
-        ; RCX is PSP at this point, so -10h for return address and RCX save value
-        lea         rsp, [rcx - 10h]
-        pop         rcx
+
+        ;; RCX is PSP at this point and the stack looks like this:
+        ;;   [PSP - 20] -> eflags save
+        ;;   [PSP - 18] -> ModuleHeader * 
+        ;;   [PSP - 10] -> rcx save
+        ;;   [PSP -  8] -> return address
+        ;;   [PSP]      -> caller's frame
+        ;;
+        ;; The final step is to restore eflags, rcx, and return back to the loop target location.
+
+        lea         rsp, [rcx - 20h]
+        popfq               ;; restore flags
+        pop         rcx     ;; discard ModuleHeader*
+        pop         rcx     ;; restore rcx
         ret
 
 NESTED_END RhpLoopHijack, _TEXT

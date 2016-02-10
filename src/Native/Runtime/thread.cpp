@@ -20,6 +20,7 @@
 #include "RWLock.h"
 #include "threadstore.h"
 #include "RuntimeInstance.h"
+#include "shash.h"
 #include "module.h"
 #include "rhbinder.h"
 #include "stressLog.h"
