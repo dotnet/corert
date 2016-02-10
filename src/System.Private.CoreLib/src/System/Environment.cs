@@ -44,14 +44,6 @@ namespace System
             }
         }
 
-        internal static long TickCount64
-        {
-            get
-            {
-                return (long)Interop.mincore.GetTickCount64();
-            }
-        }
-
         //// Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
         //// to assign blame for crashes.  Don't mess with this, such as by making it call 
         //// another managed helper method, unless you consult with some CLR Watson experts.

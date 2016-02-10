@@ -18,6 +18,14 @@ namespace System
 {
     public static partial class Environment
     {
+        internal static long TickCount64
+        {
+            get
+            {
+                return (long)Interop.Sys.GetTickCount64();
+            }
+        }
+
         public unsafe static String ExpandEnvironmentVariables(String name)
         {
             if (name == null)

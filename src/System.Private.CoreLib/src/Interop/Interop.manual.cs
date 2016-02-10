@@ -146,9 +146,6 @@ internal partial class Interop
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal extern static IntPtr GetProcessHeap();
 
-        [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
-        internal extern static ulong GetTickCount64();
-
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal extern static IntPtr HeapAlloc(IntPtr hHeap, uint dwFlags, UIntPtr dwBytes);
 
