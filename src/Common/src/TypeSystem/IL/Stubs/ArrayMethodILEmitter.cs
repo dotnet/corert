@@ -71,17 +71,35 @@ namespace Internal.IL.Stubs
             Debug.Assert(_rank > 0);
 
             var codeStream = _emitter.NewCodeStream();
+            var context = _method.Context;
 
-            var int32Type = _method.Context.GetWellKnownType(WellKnownType.Int32);
+            var int32Type = context.GetWellKnownType(WellKnownType.Int32);
 
             var totalLocalNum = _emitter.NewLocal(int32Type);
             var lengthLocalNum = _emitter.NewLocal(int32Type);
 
-            int pointerSize = _method.Context.Target.PointerSize;
+            int pointerSize = context.Target.PointerSize;
 
             var rangeExceptionLabel = _emitter.NewCodeLabel();
 
-            // TODO: type check
+            if (!_elementType.IsValueType)
+            {
+                // Type check
+                if (_method.Kind == ArrayMethodKind.Set)
+                {
+                    MethodDesc checkArrayStore =
+                        context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports").GetKnownMethod("RhCheckArrayStore", null);
+
+                    codeStream.EmitLdArg(0);
+                    codeStream.EmitLdArg(_rank + 1);
+
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(checkArrayStore));
+                }
+                else if (_method.Kind == ArrayMethodKind.Address)
+                {
+                    // TODO: type check - CheckVectorElemAddr
+                }
+            }
 
             for (int i = 0; i < _rank; i++)
             {
@@ -146,7 +164,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLabel(rangeExceptionLabel); // Assumes that there is one "int" pushed on the stack
             codeStream.Emit(ILOpcode.pop);
 
-            MethodDesc throwHelper = _method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
+            MethodDesc throwHelper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
             codeStream.EmitCallThrowHelper(_emitter, throwHelper);
 
 #if false
