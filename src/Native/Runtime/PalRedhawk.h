@@ -605,7 +605,7 @@ typedef IntNative (WINAPI *FARPROC)();
 typedef UInt64 REGHANDLE;
 typedef UInt64 TRACEHANDLE;
 
-#ifndef EVENT_PROVIDER_INCLUDED
+#ifndef _EVNTPROV_H_
 struct EVENT_DATA_DESCRIPTOR
 {
     UInt64  Ptr;
@@ -640,7 +640,7 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
     EventDataDescriptor->Size = DataSize;
     EventDataDescriptor->Reserved = 0;
 }
-#endif // EVENT_PROVIDER_INCLUDED
+#endif // _EVNTPROV_H_
 
 #ifndef GCENV_INCLUDED
 extern GCSystemInfo g_SystemInfo;
@@ -690,7 +690,7 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ 
 
 REDHAWK_PALIMPORT Int32 REDHAWK_PALAPI PalGetProcessCpuCount();
 
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_ const TCHAR *, _Out_ char * buff, _In_ UInt32 maxBytesToRead);
+REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_z_ const TCHAR *, _Out_writes_all_(maxBytesToRead) char * buff, _In_ UInt32 maxBytesToRead);
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than 
