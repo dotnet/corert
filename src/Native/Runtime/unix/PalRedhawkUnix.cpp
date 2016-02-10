@@ -12,6 +12,7 @@
 #include "CommonTypes.h"
 #include "PalRedhawkCommon.h"
 #include "CommonMacros.h"
+#include "UnixCommon.h"
 #include <sal.h>
 #include "config.h"
 #include "UnixHandle.h"
@@ -70,6 +71,12 @@ using std::nullptr_t;
 
 #include "gcenv.structs.h"
 
+#include "PalRedhawkInline.h"
+#include "daccess.h"
+#include "slist.h"
+#include "slist.inl"
+#include "UnixEvent.h"
+
 #ifdef CORERT // @TODO: Collisions between assert.h headers
 #define assert(expr) ASSERT(expr)
 #endif
@@ -86,19 +93,6 @@ using std::nullptr_t;
 #error Dont know how to get page-size on this architecture!
 #endif
 #endif // __APPLE__
-
-#define PalRaiseFailFastException RaiseFailFastException
-
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            RhFailFast(); \
-        } \
-    } \
-    while(0)
 
 typedef union _LARGE_INTEGER {
     struct {
@@ -129,19 +123,6 @@ typedef Int32 (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
 #define MEM_DECOMMIT            0x4000
 #define MEM_RELEASE             0x8000
 
-#define WAIT_OBJECT_0           0
-#define WAIT_TIMEOUT            258
-#define WAIT_FAILED             0xFFFFFFFF
-
-static const int tccSecondsToMilliSeconds = 1000;
-static const int tccSecondsToMicroSeconds = 1000000;
-static const int tccSecondsToNanoSeconds = 1000000000;
-static const int tccMilliSecondsToMicroSeconds = 1000;
-static const int tccMilliSecondsToNanoSeconds = 1000000;
-static const int tccMicroSecondsToNanoSeconds = 1000;
-
-static const uint32_t INFINITE = 0xFFFFFFFF;
-
 static uint32_t g_dwPALCapabilities;
 static UInt32 g_cLogicalCpus = 0;
 static size_t g_cbLargestOnDieCache = 0;
@@ -161,138 +142,15 @@ bool InitializeFlushProcessWriteBuffers();
 
 void TimeSpecAdd(timespec* time, uint32_t milliseconds)
 {
-    time->tv_nsec += milliseconds * tccMilliSecondsToNanoSeconds;
-    if (time->tv_nsec > tccSecondsToNanoSeconds)
+    uint64_t nsec = time->tv_nsec + (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
+    if (nsec >= tccSecondsToNanoSeconds)
     {
-        time->tv_sec += (time->tv_nsec - tccSecondsToNanoSeconds) / tccSecondsToNanoSeconds;
-        time->tv_nsec %= tccSecondsToNanoSeconds;
+        time->tv_sec += nsec / tccSecondsToNanoSeconds;
+        nsec %= tccSecondsToNanoSeconds;
     }
+
+    time->tv_nsec = nsec;
 }
-
-class UnixEvent
-{
-    pthread_cond_t m_condition;
-    pthread_mutex_t m_mutex;
-    bool m_manualReset;
-    bool m_state;
-
-    void Update(bool state)
-    {
-        pthread_mutex_lock(&m_mutex);
-        m_state = state;
-        // Unblock all threads waiting for the condition variable
-        pthread_cond_broadcast(&m_condition);
-        pthread_mutex_unlock(&m_mutex);
-    }
-
-public:
-
-    UnixEvent(bool manualReset, bool initialState)
-    : m_manualReset(manualReset),
-      m_state(initialState)
-    {
-        int st = pthread_mutex_init(&m_mutex, NULL);
-        ASSERT(st == NULL);
-
-        pthread_condattr_t attrs;
-        st = pthread_condattr_init(&attrs);
-        ASSERT(st == NULL);
-
-#if HAVE_CLOCK_MONOTONIC
-        // Ensure that the pthread_cond_timedwait will use CLOCK_MONOTONIC
-        st = pthread_condattr_setclock(&attrs, CLOCK_MONOTONIC);
-        ASSERT(st == NULL);
-#endif // HAVE_CLOCK_MONOTONIC
-
-        st = pthread_cond_init(&m_condition, &attrs);
-        ASSERT(st == NULL);
-
-        st = pthread_condattr_destroy(&attrs);
-        ASSERT(st == NULL);
-    }
-
-    ~UnixEvent()
-    {
-        int st = pthread_mutex_destroy(&m_mutex);
-        ASSERT(st == NULL);
-
-        st = pthread_cond_destroy(&m_condition);
-        ASSERT(st == NULL);
-    }
-
-    uint32_t Wait(uint32_t milliseconds)
-    {
-        timespec endTime;
-
-        if (milliseconds != INFINITE)
-        {
-#if HAVE_CLOCK_MONOTONIC
-            clock_gettime(CLOCK_MONOTONIC, &endTime);
-            TimeSpecAdd(&endTime, milliseconds);
-#else // HAVE_CLOCK_MONOTONIC
-            // TODO: fix this. The time of day can be changed by the user and then the timeout
-            // would change. So we will need to use pthread_cond_timedwait_relative_np and
-            // update the relative time each time pthread_cond_timedwait gets waked.
-            // on OSX and other systems that don't support the monotonic clock
-            timeval now;
-            gettimeofday(&now, NULL);
-            endTime.tv_sec = now.tv_sec;
-            endTime.tv_nsec = now.tv_usec * tccMicroSecondsToNanoSeconds;
-            TimeSpecAdd(&endTime, milliseconds);
-#endif // HAVE_CLOCK_MONOTONIC
-        }
-
-        int st = 0;
-
-        pthread_mutex_lock(&m_mutex);
-        while (!m_state)
-        {
-            if (milliseconds == INFINITE)
-            {
-                st = pthread_cond_wait(&m_condition, &m_mutex);
-            }
-            else
-            {
-                st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
-            }
-
-            if (st != 0)
-            {
-                // wait failed or timed out
-                break;
-            }
-
-        }
-        pthread_mutex_unlock(&m_mutex);
-
-        uint32_t waitStatus;
-
-        if (st == 0)
-        {
-            waitStatus = WAIT_OBJECT_0;
-        }
-        else if (st == ETIMEDOUT)
-        {
-            waitStatus = WAIT_TIMEOUT;
-        }
-        else
-        {
-            waitStatus = WAIT_FAILED;
-        }
-
-        return waitStatus;
-    }
-
-    void Set()
-    {
-        Update(true);
-    }
-
-    void Reset()
-    {
-        Update(false);
-    }
-};
 
 typedef UnixHandle<UnixHandleType::Event, UnixEvent> EventUnixHandle;
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
@@ -982,23 +840,43 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackC
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-extern "C" UInt32 WaitForSingleObjectEx(HANDLE handle, UInt32 milliseconds, UInt32_BOOL alertable)
+extern "C" UInt32 WaitForMultipleObjectsEx(UInt32 handleCount, HANDLE *handles, UInt32_BOOL waitAll, UInt32 milliseconds, UInt32_BOOL alertable)
 {
-    // The handle can only represent an event here
-    // TODO: encapsulate this stuff
-    UnixHandleBase* handleBase = (UnixHandleBase*)handle;
-    ASSERT(handleBase->GetType() == UnixHandleType::Event);
-    EventUnixHandle* unixHandle = (EventUnixHandle*)handleBase;
+    // Wait for all handles is not supported
+    ASSERT(!waitAll);
 
-    return unixHandle->GetObject()->Wait(milliseconds);
+    UnixEventWaiter waiter(handleCount);
+
+    for (uint32_t i = 0; i < handleCount; i++)
+    {
+        UnixHandleBase* handleBase = (UnixHandleBase*)handles[i];
+        ASSERT(handleBase->GetType() == UnixHandleType::Event);
+        EventUnixHandle* unixHandle = (EventUnixHandle*)handleBase;
+
+        waiter.AddEvent(i, unixHandle->GetObject());
+    }
+
+    UInt32 result = waiter.Wait(milliseconds);
+
+    for (uint32_t i = 0; i < handleCount; i++)
+    {
+        UnixHandleBase* handleBase = (UnixHandleBase*)handles[i];
+        EventUnixHandle* unixHandle = (EventUnixHandle*)handleBase;
+
+        waiter.RemoveEvent(i, unixHandle->GetObject());
+    }
+
+    return result;
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* handles, UInt32_BOOL allowReentrantWait)
 {
-    // Only a single handle wait for event is supported
-    ASSERT(handleCount == 1);
+    return WaitForMultipleObjectsEx(handleCount, handles, UInt32_FALSE, timeout, UInt32_FALSE);
+}
 
-    return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
+extern "C" UInt32 WaitForSingleObjectEx(HANDLE handle, UInt32 milliseconds, UInt32_BOOL alertable)
+{
+    return WaitForMultipleObjectsEx(1, &handle, UInt32_FALSE, milliseconds, alertable);
 }
 
 extern "C" void _mm_pause()
@@ -1258,11 +1136,6 @@ extern "C" void DebugBreak()
 extern "C" uint32_t GetLastError()
 {
     return 1;
-}
-
-extern "C" UInt32 WaitForMultipleObjectsEx(UInt32, HANDLE *, UInt32_BOOL, UInt32, UInt32_BOOL)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
 // Initialize the interface implementation

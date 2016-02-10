@@ -96,3 +96,8 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
 }
 
 #endif // _DEBUG
+
+void RhFailFast()
+{
+  RhFailFast2(NULL, NULL);
+}

@@ -8,7 +8,6 @@
 enum class UnixHandleType
 {
     Thread,
-    Mutex,
     Event
 };
 
