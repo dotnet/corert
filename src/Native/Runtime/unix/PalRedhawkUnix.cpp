@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <cwchar>
 #include "CommonTypes.h"
-#include <PalRedhawkCommon.h>
+#include "PalRedhawkCommon.h"
 #include "CommonMacros.h"
 #include <sal.h>
 #include "config.h"

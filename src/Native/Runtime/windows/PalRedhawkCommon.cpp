@@ -17,7 +17,8 @@
 #include <evntprov.h>
 #include "CommonTypes.h"
 #include "daccess.h"
-#include <palredhawkcommon.h>
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include <winternl.h>
 #include "CommonMacros.h"
 #include "assert.h"
@@ -248,7 +249,7 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ TCHAR* fileName, _Out_writes_all_(maxBytesToRead) char* buff, _In_ UInt32 maxBytesToRead)
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_writes_all_(maxBytesToRead) char* buff, _In_ UInt32 maxBytesToRead)
 {
     WIN32_FILE_ATTRIBUTE_DATA attrData;
 
@@ -260,8 +261,7 @@ REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ TCHAR* fileName, _Out_writes
         return 0;
     }
 
-    HANDLE hFile = CreateFile2(fileName, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ, OPEN_EXISTING, NULL);
-
+    HANDLE hFile = PalCreateFileW(fileName, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
         return 0;
