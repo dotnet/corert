@@ -159,6 +159,13 @@ namespace System
             }
         }
 
+#if CORERT
+        [Intrinsic]
+#endif
+        internal static IntPtr GetValueInternal(RuntimeTypeHandle handle)
+        {
+            return handle.RawValue;
+        }
 
         internal IntPtr RawValue
         {
