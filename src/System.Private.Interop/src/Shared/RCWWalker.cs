@@ -1305,6 +1305,7 @@ namespace System.Runtime.InteropServices
 
             // NOTE: Call must be used instead of StdCall to avoid deadlock
             IntPtr* pNewHandles = (IntPtr*)ExternalInterop.MemReAlloc((IntPtr)m_pHandles,
+                                                                      new UIntPtr( (uint) (sizeof(IntPtr) * m_capacity)),
                                                                       new UIntPtr( (uint) (sizeof(IntPtr) * newCapacity)),
                                                                       HEAP_ZERO_MEMORY);
 
@@ -1347,7 +1348,10 @@ namespace System.Runtime.InteropServices
             // If this fails, we don't really care (very unlikely to fail, though)
             // NOTE: Call must be used instead of StdCall to avoid deadlock
             //
-            IntPtr* pNewHandles = (IntPtr*)ExternalInterop.MemReAlloc((IntPtr)m_pHandles, new UIntPtr((uint)(sizeof(IntPtr) * newCapacity) ) , HEAP_ZERO_MEMORY);
+            IntPtr* pNewHandles = (IntPtr*)ExternalInterop.MemReAlloc((IntPtr) m_pHandles, 
+                                                                        new UIntPtr((uint)(sizeof(IntPtr) * m_capacity)),
+                                                                        new UIntPtr((uint)(sizeof(IntPtr) * newCapacity)), 
+                                                                        HEAP_ZERO_MEMORY);
 
             if (pNewHandles == null)
                 return false;
