@@ -140,6 +140,9 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
+// Key for the thread local storage of the attached thread pointer
+static pthread_key_t g_threadKey;
+
 extern bool PalQueryProcessorTopology();
 bool InitializeFlushProcessWriteBuffers();
 
@@ -281,10 +284,18 @@ public:
 typedef UnixHandle<UnixHandleType::Event, UnixEvent> EventUnixHandle;
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
+// Destructor of the thread local object represented by the g_threadKey,
+// called when a thread is shut down
+void TlsObjectDestructor(void* data)
+{
+    ASSERT(data == pthread_getspecific(g_threadKey));
+
+    RuntimeThreadShutdown(data);
+}
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-__attribute__((constructor))
-bool PalInit()
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
     g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
 
@@ -304,6 +315,12 @@ bool PalInit()
         return false;
     }
 
+    int status = pthread_key_create(&g_threadKey, TlsObjectDestructor);
+    if (status != 0)
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -311,6 +328,61 @@ bool PalInit()
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 {
     return (g_dwPALCapabilities & (uint32_t)capability) == (uint32_t)capability;
+}
+
+extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
+{
+    // Abort aborts the process and causes creation of a crash dump
+    abort();
+}
+
+// Attach thread to PAL. 
+// It can be called multiple times for the same thread.
+// It fails fast if a different thread was already registered.
+// Parameters:
+//  thread        - thread to attach
+extern "C" void PalAttachThread(void* thread)
+{
+    void* attachedThread = pthread_getspecific(g_threadKey);
+
+    ASSERT_MSG(attachedThread == NULL, "PalAttachThread called multiple times for the same thread");
+
+    int status = pthread_setspecific(g_threadKey, thread);
+    if (status != 0)
+    {
+        ASSERT_UNCONDITIONALLY("PalAttachThread failed to store thread pointer in thread local storage");
+        RhFailFast();
+    }
+}
+
+// Detach thread from PAL.
+// It fails fast if some other thread value was attached to PAL.
+// Parameters:
+//  thread        - thread to detach
+// Return:
+//  true if the thread was detached, false if there was no attached thread
+extern "C" bool PalDetachThread(void* thread)
+{
+    void* attachedThread = pthread_getspecific(g_threadKey);
+
+    if (attachedThread == thread)
+    {
+        int status = pthread_setspecific(g_threadKey, NULL);
+        if (status != 0)
+        {
+            ASSERT_UNCONDITIONALLY("PalDetachThread failed to clear thread pointer in thread local storage");
+            RhFailFast();
+        }
+        return true;
+    }
+
+    if (attachedThread != NULL)
+    {
+        ASSERT_UNCONDITIONALLY("PalDetachThread called with different thread pointer than PalAttachThread");
+        RhFailFast();
+    }
+
+    return false;
 }
 
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
@@ -802,39 +874,6 @@ extern "C" void EnterCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 {
     pthread_mutex_unlock(&lpCriticalSection->mutex);
-}
-
-extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
-{
-    // Abort aborts the process and causes creation of a crash dump
-    abort();
-}
-
-typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
-
-extern "C" UInt32 FlsAlloc(PFLS_CALLBACK_FUNCTION arg1)
-{
-    // UNIXTODO: The FLS stuff needs to be abstracted, the only usage of the FLS is to get a callback
-    // when a thread is terminating.
-    return 0;
-}
-
-__thread void* flsValue;
-
-extern "C" void * FlsGetValue(UInt32 arg1)
-{
-    // UNIXTODO: The FLS stuff needs to be abstracted, the only usage of the FLS is to get a callback
-    // when a thread is terminating.
-    return flsValue;
-}
-
-extern "C" UInt32_BOOL FlsSetValue(UInt32 arg1, void * arg2)
-{
-    // UNIXTODO: The FLS stuff needs to be abstracted, the only usage of the FLS is to get a callback
-    // when a thread is terminating.
-    flsValue = arg2;
-
-    return UInt32_TRUE;
 }
 
 extern "C" unsigned __int64  __readgsqword(unsigned long Offset)

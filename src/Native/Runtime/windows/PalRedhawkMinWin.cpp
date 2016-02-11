@@ -39,6 +39,9 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 
 extern "C" UInt32 __stdcall NtGetCurrentProcessorNumber();
 
+// Index for the fiber local storage of the attached thread pointer
+static UInt32 g_flsIndex = FLS_OUT_OF_INDEXES;
+
 static DWORD g_dwPALCapabilities;
 
 GCSystemInfo g_SystemInfo;
@@ -57,6 +60,22 @@ bool InitializeSystemInfo()
 
 extern bool PalQueryProcessorTopology();
 
+// This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
+// it means that the thread itself is destroyed.
+// Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
+// the ThreadStore lock in the RuntimeThreadShutdown.
+void __stdcall FiberDetachCallback(void* lpFlsData)
+{
+    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
+    ASSERT(lpFlsData == FlsGetValue(g_flsIndex));
+
+    if (lpFlsData != NULL)
+    {
+        // The current fiber is the home fiber of a thread, so the thread is shutting down
+        RuntimeThreadShutdown(lpFlsData);
+    }
+}
+
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
@@ -66,6 +85,14 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     if (!PalQueryProcessorTopology())
         return false;
 
+    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
+    // callback is made without the OS loader lock
+    g_flsIndex = FlsAlloc(FiberDetachCallback);
+    if (g_flsIndex == FLS_OUT_OF_INDEXES)
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -73,6 +100,56 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 {
     return (g_dwPALCapabilities & (DWORD)capability) == (DWORD)capability;
+}
+
+// Attach thread to PAL. 
+// It can be called multiple times for the same thread.
+// It fails fast if a different thread was already registered with the current fiber
+// or if the thread was already registered with a different fiber.
+// Parameters:
+//  thread        - thread to attach
+extern "C" void PalAttachThread(void* thread)
+{
+    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
+
+    if (threadFromCurrentFiber != NULL)
+    {
+        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
+        RhFailFast();
+    }
+
+    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
+    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
+    // is destroyed, we consider the thread to be destroyed.
+    FlsSetValue(g_flsIndex, thread);
+}
+
+// Detach thread from PAL.
+// It fails fast if some other thread value was attached to PAL.
+// Parameters:
+//  thread        - thread to detach
+// Return:
+//  true if the thread was detached, false if there was no attached thread
+extern "C" bool PalDetachThread(void* thread)
+{
+    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
+    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
+
+    if (threadFromCurrentFiber == NULL)
+    {
+        // we've seen this thread, but not this fiber.  It must be a "foreign" fiber that was 
+        // borrowing this thread.
+        return false;
+    }
+
+    if (threadFromCurrentFiber != thread)
+    {
+        ASSERT_UNCONDITIONALLY("Detaching a thread from the wrong fiber");
+        RhFailFast();
+    }
+
+    FlsSetValue(g_flsIndex, NULL);
+    return true;
 }
 
 REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()

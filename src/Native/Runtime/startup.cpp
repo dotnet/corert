@@ -39,7 +39,6 @@ UInt32 _fls_index = FLS_OUT_OF_INDEXES;
 
 
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
-void __stdcall FiberDetach(void* lpFlsData);
 void CheckForPalFallback();
 void DetectCPUFeatures();
 
@@ -76,10 +75,6 @@ bool InitDLL(HANDLE hPalInstance)
     if (NULL == hRuntimeInstance)
         return false;
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
-
-    _fls_index = PalFlsAlloc(FiberDetach);
-    if (_fls_index == FLS_OUT_OF_INDEXES)
-        return false;
 
     // @TODO: currently we're always forcing a workstation GC.
     // @TODO: GC per-instance vs per-DLL state separation
@@ -244,13 +239,13 @@ void DllThreadDetach()
     }
 }
 
-void __stdcall FiberDetach(void* lpFlsData)
+void __stdcall RuntimeThreadShutdown(void* thread)
 {
     // Note: loader lock is *not* held here!
-    UNREFERENCED_PARAMETER(lpFlsData);
-    ASSERT(lpFlsData == PalFlsGetValue(_fls_index));
+    UNREFERENCED_PARAMETER(thread);
+    ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
-    ThreadStore::DetachCurrentThreadIfHomeFiber();
+    ThreadStore::DetachCurrentThread();
 }
 
 COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterModule, (ModuleHeader *pModuleHeader))

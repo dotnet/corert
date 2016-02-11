@@ -126,25 +126,13 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     // TLS.
     CreateCurrentThreadBuffer();
 
-    ASSERT(_fls_index != FLS_OUT_OF_INDEXES);
-    Thread* pThreadFromCurrentFiber = (Thread*)PalFlsGetValue(_fls_index);
-
+    // The thread was already initialized, so it is already attached
     if (pAttachingThread->IsInitialized())
     {
-        if (pThreadFromCurrentFiber != pAttachingThread)
-        {
-            ASSERT_UNCONDITIONALLY("Multiple fibers encountered on a single thread");
-            RhFailFast();
-        }
-
         return;
     }
 
-    if (pThreadFromCurrentFiber != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
-        RhFailFast();
-    }
+    PalAttachThread(pAttachingThread);
 
     //
     // Init the thread buffer
@@ -162,13 +150,6 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
     pTS->m_ThreadList.PushHead(pAttachingThread);
-
-    //
-    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
-    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
-    // is destroyed, we consider the thread to be destroyed.
-    //
-    PalFlsSetValue(_fls_index, pAttachingThread);
 }
 
 // static 
@@ -177,44 +158,22 @@ void ThreadStore::AttachCurrentThread()
     AttachCurrentThread(true);
 }
 
-void ThreadStore::DetachCurrentThreadIfHomeFiber()
+void ThreadStore::DetachCurrentThread()
 {
-    //
-    // Note: we call this when each *fiber* is destroyed, because we receive that notification outside
-    // of the Loader Lock.  This allows us to safely acquire the ThreadStore lock.  However, we have to be
-    // extra careful to avoid cleaning up a thread unless the fiber being destroyed is the thread's "home"
-    // fiber, as recorded in AttachCurrentThread.
-    //
-
     // The thread may not have been initialized because it may never have run managed code before.
     Thread * pDetachingThread = RawGetCurrentThread();
 
-    ASSERT(_fls_index != FLS_OUT_OF_INDEXES);
-    Thread* pThreadFromCurrentFiber = (Thread*)PalFlsGetValue(_fls_index);
-
+    // The thread was not initialized yet, so it was not attached
     if (!pDetachingThread->IsInitialized())
     {
-        if (pThreadFromCurrentFiber != NULL)
-        {
-            ASSERT_UNCONDITIONALLY("Detaching a fiber from an unknown thread");
-            RhFailFast();
-        }
         return;
     }
 
-    if (pThreadFromCurrentFiber == NULL)
+    if (!PalDetachThread(pDetachingThread))
     {
-        // we've seen this thread, but not this fiber.  It must be a "foreign" fiber that was 
-        // borrowing this thread.
         return;
     }
-
-    if (pThreadFromCurrentFiber != pDetachingThread)
-    {
-        ASSERT_UNCONDITIONALLY("Detaching a thread from the wrong fiber");
-        RhFailFast();
-    }
-
+        
 #ifdef STRESS_LOG
     ThreadStressLog * ptsl = reinterpret_cast<ThreadStressLog *>(
         pDetachingThread->GetThreadStressLog());
