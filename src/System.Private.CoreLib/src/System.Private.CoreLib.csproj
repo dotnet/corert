@@ -480,6 +480,10 @@
         <Link>Interop\Windows\mincore\Interop.DateTime.cs</Link>
       </Compile>
 
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs" >
+        <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
+      </Compile>
+
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Win32.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs" >
         <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
@@ -534,6 +538,9 @@
     <Compile Include="System\Environment.Unix.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs" >
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs" >
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" >
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs</Link>
