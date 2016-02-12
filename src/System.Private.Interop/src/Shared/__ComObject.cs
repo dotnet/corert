@@ -462,11 +462,6 @@ namespace System
             m_flags = ComObjectFlags.None;
             m_refCount = 1;
             m_cachedInterfaces = new SimpleComInterfaceCacheItem[FIXED_CACHE_SIZE];
-            for (int i=0; i< FIXED_CACHE_SIZE; i++)
-            {
-                m_cachedInterfaces[i].typeInfo = McgTypeInfo.Null;
-                m_cachedInterfaces[i].typeHandle = default(RuntimeTypeHandle);
-            }
 #if DEBUG
             m_allocationId = (uint)Interlocked.Add(ref s_nextAllocationId, 1);
 #endif
@@ -528,9 +523,7 @@ namespace System
             {
                 m_flags |= ComObjectFlags.IsJupiterObject;
 
-                m_cachedInterfaces[0].ptr = pJupiterObj;
-                m_cachedInterfaces[0].typeInfo = McgModuleManager.IJupiterObject;
-
+                m_cachedInterfaces[0].Assign(McgModuleManager.IJupiterObject, pJupiterObj, default(RuntimeTypeHandle));
                 RCWWalker.OnJupiterRCWCreated(this);
 
                 //
@@ -661,10 +654,10 @@ namespace System
         internal unsafe __com_IJupiterObject* GetIJupiterObject_NoAddRef()
         {
             Debug.Assert(IsJupiterObject);
-            Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].typeInfo));
+            Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].GetTypeInfo()));
 
             // Slot 0 is always IJupiterObject*
-            return (__com_IJupiterObject*)m_cachedInterfaces[0].ptr.ToPointer();
+            return (__com_IJupiterObject*)m_cachedInterfaces[0].GetPtr().ToPointer();
         }
 
         #endregion
@@ -765,8 +758,7 @@ namespace System
 
                 if (IsJupiterObject)
                 {
-                    Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].typeInfo));
-
+                    Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].GetTypeInfo()));
                     startIndex = 1;
                 }
 
@@ -775,16 +767,16 @@ namespace System
                 //
                 for (int i = startIndex; i < FIXED_CACHE_SIZE; ++i)
                 {
-                    // ptr field will always be first field to assign value in SimpleComInterfaceCacheItem::Assign
-                    if (m_cachedInterfaces[i].ptr != default(IntPtr))
+                    IntPtr ptr;
+                    if (m_cachedInterfaces[i].TryGetPtr(out ptr))
                     {
                         if (IsJupiterObject)
                             RCWWalker.BeforeRelease(this);
 
                         if (inBaseContext)
-                            McgMarshal.ComRelease(m_cachedInterfaces[i].ptr);
+                            McgMarshal.ComRelease(ptr);
                         else
-                            baseContext.EnqueueDelayedRelease(m_cachedInterfaces[i].ptr);
+                            baseContext.EnqueueDelayedRelease(ptr);
                     }
                 }
 
@@ -829,14 +821,14 @@ namespace System
             //
             if (IsJupiterObject && !IsAggregated)
             {
-                Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].typeInfo));
+                Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].GetTypeInfo()));
 
                 RCWWalker.BeforeRelease(this);
 
                 if (inBaseContext)
-                    McgMarshal.ComRelease(m_cachedInterfaces[0].ptr);
+                    McgMarshal.ComRelease(m_cachedInterfaces[0].GetPtr());
                 else
-                    baseContext.EnqueueDelayedRelease(m_cachedInterfaces[0].ptr);
+                    baseContext.EnqueueDelayedRelease(m_cachedInterfaces[0].GetPtr());
             }
 
             if (IsAggregated)
@@ -1032,18 +1024,14 @@ namespace System
                 // NOTE: it is important to use Length instead of the constant because the compiler would
                 // eliminate the range check (for the most part) when we are using Length
                 //
-                    for (int i = 0; i < m_cachedInterfaces.Length; ++i)
+                for (int i = 0; i < m_cachedInterfaces.Length; ++i)
+                {
+                    //
+                    // Check whether this is the same COM interface as cached
+                    //
+                    if(m_cachedInterfaces[i].TryReadCachedNativeInterface(interfaceTypeInfo, out pComPtr))
                     {
-                        //
-                        // Check whether this is the same COM interface as cached
-                        //
-                        // Since Assign() set typeInfo field as last step, we can safely assume that with
-                        // typeInfo != null, m_cachedInterfaces[i] is fully initialized
-                        //
-                        if (m_cachedInterfaces[i].typeInfo.Equals(interfaceTypeInfo))
-                        {
-                            pComPtr = m_cachedInterfaces[i].ptr;
-                            return Interop.COM.S_OK;
+                        return Interop.COM.S_OK;
                     }
                 }
             }
@@ -1087,9 +1075,10 @@ namespace System
                 int i = 0;
                 do
                 {
-                    if (m_cachedInterfaces[i].IsSameAs(typeHandle))
+                    IntPtr cachedComPtr;
+                    if (m_cachedInterfaces[i].TryReadCachedNativeInterface(typeHandle, out cachedComPtr))
                     {
-                        return m_cachedInterfaces[i].ptr;
+                        return cachedComPtr;
                     }
                 } while(++i < m_cachedInterfaces.Length);
             }
@@ -1345,19 +1334,14 @@ namespace System
                 //
                 for (int i = 0; i < FIXED_CACHE_SIZE; ++i)
                 {
-                    IntPtr ptr = m_cachedInterfaces[i].ptr;
-
-                    if (ptr == default(IntPtr)) // empty slot
+                    if (m_cachedInterfaces[i].Assign(interfaceTypeInfo, pComPtr, typeHandle))
                     {
-                        if (m_cachedInterfaces[i].Assign(interfaceTypeInfo, pComPtr, typeHandle))
-                        {
-                            cachedInSimpleCache = true;
-                            break;
-                        }
+                        cachedInSimpleCache = true;
+                        break;
                     }
                     else if (checkDup)
                     {
-                        if ((ptr == pComPtr) && (m_cachedInterfaces[i].typeInfo == interfaceTypeInfo)) // found exact match, no need to store
+                        if (m_cachedInterfaces[i].IsMatchingEntry(pComPtr, interfaceTypeInfo)) // found exact match, no need to store
                         {
                             return; // If duplicate found, skipping clear pComPtr and RCWWalker.AfterAddRef
                         }
@@ -1837,10 +1821,10 @@ namespace System
             //
             for (int i = 0; i < m_cachedInterfaces.Length; ++i)
             {
-                // TypeHandle will be the last field to assign value in SimpleComInterfaceCacheItem::Assign
-                if (!m_cachedInterfaces[i].IsSameAs(default(RuntimeTypeHandle)))
+                McgTypeInfo cachedMcgTypeInfo;
+                if (m_cachedInterfaces[i].TryGetTypeInfo(out cachedMcgTypeInfo))
                 {
-                    object adapter = FindDynamicAdapterForInterface(requestedType.InterfaceType, m_cachedInterfaces[i].typeInfo.ItfType);
+                    object adapter = FindDynamicAdapterForInterface(requestedType.InterfaceType, cachedMcgTypeInfo.ItfType);
 
                     if (adapter != null)
                         return adapter;
@@ -1955,9 +1939,10 @@ namespace System
             // first check Simple ComInterface Cache
             for (int i = 0; i < m_cachedInterfaces.Length; i++)
             {
-                if (!m_cachedInterfaces[i].typeHandle.Equals(default(RuntimeTypeHandle)))
+                McgTypeInfo cachedTypeInfo;
+                if (m_cachedInterfaces[i].TryGetTypeInfo(out cachedTypeInfo))
                 {
-                    Type interfaceType = InteropExtensions.GetTypeFromHandle(m_cachedInterfaces[i].typeInfo.ItfType);
+                    Type interfaceType = InteropExtensions.GetTypeFromHandle(cachedTypeInfo.ItfType);
                     foreach (PropertyInfo propertyInfo in interfaceType.GetRuntimeProperties())
                     {
                         if (matchingDelegate(propertyInfo))
@@ -2906,23 +2891,36 @@ namespace System.Runtime.InteropServices
         /// Update managed debugger whenever field name/field type is changed.
         /// See CordbObjectValue::GetInterfaceData in debug\dbi\values.cpp
         /// </summary>
-        internal McgTypeInfo typeInfo;   // The table entry for the cached com interface
+        private McgTypeInfo typeInfo;   // The table entry for the cached com interface
         /// <summary>
         /// NOTE: Managed debugger depends on field name:"ptr" and field type:IntPtr
         /// Update managed debugger whenever field name/field type is changed.
         /// See CordbObjectValue::GetInterfaceData in debug\dbi\values.cpp
         /// </summary>
-        internal volatile IntPtr ptr;    // Interface pointer under this context
+        private IntPtr ptr;    // Interface pointer under this context
 
         /// <summary>
         /// RuntimeTypeHandle is added to the cache to make faster cache lookups. Instead
         /// of getting the McgTypeInfo from RuntimeTypeHandle, which is very expensive, we
         /// use the RuntimeTypeHandle to directly lookup the cache
         /// </summary>
-        internal RuntimeTypeHandle typeHandle;
+        private RuntimeTypeHandle typeHandle;
 
         /// <summary>
-        /// Assign GUID/ComPointer
+        /// Indict whether the entry is filled or not
+        /// Note: This field should be accessed only through Volatile.Read/Write
+        /// </summary>
+        private bool hasValue;
+
+        private bool HasValue
+        {
+            get { 
+                return Volatile.Read(ref hasValue);
+            }
+        }
+
+        /// <summary>
+        /// Assign McgTypeInfo/ComPointer/RuntimeTypeHandle
         /// </summary>
         /// <returns>Return true if winning race. False otherwise</returns>
         internal bool Assign(McgTypeInfo interfaceTypeInfo, IntPtr pComPtr, RuntimeTypeHandle handle)
@@ -2931,13 +2929,13 @@ namespace System.Runtime.InteropServices
 #pragma warning disable 0420
             if (Interlocked.CompareExchange(ref ptr, pComPtr, default(IntPtr)) == default(IntPtr))
             {
+                Debug.Assert(!HasValue, "Entry should be empty");
                 // We win the race
                 // Note: We use either typeInfo or typeHandle as key to lookup the ptr from the cache
                 // The aforementioned  compareExchange ensures that if the key is there the value will be there
                 // too. It doesn't guarantee the correct value of the other key. So we should be careful about retrieving
                 // cache item using one key and trying to access the other key of the cache as it might lead to interesting
                 // problems
-
                 typeInfo = interfaceTypeInfo;
 
                 // If the RuntimeTypeHandle has default value get the correct one from McgTypeInfo
@@ -2945,6 +2943,8 @@ namespace System.Runtime.InteropServices
                     typeHandle = interfaceTypeInfo.ItfType;
                 else
                     typeHandle = handle;
+
+                Volatile.Write(ref hasValue, true);
 
                 return true;
             }
@@ -2956,16 +2956,112 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Check whether current SimpleComInterfaceCacheItem is same interface as specified
-        /// Note: in SimpleComInterfaceCacheItem::Assign(), typeHandle field is the last field to assign value,
-        /// so if its typeHandle field value equals specified handle, it means that currently SimpleComInterfaceCacheItem is valid and
-        /// all its field are ready to use.
+        /// Get typeInfo value
+        /// Currently majority interop code replies on McgTypeInfo to work 
         /// </summary>
-        /// <param name="handle">interface type handle</param>
         /// <returns></returns>
-        internal bool IsSameAs(RuntimeTypeHandle handle)
+        public bool TryGetTypeInfo(out McgTypeInfo retTypeInfo)
         {
-            return typeHandle.Equals(handle);
+            if (HasValue)
+            {
+                retTypeInfo = typeInfo;
+                return true;
+            }
+            else
+            {
+                retTypeInfo = default(McgTypeInfo);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// NOTE: This Func doesn't check whether the item "hasValue" or not
+        /// Please make sure 'this' has value, then call this GetTypeInfo(); 
+        /// </summary>
+        /// <returns></returns>
+        internal McgTypeInfo GetTypeInfo()
+        {
+            Debug.Assert(HasValue, "Please make sure item contains valid data or you can use TryGetTypeInfo instead.");
+            return typeInfo;
+        }
+
+        /// <summary>
+        /// Get Ptr value
+        /// </summary>
+        /// <returns></returns>
+        internal bool TryGetPtr(out IntPtr retIntPtr)
+        {
+            if (HasValue)
+            {
+                retIntPtr = ptr;
+                return true;
+            }
+            else
+            {
+                retIntPtr = default(IntPtr);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// NOTE: This Func doesn't check whether the item "hasValue" or not
+        /// Please make sure 'this' has value, then call this GetPtr(); 
+        /// </summary>
+        /// <returns></returns>
+        internal IntPtr GetPtr()
+        {
+            Debug.Assert(HasValue, "Please make sure item contains valid data or you can use TryGetTypeInfo instead.");
+            return ptr;
+        }
+
+        /// <summary>
+        /// Check whether current entry matching the passed fields value
+        /// </summary>
+        internal bool IsMatchingEntry(IntPtr pComPtr, McgTypeInfo interfaceTypeInfo)
+        {
+            if (HasValue)
+            {
+                if (ptr == pComPtr && typeInfo.Equals(interfaceTypeInfo))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// If current entry's McgTypeInfo equals to the passed McgTypeInfo, then return true and its interface pointer
+        /// </summary>
+        internal bool TryReadCachedNativeInterface(McgTypeInfo interfaceTypeInfo, out IntPtr pComPtr)
+        {
+            if (HasValue)
+            {
+                if (typeInfo.Equals(interfaceTypeInfo))
+                {
+                    pComPtr = ptr;
+                    return true;
+                }
+            }
+
+            pComPtr = default(IntPtr);
+            return false;
+        }
+
+        /// <summary>
+        /// If current entry's RuntimeTypeHandle equals to the passed RuntimeTypeHandle, then return true and its interface pointer
+        /// </summary>
+        internal bool TryReadCachedNativeInterface(RuntimeTypeHandle interfaceTypeHandle, out IntPtr pComPtr)
+        {
+            if (HasValue)
+            {
+                if (typeHandle.Equals(interfaceTypeHandle))
+                {
+                    pComPtr = ptr;
+                    return true;
+                }
+            }
+
+            pComPtr = default(IntPtr);
+            return false;
         }
     }
 
