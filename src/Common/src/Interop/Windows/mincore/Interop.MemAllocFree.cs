@@ -22,13 +22,18 @@ internal static partial class Interop
     
     internal static IntPtr MemAlloc(UIntPtr sizeInBytes)
     {
-        IntPtr allocatedMemory = Interop.mincore.HeapAlloc(Interop.mincore.GetProcessHeap(), 0, sizeInBytes);
+        return MemAlloc(sizeInBytes, 0);
+    }
+    
+    internal static IntPtr MemAlloc(UIntPtr sizeInBytes, uint flags)
+    {
+        IntPtr allocatedMemory = Interop.mincore.HeapAlloc(Interop.mincore.GetProcessHeap(), flags, sizeInBytes);
         if (allocatedMemory == IntPtr.Zero)
         {
             throw new OutOfMemoryException();
         }
         return allocatedMemory;
-    }
+    }    
     
     internal static void MemFree(IntPtr allocatedMemory)
     {

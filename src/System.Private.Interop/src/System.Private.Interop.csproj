@@ -160,6 +160,7 @@
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\VariantWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />
+    <Compile Include="Interop\Interop.Memory.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -171,24 +172,45 @@
   <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
   -->
+
   <ItemGroup>
-    <Compile Include="Interop\Interop.Memory.Windows.cs" />
     <Compile Include="Interop\Interop.String.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" />
     <Compile Include="Interop\Interop.Localization.Windows.cs" />
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
     <Compile Include="Interop\Interop.COM.Windows.cs" />
     <Compile Include="Interop\Interop.Common.Windows.cs" /> 
-    <Compile Include="System\__HResults.cs" />       
+    <Compile Include="System\__HResults.cs" />
+  </ItemGroup>
+  
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs"  Condition=" '$(IsProjectKLibrary)' != 'true' ">
+      <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemReAlloc.cs" Condition=" '$(IsProjectKLibrary)' != 'true' ">
+      <Link>Interop\Windows\mincore\Interop.MemReAlloc.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <Compile Include="Interop\Interop.Memory.Unix.cs" />
     <Compile Include="Interop\Interop.String.Unix.cs" />
     <Compile Include="Interop\Interop.Common.Unix.cs" />
-  </ItemGroup>
   -->
+
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs" Condition=" '$(IsProjectKLibrary)' != 'true' ">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
+    </Compile>
+
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs" Condition=" '$(IsProjectKLibrary)' != 'true' ">
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs</Link>
+    </Compile>
+    
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" >
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
