@@ -550,15 +550,20 @@ namespace Internal.IL.Stubs
     /// </summary>
     internal sealed class PInvokeTargetNativeMethod : MethodDesc
     {
+        private static int nativeMethodCounter;
+
         private TypeDesc _owningType;
         private MethodSignature _signature;
         private PInvokeMetadata _methodMetadata;
+        private int sequenceNumber;
 
         public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata)
         {
             _owningType = owningType;
             _signature = signature;
             _methodMetadata = methodMetadata;
+
+            sequenceNumber = System.Threading.Interlocked.Increment(ref nativeMethodCounter);
         }
 
         public override TypeSystemContext Context
@@ -589,7 +594,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "__pInvokeImpl" + _methodMetadata.Name;
+                return "__pInvokeImpl" + _methodMetadata.Name + sequenceNumber;
             }
         }
 
