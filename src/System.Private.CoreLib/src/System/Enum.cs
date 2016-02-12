@@ -605,7 +605,7 @@ namespace System
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            if (value.EETypePtr == typeof(string).TypeHandle.ToEETypePtr())
+            if (value.EETypePtr == EETypePtr.EETypePtrOf<string>())
             {
                 EnumInfo enumInfo = GetEnumInfo(enumType);
                 foreach (KeyValuePair<String, ulong> kv in enumInfo.NamesAndValues)

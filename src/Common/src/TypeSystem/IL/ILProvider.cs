@@ -44,6 +44,11 @@ namespace Internal.IL
                 // TODO: Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
                 return InterlockedIntrinsic.EmitIL(method);
             }
+            else
+            if (methodName == "EETypePtrOf" && owningType.Name == "EETypePtr" && owningType.Namespace == "System")
+            {
+                return EETypePtrOfIntrinsic.EmitIL(method);
+            }
 
             return null;
         }

@@ -770,6 +770,16 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case "GetValueInternal":
+                    if (IsTypeName(method, "System", "RuntimeTypeHandle"))
+                    {
+                        StackValue typeHandleSlot = Pop();
+                        TypeDesc typeOfEEType = (TypeDesc)typeHandleSlot.Value.Aux;
+                        Push(StackValueKind.NativeInt, new Value(
+                            String.Concat("((intptr_t)", _writer.GetCppTypeName(typeOfEEType), "::__getMethodTable())")));
+                        return true;
+                    }
+                    break;
                 default:
                     break;
             }
@@ -1150,6 +1160,9 @@ namespace Internal.IL
         private void ImportLoadFloat(double value)
         {
             // TODO: Handle infinity, NaN, etc.
+            if (Double.IsNaN(value) || Double.IsInfinity(value) || Double.IsPositiveInfinity(value) || Double.IsNegativeInfinity(value))
+                throw new NotImplementedException();
+            
             string val = value.ToString();
             Push(StackValueKind.Float, new Value(val));
         }
@@ -2140,6 +2153,9 @@ namespace Internal.IL
         {
             var argument = Pop();
 
+            if (argument.Kind == StackValueKind.Float)
+                throw new NotImplementedException();
+
             PushTemp(argument.Kind, argument.Type);
 
             Append((opCode == ILOpcode.neg) ? "~" : "!");
@@ -2214,24 +2230,42 @@ namespace Internal.IL
         {
             var ldtokenValue = _methodIL.GetObject(token);
             WellKnownType ldtokenKind;
+            string name;
             if (ldtokenValue is TypeDesc)
+            {
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;
+                AddTypeReference((TypeDesc)ldtokenValue, false);
+
+                MethodDesc helper = _typeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
+                AddMethodReference(helper);
+
+                name = String.Concat(
+                    _writer.GetCppTypeName(helper.OwningType),
+                    "::",
+                    _writer.GetCppMethodName(helper),
+                    "((intptr_t)",
+                    _writer.GetCppTypeName((TypeDesc)ldtokenValue),
+                    "::__getMethodTable())");
+            }
             else if (ldtokenValue is FieldDesc)
+            {
                 ldtokenKind = WellKnownType.RuntimeFieldHandle;
+                name = null;
+            }
             else if (ldtokenValue is MethodDesc)
-                ldtokenKind = WellKnownType.RuntimeMethodHandle;
+            {
+                throw new NotImplementedException();
+            }
             else
                 throw new InvalidOperationException();
-
-            if (ldtokenKind != WellKnownType.RuntimeFieldHandle)
-                throw new NotImplementedException();
 
             var value = new StackValue
             {
                 Kind = StackValueKind.ValueType,
                 Value = new Value
                 {
-                    Aux = ldtokenValue
+                    Aux = ldtokenValue,
+                    Name = name
                 },
                 Type = GetWellKnownType(ldtokenKind),
             };

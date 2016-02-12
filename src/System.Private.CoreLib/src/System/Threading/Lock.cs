@@ -29,12 +29,7 @@ namespace System.Threading
         //
         internal static bool IsLock(object obj)
         {
-#if CORERT
-            // CORERT-TODO
-            return obj is Lock;
-#else
-            return obj.EETypePtr == typeof(Lock).TypeHandle.ToEETypePtr();
-#endif
+            return obj.EETypePtr == EETypePtr.EETypePtrOf<Lock>();
         }
 
         //
