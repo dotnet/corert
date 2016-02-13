@@ -2,8 +2,8 @@
   "dependencies": {
     "NETStandard.Library": "1.0.0-rc2-23704",
     "System.IO.MemoryMappedFiles": "4.0.0-rc2-23704",
-    "System.Collections.Immutable": "1.1.37",
-    "System.Reflection.Metadata": "1.1.0",
+    "System.Collections.Immutable": "1.2.0-rc2-23704",
+    "System.Reflection.Metadata": "1.2.0-rc2-23704",
     "Microsoft.DiaSymReader": "1.0.6"
   },
   "frameworks": {
