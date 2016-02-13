@@ -42,6 +42,7 @@ namespace ILCompiler
     {
         private readonly CompilerTypeSystemContext _typeSystemContext;
         private readonly CompilationOptions _options;
+        private readonly TypeInitialization _typeInitManager;
 
         private NodeFactory _nodeFactory;
         private DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
@@ -61,6 +62,8 @@ namespace ILCompiler
             _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(options.SystemModuleName));
 
             _nameMangler = new NameMangler(this);
+
+            _typeInitManager = new TypeInitialization();
         }
 
         public CompilerTypeSystemContext TypeSystemContext
@@ -132,7 +135,7 @@ namespace ILCompiler
         {
             NodeFactory.NameMangler = NameMangler;
 
-            _nodeFactory = new NodeFactory(_typeSystemContext, _options.IsCppCodeGen);
+            _nodeFactory = new NodeFactory(_typeSystemContext, _typeInitManager, _options.IsCppCodeGen);
 
             // Choose which dependency graph implementation to use based on the amount of logging requested.
             if (_options.DgmlLog == null)
@@ -328,6 +331,11 @@ namespace ILCompiler
         {
             return _nodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
                 ((EcmaField)field).GetFieldRvaData(), _typeSystemContext.Target.PointerSize);
+        }
+
+        public bool HasLazyStaticConstructor(TypeDesc type)
+        {
+            return _typeInitManager.HasLazyStaticConstructor(type);
         }
     }
 }

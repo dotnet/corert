@@ -450,13 +450,13 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         private void ComputeOptionalEETypeFields(NodeFactory factory)
         {
-            ComputeRareFlags();
+            ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             ComputeICastableVirtualMethodSlots(factory);
             ComputeValueTypeFieldPadding();
         }
 
-        void ComputeRareFlags()
+        void ComputeRareFlags(NodeFactory factory)
         {
             uint flags = 0;
 
@@ -465,7 +465,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsNullableFlag;
             }
 
-            if (_type.HasStaticConstructor)
+            if (factory.TypeInitializationManager.HasLazyStaticConstructor(_type))
             {
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }

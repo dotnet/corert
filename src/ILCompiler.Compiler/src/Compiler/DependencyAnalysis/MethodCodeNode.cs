@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class MethodCodeNode : ObjectNode, INodeWithFrameInfo, INodeWithDebugInfo, ISymbolNode
+    internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithFrameInfo, INodeWithDebugInfo
     {
         private MethodDesc _method;
         private ObjectData _methodCode;
@@ -70,6 +70,19 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return 0;
             }
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        {
+            TypeDesc owningType = _method.OwningType;
+            if (context.TypeInitializationManager.HasEagerStaticConstructor(owningType))
+            {
+                var result = new DependencyList();
+                result.Add(context.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
+                return result;
+            }
+
+            return null;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

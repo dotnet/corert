@@ -255,6 +255,8 @@ void * g_pDispatchMapTemporaryWorkaround;
 
 extern "C" void* __StringTableStart;
 extern "C" void* __StringTableEnd;
+extern "C" void* __EagerCctorStart;
+extern "C" void* __EagerCctorEnd;
 extern "C" void* GetModuleSection(int id, int* length)
 {
     struct ModuleSectionSymbol
@@ -269,9 +271,11 @@ extern "C" void* GetModuleSection(int id, int* length)
 #ifdef CPPCODEGEN
         { System::String::__getMethodTable(), sizeof(void*) },
         { nullptr, 0 },
+        { nullptr, 0 },
 #else
         { &__EEType_System_Private_CoreLib_System_String, sizeof(void*) },
         { &__StringTableStart, (size_t)((uint8_t*)&__StringTableEnd - (uint8_t*)&__StringTableStart) },
+        { &__EagerCctorStart, (size_t)((uint8_t*)&__EagerCctorEnd - (uint8_t*)&__EagerCctorStart) },
 #endif
     };
 
