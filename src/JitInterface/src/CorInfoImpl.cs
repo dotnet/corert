@@ -104,19 +104,35 @@ namespace Internal.JitInterface
                     flags |= (uint) CorJitFlag.CORJIT_FLG_CFI_UNWIND;
                 }
 
-                if (!_compilation.Options.NoLineNumbers)
+                try
                 {
                     CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
-                    if (ilSequencePoints != null)
+
+                    if (!_compilation.Options.NoLineNumbers)
                     {
-                        Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
-                        foreach (var point in ilSequencePoints)
+                        IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
+                        if (ilSequencePoints != null)
                         {
-                            sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
+                            SetSequencePoints(ilSequencePoints);
                         }
-                        _sequencePoints = sequencePoints;
                     }
+
+                    IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(MethodBeingCompiled);
+                    if (localVariables != null)
+                    {
+                        SetLocalVariables(localVariables);
+                    }
+
+                    IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(MethodBeingCompiled);
+                    if (parameters != null)
+                    {
+                        SetParameterNames(parameters);
+                    }
+                }
+                catch (Exception e)
+                {
+                    // Debug info not successfully loaded.
+                    _compilation.Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.GetName() + ")");
                 }
 
                 IntPtr exception;
@@ -152,6 +168,7 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
+            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
         }
 
         private MethodDesc MethodBeingCompiled
@@ -214,6 +231,7 @@ namespace Internal.JitInterface
 
             _sequencePoints = null;
             _debugLocInfos = null;
+            _debugVarInfos = null;
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -1291,6 +1309,47 @@ namespace Internal.JitInterface
             return HandleToObject(fldHnd).IsStatic;
         }
 
+        public void SetSequencePoints(IEnumerable<ILSequencePoint> ilSequencePoints)
+        {
+            Debug.Assert(ilSequencePoints != null);
+            Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
+
+            foreach (var point in ilSequencePoints)
+            {
+                sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
+            }
+
+            _sequencePoints = sequencePoints;
+        }
+
+        public void SetLocalVariables(IEnumerable<ILLocalVariable> localVariables)
+        {
+            Debug.Assert(localVariables != null);
+            var localSlotToInfoMap = new Dictionary<uint, ILLocalVariable>();
+
+            foreach (var v in localVariables)
+            {
+                localSlotToInfoMap[(uint)v.Slot] = v;
+            }
+
+            _localSlotToInfoMap = localSlotToInfoMap;
+        }
+
+        public void SetParameterNames(IEnumerable<string> parameters)
+        {
+            Debug.Assert(parameters != null);
+            var parameterIndexToNameMap = new Dictionary<uint, string>();
+            uint index = 0;
+
+            foreach (var p in parameters)
+            {
+                parameterIndexToNameMap[index] = p;
+                ++index;
+            }
+
+            _parameterIndexToNameMap = parameterIndexToNameMap;
+        }
+
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
@@ -1353,9 +1412,61 @@ namespace Internal.JitInterface
             // Just tell the JIT to extend everything.
             extendOthers = true;
         }
+
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
-            // TODO: Debugging
+            if (_localSlotToInfoMap == null && _parameterIndexToNameMap == null)
+            {
+                return;
+            }
+
+            uint paramCount = (_parameterIndexToNameMap == null) ? 0 : (uint)_parameterIndexToNameMap.Count;
+            Dictionary<uint, DebugVarInfo> debugVars = new Dictionary<uint, DebugVarInfo>();
+            int i;
+
+            for (i = 0; i < cVars; i++)
+            {
+                NativeVarInfo nativeVarInfo = vars[i];
+
+                if (nativeVarInfo.varNumber < paramCount)
+                {
+                    string name = _parameterIndexToNameMap[nativeVarInfo.varNumber];
+                    updateDebugVarInfo(debugVars, name, true, nativeVarInfo);
+                }
+                else if (_localSlotToInfoMap != null)
+                {
+                    ILLocalVariable ilVar;
+                    uint slotNumber = nativeVarInfo.varNumber - paramCount;
+                    if (_localSlotToInfoMap.TryGetValue(slotNumber, out ilVar))
+                    {
+                        updateDebugVarInfo(debugVars, ilVar.Name, false, nativeVarInfo);
+                    }
+                }
+            }
+
+            i = 0;
+            _debugVarInfos = new DebugVarInfo[debugVars.Count];
+            foreach (var debugVar in debugVars)
+            {
+                _debugVarInfos[i] = debugVar.Value;
+                i++;
+            }
+        }
+
+        private void updateDebugVarInfo(Dictionary<uint, DebugVarInfo> debugVars, string name, 
+                                        bool isParam, NativeVarInfo nativeVarInfo)
+        {
+            DebugVarInfo debugVar;
+
+            if (!debugVars.TryGetValue(nativeVarInfo.varNumber, out debugVar))
+            {
+                // TODO: Force an INT32 type (0x0074 in CodeView) for now. Fix it later.
+                // ISSUE #784. 
+                debugVar = new DebugVarInfo(name, isParam, typeIndex : 0x0074);
+                debugVars[nativeVarInfo.varNumber] = debugVar;
+            }
+
+            debugVar.Ranges.Add(nativeVarInfo);
         }
 
         private void* allocateArray(uint cBytes)
@@ -2002,7 +2113,10 @@ namespace Internal.JitInterface
         private FrameInfo[] _frameInfos;
 
         private Dictionary<int, SequencePoint> _sequencePoints;
+        private Dictionary<uint, ILLocalVariable> _localSlotToInfoMap;
+        private Dictionary<uint, string> _parameterIndexToNameMap;
         private DebugLocInfo[] _debugLocInfos;
+        private DebugVarInfo[] _debugVarInfos;
 
         private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
