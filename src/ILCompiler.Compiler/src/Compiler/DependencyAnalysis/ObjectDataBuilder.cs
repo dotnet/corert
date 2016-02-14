@@ -4,10 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,6 +19,9 @@ namespace ILCompiler.DependencyAnalysis
             _relocs = new ArrayBuilder<Relocation>();
             Alignment = 1;
             DefinedSymbols = new ArrayBuilder<ISymbolNode>();
+#if DEBUG
+            _numReservations = 0;
+#endif
         }
 
         private TargetDetails _target;
@@ -27,6 +29,10 @@ namespace ILCompiler.DependencyAnalysis
         private ArrayBuilder<byte> _data;
         internal int Alignment;
         internal ArrayBuilder<ISymbolNode> DefinedSymbols;
+
+#if DEBUG
+        private int _numReservations;
+#endif
 
         public int CountBytes
         {
@@ -92,6 +98,62 @@ namespace ILCompiler.DependencyAnalysis
             _data.ZeroExtend(numBytes);
         }
 
+        private Reservation GetReservationTicket(int size)
+        {
+#if DEBUG
+            _numReservations++;
+#endif
+            Reservation ticket = (Reservation)_data.Count;
+            _data.ZeroExtend(size);
+            return ticket;
+        }
+
+        private int ReturnReservationTicket(Reservation reservation)
+        {
+#if DEBUG
+            Debug.Assert(_numReservations > 0);
+            _numReservations--;
+#endif
+            return (int)reservation;
+        }
+
+        public Reservation ReserveByte()
+        {
+            return GetReservationTicket(1);
+        }
+
+        public void EmitByte(Reservation reservation, byte emit)
+        {
+            int offset = ReturnReservationTicket(reservation);
+            _data[offset] = emit;
+        }
+
+        public Reservation ReserveShort()
+        {
+            return GetReservationTicket(2);
+        }
+
+        public void EmitShort(Reservation reservation, short emit)
+        {
+            int offset = ReturnReservationTicket(reservation);
+            _data[offset] = (byte)(emit & 0xFF);
+            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
+        }
+
+        public Reservation ReserveInt()
+        {
+            return GetReservationTicket(4);
+        }
+
+        public void EmitInt(Reservation reservation, int emit)
+        {
+            int offset = ReturnReservationTicket(reservation);
+            _data[offset] = (byte)(emit & 0xFF);
+            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
+            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
+            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
+        }
+
         public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int delta = 0)
         {
             Relocation symbolReloc = new Relocation();
@@ -134,6 +196,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public ObjectNode.ObjectData ToObjectData()
         {
+#if DEBUG
+            Debug.Assert(_numReservations == 0);
+#endif
+
             ObjectNode.ObjectData returnData = new ObjectNode.ObjectData(_data.ToArray(),
                                                                          _relocs.ToArray(),
                                                                          Alignment,
@@ -141,5 +207,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return returnData;
         }
+
+        public enum Reservation { }
     }
 }
