@@ -908,9 +908,6 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallback : IThreadPoolWorkItem
     {
-        [System.Security.SecuritySafeCritical]
-        static QueueUserWorkItemCallback() { }
-
         private WaitCallback callback;
         private ExecutionContext context;
         private Object state;
@@ -934,15 +931,11 @@ namespace System.Threading
         }
 #endif
 
-        //
-        // internal test hook - used by tests to exercise work-stealing, etc.
-        //
-        internal QueueUserWorkItemCallback(WaitCallback waitCallback, Object stateObj, bool captureContext)
+        internal QueueUserWorkItemCallback(WaitCallback waitCallback, Object stateObj, ExecutionContext ec)
         {
             callback = waitCallback;
             state = stateObj;
-            if (captureContext)
-                context = ExecutionContext.Capture();
+            context = ec;
         }
 
         [SecurityCritical]
@@ -978,6 +971,67 @@ namespace System.Threading
         }
     }
 
+
+    internal sealed class QueueUserWorkItemCallbackDefaultContext : IThreadPoolWorkItem
+    {
+        private WaitCallback callback;
+        private Object state;
+
+#if DEBUG
+        volatile int executed;
+
+        ~QueueUserWorkItemCallbackDefaultContext()
+        {
+            Contract.Assert(
+                executed != 0 || Environment.HasShutdownStarted /*|| AppDomain.CurrentDomain.IsFinalizingForUnload()*/,
+                "A QueueUserWorkItemCallbackDefaultContext was never called!");
+        }
+
+        void MarkExecuted()
+        {
+            GC.SuppressFinalize(this);
+            Contract.Assert(
+                0 == Interlocked.Exchange(ref executed, 1),
+                "A QueueUserWorkItemCallbackDefaultContext was called twice!");
+        }
+#endif
+
+        internal QueueUserWorkItemCallbackDefaultContext(WaitCallback waitCallback, Object stateObj)
+        {
+            callback = waitCallback;
+            state = stateObj;
+        }
+
+        [SecurityCritical]
+        void IThreadPoolWorkItem.ExecuteWorkItem()
+        {
+#if DEBUG
+            MarkExecuted();
+#endif
+            try
+            {
+                ExecutionContext.Run(ExecutionContext.Default, ccb, this);
+            }
+            catch (Exception e)
+            {
+                RuntimeAugments.ReportUnhandledException(e);
+                throw; //unreachable
+            }
+        }
+
+        [System.Security.SecurityCritical]
+        static internal ContextCallback ccb = new ContextCallback(WaitCallback_Context);
+
+        [System.Security.SecurityCritical]
+        static private void WaitCallback_Context(Object state)
+        {
+            QueueUserWorkItemCallbackDefaultContext obj = (QueueUserWorkItemCallbackDefaultContext)state;
+            WaitCallback wc = obj.callback as WaitCallback;
+            Contract.Assert(null != wc);
+            wc(obj.state);
+        }
+    }
+
     internal static class ThreadPool
     {
         [System.Security.SecuritySafeCritical]  // auto-generated
@@ -987,7 +1041,10 @@ namespace System.Threading
              )
         {
             Contract.Assert(callBack != null);
-            QueueUserWorkItemCallback tpcallBack = new QueueUserWorkItemCallback(callBack, state, captureContext: true);
+            ExecutionContext context = ExecutionContext.Capture();
+            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.Default ?
+                    new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
+                    (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
             ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, true);
         }
 
@@ -1005,7 +1062,7 @@ namespace System.Threading
              )
         {
             Contract.Assert(callBack != null);
-            QueueUserWorkItemCallback tpcallBack = new QueueUserWorkItemCallback(callBack, state, captureContext: false);
+            QueueUserWorkItemCallback tpcallBack = new QueueUserWorkItemCallback(callBack, state, null);
             ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, true);
         }
 
