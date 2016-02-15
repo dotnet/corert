@@ -100,9 +100,9 @@ install_dotnet_cli()
         fi
         
         local __build_arch_lowercase=$(echo "${__BuildArch}" | tr '[:upper:]' '[:lower:]')
-        local __cli_tarball=dotnet-${__build_os_lowercase}-${__build_arch_lowercase}.latest.tar.gz
+        local __cli_tarball=dotnet-${__build_os_lowercase}-${__build_arch_lowercase}.1.0.1.001252.tar.gz
         local __cli_tarball_path=${__tools_dir}/${__cli_tarball}
-        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/${__cli_tarball}"
+        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/1.0.1.001252/${__cli_tarball}"
         tar -xzf ${__cli_tarball_path} -C ${__cli_dir}
         export DOTNET_HOME=${__cli_dir}
         #
