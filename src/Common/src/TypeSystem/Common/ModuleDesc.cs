@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 namespace Internal.TypeSystem
 {
     public abstract partial class ModuleDesc
@@ -29,5 +31,10 @@ namespace Internal.TypeSystem
         /// Gets the global &lt;Module&gt; type.
         /// </summary>
         public abstract TypeDesc GetGlobalModuleType();
+
+        /// <summary>
+        /// Retrieves a collection of all types defined in the current module. This includes nested types.
+        /// </summary>
+        public abstract IEnumerable<MetadataType> GetAllTypes();
     }
 }
