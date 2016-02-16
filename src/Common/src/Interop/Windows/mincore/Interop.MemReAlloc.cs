@@ -11,17 +11,12 @@ internal static partial class Interop
     internal static unsafe partial class mincore
     {
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
-        internal static unsafe extern IntPtr HeapReAlloc(IntPtr hHeap, UInt32 dwFlags, IntPtr lpMem, UIntPtr dwBytes);        
+        internal static unsafe extern IntPtr HeapReAlloc(IntPtr hHeap, UInt32 dwFlags, IntPtr lpMem, UIntPtr dwBytes);
     }
 
     internal unsafe static IntPtr MemReAlloc(IntPtr ptr, UIntPtr newSize)
     {
-        return MemReAlloc(ptr, UIntPtr.Zero, newSize, 0);
-    }
-    
-    internal static IntPtr MemReAlloc(IntPtr ptr, UIntPtr oldSize, UIntPtr newSize, uint flags)
-    {
-        IntPtr allocatedMemory = Interop.mincore.HeapReAlloc(Interop.mincore.GetProcessHeap(), flags, ptr, newSize);
+        IntPtr allocatedMemory = Interop.mincore.HeapReAlloc(Interop.mincore.GetProcessHeap(), 0, ptr, newSize);
         if (allocatedMemory == IntPtr.Zero)
         {
             throw new OutOfMemoryException();

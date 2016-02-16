@@ -210,11 +210,6 @@ namespace System.Runtime.InteropServices
             if (pBlock == null)
             {
                 pBlock =(void*) ExternalInterop.MemAlloc(new UIntPtr((uint)size));
-
-                if (pBlock == null)
-                {
-                    throw new OutOfMemoryException();
-                }
             }
 
             return pBlock;
