@@ -15,9 +15,9 @@ using AssemblyContentType = System.Reflection.AssemblyContentType;
 
 namespace ILCompiler.Metadata
 {
-    public partial class Transform<TPolicy>
+    partial class Transform<TPolicy>
     {
-        private EntityMap<Cts.ModuleDesc, ScopeDefinition> _scopeDefs
+        internal EntityMap<Cts.ModuleDesc, ScopeDefinition> _scopeDefs
             = new EntityMap<Cts.ModuleDesc, ScopeDefinition>(EqualityComparer<Cts.ModuleDesc>.Default);
         private Action<Cts.ModuleDesc, ScopeDefinition> _initScopeDef;
 
@@ -28,6 +28,10 @@ namespace ILCompiler.Metadata
 
         private void InitializeScopeDefinition(Cts.ModuleDesc module, ScopeDefinition scopeDefinition)
         {
+            // Make sure we're expected to create a scope definition here. If the assert fires, the metadata
+            // policy should have directed us to create a scope reference (or the list of inputs was incomplete).
+            Debug.Assert(_modulesToTransform.Contains(module), "Incomplete list of input modules with respect to metadata policy");
+
             var assemblyDesc = module as Cts.IAssemblyDesc;
             if (assemblyDesc != null)
             {
@@ -65,7 +69,8 @@ namespace ILCompiler.Metadata
             };
         }
 
-        private EntityMap<Cts.ModuleDesc, ScopeReference> _scopeRefs;
+        private EntityMap<Cts.ModuleDesc, ScopeReference> _scopeRefs
+            = new EntityMap<Cts.ModuleDesc, ScopeReference>(EqualityComparer<Cts.ModuleDesc>.Default);
         private Action<Cts.ModuleDesc, ScopeReference> _initScopeRef;
 
         private ScopeReference HandleScopeReference(Cts.ModuleDesc module)
