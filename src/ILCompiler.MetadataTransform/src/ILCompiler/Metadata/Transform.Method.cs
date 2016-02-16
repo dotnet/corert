@@ -16,38 +16,39 @@ using MethodImplAttributes = System.Reflection.MethodImplAttributes;
 
 namespace ILCompiler.Metadata
 {
-    public partial class Transform<TPolicy>
+    partial class Transform<TPolicy>
     {
-        private EntityMap<Cts.MethodDesc, MetadataRecord> _methods
+        internal EntityMap<Cts.MethodDesc, MetadataRecord> _methods
             = new EntityMap<Cts.MethodDesc, MetadataRecord>(EqualityComparer<Cts.MethodDesc>.Default);
 
         private Action<Cts.MethodDesc, Method> _initMethodDef;
         private Action<Cts.MethodDesc, MemberReference> _initMethodRef;
 
-        private MetadataRecord HandleMethod(Cts.MethodDesc method)
+        private MetadataRecord HandleQualifiedMethod(Cts.MethodDesc method)
         {
-            // TODO: MethodSpecs
-            Debug.Assert(method.IsTypicalMethodDefinition);
-
             MetadataRecord rec;
 
             if (_policy.GeneratesMetadata(method))
             {
-                rec = HandleMethodDefinition(method);
+                rec = new QualifiedMethod
+                {
+                    EnclosingType = (TypeDefinition)HandleType(method.OwningType),
+                    Method = HandleMethodDefinition(method),
+                };
             }
             else
             {
-                rec = _methods.GetOrCreate(method, _initMethodRef ?? (_initMethodRef = InitializeMethodReference));
+                rec = HandleMethodReference(method);
             }
 
-            Debug.Assert(rec is Method || rec is MemberReference);
+            Debug.Assert(rec is QualifiedMethod || rec is MemberReference);
 
             return rec;
         }
 
         private Method HandleMethodDefinition(Cts.MethodDesc method)
         {
-            Debug.Assert(method.IsMethodDefinition);
+            Debug.Assert(method.IsTypicalMethodDefinition);
             Debug.Assert(_policy.GeneratesMetadata(method));
             return (Method)_methods.GetOrCreate(method, _initMethodDef ?? (_initMethodDef = InitializeMethodDefinition));
         }
@@ -59,18 +60,17 @@ namespace ILCompiler.Metadata
 
             if (entity.HasInstantiation)
             {
-                var genericParams = new List<GenericParameter>(entity.Instantiation.Length);
+                record.GenericParameters.Capacity = entity.Instantiation.Length;
                 foreach (var p in entity.Instantiation)
-                    genericParams.Add(HandleGenericParameter((Cts.GenericParameterDesc)p));
-                record.GenericParameters = genericParams;
+                    record.GenericParameters.Add(HandleGenericParameter((Cts.GenericParameterDesc)p));
             }
 
             if (entity.Signature.Length > 0)
             {
-                List<Parameter> parameters = new List<Parameter>(entity.Signature.Length);
+                record.Parameters.Capacity = entity.Signature.Length;
                 for (ushort i = 0; i < entity.Signature.Length; i++)
                 {
-                    parameters.Add(new Parameter
+                    record.Parameters.Add(new Parameter
                     {
                         Sequence = i
                     });
@@ -89,8 +89,8 @@ namespace ILCompiler.Metadata
                     foreach (var paramHandle in paramHandles)
                     {
                         Ecma.Parameter param = reader.GetParameter(paramHandle);
-                        parameters[i].Flags = param.Attributes;
-                        parameters[i].Name = HandleString(reader.GetString(param.Name));
+                        record.Parameters[i].Flags = param.Attributes;
+                        record.Parameters[i].Name = HandleString(reader.GetString(param.Name));
                         
                         // TODO: CustomAttributes
                         // TODO: DefaultValue
@@ -98,16 +98,20 @@ namespace ILCompiler.Metadata
                         i++;
                     }
                 }
-
-                record.Parameters = parameters;
             }
 
             record.Flags = GetMethodAttributes(entity);
             record.ImplFlags = GetMethodImplAttributes(entity);
             
-            //TODO: MethodImpls
             //TODO: RVA
             //TODO: CustomAttributes
+        }
+
+        private MemberReference HandleMethodReference(Cts.MethodDesc method)
+        {
+            Debug.Assert(method.IsTypicalMethodDefinition);
+            Debug.Assert(!_policy.GeneratesMetadata(method));
+            return (MemberReference)_methods.GetOrCreate(method, _initMethodRef ?? (_initMethodRef = InitializeMethodReference));
         }
 
         private void InitializeMethodReference(Cts.MethodDesc entity, MemberReference record)
@@ -117,27 +121,14 @@ namespace ILCompiler.Metadata
             record.Signature = HandleMethodSignature(entity.Signature);
         }
 
-        private MethodSignature HandleMethodSignature(Cts.MethodSignature signature)
+        public override MethodSignature HandleMethodSignature(Cts.MethodSignature signature)
         {
-            List<ParameterTypeSignature> parameters;
-            if (signature.Length > 0)
-            {
-                parameters = new List<ParameterTypeSignature>(signature.Length);
-                for (int i = 0; i < signature.Length; i++)
-                {
-                    parameters.Add(HandleParameterTypeSignature(signature[i]));
-                }
-            }
-            else
-            {
-                parameters = null;
-            }
-            
-            return new MethodSignature
+            // TODO: if Cts.MethodSignature implements Equals/GetHashCode, we could enable pooling here.
+
+            var result = new MethodSignature
             {
                 // TODO: CallingConvention
                 GenericParameterCount = signature.GenericParameterCount,
-                Parameters = parameters,
                 ReturnType = new ReturnTypeSignature
                 {
                     // TODO: CustomModifiers
@@ -145,6 +136,14 @@ namespace ILCompiler.Metadata
                 },
                 // TODO-NICE: VarArgParameters
             };
+
+            result.Parameters.Capacity = signature.Length;
+            for (int i = 0; i < signature.Length; i++)
+            {
+                result.Parameters.Add(HandleParameterTypeSignature(signature[i]));
+            }
+
+            return result;
         }
 
         private MethodAttributes GetMethodAttributes(Cts.MethodDesc method)

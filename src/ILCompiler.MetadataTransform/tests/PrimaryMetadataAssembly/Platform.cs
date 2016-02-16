@@ -55,20 +55,38 @@ namespace System
     public class Array<T> : Array, System.Collections.Generic.IList<T> { }
 
     public class __ComObject : Private.CompilerServices.ICastable { }
+
+    public delegate void Action();
+
+    public interface IEquatable<T>
+    { }
+
+    public class Type
+    { }
+
+    public sealed class ParamArrayAttribute : Attribute
+    {
+    }
 }
 
 namespace System.Collections
 {
-    interface IList
+    public interface IList
+    { }
+
+    public interface IEnumerable
     { }
 }
 
 namespace System.Collections.Generic
 {
-    interface IList<T>
+    public interface IList<T>
     {
 
     }
+
+    public interface IEnumerable<T>
+    { }
 }
 
 namespace System.Private.CompilerServices
@@ -107,6 +125,16 @@ namespace System.Runtime.InteropServices
             _val = offset;
         }
         public int Value { get { return _val; } }
+    }
+}
+
+namespace System.Runtime.CompilerServices
+{
+    public sealed class IndexerNameAttribute : Attribute
+    {
+        public IndexerNameAttribute(String indexerName)
+        {
+        }
     }
 }
 
