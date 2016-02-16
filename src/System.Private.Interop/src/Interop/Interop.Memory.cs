@@ -27,14 +27,14 @@ namespace System.Runtime.InteropServices
             return Marshal.ReAllocHGlobal(ptr, unchecked( (IntPtr) (long)(ulong)newSize));
         }
 
-         internal static IntPtr MemAlloc(UIntPtr sizeInBytes, uint flags)
+        internal static IntPtr MemAllocWithZeroInitializeNoThrow(UIntPtr sizeInBytes)
         {
-            return MemAlloc(sizeInBytes);
+            throw new NotSupportedException();
         }
 
-        internal static IntPtr MemReAlloc(IntPtr ptr, UIntPtr oldSize, UIntPtr newSize ,uint flags)
+        internal static IntPtr MemReAllocWithZeroInitializeNoThrow(IntPtr ptr, UIntPtr oldSize, UIntPtr newSize)
         {
-            return MemReAlloc(ptr, newSize);
+            throw new NotSupportedException();
         }
 
 #else
@@ -49,16 +49,6 @@ namespace System.Runtime.InteropServices
             return Interop.MemAlloc((UIntPtr)(void *) sizeInBytes);
         }
 
-        internal static IntPtr MemAlloc(UIntPtr sizeInBytes, uint flags)
-        {
-            return Interop.MemAlloc(sizeInBytes, flags);
-        }
-        
-        internal static unsafe IntPtr MemAlloc(IntPtr sizeInBytes, uint flags)
-        {
-            return Interop.MemAlloc((UIntPtr)(void *)sizeInBytes, flags);
-        }
-        
         public static unsafe void MemFree(IntPtr ptr)
         {
             Interop.MemFree(ptr);
@@ -74,14 +64,14 @@ namespace System.Runtime.InteropServices
             return Interop.MemReAlloc(ptr, (UIntPtr)(void *)newSize);
         }
 
-        internal static IntPtr MemReAlloc(IntPtr ptr, UIntPtr oldSize, UIntPtr newSize ,uint flags)
+        internal static IntPtr MemAllocWithZeroInitializeNoThrow(UIntPtr sizeInBytes)
         {
-            return Interop.MemReAlloc(ptr, oldSize, newSize , flags);
+            return Interop.MemAllocWithZeroInitializeNoThrow(sizeInBytes);
         }
-        
-        internal static unsafe IntPtr MemReAlloc(IntPtr ptr, IntPtr oldSize, IntPtr newSize ,uint flags)
+
+        internal static IntPtr MemReAllocWithZeroInitializeNoThrow(IntPtr ptr, UIntPtr oldSize, UIntPtr newSize)
         {
-            return Interop.MemReAlloc(ptr, (UIntPtr)(void *) oldSize, (UIntPtr)(void *) newSize , flags);
+            return Interop.MemReAllocWithZeroInitializeNoThrow(ptr, oldSize, newSize);
         }
 #endif //CORECLR
 

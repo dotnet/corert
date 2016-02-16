@@ -19,22 +19,17 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal static extern int HeapFree(IntPtr hHeap, UInt32 dwFlags, IntPtr lpMem);
     }
-    
+
     internal static IntPtr MemAlloc(UIntPtr sizeInBytes)
     {
-        return MemAlloc(sizeInBytes, 0);
-    }
-    
-    internal static IntPtr MemAlloc(UIntPtr sizeInBytes, uint flags)
-    {
-        IntPtr allocatedMemory = Interop.mincore.HeapAlloc(Interop.mincore.GetProcessHeap(), flags, sizeInBytes);
+        IntPtr allocatedMemory = Interop.mincore.HeapAlloc(Interop.mincore.GetProcessHeap(), 0, sizeInBytes);
         if (allocatedMemory == IntPtr.Zero)
         {
             throw new OutOfMemoryException();
         }
         return allocatedMemory;
-    }    
-    
+    }
+
     internal static void MemFree(IntPtr allocatedMemory)
     {
         Interop.mincore.HeapFree(Interop.mincore.GetProcessHeap(), 0, allocatedMemory);
