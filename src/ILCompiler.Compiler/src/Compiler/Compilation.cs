@@ -244,17 +244,6 @@ namespace ILCompiler
                 _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
         }
 
-        private struct TypeAndMethod
-        {
-            public string TypeName;
-            public string MethodName;
-            public TypeAndMethod(string typeName, string methodName)
-            {
-                TypeName = typeName;
-                MethodName = methodName;
-            }
-        }
-
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)

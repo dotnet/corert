@@ -12,10 +12,17 @@ namespace ILCompiler.SymbolReader
     /// </summary>
     public struct ILSequencePoint
     {
-        public int Offset;
-        public string Document;
-        public int LineNumber;
+        public readonly int Offset;
+        public readonly string Document;
+        public readonly int LineNumber;
         // TODO: The remaining info
+
+        public ILSequencePoint(int offset, string document, int lineNumber)
+        {
+            Offset = offset;
+            Document = document;
+            LineNumber = lineNumber;
+        }
     }
 
     /// <summary>

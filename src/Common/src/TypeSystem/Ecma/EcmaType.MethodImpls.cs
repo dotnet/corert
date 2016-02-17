@@ -64,9 +64,9 @@ namespace Internal.TypeSystem.Ecma
 
                 if (foundRecord)
                 {
-                    MethodImplRecord newRecord = new MethodImplRecord();
-                    newRecord.Decl = (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration);
-                    newRecord.Body = (MethodDesc)_module.GetObject(methodImpl.MethodBody);
+                    MethodImplRecord newRecord = new MethodImplRecord(
+                        (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration),
+                        (MethodDesc)_module.GetObject(methodImpl.MethodBody));
 
                     foundRecords.Add(newRecord);
                 }
@@ -119,9 +119,9 @@ namespace Internal.TypeSystem.Ecma
 
                 if (!owningType.IsInterface)
                 {
-                    MethodImplRecord newRecord = new MethodImplRecord();
-                    newRecord.Decl = (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration);
-                    newRecord.Body = (MethodDesc)_module.GetObject(methodImpl.MethodBody);
+                    MethodImplRecord newRecord = new MethodImplRecord(
+                        (MethodDesc)_module.GetObject(methodImpl.MethodDeclaration),
+                        (MethodDesc)_module.GetObject(methodImpl.MethodBody));
                     records.Add(newRecord);
                 }
             }

@@ -10,10 +10,10 @@ namespace ILCompiler.DependencyAnalysis
 {
     public struct DebugLocInfo
     {
-        public int NativeOffset;
-        public string FileName;
-        public int LineNumber;
-        public int ColNumber;
+        public readonly int NativeOffset;
+        public readonly string FileName;
+        public readonly int LineNumber;
+        public readonly int ColNumber;
 
         public DebugLocInfo(int nativeOffset, string fileName, int lineNumber, int colNumber = 0)
         {

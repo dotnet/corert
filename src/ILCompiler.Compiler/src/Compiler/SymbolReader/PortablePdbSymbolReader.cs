@@ -96,7 +96,7 @@ namespace ILCompiler.SymbolReader
 
                 var url = _reader.GetString(_reader.GetDocument(sequencePoint.Document).Name);
 
-                yield return new ILSequencePoint() { Document = url, LineNumber = sequencePoint.StartLine, Offset = sequencePoint.Offset };
+                yield return new ILSequencePoint(sequencePoint.Offset, url, sequencePoint.StartLine);
             }
         }
 

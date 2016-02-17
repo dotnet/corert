@@ -8,8 +8,14 @@ namespace Internal.TypeSystem
 {
     public struct MethodImplRecord
     {
-        public MethodDesc Decl;
-        public MethodDesc Body;
+        public readonly MethodDesc Decl;
+        public readonly MethodDesc Body;
+
+        public MethodImplRecord(MethodDesc decl, MethodDesc body)
+        {
+            Decl = decl;
+            Body = body;
+        }
     }
 
     // MethodImpl api surface for types.
