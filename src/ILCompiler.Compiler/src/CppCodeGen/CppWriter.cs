@@ -122,10 +122,12 @@ namespace ILCompiler.CppCodeGen
             {
                 if (implementation)
                 {
-                    sb.Append(GetCppTypeName(method.OwningType));
-                    sb.Append("::");
+                    sb.Append(GetCppMethodDeclarationName(method.OwningType, GetCppMethodName(method)));
                 }
-                sb.Append(GetCppMethodName(method));
+                else
+                {
+                    sb.Append(GetCppMethodName(method));
+                }
             }
             sb.Append("(");
             bool hasThis = !methodSignature.IsStatic;
@@ -248,6 +250,26 @@ namespace ILCompiler.CppCodeGen
                 default:
                     return _compilation.NameMangler.GetMangledTypeName(type);
             }
+        }
+
+        /// <summary>
+        /// Compute a proper declaration for <param name="methodName"/> defined in <param name="owningType"/>.
+        /// Usually the C++ name for a type is prefixed by "::" but this is not a valid way to declare a method,
+        /// so we need to strip it if present.
+        /// </summary>
+        /// <param name="owningType">Type where <param name="methodName"/> belongs.</param>
+        /// <param name="methodName">Name of method from <param name="owningType"/>.</param>
+        /// <returns>C++ declaration name for <param name="methodName"/>.</returns>
+        /// </summary>
+        public string GetCppMethodDeclarationName(TypeDesc owningType, string methodName)
+        {
+            var s = GetCppTypeName(owningType);
+            if (s.StartsWith("::"))
+            {
+                // For a Method declaration we do not need the starting ::
+                s = s.Substring(2, s.Length - 2);
+            }
+            return string.Concat(s, "::", methodName);
         }
 
         public string GetCppMethodName(MethodDesc method)
@@ -605,6 +627,7 @@ namespace ILCompiler.CppCodeGen
 
             int nesting = 0;
             int current = 0;
+            // Create Namespaces. If a mangledName starts with just :: we will simply ignore it.
             sb.AppendLine();
             for (;;)
             {
@@ -612,10 +635,14 @@ namespace ILCompiler.CppCodeGen
                 if (sep < 0)
                     break;
 
-                sb.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                if (sep != 0)
+                {
+                    // Case of a name not starting with ::
+                    sb.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                    nesting++;
+                }
                 current = sep + 2;
 
-                nesting++;
             }
 
             if (full)
@@ -921,9 +948,7 @@ namespace ILCompiler.CppCodeGen
                     else
                     {
                         sb.Append("(void*)&");
-                        sb.Append(GetCppTypeName(implMethod.OwningType));
-                        sb.Append("::");
-                        sb.Append(GetCppMethodName(implMethod));
+                        sb.Append(GetCppMethodDeclarationName(implMethod.OwningType, GetCppMethodName(implMethod)));
                         sb.Append(",");
                     }
                 }
@@ -958,8 +983,8 @@ namespace ILCompiler.CppCodeGen
             }
 
             sb.Append("MethodTable * ");
-            sb.Append(GetCppTypeName(type));
-            sb.Append("::__getMethodTable()");
+            sb.Append(GetCppMethodDeclarationName(type, "__getMethodTable"));
+            sb.Append("()");
             sb.AppendLine();
             sb.Append("{");
             sb.Indent();
@@ -1057,16 +1082,16 @@ namespace ILCompiler.CppCodeGen
             // base type
             if (type.IsArray)
             {
-                sb.Append(GetCppTypeName(((ArrayType)type).ElementType));
-                sb.Append("::__getMethodTable()");
+                sb.Append(GetCppMethodDeclarationName(((ArrayType)type).ElementType, "__getMethodTable"));
+                sb.Append("()");
             }
             else
             {
                 var baseType = type.BaseType;
                 if (baseType != null)
                 {
-                    sb.Append(GetCppTypeName(type.BaseType));
-                    sb.Append("::__getMethodTable()");
+                    sb.Append(GetCppMethodDeclarationName(type.BaseType, "__getMethodTable"));
+                    sb.Append("()");
                 }
                 else
                 {
@@ -1187,9 +1212,7 @@ namespace ILCompiler.CppCodeGen
                             {
                                 sb.Append("return ");
                             }
-                            sb.Append(GetCppTypeName(m.OwningType));
-                            sb.Append("::");
-                            sb.Append(GetCppMethodName(m));
+                            sb.Append(GetCppMethodDeclarationName(m.OwningType, GetCppMethodName(m)));
                             sb.Append("(");
                             sb.Append(GetCppMethodCallParamList(m));
                             sb.Append(");");
@@ -1236,9 +1259,7 @@ namespace ILCompiler.CppCodeGen
                 sb.AppendEmptyLine();
                 sb.AppendLine();
                 sb.Append("int ret = ");
-                sb.Append(GetCppTypeName(startupCodeMain.OwningType));
-                sb.Append("::");
-                sb.Append(GetCppMethodName(startupCodeMain));
+                sb.Append(GetCppMethodDeclarationName(startupCodeMain.OwningType, GetCppMethodName(startupCodeMain)));
                 sb.Append("(argc-1, (intptr_t)(argv+1));");
 
                 sb.AppendEmptyLine();
