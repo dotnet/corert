@@ -23,17 +23,20 @@ namespace Internal.TypeSystem
 
             for (int i = 0; i < uninstMethodImpls.Length; i++)
             {
+                MethodDesc decl;
+
                 var implTypeInstantiated = uninstMethodImpls[i].Decl.OwningType.InstantiateSignature(this.Instantiation, new Instantiation());
                 if (implTypeInstantiated is InstantiatedType)
                 {
-                    instMethodImpls[i].Decl = _typeDef.Context.GetMethodForInstantiatedType(uninstMethodImpls[i].Decl.GetTypicalMethodDefinition(), (InstantiatedType)implTypeInstantiated);
+                    decl = _typeDef.Context.GetMethodForInstantiatedType(uninstMethodImpls[i].Decl.GetTypicalMethodDefinition(), (InstantiatedType)implTypeInstantiated);
                 }
                 else
                 {
-                    instMethodImpls[i].Decl = uninstMethodImpls[i].Decl;
+                    decl = uninstMethodImpls[i].Decl;
                 }
 
-                instMethodImpls[i].Body = _typeDef.Context.GetMethodForInstantiatedType(uninstMethodImpls[i].Body, this);
+                MethodDesc body = _typeDef.Context.GetMethodForInstantiatedType(uninstMethodImpls[i].Body, this);
+                instMethodImpls[i] = new MethodImplRecord(decl, body);
             }
 
             return instMethodImpls;

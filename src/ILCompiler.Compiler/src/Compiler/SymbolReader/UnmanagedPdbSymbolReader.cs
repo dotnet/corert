@@ -206,7 +206,7 @@ namespace ILCompiler.SymbolReader
                 if (lineNumbers[i] == 0xFEEFEE)
                     continue;
 
-                yield return new ILSequencePoint() { Document = GetUrl(docs[i]), LineNumber = lineNumbers[i], Offset = ilOffsets[i] };
+                yield return new ILSequencePoint(ilOffsets[i], GetUrl(docs[i]), lineNumbers[i]);
             }
         }
 

@@ -1386,9 +1386,7 @@ namespace Internal.JitInterface
                     // from the first entry.
                     if (debugLocInfos.Count == 0 && nativeOffset != 0)
                     {
-                        DebugLocInfo firstLoc = loc;
-                        firstLoc.NativeOffset = 0;
-                        firstLoc.LineNumber--;
+                        DebugLocInfo firstLoc = new DebugLocInfo(0, loc.FileName, loc.LineNumber - 1, loc.ColNumber);
                         debugLocInfos.Add(firstLoc);
                     }
 
