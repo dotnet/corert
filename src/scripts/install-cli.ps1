@@ -13,9 +13,9 @@ $ErrorActionPreference="Stop"
 $ProgressPreference="SilentlyContinue"
 
 $Feed="https://dotnetcli.blob.core.windows.net/dotnet"
-$Channel="dev"
-$DotNetFileName="dotnet-win-" + $TargetPlatform + ".1.0.1.001200.zip"
-$DotNetUrl="$Feed/$Channel/Binaries/1.0.1.001200"
+$Channel="beta"
+$DotNetFileName="dotnet-win-" + $TargetPlatform + ".latest.zip"
+$DotNetUrl="$Feed/$Channel/Binaries/Latest"
 
 function say($str)
 {

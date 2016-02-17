@@ -9,64 +9,13 @@ using System.IO;
 namespace Internal.CommandLine
 {
     //
-    // Simple command line parser
+    // Helpers for command line processing
     //
-    internal class CommandLineParser
+    internal class Helpers
     {
-        private string[] _args;
-        private int _current;
-
-        private string _currentOption;
-
-        public CommandLineParser(string[] args)
+        // Helper to create a collection of paths unique in their simple names.
+        public static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
         {
-            _args = args;
-            _current = 0;
-        }
-
-        public string GetOption()
-        {
-            if (_current >= _args.Length)
-                return null;
-
-            string opt = _args[_current];
-            _currentOption = opt;
-
-            if (opt.StartsWith("-"))
-            {
-                opt = opt.Substring(1);
-            }
-            else
-            if (Path.DirectorySeparatorChar != '/' && opt.StartsWith("/"))
-            {
-                // For convenience, allow command line options starting with slash on Windows
-                opt = opt.Substring(1);
-            }
-            else
-            {
-                return "";
-            }
-
-            _current++;
-            return opt;
-        }
-
-        public string GetCurrentOption()
-        {
-            return _currentOption;
-        }
-
-        public string GetStringValue()
-        {
-            if (_current >= _args.Length)
-                throw new CommandLineException("Value expected for " + GetCurrentOption());
-
-            return _args[_current++];
-        }
-        public void AppendExpandedPaths(Dictionary<string, string> dictionary, bool strict)
-        {
-            string pattern = GetStringValue();
-
             bool empty = true;
 
             string directoryName = Path.GetDirectoryName(pattern);

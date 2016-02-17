@@ -25,14 +25,14 @@ fi
 
 __build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 if [ ${__build_os_lowcase} != "osx" ]; then
-    __BuildRid=ubuntu.14.04
+    __BuildRid=ubuntu.14.04-${CoreRT_BuildArch}
 else
-    __BuildRid=osx.10.10
+    __BuildRid=osx.10.10-${CoreRT_BuildArch}
 fi
-export CoreRT_ToolchainPkg=toolchain.${__BuildRid}-${CoreRT_BuildArch}.Microsoft.DotNet.ILCompiler.Development
+export CoreRT_ToolchainPkg=toolchain.${__BuildRid}.Microsoft.DotNet.ILCompiler.Development
 export CoreRT_ToolchainVer=1.0.2-prerelease-00001
-export CoreRT_AppDepSdkPkg=toolchain.${__BuildRid}-${CoreRT_BuildArch}.Microsoft.DotNet.AppDep
-export CoreRT_AppDepSdkVer=1.0.5-prerelease-00001
+export CoreRT_AppDepSdkPkg=toolchain.${__BuildRid}.Microsoft.DotNet.AppDep
+export CoreRT_AppDepSdkVer=1.0.6-prerelease-00001
 
 __ScriptDir=$(cd "$(dirname "$0")"; pwd -P)
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}

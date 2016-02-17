@@ -4,14 +4,16 @@
     "System.IO.MemoryMappedFiles": "4.0.0-rc2-23704",
     "System.Collections.Immutable": "1.2.0-rc2-23704",
     "System.Reflection.Metadata": "1.2.0-rc2-23704",
-    "Microsoft.DiaSymReader": "1.0.6"
+    "Microsoft.DiaSymReader": "1.0.6",
+    "System.CommandLine": "0.1.0-d111815-3",
+    "System.IO.FileSystem": "4.0.1-rc2-23704"
   },
   "frameworks": {
-    "net46": { 
-        "imports": "portable-net451+win8"
+    "net46": {
+      "imports": "portable-net452+win8"
     }
   },
   "runtimes": {
-    "win7-x64": {}
+    "win-x64": {}
   }
 }

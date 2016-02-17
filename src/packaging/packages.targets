@@ -19,7 +19,7 @@
         <!-- Property needed for creating nupkgs -->
         <PropertyGroup>
             <ToolchainMilestone Condition="'$(ToolchainMilestone)'==''">prerelease</ToolchainMilestone>
-            <ToolchainVersion>1.0.5-$(ToolchainMilestone)-00001</ToolchainVersion>
+            <ToolchainVersion>1.0.6-$(ToolchainMilestone)-00003</ToolchainVersion>
             <RuntimeSdkVersion>$(ToolchainVersion)</RuntimeSdkVersion>
             <NuPkgRid>$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform)</NuPkgRid>
             
@@ -104,6 +104,7 @@
         <dependency id="System.Reflection.Metadata" version="1.1.0" />
         <dependency id="System.Xml.ReaderWriter" version="4.0.0" />
         <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
+        <dependency id="System.CommandLine" version="0.1.0-e160208-1" />
                     ]]></Dependencies>
             </NuSpecFile>
             
