@@ -14,7 +14,7 @@ using CallingConventions = System.Reflection.CallingConventions;
 
 namespace ILCompiler.Metadata
 {
-    public partial class Transform<TPolicy>
+    partial class Transform<TPolicy>
     {
         private Property HandleProperty(Cts.Ecma.EcmaModule module, Ecma.PropertyDefinitionHandle property)
         {
@@ -36,18 +36,6 @@ namespace ILCompiler.Metadata
             Ecma.BlobReader sigBlobReader = reader.GetBlobReader(propDef.Signature);
             Cts.PropertySignature sig = new Cts.Ecma.EcmaSignatureParser(module, sigBlobReader).ParsePropertySignature();
 
-            List<ParameterTypeSignature> parameters;
-            if (sig.Length == 0)
-            {
-                parameters = null;
-            }
-            else
-            {
-                parameters = new List<ParameterTypeSignature>(sig.Length);
-                for (int i = 0; i < parameters.Count; i++)
-                    parameters.Add(HandleParameterTypeSignature(sig[i]));
-            }
-
             Property result = new Property
             {
                 Name = HandleString(reader.GetString(propDef.Name)),
@@ -56,10 +44,13 @@ namespace ILCompiler.Metadata
                 {
                     CallingConvention = sig.IsStatic ? CallingConventions.Standard : CallingConventions.HasThis,
                     // TODO: CustomModifiers
-                    Type = HandleType(sig.ReturnType),
-                    Parameters = parameters,
+                    Type = HandleType(sig.ReturnType)
                 },
             };
+
+            result.Signature.Parameters.Capacity = sig.Length;
+            for (int i = 0; i < sig.Length; i++)
+                result.Signature.Parameters.Add(HandleParameterTypeSignature(sig[i]));
 
             if (getterHasMetadata)
             {

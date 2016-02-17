@@ -14,31 +14,13 @@ using FieldAttributes = System.Reflection.FieldAttributes;
 
 namespace ILCompiler.Metadata
 {
-    public partial class Transform<TPolicy>
+    partial class Transform<TPolicy>
     {
-        private EntityMap<Cts.FieldDesc, MetadataRecord> _fields =
+        internal EntityMap<Cts.FieldDesc, MetadataRecord> _fields =
             new EntityMap<Cts.FieldDesc, MetadataRecord>(EqualityComparer<Cts.FieldDesc>.Default);
 
         private Action<Cts.FieldDesc, Field> _initFieldDef;
         private Action<Cts.FieldDesc, MemberReference> _initFieldRef;
-
-        private MetadataRecord HandleField(Cts.FieldDesc field)
-        {
-            MetadataRecord rec;
-
-            if (_policy.GeneratesMetadata(field))
-            {
-                rec = HandleFieldDefinition(field);
-            }
-            else
-            {
-                rec = _fields.GetOrCreate(field, _initFieldRef ?? (_initFieldRef = InitializeFieldReference));
-            }
-
-            Debug.Assert(rec is Field || rec is MemberReference);
-
-            return rec;
-        }
 
         private Field HandleFieldDefinition(Cts.FieldDesc field)
         {
@@ -60,6 +42,13 @@ namespace ILCompiler.Metadata
             // TODO: CustomAttributes
             // TODO: DefaultValue
             // TODO: Offset
+        }
+
+        private MemberReference HandleFieldReference(Cts.FieldDesc field)
+        {
+            Debug.Assert(field.GetTypicalFieldDefinition() == field);
+            Debug.Assert(!_policy.GeneratesMetadata(field));
+            return (MemberReference)_fields.GetOrCreate(field, _initFieldRef ?? (_initFieldRef = InitializeFieldReference));
         }
 
         private void InitializeFieldReference(Cts.FieldDesc entity, MemberReference record)

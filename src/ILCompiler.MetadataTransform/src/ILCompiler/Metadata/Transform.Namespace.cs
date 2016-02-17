@@ -10,7 +10,7 @@ using Cts = Internal.TypeSystem;
 
 namespace ILCompiler.Metadata
 {
-    public partial class Transform<TPolicy>
+    partial class Transform<TPolicy>
     {
         private Dictionary<NamespaceKey, NamespaceDefinition> _namespaceDefs = new Dictionary<NamespaceKey, NamespaceDefinition>();
 
@@ -62,7 +62,51 @@ namespace ILCompiler.Metadata
 
         private NamespaceReference HandleNamespaceReference(Cts.ModuleDesc parentScope, string namespaceString)
         {
-            throw new NotImplementedException();
+            NamespaceReference result;
+            NamespaceKey key = new NamespaceKey(parentScope, namespaceString);
+            if (_namespaceRefs.TryGetValue(key, out result))
+            {
+                return result;
+            }
+
+            ScopeReference scope = HandleScopeReference(parentScope);
+            NamespaceReference rootNamespace;
+            key = new NamespaceKey(parentScope, null);
+            if (!_namespaceRefs.TryGetValue(key, out rootNamespace))
+            {
+                rootNamespace = new NamespaceReference
+                {
+                    Name = null,
+                    ParentScopeOrNamespace = scope,
+                };
+                _namespaceRefs.Add(key, rootNamespace);
+            }
+
+            NamespaceReference currentNamespace = rootNamespace;
+            string currentNamespaceName = String.Empty;
+            foreach (var segment in namespaceString.Split('.'))
+            {
+                string nextNamespaceName = currentNamespaceName;
+                if (nextNamespaceName.Length > 0)
+                    nextNamespaceName = nextNamespaceName + '.';
+                nextNamespaceName += segment;
+                NamespaceReference nextNamespace;
+                key = new NamespaceKey(parentScope, nextNamespaceName);
+                if (!_namespaceRefs.TryGetValue(key, out nextNamespace))
+                {
+                    nextNamespace = new NamespaceReference
+                    {
+                        Name = HandleString(segment.Length == 0 ? null : segment),
+                        ParentScopeOrNamespace = currentNamespace
+                    };
+
+                    _namespaceRefs.Add(key, nextNamespace);
+                }
+                currentNamespace = nextNamespace;
+                currentNamespaceName = nextNamespaceName;
+            }
+
+            return currentNamespace;
         }
     }
 
@@ -91,7 +135,7 @@ namespace ILCompiler.Metadata
 
         public override int GetHashCode()
         {
-            return Namespace.GetHashCode();
+            return Namespace != null ? Namespace.GetHashCode() : 0;
         }
     }
 }
