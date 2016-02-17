@@ -260,7 +260,6 @@ namespace ILCompiler.CppCodeGen
         /// <param name="owningType">Type where <param name="methodName"/> belongs.</param>
         /// <param name="methodName">Name of method from <param name="owningType"/>.</param>
         /// <returns>C++ declaration name for <param name="methodName"/>.</returns>
-        /// </summary>
         public string GetCppMethodDeclarationName(TypeDesc owningType, string methodName)
         {
             var s = GetCppTypeName(owningType);
