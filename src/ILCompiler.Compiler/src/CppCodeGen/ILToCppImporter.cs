@@ -809,8 +809,13 @@ namespace Internal.IL
                     _pendingPrefix &= ~Prefix.Constrained;
                     constrained = _constrained;
 
-                    // TODO:
-                    throw new NotImplementedException();
+                    bool forceUseRuntimeLookup;
+                    MethodDesc directMethod = constrained.GetClosestMetadataType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                    if (directMethod == null || forceUseRuntimeLookup)
+                        throw new NotImplementedException();
+
+                    method = directMethod;
+                    opcode = ILOpcode.call;
                 }
             }
 
