@@ -1931,4 +1931,35 @@ namespace System.Runtime.InteropServices
         }
         #endregion
     }
+
+    /// The main puropse of this type is making McgIR happy
+    /// The problem to solve is to generate "IUriRuntimeClass" McgData into shared assembly in production build.
+    /// In Mcg, there is a place to determine which CompilationUnit(assembly) for a type should go to.
+    /// Related Code: MCG.CompilationUnitCollection[ReportInteropTypeAndComputeDestination(typeDef)].IRCollection.Add(type);
+    /// Solution 1: Use Windows.Foundation.IUriRuntimeClass type as typedef
+    /// By default, the destination for a Windows.* WinRT type will be App CompilationUnit unless Windows.* WinRT type is shared type.
+    /// Since marking Windows.Foundation.IUriRuntimeClass as shared type, it will introduce Windows.Foundation.WwwFormUrlDecoder as shared type and
+    /// in reality, we don't care Windows.Foundation.WwwFormUrlDecoder.
+    /// 
+    /// [Current]Solution2: Use a WellKnown type(System.Runtime.InteropServices.IUriRuntimeClass) as typedef
+    /// By default, the destination for a type in system.private.interop will be shared CompilationUnit.
+    [Guid("9e365e57-48b2-4160-956f-c7385120bbfc")]
+    public interface IUriRuntimeClass
+    {
+    }
+
+    // The main puropse of this type is making McgIR happy during TypeImporter.ImporWinRTUri
+    /// The problem to solve is to generate "IUriRuntimeClassFactory" McgData into shared assembly in production build
+    /// In Mcg, there is a place to determine which CompilationUnit(assembly) for a type should go to.
+    /// Related Code: MCG.CompilationUnitCollection[ReportInteropTypeAndComputeDestination(typeDef)].IRCollection.Add(type);
+    /// Solution 1: Use Windows.Foundation.IUriRuntimeClassFactory type as typedef
+    /// By default, the destination for a Windows.* WinRT type will be App CompilationUnit unless Windows.* WinRT type is shared type.
+    /// Since marking Windows.Foundation.IUriRuntimeClassFactory as shared type, it will introduce Windows.Foundation.Uri as shared type 
+    /// 
+    /// [Current]Solution2: Use a WellKnown type(System.Runtime.InteropServices.IUriRuntimeClassFactory) as typedef
+    /// By default, the destination for a type in system.private.interop will be shared CompilationUnit.
+    [Guid("44a9796f-723e-4fdf-a218-033e75b0c084")]
+    public interface IUriRuntimeClassFactory
+    {
+    }
 }
