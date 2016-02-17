@@ -462,11 +462,11 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public IEnumerable<TypeDesc> GetAllTypes()
+        public override IEnumerable<MetadataType> GetAllTypes()
         {
             foreach (var typeDefinitionHandle in _metadataReader.TypeDefinitions)
             {
-                yield return GetType(typeDefinitionHandle);
+                yield return (MetadataType)GetType(typeDefinitionHandle);
             }
         }
 

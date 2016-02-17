@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Internal.Metadata.NativeFormat.Writer;
 
 namespace ILCompiler.Metadata
 {
@@ -12,7 +11,7 @@ namespace ILCompiler.Metadata
     {
         private Dictionary<TEntity, TRecord> _map;
 
-        public IEnumerable<TRecord> Records
+        public IReadOnlyCollection<TRecord> Records
         {
             get { return _map.Values; }
         }
@@ -59,6 +58,26 @@ namespace ILCompiler.Metadata
             }
 
             return record;
+        }
+
+        public bool TryGet(TEntity entity, out TRecord record)
+        {
+            return _map.TryGetValue(entity, out record);
+        }
+
+        public TConcreteRecord Create<TConcreteEntity, TConcreteRecord>(TConcreteEntity entity, Action<TConcreteEntity, TConcreteRecord> initializer)
+            where TConcreteEntity : TEntity
+            where TConcreteRecord : TRecord, new()
+        {
+            TConcreteRecord concreteRecord = new TConcreteRecord();
+
+            // Important: add to the map before calling the initializer.
+            // For reasoning see GetOrCreate.
+            _map.Add(entity, concreteRecord);
+
+            initializer(entity, concreteRecord);
+
+            return concreteRecord;
         }
     }    
 }

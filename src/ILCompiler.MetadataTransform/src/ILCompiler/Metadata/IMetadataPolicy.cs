@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Metadata.NativeFormat.Writer;
+
 using Cts = Internal.TypeSystem;
 
 namespace ILCompiler.Metadata
@@ -9,11 +11,14 @@ namespace ILCompiler.Metadata
     /// <summary>
     /// Controls metadata generation policy. Decides what types and members will get metadata.
     /// </summary>
+    /// <remarks>
+    /// Thread safety: the implementers are required to be thread safe.
+    /// </remarks>
     public interface IMetadataPolicy
     {
         /// <summary>
         /// Returns true if the type should generate <see cref="TypeDefinition"/> metadata. If false,
-        /// the type should generate a <see cref="TypeReference"/>.
+        /// the type will generate a <see cref="TypeReference"/> if required within the object graph.
         /// </summary>
         /// <param name="typeDef">Uninstantiated type definition to check.</param>
         bool GeneratesMetadata(Cts.MetadataType typeDef);

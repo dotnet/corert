@@ -28,6 +28,8 @@
   <ItemGroup>
     <Compile Include="ILCompiler\Metadata\EntityMap.cs" />
     <Compile Include="ILCompiler\Metadata\IMetadataPolicy.cs" />
+    <Compile Include="ILCompiler\Metadata\MetadataTransform.cs" />
+    <Compile Include="ILCompiler\Metadata\MetadataTransformResult.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Field.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Method.cs" />

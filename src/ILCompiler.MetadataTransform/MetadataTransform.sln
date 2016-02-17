@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransfor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimaryMetadataAssembly", "tests\PrimaryMetadataAssembly\PrimaryMetadataAssembly.csproj", "{C29B7395-F925-4B0E-972D-187D2D4BFEC7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleMetadataAssembly", "tests\SampleMetadataAssembly\SampleMetadataAssembly.csproj", "{D29B7395-A925-5B0E-972D-387D2D4BFEC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D29B7395-A925-5B0E-972D-387D2D4BFEC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D29B7395-A925-5B0E-972D-387D2D4BFEC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D29B7395-A925-5B0E-972D-387D2D4BFEC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D29B7395-A925-5B0E-972D-387D2D4BFEC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
