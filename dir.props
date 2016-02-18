@@ -10,7 +10,7 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00111</BuildToolsVersion>
+    <BuildToolsVersion>1.0.25-prerelease-00115</BuildToolsVersion>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
@@ -298,10 +298,10 @@
 
 
   <Target Name="OverrideBuildTools">
-    <Error Condition="'$(BuildToolsVersion)'!='1.0.25-prerelease-00111'" Text="Confirm below project.json overrides are still compatibile with this version."></Error>
+    <Error Condition="'$(BuildToolsVersion)'!='1.0.25-prerelease-00115'" Text="Confirm below project.json overrides are still compatibile with this version."></Error>
     <PropertyGroup>
       <!--
-          These overrides are for $(PackagesDir)\Microsoft.DotNet.BuildTools.1.0.25-prerelease-00111\lib\tool-runtime\project.json and test-runtime\project.json
+          These overrides are for $(PackagesDir)\Microsoft.DotNet.BuildTools.1.0.25-prerelease-00115\lib\tool-runtime\project.json and test-runtime\project.json
           This is similar to how CoreFX handles these files.
       -->
       <TestRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.json</TestRuntimeProjectJson>
