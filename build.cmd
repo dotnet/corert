@@ -59,6 +59,7 @@ echo.
 
 :: Set the remaining variables based upon the determined build configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
+set "__ObjDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\Native\%__BuildOS%.%__BuildArch%.%__BuildType%\"
 set "__RelativeProductBinDir=bin\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
@@ -76,12 +77,14 @@ set __MSBCleanBuildArgs=/t:rebuild /p:CleanedTheBuild=1
 
 :: Cleanup the previous output for the selected configuration
 if exist "%__BinDir%" rd /s /q "%__BinDir%"
+if exist "%__ObjDir%" rd /s /q "%__ObjDir%"
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 
 if exist "%__LogsDir%" del /f /q "%__LogsDir%\*_%__BuildOS%__%__BuildArch%__%__BuildType%.*"
 
 :MakeDirs
 if not exist "%__BinDir%" md "%__BinDir%"
+if not exist "%__ObjDir%" md "%__ObjDir%"
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 if not exist "%__LogsDir%" md "%__LogsDir%"
 
@@ -205,15 +208,19 @@ exit /b 1
 :VsDevGenerateRespFiles
 if defined __SkipVsDev goto :AfterVsDevGenerateRespFiles
 set __GenRespFiles=0
-if not exist "%__ProjectDir%\bin\obj\ryujit.rsp" set __GenRespFiles=1
-if not exist "%__ProjectDir%\bin\obj\cpp.rsp" set __GenRespFiles=1
+if not exist "%__ObjDir%\ryujit.rsp" set __GenRespFiles=1
+if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
     "%__DotNetCliPath%\bin\dotnet.exe" restore --quiet --runtime "win7-x64" --source "https://dotnet.myget.org/F/dotnet-core" "%__ProjectDir%\src\ILCompiler\repro"
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
-    "%__DotNetCliPath%\bin\dotnet.exe" compile --native "%__ProjectDir%\src\ILCompiler\repro"
-    copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ProjectDir%\bin\obj\ryujit.rsp"
-    "%__DotNetCliPath%\bin\dotnet.exe" compile --native --cpp "%__ProjectDir%\src\ILCompiler\repro"
-    copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ProjectDir%\bin\obj\cpp.rsp"
+    "%__DotNetCliPath%\bin\dotnet.exe" compile --native --ilcpath "%__BinDir%\.nuget\publish1" "%__ProjectDir%\src\ILCompiler\repro" -c %__BuildType%
+    copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
+    set __AdditionalCompilerFlags=
+    if /i "%__BuildType%"=="debug" (
+        set __AdditionalCompilerFlags=--cppcompilerflags /MTd
+    )
+    "%__DotNetCliPath%\bin\dotnet.exe" compile --native --cpp --ilcpath "%__BinDir%\.nuget\publish1" "%__ProjectDir%\src\ILCompiler\repro" -c %__BuildType% !__AdditionalCompilerFlags!
+    copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
 )
 :AfterVsDevGenerateRespFiles
 
