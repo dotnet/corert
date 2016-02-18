@@ -213,6 +213,16 @@ extern "C" void RhCollect()
 {
     throw "RhCollect";
 }
+
+#if !defined(_WIN32) || defined(CPPCODEGEN)
+extern "C" void RhpThrowEx(void * pEx)
+{
+    throw "RhpThrowEx";
+}
+extern "C" void RhpThrowHwEx()
+{
+    throw "RhpThrowHwEx";
+}
 extern "C" void RhpCallCatchFunclet()
 {
     throw "RhpCallCatchFunclet";
@@ -225,6 +235,8 @@ extern "C" void RhpCallFinallyFunclet()
 {
     throw "RhpCallFinallyFunclet";
 }
+#endif //. !_WIN32 || CPPCODEGEN
+
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
@@ -232,14 +244,6 @@ extern "C" void RhpUniversalTransition()
 extern "C" void RhpFailFastForPInvokeExceptionPreemp()
 {
     throw "RhpFailFastForPInvokeExceptionPreemp";
-}
-extern "C" void RhpThrowEx(void * pEx)
-{
-    throw "RhpThrowEx";
-}
-extern "C" void RhpThrowHwEx()
-{
-    throw "RhpThrowHwEx";
 }
 extern "C" void RhpEtwExceptionThrown()
 {

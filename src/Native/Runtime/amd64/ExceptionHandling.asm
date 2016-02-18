@@ -332,7 +332,7 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
         mov     r15, [rax]
 
-if 0 ;; DBG  ;; @TODO: temporarily removed because trashing RBP breaks the debugger
+if 0 ;; _DEBUG  ;; @TODO: temporarily removed because trashing RBP breaks the debugger
         ;; trash the values at the old homes to make sure nobody uses them
         mov     r9, 0baaddeedh
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
@@ -371,7 +371,7 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
 
         mov     r8, [rsp + 28h + 8*8h]                              ;; r8 <- dispatch context
 
-if DBG
+ifdef _DEBUG
         ;; Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we 
         ;; have to spill all the preserved registers and then refill them after the call.
 
@@ -508,7 +508,7 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
         movdqa  xmm14,[rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
         movdqa  xmm15,[rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
-if 0 ;; DBG  ;; @TODO: temporarily removed because trashing RBP breaks the debugger
+if 0 ;; _DEBUG ;; @TODO: temporarily removed because trashing RBP breaks the debugger
         ;; trash the values at the old homes to make sure nobody uses them
         mov     r9, 0baaddeedh
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
