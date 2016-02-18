@@ -567,7 +567,8 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
         pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
         pEHClauseOut->m_filterOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
         break;
-    case EH_CLAUSE_FAIL_FAST:
+    default:
+        ASSERT_UNCONDITIONALLY("Unexpected EHClauseKind");
         break;
     }
 

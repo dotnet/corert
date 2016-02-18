@@ -96,6 +96,7 @@ void __range_check_fail()
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
 extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
+extern "C" bool RhpRegisterCoffModule(void * pModule);
 extern "C" void * RhpHandleAlloc(void * pObject, int handleType);
 
 #define DLL_PROCESS_ATTACH      1
@@ -270,6 +271,10 @@ extern "C" void RhReRegisterForFinalize()
 
 extern "C" void InitializeModules(void ** modules, int count);
 
+#ifdef _WIN32
+extern "C" void* WINAPI GetModuleHandleW(const wchar_t *);
+#endif
+
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 int wmain(int argc, wchar_t* argv[])
@@ -279,6 +284,10 @@ int main(int argc, char* argv[])
 #endif
 {
     if (__initialize_runtime() != 0) return -1;
+
+#if defined(_WIN32) && !defined(CPPCODEGEN)
+    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL))) return -1;
+#endif
 
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
 

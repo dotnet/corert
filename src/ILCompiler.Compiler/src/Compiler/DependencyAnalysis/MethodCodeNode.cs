@@ -13,6 +13,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
+        private ObjectData _ehInfo;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
 
@@ -74,15 +75,28 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
         {
+            DependencyList dependencies = null;
+
             TypeDesc owningType = _method.OwningType;
             if (context.TypeInitializationManager.HasEagerStaticConstructor(owningType))
             {
-                var result = new DependencyList();
-                result.Add(context.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
-                return result;
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+                dependencies.Add(context.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
             }
 
-            return null;
+            if (_ehInfo != null && _ehInfo.Relocs != null)
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
+                foreach (Relocation reloc in _ehInfo.Relocs)
+                {
+                    dependencies.Add(reloc.Target, "reloc");
+                }
+            }
+
+            return dependencies;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
@@ -98,10 +112,24 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public ObjectData EHInfo
+        {
+            get
+            {
+                return _ehInfo;
+            }
+        }
+
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {
             Debug.Assert(_frameInfos == null);
             _frameInfos = frameInfos;
+        }
+
+        public void InitializeEHInfo(ObjectData ehInfo)
+        {
+            Debug.Assert(_ehInfo == null);
+            _ehInfo = ehInfo;
         }
 
         public DebugLocInfo[] DebugLocInfos

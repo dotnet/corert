@@ -24,5 +24,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get;
         }
+
+        ObjectNode.ObjectData EHInfo
+        {
+            get;
+        }
     }
 }

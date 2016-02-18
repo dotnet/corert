@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
-using System.Reflection;
 
 using Internal.TypeSystem;
 
@@ -84,6 +83,8 @@ namespace Internal.JitInterface
 
         private MethodCodeNode _methodCodeNode;
 
+        private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
+
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
         {
             try
@@ -92,6 +93,8 @@ namespace Internal.JitInterface
 
                 CORINFO_METHOD_INFO methodInfo;
                 Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
+
+                _methodScope = methodInfo.scope;
 
                 try
                 {
@@ -143,6 +146,70 @@ namespace Internal.JitInterface
             }
         }
 
+        enum RhEHClauseKind
+        {
+            RH_EH_CLAUSE_TYPED = 0,
+            RH_EH_CLAUSE_FAULT = 1,
+            RH_EH_CLAUSE_FILTER = 2
+        }
+
+        private ObjectNode.ObjectData EncodeEHInfo()
+        {
+            var builder = new ObjectDataBuilder();
+            builder.Alignment = 1;
+
+            // TODO: Filter out duplicate clauses
+
+            builder.EmitCompressedUInt((uint)_ehClauses.Length);
+
+            for (int i = 0; i < _ehClauses.Length; i++)
+            {
+                var clause = _ehClauses[i];
+                RhEHClauseKind clauseKind;
+
+                if (((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT) != 0) ||
+                    ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY) != 0))
+                {
+                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FAULT;
+                }
+                else
+                if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) != 0)
+                {
+                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FILTER;
+                }
+                else
+                {
+                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_TYPED;
+                }
+
+                builder.EmitCompressedUInt((uint)clause.TryOffset);
+                builder.EmitCompressedUInt((uint)(((int)clause.TryLength << 2) | (int)clauseKind));
+
+                switch (clauseKind)
+                {
+                    case RhEHClauseKind.RH_EH_CLAUSE_TYPED:
+                        {
+                            builder.EmitCompressedUInt(clause.HandlerOffset);
+
+                            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
+                            var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
+                            var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
+
+                            builder.EmitReloc(typeSymbol, RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                        }
+                        break;
+                    case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
+                        builder.EmitCompressedUInt(clause.HandlerOffset);
+                        break;
+                    case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
+                        builder.EmitCompressedUInt(clause.ClassTokenOrOffset);
+                        break;
+                }
+            }
+
+            return builder.ToObjectData();
+        }
+
         private void PublishCode()
         {
             var relocs = _relocs.ToArray();
@@ -156,6 +223,9 @@ namespace Internal.JitInterface
             _methodCodeNode.SetCode(objectData);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
+            if (_ehClauses != null)
+                _methodCodeNode.InitializeEHInfo(EncodeEHInfo());
+
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
         }
@@ -217,6 +287,8 @@ namespace Internal.JitInterface
             _numFrameInfos = 0;
             _usedFrameInfos = 0;
             _frameInfos = null;
+
+            _ehClauses = null;
 
             _sequencePoints = null;
             _debugLocInfos = null;
@@ -1440,7 +1512,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private void updateDebugVarInfo(Dictionary<uint, DebugVarInfo> debugVars, string name, 
+        private void updateDebugVarInfo(Dictionary<uint, DebugVarInfo> debugVars, string name,
                                         bool isParam, NativeVarInfo nativeVarInfo)
         {
             DebugVarInfo debugVar;
@@ -1933,7 +2005,7 @@ namespace Internal.JitInterface
                     directCall = true;
                 }
             }
-            
+
             pResult.hMethod = ObjectToHandle(targetMethod);
             pResult.methodFlags = getMethodAttribsInternal(targetMethod);
 
@@ -1970,7 +2042,7 @@ namespace Internal.JitInterface
             pResult._exactContextNeedsRuntimeLookup = 0;
 
             pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-            
+
             if (directCall)
             {
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
@@ -2101,6 +2173,8 @@ namespace Internal.JitInterface
         private int _usedFrameInfos;
         private FrameInfo[] _frameInfos;
 
+        private CORINFO_EH_CLAUSE[] _ehClauses;
+
         private Dictionary<int, SequencePoint> _sequencePoints;
         private Dictionary<uint, ILLocalVariable> _localSlotToInfoMap;
         private Dictionary<uint, string> _parameterIndexToNameMap;
@@ -2149,11 +2223,26 @@ namespace Internal.JitInterface
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
         {
-            byte[] blobData = new byte[unwindSize];
+            int extraBlobData = 0;
+
+            if (_compilation.Options.TargetOS == TargetOS.Windows)
+            {
+                // The unwind info blob are followed by byte that identifies the type of the funclet
+                // and other optional data that follows
+                extraBlobData = 1;
+            }
+
+            byte[] blobData = new byte[unwindSize + extraBlobData];
 
             for (uint i = 0; i < unwindSize; i++)
             {
                 blobData[i] = pUnwindBlock[i];
+            }
+
+            if (extraBlobData != 0)
+            {
+                // Capture the type of the funclet in unwind info blob
+                pUnwindBlock[unwindSize] = (byte)funcKind;
             }
 
             _frameInfos[_usedFrameInfos++] = new FrameInfo((int)startOffset, (int)endOffset, blobData);
@@ -2172,12 +2261,12 @@ namespace Internal.JitInterface
 
         private void setEHcount(uint cEH)
         {
-            // TODO: EH
+            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
         }
 
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            // TODO: EH
+            _ehClauses[EHnumber] = clause;
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]

@@ -97,9 +97,9 @@ namespace ILCompiler.DependencyAnalysis
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitBlob(IntPtr objWriter, int blobSize, byte[] blob);
-        public void EmitBlob(int blobSize, byte[] blob)
+        public void EmitBlob(byte[] blob)
         {
-            EmitBlob(_nativeObjectWriter, blobSize, blob);
+            EmitBlob(_nativeObjectWriter, blob.Length, blob);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -117,20 +117,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitSymbolRef(IntPtr objWriter, string symbolName, int size, bool isPCRelative, int delta = 0);
-        public void EmitSymbolRef(string symbolName, int size, bool isPCRelative, int delta = 0)
+        private static extern int EmitSymbolRef(IntPtr objWriter, string symbolName, RelocType relocType, int delta);
+        public int EmitSymbolRef(string symbolName, RelocType relocType, int delta = 0)
         {
-            EmitSymbolRef(_nativeObjectWriter, symbolName, size, isPCRelative, delta);
+            return EmitSymbolRef(_nativeObjectWriter, symbolName, relocType, delta);
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitWinFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, int blobSize, byte[] blobData,
-                                                 string personalityFunctionName, int LSDASize, byte[] LSDA);
-        public void EmitWinFrameInfo(int startOffset, int endOffset, int blobSize, byte[] blobData,
-                                  string personalityFunctionName = null, int LSDASize = 0, byte[] LSDA = null)
+        private static extern void EmitWinFrameInfo(IntPtr objWriter, string methodName, int startOffset, int endOffset, 
+                                                    string blobSymbolName);
+        public void EmitWinFrameInfo(int startOffset, int endOffset, int blobSize, string blobSymbolName)
         {
-            EmitWinFrameInfo(_nativeObjectWriter, _currentNodeName, startOffset, endOffset, blobSize, blobData,
-                          personalityFunctionName, LSDASize, LSDA);
+            EmitWinFrameInfo(_nativeObjectWriter, _currentNodeName, startOffset, endOffset, blobSymbolName);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -301,6 +299,9 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
+            ObjectNode.ObjectData ehInfo = nodeWithCodeInfo.EHInfo;
+
+            int i = 0;
             foreach (var frameInfo in frameInfos)
             {
                 int start = frameInfo.StartOffset;
@@ -310,8 +311,32 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_targetPlatform.OperatingSystem == TargetOS.Windows)
                 {
+                    SwitchSection(_nativeObjectWriter, "xdata");
+                    EmitAlignment(4);
+
+                    // TODO: Make sure that the same blobs get folded by emitting them to comdat sections
+
+                    string blobSymbolName = "_unwind" + (i++).ToString() + _currentNodeName;
+                    EmitSymbolDef(blobSymbolName);
+
+                    if (ehInfo != null)
+                    {
+                        blob[blob.Length - 1] |= 0x04; // Flag to indicate that EHClauses follows
+                    }
+
+                    EmitBlob(blob);
+
+                    if (ehInfo != null)
+                    {
+                        Debug.Assert(ehInfo.Alignment == 1);
+                        Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
+                        EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
+                        ehInfo = null;
+                    }
+
                     // For window, just emit the frame blob (UNWIND_INFO) as a whole.
-                    EmitWinFrameInfo(start, end, len, blob);
+                    EmitWinFrameInfo(start, end, len, blobSymbolName);
+
                     EnsureCurrentSection();
                 }
                 else
@@ -419,6 +444,48 @@ namespace ILCompiler.DependencyAnalysis
             return symbolToEmit;
         }
 
+        // Returns size of the emitted symbol reference
+        public int EmitSymbolReference(ISymbolNode target, int delta, RelocType relocType)
+        {
+            string targetName = GetSymbolToEmitForTargetPlatform(target.MangledName);
+
+            return EmitSymbolRef(targetName, relocType, delta);
+        }
+
+        public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
+        {
+            int nextRelocOffset = -1;
+            int nextRelocIndex = -1;
+            if (relocs.Length > 0)
+            {
+                nextRelocOffset = relocs[0].Offset;
+                nextRelocIndex = 0;
+            }
+
+            int i = 0;
+            while (i < blob.Length)
+            {
+                if (i == nextRelocOffset)
+                {
+                    Relocation reloc = relocs[nextRelocIndex];
+
+                    int size = EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
+
+                    // Update nextRelocIndex/Offset
+                    if (++nextRelocIndex < relocs.Length)
+                    {
+                        nextRelocOffset = relocs[nextRelocIndex].Offset;
+                    }
+                    i += size;
+                }
+                else
+                {
+                    EmitIntValue(blob[i], 1);
+                    i++;
+                }
+            }
+        }
+
         public void EmitSymbolDefinition(int currentOffset)
         {
             List<string> nodes;
@@ -501,15 +568,6 @@ namespace ILCompiler.DependencyAnalysis
                     objectWriter.SetSection(node.Section);
                     objectWriter.EmitAlignment(nodeContents.Alignment);
 
-                    Relocation[] relocs = nodeContents.Relocs;
-                    int nextRelocOffset = -1;
-                    int nextRelocIndex = -1;
-                    if (relocs != null && relocs.Length > 0)
-                    {
-                        nextRelocOffset = relocs[0].Offset;
-                        nextRelocIndex = 0;
-                    }
-
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(nodeContents.DefinedSymbols);
 
@@ -519,7 +577,17 @@ namespace ILCompiler.DependencyAnalysis
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);
 
-                    for (int i = 0; i < nodeContents.Data.Length; i++)
+                    Relocation[] relocs = nodeContents.Relocs;
+                    int nextRelocOffset = -1;
+                    int nextRelocIndex = -1;
+                    if (relocs.Length > 0)
+                    {
+                        nextRelocOffset = relocs[0].Offset;
+                        nextRelocIndex = 0;
+                    }
+
+                    int i = 0;
+                    while (i < nodeContents.Data.Length)
                     {
                         // Emit symbol definitions if necessary
                         objectWriter.EmitSymbolDefinition(i);
@@ -534,35 +602,20 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             Relocation reloc = relocs[nextRelocIndex];
 
-                            ISymbolNode target = reloc.Target;
-                            string targetName = objectWriter.GetSymbolToEmitForTargetPlatform(target.MangledName);
-                            int size = 0;
-                            bool isPCRelative = false;
-                            switch (reloc.RelocType)
-                            {
-                                case RelocType.IMAGE_REL_BASED_DIR64:
-                                    size = 8;
-                                    break;
-                                case RelocType.IMAGE_REL_BASED_REL32:
-                                    size = 4;
-                                    isPCRelative = true;
-                                    break;
-                                default:
-                                    throw new NotImplementedException();
-                            }
-                            // Emit symbol reference
-                            objectWriter.EmitSymbolRef(targetName, size, isPCRelative, reloc.Delta);
+                            int size = objectWriter.EmitSymbolReference(reloc.Target, reloc.Delta, reloc.RelocType);
 
                             // Update nextRelocIndex/Offset
                             if (++nextRelocIndex < relocs.Length)
                             {
                                 nextRelocOffset = relocs[nextRelocIndex].Offset;
                             }
-                            i += size - 1;
-                            continue;
+                            i += size;
                         }
-
-                        objectWriter.EmitIntValue(nodeContents.Data[i], 1);
+                        else
+                        {
+                            objectWriter.EmitIntValue(nodeContents.Data[i], 1);
+                            i++;
+                        }
                     }
 
                     // It is possible to have a symbol just after all of the data.

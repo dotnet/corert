@@ -184,11 +184,13 @@ __BuildOsLowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 
 for json in $(find src -iname 'project.json')
 do
-    __restore=1
-    run_test_dir ${json} ${__restore} "Jit"
-    __restore=0
-    if [ ! -e `dirname ${json}`/no_cpp ]; then
-        run_test_dir ${json} ${__restore} "Cpp"
+    if [ ! -e `dirname ${json}`/no_unix ]; then
+        __restore=1
+        run_test_dir ${json} ${__restore} "Jit"
+        __restore=0
+        if [ ! -e `dirname ${json}`/no_cpp ]; then
+            run_test_dir ${json} ${__restore} "Cpp"
+        fi
     fi
 done
 

@@ -69,6 +69,7 @@ if(WIN32)
   list(APPEND COMMON_RUNTIME_SOURCES
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
+    windows/CoffNativeCodeManager.cpp
   )
 
   if(CLR_CMAKE_PLATFORM_ARCH_AMD64)

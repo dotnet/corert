@@ -52,12 +52,6 @@ enum EHClauseKind
 {
     EH_CLAUSE_TYPED = 0,
     EH_CLAUSE_FAULT = 1,
-
-    // Local Exceptions
-    EH_CLAUSE_METHOD_BOUNDARY = 2,
-    EH_CLAUSE_FAIL_FAST = 3,
-
-    // CLR Exceptions
     EH_CLAUSE_FILTER = 2,
     EH_CLAUSE_UNUSED = 3,
 };
