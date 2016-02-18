@@ -25,7 +25,7 @@ build.cmd clean
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`@c:\corert\bin\obj\ryujit.rsp`
+`@c:\corert\bin\obj\Windows_NT.x64.Debug\ryujit.rsp`
 
   - Build & run using **F5**
     - This will run the compiler. The output is `c:\corert\src\ILCompiler\repro\obj\Debug\dnxcore50\native\repro.obj` file.
@@ -48,7 +48,7 @@ build.cmd clean
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`@c:\corert\bin\obj\cpp.rsp`
+`@c:\corert\bin\obj\Windows_NT.x64.Debug\cpp.rsp`
 
     - `-nolinenumbers` command line option can be used to suppress generation of line number mappings in C++ files - useful for debugging
 
