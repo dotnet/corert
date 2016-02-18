@@ -196,10 +196,7 @@ namespace ILCompiler.DependencyAnalysis
         private static extern void EmitDebugFunctionInfo(IntPtr objWriter, string methodName, int methodSize);
         public void EmitDebugFunctionInfo(int methodSize)
         {
-            if (HasFunctionDebugInfo())
-            {
-                EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeName, methodSize);
-            }
+            EmitDebugFunctionInfo(_nativeObjectWriter, _currentNodeName, methodSize);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -564,10 +561,13 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
-                    // Build debug local var info
-                    objectWriter.EmitDebugVarInfo(node);
+                    if (objectWriter.HasFunctionDebugInfo())
+                    {
+                        // Build debug local var info
+                        objectWriter.EmitDebugVarInfo(node);
 
-                    objectWriter.EmitDebugFunctionInfo(nodeContents.Data.Length);
+                        objectWriter.EmitDebugFunctionInfo(nodeContents.Data.Length);
+                    }
                 }
 
                 objectWriter.EmitDebugModuleInfo();
