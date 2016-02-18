@@ -304,17 +304,6 @@ COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterModule, (ModuleHeader *pModuleHeader
     return UInt32_TRUE;
 }
 
-
-COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterSimpleModule, (SimpleModuleHeader *pModuleHeader))
-{
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-
-    if (!pInstance->RegisterSimpleModule(pModuleHeader))
-        return UInt32_FALSE;
-
-    return UInt32_TRUE;
-}
-
 COOP_PINVOKE_HELPER(UInt32_BOOL, RhpEnableConservativeStackReporting, ())
 {
     RuntimeInstance * pInstance = GetRuntimeInstance();

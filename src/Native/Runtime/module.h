@@ -14,7 +14,6 @@ class DispatchMap;
 struct BlobHeader;
 struct GenericInstanceDesc;
 typedef SPTR(struct GenericInstanceDesc) PTR_GenericInstanceDesc;
-struct SimpleModuleHeader;
 
 class Module : public ICodeManager
 {
@@ -25,7 +24,6 @@ public:
     virtual ~Module();
 
     static Module *     Create(ModuleHeader *pModuleHeader);
-    static Module *     Create(SimpleModuleHeader *pModuleHeader);
 
     void                Destroy();
 
@@ -165,7 +163,6 @@ private:
     PTR_UInt8                   m_pbDeltaShortcutTable;   // 16-byte array of the most popular deltas
 
     PTR_ModuleHeader            m_pModuleHeader;
-    SimpleModuleHeader *        m_pSimpleModuleHeader;
     void *                      m_pEHTypeTable;
     SectionMethodList           m_MethodList;
     GcSegmentHandle             m_FrozenSegment;
