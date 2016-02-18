@@ -555,12 +555,6 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
     // For each clause, we have up to 4 integers:
     //      1)  try start offset
     //      2)  (try length << 2) | clauseKind
-    //
-    //      Local exceptions
-    //      3) if (typed || fault) { handler start offset }
-    //      4) if (typed)          { index into type table }
-    //
-    //      CLR exceptions
     //      3)  if (typed || fault || filter)    { handler start offset }
     //      4a) if (typed)                       { index into type table }
     //      4b) if (filter)                      { filter start offset }
