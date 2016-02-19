@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        if (!target.HasStaticConstructor)
+                        if (!factory.TypeInitializationManager.HasLazyStaticConstructor(target))
                         {
                             Debug.Assert(Id == ReadyToRunHelperId.GetNonGCStaticBase);
                             encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        if (!target.HasStaticConstructor)
+                        if (!factory.TypeInitializationManager.HasLazyStaticConstructor(target))
                         {
                             encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeGCStaticsSymbol(target));
                             AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);

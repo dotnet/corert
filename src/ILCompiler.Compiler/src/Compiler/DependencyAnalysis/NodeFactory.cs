@@ -19,11 +19,12 @@ namespace ILCompiler.DependencyAnalysis
         private CompilerTypeSystemContext _context;
         private bool _cppCodeGen;
 
-        public NodeFactory(CompilerTypeSystemContext context, bool cppCodeGen)
+        public NodeFactory(CompilerTypeSystemContext context, TypeInitialization typeInitManager, bool cppCodeGen)
         {
             _target = context.Target;
             _context = context;
             _cppCodeGen = cppCodeGen;
+            TypeInitializationManager = typeInitManager;
             DispatchMapTable = new InterfaceDispatchMapTableNode(this.Target);
             CreateNodeCaches();
         }
@@ -34,6 +35,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _target;
             }
+        }
+
+        public TypeInitialization TypeInitializationManager
+        {
+            get; private set;
         }
 
         private struct NodeCache<TKey, TValue>
@@ -80,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>
             {
-                return new NonGCStaticsNode(type);
+                return new NonGCStaticsNode(type, this);
             });
 
             _GCStatics = new NodeCache<MetadataType, GCStaticsNode>((MetadataType type) =>
@@ -160,6 +166,20 @@ namespace ILCompiler.DependencyAnalysis
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
             {
                 return new InterfaceDispatchMapNode(type);
+            });
+
+            _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
+            {
+                Debug.Assert(method.IsStaticConstructor);
+                Debug.Assert(TypeInitializationManager.HasEagerStaticConstructor((MetadataType)method.OwningType));
+
+                ISymbolNode entrypoint = MethodEntrypoint(method);
+
+                // TODO: multifile: We will likely hit this assert with ExternSymbolNode. We probably need ExternMethodSymbolNode
+                //       deriving from ExternSymbolNode that carries around the target method.
+                Debug.Assert(entrypoint is IMethodNode);
+
+                return EagerCctorTable.NewNode((IMethodNode)entrypoint);
             });
         }
 
@@ -287,6 +307,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode MethodEntrypoint(MethodDesc method)
         {
+            // TODO: NICE: make this method always return IMethodNode. We will likely be able to get rid of the
+            //             cppCodeGen special casing here that way, and other places won't need to cast this from ISymbolNode.
             if (!_cppCodeGen)
             {
                 var kind = method.DetectSpecialMethodKind();
@@ -374,6 +396,13 @@ namespace ILCompiler.DependencyAnalysis
             return _stringIndirectionNodes.GetOrAdd(data);
         }
 
+        private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
+
+        public EmbeddedObjectNode EagerCctorIndirection(MethodDesc cctorMethod)
+        {
+            return _eagerCctorIndirectionNodes.GetOrAdd(cctorMethod);
+        }
+
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
@@ -398,6 +427,10 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler.CompilationUnitPrefix + "__StringTableStart",
             NameMangler.CompilationUnitPrefix + "__StringTableEnd", 
             null);
+        public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
+            NameMangler.CompilationUnitPrefix + "__EagerCctorStart",
+            NameMangler.CompilationUnitPrefix + "__EagerCctorEnd",
+            /*TODO SORT */null);
 
         public InterfaceDispatchMapTableNode DispatchMapTable;
 
@@ -413,6 +446,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(StringTable, "StringTable is always generated");
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
+            graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
         }
     }
 

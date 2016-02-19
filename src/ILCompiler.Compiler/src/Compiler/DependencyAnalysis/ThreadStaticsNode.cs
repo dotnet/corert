@@ -48,8 +48,18 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            return new DependencyListEntry[] { new DependencyListEntry(context.ThreadStaticsRegion, "ThreadStatics Region"),
-                                               new DependencyListEntry(GetGCStaticEETypeNode(context), "ThreadStatic EEType")};
+            DependencyListEntry[] result;
+            if (context.TypeInitializationManager.HasEagerStaticConstructor(_type))
+            {
+                result = new DependencyListEntry[3];
+                result[2] = new DependencyListEntry(context.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+            }
+            else
+                result = new DependencyListEntry[2];
+
+            result[0] = new DependencyListEntry(context.ThreadStaticsRegion, "ThreadStatics Region");
+            result[1] = new DependencyListEntry(GetGCStaticEETypeNode(context), "ThreadStatic EEType");
+            return result;
         }
 
         int ISymbolNode.Offset
