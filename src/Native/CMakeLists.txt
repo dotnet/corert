@@ -90,8 +90,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-Wno-null-arithmetic)
     add_compile_options(-Wno-null-conversion)
 
-    # Allow 16 byte compare-exchange
-    add_compile_options(-mcx16)
+    if (CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
+        # Allow 16 byte compare-exchange
+        add_compile_options(-mcx16)
+    endif()
 
     # Disable strict warning on unused functions.
     add_compile_options(-Wno-unused-function)
