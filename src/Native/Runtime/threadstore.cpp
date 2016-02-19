@@ -322,14 +322,19 @@ DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     0,                                  // m_uPalThreadId
 };
 
+#ifdef CORERT
+Thread * FASTCALL RhpGetThread()
+{
+    return (Thread *)&tls_CurrentThread;
+}
+#endif
+
 // static
 void * ThreadStore::CreateCurrentThreadBuffer()
 {
     void * pvBuffer = &tls_CurrentThread;
 
-#if !defined(CORERT) // @TODO: CORERT: No assembly routine defined to verify against.
     ASSERT(RhpGetThread() == pvBuffer);
-#endif // !defined(CORERT)
 
     return pvBuffer;
 }
