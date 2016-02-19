@@ -233,6 +233,8 @@ void DllThreadAttach(HANDLE /*hPalInstance*/)
     // threads themselves will do this on their first reverse pinvoke.
 }
 
+volatile bool g_processShutdownHasStarted = false;
+
 void DllThreadDetach()
 {
     // BEWARE: loader lock is held here!
@@ -241,18 +243,32 @@ void DllThreadDetach()
     Thread* pCurrentThread = ThreadStore::GetCurrentThreadIfAvailable();
     if (pCurrentThread != NULL && !pCurrentThread->IsDetached())
     {
-        ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
-        RhFailFast();
+        // Once shutdown starts, FiberDetach callouts are ignored, implying that it is no longer
+        // guaranteed that exiting threads will be detached.
+        if (!g_processShutdownHasStarted)
+        {
+            ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
+            RhFailFast();
+        }
     }
 }
 
 void __stdcall FiberDetach(void* lpFlsData)
 {
-    // Note: loader lock is *not* held here!
+    // Note: loader lock is normally *not* held here!
+    // The one exception is that the loader lock may be held during the fiber detach callout
+    // that is made for the single thread that runs the final stages of orderly process
+    // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
+    // process is being torn down via an ExitProcess call).
     UNREFERENCED_PARAMETER(lpFlsData);
     ASSERT(lpFlsData == PalFlsGetValue(_fls_index));
 
-    ThreadStore::DetachCurrentThreadIfHomeFiber();
+    // ThreadStore::DetachCurrentThreadIfHomeFiber assumes that the loader lock is *not* held
+    // and also assumes that it can acquire runtime locks.  Neither of these are guaranteed
+    // during shutdown since the loader lock may be held (as described above) and it is also
+    // generally possible for threads to be forcibly terminated while holding runtime locks.
+    if (!g_processShutdownHasStarted)
+        ThreadStore::DetachCurrentThreadIfHomeFiber();
 }
 
 COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterModule, (ModuleHeader *pModuleHeader))
@@ -339,6 +355,9 @@ COOP_PINVOKE_HELPER(void, RhpShutdownHelper, (UInt32 /*uExitCode*/))
 #ifdef FEATURE_PROFILING
     GetRuntimeInstance()->WriteProfileInfo();
 #endif // FEATURE_PROFILING
+
+    // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
+    g_processShutdownHasStarted = true;
 }
 
 #endif // !DACCESS_COMPILE
