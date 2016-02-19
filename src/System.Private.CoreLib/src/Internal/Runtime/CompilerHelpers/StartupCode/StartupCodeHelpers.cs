@@ -21,7 +21,6 @@ namespace Internal.Runtime.CompilerHelpers
         {
             InitializeStringTable();
             RunEagerClassConstructors();
-            RuntimeImports.RhEnableShutdownFinalization(0xffffffffu);
         }
 
         internal static void Shutdown()
