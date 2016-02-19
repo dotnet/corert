@@ -425,7 +425,7 @@ PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
 #ifndef DACCESS_COMPILE
 
 // internal static extern unsafe bool RhGetExceptionsForCurrentThread(Exception[] outputArray, out int writtenCountOut);
-COOP_PINVOKE_HELPER(Boolean, RhGetExceptionsForCurrentThread, (Array* pOutputArray, Int32* pWrittenCountOut))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhGetExceptionsForCurrentThread, (Array* pOutputArray, Int32* pWrittenCountOut))
 {
     return GetThreadStore()->GetExceptionsForCurrentThread(pOutputArray, pWrittenCountOut);
 }

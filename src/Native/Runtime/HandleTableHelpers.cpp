@@ -51,7 +51,7 @@ COOP_PINVOKE_HELPER(void, RhHandleSet, (OBJECTHANDLE handle, Object *pObject))
     StoreObjectInHandle(handle, pObject);
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhRegisterRefCountedHandleCallback, (void * pCallout, EEType * pTypeFilter))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhRegisterRefCountedHandleCallback, (void * pCallout, EEType * pTypeFilter))
 {
     return RestrictedCallouts::RegisterRefCountedHandleCallback(pCallout, pTypeFilter);
 }

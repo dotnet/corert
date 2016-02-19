@@ -68,7 +68,7 @@ COOP_PINVOKE_HELPER(void, RhSetGcLatencyMode, (Int32 newLatencyMode))
     GCHeap::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhIsServerGc, ())
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhIsServerGc, ())
 {
     return GCHeap::IsServerHeap();
 }
@@ -78,7 +78,7 @@ COOP_PINVOKE_HELPER(Int64, RhGetGcTotalMemoryHelper, ())
     return GCHeap::GetGCHeap()->GetTotalBytesInUse();
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhRegisterGcCallout, (GcRestrictedCalloutKind eKind, void * pCallout))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhRegisterGcCallout, (GcRestrictedCalloutKind eKind, void * pCallout))
 {
     return RestrictedCallouts::RegisterGcCallout(eKind, pCallout);
 }
@@ -88,7 +88,7 @@ COOP_PINVOKE_HELPER(void, RhUnregisterGcCallout, (GcRestrictedCalloutKind eKind,
     RestrictedCallouts::UnregisterGcCallout(eKind, pCallout);
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhIsPromoted, (OBJECTREF obj))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhIsPromoted, (OBJECTREF obj))
 {
     return GCHeap::GetGCHeap()->IsPromoted(obj) ? Boolean_true : Boolean_false;
 }

@@ -56,7 +56,7 @@ static Module * FindModuleRespectingReturnAddressHijacks(void * address)
     return pModule;
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhpEHEnumInitFromStackFrameIterator, (
     StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))
 {
     ICodeManager * pCodeManager = pFrameIter->GetCodeManager();
@@ -65,7 +65,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (
     return pCodeManager->EHEnumInit(pFrameIter->GetMethodInfo(), pMethodStartAddressOut, &pEHEnum->m_state);
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClause))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClause))
 {
     return pEHEnum->m_pCodeManager->EHEnumNext(&pEHEnum->m_state, pEHClause);
 }

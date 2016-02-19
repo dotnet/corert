@@ -35,6 +35,13 @@ typedef unsigned char       Boolean;
 #define Boolean_false 0
 #define Boolean_true 1
 
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+// Small return values are widened on x86 and amd64
+typedef UInt32 Boolean_RetVal;
+#else
+typedef Boolean Boolean_RetVal;
+#endif
+
 typedef UInt32              UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, everything else -> true
 #define UInt32_FALSE        0
 #define UInt32_TRUE         1
