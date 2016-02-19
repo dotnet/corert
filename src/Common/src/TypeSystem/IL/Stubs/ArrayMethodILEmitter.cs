@@ -81,6 +81,7 @@ namespace Internal.IL.Stubs
             int pointerSize = context.Target.PointerSize;
 
             var rangeExceptionLabel = _emitter.NewCodeLabel();
+            ILCodeLabel typeMismatchExceptionLabel = null;
 
             if (!_elementType.IsValueType)
             {
@@ -97,7 +98,31 @@ namespace Internal.IL.Stubs
                 }
                 else if (_method.Kind == ArrayMethodKind.Address)
                 {
-                    // TODO: type check - CheckVectorElemAddr
+                    TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+                    TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
+
+                    MethodDesc eetypePtrOfMethod = eetypePtrType.GetKnownMethod("EETypePtrOf", null)
+                        .MakeInstantiatedMethod(new Instantiation(new[] { _elementType }));
+
+                    typeMismatchExceptionLabel = _emitter.NewCodeLabel();
+
+                    ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
+
+                    // EETypePtr actualElementType = this.EETypePtr.ArrayElementType;
+                    codeStream.EmitLdArg(0);
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EETypePtr", null)));
+                    codeStream.EmitStLoc(thisEEType);
+                    codeStream.EmitLdLoca(thisEEType);
+                    codeStream.Emit(ILOpcode.call,
+                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
+                    
+                    // EETypePtr expectedElementType = EETypePtr.EETypePtrOf<_elementType>();
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrOfMethod));
+                    
+                    // if (expectedElementType != actualElementType)
+                    //     ThrowHelpers.ThrowArrayTypeMismatchException();
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrType.GetKnownMethod("op_Equality", null)));
+                    codeStream.Emit(ILOpcode.brfalse, typeMismatchExceptionLabel);
                 }
             }
 
@@ -167,16 +192,11 @@ namespace Internal.IL.Stubs
             MethodDesc throwHelper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
             codeStream.EmitCallThrowHelper(_emitter, throwHelper);
 
-#if false
             if (typeMismatchExceptionLabel != null)
             {
-                var tokTypeMismatchExcepCtor = GetToken(GetException(kArrayTypeMismatchException).GetDefaultConstructor());
-
                 codeStream.EmitLabel(typeMismatchExceptionLabel);
-                codeStream.Emit(ILOpcode.newobj, tokTypeMismatchExcepCtor, 0);
-                codeStream.Emit(ILOpcode.throw_);
+                codeStream.EmitCallThrowHelper(_emitter, context.GetHelperEntryPoint("ThrowHelpers", "ThrowArrayTypeMismatchException"));
             }
-#endif
         }
     }
 }

@@ -30,5 +30,10 @@ namespace Internal.Runtime.CompilerHelpers
         {
             throw new IndexOutOfRangeException();
         }
+
+        private static void ThrowArrayTypeMismatchException()
+        {
+            throw new ArrayTypeMismatchException();
+        }
     }
 }
