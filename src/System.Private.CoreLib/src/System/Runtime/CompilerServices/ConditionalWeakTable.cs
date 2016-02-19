@@ -144,7 +144,7 @@ namespace System.Runtime.CompilerServices
 
         private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
         {
-            // If we got here, the key is not currently in table. Invoke the callback (outside the lock)
+            // If we got here, the key was not in the table. Invoke the callback (outside the lock)
             // to generate the new value for the key. 
             TValue newValue = createValueCallback(key);
 
@@ -270,12 +270,12 @@ namespace System.Runtime.CompilerServices
 
         #region Private Data Members
         //--------------------------------------------------------------------------------------------
-        // Entry can be in one of three states:
+        // Entry can be in one of four states:
         //
-        //    - Linked into the freeList (_freeList points to first entry)
+        //    - Unused (stored with an index _firstFreeEntry and above)
         //         depHnd.IsAllocated == false
         //         hashCode == <dontcare>
-        //         next links to next Entry on freelist)
+        //         next == <dontcare>)
         //
         //    - Used with live key (linked into a bucket list where _buckets[hashCode % _buckets.Length] points to first entry)
         //         depHnd.IsAllocated == true, depHnd.GetPrimary() != null
@@ -297,8 +297,8 @@ namespace System.Runtime.CompilerServices
         // happens asynchronously as a result of normal garbage collection. The dictionary itself
         // receives no notification when this happens.
         //
-        // When the dictionary grows the _entries table, it scours it for expired keys and puts those
-        // entries back on the freelist.
+        // When the dictionary grows the _entries table, it scours it for expired keys and does not
+        // add those to the new container.
         //--------------------------------------------------------------------------------------------
         private struct Entry
         {
@@ -319,14 +319,14 @@ namespace System.Runtime.CompilerServices
             {
                 _buckets = new int[0];
                 _entries = new Entry[0];
-                _freeList = -1;
+                _firstFreeEntry = 0;
             }
 
             internal bool HasCapacity
             {
                 get
                 {
-                    return _freeList != -1;
+                    return _firstFreeEntry < _entries.Length;
                 }
             }
 
@@ -346,9 +346,8 @@ namespace System.Runtime.CompilerServices
                 int hashCode = RuntimeHelpers.GetHashCode(key) & Int32.MaxValue;
                 int bucket = hashCode % _buckets.Length;
 
-                int newEntry = _freeList;
-                _freeList = _entries[newEntry].next;
-
+                int newEntry = _firstFreeEntry++;
+                
                 _entries[newEntry].hashCode = hashCode;
                 _entries[newEntry].depHnd = new DependentHandle(key, value);
                 _entries[newEntry].next = _buckets[bucket];
@@ -433,7 +432,7 @@ namespace System.Runtime.CompilerServices
             //      Must hold _lock.
             //
             // Postcondition:
-            //      _freeList is non-empty on exit.
+            //      _firstEntry is less than _entries.Length on exit, that is, the table has at least one free entry.
             //----------------------------------------------------------------------------------------
             [System.Security.SecurityCritical]
             internal Container Resize()
@@ -467,15 +466,15 @@ namespace System.Runtime.CompilerServices
                 }
 
 
-                // Reallocate both buckets and entries and rebuild the bucket and freelists from scratch.
+                // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.
-                int newFreeList = -1;
                 int[] newBuckets = new int[newSize];
                 for (int bucketIndex = 0; bucketIndex < newSize; bucketIndex++)
                 {
                     newBuckets[bucketIndex] = -1;
                 }
                 Entry[] newEntries = new Entry[newSize];
+                int newEntriesIndex = 0;
 
                 // Migrate existing entries to the new table.
                 for (entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
@@ -487,31 +486,14 @@ namespace System.Runtime.CompilerServices
                         // Note that we have to copy the DependentHandle, since the original copy will be freed
                         // by the Container's finalizer.  
                         int bucket = _entries[entriesIndex].hashCode % newSize;
-                        newEntries[entriesIndex].depHnd = depHnd.AllocateCopy();
-                        newEntries[entriesIndex].hashCode = _entries[entriesIndex].hashCode;
-                        newEntries[entriesIndex].next = newBuckets[bucket];
-                        newBuckets[bucket] = entriesIndex;
-                    }
-                    else
-                    {
-                        // Entry has either expired or was on the freelist to begin with. Either way
-                        // insert it on the new freelist.
-                        // We do not free the underlying GC handle here, as we may be racing with readers who already saw
-                        // the old Container.  The GC handle will be free'd in Container's finalizer.
-                        newEntries[entriesIndex].depHnd = new DependentHandle();
-                        newEntries[entriesIndex].next = newFreeList;
-                        newFreeList = entriesIndex;
+                        newEntries[newEntriesIndex].depHnd = depHnd.AllocateCopy();
+                        newEntries[newEntriesIndex].hashCode = _entries[entriesIndex].hashCode;
+                        newEntries[newEntriesIndex].next = newBuckets[bucket];
+                        newBuckets[bucket] = newEntriesIndex;
+                        newEntriesIndex++;
                     }
                 }
 
-                // Add remaining entries to freelist.
-                while (entriesIndex != newEntries.Length)
-                {
-                    newEntries[entriesIndex].depHnd = new DependentHandle();
-                    newEntries[entriesIndex].next = newFreeList;
-                    newFreeList = entriesIndex;
-                    entriesIndex++;
-                }
 
                 GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 
@@ -519,7 +501,7 @@ namespace System.Runtime.CompilerServices
                 {
                     _buckets = newBuckets,
                     _entries = newEntries,
-                    _freeList = newFreeList
+                    _firstFreeEntry = newEntriesIndex
                 };
             }
 
@@ -654,8 +636,8 @@ namespace System.Runtime.CompilerServices
 
             private int[] _buckets;             // _buckets[hashcode & _buckets.Length] contains index of first entry in bucket (-1 if empty)
             private Entry[] _entries;
-            private int _freeList;            // -1 = empty, else index of first unused Entry
-            private bool _invalid;             // flag detects if OOM or other background exception threw us out of the lock.
+            private int _firstFreeEntry;        // _firstFreeEntry < _entries.Length => table has capacity,  entries grow from the bottom of the table.
+            private bool _invalid;              // flag detects if OOM or other background exception threw us out of the lock.
         }
 
         private volatile Container _container;
