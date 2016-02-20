@@ -2712,46 +2712,47 @@ namespace System
 
         // Replaces all instances of oldChar with newChar.
         //
-        private unsafe String ReplaceInternal(char oldChar, char newChar)
+        public String Replace(char oldChar, char newChar)
         {
             if (oldChar == newChar)
                 return this;
             
-            int firstFoundIndex = -1;
-
-            fixed (char* pChars = &_firstChar)
+            unsafe
             {
-                for (int i = 0; i < Length; i++)
+                int firstFoundIndex = -1;
+
+                fixed (char* pChars = &_firstChar)
                 {
-                    if (oldChar == pChars[i])
+                    for (int i = 0; i < Length; i++)
                     {
-                        firstFoundIndex = i;
-                        break;
+                        if (oldChar == pChars[i])
+                        {
+                            firstFoundIndex = i;
+                            break;
+                        }
                     }
                 }
+
+                if (-1 == firstFoundIndex)
+                    return this;
+
+                String result = FastAllocateString(Length);
+
+                fixed (char* pChars = &_firstChar)
+                {
+                    fixed (char* pResult = &result._firstChar)
+                    {
+                        //Copy the characters, doing the replacement as we go.
+                        for (int i = 0; i < firstFoundIndex; i++)
+                            pResult[i] = pChars[i];
+
+                        for (int i = firstFoundIndex; i < Length; i++)
+                            pResult[i] = (pChars[i] == oldChar) ? newChar : pChars[i];
+                    }
+                }
+
+                return result;
             }
-
-            if (-1 == firstFoundIndex)
-                return this;
-
-            char[] newChars = new char[Length];
-
-            fixed (char* pChars = &_firstChar)
-            {
-                //Copy the characters, doing the replacement as we go.
-                for (int i = 0; i < firstFoundIndex; i++)
-                    newChars[i] = pChars[i];
-
-                for (int i = firstFoundIndex; i < Length; i++)
-                    newChars[i] = (pChars[i] == oldChar) ? newChar : pChars[i];
-            }
-
-            return new string(newChars);
-        }
-
-        public String Replace(char oldChar, char newChar)
-        {
-            return ReplaceInternal(oldChar, newChar);
         }
 
         public String Replace(String oldValue, String newValue)
