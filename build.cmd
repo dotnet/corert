@@ -182,6 +182,10 @@ if not exist "%__DotNetCliPath%" (
 )
 if not exist "%__DotNetCliPath%" (
     echo DotNet CLI could not be downloaded or installed.
+
+    rem The script calls Invoke-WebRequest which is only available in PowerShell 3.
+    echo If you are running Windows 7, make sure you have PowerShell version 3.
+
     exit /b 1
 )
 
