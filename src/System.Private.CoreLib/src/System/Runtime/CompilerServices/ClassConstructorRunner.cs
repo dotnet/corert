@@ -30,10 +30,28 @@ namespace System.Runtime.CompilerServices
         //
         // No attempt is made to detect or break deadlocks due to other synchronization mechanisms.
         //==============================================================================================================
-#if !CORERT // CORERT-TODO: Use full cctor helper
+#if !CORERT
         [RuntimeExport("CheckStaticClassConstruction")]
+        public static unsafe void* CheckStaticClassConstruction(void* returnValue, StaticClassConstructionContext* pContext)
+        {
+            EnsureClassConstructorRun(pContext);
+            return returnValue;
+        }
+#else
+        private unsafe static object CheckStaticClassConstructionReturnGCStaticBase(StaticClassConstructionContext* context, object gcStaticBase)
+        {
+            EnsureClassConstructorRun(context);
+            return gcStaticBase;
+        }
+
+        private unsafe static IntPtr CheckStaticClassConstructionReturnNonGCStaticBase(StaticClassConstructionContext* context, IntPtr nonGcStaticBase)
+        {
+            EnsureClassConstructorRun(context);
+            return nonGcStaticBase;
+        }
 #endif
-        public static unsafe void* EnsureClassConstructorRun(void* returnValue, StaticClassConstructionContext* pContext)
+
+        public static unsafe void EnsureClassConstructorRun(StaticClassConstructionContext* pContext)
         {
             IntPtr pfnCctor = pContext->cctorMethodAddress;
             NoisyLog("EnsureClassConstructorRun, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
@@ -43,7 +61,7 @@ namespace System.Runtime.CompilerServices
             if (pContext->initialized == 1)
             {
                 NoisyLog("Cctor already run, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
-                return returnValue;
+                return;
             }
 
             CctorHandle cctor = Cctor.GetCctor(pContext);
@@ -109,8 +127,6 @@ namespace System.Runtime.CompilerServices
                 Cctor.Release(cctor);
             }
             NoisyLog("EnsureClassConstructorRun complete, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
-
-            return returnValue;
         }
 
         //=========================================================================================================

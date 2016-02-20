@@ -37,7 +37,9 @@ namespace ILCompiler
         private static bool HasEagerConstructorAttribute(TypeDesc type)
         {
             MetadataType mdType = type as MetadataType;
-            return mdType != null && mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerOrderedStaticConstructorAttribute");
+            return mdType != null && (
+                mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerOrderedStaticConstructorAttribute")
+                || mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute"));
         }
     }
 }

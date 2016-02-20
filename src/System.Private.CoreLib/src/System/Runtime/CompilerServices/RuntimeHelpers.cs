@@ -34,7 +34,7 @@ namespace System.Runtime.CompilerServices
                 return;
             unsafe
             {
-                ClassConstructorRunner.EnsureClassConstructorRun(null, (StaticClassConstructionContext*)pStaticClassConstructionContext);
+                ClassConstructorRunner.EnsureClassConstructorRun((StaticClassConstructionContext*)pStaticClassConstructionContext);
             }
         }
 
