@@ -308,7 +308,7 @@ namespace Internal.Runtime.Augments
         public unsafe static void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
         {
             StaticClassConstructionContext* context = (StaticClassConstructionContext*)staticClassConstructionContext;
-            ClassConstructorRunner.EnsureClassConstructorRun(null, context);
+            ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
         public static bool GetMdArrayRankTypeHandleIfSupported(int rank, out RuntimeTypeHandle mdArrayTypeHandle)

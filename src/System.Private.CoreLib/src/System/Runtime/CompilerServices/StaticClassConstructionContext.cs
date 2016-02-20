@@ -29,8 +29,7 @@ namespace System.Runtime.CompilerServices
         public volatile int initialized;
     }
 
-#if CORERT 
-    // CORERT-TODO: Use full cctor helper instead
+#if false
     [McgIntrinsics]
     internal sealed class CctorHelper
     {
@@ -99,26 +98,6 @@ namespace System.Runtime.CompilerServices
                 // If we get here some other thread changed the initialization state to a non-zero value
                 // before we could. Loop at try again.
             }
-        }
-
-        private static object CheckStaticClassConstructionReturnGCStaticBase(ref StaticClassConstructionContext context, object gcStaticBase)
-        {
-            // CORERT-TODO: Early out if initializer was set to anything. The runner doesn't handle recursion and assumes it's access from
-            //              a different thread and deadlocks itself. CoreRT will cause recursion for things like trying to get a static
-            //              base from the CCtor (which means that pretty much all cctors will deadlock).
-            if (context.initialized == 0)
-                CheckStaticClassConstruction(ref context);
-            return gcStaticBase;
-        }
-
-        private static IntPtr CheckStaticClassConstructionReturnNonGCStaticBase(ref StaticClassConstructionContext context, IntPtr nonGcStaticBase)
-        {
-            // CORERT-TODO: Early out if initializer was set to anything. The runner doesn't handle recursion and assumes it's access from
-            //              a different thread and deadlocks itself. CoreRT will cause recursion for things like trying to get a static
-            //              base from the CCtor (which means that pretty much all cctors will deadlock).
-            if (context.initialized == 0)
-                CheckStaticClassConstruction(ref context);
-            return nonGcStaticBase;
         }
 
         // Intrinsic to call the cctor given a pointer to the code (this method's body is ignored and replaced

@@ -326,8 +326,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
-            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnGCStaticBase" },
-            new string[] { "System.Runtime.CompilerServices", "CctorHelper", "CheckStaticClassConstructionReturnNonGCStaticBase" }
+            new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
+            new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" }
         };
 
         private ISymbolNode[] _helperEntrypointSymbols;
