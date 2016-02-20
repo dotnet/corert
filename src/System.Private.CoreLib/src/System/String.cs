@@ -1271,7 +1271,7 @@ namespace System
             }
 
             int[] sepList = new int[Length];
-            int numReplaces = MakeSeparatorList(separator, ref sepList);
+            int numReplaces = MakeSeparatorList(separator, sepList);
 
             // Handle the special case of no replaces.
             if (0 == numReplaces)
@@ -1326,7 +1326,7 @@ namespace System
 
             int[] sepList = new int[Length];
             int[] lengthList = new int[Length];
-            int numReplaces = MakeSeparatorList(separator, ref sepList, ref lengthList);
+            int numReplaces = MakeSeparatorList(separator, sepList, lengthList);
 
             //Handle the special case of no replaces.
             if (0 == numReplaces)
@@ -1438,7 +1438,7 @@ namespace System
         // Args: separator  -- A string containing all of the split characters.
         //       sepList    -- an array of ints for split char indicies.
         //--------------------------------------------------------------------    
-        private unsafe int MakeSeparatorList(char[] separator, ref int[] sepList)
+        private unsafe int MakeSeparatorList(char[] separator, int[] sepList)
         {
             int foundCount = 0;
 
@@ -1487,7 +1487,7 @@ namespace System
         //       sepList    -- an array of ints for split string indicies.
         //       lengthList -- an array of ints for split string lengths.
         //--------------------------------------------------------------------    
-        private unsafe int MakeSeparatorList(String[] separators, ref int[] sepList, ref int[] lengthList)
+        private unsafe int MakeSeparatorList(String[] separators, int[] sepList, int[] lengthList)
         {
             int foundCount = 0;
             int sepListCount = sepList.Length;
