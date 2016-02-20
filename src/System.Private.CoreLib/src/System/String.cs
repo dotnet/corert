@@ -3103,24 +3103,19 @@ namespace System
 
         public static String Concat(String str0, String str1, String str2)
         {
-            if (str0 == null && str1 == null && str2 == null)
+            if (IsNullOrEmpty(str0))
             {
-                return String.Empty;
+                return Concat(str1, str2);
             }
 
-            if (str0 == null)
+            if (IsNullOrEmpty(str1))
             {
-                str0 = String.Empty;
+                return Concat(str0, str2);
             }
 
-            if (str1 == null)
+            if (IsNullOrEmpty(str2))
             {
-                str1 = String.Empty;
-            }
-
-            if (str2 == null)
-            {
-                str2 = String.Empty;
+                return Concat(str0, str1);
             }
 
             int totalLength = str0.Length + str1.Length + str2.Length;
@@ -3135,29 +3130,24 @@ namespace System
 
         public static String Concat(String str0, String str1, String str2, String str3)
         {
-            if (str0 == null && str1 == null && str2 == null && str3 == null)
+            if (IsNullOrEmpty(str0))
             {
-                return String.Empty;
+                return Concat(str1, str2, str3);
             }
 
-            if (str0 == null)
+            if (IsNullOrEmpty(str1))
             {
-                str0 = String.Empty;
+                return Concat(str0, str2, str3);
             }
 
-            if (str1 == null)
+            if (IsNullOrEmpty(str2))
             {
-                str1 = String.Empty;
+                return Concat(str0, str1, str3);
             }
 
-            if (str2 == null)
+            if (IsNullOrEmpty(str3))
             {
-                str2 = String.Empty;
-            }
-
-            if (str3 == null)
-            {
-                str3 = String.Empty;
+                return Concat(str0, str1, str2);
             }
 
             int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;
