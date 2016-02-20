@@ -2714,6 +2714,9 @@ namespace System
         //
         private unsafe String ReplaceInternal(char oldChar, char newChar)
         {
+            if (oldChar == newChar)
+                return this;
+            
             int firstFoundIndex = -1;
 
             fixed (char* pChars = &_firstChar)
