@@ -1898,7 +1898,7 @@ namespace System
         // if this is equal to value, or a value greater than 0 if this is greater than value.
         //
 
-        private int CompareTo(Object value)
+        int IComparable.CompareTo(Object value)
         {
             if (value == null)
             {
@@ -1911,11 +1911,6 @@ namespace System
             }
 
             return String.Compare(this, (String)value, StringComparison.CurrentCulture);
-        }
-
-        int IComparable.CompareTo(Object value)
-        {
-            return this.CompareTo(value);
         }
 
         // Determines the sorting relation of StrB to the current instance.
