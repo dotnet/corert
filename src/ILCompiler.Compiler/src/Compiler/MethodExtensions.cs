@@ -20,6 +20,8 @@ namespace ILCompiler
 
     internal static class MethodExtensions
     {
+        // TODO: This method looks like a general purpose helper, but the implementation is actually specific to
+        // reading overloads of RuntimeImport attributes.
         public static string GetAttributeStringValue(this EcmaMethod This, string nameSpace, string name)
         {
             var metadataReader = This.MetadataReader;
@@ -51,9 +53,7 @@ namespace ILCompiler
                         if (constructor.Signature[i] != This.Context.GetWellKnownType(WellKnownType.String))
                             throw new BadImageFormatException();
 
-                    var attributeBlob = metadataReader.GetBlobReader(metadataReader.GetCustomAttribute(attributeHandle).Value);
-                    if (attributeBlob.ReadInt16() != 1)
-                        throw new BadImageFormatException();
+                    var attributeBlob = metadataReader.GetCustomAttributeBlobReader(attributeHandle);
 
                     // Skip module name if present
                     if (constructor.Signature.Length == 2)
