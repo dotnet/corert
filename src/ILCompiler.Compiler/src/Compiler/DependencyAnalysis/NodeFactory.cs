@@ -430,7 +430,7 @@ namespace ILCompiler.DependencyAnalysis
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             NameMangler.CompilationUnitPrefix + "__EagerCctorStart",
             NameMangler.CompilationUnitPrefix + "__EagerCctorEnd",
-            /*TODO SORT */null);
+            new EagerConstructorComparer());
 
         public InterfaceDispatchMapTableNode DispatchMapTable;
 

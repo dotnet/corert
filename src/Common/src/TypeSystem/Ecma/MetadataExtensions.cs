@@ -104,6 +104,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public static BlobReader GetCustomAttributeBlobReader(this MetadataReader reader, CustomAttributeHandle handle)
+        {
+            BlobReader result = reader.GetBlobReader(reader.GetCustomAttribute(handle).Value);
+            if (result.ReadInt16() != 1)
+                throw new BadImageFormatException();
+            return result;
+        }
+
         // This mask is the fastest way to check if a type is nested from its flags,
         // but it should not be added to the BCL enum as its semantics can be misleading.
         // Consider, for example, that (NestedFamANDAssem & NestedMask) == NestedFamORAssem.

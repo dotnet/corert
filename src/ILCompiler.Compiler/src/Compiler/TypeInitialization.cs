@@ -2,7 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
+using System.Reflection.Metadata;
+
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -40,6 +47,76 @@ namespace ILCompiler
             return mdType != null && (
                 mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerOrderedStaticConstructorAttribute")
                 || mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute"));
+        }
+    }
+
+    public class EagerConstructorComparer : IComparer<DependencyAnalysis.IMethodNode>
+    {
+        private int GetConstructionOrder(MetadataType type)
+        {
+            // For EagerOrderedStaticConstructorAttribute, order is defined by an integer.
+            // For the other case (EagerStaticClassConstructionAttribute), order is defined
+            // implicitly.
+
+            type = (MetadataType)type.GetTypeDefinition();
+
+            EcmaType ecmaType = (EcmaType)type;
+            MetadataReader metadataReader = ecmaType.MetadataReader;
+
+            foreach (var attributeHandle in metadataReader.GetTypeDefinition(ecmaType.Handle).GetCustomAttributes())
+            {
+                EntityHandle attributeType, attributeCtor;
+                if (!metadataReader.GetAttributeTypeAndConstructor(attributeHandle,
+                    out attributeType, out attributeCtor))
+                {
+                    continue;
+                }
+
+                StringHandle namespaceHandle, nameHandle;
+                if (!metadataReader.GetAttributeTypeNamespaceAndName(attributeType,
+                   out namespaceHandle, out nameHandle))
+                {
+                    continue;
+                }
+
+                if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices")
+                    && metadataReader.StringComparer.Equals(nameHandle, "EagerOrderedStaticConstructorAttribute"))
+                {
+                    var attributeBlob = metadataReader.GetCustomAttributeBlobReader(attributeHandle);
+                    return attributeBlob.ReadInt32();
+                }
+            }
+
+            Debug.Assert(type.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute"));
+            // RhBind on .NET Native for UWP will sort these based on static dependencies of the .cctors.
+            // We could probably do the same, but this attribute is pretty much deprecated in favor of
+            // EagerOrderedStaticConstructorAttribute that has explicit order. The remaining uses of
+            // the unordered one don't appear to have dependencies, so sorting them all before the
+            // ordered ones should do.
+            return -1;
+        }
+
+        public int Compare(DependencyAnalysis.IMethodNode x, DependencyAnalysis.IMethodNode y)
+        {
+            var typeX = (MetadataType)x.Method.OwningType;
+            var typeY = (MetadataType)y.Method.OwningType;
+
+            int orderX = GetConstructionOrder(typeX);
+            int orderY = GetConstructionOrder(typeY);
+
+            int result;
+            if (orderX != orderY)
+            {
+                result = Comparer<int>.Default.Compare(orderX, orderY);
+            }
+            else
+            {
+                // Use type name as a tie breaker. We need this algorithm to produce stable
+                // ordering so that the sequence of eager cctors is deterministic.
+                result = String.Compare(typeX.GetFullName(), typeY.GetFullName(), StringComparison.Ordinal);
+            }
+            
+            return result;
         }
     }
 }
