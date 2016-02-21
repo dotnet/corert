@@ -2688,6 +2688,12 @@ namespace System
 
             int oldLength = Length;
             int insertLength = value.Length;
+            
+            if (oldLength == 0)
+                return value;
+            if (insertLength == 0)
+                return this;
+            
             int newLength = oldLength + insertLength;
             if (newLength < 0)
                 throw new OutOfMemoryException();
@@ -2866,7 +2872,13 @@ namespace System
             int oldLength = this.Length;
             if (count > oldLength - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_IndexCount);
+            
+            if (count == 0)
+                return this;
             int newLength = oldLength - count;
+            if (newLength == 0)
+                return string.Empty;
+            
             String result = FastAllocateString(newLength);
             unsafe
             {
