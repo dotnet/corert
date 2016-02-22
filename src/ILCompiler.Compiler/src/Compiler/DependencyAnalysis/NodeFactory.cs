@@ -28,6 +28,8 @@ namespace ILCompiler.DependencyAnalysis
             _compilationModuleGroup = compilationModuleGroup;
             TypeInitializationManager = typeInitManager;
             CreateNodeCaches();
+
+            MetadataManager = new MetadataGeneration();
         }
 
         public TargetDetails Target
@@ -39,6 +41,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public TypeInitialization TypeInitializationManager
+        {
+            get; private set;
+        }
+
+        public MetadataGeneration MetadataManager
         {
             get; private set;
         }
@@ -545,6 +552,9 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleManagerIndirection, ModuleManagerIndirection, ModuleManagerIndirection);
             ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
+
+            MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
+            MetadataManager.AttachToDependencyGraph(graph);
         }
     }
 

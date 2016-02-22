@@ -303,6 +303,8 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool IsReflectionBlocked(RuntimeTypeHandle runtimeTypeHandle)
         {
+            return false;
+#if false
             // For generic types, use the generic type definition
             runtimeTypeHandle = GetTypeDefinition(runtimeTypeHandle);
 
@@ -327,6 +329,7 @@ namespace Internal.Reflection.Execution
             }
             // Entry not found, must not be blocked
             return false;
+#endif
         }
 
 
