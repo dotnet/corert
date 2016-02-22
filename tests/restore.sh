@@ -32,7 +32,7 @@ fi
 export CoreRT_ToolchainPkg=toolchain.${__BuildRid}.Microsoft.DotNet.ILCompiler.Development
 export CoreRT_ToolchainVer=1.0.2-prerelease-00001
 export CoreRT_AppDepSdkPkg=toolchain.${__BuildRid}.Microsoft.DotNet.AppDep
-export CoreRT_AppDepSdkVer=1.0.6-prerelease-00001
+export CoreRT_AppDepSdkVer=1.0.6-prerelease-00003
 
 __ScriptDir=$(cd "$(dirname "$0")"; pwd -P)
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
