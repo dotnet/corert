@@ -151,7 +151,7 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetModuleFromEEType, (EEType * pEEType))
     return NULL;
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (HANDLE hOsModule, UInt32 blobId, UInt8 ** ppbBlob, UInt32 * pcbBlob))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhFindBlob, (HANDLE hOsModule, UInt32 blobId, UInt8 ** ppbBlob, UInt32 * pcbBlob))
 {
     // Search for the Redhawk module contained by the OS module.
     FOREACH_MODULE(pModule)
@@ -229,7 +229,7 @@ COOP_PINVOKE_HELPER(EEType *, RhpGetNullableEEType, (EEType * pEEType))
     return pEEType->GetNullableType();
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhpHasDispatchMap, (EEType * pEEType))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhpHasDispatchMap, (EEType * pEEType))
 {
     return pEEType->HasDispatchMap();
 }
@@ -478,7 +478,7 @@ FORCEINLINE bool CheckArraySlice(Array * pArray, Int32 index, Int32 length)
 // This function handles all cases of Array.Copy that do not require conversions or casting. It returns false if the copy cannot be performed, leaving
 // the handling of the complex cases or throwing appropriate exception to the higher level framework.
 //
-COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIndex, Array * pDestinationArray, Int32 destinationIndex, Int32 length))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIndex, Array * pDestinationArray, Int32 destinationIndex, Int32 length))
 {
     if (pSourceArray == NULL || pDestinationArray == NULL)
         return false;
@@ -530,7 +530,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpArrayCopy, (Array * pSourceArray, Int32 sourceIn
 // the handling of the complex cases or throwing apppropriate exception to the higher level framework. It is only allowed to return false for illegal 
 // calls as the BCL side has fallback for "complex cases" only.
 //
-COOP_PINVOKE_HELPER(Boolean, RhpArrayClear, (Array * pArray, Int32 index, Int32 length))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhpArrayClear, (Array * pArray, Int32 index, Int32 length))
 {
     if (pArray == NULL)
         return false;

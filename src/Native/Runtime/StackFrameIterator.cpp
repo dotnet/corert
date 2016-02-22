@@ -1544,7 +1544,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
 #ifndef DACCESS_COMPILE
 
-COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED_CONTEXT* pStackwalkCtx))
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
 
@@ -1566,7 +1566,7 @@ COOP_PINVOKE_HELPER(Boolean, RhpSfiInit, (StackFrameIterator* pThis, PAL_LIMITED
     return isValid ? Boolean_true : Boolean_false;
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhpSfiNext, (StackFrameIterator* pThis, UInt32* puExCollideClauseIdx, Boolean* pfUnwoundReversePInvoke))
+COOP_PINVOKE_HELPER(Boolean_RetVal, RhpSfiNext, (StackFrameIterator* pThis, UInt32* puExCollideClauseIdx, Boolean* pfUnwoundReversePInvoke))
 {
     // The stackwalker is intolerant to hijacked threads, as it is largely expecting to be called from C++
     // where the hijack state of the thread is invariant.  Because we've exposed the iterator out to C#, we 
