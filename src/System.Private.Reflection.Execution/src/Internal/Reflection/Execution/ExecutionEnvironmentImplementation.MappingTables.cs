@@ -1373,7 +1373,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        struct ModuleList
+        class ModuleList
         {
             private static volatile IntPtr[] s_moduleList;
 
