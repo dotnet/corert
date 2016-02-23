@@ -866,6 +866,8 @@ bool EETypesEquivalentEnoughForUnboxing(EEType *pObjectEEType, EEType *pUnboxToE
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
             return true;
+        default:
+            break;
         }
     }
 
