@@ -302,6 +302,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 try
                 {
                     m_property.SetValue(unwrappedTarget, value, new object[] { index });
+                    return;
                 }
                 catch (MemberAccessException ex)
                 {
