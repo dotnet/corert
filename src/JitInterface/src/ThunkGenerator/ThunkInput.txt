@@ -79,6 +79,7 @@ const wchar_t*,String
 DWORD**,ref uint*,unsigned int**
 unsigned*,ref uint
 DWORD*,ref uint,unsigned int*
+CORJIT_FLAGS*,ref CORJIT_FLAGS,void*
 CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP,void*
 CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
 const CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
@@ -167,7 +168,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getMethodClass(        CORINFO_METHOD_HANDLE       method        );
     CORINFO_MODULE_HANDLE getMethodModule(        CORINFO_METHOD_HANDLE       method        );
     void getMethodVTableOffset(        CORINFO_METHOD_HANDLE       method,        unsigned*                   offsetOfIndirection,        unsigned*                   offsetAfterIndirection        );
-    CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        );
+    CorInfoIntrinsics getIntrinsicID(        CORINFO_METHOD_HANDLE       method        , bool * pMustExpand);
     bool isInSIMDModule(           CORINFO_CLASS_HANDLE        classHnd );
     CorInfoUnmanagedCallConv getUnmanagedCallConv(        CORINFO_METHOD_HANDLE       method        );
     BOOL pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
@@ -281,6 +282,7 @@ FUNCTIONS
     [ManualNativeWrapper] [ReturnAsParm] CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
     void* getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE   method, void                  **ppIndirection);
     void* getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE   method, void                  **ppIndirection);
+    void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE   method, CORINFO_CONST_LOOKUP *pLookup);
     LPVOID GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void           ** ppIndirection);
     bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(CORINFO_METHOD_HANDLE       method, CORINFO_JUST_MY_CODE_HANDLE**ppIndirection);
@@ -318,3 +320,4 @@ FUNCTIONS
     WORD getRelocTypeHint(void* target)
     void getModuleNativeEntryPointRange(void** pStart, void** pEnd)
     DWORD getExpectedTargetArchitecture()
+    DWORD getJitFlags(CORJIT_FLAGS* flags, DWORD  sizeInBytes)

@@ -93,17 +93,6 @@ namespace Internal.JitInterface
                 CORINFO_METHOD_INFO methodInfo;
                 Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
-                uint flags = (uint)(
-                    CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
-                    CorJitFlag.CORJIT_FLG_READYTORUN |
-                    CorJitFlag.CORJIT_FLG_RELOC |
-                    CorJitFlag.CORJIT_FLG_DEBUG_INFO |
-                    CorJitFlag.CORJIT_FLG_PREJIT);
-                if (_compilation.Options.TargetOS != TargetOS.Windows)
-                {
-                    flags |= (uint) CorJitFlag.CORJIT_FLG_CFI_UNWIND;
-                }
-
                 try
                 {
                     CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
@@ -138,7 +127,7 @@ namespace Internal.JitInterface
                 IntPtr exception;
                 IntPtr nativeEntry;
                 uint codeSize;
-                JitWrapper(out exception, _jit, _comp, ref methodInfo, flags, out nativeEntry, out codeSize);
+                JitWrapper(out exception, _jit, _comp, ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
                 if (exception != IntPtr.Zero)
                 {
                     char* szMessage = GetExceptionMessage(exception);
@@ -1828,6 +1817,8 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
+        private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
+        { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
         [return: MarshalAs(UnmanagedType.I1)]
@@ -2337,6 +2328,25 @@ namespace Internal.JitInterface
         private uint getExpectedTargetArchitecture()
         {
             return 0x8664; // AMD64
+        }
+
+        private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
+        {
+            flags.corJitFlags = 
+                CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
+                CorJitFlag.CORJIT_FLG_READYTORUN |
+                CorJitFlag.CORJIT_FLG_RELOC |
+                CorJitFlag.CORJIT_FLG_DEBUG_INFO |
+                CorJitFlag.CORJIT_FLG_PREJIT;
+
+            if (_compilation.Options.TargetOS != TargetOS.Windows)
+            {
+                flags.corJitFlags |= CorJitFlag.CORJIT_FLG_CFI_UNWIND;
+            }
+
+            flags.corJitFlags2 = 0;
+
+            return (uint)sizeof(CORJIT_FLAGS);
         }
     }
 }

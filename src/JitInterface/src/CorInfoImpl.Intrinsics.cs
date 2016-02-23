@@ -131,8 +131,10 @@ namespace Internal.JitInterface
 
         static IntrinsicHashtable s_IntrinsicHashtable = InitializeIntrinsicHashtable();
 
-        private CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_STRUCT_* ftn)
+        private CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_STRUCT_* ftn, ref bool pMustExpand)
         {
+            pMustExpand = false;
+
             var method = HandleToObject(ftn);
 
             Debug.Assert(method.IsIntrinsic);
@@ -189,6 +191,12 @@ namespace Internal.JitInterface
                         }
                     }
                     break;
+
+                // TODO: Implementation of pMustExpand in RyuJIT is not correct
+                // case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
+                // case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
+                //    pMustExpand = true;
+                //    break;
 
                 default:
                     break;
