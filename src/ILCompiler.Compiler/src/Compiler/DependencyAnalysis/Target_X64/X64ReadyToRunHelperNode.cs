@@ -96,7 +96,22 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    encoder.EmitINT3();
+                    {
+                        MetadataType target = (MetadataType)Target;
+
+                        if (!factory.TypeInitializationManager.HasLazyStaticConstructor(target))
+                        {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeThreadStaticsSymbol(target));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.RhGetThreadStaticField));
+                        }
+                        else
+                        {
+                            // We need to trigger the cctor before returning the base
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol(target));
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.TypeThreadStaticsSymbol(target));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                        }
+                    }
                     break;
 
                 case ReadyToRunHelperId.GetGCStaticBase:

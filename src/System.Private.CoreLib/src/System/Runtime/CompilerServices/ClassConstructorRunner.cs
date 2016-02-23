@@ -44,6 +44,12 @@ namespace System.Runtime.CompilerServices
             return gcStaticBase;
         }
 
+        private unsafe static object CheckStaticClassConstructionReturnThreadStaticBase(StaticClassConstructionContext* context, IntPtr threadStaticBase)
+        {
+            EnsureClassConstructorRun(context);
+            return RuntimeImports.RhGetThreadStaticField(threadStaticBase);
+        }
+
         private unsafe static IntPtr CheckStaticClassConstructionReturnNonGCStaticBase(StaticClassConstructionContext* context, IntPtr nonGcStaticBase)
         {
             EnsureClassConstructorRun(context);

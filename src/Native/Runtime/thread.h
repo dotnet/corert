@@ -90,6 +90,10 @@ struct ThreadBuffer
     // Thread Statics Storage for dynamic types
     UInt32          m_numDynamicTypesTlsCells;
     PTR_UInt8*      m_pDynamicTypesTlsCells;
+#if defined(CORERT)
+    PTR_PTR_VOID    m_pThreadStaticBase;                            // base address of thread statics handles
+    UInt32          m_uThreadStaticLength;
+#endif
 };
 
 struct ReversePInvokeFrame
@@ -123,6 +127,13 @@ public:
 private:
 
     void Construct();
+#if defined(CORERT)
+public:
+    Object* GetThreadStaticField(void** pModuleStart, Int32 nIndex, Int32 nByteLength);
+private:
+    void EnsureThreadStaticStorage(Int32 nByteLength);
+    void DestroyThreadStatics();
+#endif
 
     void SetState(ThreadStateFlags flags);
     void ClearState(ThreadStateFlags flags);

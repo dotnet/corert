@@ -520,6 +520,10 @@ namespace System.Runtime
         internal static extern IntPtr RhGetModuleFromEEType(IntPtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticField")]
+        internal static extern object RhGetThreadStaticField(IntPtr pModuleFieldTypePtr);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
         internal static unsafe extern byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, IntPtr fieldCookie);
 

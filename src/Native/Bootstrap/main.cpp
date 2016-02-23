@@ -261,6 +261,9 @@ extern "C" void* __StringTableStart;
 extern "C" void* __StringTableEnd;
 extern "C" void* __EagerCctorStart;
 extern "C" void* __EagerCctorEnd;
+extern "C" void* __ThreadStaticRegionStart;
+extern "C" void* __ThreadStaticRegionEnd;
+
 extern "C" void* GetModuleSection(int id, int* length)
 {
     struct ModuleSectionSymbol
@@ -276,10 +279,12 @@ extern "C" void* GetModuleSection(int id, int* length)
         { System::String::__getMethodTable(), sizeof(void*) },
         { nullptr, 0 },
         { nullptr, 0 },
+        { nullptr, 0 },
 #else
         { &__EEType_System_Private_CoreLib_System_String, sizeof(void*) },
         { &__StringTableStart, (size_t)((uint8_t*)&__StringTableEnd - (uint8_t*)&__StringTableStart) },
         { &__EagerCctorStart, (size_t)((uint8_t*)&__EagerCctorEnd - (uint8_t*)&__EagerCctorStart) },
+        { &__ThreadStaticRegionStart, (size_t)((uint8_t*)&__ThreadStaticRegionEnd - (uint8_t*)&__ThreadStaticRegionStart) },
 #endif
     };
 
@@ -293,6 +298,7 @@ SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */
 extern "C" void* __InterfaceDispatchMapTable;
 extern "C" void* __GCStaticRegionStart;
 extern "C" void* __GCStaticRegionEnd;
+
 int __statics_fixup()
 {
     for (void** currentBlock = &__GCStaticRegionStart; currentBlock < &__GCStaticRegionEnd; currentBlock++)
@@ -301,7 +307,6 @@ int __statics_fixup()
         // TODO: OOM handling
         *currentBlock = RhpHandleAlloc(gcBlock, 2 /* Normal */);
     }
-
     return 0;
 }
 
