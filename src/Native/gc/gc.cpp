@@ -1524,6 +1524,18 @@ void WaitLongerNoInstru (int i)
     {
         if (bToggleGC || g_TrapReturningThreads)
         {
+#ifdef _DEBUG
+            // In debug builds, all enter_spin_lock operations go through this code.  If a GC has
+            // started, it is important to block until the GC thread calls set_gc_done (since it is
+            // guaranteed to have cleared g_TrapReturningThreads by this point).  This avoids livelock
+            // conditions which can otherwise occur if threads are allowed to spin in this function
+            // (and therefore starve the GC thread) between the point when the GC thread sets the
+            // WaitForGC event and the point when the GC thread clears g_TrapReturningThreads.
+            if (gc_heap::gc_started)
+            {
+                gc_heap::wait_for_gc_done();
+            }
+#endif // _DEBUG
             GCToEEInterface::DisablePreemptiveGC(pCurThread);
             if (!bToggleGC)
             {
