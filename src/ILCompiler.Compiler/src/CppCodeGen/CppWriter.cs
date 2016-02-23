@@ -1022,7 +1022,7 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("2 * sizeof(void*) + sizeof(int32_t) + 2,");       // EEType::_uBaseSize
             }
             else
-            if (type.IsArray && ((ArrayType)type).Rank == 1)
+            if (type.IsSzArray)
             {
                 sb.AppendLine();
                 sb.Append("{");
@@ -1041,7 +1041,6 @@ namespace ILCompiler.CppCodeGen
             else
             if (type.IsArray)
             {
-                Debug.Assert(((ArrayType)type).Rank > 1);
                 sb.AppendLine();
                 sb.Append("{");
                 sb.Indent();
