@@ -740,7 +740,16 @@ namespace System.Runtime
             EEType* elemType = (EEType*)pvElemType;
             EEType* arrayElemType = array.EEType->RelatedParameterType;
 
-            if (!AreTypesEquivalentInternal(elemType, arrayElemType))
+            if (!AreTypesEquivalentInternal(elemType, arrayElemType)
+            // In addition to the exactness check, add another check to allow non-exact matches through
+            // if the element type is a ValueType. The issue here is Universal Generics. The Universal
+            // Generic codegen will generate a call to this helper for all ldelema opcodes if the exact
+            // type is not known, and this can include ValueTypes. For ValueTypes, the exact check is not
+            // desireable as enum's are allowed to pass through this code if they are size matched.
+            // While this check is overly broad and allows non-enum valuetypes to also skip the check
+            // that is OK, because in the non-enum case the casting operations are sufficient to ensure
+            // type safety.
+                && !elemType->IsValueType)
             {
                 // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
                 // to find the correct classlib.
@@ -799,7 +808,7 @@ namespace System.Runtime
         //   1. The pointers are Equal => true
         //   2. Either one or both the types are CLONED, follow to the canonical EEType and check
         //   3. For Arrays/Pointers, we have to further check for rank and element type equality
-        static private unsafe bool AreTypesEquivalentInternal(EEType* pType1, EEType* pType2)
+        static internal unsafe bool AreTypesEquivalentInternal(EEType* pType1, EEType* pType2)
         {
             if (pType1 == pType2)
                 return true;
