@@ -325,6 +325,11 @@ namespace System.Runtime.InteropServices
             __interface_ccw* pComThis = (__interface_ccw*)__IntPtr__pComThis;
             HSTRING* pClassName = (HSTRING*)__IntPtr__className;
 
+            if (pClassName == null)
+            {
+                return Interop.COM.E_POINTER;
+            }
+
             CCWTemplateInfo template = pComThis->ComCallableObject.Template;
 
             if (!template.IsNull)
@@ -356,6 +361,11 @@ namespace System.Runtime.InteropServices
         {
             __interface_ccw* pComThis = (__interface_ccw*)__IntPtr__pComThis;
             int* pTrustLevel = (int*)__IntPtr__pTrustLevel;
+
+            if (pTrustLevel == null)
+            {
+                return Interop.COM.E_POINTER;
+            }
 
             *pTrustLevel = BaseTrust;
 

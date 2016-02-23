@@ -1052,6 +1052,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         CCWTemplateInfo m_ccwTemplateInfo;
 
+        /// <summary>
+        /// Indicates whether it supports ICustomQueryInterface
+        /// </summary>
+        bool m_supportsICustomQueryInterface;
+
         #endregion
 
 
@@ -1203,6 +1208,10 @@ namespace System.Runtime.InteropServices
             m_CCWs = new LightweightList<CCWCacheEntry>.WithInlineStorage();
             m_pNativeCCW = __native_ccw.Allocate(this, target);
             m_target = target;
+
+#pragma warning disable 618
+            m_supportsICustomQueryInterface = target is ICustomQueryInterface;
+#pragma warning restore 618
 
             if (locked)
                 CCWLookupMap.RegisterLocked(m_pNativeCCW);
@@ -1376,10 +1385,11 @@ namespace System.Runtime.InteropServices
             // Simplified implementation of ICustomQueryInterface
             // It is needed internally to customize CCW behavior
             //
-            ICustomQueryInterface customQueryInterfaceImpl = targetObject as ICustomQueryInterface;
 
-            if (customQueryInterfaceImpl != null)
+            if (m_supportsICustomQueryInterface)
             {
+                ICustomQueryInterface customQueryInterfaceImpl = targetObject as ICustomQueryInterface;
+
                 IntPtr pRet;
                 CustomQueryInterfaceResult result = customQueryInterfaceImpl.GetInterface(ref iid, out pRet);
                 if (result == CustomQueryInterfaceResult.Failed)
