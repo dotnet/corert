@@ -49,6 +49,9 @@ namespace System.Runtime.InteropServices
         internal static volatile int s_moduleCount;
 
         internal static int s_numInteropThunksAllocatedSinceLastCleanup = 0;
+
+        private static System.Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, McgTypeInfo> s_runtimeTypeHandleToMcgTypeInfoMap;
+
 #if !CORECLR
         private static class AsmCode
         {
@@ -72,6 +75,10 @@ namespace System.Runtime.InteropServices
             CCWLookupMap.InitializeStatics();
             ContextEntry.ContextEntryManager.InitializeStatics();
             ComObjectCache.InitializeStatics();
+
+            const int DefaultSize = 101; // small prime number to avoid resizing in start up code
+            s_runtimeTypeHandleToMcgTypeInfoMap = new Collections.Generic.Internal.Dictionary<RuntimeTypeHandle, McgTypeInfo>(DefaultSize, new RuntimeTypeHandleComparer(), /* sync = */ true);
+
         }
 
 
@@ -463,8 +470,93 @@ namespace System.Runtime.InteropServices
             return firstTypeInfoLocal;
         }
 
+        /// <summary>
+        /// Comparer for RuntimeTypeHandle
+        /// This custom comparer is required because RuntimeTypeHandle is different between ProjectN(IntPtr) 
+        /// and in CoreCLR. The default Equals and GetHashCode functions on RuntimeTypeHandle "do new EETypePtr" which 
+        /// adds additional cost to the dictionary lookup. In ProjectN we can get away with only checking the IntPtr
+        /// which is significantly less expensive.
+        /// </summary>
+        internal class RuntimeTypeHandleComparer : IEqualityComparer<RuntimeTypeHandle>
+        {
+            //
+            // Calculates Hash code when RuntimeTypeHandle is an IntPtr(ProjectN)
+            //
+            private unsafe int GetHashCodeHelper(ref RuntimeTypeHandle handle)
+            {
+                IntPtr val;
+                fixed (RuntimeTypeHandle* pHandle = &handle)
+                {
+                    val = *(IntPtr*)pHandle;
+                }
+                return unchecked((int)(val.ToInt64()));
+            }
+
+            //
+            // Determines whether two types are equal when RuntimeTypeHandle is an IntPtr(ProjectN)
+            //
+            private unsafe bool EqualsHelper(ref RuntimeTypeHandle handle1, ref RuntimeTypeHandle handle2)
+            {
+                IntPtr val1, val2;
+                fixed (RuntimeTypeHandle* pHandle1 = &handle1, pHandle2 = &handle2)
+                {
+                    val1 = *(IntPtr*)pHandle1;
+                    val2 = *(IntPtr*)pHandle2;
+                }
+                return val1.Equals(val2);
+            }
+
+            bool IEqualityComparer<RuntimeTypeHandle>.Equals(RuntimeTypeHandle handle1, RuntimeTypeHandle handle2)
+            {
+//
+// Ideally, here we should use a symbol that identifies we are in ProjctN as in ProjectN RuntimeTypeHandle
+// is an IntPtr. Since we don't have such symbol yet,  I am using ENABLE_WINRT which is synonymous to
+// ProjectN for now. It may change in the future with CoreRT, in that case we may need to revisit this.
+//
+#if ENABLE_WINRT
+                return EqualsHelper(ref handle1 , ref handle2);
+#else
+                return handle1.Equals(handle2);
+#endif
+            }
+
+            int IEqualityComparer<RuntimeTypeHandle>.GetHashCode(RuntimeTypeHandle obj)
+            {
+//
+//  See the comment for Equals
+//
+#if ENABLE_WINRT
+                return GetHashCodeHelper(ref obj);
+#else
+                return obj.GetHashCode();
+#endif
+            }
+        }
+
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static McgTypeInfo GetTypeInfoByHandle(RuntimeTypeHandle typeHnd)
+        {
+            McgTypeInfo typeInfo;
+
+            try
+            {
+                s_runtimeTypeHandleToMcgTypeInfoMap.LockAcquire();
+                if (!s_runtimeTypeHandleToMcgTypeInfoMap.TryGetValue(typeHnd, out typeInfo))
+                {
+                    typeInfo = GetTypeInfoByHandleInternal(typeHnd);
+                    s_runtimeTypeHandleToMcgTypeInfoMap.Add(typeHnd, typeInfo);
+                }
+            }
+            finally
+            {
+                s_runtimeTypeHandleToMcgTypeInfoMap.LockRelease();
+            }
+
+            return typeInfo;
+        }
+
+
+        private static McgTypeInfo GetTypeInfoByHandleInternal(RuntimeTypeHandle typeHnd)
         {
             McgTypeInfo typeInfo;
             for (int i = 0; i < s_moduleCount; ++i)
