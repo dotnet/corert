@@ -845,6 +845,35 @@ COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
     }
 }
 
+bool EETypesEquivalentEnoughForUnboxing(EEType *pObjectEEType, EEType *pUnboxToEEType)
+{
+    if (pObjectEEType->IsEquivalentTo(pUnboxToEEType))
+        return true;
+
+    if (pObjectEEType->GetCorElementType() == pUnboxToEEType->GetCorElementType())
+    {
+        // Enums and primitive types can unbox if their CorElementTypes exactly match
+        switch (pObjectEEType->GetCorElementType())
+        {
+        case ELEMENT_TYPE_I1:
+        case ELEMENT_TYPE_U1:
+        case ELEMENT_TYPE_I2:
+        case ELEMENT_TYPE_U2:
+        case ELEMENT_TYPE_I4:
+        case ELEMENT_TYPE_U4:
+        case ELEMENT_TYPE_I8:
+        case ELEMENT_TYPE_U8:
+        case ELEMENT_TYPE_I:
+        case ELEMENT_TYPE_U:
+            return true;
+        default:
+            break;
+        }
+    }
+
+    return false;
+}
+
 COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnboxToEEType))
 {
     // When unboxing to a Nullable the input object may be null.
@@ -872,7 +901,7 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
 
     // A special case is that we can unbox a value type T into a Nullable<T>. It's the only case where
     // pUnboxToEEType is useful.
-    ASSERT((pUnboxToEEType == NULL) || pEEType->IsEquivalentTo(pUnboxToEEType) || pUnboxToEEType->IsNullable());
+    ASSERT((pUnboxToEEType == NULL) || EETypesEquivalentEnoughForUnboxing(pEEType, pUnboxToEEType) || pUnboxToEEType->IsNullable());
     if (pUnboxToEEType && pUnboxToEEType->IsNullable())
     {
         ASSERT(pUnboxToEEType->GetNullableType()->IsEquivalentTo(pEEType));
