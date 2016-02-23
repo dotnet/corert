@@ -183,6 +183,39 @@ namespace System.Runtime
                 return data.o;
         }
 
+        private unsafe static bool UnboxAnyTypeCompare(EEType *pEEType, EEType *ptrUnboxToEEType)
+        {
+            bool result = false;
+
+            if (pEEType->CorElementType == ptrUnboxToEEType->CorElementType)
+            {
+                result = TypeCast.AreTypesEquivalentInternal(pEEType, ptrUnboxToEEType);
+
+                if (!result)
+                {
+                    // Enum's and primitive types should pass the UnboxAny exception cases
+                    // if they have an exactly matching cor element type.
+                    switch (ptrUnboxToEEType->CorElementType)
+                    {
+                        case TypeCast.CorElementType.ELEMENT_TYPE_I1:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_U1:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_I2:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_U2:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_I4:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_U4:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_I8:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_U8:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_I:
+                        case TypeCast.CorElementType.ELEMENT_TYPE_U:
+                            result = true;
+                            break;
+                    }
+                }
+            }
+
+            return result;
+        }
+
         [RuntimeExport("RhUnboxAny")]
         public unsafe static void RhUnboxAny(object o, ref Hack_o_p data, EETypePtr pUnboxToEEType)
         {
@@ -198,9 +231,11 @@ namespace System.Runtime
                     bool isValid = false;
 
                     if (ptrUnboxToEEType->IsNullable)
-                        isValid = (o == null) || (o.EEType == ptrUnboxToEEType->GetNullableType());
-                    else
-                        isValid = (o != null && o.EEType->CorElementType == ptrUnboxToEEType->CorElementType && TypeCast.IsInstanceOfClass(o, ptrUnboxToEEType) != null);
+                        isValid = (o == null) || TypeCast.AreTypesEquivalentInternal(o.EEType, ptrUnboxToEEType->GetNullableType());
+                    else if (o != null)
+                    {
+                        isValid = UnboxAnyTypeCompare(o.EEType, ptrUnboxToEEType);
+                    }
 
                     if (!isValid)
                     {
@@ -218,7 +253,19 @@ namespace System.Runtime
                 }
             }
             else
-                data.o = o;
+            {
+                if (o == null || (TypeCast.IsInstanceOf(o, ptrUnboxToEEType) != null))
+                {
+                    data.o = o;
+                }
+                else
+                {
+                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
+                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
+
+                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                }
+            }
         }
 
 #if CORERT

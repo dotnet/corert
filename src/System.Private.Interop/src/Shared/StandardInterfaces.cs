@@ -325,6 +325,11 @@ namespace System.Runtime.InteropServices
             __interface_ccw* pComThis = (__interface_ccw*)__IntPtr__pComThis;
             HSTRING* pClassName = (HSTRING*)__IntPtr__className;
 
+            if (pClassName == null)
+            {
+                return Interop.COM.E_POINTER;
+            }
+
             CCWTemplateInfo template = pComThis->ComCallableObject.Template;
 
             if (!template.IsNull)
@@ -356,6 +361,11 @@ namespace System.Runtime.InteropServices
         {
             __interface_ccw* pComThis = (__interface_ccw*)__IntPtr__pComThis;
             int* pTrustLevel = (int*)__IntPtr__pTrustLevel;
+
+            if (pTrustLevel == null)
+            {
+                return Interop.COM.E_POINTER;
+            }
 
             *pTrustLevel = BaseTrust;
 
@@ -459,7 +469,7 @@ namespace System.Runtime.InteropServices
                     propertyName);
 
                 if (propertyInfo != null)
-                    return new CustomPropertyImpl(propertyInfo);
+                    return new CustomPropertyImpl(propertyInfo, supportIndexerWithoutMetadata : false);
 
                 // Weakly-Typed RCW scenario
                 // Check cached interface to see whether it supports propertyName Property
@@ -470,7 +480,7 @@ namespace System.Runtime.InteropServices
                         (PropertyInfo p) => { if (p.Name == propertyName) return true; return false; }
                     );
                     if (propertyInfo != null)
-                        return new CustomPropertyImpl(propertyInfo);
+                        return new CustomPropertyImpl(propertyInfo, supportIndexerWithoutMetadata : false);
                 }
             }
             catch (MissingMetadataException ex)
@@ -550,13 +560,16 @@ namespace System.Runtime.InteropServices
         {
             target = CustomPropertyImpl.UnwrapTarget(target);
 
+            // We can do indexing on lists and dictionaries without metadata as a fallback
+            bool supportIndexerWithoutMetadata = (target is IList || target is IDictionary);
+
             try
             {
                 foreach (PropertyInfo property in target.GetType().GetRuntimeProperties())
                 {
                     if (IsMatchingIndexedProperty(property, propertyName, indexerType))
                     {
-                        return new CustomPropertyImpl(property);
+                        return new CustomPropertyImpl(property, supportIndexerWithoutMetadata);
                     }
                 }
 
@@ -571,7 +584,7 @@ namespace System.Runtime.InteropServices
 
                     if (property != null)
                     {
-                        return new CustomPropertyImpl(property);
+                        return new CustomPropertyImpl(property, supportIndexerWithoutMetadata);
                     }
                 }
             }
@@ -579,13 +592,12 @@ namespace System.Runtime.InteropServices
             {
                 CustomPropertyImpl.LogDataBindingError(propertyName, ex);
             }
-
-            // We can do indexing on lists and dictionaries without metadata
-            if (target is IList || target is IDictionary)
+           
+            if (supportIndexerWithoutMetadata)
             {
-                return new CustomPropertyImpl(null, true, target.GetType());
+				return new CustomPropertyImpl(null, supportIndexerWithoutMetadata, target.GetType());
             }
-
+            
             return null;
         }
 
