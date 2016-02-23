@@ -229,6 +229,9 @@ namespace ILCompiler.DependencyAnalysis
 
                     foreach (MethodDesc interfaceMethod in interfaceType.GetMethods())
                     {
+                        if (interfaceMethod.Signature.IsStatic)
+                            continue;
+
                         Debug.Assert(interfaceMethod.IsVirtual);
                         MethodDesc implMethod = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, _type.GetClosestMetadataType());
                         if (implMethod != null)
