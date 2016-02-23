@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         // TODO: Swap argument order instead
                         encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg0);
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.NecessaryTypeSymbol(target));
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
                         encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(target)));
                     }
                     break;

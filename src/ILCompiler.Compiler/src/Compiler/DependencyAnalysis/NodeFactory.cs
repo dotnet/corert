@@ -76,11 +76,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NodeCache<TypeDesc, EETypeNode>((TypeDesc type) =>
             {
+                Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
                 return new EETypeNode(type, false);
             });
 
             _constructedTypeSymbols = new NodeCache<TypeDesc, EETypeNode>((TypeDesc type) =>
             {
+                Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
                 return new EETypeNode(type, true);
             });
             
@@ -414,6 +416,19 @@ namespace ILCompiler.DependencyAnalysis
                 _helperEntrypointSymbols[index] = symbol;
             }
             return symbol;
+        }
+
+        private TypeDesc _systemArrayOfTClass;
+        public TypeDesc ArrayOfTClass
+        {
+            get
+            {
+                if (_systemArrayOfTClass == null)
+                {
+                    _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
+                }
+                return _systemArrayOfTClass;
+            }
         }
 
         private TypeDesc _systemICastableType;

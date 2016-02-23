@@ -1869,7 +1869,13 @@ namespace Internal.JitInterface
                 // can simply do a static look up
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
 
-                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
+                if (td.IsArray && !td.IsSzArray)
+                {
+                    // TODO: Use CORINFO_TOKENKIND_NewObj to track that this is because of CORINFO_HELP_NEW_MDARR.
+                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ConstructedTypeSymbol(td));
+                }
+                else
+                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
                 pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
             }
 

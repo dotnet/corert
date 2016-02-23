@@ -18,6 +18,9 @@ public class BringUpTest
         if (TestMultipleInterfaces() == Fail)
             return Fail;
 
+        if (TestArrayInterfaces() == Fail)
+            return Fail;
+
         return Pass;
     }
 
@@ -232,6 +235,54 @@ public class BringUpTest
         {
             return "TestClass";
         }
+    }
+    #endregion
+
+    #region Array Interfaces Test
+    private static int TestArrayInterfaces()
+    {
+        {
+            object stringArray = new string[] { "A", "B", "C", "D" };
+
+            Console.WriteLine("Testing IEnumerable<T> on array...");
+            string result = String.Empty;
+            foreach (var s in (System.Collections.Generic.IEnumerable<string>)stringArray)
+                result += s;
+
+            if (result != "ABCD")
+            {
+                Console.WriteLine("Failed.");
+                return Fail;
+            }
+        }
+
+        {
+            object stringArray = new string[] { "A", "B", "C", "D" };
+
+            Console.WriteLine("Testing IEnumerable on array...");
+            string result = String.Empty;
+            foreach (var s in (System.Collections.IEnumerable)stringArray)
+                result += s;
+
+            if (result != "ABCD")
+            {
+                Console.WriteLine("Failed.");
+                return Fail;
+            }
+        }
+
+        {
+            object intArray = new int[5, 5];
+
+            Console.WriteLine("Testing IList on MDArray...");
+            if (((System.Collections.IList)intArray).Count != 25)
+            {
+                Console.WriteLine("Failed.");
+                return Fail;
+            }
+        }
+
+        return Pass;
     }
     #endregion
 }
