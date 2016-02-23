@@ -295,10 +295,9 @@ namespace ILCompiler.DependencyAnalysis
             else if (_type is ArrayType)
             {
                 objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
-                int rank = ((ArrayType)_type).Rank;
-                if (rank > 1)
+                if (!_type.IsSzArray)
                     objectSize +=
-                        2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * rank;
+                        2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
             }
             else if (_type is PointerType)
             {
