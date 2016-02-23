@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Security;
+using System.Diagnostics;
 using Windows.UI.Xaml.Data;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -21,12 +22,18 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [System.Runtime.CompilerServices.DependencyReductionRootAttribute]
     internal sealed class CustomPropertyImpl : ICustomProperty
     {
+        /// <summary>
+        /// The PropertyInfo for reflection
+        /// It might be null if m_supportIndexerWithoutMetadata is true
+        /// </summary>
         private PropertyInfo m_property;
 
         /// <summary>
         /// True if the property is a collection indexer that may not have metadata
+        /// Typically a IList/IDictionary
+        /// This is attempted as a fallback if metadata is not available or accessor is gone
         /// </summary>
-        private bool m_isIndexerWithoutMetadata;
+        private bool m_supportIndexerWithoutMetadata;
 
         /// <summary>
         /// Type that contains an indexer that doesn't have metadata
@@ -36,10 +43,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         //
         // Constructor
         //
-        public CustomPropertyImpl(PropertyInfo propertyInfo, bool isIndexerWithoutMetadata = false, Type indexerContainingType = null)
+        public CustomPropertyImpl(PropertyInfo propertyInfo, bool supportIndexerWithoutMetadata, Type indexerContainingType = null)
         {
             m_property = propertyInfo;
-            m_isIndexerWithoutMetadata = isIndexerWithoutMetadata;
+            m_supportIndexerWithoutMetadata = supportIndexerWithoutMetadata;
             m_indexerContainingType = indexerContainingType;
         }
 
@@ -51,12 +58,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             get
             {
-                if (m_isIndexerWithoutMetadata)
+                if (m_property != null)
                 {
-                    return "Item";
+                    return m_property.Name;
                 }
 
-                return m_property.Name;
+                Debug.Assert(m_supportIndexerWithoutMetadata);
+
+                return "Item";
             }
         }
 
@@ -64,7 +73,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             get
             {
-                return m_isIndexerWithoutMetadata || (m_property.GetMethod != null && m_property.GetMethod.IsPublic);
+                return m_supportIndexerWithoutMetadata || (m_property.GetMethod != null && m_property.GetMethod.IsPublic);
             }
         }
 
@@ -72,28 +81,50 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             get
             {
-                return m_isIndexerWithoutMetadata || (m_property.SetMethod != null && m_property.SetMethod.IsPublic);
+                return m_supportIndexerWithoutMetadata || (m_property.SetMethod != null && m_property.SetMethod.IsPublic);
             }
         }
 
         /// <summary>
         /// Verify caller has access to the getter/setter property
+        /// Return true if we can use reflection to access the property. False otherwise.
         /// </summary>
-        private void CheckAccess(bool getValue)
+        private bool CheckAccess(bool getValue)
         {
-            if (m_isIndexerWithoutMetadata)
+            //
+            // If no property, there is nothing to check against
+            // We'll use IList/IDictionary to access them
+            //
+            if (m_property == null)
             {
-                return;
+                Debug.Assert(m_supportIndexerWithoutMetadata);
+
+                return false;
             }
 
             MethodInfo accessor = getValue ? m_property.GetMethod : m_property.SetMethod;
 
             if (accessor == null)
-                throw new ArgumentException(getValue ? SR.Arg_GetMethNotFnd : SR.Arg_SetMethNotFnd);
+            {
+                if (m_supportIndexerWithoutMetadata)
+                {
+                    return false;
+                }
+                else
+                {
+                    throw new ArgumentException(getValue ? SR.Arg_GetMethNotFnd : SR.Arg_SetMethNotFnd);
+                }
+            }
 
             if (!accessor.IsPublic)
             {
-                Exception ex = new MemberAccessException(
+                if (m_supportIndexerWithoutMetadata)
+                {
+                    return false;
+                }
+                else
+                {
+                    Exception ex = new MemberAccessException(
                     String.Format(
                         CultureInfo.CurrentCulture,
                         SR.Arg_MethodAccessException_WithMethodName,
@@ -101,10 +132,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         accessor.DeclaringType.FullName)
                     );
 
-                // We need to make sure it has the same HR that we were returning in desktop
-                InteropExtensions.SetExceptionErrorCode(ex, __HResults.COR_E_METHODACCESS);
-                throw ex;
+                    // We need to make sure it has the same HR that we were returning in desktop
+                    InteropExtensions.SetExceptionErrorCode(ex, __HResults.COR_E_METHODACCESS);
+                    throw ex;
+                }
             }
+
+            return true;
         }
 
         internal static void LogDataBindingError(string propertyName, Exception ex)
@@ -117,12 +151,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public object GetValue(object target)
         {
-            CheckAccess(getValue: true);
-
-            if (m_isIndexerWithoutMetadata)
+            // This means you are calling GetValue on a index property
+            if (m_supportIndexerWithoutMetadata)
             {
                 throw new TargetParameterCountException();
             }
+
+            CheckAccess(getValue: true);
 
             try
             {
@@ -137,12 +172,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public void SetValue(object target, object value)
         {
-            CheckAccess(getValue: false);
-
-            if (m_isIndexerWithoutMetadata)
+            // This means you are calling SetValue on a index property
+            if (m_supportIndexerWithoutMetadata)
             {
                 throw new TargetParameterCountException();
             }
+
+            CheckAccess(getValue: false);
 
             try
             {
@@ -159,48 +195,54 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             get
             {
-                if (m_isIndexerWithoutMetadata)
+                if (m_property != null)
                 {
-                    // The following calls look like reflection, but don't require metadata,
-                    // so they work on all types.
-                    Type indexType = null;
-                    TypeInfo containingTypeInfo = m_indexerContainingType.GetTypeInfo();
-                    foreach (Type itf in containingTypeInfo.ImplementedInterfaces)
-                    {
-                        if (!itf.IsConstructedGenericType)
-                        {
-                            continue;
-                        }
-
-                        Type genericItf = itf.GetGenericTypeDefinition();
-                        if (genericItf.Equals(typeof(IList<>)))
-                        {
-                            Type listArg = itf.GenericTypeArguments[0];
-                            if (indexType != null && !indexType.Equals(listArg))
-                            {
-                                throw new MissingMetadataException();
-                            }
-                            indexType = listArg;
-                        }
-                        else if (genericItf.Equals(typeof(IDictionary<,>)))
-                        {
-                            Type dictionaryArg = itf.GenericTypeArguments[1];
-                            if (indexType != null && !indexType.Equals(dictionaryArg))
-                            {
-                                throw new MissingMetadataException();
-                            }
-                            indexType = dictionaryArg;
-                        }
-                    }
-
-                    if (indexType == null)
-                    {
-                        throw new MissingMetadataException();
-                    }
-                    return indexType;
+                    return m_property.PropertyType;
                 }
 
-                return m_property.PropertyType;
+                //
+                // Calculate the property type from IList/IDictionary
+                //
+                Debug.Assert(m_supportIndexerWithoutMetadata);
+
+                // The following calls look like reflection, but don't require metadata,
+                // so they work on all types.
+                Type indexType = null;
+                TypeInfo containingTypeInfo = m_indexerContainingType.GetTypeInfo();
+                foreach (Type itf in containingTypeInfo.ImplementedInterfaces)
+                {
+                    if (!itf.IsConstructedGenericType)
+                    {
+                        continue;
+                    }
+
+                    Type genericItf = itf.GetGenericTypeDefinition();
+                    if (genericItf.Equals(typeof(IList<>)))
+                    {
+                        Type listArg = itf.GenericTypeArguments[0];
+                        if (indexType != null && !indexType.Equals(listArg))
+                        {
+                            throw new MissingMetadataException();
+                        }
+                        indexType = listArg;
+                    }
+                    else if (genericItf.Equals(typeof(IDictionary<,>)))
+                    {
+                        Type dictionaryArg = itf.GenericTypeArguments[1];
+                        if (indexType != null && !indexType.Equals(dictionaryArg))
+                        {
+                            throw new MissingMetadataException();
+                        }
+                        indexType = dictionaryArg;
+                    }
+                }
+
+                if (indexType == null)
+                {
+                    throw new MissingMetadataException();
+                }
+
+                return indexType;
             }
         }
 
@@ -208,69 +250,81 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // indexValue here means that the property has an indexer argument and its value is null.
         public object GetIndexedValue(object target, object index)
         {
-            CheckAccess(getValue: true);
+            bool supportPropertyAccess = CheckAccess(getValue: true);
             object unwrappedTarget = UnwrapTarget(target);
 
-            // We might not have metadata for the accessor, but we can try some common collections
-            if (m_isIndexerWithoutMetadata)
+            //
+            // If we can use reflection, go with reflection
+            // If it fails, we would simply throw and not fallback to IList/IDictionary
+            //
+            if (m_property != null && supportPropertyAccess)
             {
-                IDictionary dictionary = unwrappedTarget as IDictionary;
-                if (dictionary != null)
+                try
                 {
-                    return dictionary[index];
+                    return m_property.GetValue(unwrappedTarget, new object[] { index });
                 }
-                IList list = unwrappedTarget as IList;
-                if (list != null)
+                catch (MemberAccessException ex)
                 {
-                    if (index is int)
-                    {
-                        return list[(int)index];
-                    }
+                    LogDataBindingError(Name, ex);
+                    throw;
                 }
             }
 
-            try
+            //
+            // If reflection is not supported, fallback to IList/IDictionary indexer
+            // If fallback is not possible, we would've failed earlier
+            //
+            Debug.Assert(m_supportIndexerWithoutMetadata);
+
+            IDictionary dictionary = unwrappedTarget as IDictionary;
+            if (dictionary != null)
             {
-                return m_property.GetValue(unwrappedTarget, new object[] { index });
+                return dictionary[index];
             }
-            catch (MemberAccessException ex)
-            {
-                LogDataBindingError(Name, ex);
-                throw;
-            }
+
+            IList list = (IList) unwrappedTarget;
+            return list[Convert.ToInt32(index)];
         }
 
         // Unlike normal .Net, Jupiter properties can have at most one indexer parameter. A null
         // indexValue here means that the property has an indexer argument and its value is null.
         public void SetIndexedValue(object target, object value, object index)
         {
-            CheckAccess(getValue: false);
+            bool supportPropertyAccess = CheckAccess(getValue: false);
             object unwrappedTarget = UnwrapTarget(target);
 
-            // We might not have metadata for the accessor, but we can try some common collections
+            //
+            // If we can use reflection, go with reflection
+            // If it fails, we would simply throw and not fallback to IList/IDictionary
+            //
+            if (m_property != null && supportPropertyAccess)
+            {
+                try
+                {
+                    m_property.SetValue(unwrappedTarget, value, new object[] { index });
+                }
+                catch (MemberAccessException ex)
+                {
+                    LogDataBindingError(Name, ex);
+                    throw;
+                }
+            }
+
+            //
+            // If reflection is not supported, fallback to IList/IDictionary indexer
+            // If fallback is not possible, we would've failed earlier
+            //
+            Debug.Assert(m_supportIndexerWithoutMetadata);
+
             IDictionary dictionary = unwrappedTarget as IDictionary;
             if (dictionary != null)
             {
                 dictionary[index] = value;
-            }
-            IList list = unwrappedTarget as IList;
-            if (list != null)
-            {
-                if (index is int)
-                {
-                    list[(int)index] = value;
-                }
+                return;
             }
 
-            try
-            {
-                m_property.SetValue(unwrappedTarget, value, new object[] { index });
-            }
-            catch (MemberAccessException ex)
-            {
-                LogDataBindingError(Name, ex);
-                throw;
-            }
+            IList list = (IList) unwrappedTarget;
+            list[Convert.ToInt32(index)] = value;
         }
 
         public static object UnwrapTarget(object target)
