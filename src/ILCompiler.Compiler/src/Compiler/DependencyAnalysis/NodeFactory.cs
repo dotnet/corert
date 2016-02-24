@@ -128,6 +128,11 @@ namespace ILCompiler.DependencyAnalysis
                     return new MethodCodeNode(method);
             });
 
+            _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
+            {
+                return new UnboxingStubNode(method);
+            });
+
             _jumpStubs = new NodeCache<ISymbolNode, JumpStubNode>((ISymbolNode node) =>
             {
                 return new JumpStubNode(node);
@@ -304,8 +309,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MethodDesc, ISymbolNode> _methodCode;
         private NodeCache<ISymbolNode, JumpStubNode> _jumpStubs;
+        private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
 
-        public ISymbolNode MethodEntrypoint(MethodDesc method)
+        public ISymbolNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
             // TODO: NICE: make this method always return IMethodNode. We will likely be able to get rid of the
             //             cppCodeGen special casing here that way, and other places won't need to cast this from ISymbolNode.
@@ -319,6 +325,11 @@ namespace ILCompiler.DependencyAnalysis
                 else if (kind == SpecialMethodKind.RuntimeImport)
                 {
                     return ExternSymbol(((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute"));
+                }
+
+                if (unboxingStub)
+                {
+                    return _unboxingStubs.GetOrAdd(method);
                 }
             }
 

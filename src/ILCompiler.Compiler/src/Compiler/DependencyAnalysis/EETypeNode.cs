@@ -216,7 +216,7 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc impl = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(decl, (MetadataType)_type);
                     if (impl.OwningType == _type && !impl.IsAbstract)
                     {
-                        yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl), factory.VirtualMethodUse(decl), "Virtual method");
+                        yield return new CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                     }
                 }
 
@@ -406,7 +406,7 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
 
                     if (!implMethod.IsAbstract)
-                        objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod));
+                        objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
                     else
                         objData.EmitZeroPointer();
                 }
