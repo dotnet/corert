@@ -30,7 +30,7 @@ namespace System.Diagnostics
             throw new PlatformNotSupportedException();
         }
 
-        internal static void NotifyOfCrossThreadDependency()
+        public static void NotifyOfCrossThreadDependency()
         {
             // nothing to do...yet
         }
