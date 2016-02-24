@@ -2149,17 +2149,14 @@ namespace Internal.JitInterface
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
         {
-            FrameInfo frameInfo = new FrameInfo();
-            frameInfo.StartOffset = (int)startOffset;
-            frameInfo.EndOffset = (int)endOffset;
-            frameInfo.BlobData = new byte[unwindSize];
+            byte[] blobData = new byte[unwindSize];
+
             for (uint i = 0; i < unwindSize; i++)
             {
-                frameInfo.BlobData[i] = pUnwindBlock[i];
+                blobData[i] = pUnwindBlock[i];
             }
 
-            Debug.Assert(_usedFrameInfos < _frameInfos.Length);
-            _frameInfos[_usedFrameInfos++] = frameInfo;
+            _frameInfos[_usedFrameInfos++] = new FrameInfo((int)startOffset, (int)endOffset, blobData);
         }
 
         private void* allocGCInfo(UIntPtr size)

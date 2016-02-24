@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithFrameInfo, INodeWithDebugInfo
+    internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
     {
         private MethodDesc _method;
         private ObjectData _methodCode;
@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _debugVarInfos;
             }
-        }        
+        }
 
         public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
         {
