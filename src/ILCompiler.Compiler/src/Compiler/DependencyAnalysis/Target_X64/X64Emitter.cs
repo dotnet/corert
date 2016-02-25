@@ -49,6 +49,14 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitByte((byte)immediate);
         }
 
+        public void EmitADD(ref AddrMode addrMode, sbyte immediate)
+        {
+            if (addrMode.Size == AddrModeSize.Int16)
+                Builder.EmitByte(0x66);
+            EmitIndirInstruction((byte)((addrMode.Size != AddrModeSize.Int8) ? 0x83 : 0x80), (byte)0, ref addrMode);
+            Builder.EmitByte((byte)immediate);
+        }
+
         public void EmitJMP(ISymbolNode symbol)
         {
             Builder.EmitByte(0xE9);

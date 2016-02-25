@@ -70,7 +70,9 @@
     <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
