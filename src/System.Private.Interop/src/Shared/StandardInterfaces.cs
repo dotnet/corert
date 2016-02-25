@@ -1870,7 +1870,7 @@ namespace System.Runtime.InteropServices
         internal static unsafe int Seek(System.IntPtr pComThis, long dlibMove, int dwOrigin, IntPtr plib)
         {
             __com_IStream* pIStream = (__com_IStream*)pComThis;
-            int* plibNewPosition = (int*)plib;
+            long* plibNewPosition = (long*)plib;
             Debug.Assert(dwOrigin == (int)Interop.COM.STREAM_SEEK.STREAM_SEEK_SET ||
                 dwOrigin == (int)Interop.COM.STREAM_SEEK.STREAM_SEEK_CUR);
             Debug.Assert(dlibMove >= 0);
