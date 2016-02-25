@@ -1475,7 +1475,7 @@ uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
     }
 }
 
-HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, wchar_t * * outVal)
+HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, __out_z wchar_t * * outVal)
 {
     *outVal = NULL;
     return 0;

@@ -110,8 +110,8 @@ inline UInt32 PalGetCurrentThreadId()
     return GetCurrentThreadId();
 }
 
-extern "C" UInt32 __stdcall GetEnvironmentVariableW(LPCWSTR, LPWSTR, UInt32);
-inline UInt32 PalGetEnvironmentVariableW(LPCWSTR arg1, LPWSTR arg2, UInt32 arg3)
+extern "C" UInt32 __stdcall GetEnvironmentVariableW(__in_z_opt LPCWSTR, __out_z_opt LPWSTR, UInt32);
+inline UInt32 PalGetEnvironmentVariableW(__in_z_opt LPCWSTR arg1, __out_z_opt LPWSTR arg2, UInt32 arg3)
 {
     return GetEnvironmentVariableW(arg1, arg2, arg3);
 }
