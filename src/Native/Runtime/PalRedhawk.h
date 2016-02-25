@@ -44,20 +44,30 @@ typedef void *              HINSTANCE;
 typedef void *              LPSECURITY_ATTRIBUTES;
 typedef void *              LPOVERLAPPED;
 
-typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
-#define FLS_OUT_OF_INDEXES ((UInt32)0xFFFFFFFF)
-
 #ifndef GCENV_INCLUDED
 #define CALLBACK            __stdcall
 #define WINAPI              __stdcall
 #define WINBASEAPI          __declspec(dllimport)
 #endif //!GCENV_INCLUDED
 
+typedef union _LARGE_INTEGER {
+    struct {
+#if BIGENDIAN
+        int32_t HighPart;
+        uint32_t LowPart;
+#else
+        uint32_t LowPart;
+        int32_t HighPart;
+#endif
+    } u;
+    int64_t QuadPart;
+} LARGE_INTEGER, *PLARGE_INTEGER;
+
 typedef struct _GUID {
-    unsigned long  Data1;
-    unsigned short Data2;
-    unsigned short Data3;
-    unsigned char  Data4[8];
+    uint32_t Data1;
+    uint16_t Data2;
+    uint16_t Data3;
+    uint8_t Data4[8];
 } GUID;
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name

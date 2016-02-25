@@ -100,6 +100,19 @@ using std::nullptr_t;
     } \
     while(0)
 
+typedef union _LARGE_INTEGER {
+    struct {
+#if BIGENDIAN
+        int32_t HighPart;
+        uint32_t LowPart;
+#else
+        uint32_t LowPart;
+        int32_t HighPart;
+#endif
+    } u;
+    int64_t QuadPart;
+} LARGE_INTEGER, *PLARGE_INTEGER;
+
 typedef void * LPSECURITY_ATTRIBUTES;
 typedef void* PCONTEXT;
 typedef void* PEXCEPTION_RECORD;
