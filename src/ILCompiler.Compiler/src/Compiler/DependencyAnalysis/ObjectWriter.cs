@@ -282,12 +282,13 @@ namespace ILCompiler.DependencyAnalysis
             _offsetToCfiEnd.Clear();
             _frameOpened = false;
 
-            if (!(node is INodeWithFrameInfo))
+            INodeWithCodeInfo nodeWithCodeInfo = node as INodeWithCodeInfo;
+            if (nodeWithCodeInfo == null)
             {
                 return;
             }
 
-            FrameInfo[] frameInfos = ((INodeWithFrameInfo)node).FrameInfos;
+            FrameInfo[] frameInfos = nodeWithCodeInfo.FrameInfos;
             if (frameInfos == null)
             {
                 return;
