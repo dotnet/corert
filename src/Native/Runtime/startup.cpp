@@ -35,9 +35,6 @@ unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance);
 
 
-UInt32 _fls_index = FLS_OUT_OF_INDEXES;
-
-
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 void CheckForPalFallback();
 void DetectCPUFeatures();
