@@ -159,13 +159,53 @@ namespace ILCompiler.Metadata
             record.Signature = sig;
         }
 
+        private TypeReference GetNestedReferenceParent(Cts.MetadataType entity)
+        {
+            // This special code deals with the metadata format requirement saying that
+            // nested type *references* need to have a type *reference* as their containing type.
+            // This is potentially in conflict with our other rule that says to always resolve
+            // references to their definition records (we are avoiding emitting references
+            // to things that have a definition within the same blob to save space).
+
+            Cts.MetadataType containingType = entity.ContainingType;
+            MetadataRecord parentRecord = HandleType(containingType);
+            TypeReference parentReferenceRecord = parentRecord as TypeReference;
+            
+            if (parentReferenceRecord != null)
+            {
+                // Easy case - parent type doesn't have a definition record.
+                return parentReferenceRecord;
+            }
+
+            // Parent has a type definition record. We need to make a new record that's a reference.
+            // We don't bother with interning these because this will be rare and metadata writer
+            // will do the interning anyway.
+            Debug.Assert(parentRecord is TypeDefinition);
+
+            parentReferenceRecord = new TypeReference
+            {
+                TypeName = HandleString(containingType.Name),
+            };
+
+            if (containingType.ContainingType != null)
+            {
+                parentReferenceRecord.ParentNamespaceOrType = GetNestedReferenceParent(containingType);
+            }
+            else
+            {
+                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.Namespace);
+            }
+
+            return parentReferenceRecord;
+        }
+
         private void InitializeTypeRef(Cts.MetadataType entity, TypeReference record)
         {
             Debug.Assert(entity.IsTypeDefinition);
 
             if (entity.ContainingType != null)
             {
-                record.ParentNamespaceOrType = HandleType(entity.ContainingType);
+                record.ParentNamespaceOrType = GetNestedReferenceParent(entity);
             }
             else
             {
