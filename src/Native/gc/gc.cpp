@@ -33345,35 +33345,6 @@ HRESULT GCHeap::Shutdown ()
     return S_OK;
 }
 
-//used by static variable implementation
-void CGCDescGcScan(LPVOID pvCGCDesc, promote_func* fn, ScanContext* sc)
-{
-    CGCDesc* map = (CGCDesc*)pvCGCDesc;
-
-    CGCDescSeries *last = map->GetLowestSeries();
-    CGCDescSeries *cur = map->GetHighestSeries();
-
-    assert (cur >= last);
-    do
-    {
-        uint8_t** ppslot = (uint8_t**)((uint8_t*)pvCGCDesc + cur->GetSeriesOffset());
-        uint8_t**ppstop = (uint8_t**)((uint8_t*)ppslot + cur->GetSeriesSize());
-
-        while (ppslot < ppstop)
-        {
-            if (*ppslot)
-            {
-                (fn) ((Object**)ppslot, sc, 0);
-            }
-
-            ppslot++;
-        }
-
-        cur--;
-    }
-    while (cur >= last);
-}
-
 // Wait until a garbage collection is complete
 // returns NOERROR if wait was OK, other error code if failure.
 // WARNING: This will not undo the must complete state. If you are
@@ -36632,7 +36603,7 @@ void GCHeap::WalkObject (Object* obj, walk_fn fn, void* context)
 #endif //defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 // Go through and touch (read) each page straddled by a memory block.
-void TouchPages(LPVOID pStart, uint32_t cb)
+void TouchPages(void * pStart, size_t cb)
 {
     const uint32_t pagesize = OS_PAGE_SIZE;
     _ASSERTE(0 == (pagesize & (pagesize-1))); // Must be a power of 2.
@@ -36731,7 +36702,7 @@ void initGCShadow()
     }
 }
 
-#define INVALIDGCVALUE (LPVOID)((size_t)0xcccccccd)
+#define INVALIDGCVALUE (void*)((size_t)0xcccccccd)
 
     // test to see if 'ptr' was only updated via the write barrier.
 inline void testGCShadow(Object** ptr)

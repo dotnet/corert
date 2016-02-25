@@ -191,7 +191,7 @@ extern "C" {
          *              callback.
          * Ret:         success or failure
      ***********************************************/
-    VOID EtwCallback(
+    void EtwCallback(
         _In_ LPCGUID SourceId,
         _In_ ULONG ControlCode,
         _In_ UCHAR Level,
@@ -218,7 +218,7 @@ extern "C" {
          * Desc:        This function handles the ETW callout
          * Ret:         success or failure
      ***********************************************/
-    VOID EtwCallout(
+    void EtwCallout(
         REGHANDLE RegHandle,
         PCEVENT_DESCRIPTOR Descriptor,
         ULONG ArgumentCount,
@@ -317,13 +317,13 @@ namespace ETW
         friend class ETW::LoaderLog;
         friend class ETW::MethodLog;
 #ifdef FEATURE_EVENT_TRACE
-        static VOID SendThreadRundownEvent();
-        static VOID IterateDomain(BaseDomain *pDomain, DWORD enumerationOptions);
-        static VOID IterateAppDomain(AppDomain * pAppDomain, DWORD enumerationOptions);
-        static VOID IterateCollectibleLoaderAllocator(AssemblyLoaderAllocator *pLoaderAllocator, DWORD enumerationOptions);
-        static VOID IterateAssembly(Assembly *pAssembly, DWORD enumerationOptions);
-        static VOID IterateModule(Module *pModule, DWORD enumerationOptions);
-        static VOID EnumerationHelper(Module *moduleFilter, BaseDomain *domainFilter, DWORD enumerationOptions);
+        static void SendThreadRundownEvent();
+        static void IterateDomain(BaseDomain *pDomain, DWORD enumerationOptions);
+        static void IterateAppDomain(AppDomain * pAppDomain, DWORD enumerationOptions);
+        static void IterateCollectibleLoaderAllocator(AssemblyLoaderAllocator *pLoaderAllocator, DWORD enumerationOptions);
+        static void IterateAssembly(Assembly *pAssembly, DWORD enumerationOptions);
+        static void IterateModule(Module *pModule, DWORD enumerationOptions);
+        static void EnumerationHelper(Module *moduleFilter, BaseDomain *domainFilter, DWORD enumerationOptions);
         static DWORD GetEnumerationOptionsFromRuntimeKeywords();
     public:
         typedef union _EnumerationStructs
@@ -359,16 +359,16 @@ namespace ETW
             }EnumerationOptions;
         }EnumerationStructs;
 
-        static VOID ProcessShutdown();
-        static VOID ModuleRangeRundown();
-        static VOID StartRundown();
-        static VOID EndRundown();
-        static VOID EnumerateForCaptureState();
+        static void ProcessShutdown();
+        static void ModuleRangeRundown();
+        static void StartRundown();
+        static void EndRundown();
+        static void EnumerateForCaptureState();
 #else
     public:
-        static VOID ProcessShutdown() {};
-        static VOID StartRundown() {};
-        static VOID EndRundown() {};
+        static void ProcessShutdown() {};
+        static void StartRundown() {};
+        static void EndRundown() {};
 #endif // FEATURE_EVENT_TRACE
     };
 
@@ -389,7 +389,7 @@ namespace ETW
         static const UINT8 s_MaxStackSize=100;
         UINT32 m_FrameCount;
         SIZE_T m_EBPStack[SamplingLog::s_MaxStackSize];
-        VOID Append(SIZE_T currentFrame);
+        void Append(SIZE_T currentFrame);
         EtwStackWalkStatus SaveCurrentStack(int skipTopNFrames=1);
     public:
         static ULONG SendStackTrace(MCGEN_TRACE_CONTEXT TraceContext, PCEVENT_DESCRIPTOR Descriptor, LPCGUID EventGuid);
@@ -402,12 +402,12 @@ namespace ETW
     {
         friend class ETW::EnumerationLog;
 #ifdef FEATURE_EVENT_TRACE
-        static VOID SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents=FALSE);
+        static void SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents=FALSE);
 #if !defined(FEATURE_PAL)
         static ULONG SendModuleRange(Module *pModule, DWORD dwEventOptions);
 #endif // !FEATURE_PAL
-        static VOID SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions);
-        static VOID SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
+        static void SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions);
+        static void SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
     public:
         typedef union _LoaderStructs
         {
@@ -442,9 +442,9 @@ namespace ETW
 
         }LoaderStructs;
         
-        static VOID DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL);
+        static void DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL);
         
-        static VOID DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName = NULL)
+        static void DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName = NULL)
         {
 #ifndef FEATURE_PAL
             if (MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled)
@@ -454,15 +454,15 @@ namespace ETW
             }
         }
 
-        static VOID DomainUnload(AppDomain *pDomain);
-        static VOID CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator);
-        static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule);
+        static void DomainUnload(AppDomain *pDomain);
+        static void CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator);
+        static void ModuleLoad(Module *pModule, LONG liReportedSharedModule);
 #else
     public:
-        static VOID DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL) {};
-        static VOID DomainUnload(AppDomain *pDomain) {};
-        static VOID CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator) {};
-        static VOID ModuleLoad(Module *pModule, LONG liReportedSharedModule) {};
+        static void DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL) {};
+        static void DomainUnload(AppDomain *pDomain) {};
+        static void CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator) {};
+        static void ModuleLoad(Module *pModule, LONG liReportedSharedModule) {};
 #endif // FEATURE_EVENT_TRACE
     };
 
@@ -471,14 +471,14 @@ namespace ETW
     {
         friend class ETW::EnumerationLog;
 #ifdef FEATURE_EVENT_TRACE
-        static VOID SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
-        static VOID SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
-        static VOID SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
+        static void SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions);
+        static void SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions);
+        static void SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
 #ifndef WINXP_AND_WIN2K3_BUILD_SUPPORT
-        static VOID SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, ReJITID rejitID);
+        static void SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWORD dwEventOptions, ReJITID rejitID);
 #endif // WINXP_AND_WIN2K3_BUILD_SUPPORT
-        static VOID SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0);
-        static VOID SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
+        static void SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0);
+        static void SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName);
     public:
         typedef union _MethodStructs
         {
@@ -499,22 +499,22 @@ namespace ETW
 
         }MethodStructs;
 
-        static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
-        static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0);
-        static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
-        static VOID StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers);
-        static VOID MethodRestored(MethodDesc * pMethodDesc);
-        static VOID MethodTableRestored(MethodTable * pMethodTable);
-        static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc);
+        static void MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
+        static void MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0);
+        static void StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
+        static void StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers);
+        static void MethodRestored(MethodDesc * pMethodDesc);
+        static void MethodTableRestored(MethodTable * pMethodTable);
+        static void DynamicMethodDestroyed(MethodDesc *pMethodDesc);
 #else // FEATURE_EVENT_TRACE
     public:
-        static VOID MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL) {};
-        static VOID MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0) {};
-        static VOID StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
-        static VOID StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
-        static VOID MethodRestored(MethodDesc * pMethodDesc) {};
-        static VOID MethodTableRestored(MethodTable * pMethodTable) {};
-        static VOID DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
+        static void MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL) {};
+        static void MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0) {};
+        static void StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
+        static void StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
+        static void MethodRestored(MethodDesc * pMethodDesc) {};
+        static void MethodTableRestored(MethodTable * pMethodTable) {};
+        static void DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};
 #endif // FEATURE_EVENT_TRACE
     };
 
@@ -523,8 +523,8 @@ namespace ETW
     {
 #ifdef FEATURE_EVENT_TRACE
     public:
-        static VOID StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName);
-        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName);
+        static void StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName);
+        static void StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName);
 
         static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
                                                           LPCWSTR wszModuleName,
@@ -574,8 +574,8 @@ namespace ETW
                                                        BOOL fIsTreatAsSafe);
 #else
     public:
-        static VOID StrongNameVerificationStart(DWORD dwInFlags,LPWSTR strFullyQualifiedAssemblyName) {};
-        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, LPWSTR strFullyQualifiedAssemblyName) {};
+        static void StrongNameVerificationStart(DWORD dwInFlags,LPWSTR strFullyQualifiedAssemblyName) {};
+        static void StrongNameVerificationStop(DWORD dwInFlags,ULONG result, LPWSTR strFullyQualifiedAssemblyName) {};
 
         static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
                                                           LPCWSTR wszModuleName,
@@ -665,9 +665,9 @@ namespace ETW
     {
     public:
 #ifdef FEATURE_EVENT_TRACE
-        static VOID ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownException, BOOL bIsNewException);
+        static void ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownException, BOOL bIsNewException);
 #else
-        static VOID ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownException, BOOL bIsNewException) {};
+        static void ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownException, BOOL bIsNewException) {};
 #endif // FEATURE_EVENT_TRACE
         typedef union _ExceptionStructs
         {
@@ -728,9 +728,9 @@ namespace ETW
         }InfoStructs;
 
 #ifdef FEATURE_EVENT_TRACE
-        static VOID RuntimeInformation(INT32 type);
+        static void RuntimeInformation(INT32 type);
 #else
-        static VOID RuntimeInformation(INT32 type) {};
+        static void RuntimeInformation(INT32 type) {};
 #endif // FEATURE_EVENT_TRACE
     };
 };
@@ -964,8 +964,8 @@ namespace ETW
         static DWORD GetEtwThreadFlags(Thread * pThread);
 
     public:
-        static VOID FireThreadCreated(Thread * pThread);
-        static VOID FireThreadDC(Thread * pThread);
+        static void FireThreadCreated(Thread * pThread);
+        static void FireThreadDC(Thread * pThread);
     };
 };
 

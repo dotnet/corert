@@ -140,8 +140,8 @@ namespace ETW
         static BOOL IsHeapAllocEventEnabled();
         static void SendObjectAllocatedEvent(Object * pObject);
         static CrstBase * GetHashCrst();
-        static VOID LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pBulkTypeEventLogger, ULONGLONG thAsAddr, TypeLogBehavior typeLogBehavior);
-        static VOID OnModuleUnload(Module * pModule);
+        static void LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pBulkTypeEventLogger, ULONGLONG thAsAddr, TypeLogBehavior typeLogBehavior);
+        static void OnModuleUnload(Module * pModule);
         static void OnKeywordsChanged();
 
     private:
@@ -150,7 +150,7 @@ namespace ETW
         static TypeLoggingInfo LookupOrCreateTypeLoggingInfo(TypeHandle th, BOOL * pfCreatedNew, LoggedTypesFromModule ** ppLoggedTypesFromModule = NULL);
         static BOOL AddOrReplaceTypeLoggingInfo(ETW::LoggedTypesFromModule * pLoggedTypesFromModule, const ETW::TypeLoggingInfo * pTypeLoggingInfo);
         static int GetDefaultMsBetweenEvents();
-        static VOID OnTypesKeywordTurnedOff();
+        static void OnTypesKeywordTurnedOff();
     };
 
 #endif // FEATURE_REDHAWK
@@ -270,9 +270,9 @@ namespace ETW
         } ETW_GC_INFO, *PETW_GC_INFO;
 
 #ifdef FEATURE_EVENT_TRACE
-        static VOID GCSettingsEvent();
+        static void GCSettingsEvent();
 #else
-        static VOID GCSettingsEvent() {};
+        static void GCSettingsEvent() {};
 #endif // FEATURE_EVENT_TRACE
 
         static BOOL ShouldWalkHeapObjectsForEtw();
@@ -280,16 +280,16 @@ namespace ETW
         static BOOL ShouldTrackMovementForEtw();
         static BOOL ShouldWalkStaticsAndCOMForEtw();
         static HRESULT ForceGCForDiagnostics();
-        static VOID ForceGC(LONGLONG l64ClientSequenceNumber);
-        static VOID FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo);
-        static VOID FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth);
-        static VOID FireSingleGenerationRangeEvent(
+        static void ForceGC(LONGLONG l64ClientSequenceNumber);
+        static void FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo);
+        static void FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth);
+        static void FireSingleGenerationRangeEvent(
             void * /* context */,
             int generation, 
             BYTE * rangeStart, 
             BYTE * rangeEnd,
             BYTE * rangeEndReserved);
-        static VOID RootReference(
+        static void RootReference(
             LPVOID pvHandle,
             Object * pRootedNode,
             Object * pSecondaryNodeForDependentHandle,
@@ -297,19 +297,19 @@ namespace ETW
             ProfilingScanContext * profilingScanContext,
             DWORD dwGCFlags,
             DWORD rootFlags);
-        static VOID ObjectReference(
+        static void ObjectReference(
             ProfilerWalkHeapContext * profilerWalkHeapContext,
             Object * pObjReferenceSource,
             ULONGLONG typeID,
             ULONGLONG cRefs,
             Object ** rgObjReferenceTargets);
-        static VOID EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext);
-        static VOID BeginMovedReferences(size_t * pProfilingContext);
-        static VOID MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
-        static VOID EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
-        static VOID WalkStaticsAndCOMForETW();
+        static void EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext);
+        static void BeginMovedReferences(size_t * pProfilingContext);
+        static void MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
+        static void EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
+        static void WalkStaticsAndCOMForETW();
 #ifndef FEATURE_REDHAWK
-        static VOID SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj);
+        static void SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj);
 #endif // FEATURE_REDHAWK
     };
 };
@@ -319,14 +319,14 @@ inline BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw() { return FALSE; }
-inline VOID ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo) { }
-inline VOID ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth) { }
-inline VOID ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext) { }
-inline VOID ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
-inline VOID ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting) { }
-inline VOID ETW::GCLog::EndMovedReferences(size_t profilingContext) { }
-inline VOID ETW::GCLog::WalkStaticsAndCOMForETW() { }
-inline VOID ETW::GCLog::RootReference(
+inline void ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo) { }
+inline void ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth) { }
+inline void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext) { }
+inline void ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
+inline void ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting) { }
+inline void ETW::GCLog::EndMovedReferences(size_t profilingContext) { }
+inline void ETW::GCLog::WalkStaticsAndCOMForETW() { }
+inline void ETW::GCLog::RootReference(
     LPVOID pvHandle,
     Object * pRootedNode,
     Object * pSecondaryNodeForDependentHandle,
