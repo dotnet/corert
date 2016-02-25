@@ -141,12 +141,12 @@ inline void FATAL_GC_ERROR()
 
 #if defined (SYNCHRONIZATION_STATS) || defined (STAGE_STATS)
 #define BEGIN_TIMING(x) \
-    LARGE_INTEGER x##_start; \
-    x##_start = GCToOSInterface::QueryPerformanceCounter ()
+    int64_t x##_start; \
+    x##_start = GCToOSInterface::QueryPerformanceCounter()
 
 #define END_TIMING(x) \
-    LARGE_INTEGER x##_end; \
-    x##_end = GCToOSInterface::QueryPerformanceCounter (); \
+    int64_t x##_end; \
+    x##_end = GCToOSInterface::QueryPerformanceCounter(); \
     x += x##_end - x##_start
 
 #else
@@ -2922,7 +2922,7 @@ public:
 
 #ifdef SHORT_PLUGS
     PER_HEAP_ISOLATED
-    float short_plugs_pad_ratio;
+    double short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
 #ifdef BIT64
