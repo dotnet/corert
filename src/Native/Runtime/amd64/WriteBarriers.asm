@@ -414,6 +414,12 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
     mov     rcx, [rsi]
     mov     [rdi], rcx
 
+    ;; Check whether the writes were even into the heap. If not there's no card update required.
+    cmp     rdi, [g_lowest_address]
+    jb      RhpByRefAssignRef_NotInHeap
+    cmp     rdi, [g_highest_address]
+    jae     RhpByRefAssignRef_NotInHeap
+
     ;; Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     ;; we're in a debug build and write barrier checking has been enabled).
     UPDATE_GC_SHADOW BASENAME, rcx, rdi
