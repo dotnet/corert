@@ -51,8 +51,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_AssemblyQualifiedName(this);
+#endif
 
                 return AsType().AssemblyQualifiedName;
             }
@@ -75,8 +77,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_BaseType(this);
+#endif
 
                 // If this has a RuntimeTypeHandle, let the underlying runtime engine have the first crack. If it refuses, fall back to metadata.
                 RuntimeTypeHandle typeHandle;
@@ -115,8 +119,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
+#endif
 
                 Debug.Assert(IsArray || IsByRef || IsPointer);
                 return Empty<CustomAttributeData>.Enumerable;
@@ -127,8 +133,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredConstructors(this);
+#endif
 
                 return GetDeclaredConstructorsInternal(this.AnchoringTypeDefinitionForDeclaredMembers);
             }
@@ -138,8 +146,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredEvents(this);
+#endif
 
                 return GetDeclaredEventsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
             }
@@ -149,8 +159,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredFields(this);
+#endif
 
                 return GetDeclaredFieldsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
             }
@@ -160,8 +172,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredMembers(this);
+#endif
 
                 return GetDeclaredMembersInternal(
                     this.DeclaredMethods,
@@ -177,8 +191,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredMethods(this);
+#endif
 
                 return GetDeclaredMethodsInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
             }
@@ -191,8 +207,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredNestedTypes(this);
+#endif
 
                 Debug.Assert(!(this is RuntimeNamedTypeInfo));
                 return Empty<TypeInfo>.Enumerable;
@@ -203,8 +221,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredProperties(this);
+#endif
 
                 return GetDeclaredPropertiesInternal(this.AnchoringTypeDefinitionForDeclaredMembers, null);
             }
@@ -229,8 +249,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_FullName(this);
+#endif
 
                 return AsType().FullName;
             }
@@ -266,8 +288,10 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override EventInfo GetDeclaredEvent(String name)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_GetDeclaredEvent(this, name);
+#endif
 
             if (name == null)
                 throw new ArgumentNullException("name");
@@ -278,8 +302,10 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override FieldInfo GetDeclaredField(String name)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_GetDeclaredField(this, name);
+#endif
 
             if (name == null)
                 throw new ArgumentNullException("name");
@@ -290,8 +316,10 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override MethodInfo GetDeclaredMethod(String name)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_GetDeclaredMethod(this, name);
+#endif
 
             if (name == null)
                 throw new ArgumentNullException("name");
@@ -302,8 +330,10 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override PropertyInfo GetDeclaredProperty(String name)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_GetDeclaredProperty(this, name);
+#endif
 
             if (name == null)
                 throw new ArgumentNullException("name");
@@ -484,8 +514,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_Namespace(this);
+#endif
 
                 return AsType().Namespace;
             }
@@ -531,40 +563,50 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type MakeArrayType()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_MakeArrayType(this);
+#endif
 
             return AsType().MakeArrayType();
         }
 
         public sealed override Type MakeArrayType(int rank)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_MakeArrayType(this, rank);
+#endif
 
             return AsType().MakeArrayType(rank);
         }
 
         public sealed override Type MakeByRefType()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_MakeByRefType(this);
+#endif
 
             return AsType().MakeByRefType();
         }
 
         public sealed override Type MakeGenericType(params Type[] typeArguments)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_MakeGenericType(this, typeArguments);
+#endif
 
             return AsType().MakeGenericType(typeArguments);
         }
 
         public sealed override Type MakePointerType()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.TypeInfo_MakePointerType(this);
+#endif
 
             return AsType().MakePointerType();
         }
@@ -581,8 +623,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_Name(this);
+#endif
 
                 return this.InternalName;
             }
@@ -825,9 +869,11 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 String debugName;
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     debugName = this.GetTraceString();  // If tracing on, call this.GetTraceString() which only gives you useful strings when metadata is available but doesn't pollute the ETW trace.
                 else
+#endif
                     debugName = this.ToString();
                 if (debugName == null)
                     debugName = "";

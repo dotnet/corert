@@ -70,8 +70,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodBase_CustomAttributes(this);
+#endif
 
                 return _common.CustomAttributes;
             }
@@ -103,8 +105,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodInfo_MakeGenericMethod(this, typeArguments);
+#endif
 
             if (typeArguments == null)
                 throw new ArgumentNullException("typeArguments");

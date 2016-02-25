@@ -67,8 +67,10 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.EventInfo_AddMethod(this);
+#endif
 
                 foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
                 {
@@ -94,8 +96,10 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.EventInfo_CustomAttributes(this);
+#endif
 
                 foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _event.CustomAttributes))
                     yield return cad;
@@ -112,8 +116,10 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.EventInfo_DeclaringType(this);
+#endif
 
                 return _contextTypeInfo.AsType();
             }
@@ -158,8 +164,10 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.EventInfo_Name(this);
+#endif
 
                 return _event.Name.GetString(_reader);
             }
@@ -169,8 +177,10 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.EventInfo_RaiseMethod(this);
+#endif
 
                 foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
                 {
@@ -196,8 +206,10 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.EventInfo_RemoveMethod(this);
+#endif
 
                 foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
                 {

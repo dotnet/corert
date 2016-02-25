@@ -48,8 +48,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override ParameterInfo[] GetParameters()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_GetParameters(this);
+#endif
 
             RuntimeParameterInfo[] runtimeParametersAndReturn = this.RuntimeParametersAndReturn;
             if (runtimeParametersAndReturn.Length == 1)
@@ -64,8 +66,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Object Invoke(Object obj, Object[] parameters)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
+#endif
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();
