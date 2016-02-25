@@ -28,9 +28,9 @@ restore()
 
 compiletest()
 {
-    echo "Compiling dir $1 with dotnet compile $2"
+    echo "Compiling dir $1 with dotnet build $2"
     rm -rf $1/bin $1/obj
-    ${CoreRT_CliBinDir}/dotnet compile --runtime ${__BuildRid} --native -c ${CoreRT_BuildType} --ilcpath ${CoreRT_ToolchainDir} $1 $2
+    ${CoreRT_CliBinDir}/dotnet build --runtime ${__BuildRid} --native -c ${CoreRT_BuildType} --ilcpath ${CoreRT_ToolchainDir} $1 $2
 }
 
 run_test_dir()
