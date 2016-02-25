@@ -39,6 +39,9 @@
     #define FireEtwGCTriggered(Reason, ClrInstanceID) 0
 
     #ifndef _INC_WINDOWS
+        typedef void* LPVOID;
+        typedef uint32_t UINT;
+        typedef void* PVOID;
         typedef uint64_t ULONGLONG;
         typedef uint32_t ULONG;
         typedef int64_t LONGLONG;
