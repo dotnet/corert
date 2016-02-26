@@ -15,6 +15,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
+    [McgIntrinsics]
     internal static class StartupCodeHelpers
     {
         internal static void Initialize()
@@ -78,6 +79,10 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
+        private static void Call(System.IntPtr pfn)
+        {
+        }
+
         private static unsafe void RunEagerClassConstructors()
         {
             int length = 0;
@@ -88,7 +93,7 @@ namespace Internal.Runtime.CompilerHelpers
 
             for (IntPtr* tab = (IntPtr*)cctorTableStart; tab < (IntPtr*)cctorTableEnd; tab++)
             {
-                CalliIntrinsics.Call<int>(*tab);
+                Call(*tab);
             }
         }
 

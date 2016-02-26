@@ -21,7 +21,6 @@ using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Internal.DeveloperExperience;
-using Internal.Runtime.CompilerHelpers;
 
 namespace System
 {
