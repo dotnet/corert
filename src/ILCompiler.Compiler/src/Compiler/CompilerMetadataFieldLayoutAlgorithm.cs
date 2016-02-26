@@ -13,17 +13,23 @@ namespace ILCompiler
     {
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {
-            // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
+            // Thread/GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
             layout.GcStatics.Size = context.Target.PointerSize;
+            layout.ThreadStatics.Size = context.Target.PointerSize;
         }
 
         protected override void FinalizeRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {
-            // If the size of GCStatics is equal to the size set in PrepareRuntimeSpecificStaticFieldLayout, we
-            // don't have any GC statics
+            // If the size of GC/Thread Statics is equal to the size set in PrepareRuntimeSpecificStaticFieldLayout, we
+            // don't have any GC/Thread statics
             if (layout.GcStatics.Size == context.Target.PointerSize)
             {
                 layout.GcStatics.Size = 0;
+            }
+
+            if (layout.ThreadStatics.Size == context.Target.PointerSize)
+            {
+                layout.ThreadStatics.Size = 0;
             }
         }
     }
