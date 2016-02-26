@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -17,13 +18,15 @@ namespace ILCompiler.DependencyAnalysis
 
     internal class InterfaceDispatchMapNode : ObjectNode, ISymbolNode
     {
-        uint _dispatchMapTableIndex;
+        const int IndexNotSet = int.MaxValue;
+
+        int _dispatchMapTableIndex;
         TypeDesc _type;
 
         public InterfaceDispatchMapNode(TypeDesc type)
         {
             _type = type;
-            _dispatchMapTableIndex = uint.MaxValue;
+            _dispatchMapTableIndex = IndexNotSet;
         }
         
         public override string GetName()
@@ -35,10 +38,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_dispatchMapTableIndex == uint.MaxValue)
-                    return "__InterfaceDispatchMap_";
-                else
-                    return "__InterfaceDispatchMap_" + _dispatchMapTableIndex;
+                if (_dispatchMapTableIndex == IndexNotSet)
+                {
+                    throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
+                }
+                    
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__InterfaceDispatchMap_" + _dispatchMapTableIndex;
             }
         }
         
@@ -68,16 +73,11 @@ namespace ILCompiler.DependencyAnalysis
                     return "data";
             }
         }
-
-        internal void SetDispatchMapTableIndex(uint index)
-        {
-            Debug.Assert(_dispatchMapTableIndex == uint.MaxValue);
-            _dispatchMapTableIndex = index;
-        }
-
+        
         protected override void OnMarked(NodeFactory context)
         {
-            _dispatchMapTableIndex = context.DispatchMapTable.AddDispatchMap(this);
+            context.DispatchMapTable.AddEmbeddedObject(context.InterfaceDispatchMapIndirection(_type));
+            _dispatchMapTableIndex = context.DispatchMapTable.IndexOfEmbeddedObject(context.InterfaceDispatchMapIndirection(_type));
             ((EETypeNode)context.ConstructedTypeSymbol(_type)).SetDispatchMapIndex(_dispatchMapTableIndex);
         }
 

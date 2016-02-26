@@ -82,6 +82,13 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
+        private static extern bool CreateDataSection(IntPtr objWriter, string sectionName, bool readOnly);
+        public void CreateDataSection(string sectionName, bool readOnly)
+        {
+            CreateDataSection(_nativeObjectWriter, sectionName, readOnly);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitAlignment(IntPtr objWriter, int byteAlignment);
         public void EmitAlignment(int byteAlignment)
         {
@@ -472,6 +479,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
+                objectWriter.CreateDataSection(ModuleHeaderNode.SectionName, true);
+
                 // Build file info map.
                 objectWriter.BuildFileInfoMap(nodes);
 

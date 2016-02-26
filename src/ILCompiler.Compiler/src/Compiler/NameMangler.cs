@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -365,7 +366,7 @@ namespace ILCompiler
                     }
                     else
                     {
-                        _compilationUnitPrefix = "";
+                        _compilationUnitPrefix = SanitizeName(Path.GetFileNameWithoutExtension(_compilation.Options.OutputFilePath));
                     }
                 }
                 return _compilationUnitPrefix;

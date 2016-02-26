@@ -31,14 +31,16 @@ namespace ILCompiler
         public TargetOS TargetOS;
         public TargetArchitecture TargetArchitecture;
 
+        public bool MultiFile;
+
         public bool IsCppCodeGen;
         public bool NoLineNumbers;
         public string DgmlLog;
         public bool FullLog;
         public bool Verbose;
     }
-
-    public partial class Compilation
+    
+    public partial class Compilation : ICompilationRootProvider
     {
         private readonly CompilerTypeSystemContext _typeSystemContext;
         private readonly CompilationOptions _options;
@@ -50,12 +52,13 @@ namespace ILCompiler
         private NameMangler _nameMangler = null;
 
         private ILCompiler.CppCodeGen.CppWriter _cppWriter = null;
+        private CompilationModuleGroup _compilationModuleGroup;
 
         public Compilation(CompilationOptions options)
         {
             _options = options;
 
-            _typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(options.TargetArchitecture, options.TargetOS));
+            _typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(options.TargetArchitecture, options.TargetOS), options.MultiFile);
             _typeSystemContext.InputFilePaths = options.InputFilePaths;
             _typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
 
@@ -64,6 +67,15 @@ namespace ILCompiler
             _nameMangler = new NameMangler(this);
 
             _typeInitManager = new TypeInitialization();
+
+            if (options.MultiFile)
+            {
+                _compilationModuleGroup = new MultiFileCompilationModuleGroup(_typeSystemContext, this);
+            }
+            else
+            {
+                _compilationModuleGroup = new SingleFileCompilationModuleGroup(_typeSystemContext, this);
+            }
         }
 
         public CompilerTypeSystemContext TypeSystemContext
@@ -135,7 +147,7 @@ namespace ILCompiler
         {
             NodeFactory.NameMangler = NameMangler;
 
-            _nodeFactory = new NodeFactory(_typeSystemContext, _typeInitManager, _options.IsCppCodeGen);
+            _nodeFactory = new NodeFactory(_typeSystemContext, _typeInitManager, _compilationModuleGroup, _options.IsCppCodeGen);
 
             // Choose which dependency graph implementation to use based on the amount of logging requested.
             if (_options.DgmlLog == null)
@@ -159,8 +171,8 @@ namespace ILCompiler
 
             _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            AddWellKnownTypes();
-            AddCompilationRoots();
+            _compilationModuleGroup.AddWellKnownTypes();
+            _compilationModuleGroup.AddCompilationRoots();
 
             if (_options.IsCppCodeGen)
             {
@@ -192,23 +204,25 @@ namespace ILCompiler
                 }
             }
         }
+        
+        #region ICompilationRootProvider implementation
 
-        private void AddCompilationRoots()
+        public void AddMethodCompilationRoot(MethodDesc method, string reason, string exportName = null)
         {
-            foreach (var inputFile in _typeSystemContext.InputFilePaths)
-            {
-                var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
+            var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
 
-                if (module.PEReader.PEHeaders.IsExe)
-                    AddCompilationRootsForMainMethod(module);
+            _dependencyGraph.AddRoot(methodEntryPoint, reason);
 
-                AddCompilationRootsForRuntimeExports(module);
-           }
-
-            AddCompilationRootsForRuntimeExports((EcmaModule)_typeSystemContext.SystemModule);
+            if (exportName != null)
+                _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
         }
 
-        private void AddCompilationRootsForMainMethod(EcmaModule module)
+        public void AddTypeCompilationRoot(TypeDesc type, string reason)
+        {
+            _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(type), reason);
+        }
+
+        public void AddMainMethodCompilationRoot(EcmaModule module)
         {
             if (StartupCodeMain != null)
                 throw new Exception("Multiple entrypoint modules");
@@ -219,33 +233,10 @@ namespace ILCompiler
             var owningType = module.GetGlobalModuleType();
             StartupCodeMain = new StartupCodeMainMethod(owningType, mainMethod);
 
-            AddCompilationRoot(StartupCodeMain, "Startup Code Main Method", "__managed__Main");
+            AddMethodCompilationRoot(StartupCodeMain, "Startup Code Main Method", "__managed__Main");
         }
 
-        private void AddCompilationRootsForRuntimeExports(EcmaModule module)
-        {
-            foreach (var type in module.GetAllTypes())
-            {
-                foreach (var method in type.GetMethods())
-                {
-                    if (method.HasCustomAttribute("System.Runtime", "RuntimeExportAttribute"))
-                    {
-                        string exportName = ((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeExportAttribute");
-                        AddCompilationRoot(method, "Runtime export", exportName);
-                    }
-                }
-            }
-        }
- 
-        private void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
-        {
-            var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
-
-            _dependencyGraph.AddRoot(methodEntryPoint, reason);
-
-            if (exportName != null)
-                _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
-        }
+        #endregion
 
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -297,18 +288,6 @@ namespace ILCompiler
             {
                 _cppWriter.CompileMethod(methodCodeNodeNeedingCode);
             }
-        }
-
-        private void AddWellKnownTypes()
-        {
-            var stringType = TypeSystemContext.GetWellKnownType(WellKnownType.String);
-
-            _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(stringType), "String type is always generated");
-
-            // TODO: We are rooting String[] so the bootstrap code can find the EEType for making the command-line args
-            // string array.  Once we generate the startup code in managed code, we should remove this
-            var arrayOfStringType = stringType.MakeArrayType();
-            _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(arrayOfStringType), "String[] type is always generated");
         }
 
         private Dictionary<MethodDesc, DelegateInfo> _delegateInfos = new Dictionary<MethodDesc, DelegateInfo>();

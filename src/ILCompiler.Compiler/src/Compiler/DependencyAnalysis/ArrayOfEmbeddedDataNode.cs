@@ -4,9 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Text;
-using System.Threading.Tasks;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -24,12 +23,30 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectAndOffsetSymbolNode _startSymbol;
         private ObjectAndOffsetSymbolNode _endSymbol;
         private IComparer<TEmbedded> _sorter;
+        private string _section;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter)
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter, string section = "data")
         {
             _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName);
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName);
             _sorter = nodeSorter;
+            _section = section;
+        }
+
+        internal ObjectAndOffsetSymbolNode StartSymbol
+        {
+            get
+            {
+                return _startSymbol;
+            }
+        }
+
+        internal ObjectAndOffsetSymbolNode EndSymbol
+        {
+            get
+            {
+                return _endSymbol;
+            }
         }
 
         public void AddEmbeddedObject(TEmbedded symbol)
@@ -38,6 +55,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 _nestedNodesList.Add(symbol);
             }
+        }
+
+        public int IndexOfEmbeddedObject(TEmbedded symbol)
+        {
+            Debug.Assert(_sorter == null);
+            return _nestedNodesList.IndexOf(symbol);
         }
 
         public override string GetName()
@@ -49,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "data";
+                return _section;
             }
         }
 

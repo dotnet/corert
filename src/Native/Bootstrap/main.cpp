@@ -254,56 +254,8 @@ extern "C" void RhReRegisterForFinalize()
     throw "RhReRegisterForFinalize";
 }
 
-extern "C" void * g_pDispatchMapTemporaryWorkaround;
-void * g_pDispatchMapTemporaryWorkaround;
-
-extern "C" void* __StringTableStart;
-extern "C" void* __StringTableEnd;
-extern "C" void* __EagerCctorStart;
-extern "C" void* __EagerCctorEnd;
-extern "C" void* GetModuleSection(int id, int* length)
-{
-    struct ModuleSectionSymbol
-    {
-        void* symbolId;
-        size_t length;
-    };
-
-    // TODO: emit this table from the compiler per module.
-    // The order should be kept in sync with ModuleSectionIds in StartupCodeHelpers.cs in CoreLib.
-    static ModuleSectionSymbol symbols[] = {
-#ifdef CPPCODEGEN
-        { System::String::__getMethodTable(), sizeof(void*) },
-        { nullptr, 0 },
-        { nullptr, 0 },
-#else
-        { &__EEType_System_Private_CoreLib_System_String, sizeof(void*) },
-        { &__StringTableStart, (size_t)((uint8_t*)&__StringTableEnd - (uint8_t*)&__StringTableStart) },
-        { &__EagerCctorStart, (size_t)((uint8_t*)&__EagerCctorEnd - (uint8_t*)&__EagerCctorStart) },
-#endif
-    };
-
-    *length = (int) symbols[id].length;
-    return symbols[id].symbolId;
-}
-
 #ifndef CPPCODEGEN
 SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
-
-extern "C" void* __InterfaceDispatchMapTable;
-extern "C" void* __GCStaticRegionStart;
-extern "C" void* __GCStaticRegionEnd;
-int __statics_fixup()
-{
-    for (void** currentBlock = &__GCStaticRegionStart; currentBlock < &__GCStaticRegionEnd; currentBlock++)
-    {
-        Object* gcBlock = RhNewObject((MethodTable*)*currentBlock);
-        // TODO: OOM handling
-        *currentBlock = RhpHandleAlloc(gcBlock, 2 /* Normal */);
-    }
-
-    return 0;
-}
 
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
@@ -315,10 +267,7 @@ int main(int argc, char* argv[])
 {
     if (__initialize_runtime() != 0) return -1;
     __register_module(&__module);
-    g_pDispatchMapTemporaryWorkaround = (void*)&__InterfaceDispatchMapTable;
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
-
-    if (__statics_fixup() != 0) return -1;
 
     int retval;
     try

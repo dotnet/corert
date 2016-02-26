@@ -673,6 +673,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
       <Link>Internal\Runtime\EEType.Constants.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs" >
+      <Link>Internal\Runtime\ModuleHeaders.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />

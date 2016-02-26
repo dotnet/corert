@@ -13,6 +13,8 @@ namespace ILCompiler.DependencyAnalysis
 {
     public abstract class EmbeddedObjectNode : DependencyNodeCore<NodeFactory>
     {
+        public const int InvalidOffset = 1;
+
         public int Offset
         {
             get;
