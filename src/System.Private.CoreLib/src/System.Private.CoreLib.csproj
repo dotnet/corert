@@ -490,11 +490,16 @@
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs" >
         <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
+      </Compile>      
+
+      <Compile Include="System\Environment.Windows.cs" />
+      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs" >
+        <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
       </Compile>
-      
+
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.UWP.cs" />
 
-      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Windows.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" >
         <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
       </Compile>
@@ -529,7 +534,7 @@
       <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs" >
           <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
       </Compile>
-</ItemGroup>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
     <Compile Include="System\Globalization\CompareInfo.Dummy.cs" />
@@ -544,6 +549,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs" >
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs" >
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" >
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs</Link>
