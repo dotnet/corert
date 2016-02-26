@@ -178,10 +178,10 @@
     <Compile Include="System\Globalization\HebrewCalendar.cs" />
     <Compile Include="System\Globalization\HebrewNumber.cs" />
     <Compile Include="System\Globalization\HijriCalendar.cs" />
-    <Compile Include="System\Globalization\HijriCalendar.Win32.cs" />
+    <Compile Include="System\Globalization\HijriCalendar.Windows.cs" />
     <Compile Include="System\Globalization\InternalGlobalizationHelper.cs" />
     <Compile Include="System\Globalization\JapaneseCalendar.cs" />
-    <Compile Include="System\Globalization\JapaneseCalendar.Win32.cs" />
+    <Compile Include="System\Globalization\JapaneseCalendar.Windows.cs" />
     <Compile Include="System\Globalization\KoreanCalendar.cs" />
     <Compile Include="System\Globalization\RegionInfo.cs" />
     <Compile Include="System\Globalization\FormatProvider.CultureAwareComparer.cs" />
@@ -465,13 +465,13 @@
   </ItemGroup>
   <!-- Windows is default build -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-      <Compile Include="System\Globalization\CultureInfo.Win32.cs" />
-      <Compile Include="System\Globalization\CompareInfo.Win32.cs" />
-      <Compile Include="System\Globalization\CultureData.Win32.cs" />
-      <Compile Include="System\Globalization\TextInfo.Win32.cs" />
-      <Compile Include="System\Globalization\CalendarData.Win32.cs" />
-      <Compile Include="System\DateTime.Win32.cs" />
-      <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Win32.cs" />
+      <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
+      <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
+      <Compile Include="System\Globalization\CultureData.Windows.cs" />
+      <Compile Include="System\Globalization\TextInfo.Windows.cs" />
+      <Compile Include="System\Globalization\CalendarData.Windows.cs" />
+      <Compile Include="System\DateTime.Windows.cs" />
+      <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
       <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs">
         <Link>Interop\Windows\Interop.BOOL.cs</Link>
       </Compile>
@@ -487,14 +487,14 @@
         <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
       </Compile>
 
-      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Win32.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs" >
         <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
       </Compile>
       
       <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.UWP.cs" />
 
-      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
+      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Windows.cs" />
       <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" >
         <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
       </Compile>
