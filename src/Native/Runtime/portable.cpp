@@ -156,7 +156,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     {
         // Perform the size computation using 64-bit integeres to detect overflow
         uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
-        size64 = ALIGN_UP(size64, sizeof(UIntNative));
+        size64 = (size64 + (sizeof(UIntNative)-1)) & ~(sizeof(UIntNative)-1);
 
         size = (size_t)size64;
         if (size != size64)
