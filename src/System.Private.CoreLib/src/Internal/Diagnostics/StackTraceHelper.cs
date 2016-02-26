@@ -50,6 +50,7 @@ namespace Internal.Diagnostics
 
         public static class SpecialIP
         {
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]            
             public static IntPtr EdiSeparator = (IntPtr)1;  // Marks a boundary where an ExceptionDispatchInfo rethrew an exception.
         }
     }

@@ -119,6 +119,7 @@ namespace System.Runtime.InteropServices
 
     public abstract class SafeHandle : IDisposable
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]  
         protected IntPtr handle;        // PUBLICLY DOCUMENTED handle field
 
         private int _state;            // Combined ref count and closed/disposed flags (so we can atomically modify them).
