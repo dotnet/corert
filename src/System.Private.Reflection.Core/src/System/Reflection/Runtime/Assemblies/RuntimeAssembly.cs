@@ -39,8 +39,10 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Assembly_CustomAttributes(this);
+#endif
 
                 foreach (QScopeDefinition scope in AllScopes)
                 {
@@ -61,8 +63,10 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Assembly_DefinedTypes(this);
+#endif
 
                 foreach (QScopeDefinition scope in AllScopes)
                 {
@@ -101,8 +105,10 @@ namespace System.Reflection.Runtime.Assemblies
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Assembly_FullName(this);
+#endif
 
                 return GetName().FullName;
             }
@@ -172,16 +178,20 @@ namespace System.Reflection.Runtime.Assemblies
 
         public sealed override AssemblyName GetName()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.Assembly_GetName(this);
+#endif
 
             return Scope.Handle.ToRuntimeAssemblyName(Scope.Reader).ToAssemblyName();
         }
 
         public sealed override Type GetType(String name, bool throwOnError, bool ignoreCase)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.Assembly_GetType(this, name);
+#endif
 
             if (name == null)
                 throw new ArgumentNullException();

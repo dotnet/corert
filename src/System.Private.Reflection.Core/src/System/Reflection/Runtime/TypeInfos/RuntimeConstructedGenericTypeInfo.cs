@@ -31,8 +31,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
+#endif
 
                 return GenericTypeDefinitionTypeInfo.CustomAttributes;
             }

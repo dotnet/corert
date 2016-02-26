@@ -10,7 +10,10 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime.Augments;
 using Internal.Reflection.Extensibility;
+
+#if ENABLE_REFLECTION_TRACE
 using Internal.Reflection.Tracing;
+#endif
 
 namespace Internal.Reflection.Core.NonPortable
 {
@@ -63,8 +66,10 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_AssemblyQualifiedName(this);
+#endif
 
                 String fullName = FullName;
                 if (fullName == null)   // Some Types (such as generic parameters) return null for FullName by design.
@@ -89,8 +94,10 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_FullName(this);
+#endif
 
                 Debug.Assert(!IsConstructedGenericType);
                 Debug.Assert(!IsGenericParameter);
@@ -172,8 +179,10 @@ namespace Internal.Reflection.Core.NonPortable
 
         public sealed override Type MakeArrayType()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.Type_MakeArrayType(this);
+#endif
 
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
@@ -183,8 +192,10 @@ namespace Internal.Reflection.Core.NonPortable
 
         public sealed override Type MakeArrayType(int rank)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.Type_MakeArrayType(this);
+#endif
 
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
@@ -198,8 +209,10 @@ namespace Internal.Reflection.Core.NonPortable
 
         public sealed override Type MakeGenericType(params Type[] instantiation)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.Type_MakeGenericType(this, instantiation);
+#endif
 
             if (instantiation == null)
                 throw new ArgumentNullException("instantiation");
@@ -235,8 +248,10 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_Name(this);
+#endif
 
                 RuntimeType rootCauseForFailure = null;
                 String name = this.InternalGetNameIfAvailable(ref rootCauseForFailure);
@@ -437,11 +452,13 @@ namespace Internal.Reflection.Core.NonPortable
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 String debugName;
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                 {
                     debugName = this.GetTraceString();  // If tracing on, call this.GetTraceString() which only gives you useful strings when metadata is available but doesn't pollute the ETW trace.
                 }
                 else
+#endif
                 {
                     debugName = this.ToString();
                 }
