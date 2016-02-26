@@ -92,6 +92,15 @@ if not exist "%__LogsDir%" md "%__LogsDir%"
 :: Check prerequisites
 echo Checking pre-requisites...
 echo.
+
+:: Validate that PowerShell is accessibile.
+for %%X in (powershell.exe) do (set __PSDir=%%~$PATH:X)
+if defined __PSDir goto EvaluatePS
+echo PowerShell is a prerequisite to build this repository.
+echo See: https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md
+exit /b 1
+
+:EvaluatePS
 :: Eval the output from probe-win1.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& ""%__SourceDir%\Native\probe-win.ps1"""') do %%a
 
