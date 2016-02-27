@@ -37,8 +37,10 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
 
+#ifndef RUNTIME_SERVICES_ONLY
 // Index for the fiber local storage of the attached thread pointer
 static UInt32 g_flsIndex = FLS_OUT_OF_INDEXES;
+#endif
 
 static DWORD g_dwPALCapabilities;
 
@@ -58,6 +60,7 @@ bool InitializeSystemInfo()
 
 extern bool PalQueryProcessorTopology();
 
+#ifndef RUNTIME_SERVICES_ONLY
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
 // Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
@@ -73,6 +76,7 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
         RuntimeThreadShutdown(lpFlsData);
     }
 }
+#endif
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
@@ -83,6 +87,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     if (!PalQueryProcessorTopology())
         return false;
 
+#ifndef RUNTIME_SERVICES_ONLY
     // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
     // callback is made without the OS loader lock
     g_flsIndex = FlsAlloc(FiberDetachCallback);
@@ -90,6 +95,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     {
         return false;
     }
+#endif
 
     return true;
 }
@@ -100,6 +106,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
     return (g_dwPALCapabilities & (DWORD)capability) == (DWORD)capability;
 }
 
+#ifndef RUNTIME_SERVICES_ONLY
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
 // It fails fast if a different thread was already registered with the current fiber
@@ -149,6 +156,7 @@ extern "C" bool PalDetachThread(void* thread)
     FlsSetValue(g_flsIndex, NULL);
     return true;
 }
+#endif // RUNTIME_SERVICES_ONLY
 
 #define SUPPRESS_WARNING_4127   \
     __pragma(warning(push))     \
@@ -1279,6 +1287,20 @@ void PalDebugBreak()
     __debugbreak();
 }
 
+#ifdef RUNTIME_SERVICES_ONLY
+// Functions called by the GC to obtain our cached values for number of logical processors and cache size.
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetLogicalCpuCount()
+{
+    return g_cLogicalCpus;
+}
+
+REDHAWK_PALEXPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize)
+{
+    return bTrueSize ? g_cbLargestOnDieCache
+        : g_cbLargestOnDieCacheAdjusted;
+}
+#endif // RUNTIME_SERVICES_ONLY
+
 REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, UIntNative size, UInt32 allocationType, UInt32 protect)
 {
     return VirtualAlloc(pAddress, size, allocationType, protect);
@@ -1302,6 +1324,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
     return InterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
+#ifndef RUNTIME_SERVICES_ONLY
 
 static LARGE_INTEGER performanceFrequency;
 
@@ -1730,3 +1753,5 @@ void CLRCriticalSection::Leave()
 {
     LeaveCriticalSection(&m_cs);
 }
+
+#endif // RUNTIME_SERVICES_ONLY
