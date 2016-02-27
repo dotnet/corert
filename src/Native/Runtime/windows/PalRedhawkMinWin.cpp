@@ -37,8 +37,6 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
 
-extern "C" UInt32 __stdcall NtGetCurrentProcessorNumber();
-
 // Index for the fiber local storage of the attached thread pointer
 static UInt32 g_flsIndex = FLS_OUT_OF_INDEXES;
 
@@ -150,11 +148,6 @@ extern "C" bool PalDetachThread(void* thread)
 
     FlsSetValue(g_flsIndex, NULL);
     return true;
-}
-
-REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
-{
-    return GetCurrentProcessorNumber();
 }
 
 #define SUPPRESS_WARNING_4127   \
@@ -1309,9 +1302,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
     return InterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
-typedef uint32_t (WINAPI *GetCurrentProcessorNumber_t)(void);
 
-static GetCurrentProcessorNumber_t g_GetCurrentProcessorNumber = NULL;
 static LARGE_INTEGER performanceFrequency;
 
 // Initialize the interface implementation
@@ -1320,11 +1311,6 @@ bool GCToOSInterface::Initialize()
     if (!::QueryPerformanceFrequency(&performanceFrequency))
     {
         return false;
-    }
-
-    if (PalHasCapability(GetCurrentProcessorNumberCapability))
-    {
-        g_GetCurrentProcessorNumber = PalGetCurrentProcessorNumber;
     }
 
     return true;
@@ -1385,13 +1371,13 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
     _ASSERTE(GCToOSInterface::CanGetCurrentProcessorNumber());
-    return g_GetCurrentProcessorNumber();
+    return GetCurrentProcessorNumber();
 }
 
 // Check if the OS supports getting current processor number
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
-    return g_GetCurrentProcessorNumber != NULL;
+    return true;
 }
 
 // Flush write buffers of processors that are executing threads of the current process

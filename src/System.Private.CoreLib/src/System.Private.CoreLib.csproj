@@ -41,9 +41,6 @@
     <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
-      <Link>Internal\Runtime\CompilerHelpers\StartupCode\NativeFormatReader.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\System\SR.Core.cs">
       <Link>Resources\Common</Link>
     </Compile>
@@ -53,6 +50,12 @@
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs" >
+      <Link>Internal\Runtime\ModuleHeaders.cs</Link>
+    </Compile>
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\LowLevelUTF8Encoding.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
@@ -109,6 +112,9 @@
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Internal.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs" >
+      <Link>TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs</Link>
+    </Compile>
     <Compile Include="Internal\Reflection\CoreRT\RuntimeType.cs" />
     <Compile Include="Internal\Reflection\CoreRT\ReflectionCoreNonPortable.cs" />
   </ItemGroup>
@@ -615,9 +621,6 @@
     <Compile Include="..\..\Common\src\System\__HResults.cs" >
       <Link>System\__HResults.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs" >
-      <Link>TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs</Link>
-    </Compile>
     <Compile Include="CoverageSupport.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
@@ -672,9 +675,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
       <Link>Internal\Runtime\EEType.Constants.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs" >
-      <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
