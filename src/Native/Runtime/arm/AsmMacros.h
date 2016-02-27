@@ -40,12 +40,12 @@ PTFF_R0_IS_GCREF        equ 0x00004000  ;; iff PTFF_SAVE_R0: set -> r0 is Object
 PTFF_R0_IS_BYREF        equ 0x00008000  ;; iff PTFF_SAVE_R0: set -> r0 is ByRef, clear -> r0 is Object or scalar
 
 
-ifndef CORERT; Hardcoded TLS offsets are not compatible with static linking
+#ifndef CORERT; Hardcoded TLS offsets are not compatible with static linking
 ;;
 ;; This constant, unfortunately, cannot be validated at build time.
 ;;
 OFFSETOF__TLS__tls_CurrentThread                    equ  0x10
-endif
+#endif
 
 ;;
 ;; Rename fields of nested structs
