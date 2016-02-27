@@ -555,7 +555,14 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pR14 = m_RegDisplay.pR14;
         m_funcletPtrs.pR15 = m_RegDisplay.pR15;
 
-        SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x28);
+        if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
+        {
+            SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x38);
+        }
+        else
+        {
+            SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x28);
+        }
 
         m_RegDisplay.pRbp = SP++;
         m_RegDisplay.pRdi = SP++;
@@ -565,11 +572,6 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_RegDisplay.pR13 = SP++;
         m_RegDisplay.pR14 = SP++;
         m_RegDisplay.pR15 = SP++;
-
-        // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two  
-        // thunks, but we don't need to know what they are here, so we just skip them.
-        if (EQUALS_CODE_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
-            SP += 2;
     }
 #elif defined(_TARGET_X86_)
     if (isFilterInvoke)
