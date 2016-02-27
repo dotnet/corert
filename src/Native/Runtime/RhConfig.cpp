@@ -70,7 +70,7 @@ UInt32 RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, UInt32 uiDefaultVa
 //if the file is not avaliable, or unreadable zero will always be returned
 //cchOuputBuffer is the maximum number of characters to write to outputBuffer
 //cchOutputBuffer must be a size >= CONFIG_VAL_MAXLEN + 1
-UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchBuff) TCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer)
+UInt32 RhConfig::GetIniVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOuputBuffer) TCHAR* outputBuffer, _In_ UInt32 cchOuputBuffer)
 {
     //the buffer needs to be big enough to read the value buffer + null terminator
     if (cchOuputBuffer < CONFIG_VAL_MAXLEN + 1)

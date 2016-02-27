@@ -20,6 +20,7 @@ namespace System.Runtime.CompilerServices
     {
         // Pointer to the code for the static class constructor method. This is initialized by the
         // binder/runtime.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]  
         public IntPtr cctorMethodAddress;
 
         // Initialization state of the class. This is initialized to 0. Every time managed code checks the
