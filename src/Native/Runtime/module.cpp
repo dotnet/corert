@@ -51,26 +51,6 @@ Module::Module(ModuleHeader *pModuleHeader) :
 {
 }
 
-Module * Module::Create(SimpleModuleHeader *pModuleHeader)
-{
-    NewHolder<Module> pNewModule = new (nothrow) Module(nullptr);
-    if (NULL == pNewModule)
-        return NULL;
-
-    pNewModule->m_pSimpleModuleHeader = pModuleHeader;
-    pNewModule->m_pEHTypeTable = nullptr;
-    pNewModule->m_pbDeltaShortcutTable = nullptr;
-    pNewModule->m_FrozenSegment = nullptr;
-    pNewModule->m_pStaticsGCInfo = dac_cast<PTR_StaticGcDesc>(pModuleHeader->m_pStaticsGcInfo);
-    pNewModule->m_pStaticsGCDataSection = dac_cast<PTR_UInt8>((UInt8*)pModuleHeader->m_pStaticsGcDataSection);
-    pNewModule->m_pThreadStaticsGCInfo = nullptr;
-
-    pNewModule->m_hOsModuleHandle = PalGetModuleHandleFromPointer(pModuleHeader);
-
-    pNewModule.SuppressRelease();
-    return pNewModule;
-}
-
 Module * Module::Create(ModuleHeader *pModuleHeader)
 {
     // There's only one module header version for now. If we ever need to change it in a breaking fashion this

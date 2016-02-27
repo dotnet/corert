@@ -80,28 +80,6 @@ struct ReversePInvokeFrame
 void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame);
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame);
 
-struct StaticGcDesc
-{
-    struct GCSeries
-    {
-        uint32_t m_size;
-        uint32_t m_startOffset;
-    };
-
-    uint32_t m_numSeries;
-    GCSeries m_series[0];
-};
-
-struct SimpleModuleHeader
-{
-    void* m_pStaticsGcDataSection;
-    StaticGcDesc* m_pStaticsGcInfo;
-    StaticGcDesc* m_pThreadStaticsGcInfo;
-};
-
-void __register_module(SimpleModuleHeader* pModule);
-
-// TODO: this might be wrong...
 typedef size_t UIntNative;
 
 inline bool IS_ALIGNED(UIntNative val, UIntNative alignment)

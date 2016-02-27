@@ -67,7 +67,6 @@ void __range_check_fail()
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
 extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
-extern "C" void RhpRegisterSimpleModule(SimpleModuleHeader* pModule);
 extern "C" void * RhpHandleAlloc(void * pObject, int handleType);
 
 #define DLL_PROCESS_ATTACH      1
@@ -101,11 +100,6 @@ void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame)
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
 {
     RhpReversePInvokeReturn(pRevFrame);
-}
-
-void __register_module(SimpleModuleHeader* pModule)
-{
-    RhpRegisterSimpleModule(pModule);
 }
 
 namespace System_Private_CoreLib { namespace System { 
@@ -255,7 +249,6 @@ extern "C" void RhReRegisterForFinalize()
 }
 
 #ifndef CPPCODEGEN
-SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
 
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
@@ -266,15 +259,15 @@ int main(int argc, char* argv[])
 #endif
 {
     if (__initialize_runtime() != 0) return -1;
-    __register_module(&__module);
+
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
 
     int retval;
     try
     {
-		// Managed apps don't see the first args argument (full path of executable) so skip it
-		assert(argc > 0);
-		retval = __managed__Main(argc, argv);
+        // Managed apps don't see the first args argument (full path of executable) so skip it
+        assert(argc > 0);
+        retval = __managed__Main(argc, argv);
     }
     catch (const char* &e)
     {

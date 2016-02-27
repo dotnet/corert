@@ -213,16 +213,6 @@ struct ModuleHeader
 typedef DPTR(ModuleHeader) PTR_ModuleHeader;
 #endif // !RHDUMP
 
-#if       !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL) // due to dependency on StaticGcDesc
-struct SimpleModuleHeader
-{
-    void* m_pStaticsGcDataSection;
-    StaticGcDesc* m_pStaticsGcInfo;
-    StaticGcDesc* m_pThreadStaticsGcInfo;
-};
-#endif // !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL)
-
-
 class GcPollInfo
 {
 public:

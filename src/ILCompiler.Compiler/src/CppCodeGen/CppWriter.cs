@@ -565,21 +565,6 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("} __gcStatics;");
 
                 sb.AppendLine();
-                // @TODO_SDM: do for real - note: the 'extra' series are just testing the init syntax for 0-length arrays, they should be removed
-                // TODO: preinitialized 0-length arrays are not supported in CLang
-                sb.Append("#ifdef _MSC_VER");
-                sb.AppendLine();
-                sb.Append("StaticGcDesc __gcStaticsDescs = { 1, { { sizeof(__gcStatics), 0 }, { 123, 456 }, { 789, 101112 } } };");
-                sb.AppendLine();
-                sb.Append("#else");
-                sb.AppendLine();
-                sb.Append("StaticGcDesc __gcStaticsDescs;");
-                sb.AppendLine();
-                sb.Append("#endif");
-
-                sb.AppendLine();
-                sb.Append("SimpleModuleHeader __module = { &__gcStatics, &__gcStaticsDescs };");
-
 
                 _statics = null;
                 _gcStatics = null;
@@ -1247,8 +1232,6 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("return -1;");
                 sb.Exdent();
                 sb.AppendEmptyLine();
-                sb.AppendLine();
-                sb.Append("__register_module(&__module);");
                 sb.AppendLine();
                 sb.Append("ReversePInvokeFrame frame;");
                 sb.AppendLine();
