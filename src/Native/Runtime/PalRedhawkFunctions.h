@@ -93,14 +93,14 @@ inline UInt32 PalGetCurrentThreadId()
 }
 
 #ifdef UNICODE
-extern "C" UInt32 __stdcall GetEnvironmentVariableW(LPCWSTR, LPWSTR, UInt32);
-inline UInt32 PalGetEnvironmentVariable(LPCWSTR arg1, LPWSTR arg2, UInt32 arg3)
+extern "C" UInt32 __stdcall GetEnvironmentVariableW(__in_z_opt LPCWSTR, __out_z_opt LPWSTR, UInt32);
+inline UInt32 PalGetEnvironmentVariable(__in_z_opt LPCWSTR arg1, __out_z_opt LPWSTR arg2, UInt32 arg3)
 {
     return GetEnvironmentVariableW(arg1, arg2, arg3);
 }
 #else
-extern "C" UInt32 __stdcall GetEnvironmentVariableA(LPCSTR, LPSTR, UInt32);
-inline UInt32 PalGetEnvironmentVariable(LPCSTR arg1, LPSTR arg2, UInt32 arg3)
+extern "C" UInt32 __stdcall GetEnvironmentVariableA(__in_z_opt LPCSTR, __out_z_opt LPSTR, UInt32);
+inline UInt32 PalGetEnvironmentVariable(__in_z_opt LPCSTR arg1, __out_z_opt LPSTR arg2, UInt32 arg3)
 {
     return GetEnvironmentVariableA(arg1, arg2, arg3);
 }

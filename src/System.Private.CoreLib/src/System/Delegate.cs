@@ -31,7 +31,9 @@ namespace System
 
         internal protected object m_firstParameter;
         internal protected object m_helperObject;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]  
         internal protected IntPtr m_extraFunctionPointerOrData;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]  
         internal protected IntPtr m_functionPointer;
 
         [ThreadStatic]

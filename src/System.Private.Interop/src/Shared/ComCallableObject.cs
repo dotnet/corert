@@ -106,14 +106,14 @@ namespace System.Runtime.InteropServices
 
             if (vt == default(IntPtr))
             {
-                // McgTypeInfo.RawValue points to an individual McgInterfaceData static field which should have a symbol in pdb file
-
 #if ENABLE_WINRT
-                throw new MissingInteropDataException(McgTypeHelpers.GetDiagnosticMessageForMissingType(managedCCW.TargetObject.GetType().TypeHandle));
+                Debug.Assert(!typeInfo.IsNull);
+                bool isWinRT = false;
+                string typeName = typeInfo.ContainingModule.GetTypeName(typeInfo.ItfType, ref isWinRT);
+                throw new MissingInteropDataException(String.Format(SR.ComTypeMarshalling_MissingInteropData, typeName));
 #else
                 Environment.FailFast("CCW discarded.");
 #endif
-
             }
 
             pCcw->m_pVtable = vt.ToPointer();
