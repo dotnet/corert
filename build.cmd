@@ -226,13 +226,13 @@ if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
     "%__DotNetCliPath%\bin\dotnet.exe" restore --quiet --runtime "win7-x64" --source "https://dotnet.myget.org/F/dotnet-core" "%__ProjectDir%\src\ILCompiler\repro"
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
-    "%__DotNetCliPath%\bin\dotnet.exe" compile --native --ilcpath "%__BinDir%\.nuget\publish1" "%__ProjectDir%\src\ILCompiler\repro" -c %__BuildType%
+    "%__DotNetCliPath%\bin\dotnet.exe" build --native --ilcpath "%__BinDir%\.nuget\publish1" "%__ProjectDir%\src\ILCompiler\repro" -c %__BuildType%
     copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
     set __AdditionalCompilerFlags=
     if /i "%__BuildType%"=="debug" (
         set __AdditionalCompilerFlags=--cppcompilerflags /MTd
     )
-    "%__DotNetCliPath%\bin\dotnet.exe" compile --native --cpp --ilcpath "%__BinDir%\.nuget\publish1" "%__ProjectDir%\src\ILCompiler\repro" -c %__BuildType% !__AdditionalCompilerFlags!
+    "%__DotNetCliPath%\bin\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\.nuget\publish1" "%__ProjectDir%\src\ILCompiler\repro" -c %__BuildType% !__AdditionalCompilerFlags!
     copy /y "src\ILCompiler\repro\obj\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
 )
 :AfterVsDevGenerateRespFiles

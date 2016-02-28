@@ -144,7 +144,7 @@ goto :eof
     )
     REM TODO: Add AppDepSDK argument after CLI build picks up: PR dotnet/cli #336
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
-    "%CoreRT_CliDir%\dotnet" compile --native --runtime "win7-x64" --ilcpath "%CoreRT_ToolchainDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType% %additionalCompilerFlags%
+    "%CoreRT_CliDir%\dotnet" build --native --runtime "win7-x64" --ilcpath "%CoreRT_ToolchainDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType% %additionalCompilerFlags%
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%
