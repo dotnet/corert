@@ -46,7 +46,6 @@ extern "C" Object * __castclass(void * obj, MethodTable * pMT);
 extern "C" Object * __isinst(void * obj, MethodTable * pMT);
 extern "C" void __declspec(noreturn) __throw_exception(void * pEx);
 
-Object * __allocate_string(int32_t len);
 Object * __load_string_literal(const char * string);
 
 extern "C" void __range_check_fail();

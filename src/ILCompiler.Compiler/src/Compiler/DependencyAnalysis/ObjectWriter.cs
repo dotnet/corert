@@ -479,7 +479,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
-                objectWriter.CreateDataSection(ModuleHeaderNode.SectionName, true);
+                objectWriter.CreateDataSection(ModulesSectionNode.SectionName, true);
 
                 // Build file info map.
                 objectWriter.BuildFileInfoMap(nodes);

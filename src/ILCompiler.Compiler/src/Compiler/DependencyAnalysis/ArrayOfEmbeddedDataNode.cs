@@ -110,6 +110,11 @@ namespace ILCompiler.DependencyAnalysis
             ObjectData objData = builder.ToObjectData();
             return objData;
         }
+
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            return _nestedNodesList.Count == 0;
+        }
     }
 
     // TODO: delete this once we review each use of this and put it on the generic plan with the

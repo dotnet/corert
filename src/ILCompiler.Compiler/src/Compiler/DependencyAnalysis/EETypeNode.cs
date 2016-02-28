@@ -158,7 +158,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputVirtualSlotAndInterfaceCount(factory, ref objData);
 
             objData.EmitInt(_type.GetHashCode());
-            objData.EmitPointerReloc(factory.ModuleIndirectionCell);
+            objData.EmitPointerReloc(factory.ModuleManagerIndirection);
 
             if (_constructed)
             {

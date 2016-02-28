@@ -11,37 +11,47 @@
 #include "ModuleManager.h"
 
 /* static */
-ModuleManager * ModuleManager::Create(void * pHeaderStart, void * pHeaderEnd)
+ModuleManager * ModuleManager::Create(void * pModuleHeader)
 {
-    ASSERT(pHeaderStart < pHeaderEnd);
-    if (pHeaderStart >= pHeaderEnd)
+    ReadyToRunHeader * pReadyToRunHeader = (ReadyToRunHeader *)pModuleHeader;
+
+    // Sanity check the signature magic
+    ASSERT(pReadyToRunHeader->Signature == ReadyToRunHeaderConstants::Signature);
+    if (pReadyToRunHeader->Signature != ReadyToRunHeaderConstants::Signature)
         return nullptr;
 
-    NewHolder<ModuleManager> pNewModule = new (nothrow) ModuleManager(pHeaderStart, pHeaderEnd);
-    if (nullptr == pNewModule)
+    // Only the current major version is supported currently
+    ASSERT(pReadyToRunHeader->MajorVersion == ReadyToRunHeaderConstants::CurrentMajorVersion);
+    if (pReadyToRunHeader->MajorVersion != ReadyToRunHeaderConstants::CurrentMajorVersion)
         return nullptr;
 
-    pNewModule.SuppressRelease();
-    return pNewModule;
+    return new (nothrow) ModuleManager(pReadyToRunHeader);
 }
 
-void * ModuleManager::GetModuleSection(ModuleHeaderSection sectionId, int * length)
+ModuleManager::ModuleManager(ReadyToRunHeader * pHeader)
+    : m_pHeader(pHeader), m_pDispatchMapTable(nullptr)
 {
-    void * pSectionStart = nullptr;
-    ModuleInfoRow * pCurrent = (ModuleInfoRow *)m_pHeaderStart;
+}
+
+void * ModuleManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)
+{
+    ModuleInfoRow * pModuleInfoRows = (ModuleInfoRow *)(m_pHeader + 1);
+
+    ASSERT(m_pHeader->EntrySize == sizeof(ModuleInfoRow));
 
     // TODO: Binary search
-    for (; pCurrent < m_pHeaderEnd; pCurrent ++)
+    for (int i = 0; i < m_pHeader->NumberOfSections; i++)
     {
+        ModuleInfoRow * pCurrent = pModuleInfoRows + i;
         if ((int32_t)sectionId == pCurrent->SectionId)
         {
-            pSectionStart = pCurrent->Start;
-            *length = pCurrent->GetLength();;
+            *length = pCurrent->GetLength();
+            return pCurrent->Start;
         }
-         
     }
 
-    return pSectionStart;
+    *length = 0;
+    return nullptr;
 }
 
 DispatchMap** ModuleManager::GetDispatchMapLookupTable()
@@ -49,8 +59,8 @@ DispatchMap** ModuleManager::GetDispatchMapLookupTable()
     if (m_pDispatchMapTable == nullptr)
     {
         int length = 0;
-        DispatchMap ** pNewDispatchMapTable = (DispatchMap **)GetModuleSection(ModuleHeaderSection::InterfaceDispatchTable, &length);
-        PalInterlockedCompareExchangePointer((void **)&m_pDispatchMapTable, pNewDispatchMapTable, nullptr);
+        DispatchMap ** pDispatchMapTable = (DispatchMap **)GetModuleSection(ReadyToRunSectionType::InterfaceDispatchTable, &length);
+        m_pDispatchMapTable = pDispatchMapTable;
     }
 
     return m_pDispatchMapTable;

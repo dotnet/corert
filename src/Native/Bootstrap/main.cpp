@@ -10,6 +10,35 @@
 
 #include <stdlib.h> 
 
+#ifndef CPPCODEGEN
+
+#if defined(_MSC_VER)
+
+#pragma section(".modules$A", read)
+#pragma section(".modules$Z", read)
+extern "C" __declspec(allocate(".modules$A")) void * __modules_a[];
+extern "C" __declspec(allocate(".modules$Z")) void * __modules_z[];
+
+__declspec(allocate(".modules$A")) void * __modules_a[] = { nullptr };
+__declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
+#pragma comment(linker, "/merge:.modules=.rdata")
+
+#else
+// TODO: Once the dotnet compiler is modified to configure the linker to merge sections
+// on OSX / Linux, store these externs in the .modules section and remove work-around
+// in ModuleHeaderNode.cs.
+//extern "C" __attribute((section ("__DATA,.modules$A"))) void * __modules_a[];
+//extern "C" __attribute((section ("__DATA,.modules$Z"))) void * __modules_z[];
+//__attribute((section ("__DATA,.modules$Z"))) void * __modules_a[] = { nullptr };
+//__attribute((section ("__DATA,.modules$Z"))) void * __modules_z[] = { nullptr };
+
+extern "C" void * __modules_a[];
+extern "C" void * __modules_z[];
+
+#endif // _MSC_VER
+
+#endif // CPPCODEGEN
+
 #pragma warning(disable:4297)
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
@@ -77,13 +106,13 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
 int __initialize_runtime()
 {
     if (!PalInit())
-    {
-        return 1;
-    }
+        return -1;
 
-    RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL);
+    if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
+        return -1;
 
-    RhpEnableConservativeStackReporting();
+    if (!RhpEnableConservativeStackReporting())
+        return -1;
 
     return 0;
 }
@@ -135,17 +164,6 @@ namespace System_Private_CoreLib { namespace System {
 
 using namespace System_Private_CoreLib;
 
-extern "C" void* __EEType_System_Private_CoreLib_System_String;
-
-Object * __allocate_string(int32_t len)
-{
-#ifdef CPPCODEGEN
-    return RhNewArray(System::String::__getMethodTable(), len);
-#else
-    return RhNewArray((MethodTable*)__EEType_System_Private_CoreLib_System_String, len);
-#endif
-}
-
 void PrintStringObject(System::String *pStringToPrint)
 {
     // Get the number of characters in managed string (stored as UTF16)
@@ -183,6 +201,7 @@ extern "C" void __fail_fast()
     throw "__fail_fast";
 }
 
+#ifdef CPPCODEGEN
 Object * __load_string_literal(const char * string)
 {
     // TODO: Cache/intern string literals
@@ -190,23 +209,14 @@ Object * __load_string_literal(const char * string)
 
     size_t len = strlen(string);
 
-    Object * pString = __allocate_string((int32_t)len);
+    Object * pString = RhNewArray(System::String::__getMethodTable(), (int32_t)len);
 
     uint16_t * p = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     for (size_t i = 0; i < len; i++)
         p[i] = string[i];
     return pString;
 }
-
-extern "C" void RhGetCurrentThreadStackTrace()
-{
-    throw "RhGetCurrentThreadStackTrace";
-}
-
-extern "C" void RhCollect()
-{
-    throw "RhCollect";
-}
+#endif // CPPCODEGEN
 
 #if !defined(_WIN32) || defined(CPPCODEGEN)
 extern "C" void RhpThrowEx(void * pEx)
@@ -231,6 +241,14 @@ extern "C" void RhpCallFinallyFunclet()
 }
 #endif //. !_WIN32 || CPPCODEGEN
 
+extern "C" void RhGetCurrentThreadStackTrace()
+{
+    throw "RhGetCurrentThreadStackTrace";
+}
+extern "C" void RhCollect()
+{
+    throw "RhCollect";
+}
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
@@ -250,6 +268,8 @@ extern "C" void RhReRegisterForFinalize()
 
 #ifndef CPPCODEGEN
 
+extern "C" void InitializeModules(void ** modules, int count);
+
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 int wmain(int argc, wchar_t* argv[])
@@ -261,6 +281,8 @@ int main(int argc, char* argv[])
     if (__initialize_runtime() != 0) return -1;
 
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
+
+    InitializeModules(__modules_a, (int)((__modules_z - __modules_a))); 
 
     int retval;
     try

@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ModuleHeaderNode : ObjectNode, ISymbolNode
+    public class ModulesSectionNode : ObjectNode, ISymbolNode
     {
+        // Each compilation unit produces one module. When all compilation units are linked
+        // together in multifile mode, the runtime needs to get list of modules present
+        // in the final binary. This list is created via a special .modules section that
+        // contains list of pointers to all module headers.
+
         public static readonly string SectionName = ".modules$I";
 
         public override string Section
@@ -63,8 +64,7 @@ namespace ILCompiler.DependencyAnalysis
                 objData.DefinedSymbols.Add(startNode);
             }
 
-            objData.EmitPointerReloc(factory.ModuleGlobalData.StartSymbol);
-            objData.EmitPointerReloc(factory.ModuleGlobalData.EndSymbol);
+            objData.EmitPointerReloc(factory.ReadyToRunHeader);
 
             if (factory.Target.OperatingSystem != Internal.TypeSystem.TargetOS.Windows)
             {
