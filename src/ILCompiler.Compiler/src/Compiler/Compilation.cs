@@ -58,7 +58,7 @@ namespace ILCompiler
         {
             _options = options;
 
-            _typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(options.TargetArchitecture, options.TargetOS), options.MultiFile);
+            _typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(options.TargetArchitecture, options.TargetOS));
             _typeSystemContext.InputFilePaths = options.InputFilePaths;
             _typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
 
