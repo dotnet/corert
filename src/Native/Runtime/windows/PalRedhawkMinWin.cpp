@@ -1371,7 +1371,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
     _ASSERTE(GCToOSInterface::CanGetCurrentProcessorNumber());
-    return GetCurrentProcessorNumber();
+    return ::GetCurrentProcessorNumber();
 }
 
 // Check if the OS supports getting current processor number
