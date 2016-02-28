@@ -21,6 +21,7 @@ internal static partial class Interop
             internal ushort wMilliseconds;
         }
 
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct TIME_DYNAMIC_ZONE_INFORMATION
         {
             internal int Bias;
@@ -34,6 +35,7 @@ internal static partial class Interop
             internal byte DynamicDaylightTimeDisabled;
         }
 
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct TIME_ZONE_INFORMATION
         {
             internal int Bias;
