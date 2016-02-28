@@ -16,7 +16,6 @@ namespace ILCompiler.DependencyAnalysis
         public InterfaceDispatchMapIndirectionNode(TypeDesc type)
         {
             _type = type;
-            base.Offset = InvalidOffset;
         }
 
         public override bool StaticDependenciesAreComputed
@@ -31,20 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (Offset == InvalidOffset)
-                {
-                    throw new InvalidOperationException("MangledName called before Offset was initialized.");
-                }
-                
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__DispatchMap_Pointer_" + base.Offset.ToString(CultureInfo.InvariantCulture);
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return Offset;
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__DispatchMap_Pointer_" + Offset.ToString(CultureInfo.InvariantCulture);
             }
         }
 
