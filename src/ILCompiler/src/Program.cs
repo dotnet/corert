@@ -83,7 +83,7 @@ namespace ILCompiler
                 // HandleHelp writes to error, fails fast with crash dialog and lacks custom formatting.
                 syntax.HandleHelp = false;
                 syntax.HandleErrors = true;
-            
+
                 syntax.DefineOption("h|help", ref _help, "Help message for ILC");
                 syntax.DefineOptionList("r|reference", ref referenceFiles, "Reference file(s) for compilation");
                 syntax.DefineOption("o|out", ref _options.OutputFilePath, "Output file path");
@@ -100,7 +100,7 @@ namespace ILCompiler
                 Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
 
             foreach (var reference in referenceFiles)
-                Helpers.AppendExpandedPaths(_referenceFilePaths, reference, true);
+                Helpers.AppendExpandedPaths(_referenceFilePaths, reference, false);
 
             return argSyntax;
         }
