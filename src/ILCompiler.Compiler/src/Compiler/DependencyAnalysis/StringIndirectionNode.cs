@@ -15,7 +15,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public StringIndirectionNode(string data)
         {
-            base.Offset = InvalidOffset;
             _data = data;
         }
 
@@ -31,20 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (base.Offset == InvalidOffset)
-                {
-                    throw new InvalidOperationException("MangledName called before Offset was initialized.");
-                }
-
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + base.Offset.ToString(CultureInfo.InvariantCulture);
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return base.Offset;
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + Offset.ToString(CultureInfo.InvariantCulture);
             }
         }
 
