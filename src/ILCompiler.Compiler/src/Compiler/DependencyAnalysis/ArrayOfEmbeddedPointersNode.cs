@@ -17,6 +17,12 @@ namespace ILCompiler.DependencyAnalysis
         private int _nextId;
         private string _startSymbolMangledName;
 
+        /// <summary>
+        /// Provides a callback mechanism for notification when an EmbeddedPointerIndirectionNode is marked and added to the
+        /// parent ArrayOfEmbeddedPointersNode's internal list
+        /// </summary>
+        public delegate void OnMarkedDelegate(EmbeddedPointerIndirectionNode<TTarget> embeddedObject);
+
         public ArrayOfEmbeddedPointersNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TTarget> nodeSorter)
             : base(
                   startSymbolMangledName,
@@ -33,8 +39,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public EmbeddedObjectNode NewNodeWithSymbol(TTarget target)
         {
-            int id = System.Threading.Interlocked.Increment(ref _nextId);
-            return new EmbeddedPointerIndirectionWithSymbolNode(this, target, id);
+            return new EmbeddedPointerIndirectionWithSymbolNode(this, target, GetNextId());
+        }
+
+        public EmbeddedObjectNode NewNodeWithSymbol(TTarget target, OnMarkedDelegate callback)
+        {
+            return new EmbeddedPointerIndirectionWithSymbolAndOnMarkedCallbackNode(this, target, GetNextId(), callback);
+        }
+
+        int GetNextId()
+        {
+            return System.Threading.Interlocked.Increment(ref _nextId);
         }
 
         private class PointerIndirectionNodeComparer : IComparer<EmbeddedPointerIndirectionNode<TTarget>>
@@ -100,6 +115,23 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return String.Concat(_parentNode._startSymbolMangledName, "_", _id.ToStringInvariant());
                 }
+            }
+        }
+        
+        private class EmbeddedPointerIndirectionWithSymbolAndOnMarkedCallbackNode : EmbeddedPointerIndirectionWithSymbolNode
+        {
+            private OnMarkedDelegate _onMarkedCallback;
+
+            public EmbeddedPointerIndirectionWithSymbolAndOnMarkedCallbackNode(ArrayOfEmbeddedPointersNode<TTarget> futureParent, TTarget target, int id, OnMarkedDelegate onMarkedCallback)
+                : base(futureParent, target, id)
+            {
+                _onMarkedCallback = onMarkedCallback;
+            }
+
+            protected override void OnMarked(NodeFactory context)
+            {
+                base.OnMarked(context);
+                _onMarkedCallback(this);
             }
         }
     }
