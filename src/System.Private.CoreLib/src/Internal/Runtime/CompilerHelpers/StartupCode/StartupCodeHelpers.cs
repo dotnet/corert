@@ -3,15 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using System.Security;
 using Internal.NativeFormat;
-using Internal.Runtime;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Text;
 using System;
 using System.Runtime;
-using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -20,9 +17,10 @@ namespace Internal.Runtime.CompilerHelpers
     [McgIntrinsics]
     internal static class StartupCodeHelpers
     {
-        internal static void Initialize()
+        [RuntimeExport("InitializeModules")] // TODO: Change to NativeCallable
+        internal static void InitializeModules(IntPtr moduleHeaders, int count)
         {
-            IntPtr[] modules = CreateModuleManagers();
+            IntPtr[] modules = CreateModuleManagers(moduleHeaders, count);
 
             foreach (var moduleManager in modules)
             {
@@ -35,10 +33,6 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 InitializeEagerClassConstructorsForModule(moduleManager);
             }
-        }
-
-        internal static void Shutdown()
-        {
         }
 
         internal static unsafe void InitializeCommandLineArgsW(int argc, char** argv)
@@ -63,43 +57,26 @@ namespace Internal.Runtime.CompilerHelpers
             Environment.SetCommandLineArgs(args);
         }
 
-        private static unsafe IntPtr[] CreateModuleManagers()
+        private static unsafe IntPtr[] CreateModuleManagers(IntPtr moduleHeaders, int count)
         {
-            IntPtr* modulesSectionStart;
-            IntPtr* modulesSectionEnd;
-            GetModulesSection(out modulesSectionStart, out modulesSectionEnd);
-
             // Count the number of modules so we can allocate an array to hold the ModuleManager objects.
             // At this stage of startup, complex collection classes will not work.
             int moduleCount = 0;
-            for (IntPtr* current = modulesSectionStart; current < modulesSectionEnd; current++)
+            for (int i = 0; i < count; i++)
             {
-                IntPtr* moduleHeaderStart = (IntPtr*)*current;
-
-                if (moduleHeaderStart != null)
-                {
+                // The null pointers are sentinel values and padding inserted as side-effect of
+                // the section merging. (The global static constructors section used by C++ has 
+                // them too.)
+                if (((IntPtr *)moduleHeaders)[i] != IntPtr.Zero)
                     moduleCount++;
-                    current++;
-                }
             }
 
             IntPtr[] modules = new IntPtr[moduleCount];
-            int i = 0;
-            for (IntPtr* current = modulesSectionStart; current < modulesSectionEnd; current++)
+            int moduleIndex = 0;
+            for (int i = 0; i < count; i++)
             {
-                IntPtr* moduleHeaderStart = (IntPtr*)*current;
-
-                if (moduleHeaderStart != null)
-                {
-                    // Module headers are always emitted in pairs
-                    Contract.Assert(current + 1 < modulesSectionEnd);
-
-                    IntPtr* moduleHeaderEnd = (IntPtr*)*(current + 1);
-                    modules[i] = CreateModuleManager((IntPtr)moduleHeaderStart, (IntPtr)moduleHeaderEnd);
-                    
-                    current++;
-                    i++;
-                }
+                if (((IntPtr *)moduleHeaders)[i] != IntPtr.Zero)
+                    modules[moduleIndex++] = CreateModuleManager(((IntPtr *)moduleHeaders)[i]);
             }
 
             return modules;
@@ -115,11 +92,11 @@ namespace Internal.Runtime.CompilerHelpers
             // Configure the module indirection cell with the newly created ModuleManager. This allows EETypes to find
             // their interface dispatch map tables.
             int length;
-            IntPtr* section = (IntPtr*)GetModuleSection(moduleManager, ModuleHeaderSection.ModuleIndirectionCell, out length);
+            IntPtr* section = (IntPtr*)GetModuleSection(moduleManager, ReadyToRunSectionType.ModuleManagerIndirection, out length);
             *section = moduleManager;
 
             // Initialize strings if any are present
-            IntPtr stringSection = GetModuleSection(moduleManager, ModuleHeaderSection.StringTable, out length);
+            IntPtr stringSection = GetModuleSection(moduleManager, ReadyToRunSectionType.StringTable, out length);
             if (stringSection != IntPtr.Zero)
             {
                 Contract.Assert(length % IntPtr.Size == 0);
@@ -127,7 +104,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             // Initialize statics if any are present
-            IntPtr staticsSection = GetModuleSection(moduleManager, ModuleHeaderSection.GCStaticRegion, out length);
+            IntPtr staticsSection = GetModuleSection(moduleManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
                 Contract.Assert(length % IntPtr.Size == 0);
@@ -140,7 +117,7 @@ namespace Internal.Runtime.CompilerHelpers
             int length;
 
             // Run eager class constructors if any are present
-            IntPtr eagerClassConstructorSection = GetModuleSection(moduleManager, ModuleHeaderSection.EagerCctor, out length);
+            IntPtr eagerClassConstructorSection = GetModuleSection(moduleManager, ReadyToRunSectionType.EagerCctor, out length);
             if (eagerClassConstructorSection != IntPtr.Zero)
             {
                 Contract.Assert(length % IntPtr.Size == 0);
@@ -200,20 +177,13 @@ namespace Internal.Runtime.CompilerHelpers
             for (; str[len] != 0; len++) { }
             return len;
         }
-        
+
         [RuntimeImport(".", "RhpGetModuleSection")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical] // required to match contract
-        private static extern IntPtr GetModuleSection(IntPtr module, ModuleHeaderSection section, out int length);
+        private static extern IntPtr GetModuleSection(IntPtr module, ReadyToRunSectionType section, out int length);
 
         [RuntimeImport(".", "RhpCreateModuleManager")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical] // required to match contract
-        private static unsafe extern IntPtr CreateModuleManager(IntPtr headerStart, IntPtr headerEnd);
-
-        [RuntimeImport(".", "RhpGetModulesSection")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical] // required to match contract
-        internal static unsafe extern void GetModulesSection(out IntPtr* start, out IntPtr* end);
+        private static unsafe extern IntPtr CreateModuleManager(IntPtr moduleHeader);
     }
 }

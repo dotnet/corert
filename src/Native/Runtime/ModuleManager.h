@@ -8,16 +8,15 @@ class DispatchMap;
 
 class ModuleManager
 {
-    void *                      m_pHeaderStart;
-    void *                      m_pHeaderEnd;
+    ReadyToRunHeader *          m_pHeader;
 
     DispatchMap**               m_pDispatchMapTable;
 
-    ModuleManager(void * pHeaderStart, void * pHeaderEnd) : m_pHeaderStart(pHeaderStart), m_pHeaderEnd(pHeaderEnd), m_pDispatchMapTable(nullptr) {}
+    ModuleManager(ReadyToRunHeader * pHeader);
 
 public:
-    static ModuleManager * Create(void * pHeaderStart, void * pHeaderEnd);
-    void * GetModuleSection(ModuleHeaderSection sectionId, int * length);
+    static ModuleManager * Create(void * pModuleHeader);
+    void * GetModuleSection(ReadyToRunSectionType sectionId, int * length);
     DispatchMap ** GetDispatchMapLookupTable();
 
 private:

@@ -8,13 +8,13 @@ using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class ModuleIndirectionCell : ObjectNode, ISymbolNode
+    class ModuleManagerIndirectionNode : ObjectNode, ISymbolNode
     {
         public string MangledName
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__module_indirection_cell";
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__module_manager_indirection";
             }
         }
 

@@ -491,43 +491,41 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler.CompilationUnitPrefix + "__EagerCctorEnd",
             new EagerConstructorComparer());
 
-        public ArrayOfEmbeddedDataNode ModuleGlobalData = new ArrayOfEmbeddedDataNode(
-            NameMangler.CompilationUnitPrefix + "__ModuleHeaderStart",
-            NameMangler.CompilationUnitPrefix + "__ModuleHeaderEnd",
-            null);
-
         public ArrayOfEmbeddedDataNode DispatchMapTable = new ArrayOfEmbeddedDataNode(
             NameMangler.CompilationUnitPrefix + "__DispatchMapTableStart",
             NameMangler.CompilationUnitPrefix + "__DispatchMapTableEnd",
             null);
 
-        public ModuleHeaderNode ModuleHeader = new ModuleHeaderNode();
-        
+        public ReadyToRunHeaderNode ReadyToRunHeader;
+
         public Dictionary<TypeDesc, List<MethodDesc>> VirtualSlots = new Dictionary<TypeDesc, List<MethodDesc>>();
 
         public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
 
-        internal ModuleIndirectionCell ModuleIndirectionCell = new ModuleIndirectionCell();
+        internal ModuleManagerIndirectionNode ModuleManagerIndirection = new ModuleManagerIndirectionNode();
 
         public static NameMangler NameMangler;
 
         public void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
         {
+            ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
+
+            graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
+            graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
+
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(StringTable, "StringTable is always generated");
-            graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
-            graph.AddRoot(ModuleGlobalData, "ModuleGlobalData is always generated");
-            graph.AddRoot(ModuleHeader, "ModuleHeader is always generated");
-            graph.AddRoot(ModuleIndirectionCell, "ModuleIndirectionCell is always generated");
-            
-            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.StringTable, StringTable.StartSymbol, StringTable.EndSymbol));
-            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.GCStaticRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol));
-            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.ThreadStaticRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol));
-            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.InterfaceDispatchTable, DispatchMapTable.StartSymbol));
-            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.ModuleIndirectionCell, ModuleIndirectionCell));
-            ModuleGlobalData.AddEmbeddedObject(new ModuleHeaderItemNode(ModuleHeaderSection.EagerCctor, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol));
+            graph.AddRoot(ModuleManagerIndirection, "ModuleManagerIndirection is always generated");
+            graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
+
+            ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.StringTable, StringTable, StringTable.StartSymbol, StringTable.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleManagerIndirection, ModuleManagerIndirection, ModuleManagerIndirection);
+            ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
         }
     }
 

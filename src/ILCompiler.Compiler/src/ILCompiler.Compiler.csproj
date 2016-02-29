@@ -49,9 +49,9 @@
     <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ModuleHeaderItemNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ModuleHeaderNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ModuleIndirectionCell.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHeaderNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ModulesSectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ModuleManagerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StringIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />

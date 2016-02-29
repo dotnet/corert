@@ -7,21 +7,44 @@
 //  src/Common/src/Internal/Runtime/ModuleHeaders.cs
 //
 
+struct ReadyToRunHeaderConstants
+{
+    static const uint32_t Signature = 0x00525452; // 'RTR'
+
+    static const uint32_t CurrentMajorVersion = 2;
+    static const uint32_t CurrentMinorVersion = 1;
+};
+
+struct ReadyToRunHeader
+{
+    uint32_t                Signature;      // ReadyToRunHeaderConstants.Signature
+    uint16_t                MajorVersion;
+    uint16_t                MinorVersion;
+
+    uint32_t                Flags;
+
+    uint16_t                NumberOfSections;
+    uint8_t                 EntrySize;
+    uint8_t                 EntryType;
+
+    // Array of sections follows.
+};
+
 //
-// ModuleHeaderSection IDs are used by the runtime to look up specific global data sections
+// ReadyToRunSectionType IDs are used by the runtime to look up specific global data sections
 // from each module linked into the final binary. New sections should be added at the bottom
 // of the enum and deprecated sections should not be removed to preserve ID stability.
 //
 // Eventually this will be reconciled with ReadyToRunSectionType from 
 // https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
 //
-enum class ModuleHeaderSection
+enum class ReadyToRunSectionType
 {
     StringTable                 = 200,
     GCStaticRegion              = 201,
     ThreadStaticRegion          = 202,
     InterfaceDispatchTable      = 203,
-    ModuleIndirectionCell       = 204,
+    ModuleManagerIndirection    = 204,
     EagerCctor                  = 205,
 };
 
