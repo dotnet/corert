@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
 using System.IO;
 
 using Internal.TypeSystem;
@@ -15,7 +14,6 @@ using Internal.IL;
 using Internal.JitInterface;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.IL.Stubs.StartupCode;
 
 namespace ILCompiler
 {
@@ -108,12 +106,6 @@ namespace ILCompiler
             set;
         }
 
-        public MethodDesc StartupCodeMain
-        {
-            get;
-            set;
-        }
-
         internal bool IsCppCodeGen
         {
             get
@@ -182,7 +174,7 @@ namespace ILCompiler
 
                 var nodes = _dependencyGraph.MarkedNodeList;
 
-                _cppWriter.OutputCode(nodes);
+                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain);
             }
             else
             {
@@ -207,7 +199,7 @@ namespace ILCompiler
         
         #region ICompilationRootProvider implementation
 
-        public void AddMethodCompilationRoot(MethodDesc method, string reason, string exportName = null)
+        public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
         {
             var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
 
@@ -217,23 +209,9 @@ namespace ILCompiler
                 _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
         }
 
-        public void AddTypeCompilationRoot(TypeDesc type, string reason)
+        public void AddCompilationRoot(TypeDesc type, string reason)
         {
             _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(type), reason);
-        }
-
-        public void AddMainMethodCompilationRoot(EcmaModule module)
-        {
-            if (StartupCodeMain != null)
-                throw new Exception("Multiple entrypoint modules");
-
-            int entryPointToken = module.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress;
-            MethodDesc mainMethod = module.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
-
-            var owningType = module.GetGlobalModuleType();
-            StartupCodeMain = new StartupCodeMainMethod(owningType, mainMethod);
-
-            AddMethodCompilationRoot(StartupCodeMain, "Startup Code Main Method", "__managed__Main");
         }
 
         #endregion
