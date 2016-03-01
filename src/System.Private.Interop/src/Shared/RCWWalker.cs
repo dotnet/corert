@@ -417,7 +417,14 @@ namespace System.Runtime.InteropServices
         {
             try
             {
+                void* pUnknown = (void *)__IntPtr__pUnknown;
+                if (pUnknown == null)
+                    return Interop.COM.E_POINTER;
+
                 __com_ICCW** ppNewReference = (__com_ICCW**)__IntPtr__ppNewReference;
+                if (ppNewReference == null)
+                    return Interop.COM.E_POINTER;
+
                 object comObj = null;
 #if ENABLE_WINRT
             //
