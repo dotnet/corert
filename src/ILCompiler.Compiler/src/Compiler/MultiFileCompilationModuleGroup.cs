@@ -85,7 +85,7 @@ namespace ILCompiler
                         if (method.ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.InternalCall))
                             continue;
 
-                        _rootProvider.AddMethodCompilationRoot(method, "Library module method");
+                        _rootProvider.AddCompilationRoot(method, "Library module method");
                     }
                 }
             }

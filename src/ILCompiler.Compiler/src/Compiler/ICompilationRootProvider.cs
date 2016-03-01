@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -12,8 +11,7 @@ namespace ILCompiler
     /// </summary>
     public interface ICompilationRootProvider
     {
-        void AddMethodCompilationRoot(MethodDesc method, string reason, string exportName = null);
-        void AddTypeCompilationRoot(TypeDesc type, string reason);
-        void AddMainMethodCompilationRoot(EcmaModule module);
+        void AddCompilationRoot(MethodDesc method, string reason, string exportName = null);
+        void AddCompilationRoot(TypeDesc type, string reason);
     }
 }

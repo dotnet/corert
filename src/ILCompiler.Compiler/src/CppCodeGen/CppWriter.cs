@@ -1132,7 +1132,7 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        public void OutputCode(IEnumerable<DependencyNode> nodes)
+        public void OutputCode(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint)
         {
             BuildMethodLists(nodes);
 
@@ -1209,10 +1209,8 @@ namespace ILCompiler.CppCodeGen
             Out.Write(sb.ToString());
             sb.Clear();
 
-            if (_compilation.StartupCodeMain != null)
+            if (entrypoint != null)
             {
-                var startupCodeMain = _compilation.StartupCodeMain;
-
                 // Stub for main method
                 sb.AppendLine();
                 if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
@@ -1240,7 +1238,7 @@ namespace ILCompiler.CppCodeGen
                 sb.AppendEmptyLine();
                 sb.AppendLine();
                 sb.Append("int ret = ");
-                sb.Append(GetCppMethodDeclarationName(startupCodeMain.OwningType, GetCppMethodName(startupCodeMain)));
+                sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
                 sb.Append("(argc-1, (intptr_t)(argv+1));");
 
                 sb.AppendEmptyLine();
