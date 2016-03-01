@@ -45,7 +45,6 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />

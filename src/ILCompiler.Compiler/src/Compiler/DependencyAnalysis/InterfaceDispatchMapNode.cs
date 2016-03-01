@@ -6,6 +6,7 @@ using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -16,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         public short ImplementationMethodSlot;
     }
 
-    internal class InterfaceDispatchMapNode : ObjectNode, ISymbolNode
+    public class InterfaceDispatchMapNode : ObjectNode, ISymbolNode
     {
         const int IndexNotSet = int.MaxValue;
 
@@ -73,12 +74,18 @@ namespace ILCompiler.DependencyAnalysis
                     return "data";
             }
         }
-        
-        protected override void OnMarked(NodeFactory context)
+
+        public void SetDispatchMapIndex(NodeFactory context, int index)
         {
-            context.DispatchMapTable.AddEmbeddedObject(context.InterfaceDispatchMapIndirection(_type));
-            _dispatchMapTableIndex = context.DispatchMapTable.IndexOfEmbeddedObject(context.InterfaceDispatchMapIndirection(_type));
+            _dispatchMapTableIndex = index;
             ((EETypeNode)context.ConstructedTypeSymbol(_type)).SetDispatchMapIndex(_dispatchMapTableIndex);
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        {
+            var result = new DependencyList();
+            result.Add(context.InterfaceDispatchMapIndirection(_type), "Interface dispatch map indirection node");
+            return result;
         }
 
         DispatchMapEntry[] BuildDispatchMap(NodeFactory factory)

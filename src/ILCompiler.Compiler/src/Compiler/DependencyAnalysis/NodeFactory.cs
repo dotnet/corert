@@ -173,9 +173,13 @@ namespace ILCompiler.DependencyAnalysis
                 return new InterfaceDispatchMapNode(type);
             });
 
-            _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, InterfaceDispatchMapIndirectionNode>((TypeDesc type) =>
+            _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
             {
-                return new InterfaceDispatchMapIndirectionNode(type);
+                var dispatchMap = InterfaceDispatchMap(type);
+                return DispatchMapTable.NewNodeWithSymbol(dispatchMap, (indirectionNode) =>
+                {
+                    dispatchMap.SetDispatchMapIndex(this, DispatchMapTable.IndexOfEmbeddedObject(indirectionNode));
+                });
             });
 
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
@@ -326,9 +330,9 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMaps.GetOrAdd(type);
         }
 
-        private NodeCache<TypeDesc, InterfaceDispatchMapIndirectionNode> _interfaceDispatchMapIndirectionNodes;
+        private NodeCache<TypeDesc, EmbeddedObjectNode> _interfaceDispatchMapIndirectionNodes;
 
-        internal InterfaceDispatchMapIndirectionNode InterfaceDispatchMapIndirection(TypeDesc type)
+        public EmbeddedObjectNode InterfaceDispatchMapIndirection(TypeDesc type)
         {
             return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
         }
@@ -491,7 +495,7 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler.CompilationUnitPrefix + "__EagerCctorEnd",
             new EagerConstructorComparer());
 
-        public ArrayOfEmbeddedDataNode DispatchMapTable = new ArrayOfEmbeddedDataNode(
+        public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
             NameMangler.CompilationUnitPrefix + "__DispatchMapTableStart",
             NameMangler.CompilationUnitPrefix + "__DispatchMapTableEnd",
             null);
