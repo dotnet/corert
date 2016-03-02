@@ -1064,11 +1064,12 @@ PTR_UInt8 Thread::AllocateThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset
     return m_pDynamicTypesTlsCells[uTlsTypeOffset];
 }
 
+#ifndef PLATFORM_UNIX
 EXTERN_C REDHAWK_API UInt32 __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 count, HANDLE* pHandles)
 {
     return PalCompatibleWaitAny(alertable, timeout, count, pHandles, /*allowReentrantWait:*/ TRUE);
 }
-
+#endif // PLATFORM_UNIX
 
 EXTERN_C volatile UInt32 RhpTrapThreads;
 
