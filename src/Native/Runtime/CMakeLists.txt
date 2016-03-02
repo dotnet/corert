@@ -88,6 +88,7 @@ else()
 
   list(APPEND COMMON_RUNTIME_SOURCES
     unix/PalRedhawkUnix.cpp
+    unix/UnixEvent.cpp
   )
 
   if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
