@@ -2717,24 +2717,28 @@ namespace System
         {
             if (oldChar == newChar)
                 return this;
-            
+
             unsafe
             {
-                int firstFoundIndex = -1;
+                int remainingLength = Length;
 
                 fixed (char* pChars = &_firstChar)
                 {
-                    for (int i = 0; i < Length; i++)
+                    char* pSrc = pChars;
+
+                    while (remainingLength > 0)
                     {
-                        if (oldChar == pChars[i])
+                        if (*pSrc == oldChar)
                         {
-                            firstFoundIndex = i;
                             break;
                         }
+
+                        remainingLength--;
+                        pSrc++;
                     }
                 }
 
-                if (-1 == firstFoundIndex)
+                if (remainingLength == 0)
                     return this;
 
                 String result = FastAllocateString(Length);
@@ -2743,12 +2747,29 @@ namespace System
                 {
                     fixed (char* pResult = &result._firstChar)
                     {
-                        //Copy the characters, doing the replacement as we go.
-                        for (int i = 0; i < firstFoundIndex; i++)
-                            pResult[i] = pChars[i];
+                        int copyLength = Length - remainingLength;
 
-                        for (int i = firstFoundIndex; i < Length; i++)
-                            pResult[i] = (pChars[i] == oldChar) ? newChar : pChars[i];
+                        //Copy the characters already proven not to match.
+                        if (copyLength > 0)
+                        {
+                            wstrcpy(pResult, pChars, copyLength);
+                        }
+
+                        //Copy the remaining characters, doing the replacement as we go.
+                        char* pSrc = pChars + copyLength;
+                        char* pDst = pResult + copyLength;
+
+                        do
+                        {
+                            char currentChar = *pSrc;
+                            if (currentChar == oldChar)
+                                currentChar = newChar;
+                            *pDst = currentChar;
+
+                            remainingLength--;
+                            pSrc++;
+                            pDst++;
+                        } while (remainingLength > 0);
                     }
                 }
 
