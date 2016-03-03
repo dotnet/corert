@@ -83,6 +83,37 @@ namespace ILCompiler.DependencyAnalysis
             EmitByte((byte)((emit >> 56) & 0xFF));
         }
 
+        public void EmitCompressedUInt(uint emit)
+        {
+            if (emit < 128)
+            {
+                EmitByte((byte)(emit * 2 + 0));
+            }
+            else if (emit < 128 * 128)
+            {
+                EmitByte((byte)(emit * 4 + 1));
+                EmitByte((byte)(emit >> 6));
+            }
+            else if (emit < 128 * 128 * 128)
+            {
+                EmitByte((byte)(emit * 8 + 3));
+                EmitByte((byte)(emit >> 5));
+                EmitByte((byte)(emit >> 13));
+            }
+            else if (emit < 128 * 128 * 128 * 128)
+            {
+                EmitByte((byte)(emit * 16 + 7));
+                EmitByte((byte)(emit >> 4));
+                EmitByte((byte)(emit >> 12));
+                EmitByte((byte)(emit >> 20));
+            }
+            else
+            {
+                EmitByte((byte)15);
+                EmitInt((int)emit);
+            }
+        }
+
         public void EmitBytes(byte[] bytes)
         {
             _data.Append(bytes);
@@ -172,6 +203,7 @@ namespace ILCompiler.DependencyAnalysis
             switch (relocType)
             {
                 case RelocType.IMAGE_REL_BASED_REL32:
+                case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                     EmitInt(0);
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
@@ -184,14 +216,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitPointerReloc(ISymbolNode symbol, int delta = 0)
         {
-            if (_target.PointerSize == 8)
-            {
-                EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64, delta);
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            EmitReloc(symbol, (_target.PointerSize == 8) ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW, delta);
         }
 
         public ObjectNode.ObjectData ToObjectData()
