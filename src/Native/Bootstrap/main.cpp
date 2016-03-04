@@ -219,6 +219,13 @@ Object * __load_string_literal(const char * string)
 }
 #endif // CPPCODEGEN
 
+#ifdef CPPCODEGEN
+extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = 0;
+#else
+extern "C" void * __EEType_System_Private_CoreLib_System_Array;
+extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = &__EEType_System_Private_CoreLib_System_Array;
+#endif
+
 #if !defined(_WIN32) || defined(CPPCODEGEN)
 extern "C" void RhpThrowEx(void * pEx)
 {

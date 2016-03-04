@@ -34,22 +34,6 @@ namespace Internal.TypeSystem
             return type.Context.GetPointerType(type);
         }
 
-        static public DefType GetClosestDefType(this TypeDesc type)
-        {
-            if (type is DefType)
-                return (DefType)type;
-            else
-                return type.BaseType;
-        }
-
-        static public MetadataType GetClosestMetadataType(this TypeDesc type)
-        {
-            if (type is MetadataType)
-                return (MetadataType)type;
-            else
-                return type.BaseType.GetClosestMetadataType();
-        }
-
         static public int GetElementSize(this TypeDesc type)
         {
             if (type.IsValueType)

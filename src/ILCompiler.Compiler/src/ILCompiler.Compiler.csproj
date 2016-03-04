@@ -92,6 +92,7 @@
     <Compile Include="Compiler\SymbolReader\PdbSymbolReader.cs" />
     <Compile Include="Compiler\SymbolReader\PortablePdbSymbolReader.cs" />
     <Compile Include="Compiler\SymbolReader\UnmanagedPdbSymbolReader.cs" />
+    <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\TypeInitialization.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
