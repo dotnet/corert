@@ -66,6 +66,17 @@ struct EHClause
     void* m_pTargetType;
 };
 
+// Constants used with RhpGetClasslibFunction, to indicate which classlib function
+// we are interested in. 
+// Note: make sure you change the def in System\Runtime\exceptionhandling.cs if you change this!
+enum class ClasslibFunctionId
+{
+    GetRuntimeException = 0,
+    FailFast = 1,
+    UnhandledExceptionHandler = 2,
+    AppendExceptionStackFrame = 3,
+};
+
 class ICodeManager
 {
 public:
@@ -104,4 +115,6 @@ public:
     virtual bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState) = 0;
 
     virtual bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause) = 0;
+
+    virtual void * GetClasslibFunction(ClasslibFunctionId functionId) = 0;
 };

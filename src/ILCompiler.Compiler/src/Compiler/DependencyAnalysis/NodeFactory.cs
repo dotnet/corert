@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
             {
-                return new BlobNode(key.Item1, "text", key.Item2, key.Item3);
+                return new BlobNode(key.Item1, "rdata", key.Item2, key.Item3);
             }, new BlobTupleEqualityComparer());
 
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>

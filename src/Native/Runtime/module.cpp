@@ -717,28 +717,33 @@ EEType * Module::GetArrayBaseType()
     return pArrayBaseType;
 }
 
-// Return the classlib-defined GetRuntimeException helper. Returns NULL if this is not a classlib module, or
-// if this classlib module fails to export the helper.
-void * Module::GetClasslibRuntimeExceptionHelper()
+// Return the classlib-defined helper.
+void * Module::GetClasslibFunction(ClasslibFunctionId functionId)
 {
-    return m_pModuleHeader->Get_GetRuntimeException();
-}
+    // First, delegate the call to the classlib module that this module was compiled against.
+    if (!IsClasslibModule())
+        return GetClasslibModule()->GetClasslibFunction(functionId);
 
-// Return the classlib-defined FailFast helper. Returns NULL if this is not a classlib module, or
-// if this classlib module fails to export the helper.
-void * Module::GetClasslibFailFastHelper()
-{
-    return m_pModuleHeader->Get_FailFast();
-}
+    // Lookup the method and return it. If we don't find it, we just return NULL.
+    void * pMethod = NULL;
 
-void * Module::GetClasslibUnhandledExceptionHandlerHelper()
-{
-    return m_pModuleHeader->Get_UnhandledExceptionHandler();
-}
+    switch (functionId)
+    {
+    case ClasslibFunctionId::GetRuntimeException:
+        pMethod = m_pModuleHeader->Get_GetRuntimeException();
+        break;
+    case ClasslibFunctionId::AppendExceptionStackFrame:
+        pMethod = m_pModuleHeader->Get_AppendExceptionStackFrame();
+        break;
+    case ClasslibFunctionId::FailFast:
+        pMethod = m_pModuleHeader->Get_FailFast();
+        break;
+    case ClasslibFunctionId::UnhandledExceptionHandler:
+        pMethod = m_pModuleHeader->Get_UnhandledExceptionHandler();
+        break;
+    }
 
-void * Module::GetClasslibAppendExceptionStackFrameHelper()
-{
-    return m_pModuleHeader->Get_AppendExceptionStackFrame();
+    return pMethod;
 }
 
 // Get classlib-defined helper for running deferred static class constructors. Returns NULL if this is not the

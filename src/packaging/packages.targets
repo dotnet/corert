@@ -96,7 +96,7 @@
                 <Files>@(ILCompilerBinPlace -> '%(Text)', '')</Files>
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
-        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.8-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.9-prerelease-00001" />
         <dependency id="Microsoft.DotNet.RyuJit" version="1.0.5-prerelease-00001" />
         <dependency id="NETStandard.Library" version="1.0.0-rc2-23704" />
         <dependency id="System.Collections.Immutable" version="1.1.37" />

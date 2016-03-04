@@ -42,10 +42,7 @@ public:
     bool IsClasslibModule();
 
     // Get classlib-defined helpers for the exception system.
-    void * GetClasslibRuntimeExceptionHelper();
-    void * GetClasslibFailFastHelper();
-    void * GetClasslibUnhandledExceptionHandlerHelper();
-    void * GetClasslibAppendExceptionStackFrameHelper();
+    void * GetClasslibFunction(ClasslibFunctionId functionId);
 
     // Get classlib-defined helper for running deferred static class constructors.
     void * GetClasslibCheckStaticClassConstruction();

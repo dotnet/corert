@@ -10,6 +10,10 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
     {
+        public static readonly string StartSectionName = ".managedcode$A";
+        public static readonly string SectionName = ".managedcode$I";
+        public static readonly string EndSectionName = ".managedcode$Z";
+
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
@@ -45,7 +49,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "text";
+                // TODO: Exception handling on Unix
+                return _method.Context.Target.IsWindows ? SectionName : "text";
             }
         }
 
