@@ -600,7 +600,7 @@ bool QueryCacheSize()
     bool success = true;
     g_cbLargestOnDieCache = 0;
 
-#ifdef __LINUX__
+#ifdef __linux__
     DIR* cpuDir = opendir("/sys/devices/system/cpu");
     if (cpuDir == nullptr)
     {
@@ -683,7 +683,7 @@ bool QueryCacheSize()
     }
 #else
 #error Don't know how to get cache size on this platform
-#endif // __LINUX__
+#endif // __linux__
 
     // TODO: implement adjusted cache size
     g_cbLargestOnDieCacheAdjusted = g_cbLargestOnDieCache;
