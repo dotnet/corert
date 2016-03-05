@@ -176,8 +176,12 @@ namespace System
 
         public unsafe override int GetHashCode()
         {
-            // QUESTION: This HashCode seems to neglect the high order bits in calculating the hashcode?
-            return unchecked((int)((long)_value)) & 0x7fffffff;
+#if BIT64
+            ulong l = (ulong)_value;
+            return (unchecked((int)l) ^ (int)(l >> 32));
+#else
+            return unchecked((int)_value);
+#endif
         }
 
         [NonVersionable]
