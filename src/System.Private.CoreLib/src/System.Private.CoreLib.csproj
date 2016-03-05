@@ -84,6 +84,8 @@
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceConnector.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Internal\Reflection\Core\NonPortable\BlockedRuntimeTypeNameGenerator.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\ConstructedGenericTypeKey.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RawRuntimeTypeHandleKey.cs" />
@@ -107,17 +109,19 @@
     <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
     <Compile Include="Internal\Reflection\MetadataTransformedAttribute.cs" />
     <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.Events.cs" />
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Internal.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <!--ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs" >
       <Link>TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
     <Compile Include="Internal\Reflection\CoreRT\RuntimeType.cs" />
     <Compile Include="Internal\Reflection\CoreRT\ReflectionCoreNonPortable.cs" />
-  </ItemGroup>
+  </ItemGroup-->
 
   <ItemGroup>
     <Compile Include="Internal\Reflection\Extensibility\ExtensibleType.cs" />

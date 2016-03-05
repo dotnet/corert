@@ -15,7 +15,11 @@ namespace Internal.Runtime.CompilerHelpers
     {
         private static RuntimeTypeHandle GetRuntimeTypeHandle(IntPtr pEEType)
         {
+#if CLR_RUNTIMETYPEHANDLE
             return new RuntimeTypeHandle(ReflectionCoreNonPortable.GetRuntimeTypeForEEType(new EETypePtr(pEEType)));
+#else
+            return new RuntimeTypeHandle(new EETypePtr(pEEType));
+#endif
         }
     }
 }
