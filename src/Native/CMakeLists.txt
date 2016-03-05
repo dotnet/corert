@@ -79,10 +79,6 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-DPLATFORM_UNIX=1)
     add_definitions(-DPAL_STDCPP_COMPAT)
 
-    if(CLR_CMAKE_PLATFORM_LINUX)
-        add_definitions(-D__LINUX__=1)
-    endif()
-
     # All warnings that are not explicitly disabled are reported as errors
     add_compile_options(-Wall)
     add_compile_options(-Werror)
