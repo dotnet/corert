@@ -88,6 +88,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs" >
       <Link>TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataTypeSystemContext.cs" >
+      <Link>TypeSystem\Common\MetadataTypeSystemContext.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodForInstantiatedType.cs" >
       <Link>TypeSystem\Common\MethodForInstantiatedType.cs</Link>
     </Compile>

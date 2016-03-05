@@ -16,43 +16,8 @@ using System.IO;
 
 namespace TypeSystemTests
 {
-    class TestTypeSystemContext : TypeSystemContext
+    class TestTypeSystemContext : MetadataTypeSystemContext
     {
-        static readonly string[] s_wellKnownTypeNames = new string[] {
-            "Void",
-            "Boolean",
-            "Char",
-            "SByte",
-            "Byte",
-            "Int16",
-            "UInt16",
-            "Int32",
-            "UInt32",
-            "Int64",
-            "UInt64",
-            "IntPtr",
-            "UIntPtr",
-            "Single",
-            "Double",
-
-            "ValueType",
-            "Enum",
-            "Nullable`1",
-
-            "Object",
-            "String",
-            "Array",
-            "MulticastDelegate",
-
-            "RuntimeTypeHandle",
-            "RuntimeMethodHandle",
-            "RuntimeFieldHandle",
-        };
-
-        MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
-
-        ModuleDesc _systemModule;
-
         Dictionary<string, ModuleDesc> _modules = new Dictionary<string, ModuleDesc>(StringComparer.OrdinalIgnoreCase);
 
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
@@ -62,27 +27,6 @@ namespace TypeSystemTests
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown))
         {
-        }
-
-        public override DefType GetWellKnownType(WellKnownType wellKnownType)
-        {
-            return _wellKnownTypes[(int)wellKnownType - 1];
-        }
-
-        public void SetSystemModule(ModuleDesc systemModule)
-        {
-            _systemModule = systemModule;
-
-            // Sanity check the name table
-            Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == "MulticastDelegate");
-
-            // Initialize all well known types - it will save us from checking the name for each loaded type
-            for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
-            {
-                MetadataType type = _systemModule.GetType("System", s_wellKnownTypeNames[typeIndex]);
-                type.SetWellKnownType((WellKnownType)(typeIndex + 1));
-                _wellKnownTypes[typeIndex] = type;
-            }
         }
 
         public ModuleDesc GetModuleForSimpleName(string simpleName)
@@ -111,16 +55,16 @@ namespace TypeSystemTests
             return _metadataFieldLayout;
         }
 
-        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             if (_arrayOfTRuntimeInterfacesAlgorithm == null)
             {
-                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(_systemModule.GetType("System", "Array`1"));
+                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System", "Array`1"));
             }
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
-        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
         }
