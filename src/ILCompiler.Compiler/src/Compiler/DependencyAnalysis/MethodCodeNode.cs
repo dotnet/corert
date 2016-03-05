@@ -10,9 +10,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
     {
-        public static readonly string StartSectionName = ".managedcode$A";
-        public static readonly string SectionName = ".managedcode$I";
-        public static readonly string EndSectionName = ".managedcode$Z";
+        public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
+        public static readonly ObjectNodeSection ContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
+        public static readonly ObjectNodeSection EndSection = new ObjectNodeSection(".managedcode$Z", SectionType.Executable);
 
         private MethodDesc _method;
         private ObjectData _methodCode;
@@ -45,13 +45,18 @@ namespace ILCompiler.DependencyAnalysis
             return ((ISymbolNode)this).MangledName;
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
                 // TODO: Exception handling on Unix
-                return _method.Context.Target.IsWindows ? SectionName : "text";
+                return _method.Context.Target.IsWindows ? ContentSection : ObjectNodeSection.TextSection;
             }
+        }
+
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_method);
         }
 
         public override bool StaticDependenciesAreComputed

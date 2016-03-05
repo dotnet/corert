@@ -15,7 +15,7 @@ namespace ILCompiler
         public MultiFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext, ICompilationRootProvider rootProvider) : base(typeSystemContext, rootProvider)
         { }
 
-        public override bool IsTypeInCompilationGroup(TypeDesc type)
+        public override bool ContainsType(TypeDesc type)
         {
             if (type.ContainsGenericVariables)
                 return true;
@@ -33,29 +33,34 @@ namespace ILCompiler
             return true;
         }
 
-        public override bool IsMethodInCompilationGroup(MethodDesc method)
+        public override bool ContainsMethod(MethodDesc method)
         {
             if (method.GetTypicalMethodDefinition().ContainsGenericVariables)
                 return true;
 
-            return IsTypeInCompilationGroup(method.OwningType);
+            return ContainsType(method.OwningType);
+        }
+
+        private bool BuildingLibrary
+        {
+            get
+            {
+                foreach (var module in InputModules)
+                {
+                    if (module.PEReader.PEHeaders.IsExe)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         public override void AddCompilationRoots()
         {
             base.AddCompilationRoots();
-
-            bool buildingLibrary = true;
-            foreach (var module in InputModules)
-            {
-                if (module.PEReader.PEHeaders.IsExe)
-                {
-                    buildingLibrary = false;
-                    break;
-                }
-            }
-
-            if (buildingLibrary)
+            
+            if (BuildingLibrary)
             {
                 foreach (var module in InputModules)
                 {
@@ -72,28 +77,78 @@ namespace ILCompiler
                 if (type.IsDelegate || type.ContainsGenericVariables)
                     continue;
 
-                EcmaType ecmaType = type as EcmaType;
-
-                if (ecmaType.Attributes.HasFlag(System.Reflection.TypeAttributes.Public))
-                {
-                    foreach (EcmaMethod method in ecmaType.GetMethods())
-                    {
-                        // Skip methods with no IL and uninstantiated generic methods
-                        if (method.IsIntrinsic || method.IsAbstract || method.ContainsGenericVariables)
-                            continue;
-
-                        if (method.ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.InternalCall))
-                            continue;
-
-                        _rootProvider.AddCompilationRoot(method, "Library module method");
-                    }
-                }
+                _rootProvider.AddCompilationRoot(type, "Library module type");
+                RootMethods(type, "Library module method");
             }
         }
 
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
             return InputModules.Contains(module);
+        }
+
+        public override bool IsSingleFileCompilation
+        {
+            get
+            {
+                return false;
+            }
+        }
+        
+        public override bool ShouldProduceFullType(TypeDesc type)
+        {
+            // TODO: Remove this once we have delgate constructor transform added and GetMethods() tells us about
+            //       the virtuals we add on to delegate types.
+            if (type.IsDelegate)
+                return false;
+
+            // Fully build all types when building a library
+            if (BuildingLibrary)
+                return true;
+
+            // Fully build all shareable types so they will be identical in each module
+            if (ShouldShareAcrossModules(type))
+                return true;
+
+            // If referring to a type from another module, VTables, interface maps, etc should assume the
+            // type is fully build.
+            if (!ContainsType(type))
+                return true;
+            
+            return false;
+        }
+
+        public override bool ShouldShareAcrossModules(MethodDesc method)
+        {
+            if (method is InstantiatedMethod)
+                return true;
+
+            return ShouldShareAcrossModules(method.OwningType);
+        }
+
+        public override bool ShouldShareAcrossModules(TypeDesc type)
+        {
+            if (type is ParameterizedType || type is InstantiatedType)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void RootMethods(TypeDesc type, string reason)
+        {
+            foreach (MethodDesc method in type.GetMethods())
+            {
+                // Skip methods with no IL and uninstantiated generic methods
+                if (method.IsIntrinsic || method.IsAbstract || method.ContainsGenericVariables)
+                    continue;
+                
+                if (method.GetMethodDefinition() is EcmaMethod && ((EcmaMethod)method.GetMethodDefinition()).ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.InternalCall))
+                    continue;
+
+                _rootProvider.AddCompilationRoot(method, reason);
+            }
         }
 
         private HashSet<EcmaModule> InputModules

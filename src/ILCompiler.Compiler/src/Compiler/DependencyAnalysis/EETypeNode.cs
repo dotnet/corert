@@ -95,15 +95,20 @@ namespace ILCompiler.DependencyAnalysis
             get { return _constructed; }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
                 if (_type.Context.Target.IsWindows)
-                    return "rdata";
+                    return ObjectNodeSection.ReadOnlyDataSection;
                 else
-                    return "data";
+                    return ObjectNodeSection.DataSection;
             }
+        }
+
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
         }
 
         public override bool StaticDependenciesAreComputed
@@ -190,6 +195,8 @@ namespace ILCompiler.DependencyAnalysis
                     dependencyList.Add(factory.ConstructedTypeSymbol(_type.BaseType), "Array base type");
                 }
 
+                dependencyList.Add(factory.VTable(_type), "VTable");
+                
                 return dependencyList;
             }
 
@@ -394,13 +401,7 @@ namespace ILCompiler.DependencyAnalysis
 
             while (currentTypeSlice != null)
             {
-                List<MethodDesc> virtualSlots;
-                factory.VirtualSlots.TryGetValue(currentTypeSlice, out virtualSlots);
-                if (virtualSlots != null)
-                {
-                    virtualSlotCount += virtualSlots.Count;
-                }
-
+                virtualSlotCount += factory.VTable(currentTypeSlice).Slots.Count;
                 currentTypeSlice = currentTypeSlice.BaseType;
             }
 
@@ -416,21 +417,17 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
                 OutputVirtualSlots(factory, ref objData, implType, baseType);
 
-            List<MethodDesc> virtualSlots;
-            factory.VirtualSlots.TryGetValue(declType, out virtualSlots);
-
-            if (virtualSlots != null)
+            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
+            
+            for (int i = 0; i < virtualSlots.Count; i++)
             {
-                for (int i = 0; i < virtualSlots.Count; i++)
-                {
-                    MethodDesc declMethod = virtualSlots[i];
-                    MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
+                MethodDesc declMethod = virtualSlots[i];
+                MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
 
-                    if (!implMethod.IsAbstract)
-                        objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
-                    else
-                        objData.EmitZeroPointer();
-                }
+                if (!implMethod.IsAbstract)
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
+                else
+                    objData.EmitZeroPointer();
             }
         }
 

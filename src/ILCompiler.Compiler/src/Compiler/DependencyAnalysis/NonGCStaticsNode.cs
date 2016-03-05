@@ -18,19 +18,10 @@ namespace ILCompiler.DependencyAnalysis
     internal class NonGCStaticsNode : ObjectNode, ISymbolNode
     {
         private MetadataType _type;
-        private ISymbolNode _classConstructorContext;
 
         public NonGCStaticsNode(MetadataType type, NodeFactory factory)
         {
             _type = type;
-
-            if (factory.TypeInitializationManager.HasLazyStaticConstructor(type))
-            {
-                // Class constructor context is a small struct prepended to type's non-GC static data region
-                // that keeps track of whether the .cctor executed and holds the pointer to the .cctor method.
-                _classConstructorContext = new ObjectAndOffsetSymbolNode(this, 0,
-                    "__CCtorContext_" + NodeFactory.NameMangler.GetMangledTypeName(_type));
-            }
         }
 
         public override string GetName()
@@ -38,11 +29,11 @@ namespace ILCompiler.DependencyAnalysis
             return ((ISymbolNode)this).MangledName;
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "data";
+                return ObjectNodeSection.DataSection;
             }
         }
 
@@ -58,55 +49,33 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (!HasClassConstructorContext)
-                {
-                    return 0;
-                }
-                else
-                {
-                    // Prepend the context to the existing fields without messing up the alignment of those fields.
-                    int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment, ClassConstructorContextAlignment);
-                    int classConstructorContextStorageSize = AlignmentHelper.AlignUp(ClassConstructorContextSize, alignmentRequired);
-                    return classConstructorContextStorageSize;
-                }
+                return 0;
             }
         }
 
-        public bool HasClassConstructorContext
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
         {
-            get
-            {
-                return _classConstructorContext != null;
-            }
+            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
+        }
+        
+        private static int GetClassConstructorContextSize(TargetDetails target)
+        {
+            // TODO: Assert that StaticClassConstructionContext type has the expected size
+            //       (need to make it a well known type?)
+            return target.PointerSize * 2;
         }
 
-        public ISymbolNode ClassConstructorContext
+        public static int GetClassConstructorContextStorageSize(TargetDetails target, MetadataType type)
         {
-            get
-            {
-                Debug.Assert(HasClassConstructorContext);
-                return _classConstructorContext;
-            }
+            int alignmentRequired = Math.Max(type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(target));
+            return AlignmentHelper.AlignUp(GetClassConstructorContextSize(type.Context.Target), alignmentRequired);
         }
 
-        private int ClassConstructorContextSize
+        private static int GetClassConstructorContextAlignment(TargetDetails target)
         {
-            get
-            {
-                // TODO: Assert that StaticClassConstructionContext type has the expected size
-                //       (need to make it a well known type?)
-                return _type.Context.Target.PointerSize * 2;
-            }
-        }
-
-        private int ClassConstructorContextAlignment
-        {
-            get
-            {
-                // TODO: Assert that StaticClassConstructionContext type has the expected alignment
-                //       (need to make it a well known type?)
-                return _type.Context.Target.PointerSize;
-            }
+            // TODO: Assert that StaticClassConstructionContext type has the expected alignment
+            //       (need to make it a well known type?)
+            return target.PointerSize;
         }
 
         public override bool StaticDependenciesAreComputed
@@ -133,24 +102,23 @@ namespace ILCompiler.DependencyAnalysis
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory);
 
-            // If the type has a class constructor, it's non-GC statics section is prefixed  
+            // If the type has a class constructor, its non-GC statics section is prefixed  
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
-            if (HasClassConstructorContext)
+            if (factory.TypeInitializationManager.HasLazyStaticConstructor(_type))
             {
-                int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment, ClassConstructorContextAlignment);
+                int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(_type.Context.Target));
+                int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);
                 builder.RequireAlignment(alignmentRequired);
-
-                Debug.Assert(((ISymbolNode)this).Offset >= ClassConstructorContextSize);
+                
+                Debug.Assert(classConstructorContextStorageSize >= GetClassConstructorContextSize(_type.Context.Target));
 
                 // Add padding before the context if alignment forces us to do so
-                builder.EmitZeros(((ISymbolNode)this).Offset - ClassConstructorContextSize);
+                builder.EmitZeros(classConstructorContextStorageSize - GetClassConstructorContextSize(_type.Context.Target));
 
-                // Emit the actual StaticClassConstructionContext                
+                // Emit the actual StaticClassConstructionContext
                 var cctorMethod = _type.GetStaticConstructor();
                 builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
                 builder.EmitZeroPointer();
-
-                builder.DefinedSymbols.Add(_classConstructorContext);
             }
             else
             {

@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "__embedded_metadata";
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__embedded_metadata";
             }
         }
 
@@ -46,11 +46,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "data";
+                return ObjectNodeSection.DataSection;
             }
         }
 

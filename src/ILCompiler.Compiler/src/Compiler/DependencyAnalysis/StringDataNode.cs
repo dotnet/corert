@@ -17,11 +17,11 @@ namespace ILCompiler.DependencyAnalysis
             _data = data;
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "data";
+                return ObjectNodeSection.DataSection;
             }
         }
 

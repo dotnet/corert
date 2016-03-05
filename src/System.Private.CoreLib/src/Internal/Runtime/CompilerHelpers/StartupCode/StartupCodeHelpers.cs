@@ -174,8 +174,16 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
             for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
             {
-                object obj = RuntimeImports.RhNewObject(new EETypePtr(*block));
-                *block = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
+                // Gc Static regions can be shared by modules linked together during compilation. To ensure each
+                // is initialized once, the static region pointer is stored with lowest bit set in the image.
+                // The first time we initialize the static region its pointer is replaced with an object reference
+                // whose lowest bit is no longer set.
+                IntPtr* pBlock = (IntPtr*)*block;
+                if (((*pBlock).ToInt64() & 0x1L) == 1)
+                {
+                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr((*pBlock).ToInt64() & ~0x1L)));
+                    *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
+                }
             }
         }
 

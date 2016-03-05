@@ -625,7 +625,7 @@
     <Compile Include="..\..\Common\src\System\__HResults.cs" >
       <Link>System\__HResults.cs</Link>
     </Compile>
-    <Compile Include="CoverageSupport.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="CoverageSupport.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(RazzleToolPath)' == ''">

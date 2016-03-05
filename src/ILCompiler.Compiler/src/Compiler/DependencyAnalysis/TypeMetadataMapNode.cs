@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "__type_to_metadata_map";
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__type_to_metadata_map";
             }
         }
 
@@ -45,11 +45,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "data";
+                return ObjectNodeSection.DataSection;
             }
         }
 
@@ -76,7 +76,11 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping())
             {
-                var node = (EETypeNode)factory.ConstructedTypeSymbol(mappingEntry.Entity);
+                if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
+                    continue;
+
+                var node = factory.ConstructedTypeSymbol(mappingEntry.Entity) as EETypeNode;
+                
                 if (node.Marked)
                 {
                     // TODO: this format got very inefficient due to not being able to use RVAs

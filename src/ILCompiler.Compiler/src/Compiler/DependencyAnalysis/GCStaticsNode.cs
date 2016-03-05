@@ -12,7 +12,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class GCStaticsNode : EmbeddedObjectNode, ISymbolNode
+    public class GCStaticsNode : ObjectNode, ISymbolNode
     {
         private MetadataType _type;
 
@@ -25,12 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             return ((ISymbolNode)this).MangledName;
         }
-
-        protected override void OnMarked(NodeFactory factory)
-        {
-            factory.GCStaticsRegion.AddEmbeddedObject(this);
-        }
-
+        
         string ISymbolNode.MangledName
         {
             get
@@ -39,34 +34,38 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public ISymbolNode GetGCStaticEETypeNode(NodeFactory context)
+        private ISymbolNode GetGCStaticEETypeNode(NodeFactory context)
         {
             // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
             bool[] gcDesc = new bool[_type.GCStaticFieldSize / context.Target.PointerSize + 1];
             return context.GCStaticEEType(gcDesc);
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
         {
-            DependencyListEntry[] result;
+            DependencyList dependencyList = new DependencyList();
+            
             if (context.TypeInitializationManager.HasEagerStaticConstructor(_type))
             {
-                result = new DependencyListEntry[3];
-                result[2] = new DependencyListEntry(context.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                dependencyList.Add(context.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
-            else
-                result = new DependencyListEntry[2];
 
-            result[0] = new DependencyListEntry(context.GCStaticsRegion, "GCStatics Region");
-            result[1] = new DependencyListEntry(GetGCStaticEETypeNode(context), "GCStatic EEType");
-            return result;
+            dependencyList.Add(context.GCStaticsRegion, "GCStatics Region");
+            dependencyList.Add(GetGCStaticEETypeNode(context), "GCStatic EEType");
+            dependencyList.Add(context.GCStaticIndirection(_type), "GC statics indirection");
+            return dependencyList;
+        }
+
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
         }
 
         int ISymbolNode.Offset
         {
             get
             {
-                return Offset;
+                return 0;
             }
         }
 
@@ -78,10 +77,23 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
+        public override ObjectNodeSection Section
         {
+            get
+            {
+                return ObjectNodeSection.DataSection;
+            }
+        }
+
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        {
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+
             builder.RequirePointerAlignment();
-            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
+            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), 1);
+            builder.DefinedSymbols.Add(this);
+
+            return builder.ToObjectData();
         }
     }
 }

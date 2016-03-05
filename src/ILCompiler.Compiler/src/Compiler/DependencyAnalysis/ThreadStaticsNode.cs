@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public ISymbolNode GetGCStaticEETypeNode(NodeFactory context)
+        private ISymbolNode GetGCStaticEETypeNode(NodeFactory context)
         {
             // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
             // TODO This logic should be shared with GCStaticsNode.

@@ -13,11 +13,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public static readonly string SectionName = ".modules$I";
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return SectionName;
+                return new ObjectNodeSection(SectionName, SectionType.ReadOnly);
             }
         }
 
