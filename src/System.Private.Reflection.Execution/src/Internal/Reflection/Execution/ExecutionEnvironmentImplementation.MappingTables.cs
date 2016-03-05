@@ -282,7 +282,7 @@ namespace Internal.Reflection.Execution
                 foreach (var ptrEntry in mapTable)
                 {
                     var pCurrentEntry = (TypeMapEntry*)ptrEntry;
-                    RuntimeTypeHandle entryTypeHandle = RvaToRuntimeTypeHandle(moduleHandle, pCurrentEntry->EETypeRva);
+                    RuntimeTypeHandle entryTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle(pCurrentEntry->EEType);
                     if (entryTypeHandle.Equals(runtimeTypeHandle) && pCurrentEntry->TypeDefinitionHandle.IsTypeDefinitionHandle())
                     {
                         metadataReader = GetMetadataReaderForModule(moduleHandle);
@@ -354,7 +354,7 @@ namespace Internal.Reflection.Execution
                 TypeMapEntry* pCurrentEntry = (TypeMapEntry*)ptrEntry;
                 if (pCurrentEntry->TypeDefinitionHandle == typeDefHandle.AsInt())
                 {
-                    runtimeTypeHandle = RvaToRuntimeTypeHandle(moduleHandle, pCurrentEntry->EETypeRva);
+                    runtimeTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle(pCurrentEntry->EEType);
                     return true;
                 }
             }
@@ -381,7 +381,7 @@ namespace Internal.Reflection.Execution
                 foreach (var ptrEntry in mapTable)
                 {
                     var pCurrentEntry = (TypeMapEntry*)ptrEntry;
-                    RuntimeTypeHandle entryTypeHandle = RvaToRuntimeTypeHandle(moduleHandle, pCurrentEntry->EETypeRva);
+                    RuntimeTypeHandle entryTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle(pCurrentEntry->EEType);
                     if (entryTypeHandle.Equals(runtimeTypeHandle) && pCurrentEntry->TypeDefinitionHandle.IsTypeReferenceHandle())
                     {
                         metadataReader = GetMetadataReaderForModule(moduleHandle);
@@ -421,7 +421,7 @@ namespace Internal.Reflection.Execution
                 TypeMapEntry* pCurrentEntry = (TypeMapEntry*)ptrEntry;
                 if (pCurrentEntry->TypeDefinitionHandle == typeRefHandle.AsInt())
                 {
-                    runtimeTypeHandle = RvaToRuntimeTypeHandle(moduleHandle, pCurrentEntry->EETypeRva);
+                    runtimeTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle(pCurrentEntry->EEType);
                     return true;
                 }
             }

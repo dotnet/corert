@@ -174,7 +174,7 @@ namespace Internal.Reflection.Execution
         [StructLayout(LayoutKind.Sequential)]
         struct TypeMapEntry
         {
-            public uint EETypeRva;
+            public IntPtr EEType;
             public int TypeDefinitionHandle;
         }
 
