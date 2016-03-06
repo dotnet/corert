@@ -75,7 +75,7 @@ namespace System
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
             {
-                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum);
+                throw new ArgumentOutOfRangeException("mode", SR.ArgumentOutOfRange_Enum);
             }
 
             int iInternalModes = 0;
