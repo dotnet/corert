@@ -5,7 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
@@ -112,12 +112,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(ArrayTypeKey key)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(key._elementType, key._rank);
+                    return TypeHashingAlgorithms.ComputeArrayTypeHashCode(key._elementType, key._rank);
                 }
 
                 protected override int GetValueHashCode(ArrayType value)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(value.ElementType, value.IsSzArray ? -1 : value.Rank);
+                    return TypeHashingAlgorithms.ComputeArrayTypeHashCode(value.ElementType, value.IsSzArray ? -1 : value.Rank);
                 }
 
                 protected override bool CompareKeyToValue(ArrayTypeKey key, ArrayType value)
@@ -633,7 +633,11 @@ namespace Internal.TypeSystem
         /// Abstraction to allow the type system context to affect the field layout
         /// algorithm used by types to lay themselves out.
         /// </summary>
-        public abstract FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type);
+        public virtual FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
+        {
+            // Type system contexts that support computing field layout need to override this.
+            throw new NotSupportedException();
+        }
 
         /// <summary>
         /// Abstraction to allow the type system context to control the interfaces
@@ -665,12 +669,20 @@ namespace Internal.TypeSystem
         /// Abstraction to allow the type system context to control the interfaces
         /// algorithm used by metadata types.
         /// </summary>
-        public abstract RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type);
+        protected virtual RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        {
+            // Type system contexts that support computing runtime interfaces need to override this.
+            throw new NotSupportedException();
+        }
 
         /// <summary>
         /// Abstraction to allow the type system context to control the interfaces
         /// algorithm used by single dimensional array types.
         /// </summary>
-        public abstract RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type);
+        protected virtual RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            // Type system contexts that support computing runtime interfaces need to override this.
+            throw new NotSupportedException();
+        }
     }
 }

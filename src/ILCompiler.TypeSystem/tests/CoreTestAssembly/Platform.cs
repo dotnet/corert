@@ -53,6 +53,8 @@ namespace System
     public class Attribute { }
 
     public class Array<T> : Array, System.Collections.Generic.IList<T> { }
+
+    public class Exception { }
 }
 
 namespace System.Collections

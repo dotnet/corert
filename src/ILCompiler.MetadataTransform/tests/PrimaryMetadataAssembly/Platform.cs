@@ -54,6 +54,8 @@ namespace System
 
     public class Array<T> : Array, System.Collections.Generic.IList<T> { }
 
+    public class Exception { }
+
     public class __ComObject : Private.CompilerServices.ICastable { }
 
     public delegate void Action();
