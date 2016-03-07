@@ -311,8 +311,12 @@ __recordSchema = [
         ]),
     ('QualifiedMethod', None, RecordDefFlags(0), [
         ('Method', 'Method', MemberDefFlags.RecordRef),
-        ('EnclosingType', 'TypeDefinition', MemberDefFlags.RecordRef),
-    ]),
+        ('EnclosingType', ('TypeDefinition', 'TypeSpecification'), MemberDefFlags.RecordRef),
+        ]),
+    ('QualifiedField', None, RecordDefFlags(0), [
+        ('Field', 'Field', MemberDefFlags.RecordRef),
+        ('EnclosingType', ('TypeDefinition', 'TypeSpecification'), MemberDefFlags.RecordRef),
+        ]),
     ('MethodInstantiation', None, RecordDefFlags(0), [
         ('Method', MethodDefOrRef, MemberDefFlags.RecordRef),
         ('GenericTypeArguments', TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
