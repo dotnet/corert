@@ -125,8 +125,12 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
 }
 
 
-CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable)
-    : m_moduleBase(moduleBase), m_pRuntimeFunctionTable(pRuntimeFunctionTable), m_nRuntimeFunctionTable(nRuntimeFunctionTable)
+CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase, 
+                                             PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable,
+                                             PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions)
+    : m_moduleBase(moduleBase), 
+      m_pRuntimeFunctionTable(pRuntimeFunctionTable), m_nRuntimeFunctionTable(nRuntimeFunctionTable),
+      m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
 }
 
@@ -476,10 +480,22 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     return true;
 }
 
+void * CoffNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
+{
+    uint32_t id = (uint32_t)functionId;
+
+    if (id >= m_nClasslibFunctions)
+        return nullptr;
+
+    return m_pClasslibFunctions[id];
+}
+
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
-bool RhpRegisterCoffModule(void * pModule)
+bool RhpRegisterCoffModule(void * pModule, 
+                           void * pvStartRange, UInt32 cbRange,
+                           void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
     PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)pModule;
     PIMAGE_NT_HEADERS pNTHeaders = (PIMAGE_NT_HEADERS)((TADDR)pModule + pDosHeader->e_lfanew);
@@ -488,13 +504,14 @@ bool RhpRegisterCoffModule(void * pModule)
 
     CoffNativeCodeManager * pCoffNativeCodeManager = new (nothrow) CoffNativeCodeManager((TADDR)pModule,
         dac_cast<PTR_RUNTIME_FUNCTION>((TADDR)pModule + pRuntimeFunctions->VirtualAddress),
-        pRuntimeFunctions->Size / sizeof(RUNTIME_FUNCTION));
+        pRuntimeFunctions->Size / sizeof(RUNTIME_FUNCTION),
+        pClasslibFunctions, nClasslibFunctions);
+    if (pCoffNativeCodeManager == nullptr)
+    {
+        return false;
+    }
 
-    // @TODO: CORERT: Register the code manager only for the range that contains managed code. E.g. It is required for
-    // proper handling of hardware exceptions in unmanaged runtime code.
-    // https://github.com/dotnet/corert/issues/973
-
-    if (!RegisterCodeManager(pCoffNativeCodeManager, pModule, pNTHeaders->OptionalHeader.SizeOfImage))
+    if (!RegisterCodeManager(pCoffNativeCodeManager, pvStartRange, cbRange))
     {
         delete pCoffNativeCodeManager;
         return false;

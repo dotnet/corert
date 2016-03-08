@@ -1014,14 +1014,6 @@ extern "C" Int32 _stricmp(const char *string1, const char *string2)
     return strcasecmp(string1, string2);
 }
 
-// Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ UInt8 ** ppLowerBound, _Out_ UInt8 ** ppUpperBound)
-{
-    // The module handle is equal to the module base address
-    *ppLowerBound = (UInt8*)hOsHandle;
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
 REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 {
     // The concept of process CPU affinity is going away and so CoreSystem obsoletes the APIs used to

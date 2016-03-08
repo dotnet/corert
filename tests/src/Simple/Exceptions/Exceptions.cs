@@ -10,6 +10,15 @@ public class BringUpTest
     const int Pass = 100;
     const int Fail = -1;
 
+    volatile int myField;
+
+    public BringUpTest()
+    {
+        myField = 1;
+    }
+
+    static BringUpTest g = null;
+
     public static int Main()
     {
         try
@@ -27,6 +36,16 @@ public class BringUpTest
         {
             Console.WriteLine("Exception caught!");
         }
+
+        try
+        {
+             g.myField++;
+        }
+        catch (NullReferenceException)
+        {
+            Console.WriteLine("Null reference exception caught!");
+        }
+
         return Pass;
     }
 }

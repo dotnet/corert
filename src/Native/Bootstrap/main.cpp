@@ -23,13 +23,18 @@ __declspec(allocate(".modules$A")) void * __modules_a[] = { nullptr };
 __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
 #pragma comment(linker, "/merge:.modules=.rdata")
 
+// Sentinels for managed code section are not implemented here because of the C++ compiler 
+// wraps them with a jump stub in debug builds. They are emitted in ilc instead.
+extern "C" void __managedcode_a();
+extern "C" void __managedcode_z();
+
 #else
 // TODO: Once the dotnet compiler is modified to configure the linker to merge sections
 // on OSX / Linux, store these externs in the .modules section and remove work-around
 // in ModuleHeaderNode.cs.
 //extern "C" __attribute((section ("__DATA,.modules$A"))) void * __modules_a[];
 //extern "C" __attribute((section ("__DATA,.modules$Z"))) void * __modules_z[];
-//__attribute((section ("__DATA,.modules$Z"))) void * __modules_a[] = { nullptr };
+//__attribute((section ("__DATA,.modules$A"))) void * __modules_a[] = { nullptr };
 //__attribute((section ("__DATA,.modules$Z"))) void * __modules_z[] = { nullptr };
 
 extern "C" void * __modules_a[];
@@ -96,8 +101,10 @@ void __range_check_fail()
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
 extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
-extern "C" bool RhpRegisterCoffModule(void * pModule);
-extern "C" void * RhpHandleAlloc(void * pObject, int handleType);
+
+extern "C" bool RhpRegisterCoffModule(void * pModule, 
+    void * pvStartRange, uint32_t cbRange,
+    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
 #define DLL_PROCESS_ATTACH      1
 extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
@@ -282,6 +289,19 @@ extern "C" void InitializeModules(void ** modules, int count);
 extern "C" void* WINAPI GetModuleHandleW(const wchar_t *);
 #endif
 
+extern "C" void GetRuntimeException();
+extern "C" void FailFast();
+extern "C" void AppendExceptionStackFrame();
+
+typedef void(*pfn)();
+
+static const pfn c_classlibFunctions[] = {
+    &GetRuntimeException,
+    &FailFast,
+    nullptr, // &UnhandledExceptionHandler,
+    nullptr, // &AppendExceptionStackFrame,
+};
+
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 int wmain(int argc, wchar_t* argv[])
@@ -293,7 +313,12 @@ int main(int argc, char* argv[])
     if (__initialize_runtime() != 0) return -1;
 
 #if defined(_WIN32) && !defined(CPPCODEGEN)
-    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL))) return -1;
+    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
+        &__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+        (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
+    {
+        return -1;
+    }
 #endif
 
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);

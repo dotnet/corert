@@ -81,11 +81,19 @@ namespace ILCompiler.DependencyAnalysis
             SwitchSection(_nativeObjectWriter, _currentSectionName);
         }
 
-        [DllImport(NativeObjectWriterFileName)]
-        private static extern bool CreateDataSection(IntPtr objWriter, string sectionName, bool readOnly);
-        public void CreateDataSection(string sectionName, bool readOnly)
+        [Flags]
+        public enum CustomSectionAttributes
         {
-            CreateDataSection(_nativeObjectWriter, sectionName, readOnly);
+            ReadOnly    = 0x0000,
+            Writeable   = 0x0001,
+            Executable  = 0x0002,
+        };
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern bool CreateCustomSection(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes);
+        public void CreateCustomSection(string sectionName, CustomSectionAttributes attributes)
+        {
+            CreateCustomSection(_nativeObjectWriter, sectionName, attributes);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -546,7 +554,23 @@ namespace ILCompiler.DependencyAnalysis
         {
             using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
-                objectWriter.CreateDataSection(ModulesSectionNode.SectionName, true);
+                objectWriter.CreateCustomSection(ModulesSectionNode.SectionName, CustomSectionAttributes.ReadOnly);
+
+                // TODO: Exception handling on Unix
+                if (factory.Target.IsWindows)
+                {
+                    objectWriter.CreateCustomSection(MethodCodeNode.StartSectionName, CustomSectionAttributes.Executable);
+                    objectWriter.CreateCustomSection(MethodCodeNode.SectionName, CustomSectionAttributes.Executable);
+                    objectWriter.CreateCustomSection(MethodCodeNode.EndSectionName, CustomSectionAttributes.Executable);
+
+                    // Emit sentinels for managed code section.
+                    objectWriter.SetSection(MethodCodeNode.StartSectionName);
+                    objectWriter.EmitSymbolDef("__managedcode_a");
+                    objectWriter.EmitIntValue(0, 1);
+                    objectWriter.SetSection(MethodCodeNode.EndSectionName);
+                    objectWriter.EmitSymbolDef("__managedcode_z");
+                    objectWriter.EmitIntValue(0, 1);
+                }
 
                 // Build file info map.
                 objectWriter.BuildFileInfoMap(nodes);

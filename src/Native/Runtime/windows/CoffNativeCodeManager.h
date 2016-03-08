@@ -43,8 +43,13 @@ class CoffNativeCodeManager : public ICodeManager
     PTR_RUNTIME_FUNCTION m_pRuntimeFunctionTable;
     UInt32 m_nRuntimeFunctionTable;
 
+    PTR_PTR_VOID m_pClasslibFunctions;
+    UInt32 m_nClasslibFunctions;
+
 public:
-    CoffNativeCodeManager(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable);
+    CoffNativeCodeManager(TADDR moduleBase, 
+                          PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable,
+                          PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions);
     ~CoffNativeCodeManager();
 
     //
@@ -86,4 +91,6 @@ public:
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState);
 
     bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause);
+
+    void * GetClasslibFunction(ClasslibFunctionId functionId);
 };
