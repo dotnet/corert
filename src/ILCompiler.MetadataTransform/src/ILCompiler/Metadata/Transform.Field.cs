@@ -22,6 +22,11 @@ namespace ILCompiler.Metadata
         private Action<Cts.FieldDesc, Field> _initFieldDef;
         private Action<Cts.FieldDesc, MemberReference> _initFieldRef;
 
+        public override MetadataRecord HandleQualifiedField(Cts.FieldDesc field)
+        {
+            return HandleFieldReference(field);
+        }
+
         private Field HandleFieldDefinition(Cts.FieldDesc field)
         {
             Debug.Assert(field.GetTypicalFieldDefinition() == field);

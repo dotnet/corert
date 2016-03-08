@@ -58,6 +58,18 @@ namespace ILCompiler.Metadata
         public abstract MetadataRecord HandleType(Cts.TypeDesc type);
 
         /// <summary>
+        /// Retrieves an existing <see cref="QualifiedMethod"/> or <see cref="MethodReference"/>,
+        /// record representing specified method in the metadata writer object model, or creates a new one.
+        /// </summary>
+        public abstract MetadataRecord HandleQualifiedMethod(Cts.MethodDesc method);
+
+        /// <summary>
+        /// Retrieves an existing <see cref="FieldReference"/> record representing specified field
+        /// in the metadata writer object model, or creates a new one.
+        /// </summary>
+        public abstract MetadataRecord HandleQualifiedField(Cts.FieldDesc field);
+
+        /// <summary>
         /// Retrieves an existing <see cref="MethodSignature"/> record representing the specified signature
         /// in the metadata writer object model, or creates a new one.
         /// </summary>
