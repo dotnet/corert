@@ -24,7 +24,7 @@ namespace ILCompiler.Metadata
         private Action<Cts.MethodDesc, Method> _initMethodDef;
         private Action<Cts.MethodDesc, MemberReference> _initMethodRef;
 
-        private MetadataRecord HandleQualifiedMethod(Cts.MethodDesc method)
+        public override MetadataRecord HandleQualifiedMethod(Cts.MethodDesc method)
         {
             MetadataRecord rec;
 
