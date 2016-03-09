@@ -774,13 +774,13 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #endif // defined(CORERT)
 }
 
-#ifdef _AMD64_
+#ifdef _TARGET_AMD64_
 #define STACK_ALIGN_SIZE 16
-#elif defined(_ARM_)
+#elif defined(_TARGET_ARM_)
 #define STACK_ALIGN_SIZE 8
-#elif defined(_ARM64_)
+#elif defined(_TARGET_ARM64_)
 #define STACK_ALIGN_SIZE 16
-#elif defined(_X86_)
+#elif defined(_TARGET_X86_)
 #define STACK_ALIGN_SIZE 4
 #endif
 
