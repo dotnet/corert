@@ -283,6 +283,14 @@ namespace ILCompiler.Metadata
             if (ecmaEntity != null)
             {
                 Ecma.TypeDefinition ecmaRecord = ecmaEntity.MetadataReader.GetTypeDefinition(ecmaEntity.Handle);
+
+                foreach (var e in ecmaRecord.GetEvents())
+                {
+                    Event evt = HandleEvent(ecmaEntity.EcmaModule, e);
+                    if (evt != null)
+                        record.Events.Add(evt);
+                }
+
                 foreach (var property in ecmaRecord.GetProperties())
                 {
                     Property prop = HandleProperty(ecmaEntity.EcmaModule, property);
@@ -290,7 +298,6 @@ namespace ILCompiler.Metadata
                         record.Properties.Add(prop);
                 }
 
-                // TODO: Events
                 // TODO: CustomAttributes
             }
 

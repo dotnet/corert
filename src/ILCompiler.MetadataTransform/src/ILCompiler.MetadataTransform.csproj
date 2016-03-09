@@ -30,7 +30,9 @@
     <Compile Include="ILCompiler\Metadata\IMetadataPolicy.cs" />
     <Compile Include="ILCompiler\Metadata\MetadataTransform.cs" />
     <Compile Include="ILCompiler\Metadata\MetadataTransformResult.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Constant.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.Event.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Field.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Method.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Namespace.cs" />

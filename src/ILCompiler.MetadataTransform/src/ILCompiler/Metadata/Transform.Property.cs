@@ -70,7 +70,12 @@ namespace ILCompiler.Metadata
                 });
             }
 
-            // TODO: DefaultValue
+            Ecma.ConstantHandle defaultValue = propDef.GetDefaultValue();
+            if (!defaultValue.IsNil)
+            {
+                result.DefaultValue = HandleConstant(module, defaultValue);
+            }
+
             // TODO: CustomAttributes
 
             return result;
