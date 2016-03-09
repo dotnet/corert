@@ -9,9 +9,14 @@ namespace ILCompiler
 {
     static class FormattingHelpers
     {
-        public static string ToStringInvariant(this int value)
+        public static string ToStringInvariant<T>(this T value) where T:IConvertible
         {
             return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringInvariant<T>(this T value, string format) where T:IFormattable
+        {
+            return value.ToString(format, CultureInfo.InvariantCulture);
         }
     }
 }
