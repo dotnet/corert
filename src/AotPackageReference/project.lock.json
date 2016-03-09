@@ -32,6 +32,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Collections.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Collections.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Diagnostics.Contracts/4.0.0": {
@@ -41,6 +47,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Diagnostics.Contracts.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Contracts.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Diagnostics.Debug/4.0.10": {
@@ -53,6 +65,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Diagnostics.Debug.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Debug.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Diagnostics.Tracing/4.0.20": {
@@ -74,6 +92,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Diagnostics.Tracing.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Diagnostics.Tracing.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Globalization/4.0.10": {
@@ -86,6 +110,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Globalization.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Globalization.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.IO/4.0.10": {
@@ -103,6 +133,12 @@
         },
         "runtime": {
           "lib/netcore50/System.IO.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.IO.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Linq/4.0.0": {
@@ -128,6 +164,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Private.Uri.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Private.Uri.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Reflection/4.0.0": {
@@ -160,6 +202,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Reflection.Extensions.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Reflection.Extensions.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Reflection.Primitives/4.0.0": {
@@ -173,6 +221,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Reflection.Primitives.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Reflection.Primitives.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Reflection.TypeExtensions/4.0.0": {
@@ -192,6 +246,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Reflection.TypeExtensions.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Reflection.TypeExtensions.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Resources.ResourceManager/4.0.0": {
@@ -206,6 +266,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Resources.ResourceManager.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Resources.ResourceManager.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Runtime/4.0.20": {
@@ -218,6 +284,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Runtime.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Runtime.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Runtime.Extensions/4.0.10": {
@@ -230,6 +302,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Runtime.Extensions.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Runtime.Extensions.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Runtime.Handles/4.0.0": {
@@ -242,6 +320,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Runtime.Handles.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Runtime.Handles.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Runtime.InteropServices/4.0.20": {
@@ -257,6 +341,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Runtime.InteropServices.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Runtime.InteropServices.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Text.Encoding/4.0.10": {
@@ -269,6 +359,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Text.Encoding.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Text.Encoding.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Text.Encoding.Extensions/4.0.10": {
@@ -282,6 +378,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Text.Encoding.Extensions.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Text.Encoding.Extensions.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Threading/4.0.10": {
@@ -295,6 +397,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Threading.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Threading.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       },
       "System.Threading.Tasks/4.0.10": {
@@ -307,6 +415,12 @@
         },
         "runtime": {
           "lib/netcore50/System.Threading.Tasks.dll": {}
+        },
+        "runtimeTargets": {
+          "runtimes/win8-aot/lib/netcore50/System.Threading.Tasks.dll": {
+            "assetType": "runtime",
+            "rid": "win8-aot"
+          }
         }
       }
     },
