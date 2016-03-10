@@ -6,7 +6,6 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 
 using Internal.TypeSystem;
 
@@ -273,15 +272,10 @@ namespace Internal.IL
             }
         }
 
-        private static string IntToString(int x)
-        {
-            return x.ToString(CultureInfo.InvariantCulture);
-        }
-
         private int _currentTemp = 1;
         private string NewTempName()
         {
-            return "_" + IntToString(_currentTemp++);
+            return "_" + (_currentTemp++).ToStringInvariant();
         }
 
         private void PushTemp(StackValueKind kind, TypeDesc type = null)
@@ -330,7 +324,7 @@ namespace Internal.IL
             SpillSlot spillSlot = new SpillSlot();
             spillSlot.Kind = kind;
             spillSlot.Type = type;
-            spillSlot.Name = "_s" + IntToString(_spillSlots.Count);
+            spillSlot.Name = "_s" + _spillSlots.Count.ToStringInvariant();
 
             _spillSlots.Add(spillSlot);
 
@@ -414,7 +408,7 @@ namespace Internal.IL
                 return _writer.SanitizeCppVarName(_parameterIndexToNameMap[index]);
             }
 
-            return (argument ? "_a" : "_l") + IntToString(index);
+            return (argument ? "_a" : "_l") + index.ToStringInvariant();
         }
 
         private TypeDesc GetVarType(int index, bool argument)
@@ -462,7 +456,7 @@ namespace Internal.IL
 
             ForceAppendEmptyLine();
             Append("#line ");
-            Append(IntToString(sequencePoint.LineNumber));
+            Append(sequencePoint.LineNumber.ToStringInvariant());
             Append(" \"");
             Append(sequencePoint.Document.Replace("\\", "\\\\"));
             Append("\"");
@@ -486,7 +480,7 @@ namespace Internal.IL
 
                 ForceAppendEmptyLine();
                 Append("#line ");
-                Append(IntToString(sequencePoint.LineNumber));
+                Append(sequencePoint.LineNumber.ToStringInvariant());
                 Append(" \"");
                 Append(sequencePoint.Document.Replace("\\", "\\\\"));
                 Append("\"");
@@ -546,7 +540,7 @@ namespace Internal.IL
                 {
                     AppendLine();
                     Append("int __finallyReturn");
-                    Append(IntToString(i));
+                    Append(i.ToStringInvariant());
                     Append(" = 0");
                     AppendSemicolon();
                 }
@@ -563,7 +557,7 @@ namespace Internal.IL
                     AppendEmptyLine();
                     AppendLine();
                     Append("_bb");
-                    Append(IntToString(i));
+                    Append(i.ToStringInvariant());
                     Append(": {");
                     ForceAppendEmptyLine();
                     Append(basicBlock.Code);
@@ -579,16 +573,16 @@ namespace Internal.IL
                 {
                     AppendEmptyLine();
                     AppendLine();
-                    Append("__endFinally" + IntToString(i) + ":");
+                    Append("__endFinally" + i.ToStringInvariant() + ":");
                     Indent();
                     AppendLine();
-                    Append("switch(__finallyReturn" + IntToString(i) + ") {");
+                    Append("switch(__finallyReturn" + i.ToStringInvariant() + ") {");
                     Indent();
                     for (int j = 1; j <= r.ReturnLabels; j++)
                     {
                         AppendLine();
-                        Append("case " + IntToString(j) + ": goto __returnFromFinally" + IntToString(i) +
-                                            "_" + IntToString(j) + ";");
+                        Append("case " + j.ToStringInvariant() + ": goto __returnFromFinally" + i.ToStringInvariant() +
+                                            "_" + j.ToStringInvariant() + ";");
                     }
                     AppendLine();
                     Append("default: " + (_msvc ? "__assume(0)" : "__builtin_unreachable()") + ";");
@@ -747,7 +741,8 @@ namespace Internal.IL
                                 if ((i % 16) == 0)
                                     AppendLine();
                             }
-                            Append(String.Format(CultureInfo.InvariantCulture, "0x{0:X}", memBlock[i]));
+                            Append("0x");
+                            Append(memBlock[i].ToStringInvariant("x2"));
                         }
                         if (memBlock.Length > 16)
                         {
@@ -763,7 +758,7 @@ namespace Internal.IL
                         Append(" + ARRAY_BASE, ");
                         Append(preinitDataHolder);
                         Append(", ");
-                        Append(IntToString(memBlock.Length));
+                        Append(memBlock.Length.ToStringInvariant());
                         Append(")");
 
                         AppendSemicolon();
@@ -999,7 +994,7 @@ namespace Internal.IL
             {
                 Append(_writer.GetCppTypeName(method.OwningType));
                 Append("::__getMethodTable(), ");
-                Append(IntToString(((ArrayType)method.OwningType).Rank));
+                Append(((ArrayType)method.OwningType).Rank.ToStringInvariant());
                 Append(", ");
             }
             else if (opcode == ILOpcode.newobj)
@@ -1074,7 +1069,7 @@ namespace Internal.IL
                     thisArgument = thisArgument.MakeByRefType();
             }
 
-            string typeDefName = "__calli__" + token.ToString("x8", CultureInfo.InvariantCulture);
+            string typeDefName = "__calli__" + token.ToStringInvariant("x8");
             _writer.AppendSignatureTypeDef(_builder, typeDefName, methodSignature, thisArgument);
 
             TypeDesc retType = methodSignature.ReturnType;
@@ -1149,14 +1144,14 @@ namespace Internal.IL
                 if (value == Int64.MinValue)
                     val = "(int64_t)(0x8000000000000000" + (_msvc ? "i64" : "LL") + ")";
                 else
-                    val = value.ToString(CultureInfo.InvariantCulture) + (_msvc ? "i64" : "LL");
+                    val = value.ToStringInvariant() + (_msvc ? "i64" : "LL");
             }
             else
             {
                 if (value == Int32.MinValue)
                     val = "(int32_t)(0x80000000)";
                 else
-                    val = ((int)value).ToString(CultureInfo.InvariantCulture);
+                    val = ((int)value).ToStringInvariant();
             }
 
             Push(kind, new Value(val));
@@ -1167,8 +1162,8 @@ namespace Internal.IL
             // TODO: Handle infinity, NaN, etc.
             if (Double.IsNaN(value) || Double.IsInfinity(value) || Double.IsPositiveInfinity(value) || Double.IsNegativeInfinity(value))
                 throw new NotImplementedException();
-            
-            string val = value.ToString();
+
+            string val = value.ToStringInvariant();
             Push(StackValueKind.Float, new Value(val));
         }
 
@@ -1263,7 +1258,7 @@ namespace Internal.IL
                 ImportFallthrough(target);
                 AppendLine();
                 Append("goto _bb");
-                Append(IntToString(target.StartOffset));
+                Append(target.StartOffset.ToStringInvariant());
                 AppendSemicolon();
                 AppendLine();
                 Append("break; ");
@@ -1403,7 +1398,7 @@ namespace Internal.IL
             ImportFallthrough(target);
             AppendLine();
             Append("goto _bb");
-            Append(IntToString(target.StartOffset));
+            Append(target.StartOffset.ToStringInvariant());
             AppendSemicolon();
             Exdent();
             AppendLine();
@@ -1920,7 +1915,7 @@ namespace Internal.IL
         private static string AddReturnLabel(ExceptionRegion r)
         {
             r.ReturnLabels++;
-            return IntToString(r.ReturnLabels);
+            return r.ReturnLabels.ToStringInvariant();
         }
 
         private void ImportLeave(BasicBlock target)
@@ -1949,19 +1944,19 @@ namespace Internal.IL
 
                     AppendLine();
                     Append("__finallyReturn");
-                    Append(IntToString(i));
+                    Append(i.ToStringInvariant());
                     Append(" = ");
                     Append(returnLabel);
                     AppendSemicolon();
 
                     AppendLine();
                     Append("goto _bb");
-                    Append(IntToString(r.ILRegion.HandlerOffset));
+                    Append(r.ILRegion.HandlerOffset.ToStringInvariant());
                     AppendSemicolon();
 
                     AppendEmptyLine();
                     Append("__returnFromFinally");
-                    Append(IntToString(i));
+                    Append(i.ToStringInvariant());
                     Append("_");
                     Append(returnLabel);
                     Append(":");
@@ -1973,7 +1968,7 @@ namespace Internal.IL
 
             AppendLine();
             Append("goto _bb");
-            Append(IntToString(target.StartOffset));
+            Append(target.StartOffset.ToStringInvariant());
             AppendSemicolon();
 
             MarkBasicBlock(target);
@@ -2005,7 +2000,7 @@ namespace Internal.IL
 
             AppendLine();
             Append("goto __endFinally");
-            Append(IntToString(finallyIndex));
+            Append(finallyIndex.ToStringInvariant());
             AppendSemicolon();
         }
 

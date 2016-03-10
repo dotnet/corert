@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -184,7 +183,7 @@ namespace ILCompiler.CppCodeGen
                     else
                     {
                         sb.Append("_a");
-                        sb.Append(i.ToString());
+                        sb.Append(i.ToStringInvariant());
                     }
                 }
                 if (i != argCount - 1)
@@ -232,7 +231,7 @@ namespace ILCompiler.CppCodeGen
                 else
                 {
                     sb.Append("_a");
-                    sb.Append(i.ToString());
+                    sb.Append(i.ToStringInvariant());
                 }
                 if (i != argCount - 1)
                     sb.Append(", ");
@@ -900,7 +899,7 @@ namespace ILCompiler.CppCodeGen
             sb.Append(" return (__slot__");
             sb.Append(GetCppMethodName(method));
             sb.Append(")*((void **)(*((RawEEType **)pThis) + 1) + ");
-            sb.Append(slot.ToString());
+            sb.Append(slot.ToStringInvariant());
             sb.Append(");");
             sb.Exdent();
             sb.AppendLine();
@@ -1001,7 +1000,7 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("sizeof(uint16_t),");
                 sb.AppendLine();
                 sb.Append("0x");                             // EEType::_usComponentSize
-                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
+                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
                 sb.Append(",");
                 sb.AppendLine();
                 sb.Append("2 * sizeof(void*) + sizeof(int32_t) + 2,");       // EEType::_uBaseSize
@@ -1018,7 +1017,7 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("),");
                 sb.AppendLine();
                 sb.Append("0x");
-                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
+                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
                 sb.Append(",");
                 sb.AppendLine();
                 sb.Append("3 * sizeof(void*),"); // EEType::_uBaseSize
@@ -1035,11 +1034,11 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("),");
                 sb.AppendLine();
                 sb.Append("0x");
-                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
+                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
                 sb.Append(",");
                 sb.AppendLine();
                 sb.Append("3 * sizeof(void*) + ");                            // EEType::_uBaseSize
-                sb.Append(((ArrayType)type).Rank.ToString());
+                sb.Append(((ArrayType)type).Rank.ToStringInvariant());
                 sb.Append("* sizeof(int32_t) * 2,");
             }
             else
@@ -1052,7 +1051,7 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("0,");
                 sb.AppendLine();
                 sb.Append("0x");                                           // EEType::_usComponentSize
-                sb.Append(flags.ToString("x", CultureInfo.InvariantCulture));   // EEType::_usFlags
+                sb.Append(flags.ToStringInvariant("x"));   // EEType::_usFlags
                 sb.Append(",");
                 sb.AppendLine();
                 sb.Append("AlignBaseSize(sizeof(void*)+sizeof(");             // EEType::_uBaseSize
