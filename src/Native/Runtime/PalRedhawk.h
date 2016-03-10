@@ -801,6 +801,8 @@ REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertab
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
+REDHAWK_PALIMPORT UInt64 PalGetCurrentThreadIdForLogging();
+
 #ifdef PLATFORM_UNIX
 REDHAWK_PALIMPORT Int32 __cdecl _stricmp(const char *string1, const char *string2);
 #endif // PLATFORM_UNIX

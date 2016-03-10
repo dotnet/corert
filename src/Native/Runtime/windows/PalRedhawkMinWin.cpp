@@ -158,6 +158,11 @@ extern "C" bool PalDetachThread(void* thread)
 }
 #endif // RUNTIME_SERVICES_ONLY
 
+extern "C" UInt64 PalGetCurrentThreadIdForLogging()
+{
+    return GetCurrentThreadId();
+}
+
 #define SUPPRESS_WARNING_4127   \
     __pragma(warning(push))     \
     __pragma(warning(disable:4127)) /* conditional expression is constant*/
@@ -1348,7 +1353,7 @@ void GCToOSInterface::Shutdown()
 // current platform. It is indended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the 
-uint32_t GCToOSInterface::GetCurrentThreadIdForLogging()
+uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
     return ::GetCurrentThreadId();
 }

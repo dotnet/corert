@@ -24,6 +24,7 @@
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <dlfcn.h>
 #include <dirent.h>
 #include <string.h>
@@ -32,6 +33,14 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <cstdarg>
+
+#if HAVE_PTHREAD_GETTHREADID_NP
+#include <pthread_np.h>
+#endif
+
+#if HAVE_LWP_SELF
+#include <lwp.h>
+#endif
 
 #if !HAVE_SYSCONF && !HAVE_SYSCTL
 #error Neither sysconf nor sysctl is present on the current system
@@ -1221,10 +1230,22 @@ extern "C" UInt32_BOOL QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
     return UInt32_TRUE;
 }
 
-extern "C" uint32_t GetCurrentThreadId()
+extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 {
-    // UNIXTODO: Implement
-    return 1;
+#if defined(__LINUX__)
+    return (uint64_t)syscall(SYS_gettid);
+#elif defined(__APPLE__)
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return (uint64_t)tid;
+#elif HAVE_PTHREAD_GETTHREADID_NP
+    return (uint64_t)pthread_getthreadid_np();
+#elif HAVE_LWP_SELF
+    return (uint64_t)_lwp_self();
+#else
+    // Fallback in case we don't know how to get integer thread id on the current platform
+    return (uint64_t)pthread_self();
+#endif
 }
 
 extern "C" UInt32_BOOL WriteFile(
@@ -1272,9 +1293,9 @@ void GCToOSInterface::Shutdown()
 // current platform. It is indended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the 
-uint32_t GCToOSInterface::GetCurrentThreadIdForLogging()
+uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
-    return ::GetCurrentThreadId();
+    return PalGetCurrentThreadIdForLogging();
 }
 
 // Get id of the process

@@ -870,6 +870,22 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
+check_cxx_source_compiles("
+#include <pthread_np.h>
+
+int main(int argc, char **argv)
+{
+    return (int)pthread_getthreadid_np();
+}" HAVE_PTHREAD_GETTHREADID_NP)
+
+check_cxx_source_compiles("
+#include <lwp.h>
+
+int main(int argc, char **argv)
+{
+    return (int)_lwp_self();
+}" HAVE_LWP_SELF)
+
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   if(NOT HAVE_LIBUUID_H)
     unset(HAVE_LIBUUID_H CACHE)

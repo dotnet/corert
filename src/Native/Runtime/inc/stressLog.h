@@ -548,7 +548,7 @@ struct StressLogChunk
 //     to the corresponding field
 class ThreadStressLog {
     PTR_ThreadStressLog next;   // we keep a linked list of these
-    unsigned   threadId;        // the id for the thread using this buffer
+    EEThreadId threadId;        // the id for the thread using this buffer
     bool       isDead;          // Is this thread dead 
     StressMsg* curPtr;          // where packets are being put on the queue
     StressMsg* readPtr;         // where we are reading off the queue (used during dumping)
@@ -715,7 +715,6 @@ inline ThreadStressLog::ThreadStressLog()
     chunkListHead = chunkListTail = newChunk;
 
     next = NULL;
-    threadId = 0;
     isDead = TRUE;
     curPtr = NULL;
     readPtr = NULL;
