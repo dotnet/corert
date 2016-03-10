@@ -317,9 +317,11 @@ DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     INVALID_HANDLE_VALUE,               // m_hPalThread
     0,                                  // m_ppvHijackedReturnAddressLocation
     0,                                  // m_pvHijackedReturnAddress
+    0,                                  // m_pExInfoStackHead
     0,                                  // m_pStackLow
     0,                                  // m_pStackHigh
-    0,                                  // m_uPalThreadId
+    0,                                  // m_pTEB
+    0,                                  // m_uPalThreadIdForLogging
 };
 
 #ifdef CORERT

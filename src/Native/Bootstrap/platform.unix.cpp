@@ -60,4 +60,9 @@ extern "C"
     {
         throw "OutputDebugStringW";
     }
+
+    uint32_t GetCurrentThreadId()
+    {
+        throw "GetCurrentThreadId";
+    }
 }

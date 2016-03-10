@@ -353,7 +353,7 @@ void ThreadStressLog::LogMsg ( UInt32 facility, int cArgs, const char* format, v
         msg->args[i] = data;
     }
 
-    ASSERT(IsValid() && threadId == PalGetCurrentThreadId ());
+    ASSERT(IsValid() && threadId.IsCurrentThread());
 }
 
 
@@ -361,13 +361,13 @@ void ThreadStressLog::Activate (Thread * pThread)
 {
     _ASSERTE(pThread != NULL);
     //there is no need to zero buffers because we could handle garbage contents
-    threadId = PalGetCurrentThreadId ();       
+    threadId.SetToCurrentThread();       
     isDead = FALSE;        
     curWriteChunk = chunkListTail;
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();
     writeHasWrapped = FALSE;
     this->pThread = pThread;
-    ASSERT(pThread->GetPalThreadId() == threadId);
+    ASSERT(pThread->IsCurrentThread());
 }
 
 /* static */

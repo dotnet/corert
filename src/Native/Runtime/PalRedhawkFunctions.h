@@ -86,12 +86,6 @@ inline HANDLE PalGetCurrentThread()
     return GetCurrentThread();
 }
 
-extern "C" UInt32 __stdcall GetCurrentThreadId();
-inline UInt32 PalGetCurrentThreadId()
-{
-    return GetCurrentThreadId();
-}
-
 #ifdef UNICODE
 extern "C" UInt32 __stdcall GetEnvironmentVariableW(__in_z_opt LPCWSTR, __out_z_opt LPWSTR, UInt32);
 inline UInt32 PalGetEnvironmentVariable(__in_z_opt LPCWSTR arg1, __out_z_opt LPWSTR arg2, UInt32 arg3)
