@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "NETStandard.Library": "1.0.0-rc2-23704",
+    "NETStandard.Library": "1.0.0-rc2-23910",
     "Microsoft.NETCore.TestHost": "1.0.0-beta-23328",
     "Microsoft.Cci": "4.0.0-beta-23328",
     "System.Diagnostics.TextWriterTraceListener": "4.0.0-beta-23328",
