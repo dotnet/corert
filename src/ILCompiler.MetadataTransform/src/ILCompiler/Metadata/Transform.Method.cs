@@ -91,9 +91,14 @@ namespace ILCompiler.Metadata
                         Ecma.Parameter param = reader.GetParameter(paramHandle);
                         record.Parameters[i].Flags = param.Attributes;
                         record.Parameters[i].Name = HandleString(reader.GetString(param.Name));
-                        
+
+                        Ecma.ConstantHandle defaultValue = param.GetDefaultValue();
+                        if (!defaultValue.IsNil)
+                        {
+                            record.Parameters[i].DefaultValue = HandleConstant(ecmaEntity.Module, defaultValue);
+                        }
+
                         // TODO: CustomAttributes
-                        // TODO: DefaultValue
 
                         i++;
                     }
