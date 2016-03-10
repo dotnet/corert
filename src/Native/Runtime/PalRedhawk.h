@@ -50,6 +50,12 @@ typedef void *              LPOVERLAPPED;
 #define WINBASEAPI          __declspec(dllimport)
 #endif //!GCENV_INCLUDED
 
+#ifdef PLATFORM_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '/'
+#else // PLATFORM_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '\\'
+#endif // PLATFORM_UNIX
+
 typedef union _LARGE_INTEGER {
     struct {
 #if BIGENDIAN
@@ -708,7 +714,7 @@ REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_z_ const TCHAR *
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
 
 // Return value:  number of characters in name string
-REDHAWK_PALIMPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HANDLE moduleBase);
+REDHAWK_PALIMPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
 // Various intrinsic declarations needed for the PalGetCurrentTEB implementation below.
 #if defined(_X86_)

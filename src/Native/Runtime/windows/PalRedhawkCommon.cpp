@@ -378,7 +378,7 @@ typedef struct _TEB {
 //NOTE:  This implementation exists because calling GetModuleFileName is not wack compliant.  if we later decide
 //       that the framework package containing mrt100_app no longer needs to be wack compliant, this should be 
 //       removed and the windows implementation of GetModuleFileName should be substitued on windows.
-REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HANDLE moduleBase)
+REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
     TEB* pTEB = NtCurrentTeb();
     LIST_ENTRY* pStartLink = &(pTEB->ProcessEnvironmentBlock->Ldr->InMemoryOrderModuleList);

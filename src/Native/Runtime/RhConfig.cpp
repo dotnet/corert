@@ -221,50 +221,45 @@ void RhConfig::ReadConfigIni()
 //returns the path to the runtime configuration ini
 _Ret_maybenull_z_ TCHAR* RhConfig::GetConfigPath()
 {
-    TCHAR* exePathBuff;
+    const TCHAR* exePathBuff;
 
     //get the path to rhconfig.ini, this file is expected to live along side the app 
     //to build the path get the process executable module full path strip off the file name and 
     //append rhconfig.ini
-#ifdef PLATFORM_UNIX
-    // UNIXTODO: Implement RhConfig::GetConfigPath!
-    Int32 pathLen = 0; exePathBuff = NULL;
-#else
     Int32 pathLen = PalGetModuleFileName(&exePathBuff, NULL);
-#endif
 
     if (pathLen <= 0)
     {
         return NULL;
     }
-    UInt32 iLastBackslash = 0;
+    UInt32 iLastDirSeparator = 0;
 
     for (UInt32 iPath = pathLen - 1; iPath > 0; iPath--)
     {
-        if (exePathBuff[iPath] == '\\')
+        if (exePathBuff[iPath] == DIRECTORY_SEPARATOR_CHAR)
         {
-            iLastBackslash = iPath;
+            iLastDirSeparator = iPath;
             break;
         }
     }
 
-    if (iLastBackslash == 0)
+    if (iLastDirSeparator == 0)
     {
         return NULL;
     }
 
-    TCHAR* configPath = new (nothrow) TCHAR[iLastBackslash + 1 + wcslen(CONFIG_INI_FILENAME) + 1];
+    TCHAR* configPath = new (nothrow) TCHAR[iLastDirSeparator + 1 + wcslen(CONFIG_INI_FILENAME) + 1];
     if (configPath != NULL)
     {
         //copy the path base and file name
-        for (UInt32 i = 0; i <= iLastBackslash; i++)
+        for (UInt32 i = 0; i <= iLastDirSeparator; i++)
         {
             configPath[i] = exePathBuff[i];
         }
 
         for (UInt32 i = 0; i <= wcslen(CONFIG_INI_FILENAME); i++)
         {
-            configPath[i + iLastBackslash + 1] = CONFIG_INI_FILENAME[i];
+            configPath[i + iLastDirSeparator + 1] = CONFIG_INI_FILENAME[i];
         }
     }
 
