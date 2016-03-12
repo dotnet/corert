@@ -675,9 +675,15 @@ namespace Internal.Runtime.Augments
         /// <param name="moduleBase">Module base address</param>
         public static unsafe String TryGetFullPathToApplicationModule(IntPtr moduleBase)
         {
+#if PLATFORM_UNIX
+            byte* pModuleNameUtf8;
+            int numUtf8Chars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleNameUtf8);
+            String modulePath = System.Text.Encoding.UTF8.GetString(pModuleNameUtf8, numUtf8Chars);
+#else // PLATFORM_UNIX
             char* pModuleName;
             int numChars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleName);
             String modulePath = new String(pModuleName, 0, numChars);
+#endif // PLATFORM_UNIX
             return modulePath;
         }
 

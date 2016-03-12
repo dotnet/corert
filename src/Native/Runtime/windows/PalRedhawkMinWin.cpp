@@ -190,7 +190,7 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
     }                                                   \
     WHILE_0;
 
-extern "C" int __stdcall PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HANDLE moduleBase);
+extern "C" int __stdcall PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
 HRESULT STDMETHODCALLTYPE AllocateThunksFromTemplate(
     _In_ HANDLE hTemplateModule,
@@ -204,7 +204,7 @@ HRESULT STDMETHODCALLTYPE AllocateThunksFromTemplate(
     bool success = false;
     HANDLE hMap = NULL, hFile = INVALID_HANDLE_VALUE;
 
-    WCHAR * wszModuleFileName = NULL;
+    const WCHAR * wszModuleFileName = NULL;
     if (PalGetModuleFileName(&wszModuleFileName, hTemplateModule) == 0 || wszModuleFileName == NULL)
         return E_FAIL;
 

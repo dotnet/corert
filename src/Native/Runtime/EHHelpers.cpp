@@ -118,7 +118,7 @@ COOP_PINVOKE_HELPER(void, RhpSetThreadDoNotTriggerGC, ())
     pThisThread->SetDoNotTriggerGc();
 }
 
-COOP_PINVOKE_HELPER(Int32, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ wchar_t** pModuleNameOut))
+COOP_PINVOKE_HELPER(Int32, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ const TCHAR** pModuleNameOut))
 {
     return PalGetModuleFileName(pModuleNameOut, moduleHandle);
 }

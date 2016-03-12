@@ -1103,20 +1103,31 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
     return true;
 }
 
+extern "C" int main(int argc, char** argv);
+
 // retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the
 // executable module of the current process.
 //
 // Return value:  number of characters in name string
 //
-REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HANDLE moduleBase)
+REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
-    // TODO: this function has a signature that expects the module name to be stored somewhere.
-    // We should change the signature to actually copy out the module name.
-    // Or get rid of this function (it is used by RHConfig to find the config file and the
-    // profiling to generate the .profile file name.
-    // UNIXTODO: Implement this function!
-    *pModuleNameOut = NULL;
-    return 0;
+    if (moduleBase == NULL)
+    {
+        // Get an address of the "main" function, which causes the dladdr to return
+        // path of the main executable
+        moduleBase = &main;
+    }
+
+    Dl_info dl;
+    if (dladdr(moduleBase, &dl) == 0)
+    {
+        *pModuleNameOut = NULL;
+        return 0;
+    }
+
+    *pModuleNameOut = dl.dli_fname;
+    return strlen(dl.dli_fname);
 }
 
 void PalDebugBreak()

@@ -531,7 +531,11 @@ namespace System.Runtime
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetModuleFileName")]
+#if PLATFORM_UNIX
+        internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out byte* moduleName);
+#else
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out char* moduleName);
+#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetExceptionsForCurrentThread")]
