@@ -65,4 +65,9 @@ extern "C"
     {
         throw "GetCurrentThreadId";
     }
+
+    uint32_t RhCompatibleReentrantWaitAny(uint32_t alertable, uint32_t timeout, uint32_t count, void* pHandles)
+    {
+        throw "RhCompatibleReentrantWaitAny";
+    }
 }
