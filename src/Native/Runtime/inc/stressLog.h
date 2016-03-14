@@ -548,12 +548,12 @@ struct StressLogChunk
 //     to the corresponding field
 class ThreadStressLog {
     PTR_ThreadStressLog next;   // we keep a linked list of these
-    EEThreadId threadId;        // the id for the thread using this buffer
+    uint64_t   threadId;        // the id for the thread using this buffer
     bool       isDead;          // Is this thread dead 
-    StressMsg* curPtr;          // where packets are being put on the queue
-    StressMsg* readPtr;         // where we are reading off the queue (used during dumping)
     bool       readHasWrapped;      // set when read ptr has passed chunListTail
     bool       writeHasWrapped;     // set when write ptr has passed chunListHead
+    StressMsg* curPtr;          // where packets are being put on the queue
+    StressMsg* readPtr;         // where we are reading off the queue (used during dumping)
     PTR_StressLogChunk chunkListHead; //head of a list of stress log chunks
     PTR_StressLogChunk chunkListTail; //tail of a list of stress log chunks
     PTR_StressLogChunk curReadChunk;  //the stress log chunk we are currently reading
