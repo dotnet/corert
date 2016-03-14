@@ -55,9 +55,14 @@ namespace ILCompiler.Metadata
                 {
                     record.DefaultValue = HandleConstant(ecmaField.Module, defaultValueHandle);
                 }
+
+                Ecma.CustomAttributeHandleCollection customAttributes = fieldDef.GetCustomAttributes();
+                if (customAttributes.Count > 0)
+                {
+                    record.CustomAttributes = HandleCustomAttributes(ecmaField.Module, customAttributes);
+                }
             }
 
-            // TODO: CustomAttributes
             // TODO: Offset
         }
 

@@ -298,7 +298,11 @@ namespace ILCompiler.Metadata
                         record.Properties.Add(prop);
                 }
 
-                // TODO: CustomAttributes
+                Ecma.CustomAttributeHandleCollection customAttributes = ecmaRecord.GetCustomAttributes();
+                if (customAttributes.Count > 0)
+                {
+                    record.CustomAttributes = HandleCustomAttributes(ecmaEntity.EcmaModule, customAttributes);
+                }
             }
 
             // TODO: MethodImpls

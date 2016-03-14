@@ -94,9 +94,19 @@ namespace ILCompiler.Metadata
                         paramRecord.DefaultValue = HandleConstant(ecmaEntity.Module, defaultValue);
                     }
 
-                    record.Parameters.Add(paramRecord);
+                    Ecma.CustomAttributeHandleCollection paramAttributes = param.GetCustomAttributes();
+                    if (paramAttributes.Count > 0)
+                    {
+                        paramRecord.CustomAttributes = HandleCustomAttributes(ecmaEntity.Module, paramAttributes);
+                    }
 
-                    // TODO: CustomAttributes
+                    record.Parameters.Add(paramRecord);
+                }
+
+                Ecma.CustomAttributeHandleCollection attributes = methodDef.GetCustomAttributes();
+                if (attributes.Count > 0)
+                {
+                    record.CustomAttributes = HandleCustomAttributes(ecmaEntity.Module, attributes);
                 }
             }
             else
@@ -108,7 +118,6 @@ namespace ILCompiler.Metadata
             record.ImplFlags = GetMethodImplAttributes(entity);
             
             //TODO: RVA
-            //TODO: CustomAttributes
         }
 
         private MemberReference HandleMethodReference(Cts.MethodDesc method)

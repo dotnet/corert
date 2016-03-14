@@ -76,7 +76,11 @@ namespace ILCompiler.Metadata
                 result.DefaultValue = HandleConstant(module, defaultValue);
             }
 
-            // TODO: CustomAttributes
+            Ecma.CustomAttributeHandleCollection customAttributes = propDef.GetCustomAttributes();
+            if (customAttributes.Count > 0)
+            {
+                result.CustomAttributes = HandleCustomAttributes(module, customAttributes);
+            }
 
             return result;
         }
