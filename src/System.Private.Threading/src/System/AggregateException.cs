@@ -380,6 +380,7 @@ namespace System
             return new AggregateException(Message, flattenedExceptions);
         }
 
+#if CORERT
         /// <summary>Gets a message that describes the exception.</summary>
         public override string Message
         {
@@ -403,6 +404,7 @@ namespace System
                 return sb.ToString();
             }
         }
+#endif
 
         /// <summary>
         /// Creates and returns a string representation of the current <see cref="AggregateException"/>.
