@@ -23,12 +23,17 @@ namespace ILCompiler.Metadata
 
         private Action<Cts.MethodDesc, Method> _initMethodDef;
         private Action<Cts.MethodDesc, MemberReference> _initMethodRef;
+        private Action<Cts.MethodDesc, MethodInstantiation> _initMethodInst;
 
         public override MetadataRecord HandleQualifiedMethod(Cts.MethodDesc method)
         {
             MetadataRecord rec;
 
-            if (_policy.GeneratesMetadata(method))
+            if (method is Cts.InstantiatedMethod)
+            {
+                rec = HandleMethodInstantiation(method);
+            }
+            else if (method.IsTypicalMethodDefinition && _policy.GeneratesMetadata(method))
             {
                 rec = new QualifiedMethod
                 {
@@ -41,7 +46,7 @@ namespace ILCompiler.Metadata
                 rec = HandleMethodReference(method);
             }
 
-            Debug.Assert(rec is QualifiedMethod || rec is MemberReference);
+            Debug.Assert(rec is QualifiedMethod || rec is MemberReference || rec is MethodInstantiation);
 
             return rec;
         }
@@ -114,8 +119,7 @@ namespace ILCompiler.Metadata
 
         private MemberReference HandleMethodReference(Cts.MethodDesc method)
         {
-            Debug.Assert(method.IsTypicalMethodDefinition);
-            Debug.Assert(!_policy.GeneratesMetadata(method));
+            Debug.Assert(method.IsMethodDefinition);
             return (MemberReference)_methods.GetOrCreate(method, _initMethodRef ?? (_initMethodRef = InitializeMethodReference));
         }
 
@@ -124,6 +128,22 @@ namespace ILCompiler.Metadata
             record.Name = HandleString(entity.Name);
             record.Parent = HandleType(entity.OwningType);
             record.Signature = HandleMethodSignature(entity.Signature);
+        }
+
+        private MethodInstantiation HandleMethodInstantiation(Cts.MethodDesc method)
+        {
+            return (MethodInstantiation)_methods.GetOrCreate(method, _initMethodInst ?? (_initMethodInst = InitializeMethodInstantiation));
+        }
+
+        private void InitializeMethodInstantiation(Cts.MethodDesc entity, MethodInstantiation record)
+        {
+            Cts.InstantiatedMethod instantiation = (Cts.InstantiatedMethod)entity;
+            record.Method = HandleQualifiedMethod(instantiation.GetMethodDefinition());
+            record.GenericTypeArguments.Capacity = instantiation.Instantiation.Length;
+            foreach (Cts.TypeDesc typeArgument in instantiation.Instantiation)
+            {
+                record.GenericTypeArguments.Add(HandleType(typeArgument));
+            }
         }
 
         public override MethodSignature HandleMethodSignature(Cts.MethodSignature signature)

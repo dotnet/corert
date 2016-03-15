@@ -54,6 +54,9 @@ public virtual string System.Exception.StackTrace.get
 public int System.Array.Length.get
 public static void System.Array.Copy(System.Array sourceArray, int sourceIndex, System.Array destinationArray, int destinationIndex, int length)
 public static void System.Array.Copy(System.Array sourceArray, System.Array destinationArray, int length)
+public object System.Array.GetValue(int index)
+public object System.Array.GetValue(params int[] indices)
+public void System.Array.CopyTo(System.Array array, int index)
 
 # System.Runtime.InteropServices
 public static System.Runtime.InteropServices.GCHandle System.Runtime.InteropServices.GCHandle.Alloc(object value, System.Runtime.InteropServices.GCHandleType type)

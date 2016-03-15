@@ -38,7 +38,13 @@ namespace ILCompiler.Metadata
                 var assemblyName = assemblyDesc.GetName();
 
                 scopeDefinition.Name = HandleString(assemblyName.Name);
+#if NETFX_45
+                // With NET 4.5 contract System.Reflection 4.0.0.0 EcmaModule has no way
+                // to set Culture in its AssemblyName.
+                scopeDefinition.Culture = HandleString(assemblyName.CultureName ?? "");
+#else
                 scopeDefinition.Culture = HandleString(assemblyName.CultureName);
+#endif
                 scopeDefinition.MajorVersion = checked((ushort)assemblyName.Version.Major);
                 scopeDefinition.MinorVersion = checked((ushort)assemblyName.Version.Minor);
                 scopeDefinition.BuildNumber = checked((ushort)assemblyName.Version.Build);
