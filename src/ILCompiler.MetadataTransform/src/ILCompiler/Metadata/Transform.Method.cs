@@ -70,44 +70,38 @@ namespace ILCompiler.Metadata
                     record.GenericParameters.Add(HandleGenericParameter((Cts.GenericParameterDesc)p));
             }
 
-            if (entity.Signature.Length > 0)
+            var ecmaEntity = entity as Cts.Ecma.EcmaMethod;
+            if (ecmaEntity != null)
             {
-                record.Parameters.Capacity = entity.Signature.Length;
-                for (ushort i = 0; i < entity.Signature.Length; i++)
+                Ecma.MetadataReader reader = ecmaEntity.MetadataReader;
+                Ecma.MethodDefinition methodDef = reader.GetMethodDefinition(ecmaEntity.Handle);
+                Ecma.ParameterHandleCollection paramHandles = methodDef.GetParameters();
+
+                record.Parameters.Capacity = paramHandles.Count;
+                foreach (var paramHandle in paramHandles)
                 {
-                    record.Parameters.Add(new Parameter
+                    Ecma.Parameter param = reader.GetParameter(paramHandle);
+                    Parameter paramRecord = new Parameter
                     {
-                        Sequence = i
-                    });
-                }
-
-                var ecmaEntity = entity as Cts.Ecma.EcmaMethod;
-                if (ecmaEntity != null)
-                {
-                    Ecma.MetadataReader reader = ecmaEntity.MetadataReader;
-                    Ecma.MethodDefinition methodDef = reader.GetMethodDefinition(ecmaEntity.Handle);
-                    Ecma.ParameterHandleCollection paramHandles = methodDef.GetParameters();
-
-                    Debug.Assert(paramHandles.Count == entity.Signature.Length);
-
-                    int i = 0;
-                    foreach (var paramHandle in paramHandles)
+                        Flags = param.Attributes,
+                        Name = HandleString(reader.GetString(param.Name)),
+                        Sequence = checked((ushort)param.SequenceNumber)
+                    };
+                    
+                    Ecma.ConstantHandle defaultValue = param.GetDefaultValue();
+                    if (!defaultValue.IsNil)
                     {
-                        Ecma.Parameter param = reader.GetParameter(paramHandle);
-                        record.Parameters[i].Flags = param.Attributes;
-                        record.Parameters[i].Name = HandleString(reader.GetString(param.Name));
-
-                        Ecma.ConstantHandle defaultValue = param.GetDefaultValue();
-                        if (!defaultValue.IsNil)
-                        {
-                            record.Parameters[i].DefaultValue = HandleConstant(ecmaEntity.Module, defaultValue);
-                        }
-
-                        // TODO: CustomAttributes
-
-                        i++;
+                        paramRecord.DefaultValue = HandleConstant(ecmaEntity.Module, defaultValue);
                     }
+
+                    record.Parameters.Add(paramRecord);
+
+                    // TODO: CustomAttributes
                 }
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
 
             record.Flags = GetMethodAttributes(entity);
