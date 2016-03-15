@@ -5,7 +5,6 @@
     "xunit.netcore.extensions": "1.0.0-prerelease-*"
   },
   "frameworks": {
-    "net46": {},
     "dnxcore50": { 
         "imports": "portable-net451+win8"
     }
