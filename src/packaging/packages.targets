@@ -41,6 +41,8 @@
             <ILCompilerFiles Include="ilc.exe" />
             <ILCompilerFiles Include="ILCompiler.Compiler.dll" />
             <ILCompilerFiles Include="ILCompiler.DependencyAnalysisFramework.dll" />
+            <ILCompilerFiles Include="ILCompiler.MetadataTransform.dll" />
+            <ILCompilerFiles Include="ILCompiler.MetadataWriter.dll" />
             <ILCompilerFiles Include="ILCompiler.TypeSystem.dll" />
             <ILCompilerBinPlace Include="@(ILCompilerFiles)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>

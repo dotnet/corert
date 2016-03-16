@@ -173,7 +173,7 @@ inline DispatchMap * EEType::GetDispatchMap()
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
 #ifdef CORERT
-    return (*m_ppModuleManager)->GetDispatchMapLookupTable()[idxDispatchMap];
+    return GetModuleManager()->GetDispatchMapLookupTable()[idxDispatchMap];
 #endif
 
     Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(this);

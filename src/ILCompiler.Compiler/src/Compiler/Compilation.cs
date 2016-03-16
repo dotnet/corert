@@ -166,6 +166,16 @@ namespace ILCompiler
             _compilationModuleGroup.AddWellKnownTypes();
             _compilationModuleGroup.AddCompilationRoots();
 
+            if (!_options.IsCppCodeGen && !_options.MultiFile)
+            {
+                // TODO: build a general purpose way to hook up pieces that would be part of the core library
+                //       if factoring of the core library respected how things are, versus how they would be in
+                //       a magic world (future customers of this mechanism will be interop and serialization).
+                var refExec = _typeSystemContext.GetModuleForSimpleName("System.Private.Reflection.Execution");
+                var exec = refExec.GetKnownType("Internal.Reflection.Execution", "ReflectionExecution");
+                AddCompilationRoot(exec.GetStaticConstructor(), "Reflection execution");
+            }
+
             if (_options.IsCppCodeGen)
             {
                 _cppWriter = new CppCodeGen.CppWriter(this);

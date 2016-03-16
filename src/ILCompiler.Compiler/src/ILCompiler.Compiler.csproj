@@ -23,12 +23,23 @@
       <Project>{dac23e9f-f826-4577-ae7a-0849ff83280c}</Project>
       <Name>ILCompiler.DependencyAnalysisFramework</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj">
+      <Project>{a965ea82-219d-48f7-ad51-bc030c16cc6f}</Project>
+      <Name>ILCompiler.MetadataTransform</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
+      <Project>{d66338d4-f9e4-4051-b302-232c6bfb6ef6}</Project>
+      <Name>ILCompiler.MetadataWriter</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
       <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
       <Name>ILCompiler.TypeSystem</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
+      <Link>Common\MetadataBlob.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EETypePtrOfIntrinsic.cs">
       <Link>IL\Stubs\EETypePtrOfIntrinsic.cs</Link>
     </Compile>
@@ -46,6 +57,7 @@
     <Compile Include="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHeaderNode.cs" />
@@ -75,6 +87,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
@@ -85,6 +98,7 @@
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
+    <Compile Include="Compiler\MetadataGeneration.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />

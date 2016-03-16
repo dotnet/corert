@@ -17,6 +17,11 @@ namespace Internal.Runtime.CompilerHelpers
     [McgIntrinsics]
     internal static class StartupCodeHelpers
     {
+        public static IntPtr[] Modules
+        {
+            get; private set;
+        }
+
         [RuntimeExport("InitializeModules")] // TODO: Change to NativeCallable
         internal static void InitializeModules(IntPtr moduleHeaders, int count)
         {
@@ -26,6 +31,10 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 InitializeGlobalTablesForModule(moduleManager);
             }
+
+            // We are now at a stage where we can use GC statics - publish the list of modules
+            // so that the eager constructors can access it.
+            Modules = modules;
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module

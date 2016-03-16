@@ -46,6 +46,10 @@ enum class ReadyToRunSectionType
     InterfaceDispatchTable      = 203,
     ModuleManagerIndirection    = 204,
     EagerCctor                  = 205,
+
+    // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
+    ReadonlyBlobRegionStart     = 300,
+    ReadonlyBlobRegionEnd       = 399,
 };
 
 enum class ModuleInfoFlags
