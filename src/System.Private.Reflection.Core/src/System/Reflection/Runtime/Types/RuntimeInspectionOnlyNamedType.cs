@@ -77,8 +77,10 @@ namespace System.Reflection.Runtime.Types
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_Namespace(this);
+#endif
 
                 return EscapeIdentifier(NamespaceChain.NameSpace);
             }

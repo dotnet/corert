@@ -12,9 +12,7 @@ namespace System.Runtime.CompilerServices
     [System.Runtime.InteropServices.ComVisible(true)]
     public enum MethodImplOptions
     {
-        // These should stay in-sync with System.Reflection.MethodImplAttributes
         NoInlining = 0x0008,
-        //ForwardRef         =   0x0010,
         NoOptimization = 0x0040,
         PreserveSig = 0x0080,
         AggressiveInlining = 0x0100,

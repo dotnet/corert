@@ -17,7 +17,8 @@
 #include <evntprov.h>
 #include "CommonTypes.h"
 #include "daccess.h"
-#include <palredhawkcommon.h>
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include <winternl.h>
 #include "CommonMacros.h"
 #include "assert.h"
@@ -29,48 +30,6 @@
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
 
-
-#ifdef APP_LOCAL_RUNTIME
-#ifdef _DEBUG
-EXTERN_C WINBASEAPI HANDLE WINAPI GetStdHandle(
-        _In_  DWORD nStdHandle
-        );
-#endif // _DEBUG
-#endif // APP_LOCAL_RUNTIME
-
-REDHAWK_PALEXPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...)
-{
-#if defined(_DEBUG) 
-    char buffer[8*1024];
-
-    va_list args;
-    va_start(args, szFormat);
-    int cch = _vsprintf_s_l(buffer, COUNTOF(buffer), szFormat, NULL, args);
-
-    // we have to use WriteConsole directly because the "app" CRT doesn't allow us to print to the console
-    DWORD cchWritten;
-    WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), buffer, (DWORD)cch, &cchWritten, NULL);
-#endif
-}
-
-REDHAWK_PALEXPORT void __cdecl PalFlushStdout()
-{
-#if defined(_DEBUG)
-    FlushFileBuffers(GetStdHandle(STD_OUTPUT_HANDLE));
-#endif
-}
-
-REDHAWK_PALEXPORT int __cdecl PalSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, ...)
-{
-    va_list args;
-    va_start(args, szFormat);
-    return _vsprintf_s_l(szBuffer, cchBuffer, szFormat, NULL, args);
-}
-
-REDHAWK_PALEXPORT int __cdecl PalVSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, va_list args)
-{
-    return _vsprintf_s_l(szBuffer, cchBuffer, szFormat, NULL, args);
-}
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ UInt8 ** ppLowerBound, _Out_ UInt8 ** ppUpperBound)
@@ -290,20 +249,19 @@ REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 //Reads the entire contents of the file into the specified buffer, buff
 //returns the number of bytes read if the file is successfully read
 //returns 0 if the file is not found, size is greater than maxBytesToRead or the file couldn't be opened or read
-REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ WCHAR* fileName, _Out_writes_all_(cchBuff) char* buff, _In_ UInt32 cchBuff)
+REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ const TCHAR* fileName, _Out_writes_all_(maxBytesToRead) char* buff, _In_ UInt32 maxBytesToRead)
 {
     WIN32_FILE_ATTRIBUTE_DATA attrData;
 
     BOOL getAttrSuccess = GetFileAttributesExW(fileName, GetFileExInfoStandard, &attrData);
 
     //if we weren't able to get the file attributes, or the file is larger than maxBytesToRead, or the file size is zero
-    if ((!getAttrSuccess) || (attrData.nFileSizeHigh != 0) || (attrData.nFileSizeLow > (DWORD)cchBuff) || (attrData.nFileSizeLow == 0))
+    if ((!getAttrSuccess) || (attrData.nFileSizeHigh != 0) || (attrData.nFileSizeLow > (DWORD)maxBytesToRead) || (attrData.nFileSizeLow == 0))
     {
         return 0;
     }
 
-    HANDLE hFile = CreateFile2(fileName, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ, OPEN_EXISTING, NULL);
-
+    HANDLE hFile = PalCreateFileW(fileName, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
         return 0;
@@ -311,7 +269,7 @@ REDHAWK_PALEXPORT UInt32 PalReadFileContents(_In_z_ WCHAR* fileName, _Out_writes
 
     UInt32 bytesRead;
 
-    BOOL readSuccess = ReadFile(hFile, buff, (DWORD)cchBuff, (DWORD*)&bytesRead, NULL);
+    BOOL readSuccess = ReadFile(hFile, buff, (DWORD)maxBytesToRead, (DWORD*)&bytesRead, NULL);
 
     CloseHandle(hFile);
 
@@ -420,7 +378,7 @@ typedef struct _TEB {
 //NOTE:  This implementation exists because calling GetModuleFileName is not wack compliant.  if we later decide
 //       that the framework package containing mrt100_app no longer needs to be wack compliant, this should be 
 //       removed and the windows implementation of GetModuleFileName should be substitued on windows.
-REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HANDLE moduleBase)
+REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
     TEB* pTEB = NtCurrentTeb();
     LIST_ENTRY* pStartLink = &(pTEB->ProcessEnvironmentBlock->Ldr->InMemoryOrderModuleList);

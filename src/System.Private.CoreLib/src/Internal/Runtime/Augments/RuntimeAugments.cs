@@ -227,7 +227,11 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
         {
+#if CORERT // CORERT-TODO: RuntimeTypeHandle
+            throw new NotImplementedException();
+#else
             return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));
+#endif
         }
 
         public unsafe static IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, IntPtr fieldCookie)
@@ -304,7 +308,7 @@ namespace Internal.Runtime.Augments
         public unsafe static void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
         {
             StaticClassConstructionContext* context = (StaticClassConstructionContext*)staticClassConstructionContext;
-            ClassConstructorRunner.EnsureClassConstructorRun(null, context);
+            ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
         public static bool GetMdArrayRankTypeHandleIfSupported(int rank, out RuntimeTypeHandle mdArrayTypeHandle)
@@ -671,9 +675,15 @@ namespace Internal.Runtime.Augments
         /// <param name="moduleBase">Module base address</param>
         public static unsafe String TryGetFullPathToApplicationModule(IntPtr moduleBase)
         {
+#if PLATFORM_UNIX
+            byte* pModuleNameUtf8;
+            int numUtf8Chars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleNameUtf8);
+            String modulePath = System.Text.Encoding.UTF8.GetString(pModuleNameUtf8, numUtf8Chars);
+#else // PLATFORM_UNIX
             char* pModuleName;
             int numChars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleName);
             String modulePath = new String(pModuleName, 0, numChars);
+#endif // PLATFORM_UNIX
             return modulePath;
         }
 
@@ -797,8 +807,7 @@ namespace Internal.Runtime.Augments
 
         public unsafe static RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
-            IntPtr type = obj.EETypePtr.RawValue;
-            return *((RuntimeTypeHandle*)&type);
+            return new RuntimeTypeHandle(obj.EETypePtr);
         }
 
         public static int GetCorElementType(RuntimeTypeHandle type)

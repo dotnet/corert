@@ -67,8 +67,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodBase_CustomAttributes(this);
+#endif
 
                 return _common.CustomAttributes;
             }
@@ -78,8 +80,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodBase_DeclaringType(this);
+#endif
 
                 return _common.DeclaringType;
             }
@@ -87,8 +91,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Object Invoke(Object[] parameters)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.ConstructorInfo_Invoke(this, parameters);
+#endif
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();
@@ -114,8 +120,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodBase_Name(this);
+#endif
 
                 return _common.Name;
             }

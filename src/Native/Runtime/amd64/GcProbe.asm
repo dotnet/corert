@@ -478,7 +478,7 @@ endm
 NESTED_ENTRY RhpGCProbeForEHJump, _TEXT
         EHJumpProbeProlog
 
-if DBG
+ifdef _DEBUG
         ;;
         ;; If we get here, then we have been hijacked for a real GC, and our SyncState must
         ;; reflect that we've been requested to synchronize.
@@ -488,7 +488,7 @@ if DBG
 
         call        PALDEBUGBREAK
 @@:
-endif ;; DBG
+endif ;; _DEBUG
 
         mov         rbx, rdx
         WaitForGCCompletion

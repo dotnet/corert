@@ -8,12 +8,15 @@ The following pre-requisites need to be installed for building the repo:
 
 Install [Visual Studio 2015](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx), including Visual C++ support.
 
+PowerShell 3.0 or later is required to run the build scripts. On Windows 7, you need to install [Windows Management Framework 3.0](http://go.microsoft.com/fwlink/?LinkID=240290). Later versions of Windows come with the right version of PowerShell inbox.
+PowerShell also needs to be available from the PATH environment variable. Typically it should be %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
+
 # Ubuntu (14.04)
 
 Install basic dependency packages:
 
 ```
-sudo apt-get install llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev
+sudo apt-get install llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev liblttng-ust liblttng-ust-dev uuid uuid-dev
 ```
 
 

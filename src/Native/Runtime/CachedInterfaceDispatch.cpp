@@ -10,32 +10,31 @@
 #include "common.h"
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-#include "commontypes.h"
-#include "commonmacros.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "daccess.h"
-#include "debugmacrosext.h"
-#include "palredhawkcommon.h"
-#include "palredhawk.h"
+#include "DebugMacrosExt.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
 #include "assert.h"
 #include "slist.h"
 #include "holder.h"
-#include "crst.h"
-#include "redhawkwarnings.h"
-#include "targetptrs.h"
+#include "Crst.h"
+#include "RedhawkWarnings.h"
+#include "TargetPtrs.h"
 #include "eetype.h"
-#include "range.h"
-#include "memaccessmgr.h"
+#include "Range.h"
 #include "allocheap.h"
 #include "rhbinder.h"
-#include "objectlayout.h"
+#include "ObjectLayout.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "rwlock.h"
+#include "RWLock.h"
 #include "module.h"
-#include "runtimeinstance.h"
+#include "RuntimeInstance.h"
 #include "eetype.inl"
 
-#include "cachedinterfacedispatch.h"
+#include "CachedInterfaceDispatch.h"
 
 extern "C" UIntTarget __fastcall ManagedCallout2(UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame);
 
@@ -545,6 +544,6 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpResolveInterfaceMethodCacheMiss, (Object * pObj
                                                                    PInvokeTransitionFrame * pTransitionFrame))
 {
     CID_COUNTER_INC(CacheMisses);
-    return (PTR_Code)ManagedCallout2((UIntTarget)pObject, (UIntTarget)pCell, RhpCidResolve, pTransitionFrame);
+    return (PTR_Code)ManagedCallout2((UIntTarget)pObject, (UIntTarget)pCell, reinterpret_cast<void*>(RhpCidResolve), pTransitionFrame);
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

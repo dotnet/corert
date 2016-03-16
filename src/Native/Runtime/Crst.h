@@ -2,21 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Abstracted thread ID.  This doesn't really belong in this file, but there is not currently any better place
-// for it.  
-class EEThreadId
-{
-public:
-    EEThreadId(uint32_t uiId) : m_uiId(uiId) {}
-#ifndef DACCESS_COMPILE
-    bool IsSameThread();
-#endif
-
-private:
-    uint32_t m_uiId;
-};
-
-
 //
 // -----------------------------------------------------------------------------------------------------------
 //
@@ -66,8 +51,7 @@ public:
 private:
     CRITICAL_SECTION    m_sCritSec;
 #if defined(_DEBUG)
-    uint32_t            m_uiOwnerId;
-    static const uint32_t UNOWNED = 0;
+    EEThreadId          m_uiOwnerId;
 #endif // _DEBUG
 };
 

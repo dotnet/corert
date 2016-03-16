@@ -25,7 +25,7 @@ public:
     virtual void* getMethodClass(CorInfoException** ppException, void* method) = 0;
     virtual void* getMethodModule(CorInfoException** ppException, void* method) = 0;
     virtual void getMethodVTableOffset(CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection) = 0;
-    virtual int getIntrinsicID(CorInfoException** ppException, void* method) = 0;
+    virtual int getIntrinsicID(CorInfoException** ppException, void* method, bool* pMustExpand) = 0;
     virtual bool isInSIMDModule(CorInfoException** ppException, void* classHnd) = 0;
     virtual int getUnmanagedCallConv(CorInfoException** ppException, void* method) = 0;
     virtual bool pInvokeMarshalingRequired(CorInfoException** ppException, void* method, void* callSiteSig) = 0;
@@ -139,6 +139,7 @@ public:
     virtual void getLocationOfThisType(CorInfoException** ppException, CORINFO_LOOKUP_KIND* _return, void* context) = 0;
     virtual void* getPInvokeUnmanagedTarget(CorInfoException** ppException, void* method, void** ppIndirection) = 0;
     virtual void* getAddressOfPInvokeFixup(CorInfoException** ppException, void* method, void** ppIndirection) = 0;
+    virtual void getAddressOfPInvokeTarget(CorInfoException** ppException, void* method, void* pLookup) = 0;
     virtual void* GetCookieForPInvokeCalliSig(CorInfoException** ppException, void* szMetaSig, void** ppIndirection) = 0;
     virtual bool canGetCookieForPInvokeCalliSig(CorInfoException** ppException, void* szMetaSig) = 0;
     virtual void* getJustMyCodeHandle(CorInfoException** ppException, void* method, void** ppIndirection) = 0;
@@ -176,6 +177,7 @@ public:
     virtual unsigned short getRelocTypeHint(CorInfoException** ppException, void* target) = 0;
     virtual void getModuleNativeEntryPointRange(CorInfoException** ppException, void** pStart, void** pEnd) = 0;
     virtual unsigned int getExpectedTargetArchitecture(CorInfoException** ppException) = 0;
+    virtual unsigned int getJitFlags(CorInfoException** ppException, void* flags, unsigned int sizeInBytes) = 0;
 
 };
 
@@ -296,10 +298,10 @@ public:
             throw pException;
         }
     }
-    virtual int getIntrinsicID(void* method)
+    virtual int getIntrinsicID(void* method, bool* pMustExpand)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getIntrinsicID(&pException, method);
+        int _ret = _pCorInfo->getIntrinsicID(&pException, method, pMustExpand);
         if (pException != nullptr)
         {
             throw pException;
@@ -1387,6 +1389,15 @@ public:
         }
         return _ret;
     }
+    virtual void getAddressOfPInvokeTarget(void* method, void* pLookup)
+    {
+        CorInfoException* pException = nullptr;
+        _pCorInfo->getAddressOfPInvokeTarget(&pException, method, pLookup);
+        if (pException != nullptr)
+        {
+            throw pException;
+        }
+    }
     virtual void* GetCookieForPInvokeCalliSig(void* szMetaSig, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
@@ -1736,6 +1747,16 @@ public:
     {
         CorInfoException* pException = nullptr;
         unsigned int _ret = _pCorInfo->getExpectedTargetArchitecture(&pException);
+        if (pException != nullptr)
+        {
+            throw pException;
+        }
+        return _ret;
+    }
+    virtual unsigned int getJitFlags(void* flags, unsigned int sizeInBytes)
+    {
+        CorInfoException* pException = nullptr;
+        unsigned int _ret = _pCorInfo->getJitFlags(&pException, flags, sizeInBytes);
         if (pException != nullptr)
         {
             throw pException;

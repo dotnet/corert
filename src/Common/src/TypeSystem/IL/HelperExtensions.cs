@@ -34,37 +34,20 @@ namespace Internal.IL
             MethodSignature sig = new MethodSignature(
                 MethodSignatureFlags.Static, 0, constructorMethod.OwningType, parameters);
 
-            MethodDesc result = constructorMethod.OwningType.GetMethod("Ctor", sig);
-
-            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
-            if (result == null)
-                throw new NotImplementedException();
-
+            MethodDesc result = constructorMethod.OwningType.GetKnownMethod("Ctor", sig);
             return result;
         }
 
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {
-            MetadataType helperType = context.SystemModule.GetType("Internal.Runtime.CompilerHelpers", name, false);
-            if (helperType == null)
-            {
-                // TODO: throw the exception that means 'Core Library doesn't have a required thing in it'
-                throw new NotImplementedException();
-            }
-
+            MetadataType helperType = context.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", name);
             return helperType;
         }
 
         public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, string typeName, string methodName)
         {
             MetadataType helperType = context.GetHelperType(typeName);
-            MethodDesc helperMethod = helperType.GetMethod(methodName, null);
-            if (helperMethod == null)
-            {
-                // TODO: throw the exception that means 'Core Library doesn't have a required thing in it'
-                throw new NotImplementedException();
-            }
-
+            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
             return helperMethod;
         }
 
@@ -86,6 +69,54 @@ namespace Internal.IL
             codeStream.EmitLabel(label);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(method));
             codeStream.Emit(ILOpcode.br, label);
+        }
+
+        /// <summary>
+        /// Retrieves a method on <paramref name="type"/> that is well known to the compiler.
+        /// Throws an exception if the method doesn't exist.
+        /// </summary>
+        public static MethodDesc GetKnownMethod(this TypeDesc type, string name, MethodSignature signature)
+        {
+            MethodDesc method = type.GetMethod(name, signature);
+            if (method == null)
+            {
+                throw new InvalidOperationException(String.Format("Expected method '{0}' not found on type '{1}'", name, type));
+            }
+
+            return method;
+        }
+
+        /// <summary>
+        /// Retrieves a field on <paramref name="type"/> that is well known to the compiler.
+        /// Throws an exception if the field doesn't exist.
+        /// </summary>
+        public static FieldDesc GetKnownField(this TypeDesc type, string name)
+        {
+            FieldDesc field = type.GetField(name);
+            if (field == null)
+            {
+                throw new InvalidOperationException(String.Format("Expected field '{0}' not found on type '{1}'", name, type));
+            }
+
+            return field;
+        }
+
+        /// <summary>
+        /// Retrieves a namespace type in <paramref name= "module" /> that is well known to the compiler.
+        /// Throws an exception if the type doesn't exist.
+        /// </summary>
+        public static MetadataType GetKnownType(this ModuleDesc module, string @namespace, string name)
+        {
+            MetadataType type = module.GetType(@namespace, name, false);
+            if (type == null)
+            {
+                throw new InvalidOperationException(
+                    String.Format("Expected type '{0}' not found in module '{1}'",
+                    module,
+                    @namespace.Length > 0 ? String.Concat(@namespace, ".", name) : name));
+            }
+
+            return type;
         }
     }
 }

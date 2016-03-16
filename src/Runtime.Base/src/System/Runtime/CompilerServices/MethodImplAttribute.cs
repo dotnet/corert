@@ -11,8 +11,8 @@ namespace System.Runtime.CompilerServices
     internal enum MethodImplOptions
     {
         NoInlining = 0x0008,
-        ForwardRef = 0x0010,
         NoOptimization = 0x0040,
+        AggressiveInlining = 0x0100,
         InternalCall = 0x1000,
     }
 

@@ -52,12 +52,6 @@ enum EHClauseKind
 {
     EH_CLAUSE_TYPED = 0,
     EH_CLAUSE_FAULT = 1,
-
-    // Local Exceptions
-    EH_CLAUSE_METHOD_BOUNDARY = 2,
-    EH_CLAUSE_FAIL_FAST = 3,
-
-    // CLR Exceptions
     EH_CLAUSE_FILTER = 2,
     EH_CLAUSE_UNUSED = 3,
 };
@@ -70,6 +64,17 @@ struct EHClause
     UInt32 m_filterOffset;
     UInt32 m_handlerOffset;
     void* m_pTargetType;
+};
+
+// Constants used with RhpGetClasslibFunction, to indicate which classlib function
+// we are interested in. 
+// Note: make sure you change the def in System\Runtime\exceptionhandling.cs if you change this!
+enum class ClasslibFunctionId
+{
+    GetRuntimeException = 0,
+    FailFast = 1,
+    UnhandledExceptionHandler = 2,
+    AppendExceptionStackFrame = 3,
 };
 
 class ICodeManager
@@ -110,4 +115,6 @@ public:
     virtual bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState) = 0;
 
     virtual bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause) = 0;
+
+    virtual void * GetClasslibFunction(ClasslibFunctionId functionId) = 0;
 };

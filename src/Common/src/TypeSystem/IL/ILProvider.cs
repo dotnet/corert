@@ -44,6 +44,11 @@ namespace Internal.IL
                 // TODO: Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
                 return InterlockedIntrinsic.EmitIL(method);
             }
+            else
+            if (methodName == "EETypePtrOf" && owningType.Name == "EETypePtr" && owningType.Namespace == "System")
+            {
+                return EETypePtrOfIntrinsic.EmitIL(method);
+            }
 
             return null;
         }
@@ -57,9 +62,15 @@ namespace Internal.IL
                 //       an MCG attribute on the type itself...
                 if (((MetadataType)method.OwningType).HasCustomAttribute("System.Runtime.InteropServices", "McgIntrinsicsAttribute"))
                 {
-                    if (method.Name == "Call")
+                    var name = method.Name;
+                    if (name == "Call")
                     {
                         return CalliIntrinsic.EmitIL(method);
+                    }
+                    else
+                    if (name == "AddrOf")
+                    {
+                        return AddrOfIntrinsic.EmitIL(method);
                     }
                 }
 
@@ -72,7 +83,10 @@ namespace Internal.IL
 
                 if (method.IsPInvoke)
                 {
-                    return PInvokeMarshallingILEmitter.EmitIL(method);
+                    var pregenerated = McgInteropSupport.TryGetPregeneratedPInvoke(method);
+                    if (pregenerated == null)
+                        return PInvokeMarshallingILEmitter.EmitIL(method);
+                    method = pregenerated;
                 }
 
                 return EcmaMethodIL.Create((EcmaMethod)method);

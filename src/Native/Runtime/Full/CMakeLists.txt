@@ -17,9 +17,11 @@ set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../../Runtime.Base/src/AsmOffsets.cspp)
 if(WIN32)
     set(COMPILER_LANGUAGE "")
     set(PREPROCESSOR_FLAGS -EP)
+    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)
     set(PREPROCESSOR_FLAGS -E -P)
+    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/unix/AsmOffsets.cpp)
 endif()
 
 add_custom_command(
@@ -30,8 +32,8 @@ add_custom_command(
 )
 
 add_custom_target(AsmOffsets
-	COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${RUNTIME_DIR}/AsmOffsets.cpp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
-    DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
+	COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+    DEPENDS "${ASM_OFFSETS_CPP}" "${RUNTIME_DIR}/AsmOffsets.h"
     COMMENT "Generating AsmOffsets.inc"
 )
 
@@ -61,3 +63,6 @@ endforeach()
 
 # Install the static Runtime library
 install (TARGETS Runtime DESTINATION lib)
+if(WIN32)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.dir/$<CONFIG>/Runtime.pdb DESTINATION lib)
+endif()

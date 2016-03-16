@@ -14,7 +14,6 @@ struct UnifiedGenericInstance;
 class GenericTypeHashTable;
 typedef DPTR(GenericTypeHashTable) PTR_GenericTypeHashTable;
 struct StaticGcDesc;
-struct SimpleModuleHeader;
 
 class RuntimeInstance
 {
@@ -95,7 +94,6 @@ public:
     HANDLE          GetPalInstance();
 
     bool RegisterModule(ModuleHeader *pModuleHeader);
-    bool RegisterSimpleModule(SimpleModuleHeader *pModuleHeader);
     void UnregisterModule(Module *pModule);
     Module * FindModuleByAddress(PTR_VOID pvAddress);
     Module * FindModuleByCodeAddress(PTR_VOID ControlPC);

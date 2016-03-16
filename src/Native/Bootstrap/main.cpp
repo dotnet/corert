@@ -10,28 +10,117 @@
 
 #include <stdlib.h> 
 
+#ifndef CPPCODEGEN
+
+#if defined(_MSC_VER)
+
+#pragma section(".modules$A", read)
+#pragma section(".modules$Z", read)
+extern "C" __declspec(allocate(".modules$A")) void * __modules_a[];
+extern "C" __declspec(allocate(".modules$Z")) void * __modules_z[];
+
+__declspec(allocate(".modules$A")) void * __modules_a[] = { nullptr };
+__declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
+#pragma comment(linker, "/merge:.modules=.rdata")
+
+// Sentinels for managed code section are not implemented here because of the C++ compiler 
+// wraps them with a jump stub in debug builds. They are emitted in ilc instead.
+extern "C" void __managedcode_a();
+extern "C" void __managedcode_z();
+
+#else
+// TODO: Once the dotnet compiler is modified to configure the linker to merge sections
+// on OSX / Linux, store these externs in the .modules section and remove work-around
+// in ModuleHeaderNode.cs.
+//extern "C" __attribute((section ("__DATA,.modules$A"))) void * __modules_a[];
+//extern "C" __attribute((section ("__DATA,.modules$Z"))) void * __modules_z[];
+//__attribute((section ("__DATA,.modules$A"))) void * __modules_a[] = { nullptr };
+//__attribute((section ("__DATA,.modules$Z"))) void * __modules_z[] = { nullptr };
+
+extern "C" void * __modules_a[];
+extern "C" void * __modules_z[];
+
+#endif // _MSC_VER
+
+#endif // CPPCODEGEN
+
 #pragma warning(disable:4297)
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
 extern "C" Object * RhNewArray(MethodTable * pMT, int32_t elements);
+extern "C" void * RhTypeCast_IsInstanceOf(void * pObject, MethodTable * pMT);
+extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
+extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
+extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
+extern "C" __declspec(noreturn) void RhpThrowEx(void * pEx);
+
+#ifdef CPPCODEGEN
+
+extern "C" Object * __allocate_object(MethodTable * pMT)
+{
+    return RhNewObject(pMT);
+}
+
+extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
+{
+    return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
+}
+
+extern "C" Object * __castclass(void * obj, MethodTable * pTargetMT)
+{
+    return (Object *)RhTypeCast_CheckCast(obj, pTargetMT);
+}
+
+extern "C" Object * __isinst(void * obj, MethodTable * pTargetMT)
+{
+    return (Object *)RhTypeCast_IsInstanceOf(obj, pTargetMT);
+}
+
+extern "C" void __stelem_ref(void * pArray, unsigned idx, void * obj)
+{
+    RhpStelemRef(pArray, idx, obj);
+}
+
+extern "C" void* __ldelema_ref(void * pArray, unsigned idx, MethodTable * type)
+{
+    return RhpLdelemaRef(pArray, idx, type);
+}
+
+extern "C" void __throw_exception(void * pEx)
+{
+    RhpThrowEx(pEx);
+}
+
+void __range_check_fail()
+{
+    throw "ThrowRangeOverflowException";
+}
+#endif // CPPCODEGEN
+
+
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
 extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
-extern "C" void RhpRegisterSimpleModule(SimpleModuleHeader* pModule);
-extern "C" void * RhHandleAlloc(void * pObject, int handleType);
-extern "C" void * RhTypeCast_IsInstanceOfClass(void * pObject, MethodTable * pMT);
-extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
+
+extern "C" bool RhpRegisterCoffModule(void * pModule, 
+    void * pvStartRange, uint32_t cbRange,
+    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
 #define DLL_PROCESS_ATTACH      1
 extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
 
-#include "platform.h"
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
 
 int __initialize_runtime()
 {
-    RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL);
+    if (!PalInit())
+        return -1;
 
-    RhpEnableConservativeStackReporting();
+    if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
+        return -1;
+
+    if (!RhpEnableConservativeStackReporting())
+        return -1;
 
     return 0;
 }
@@ -48,11 +137,6 @@ void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame)
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
 {
     RhpReversePInvokeReturn(pRevFrame);
-}
-
-void __register_module(SimpleModuleHeader* pModule)
-{
-    RhpRegisterSimpleModule(pModule);
 }
 
 namespace System_Private_CoreLib { namespace System { 
@@ -88,44 +172,6 @@ namespace System_Private_CoreLib { namespace System {
 
 using namespace System_Private_CoreLib;
 
-//
-// The fast paths for object allocation and write barriers is performance critical. They are often
-// hand written in assembly code, etc.
-//
-extern "C" Object * __allocate_object(MethodTable * pMT)
-{
-    return RhNewObject(pMT);
-}
-
-extern "C" void __EEType_System_Private_CoreLib_System_String();
-extern "C" void __EEType_System_Private_CoreLib_System_String__Array();
-
-Object * __allocate_string(int32_t len)
-{
-#ifdef CPPCODEGEN
-    return RhNewArray(System::String::__getMethodTable(), len);
-#else
-    return RhNewArray((MethodTable*)__EEType_System_Private_CoreLib_System_String, len);
-#endif
-}
-
-extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
-{
-    return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
-}
-
-extern "C" void __stelem_ref(System::Array * pArray, unsigned idx, Object * val)
-{
-    // TODO: Range checks, writer barrier, etc.
-    ((Object **)(pArray->GetArrayData()))[idx] = val;
-}
-
-extern "C" void* __ldelema_ref(System::Array * pArray, unsigned idx, MethodTable * type)
-{
-    // TODO: Range checks, etc.
-    return &(((Object **)(pArray->GetArrayData()))[idx]);
-}
-
 void PrintStringObject(System::String *pStringToPrint)
 {
     // Get the number of characters in managed string (stored as UTF16)
@@ -157,18 +203,13 @@ extern "C" void __not_yet_implemented(System::String * pMethodName, System::Stri
     exit(-1);
 }
 
-extern "C" void __throw_exception(void * pEx)
-{
-    // TODO: Exception throwing
-    throw "__throw_exception";
-}
-
 extern "C" void __fail_fast()
 {
     // TODO: FailFast
     throw "__fail_fast";
 }
 
+#ifdef CPPCODEGEN
 Object * __load_string_literal(const char * string)
 {
     // TODO: Cache/intern string literals
@@ -176,88 +217,30 @@ Object * __load_string_literal(const char * string)
 
     size_t len = strlen(string);
 
-    Object * pString = __allocate_string((int32_t)len);
+    Object * pString = RhNewArray(System::String::__getMethodTable(), (int32_t)len);
 
     uint16_t * p = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     for (size_t i = 0; i < len; i++)
         p[i] = string[i];
     return pString;
 }
+#endif // CPPCODEGEN
 
-OBJECTHANDLE __load_static_string_literal(const uint8_t* utf8, int32_t utf8Len, int32_t strLen)
-{
-    Object * pString = __allocate_string(strLen);
-    uint16_t * buffer = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
-    if (strLen > 0)
-        UTF8ToWideChar((char*)utf8, utf8Len, buffer, strLen);
-    return (OBJECTHANDLE)RhHandleAlloc(pString, 2 /* Normal */);
-}
-
-extern "C" Object * __castclass_class(void * p, MethodTable * pTargetMT)
-{
-    return (Object *)RhTypeCast_CheckCast(p, pTargetMT);
-}
-
-extern "C" Object * __isinst_class(void * p, MethodTable * pTargetMT)
-{
-    return (Object *)RhTypeCast_IsInstanceOfClass(p, pTargetMT);
-}
-
-__declspec(noreturn)
-__declspec(noinline)
-void ThrowRangeOverflowException()
-{
-    throw "ThrowRangeOverflowException";
-}
-
-void __range_check_fail()
-{
-    ThrowRangeOverflowException();
-}
-
-void __range_check(void * a, size_t elem)
-{
-    if (elem >= *((size_t*)a + 1))
-        ThrowRangeOverflowException();
-}
-
-Object * __get_commandline_args(int argc, char * argv[])
-{
 #ifdef CPPCODEGEN
-	 MethodTable * pStringArrayMT = System::String__Array::__getMethodTable();
+extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = 0;
 #else
-	 MethodTable * pStringArrayMT = (MethodTable*)__EEType_System_Private_CoreLib_System_String__Array;
+extern "C" void * __EEType_System_Private_CoreLib_System_Array;
+extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = &__EEType_System_Private_CoreLib_System_Array;
 #endif
-	System::Array * args = (System::Array *)__allocate_array(argc, pStringArrayMT);
 
-	for (int i = 0; i < argc; i++)
-	{
-		__stelem_ref(args, i, __load_string_literal(argv[i]));
-	}
-	
-	return (Object *)args;
-}
-
-extern "C" void RhGetCurrentThreadStackTrace()
+#if !defined(_WIN32) || defined(CPPCODEGEN)
+extern "C" void RhpThrowEx(void * pEx)
 {
-    throw "RhGetCurrentThreadStackTrace";
+    throw "RhpThrowEx";
 }
-
-extern "C" void RhpGetDispatchCellInfo()
+extern "C" void RhpThrowHwEx()
 {
-    throw "RhpGetDispatchCellInfo";
-}
-extern "C" void RhpUpdateDispatchCellCache()
-{
-    throw "RhpUpdateDispatchCellCache";
-}
-extern "C" void RhpSearchDispatchCellCache()
-{
-    throw "RhpSearchDispatchCellCache";
-}
-extern "C" void RhCollect()
-{
-    throw "RhCollect";
+    throw "RhpThrowHwEx";
 }
 extern "C" void RhpCallCatchFunclet()
 {
@@ -271,6 +254,16 @@ extern "C" void RhpCallFinallyFunclet()
 {
     throw "RhpCallFinallyFunclet";
 }
+#endif //. !_WIN32 || CPPCODEGEN
+
+extern "C" void RhGetCurrentThreadStackTrace()
+{
+    throw "RhGetCurrentThreadStackTrace";
+}
+extern "C" void RhCollect()
+{
+    throw "RhCollect";
+}
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
@@ -279,146 +272,65 @@ extern "C" void RhpFailFastForPInvokeExceptionPreemp()
 {
     throw "RhpFailFastForPInvokeExceptionPreemp";
 }
-extern "C" void RhpThrowHwEx()
-{
-    throw "RhpThrowHwEx";
-}
 extern "C" void RhpEtwExceptionThrown()
 {
     throw "RhpEtwExceptionThrown";
 }
+extern "C" void RhReRegisterForFinalize()
+{
+    throw "RhReRegisterForFinalize";
+}
 
 #ifndef CPPCODEGEN
-SimpleModuleHeader __module = { NULL, NULL /* &__gcStatics, &__gcStaticsDescs */ };
 
-extern "C" int __managed__Main(Object*);
+extern "C" void InitializeModules(void ** modules, int count);
 
-namespace AsmDataFormat
+#ifdef _WIN32
+extern "C" void* WINAPI GetModuleHandleW(const wchar_t *);
+#endif
+
+extern "C" void GetRuntimeException();
+extern "C" void FailFast();
+extern "C" void AppendExceptionStackFrame();
+
+typedef void(*pfn)();
+
+static const pfn c_classlibFunctions[] = {
+    &GetRuntimeException,
+    &FailFast,
+    nullptr, // &UnhandledExceptionHandler,
+    nullptr, // &AppendExceptionStackFrame,
+};
+
+#if defined(_WIN32)
+extern "C" int __managed__Main(int argc, wchar_t* argv[]);
+int wmain(int argc, wchar_t* argv[])
+#else
+extern "C" int __managed__Main(int argc, char* argv[]);
+int main(int argc, char* argv[])
+#endif
 {
-    typedef uint8_t byte;
-    typedef uint32_t UInt32;
-
-    static UInt32 ReadUInt32(byte **ppStream)
-    {
-        UInt32 result = *(UInt32*)(*ppStream); // Assumes little endian and unaligned access
-        *ppStream += 4;
-        return result;
-    }
-    static int DecodeUnsigned(byte** ppStream, byte* pStreamEnd, UInt32 *pValue)
-    {
-        if (*ppStream >= pStreamEnd)
-            return -1;
-
-        UInt32 value = 0;
-        UInt32 val = **ppStream;
-        if ((val & 1) == 0)
-        {
-            value = (val >> 1);
-            *ppStream += 1;
-        }
-        else if ((val & 2) == 0)
-        {
-            if (*ppStream + 1 >= pStreamEnd)
-                return -1;
-
-            value = (val >> 2) |
-                (((UInt32)*(*ppStream + 1)) << 6);
-            *ppStream += 2;
-        }
-        else if ((val & 4) == 0)
-        {
-            if (*ppStream + 2 >= pStreamEnd)
-                return -1;
-
-            value = (val >> 3) |
-                (((UInt32)*(*ppStream + 1)) << 5) |
-                (((UInt32)*(*ppStream + 2)) << 13);
-            *ppStream += 3;
-        }
-        else if ((val & 8) == 0)
-        {
-            if (*ppStream + 3 >= pStreamEnd)
-                return -1;
-
-            value = (val >> 4) |
-                (((UInt32)*(*ppStream + 1)) << 4) |
-                (((UInt32)*(*ppStream + 2)) << 12) |
-                (((UInt32)*(*ppStream + 3)) << 20);
-            *ppStream += 4;
-        }
-        else if ((val & 16) == 0)
-        {
-            if (*ppStream + 4 >= pStreamEnd)
-                return -1;
-            *ppStream += 1;
-            value = ReadUInt32(ppStream);
-        }
-        else
-        {
-            return -1;
-        }
-
-        *pValue = value;
-        return 0;
-    }
-}
-
-extern "C" void __str_fixup();
-extern "C" void __str_fixup_end();
-int __strings_fixup()
-{
-    for (unsigned** ptr = (unsigned**)__str_fixup;
-         ptr < (unsigned**)__str_fixup_end; ptr++)
-    {
-        int utf8Len;
-        uint8_t* bytes = (uint8_t*) *ptr;
-        if (AsmDataFormat::DecodeUnsigned(&bytes, bytes + 5, (unsigned*)&utf8Len) != 0)
-            return -1;
-
-        assert(bytes <= ((uint8_t*)*ptr) + 5);
-        assert(utf8Len >= 0);
-
-        int strLen = 0;
-        if (utf8Len != 0)
-        {
-            strLen = UTF8ToWideCharLen((char*)bytes, utf8Len);
-            if (strLen <= 0) return -1;
-        }
-
-        *((OBJECTHANDLE*)ptr) = __load_static_string_literal(bytes, utf8Len, strLen);
-        // TODO: This "handle" will leak, deallocate with __unload
-    }
-    return 0;
-}
-
-extern "C" void* __GCStaticRegionStart;
-extern "C" void* __GCStaticRegionEnd;
-int __statics_fixup()
-{
-    for (void** currentBlock = &__GCStaticRegionStart; currentBlock < &__GCStaticRegionEnd; currentBlock++)
-    {
-        Object* gcBlock = __allocate_object((MethodTable*)*currentBlock);
-        *currentBlock = RhHandleAlloc(gcBlock, 2 /* Normal */);
-    }
-
-    return 0;
-}
-
-int main(int argc, char * argv[]) {
     if (__initialize_runtime() != 0) return -1;
-    __register_module(&__module);
+
+#if defined(_WIN32) && !defined(CPPCODEGEN)
+    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
+        &__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+        (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
+    {
+        return -1;
+    }
+#endif
+
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
-	
-    if (__strings_fixup() != 0) return -1;
-    if (__statics_fixup() != 0) return -1;
+
+    InitializeModules(__modules_a, (int)((__modules_z - __modules_a))); 
 
     int retval;
     try
     {
-		// Managed apps don't see the first args argument (full path of executable) so skip it
-		assert(argc > 0);
-		Object* args = __get_commandline_args(argc - 1, argv + 1);
-		retval = __managed__Main(args);
+        // Managed apps don't see the first args argument (full path of executable) so skip it
+        assert(argc > 0);
+        retval = __managed__Main(argc, argv);
     }
     catch (const char* &e)
     {
@@ -432,4 +344,4 @@ int main(int argc, char * argv[]) {
     return retval;
 }
 
-#endif
+#endif // !CPPCODEGEN

@@ -2,18 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** Purpose: Provides some basic access to some environment 
-** functionality.
-**
-**
-============================================================*/
-
-using System.Text;
-using System.Collections;
-
 namespace System
 {
     public static partial class Environment
@@ -124,11 +112,16 @@ namespace System
             return new string(newblob);
         }
 
-        public static string MachineName
+        public unsafe static string MachineName
         {
             get
             {
-                return Interop.mincore.GetComputerName();
+                const int MaxMachineNameLength = 256;
+                char* buf = stackalloc char[MaxMachineNameLength];
+                int len = MaxMachineNameLength;
+                if (Interop.mincore.GetComputerName(buf, ref len) == 0)
+                    throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
+                return new String(buf);
             }
         }
     }

@@ -13,3 +13,6 @@ add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_
 
 # Install the static Runtime library
 install (TARGETS PortableRuntime DESTINATION lib)
+if(WIN32)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/PortableRuntime.dir/$<CONFIG>/PortableRuntime.pdb DESTINATION lib)
+endif()

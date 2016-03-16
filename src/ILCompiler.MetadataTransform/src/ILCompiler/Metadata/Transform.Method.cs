@@ -77,17 +77,26 @@ namespace ILCompiler.Metadata
                 Ecma.MethodDefinition methodDef = reader.GetMethodDefinition(ecmaEntity.Handle);
                 Ecma.ParameterHandleCollection paramHandles = methodDef.GetParameters();
 
+                record.Parameters.Capacity = paramHandles.Count;
                 foreach (var paramHandle in paramHandles)
                 {
                     Ecma.Parameter param = reader.GetParameter(paramHandle);
-                    Parameter recordParam = new Parameter();
-                    recordParam.Flags = param.Attributes;
-                    recordParam.Name = HandleString(reader.GetString(param.Name));
-                    recordParam.Sequence = (ushort)param.SequenceNumber;
-                    record.Parameters.Add(recordParam);
+                    Parameter paramRecord = new Parameter
+                    {
+                        Flags = param.Attributes,
+                        Name = HandleString(reader.GetString(param.Name)),
+                        Sequence = checked((ushort)param.SequenceNumber)
+                    };
                     
+                    Ecma.ConstantHandle defaultValue = param.GetDefaultValue();
+                    if (!defaultValue.IsNil)
+                    {
+                        paramRecord.DefaultValue = HandleConstant(ecmaEntity.Module, defaultValue);
+                    }
+
+                    record.Parameters.Add(paramRecord);
+
                     // TODO: CustomAttributes
-                    // TODO: DefaultValue
                 }
             }
             else

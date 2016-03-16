@@ -5,7 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
@@ -56,8 +56,10 @@ namespace Internal.TypeSystem
 
         public abstract DefType GetWellKnownType(WellKnownType wellKnownType);
 
-        public virtual ModuleDesc ResolveAssembly(AssemblyName name)
+        public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
+            if (throwIfNotFound)
+                throw new NotSupportedException();
             return null;
         }
 
@@ -70,7 +72,7 @@ namespace Internal.TypeSystem
         // Array types
         //
 
-        public TypeDesc GetArrayType(TypeDesc elementType)
+        public ArrayType GetArrayType(TypeDesc elementType)
         {
             return GetArrayType(elementType, -1);
         }
@@ -110,12 +112,12 @@ namespace Internal.TypeSystem
             {
                 protected override int GetKeyHashCode(ArrayTypeKey key)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(key._elementType, key._rank);
+                    return TypeHashingAlgorithms.ComputeArrayTypeHashCode(key._elementType, key._rank);
                 }
 
                 protected override int GetValueHashCode(ArrayType value)
                 {
-                    return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(value.ElementType, value.IsSzArray ? -1 : value.Rank);
+                    return TypeHashingAlgorithms.ComputeArrayTypeHashCode(value.ElementType, value.IsSzArray ? -1 : value.Rank);
                 }
 
                 protected override bool CompareKeyToValue(ArrayTypeKey key, ArrayType value)
@@ -143,7 +145,7 @@ namespace Internal.TypeSystem
 
         private ArrayTypeKey.ArrayTypeKeyHashtable _arrayTypes;
 
-        public TypeDesc GetArrayType(TypeDesc elementType, int rank)
+        public ArrayType GetArrayType(TypeDesc elementType, int rank)
         {
             return _arrayTypes.GetOrCreateValue(new ArrayTypeKey(elementType, rank));
         }
@@ -181,7 +183,7 @@ namespace Internal.TypeSystem
 
         private ByRefHashtable _byRefTypes;
 
-        public TypeDesc GetByRefType(TypeDesc parameterType)
+        public ByRefType GetByRefType(TypeDesc parameterType)
         {
             return _byRefTypes.GetOrCreateValue(parameterType);
         }
@@ -219,7 +221,7 @@ namespace Internal.TypeSystem
 
         private PointerHashtable _pointerTypes;
 
-        public TypeDesc GetPointerType(TypeDesc parameterType)
+        public PointerType GetPointerType(TypeDesc parameterType)
         {
             return _pointerTypes.GetOrCreateValue(parameterType);
         }
@@ -631,7 +633,11 @@ namespace Internal.TypeSystem
         /// Abstraction to allow the type system context to affect the field layout
         /// algorithm used by types to lay themselves out.
         /// </summary>
-        public abstract FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type);
+        public virtual FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
+        {
+            // Type system contexts that support computing field layout need to override this.
+            throw new NotSupportedException();
+        }
 
         /// <summary>
         /// Abstraction to allow the type system context to control the interfaces
@@ -663,12 +669,20 @@ namespace Internal.TypeSystem
         /// Abstraction to allow the type system context to control the interfaces
         /// algorithm used by metadata types.
         /// </summary>
-        public abstract RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type);
+        protected virtual RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        {
+            // Type system contexts that support computing runtime interfaces need to override this.
+            throw new NotSupportedException();
+        }
 
         /// <summary>
         /// Abstraction to allow the type system context to control the interfaces
         /// algorithm used by single dimensional array types.
         /// </summary>
-        public abstract RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type);
+        protected virtual RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            // Type system contexts that support computing runtime interfaces need to override this.
+            throw new NotSupportedException();
+        }
     }
 }

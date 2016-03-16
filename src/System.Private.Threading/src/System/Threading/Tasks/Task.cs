@@ -2865,6 +2865,7 @@ namespace System.Threading.Tasks
         {
             internal SetOnInvokeMres() : base(false, 0) { }
             public void Invoke(Task completingTask) { Set(); }
+            public bool InvokeMayRunArbitraryCode { get { return false; } }
         }
 
         /// <summary>
@@ -3179,7 +3180,7 @@ namespace System.Threading.Tasks
                 ITaskCompletionAction singleTaskCompletionAction = continuationObject as ITaskCompletionAction;
                 if (singleTaskCompletionAction != null)
                 {
-                    if (bCanInlineContinuations)
+                    if (bCanInlineContinuations || !singleTaskCompletionAction.InvokeMayRunArbitraryCode)
                     {
                         singleTaskCompletionAction.Invoke(this);
                     }
@@ -3262,7 +3263,7 @@ namespace System.Threading.Tasks
                             Contract.Assert(currentContinuation is ITaskCompletionAction, "Expected continuation element to be Action, TaskContinuation, or ITaskContinuationAction");
                             var action = (ITaskCompletionAction)currentContinuation;
 
-                            if (bCanInlineContinuations)
+                            if (bCanInlineContinuations || !action.InvokeMayRunArbitraryCode)
                             {
                                 action.Invoke(this);
                             }
@@ -4723,6 +4724,8 @@ namespace System.Threading.Tasks
                 if (Interlocked.Decrement(ref _count) == 0) Set();
                 Contract.Assert(_count >= 0, "Count should never go below 0");
             }
+
+            public bool InvokeMayRunArbitraryCode { get { return false; } }
         }
 
 
@@ -5611,6 +5614,8 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
                 }
             }
+
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
 
         /// <summary>
@@ -5851,6 +5856,8 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
                 }
             }
+
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
         #endregion
 
@@ -6422,7 +6429,18 @@ namespace System.Threading.Tasks
     // TaskFactory.CompleteOnCountdownPromise<T>, and TaskFactory.CompleteOnInvokePromise.
     internal interface ITaskCompletionAction
     {
-        void Invoke(Task completingTask);
+         /// <summary>Invoked to run the completion action.</summary>
+         void Invoke(Task completingTask);
+  
+         /// <summary>
+         /// Some completion actions are considered internal implementation details of tasks,
+         /// using the continuation mechanism only for performance reasons.  Such actions perform
+         /// known quantities and types of work, and can be invoked safely as a continuation even
+         /// if the system wants to prevent arbitrary continuations from running synchronously.
+         /// This should only return false for a limited set of implementations where a small amount
+         /// of work is guaranteed to be performed, e.g. setting a ManualResetEventSlim.
+         /// </summary>
+         bool InvokeMayRunArbitraryCode { get; }
     }
 
     // This class encapsulates all "unwrap" logic, and also implements ITaskCompletionAction,
@@ -6628,5 +6646,7 @@ namespace System.Threading.Tasks
                 // We'll record that we are done when Invoke() is called.
             }
         }
+
+        public bool InvokeMayRunArbitraryCode { get { return true; } }
     }  // class UnwrapPromise<TResult>   
 }  // namespace

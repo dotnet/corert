@@ -213,16 +213,6 @@ struct ModuleHeader
 typedef DPTR(ModuleHeader) PTR_ModuleHeader;
 #endif // !RHDUMP
 
-#if       !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL) // due to dependency on StaticGcDesc
-struct SimpleModuleHeader
-{
-    void* m_pStaticsGcDataSection;
-    StaticGcDesc* m_pStaticsGcInfo;
-    StaticGcDesc* m_pThreadStaticsGcInfo;
-};
-#endif // !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL)
-
-
 class GcPollInfo
 {
 public:
@@ -675,14 +665,8 @@ enum RhEHClauseKind
 {
     RH_EH_CLAUSE_TYPED              = 0,
     RH_EH_CLAUSE_FAULT              = 1,
-
-    // local exceptions
-    RH_EH_CLAUSE_METHOD_BOUNDARY    = 2,    // /eh:rh
-    RH_EH_CLAUSE_FAIL_FAST          = 3,    // /eh:rh
-
-    // CLR exceptions
-    RH_EH_CLAUSE_FILTER             = 2,    // /eh:clr
-    RH_EH_CLAUSE_UNUSED             = 3,    // /eh:clr
+    RH_EH_CLAUSE_FILTER             = 2,
+    RH_EH_CLAUSE_UNUSED             = 3
 };
 
 // Structure used to store offsets information of thread static fields, and mainly used

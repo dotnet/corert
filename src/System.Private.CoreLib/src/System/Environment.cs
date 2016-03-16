@@ -43,14 +43,6 @@ namespace System
             }
         }
 
-        internal static long TickCount64
-        {
-            get
-            {
-                return (long)Interop.mincore.GetTickCount64();
-            }
-        }
-
         //// Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
         //// to assign blame for crashes.  Don't mess with this, such as by making it call 
         //// another managed helper method, unless you consult with some CLR Watson experts.
@@ -85,8 +77,6 @@ namespace System
             }
         }
 
-        internal const int ManagedThreadIdNone = 0;
-
         public static bool HasShutdownStarted
         {
             get
@@ -114,10 +104,30 @@ namespace System
             }
         }
 
+#if CORERT
+        private static string[] s_commandLineArgs;
+
+        internal static void SetCommandLineArgs(string[] args)
+        {
+            s_commandLineArgs = args;
+        }
+
+        public static string[] GetCommandLineArgs()
+        {
+            return (string[])s_commandLineArgs.Clone();
+        }
+#endif
+
+#if CORERT
+        // .NET Core abandoned shutdown finalization.
+        // See discussion in https://github.com/dotnet/corefx/issues/5205
+        // We should get rid of this in Project N too.
+#else
         static Environment()
         {
             RuntimeImports.RhEnableShutdownFinalization(0xffffffffu);
         }
+#endif
 
         public static String StackTrace
         {

@@ -29,6 +29,7 @@ namespace Internal.TypeSystem
         Linux,
         OSX,
         FreeBSD,
+        NetBSD,
     }
 
     /// <summary>
@@ -172,6 +173,17 @@ namespace Internal.TypeSystem
                     return 4;
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Returns True if compiling for Windows
+        /// </summary>
+        public bool IsWindows
+        {
+            get
+            {
+                return OperatingSystem == TargetOS.Windows;
             }
         }
     }

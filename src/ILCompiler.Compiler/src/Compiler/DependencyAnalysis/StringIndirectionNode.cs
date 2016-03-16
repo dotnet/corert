@@ -15,7 +15,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public StringIndirectionNode(string data)
         {
-            base.Offset = 1; // 1 is not a valid offset, so when the wrapper object emitter sets offsets, it will become more reasonable
             _data = data;
         }
 
@@ -31,18 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (base.Offset != 1)
-                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + base.Offset.ToString(CultureInfo.InvariantCulture);
-                else
-                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + _data;
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return base.Offset;
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + Offset.ToString(CultureInfo.InvariantCulture);
             }
         }
 

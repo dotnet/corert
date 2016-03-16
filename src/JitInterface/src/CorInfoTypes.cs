@@ -636,11 +636,6 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FILTER = 0x0001, // If this bit is on, then this EH entry is for a filter
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault   clause
-#if REDHAWK
-    CORINFO_EH_CLAUSE_METHOD_BOUNDARY   = 0x0008,       // This clause indicates the boundary of an inlined method
-    CORINFO_EH_CLAUSE_FAIL_FAST         = 0x0010,       // This clause will cause the exception to go unhandled
-    CORINFO_EH_CLAUSE_INDIRECT_TYPE_REFERENCE = 0x0020, // This clause is typed, but type reference is indirect.
-#endif
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -655,9 +650,6 @@ namespace Internal.JitInterface
                 {
                     DWORD                   ClassToken;       // use for type-based exception handlers
                     DWORD                   FilterOffset;     // use for filter-based exception handlers (COR_ILEXCEPTION_FILTER is set)
-            #ifdef REDHAWK
-                    void *                  EETypeReference;  // use to hold a ref to the EEType for type-based exception handlers.
-            #endif
                 };*/
     }
 
@@ -1105,7 +1097,8 @@ namespace Internal.JitInterface
         SystemVClassificationTypeMemory             = 3,
         SystemVClassificationTypeInteger            = 4,
         SystemVClassificationTypeIntegerReference   = 5,
-        SystemVClassificationTypeSSE                = 6,
+        SystemVClassificationTypeIntegerByRef       = 6,
+        SystemVClassificationTypeSSE                = 7,
         // SystemVClassificationTypeSSEUp           = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
@@ -1185,134 +1178,146 @@ namespace Internal.JitInterface
         public uint startOffset;
         public uint endOffset;
         public uint varNumber;
-        public VarLoc loc;
+        public VarLoc varLoc;
     };
 
-
-    // VarLoc describes the location of a native variable.  Note that currently, VLT_REG_BYREF and VLT_STK_BYREF 
-    // are only used for value types on X64.
-
-    public enum VarLocType
-    {
-        VLT_REG,        // variable is in a register
-        VLT_REG_BYREF,  // address of the variable is in a register
-        VLT_REG_FP,     // variable is in an fp register
-        VLT_STK,        // variable is on the stack (memory addressed relative to the frame-pointer)
-        VLT_STK_BYREF,  // address of the variable is on the stack (memory addressed relative to the frame-pointer)
-        VLT_REG_REG,    // variable lives in two registers
-        VLT_REG_STK,    // variable lives partly in a register and partly on the stack
-        VLT_STK_REG,    // reverse of VLT_REG_STK
-        VLT_STK2,       // variable lives in two slots on the stack
-        VLT_FPSTK,      // variable lives on the floating-point stack
-        VLT_FIXED_VA,   // variable is a fixed argument in a varargs function (relative to VARARGS_HANDLE)
-
-        VLT_COUNT,
-        VLT_INVALID,
-    };
-
+    // The following 16 bytes come from coreclr types. See comment below.
     public struct VarLoc
     {
-        public VarLocType vlType;
+       public int vlType;
+       // The 64bit field is here to keep VarLoc 8byte aligned on Amd64.
+       // For x86, we need to change the VarLoc definition here.
+       public long A;   
+       public int B;
 
-        public int A; // Representing a union in C# is difficult.
-        public int B;
-        public int C;
         /*
-        union
-        {
-            // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
-            // eg. EAX
-            // VLT_REG_BYREF -- the specified register contains the address of the variable
-            // eg. [EAX]
+           Changes to the following types may require revisiting the above layout.
+     
+            In coreclr\src\inc\cordebuginfo.h
 
-            struct
+            enum VarLocType
             {
-                RegNum      vlrReg;
-            } vlReg;
+                VLT_REG,        // variable is in a register
+                VLT_REG_BYREF,  // address of the variable is in a register
+                VLT_REG_FP,     // variable is in an fp register
+                VLT_STK,        // variable is on the stack (memory addressed relative to the frame-pointer)
+                VLT_STK_BYREF,  // address of the variable is on the stack (memory addressed relative to the frame-pointer)
+                VLT_REG_REG,    // variable lives in two registers
+                VLT_REG_STK,    // variable lives partly in a register and partly on the stack
+                VLT_STK_REG,    // reverse of VLT_REG_STK
+                VLT_STK2,       // variable lives in two slots on the stack
+                VLT_FPSTK,      // variable lives on the floating-point stack
+                VLT_FIXED_VA,   // variable is a fixed argument in a varargs function (relative to VARARGS_HANDLE)
 
-            // VLT_STK -- Any 32 bit value which is on the stack
-            // eg. [ESP+0x20], or [EBP-0x28]
-            // VLT_STK_BYREF -- the specified stack location contains the address of the variable
-            // eg. mov EAX, [ESP+0x20]; [EAX]
+                VLT_COUNT,
+                VLT_INVALID,
+        #ifdef MDIL
+                VLT_MDIL_SYMBOLIC = 0x20
+        #endif
 
-            struct
+            };
+
+            struct VarLoc
             {
-                RegNum      vlsBaseReg;
-                signed      vlsOffset;
-            } vlStk;
+                VarLocType      vlType;
 
-            // VLT_REG_REG -- TYP_LONG with both DWords enregistred
-            // eg. RBM_EAXEDX
-
-            struct
-            {
-                RegNum      vlrrReg1;
-                RegNum      vlrrReg2;
-            } vlRegReg;
-
-            // VLT_REG_STK -- Partly enregistered TYP_LONG
-            // eg { LowerDWord=EAX UpperDWord=[ESP+0x8] }
-
-            struct
-            {
-                RegNum      vlrsReg;
-                struct
+                union
                 {
-                    RegNum      vlrssBaseReg;
-                    signed      vlrssOffset;
-                }           vlrsStk;
-            } vlRegStk;
+                    // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
+                    // eg. EAX
+                    // VLT_REG_BYREF -- the specified register contains the address of the variable
+                    // eg. [EAX]
 
-            // VLT_STK_REG -- Partly enregistered TYP_LONG
-            // eg { LowerDWord=[ESP+0x8] UpperDWord=EAX }
+                    struct
+                    {
+                        RegNum      vlrReg;
+                    } vlReg;
 
-            struct
-            {
-                struct
-                {
-                    RegNum      vlsrsBaseReg;
-                    signed      vlsrsOffset;
-                }           vlsrStk;
-                RegNum      vlsrReg;
-            } vlStkReg;
+                    // VLT_STK -- Any 32 bit value which is on the stack
+                    // eg. [ESP+0x20], or [EBP-0x28]
+                    // VLT_STK_BYREF -- the specified stack location contains the address of the variable
+                    // eg. mov EAX, [ESP+0x20]; [EAX]
 
-            // VLT_STK2 -- Any 64 bit value which is on the stack,
-            // in 2 successsive DWords.
-            // eg 2 DWords at [ESP+0x10]
+                    struct
+                    {
+                        RegNum      vlsBaseReg;
+                        signed      vlsOffset;
+                    } vlStk;
 
-            struct
-            {
-                RegNum      vls2BaseReg;
-                signed      vls2Offset;
-            } vlStk2;
+                    // VLT_REG_REG -- TYP_LONG with both DWords enregistred
+                    // eg. RBM_EAXEDX
 
-            // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-            // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
+                    struct
+                    {
+                        RegNum      vlrrReg1;
+                        RegNum      vlrrReg2;
+                    } vlRegReg;
 
-            struct
-            {
-                unsigned        vlfReg;
-            } vlFPstk;
+                    // VLT_REG_STK -- Partly enregistered TYP_LONG
+                    // eg { LowerDWord=EAX UpperDWord=[ESP+0x8] }
 
-            // VLT_FIXED_VA -- fixed argument of a varargs function.
-            // The argument location depends on the size of the variable
-            // arguments (...). Inspecting the VARARGS_HANDLE indicates the
-            // location of the first arg. This argument can then be accessed
-            // relative to the position of the first arg
+                    struct
+                    {
+                        RegNum      vlrsReg;
+                        struct
+                        {
+                            RegNum      vlrssBaseReg;
+                            signed      vlrssOffset;
+                        }           vlrsStk;
+                    } vlRegStk;
 
-            struct
-            {
-                unsigned        vlfvOffset;
-            } vlFixedVarArg;
+                    // VLT_STK_REG -- Partly enregistered TYP_LONG
+                    // eg { LowerDWord=[ESP+0x8] UpperDWord=EAX }
 
-            // VLT_MEMORY
+                    struct
+                    {
+                        struct
+                        {
+                            RegNum      vlsrsBaseReg;
+                            signed      vlsrsOffset;
+                        }           vlsrStk;
+                        RegNum      vlsrReg;
+                    } vlStkReg;
 
-            struct
-            {
-                void        *rpValue; // pointer to the in-process
-                // location of the value.
-            } vlMemory;
-        };*/
+                    // VLT_STK2 -- Any 64 bit value which is on the stack,
+                    // in 2 successsive DWords.
+                    // eg 2 DWords at [ESP+0x10]
+
+                    struct
+                    {
+                        RegNum      vls2BaseReg;
+                        signed      vls2Offset;
+                    } vlStk2;
+
+                    // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
+                    // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
+
+                    struct
+                    {
+                        unsigned        vlfReg;
+                    } vlFPstk;
+
+                    // VLT_FIXED_VA -- fixed argument of a varargs function.
+                    // The argument location depends on the size of the variable
+                    // arguments (...). Inspecting the VARARGS_HANDLE indicates the
+                    // location of the first arg. This argument can then be accessed
+                    // relative to the position of the first arg
+
+                    struct
+                    {
+                        unsigned        vlfvOffset;
+                    } vlFixedVarArg;
+
+                    // VLT_MEMORY
+
+                    struct
+                    {
+                        void        *rpValue; // pointer to the in-process
+                        // location of the value.
+                    } vlMemory;
+                };
+            };
+        */
     };
 
 
@@ -1352,8 +1357,7 @@ namespace Internal.JitInterface
         CORJIT_OUTOFMEM = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2),
         CORJIT_INTERNALERROR = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3),
         CORJIT_SKIPPED = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4),
-        CORJIT_RECOVERABLEERROR = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5),
-        CORJIT_SKIPMDIL = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 6)*/
+        CORJIT_RECOVERABLEERROR = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
     };
 
     [Flags]
@@ -1373,7 +1377,8 @@ namespace Internal.JitInterface
         CORJIT_FLG_USE_AVX2            = 0x00000800,
         CORJIT_FLG_USE_AVX_512         = 0x00001000,
         CORJIT_FLG_FEATURE_SIMD        = 0x00002000,
-
+        CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
+        CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLG_READYTORUN          = 0x00010000, // Use version-resilient code generation
 
         CORJIT_FLG_PROF_ENTERLEAVE     = 0x00020000, // Instrument prologues/epilogues
@@ -1392,5 +1397,21 @@ namespace Internal.JitInterface
         CORJIT_FLG_ALIGN_LOOPS         = 0x20000000, // add NOPs before loops to align them at 16 byte boundaries
         CORJIT_FLG_PUBLISH_SECRET_PARAM= 0x40000000, // JIT must place stub secret param into local 0.  (used by IL stubs)
         CORJIT_FLG_GCPOLL_INLINE       = 0x80000000, // JIT must inline calls to GCPoll when possible
+
+        CORJIT_FLG_CALL_GETJITFLAGS    = 0xffffffff, // Indicates that the JIT should retrieve flags in the form of a
+                                                     // pointer to a CORJIT_FLAGS value via ICorJitInfo::getJitFlags().
+    };
+
+    [Flags]
+    public enum CorJitFlag2 : uint
+    {
+        CORJIT_FLG2_SAMPLING_JIT_BACKGROUND = 0x00000001, // JIT is being invoked as a result of stack sampling for hot methods in the background
+        CORJIT_FLG2_USE_PINVOKE_HELPERS     = 0x00000002, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
+    };
+
+    struct CORJIT_FLAGS
+    {
+        public CorJitFlag corJitFlags;     // Values are from CorJitFlag
+        public CorJitFlag2 corJitFlags2;   // Values are from CorJitFlag2
     };
 }

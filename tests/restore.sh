@@ -25,14 +25,14 @@ fi
 
 __build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 if [ ${__build_os_lowcase} != "osx" ]; then
-    __BuildRid=ubuntu.14.04
+    __BuildRid=ubuntu.14.04-${CoreRT_BuildArch}
 else
-    __BuildRid=osx.10.10
+    __BuildRid=osx.10.10-${CoreRT_BuildArch}
 fi
-export CoreRT_ToolchainPkg=toolchain.${__BuildRid}-${CoreRT_BuildArch}.Microsoft.DotNet.ILCompiler.Development
+export CoreRT_ToolchainPkg=toolchain.${__BuildRid}.Microsoft.DotNet.ILCompiler.Development
 export CoreRT_ToolchainVer=1.0.2-prerelease-00001
-export CoreRT_AppDepSdkPkg=toolchain.${__BuildRid}-${CoreRT_BuildArch}.Microsoft.DotNet.AppDep
-export CoreRT_AppDepSdkVer=1.0.2-prerelease-00002
+export CoreRT_AppDepSdkPkg=toolchain.${__BuildRid}.Microsoft.DotNet.AppDep
+export CoreRT_AppDepSdkVer=1.0.6-prerelease-00003
 
 __ScriptDir=$(cd "$(dirname "$0")"; pwd -P)
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
@@ -65,7 +65,7 @@ if [ ! -f ${__NuGetExeDir}/NuGet.exe ] ; then
     exit -1
 fi
 
-__NuGetFeedUrl="https://www.myget.org/F/dotnet/auth/3e4f1dbe-f43a-45a8-b029-3ad4d25605ac/api/v2"
+__NuGetFeedUrl="https://dotnet.myget.org/F/dotnet-corert/api/v2"
 
 echo Installing CoreRT external dependencies
 mono ${__NuGetExeDir}/NuGet.exe install -Source ${__NuGetFeedUrl} -OutputDir ${__NuPkgInstallDir} -Version ${CoreRT_AppDepSdkVer} ${CoreRT_AppDepSdkPkg} -prerelease ${__NuGetOptions} -nocache

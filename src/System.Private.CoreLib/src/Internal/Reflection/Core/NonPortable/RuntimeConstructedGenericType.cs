@@ -8,7 +8,10 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 
 using Internal.Runtime.Augments;
+
+#if ENABLE_REFLECTION_TRACE
 using Internal.Reflection.Tracing;
+#endif
 
 namespace Internal.Reflection.Core.NonPortable
 {
@@ -72,8 +75,10 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_FullName(this);
+#endif
 
                 // Desktop quirk: open constructions don't have "fullNames".
                 if (this.InternalIsOpen)
@@ -109,8 +114,10 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_Namespace(this);
+#endif
 
                 return GetGenericTypeDefinition().Namespace;
             }

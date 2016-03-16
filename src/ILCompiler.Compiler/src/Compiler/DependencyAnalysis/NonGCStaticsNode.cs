@@ -20,12 +20,14 @@ namespace ILCompiler.DependencyAnalysis
         private MetadataType _type;
         private ISymbolNode _classConstructorContext;
 
-        public NonGCStaticsNode(MetadataType type)
+        public NonGCStaticsNode(MetadataType type, NodeFactory factory)
         {
             _type = type;
 
-            if (HasClassConstructorContext)
+            if (factory.TypeInitializationManager.HasLazyStaticConstructor(type))
             {
+                // Class constructor context is a small struct prepended to type's non-GC static data region
+                // that keeps track of whether the .cctor executed and holds the pointer to the .cctor method.
                 _classConstructorContext = new ObjectAndOffsetSymbolNode(this, 0,
                     "__CCtorContext_" + NodeFactory.NameMangler.GetMangledTypeName(_type));
             }
@@ -74,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return _type.HasStaticConstructor;
+                return _classConstructorContext != null;
             }
         }
 
@@ -113,6 +115,18 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return true;
             }
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        {
+            if (context.TypeInitializationManager.HasEagerStaticConstructor(_type))
+            {
+                var result = new DependencyList();
+                result.Add(context.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                return result;
+            }
+
+            return null;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -70,13 +71,34 @@ namespace ILCompiler
                 }
 
                 // Everything else is replaced by underscore.
-                // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.                
+                // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.
                 sb.Append("_");
             }
             return (sb != null) ? sb.ToString() : s;
         }
 
+        /// <summary>
+        /// Dictionary given a mangled name for a given <see cref="TypeDesc"/>
+        /// </summary>
         private ImmutableDictionary<TypeDesc, string> _mangledTypeNames = ImmutableDictionary<TypeDesc, string>.Empty;
+
+        /// <summary>
+        /// Given a set of names <param name="set"/> check if <param name="origName"/>
+        /// is unique, if not add a numbered suffix until it becomes unique.
+        /// </summary>
+        /// <param name="origName">Name to check for uniqueness.</param>
+        /// <param name="set">Set of names already used.</param>
+        /// <returns>A name based on <param name="origName"/> that is not part of <param name="set"/>.</returns>
+        private string DisambiguateName(string origName, ISet<string> set)
+        {
+            int iter = 0;
+            string result = origName;
+            while (set.Contains(result))
+            {
+                result = string.Concat(origName, "_", (iter++).ToString(CultureInfo.InvariantCulture));
+            }
+            return result;
+        }
 
         public string GetMangledTypeName(TypeDesc type)
         {
@@ -87,6 +109,14 @@ namespace ILCompiler
             return ComputeMangledTypeName(type);
         }
 
+        /// <summary>
+        /// If given <param name="type"/> is an <see cref="EcmaType"/> precompute its mangled type name
+        /// along with all the other types from the same module as <param name="type"/>.
+        /// Otherwise, it is a constructed type and to the EcmaType's mangled name we add a suffix to
+        /// show what kind of constructed type it is (e.g. appending __Array for an array type).
+        /// </summary>
+        /// <param name="type">Type to mangled</param>
+        /// <returns>Mangled name for <param name="type"/>.</returns>
         private string ComputeMangledTypeName(TypeDesc type)
         {
             if (type is EcmaType)
@@ -95,7 +125,7 @@ namespace ILCompiler
 
                 var deduplicator = new HashSet<string>();
 
-                // Add consistent names for all types in the module, independent on the order in which 
+                // Add consistent names for all types in the module, independent on the order in which
                 // they are compiled
                 lock (this)
                 {
@@ -113,24 +143,19 @@ namespace ILCompiler
 
                         name = SanitizeName(name, true);
 
-                        if (deduplicator.Contains(name))
-                        {
-                            string nameWithIndex;
-                            for (int index = 1; ; index++)
-                            {
-                                nameWithIndex = name + "_" + index.ToString(CultureInfo.InvariantCulture);
-                                if (!deduplicator.Contains(nameWithIndex))
-                                    break;
-                            }
-                            name = nameWithIndex;
-                        }
-                        deduplicator.Add(name);
-
                         if (_compilation.IsCppCodeGen)
-                            name = prependAssemblyName + "::" + name;
+                        {
+                            // Always generate a fully qualified name
+                            name = "::" + prependAssemblyName + "::" + name;
+                        }
                         else
+                        {
                             name = prependAssemblyName + "_" + name;
+                        }
 
+                        // Ensure that name is unique and update our tables accordingly.
+                        name = DisambiguateName(name, deduplicator);
+                        deduplicator.Add(name);
                         _mangledTypeNames = _mangledTypeNames.Add(t, name);
                     }
                 }
@@ -146,7 +171,7 @@ namespace ILCompiler
                 case TypeFlags.Array:
                     // mangledName = "Array<" + GetSignatureCPPTypeName(((ArrayType)type).ElementType) + ">";
                     mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__Array";
-                    if (((ArrayType)type).Rank != 1)
+                    if (!type.IsSzArray)
                         mangledName += "Rank" + ((ArrayType)type).Rank.ToString();
                     break;
                 case TypeFlags.ByRef:
@@ -156,6 +181,9 @@ namespace ILCompiler
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + "__Pointer";
                     break;
                 default:
+                    // Case of a generic type. If `type' is a type definition we use the type name
+                    // for mangling, otherwise we use the mangling of the type and its generic type
+                    // parameters, e.g. A <B> becomes A__B.
                     var typeDefinition = type.GetTypeDefinition();
                     if (typeDefinition != type)
                     {
@@ -179,6 +207,7 @@ namespace ILCompiler
 
             lock (this)
             {
+                // Ensure that name is unique and update our tables accordingly.
                 _mangledTypeNames = _mangledTypeNames.Add(type, mangledName);
             }
 
@@ -214,17 +243,7 @@ namespace ILCompiler
                     {
                         string name = SanitizeName(m.Name);
 
-                        if (deduplicator.Contains(name))
-                        {
-                            string nameWithIndex;
-                            for (int index = 1; ; index++)
-                            {
-                                nameWithIndex = name + "_" + index.ToString(CultureInfo.InvariantCulture);
-                                if (!deduplicator.Contains(nameWithIndex))
-                                    break;
-                            }
-                            name = nameWithIndex;
-                        }
+                        name = DisambiguateName(name, deduplicator);
                         deduplicator.Add(name);
 
                         if (prependTypeName != null)
@@ -300,17 +319,7 @@ namespace ILCompiler
                     {
                         string name = SanitizeName(f.Name);
 
-                        if (deduplicator.Contains(name))
-                        {
-                            string nameWithIndex;
-                            for (int index = 1; ; index++)
-                            {
-                                nameWithIndex = name + "_" + index.ToString(CultureInfo.InvariantCulture);
-                                if (!deduplicator.Contains(nameWithIndex))
-                                    break;
-                            }
-                            name = nameWithIndex;
-                        }
+                        name = DisambiguateName(name, deduplicator);
                         deduplicator.Add(name);
 
                         if (prependTypeName != null)
@@ -357,7 +366,7 @@ namespace ILCompiler
                     }
                     else
                     {
-                        _compilationUnitPrefix = "";
+                        _compilationUnitPrefix = SanitizeName(Path.GetFileNameWithoutExtension(_compilation.Options.OutputFilePath));
                     }
                 }
                 return _compilationUnitPrefix;

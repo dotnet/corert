@@ -4,34 +4,63 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Text;
-using System.Threading.Tasks;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ArrayOfEmbeddedDataNode : ObjectNode
+    /// <summary>
+    /// Represents an array of <typeparamref name="TEmbedded"/> nodes. The contents of this node will be emitted
+    /// by placing a starting symbol, followed by contents of <typeparamref name="TEmbedded"/> nodes (optionally
+    /// sorted using provided comparer), followed by ending symbol.
+    /// </summary>
+    public class ArrayOfEmbeddedDataNode<TEmbedded> : ObjectNode
+        where TEmbedded : EmbeddedObjectNode
     {
-        private HashSet<EmbeddedObjectNode> _nestedNodes = new HashSet<EmbeddedObjectNode>();
-        private List<EmbeddedObjectNode> _nestedNodesList = new List<EmbeddedObjectNode>();
+        private HashSet<TEmbedded> _nestedNodes = new HashSet<TEmbedded>();
+        private List<TEmbedded> _nestedNodesList = new List<TEmbedded>();
         private ObjectAndOffsetSymbolNode _startSymbol;
         private ObjectAndOffsetSymbolNode _endSymbol;
-        private IComparer<EmbeddedObjectNode> _sorter;
+        private IComparer<TEmbedded> _sorter;
+        private string _section;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter, string section = "data")
         {
             _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName);
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName);
             _sorter = nodeSorter;
+            _section = section;
         }
 
-        public void AddEmbeddedObject(EmbeddedObjectNode symbol)
+        internal ObjectAndOffsetSymbolNode StartSymbol
+        {
+            get
+            {
+                return _startSymbol;
+            }
+        }
+
+        internal ObjectAndOffsetSymbolNode EndSymbol
+        {
+            get
+            {
+                return _endSymbol;
+            }
+        }
+
+        public void AddEmbeddedObject(TEmbedded symbol)
         {
             if (_nestedNodes.Add(symbol))
             {
                 _nestedNodesList.Add(symbol);
             }
+        }
+
+        public int IndexOfEmbeddedObject(TEmbedded symbol)
+        {
+            Debug.Assert(_sorter == null);
+            return _nestedNodesList.IndexOf(symbol);
         }
 
         public override string GetName()
@@ -43,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "data";
+                return _section;
             }
         }
 
@@ -64,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
                 _nestedNodesList.Sort(_sorter);
 
             builder.DefinedSymbols.Add(_startSymbol);
-            foreach (EmbeddedObjectNode node in _nestedNodesList)
+            foreach (TEmbedded node in _nestedNodesList)
             {
                 if (!relocsOnly)
                     node.Offset = builder.CountBytes;
@@ -80,6 +109,21 @@ namespace ILCompiler.DependencyAnalysis
 
             ObjectData objData = builder.ToObjectData();
             return objData;
+        }
+
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            return _nestedNodesList.Count == 0;
+        }
+    }
+
+    // TODO: delete this once we review each use of this and put it on the generic plan with the
+    //       right element type
+    public class ArrayOfEmbeddedDataNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
+    {
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
+            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
+        {
         }
     }
 }

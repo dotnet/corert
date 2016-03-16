@@ -33,8 +33,10 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.CustomAttributeData_ConstructorArguments(this);
+#endif
 
                 return new ReadOnlyCollection<CustomAttributeTypedArgument>(GetConstructorArguments(throwIfMissingMetadata: true));
             }
@@ -46,8 +48,10 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.CustomAttributeData_NamedArguments(this);
+#endif
 
                 return new ReadOnlyCollection<CustomAttributeNamedArgument>(GetNamedArguments(throwIfMissingMetadata: true));
             }

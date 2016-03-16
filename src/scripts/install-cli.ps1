@@ -4,8 +4,7 @@
 
 param (
     [string] $InstallDir = $null,
-    [string] $TargetPlatform = "x64",
-    [string] $Version = "Latest"
+    [string] $TargetPlatform = "x64"
 )
 
 # The below code is from dotnet/cli install.ps1
@@ -14,9 +13,9 @@ $ErrorActionPreference="Stop"
 $ProgressPreference="SilentlyContinue"
 
 $Feed="https://dotnetcli.blob.core.windows.net/dotnet"
-$Channel="dev"
-$DotNetFileName="dotnet-win-" + $TargetPlatform + ".$Version.zip"
-$DotNetUrl="$Feed/$Channel/Binaries/$Version"
+$Channel="beta"
+$DotNetFileName="dotnet-win-" + $TargetPlatform + ".1.0.0.001672.zip"
+$DotNetUrl="$Feed/$Channel/Binaries/1.0.0.001672"
 
 function say($str)
 {

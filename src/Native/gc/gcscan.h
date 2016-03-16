@@ -31,14 +31,7 @@ struct DhContext
     ScanContext    *m_pScanContext;             // The GC's scan context for this phase
 };
 
-
-// <TODO>
-// @TODO (JSW): For compatibility with the existing GC code we use CNamespace
-// as the name of this class.   I'm planning on changing it to
-// something like GCDomain....
-// </TODO>
-
-class CNameSpace
+class GCScan
 {
     friend struct ::_DacGlobals;
 
@@ -109,7 +102,7 @@ private:
 // These two functions are utilized to scan the heap if requested by ETW
 // or a profiler. The implementations of these two functions are in profheapwalkhelper.cpp.
 #if defined(FEATURE_EVENT_TRACE) | defined(GC_PROFILING)
-void ScanRootsHelper(Object** ppObject, Object** ppObjectRef, ScanContext * pSC, DWORD dwFlags);
+void ScanRootsHelper(Object* pObj, Object** ppRoot, ScanContext * pSC, DWORD dwFlags);
 BOOL HeapWalkHelper(Object * pBO, void * pvContext);
 #endif
 

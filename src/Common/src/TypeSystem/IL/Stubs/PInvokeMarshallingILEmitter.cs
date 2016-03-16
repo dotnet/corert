@@ -21,11 +21,13 @@ namespace Internal.IL.Stubs
     public struct PInvokeMarshallingILEmitter
     {
         private MethodDesc _targetMethod;
+        private TypeSystemContext _context;
         private PInvokeMetadata _importMetadata;
 
         private ILEmitter _emitter;
         private ILCodeStream _marshallingCodeStream;
         private ILCodeStream _returnValueMarshallingCodeStream;
+        private ILCodeStream _unmarshallingCodestream;
 
         private PInvokeMarshallingILEmitter(MethodDesc targetMethod)
         {
@@ -33,11 +35,13 @@ namespace Internal.IL.Stubs
             Debug.Assert(RequiresMarshalling(targetMethod));
 
             _targetMethod = targetMethod;
+            _context = _targetMethod.Context;
             _importMetadata = targetMethod.GetPInvokeMethodMetadata();
 
             _emitter = null;
             _marshallingCodeStream = null;
             _returnValueMarshallingCodeStream = null;
+            _unmarshallingCodestream = null;
         }
 
         /// <summary>
@@ -114,9 +118,6 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(arrayType.IsSzArray);
 
-            if (!IsBlittableType(arrayType.ParameterType))
-                throw new NotSupportedException();
-
             ILLocalVariable vPinnedFirstElement = _emitter.NewLocal(arrayType.ParameterType.MakeByRefType(), true);
             ILLocalVariable vArray = _emitter.NewLocal(arrayType);
             ILCodeLabel lNullArray = _emitter.NewCodeLabel();
@@ -139,8 +140,9 @@ namespace Internal.IL.Stubs
             // Fall through. If array didn't have elements, vPinnedFirstElement is zeroinit.
             _marshallingCodeStream.EmitLabel(lNullArray);
             _marshallingCodeStream.EmitLdLoc(vPinnedFirstElement);
+            _marshallingCodeStream.Emit(ILOpcode.conv_i);
 
-            return arrayType.Context.GetWellKnownType(WellKnownType.IntPtr);
+            return _context.GetWellKnownType(WellKnownType.IntPtr);
         }
 
         /// <summary>
@@ -150,27 +152,20 @@ namespace Internal.IL.Stubs
         /// <returns>Type the ByRef was marshalled into.</returns>
         private TypeDesc EmitByRefMarshalling(ByRefType byRefType)
         {
-            if (!IsBlittableType(byRefType.ParameterType))
-                throw new NotSupportedException();
-
             ILLocalVariable vPinnedByRef = _emitter.NewLocal(byRefType, true);
             _marshallingCodeStream.EmitStLoc(vPinnedByRef);
             _marshallingCodeStream.EmitLdLoc(vPinnedByRef);
             _marshallingCodeStream.Emit(ILOpcode.conv_i);
 
-            return byRefType.Context.GetWellKnownType(WellKnownType.IntPtr);
+            return _context.GetWellKnownType(WellKnownType.IntPtr);
         }
 
         /// <summary>
-        /// Marshals a string. Expects the string reference on the stack. Pushes a pointer
-        /// to the stack that is safe to pass out to native code.
+        /// Charset for marshalling strings
         /// </summary>
-        /// <returns>The type the string was marshalled into.</returns>
-        private TypeDesc EmitStringMarshalling()
+        private PInvokeAttributes GetCharSet()
         {
             PInvokeAttributes charset = _importMetadata.Attributes & PInvokeAttributes.CharSetMask;
-
-            TypeSystemContext context = _targetMethod.Context;
 
             if (charset == 0)
             {
@@ -183,13 +178,18 @@ namespace Internal.IL.Stubs
                 charset = PInvokeAttributes.CharSetUnicode;
             }
 
-            TypeDesc stringType = context.GetWellKnownType(WellKnownType.String);
+            return charset;
+        }
 
-            if (charset == PInvokeAttributes.CharSetUnicode)
+        private TypeDesc EmitStringMarshalling()
+        {
+            if (GetCharSet() == PInvokeAttributes.CharSetUnicode)
             {
                 //
                 // Unicode marshalling. Pin the string and push a pointer to the first character on the stack.
                 //
+
+                TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);
 
                 ILLocalVariable vPinnedString = _emitter.NewLocal(stringType, true);
                 ILCodeLabel lNullString = _emitter.NewCodeLabel();
@@ -203,11 +203,16 @@ namespace Internal.IL.Stubs
                 // Marshalling a null string?
                 _marshallingCodeStream.Emit(ILOpcode.brfalse, lNullString);
 
-                // TODO: find a safe, non-awkward way to get to OffsetToStringData
-                _marshallingCodeStream.EmitLdc(context.Target.PointerSize + 4);
+                _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(
+                    _context.SystemModule.
+                        GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers").
+                            GetKnownMethod("get_OffsetToStringData", null)));
+
                 _marshallingCodeStream.Emit(ILOpcode.add);
 
                 _marshallingCodeStream.EmitLabel(lNullString);
+
+                return _context.GetWellKnownType(WellKnownType.IntPtr);
             }
             else
             {
@@ -215,85 +220,47 @@ namespace Internal.IL.Stubs
                 // ANSI marshalling. Allocate a byte array, copy characters, pin first element.
                 //
 
-                TypeDesc byteType = context.GetWellKnownType(WellKnownType.Byte);
-                TypeDesc byteArrayType = byteType.MakeArrayType();
+                var stringToAnsi = _context.GetHelperEntryPoint("InteropHelpers", "StringToAnsi");
 
-                MethodDesc getLengthMethod = stringType.GetMethod("get_Length", null);
-                MethodDesc getCharsMethod = stringType.GetMethod("get_Chars", null);
+                _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(stringToAnsi));
 
-                ILCodeLabel lStart = _emitter.NewCodeLabel();
-                ILCodeLabel lNext = _emitter.NewCodeLabel();
-                ILCodeLabel lNullString = _emitter.NewCodeLabel();
-                ILCodeLabel lDone = _emitter.NewCodeLabel();
-
-                // Check for the simple case: string is null
-                ILLocalVariable vStringToMarshal = _emitter.NewLocal(stringType);
-                _marshallingCodeStream.EmitStLoc(vStringToMarshal);
-                _marshallingCodeStream.EmitLdLoc(vStringToMarshal);
-                _marshallingCodeStream.Emit(ILOpcode.brfalse, lNullString);
-
-                // TODO: figure out how to reference a helper from here and call the helper instead...
-
-                // byte[] byteArray = new byte[stringToMarshal.Length + 1];
-                _marshallingCodeStream.EmitLdLoc(vStringToMarshal);
-                _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(getLengthMethod));
-                _marshallingCodeStream.EmitLdc(1);
-                _marshallingCodeStream.Emit(ILOpcode.add);
-                _marshallingCodeStream.Emit(ILOpcode.newarr, _emitter.NewToken(byteType));
-                ILLocalVariable vByteArray = _emitter.NewLocal(byteArrayType);
-                _marshallingCodeStream.EmitStLoc(vByteArray);
-
-                // for (int i = 0; i < byteArray.Length - 1; i++)
-                //     byteArray[i] = (byte)stringToMarshal[i];
-                ILLocalVariable vIterator = _emitter.NewLocal(context.GetWellKnownType(WellKnownType.Int32));
-                _marshallingCodeStream.Emit(ILOpcode.ldc_i4_0);
-                _marshallingCodeStream.EmitStLoc(vIterator);
-                _marshallingCodeStream.Emit(ILOpcode.br, lStart);
-                _marshallingCodeStream.EmitLabel(lNext);
-                _marshallingCodeStream.EmitLdLoc(vByteArray);
-                _marshallingCodeStream.EmitLdLoc(vIterator);
-                _marshallingCodeStream.EmitLdLoc(vStringToMarshal);
-                _marshallingCodeStream.EmitLdLoc(vIterator);
-                _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(getCharsMethod));
-                _marshallingCodeStream.Emit(ILOpcode.conv_u1);
-                _marshallingCodeStream.Emit(ILOpcode.stelem_i1);
-                _marshallingCodeStream.EmitLdLoc(vIterator);
-                _marshallingCodeStream.EmitLdc(1);
-                _marshallingCodeStream.Emit(ILOpcode.add);
-                _marshallingCodeStream.EmitStLoc(vIterator);
-                _marshallingCodeStream.EmitLabel(lStart);
-                _marshallingCodeStream.EmitLdLoc(vIterator);
-                _marshallingCodeStream.EmitLdLoc(vByteArray);
-                _marshallingCodeStream.Emit(ILOpcode.ldlen);
-                _marshallingCodeStream.Emit(ILOpcode.conv_i4);
-                _marshallingCodeStream.EmitLdc(1);
-                _marshallingCodeStream.Emit(ILOpcode.sub);
-                _marshallingCodeStream.Emit(ILOpcode.blt, lNext);
-                _marshallingCodeStream.EmitLdLoc(vByteArray);
-
-                // Pin first element and load the byref on the stack.
-                _marshallingCodeStream.EmitLdc(0);
-                _marshallingCodeStream.Emit(ILOpcode.ldelema, _emitter.NewToken(byteType));
-                ILLocalVariable vPinnedFirstElement = _emitter.NewLocal(byteArrayType.MakeByRefType(), true);
-                _marshallingCodeStream.EmitStLoc(vPinnedFirstElement);
-                _marshallingCodeStream.EmitLdLoc(vPinnedFirstElement);
-                _marshallingCodeStream.Emit(ILOpcode.conv_i);
-                _marshallingCodeStream.Emit(ILOpcode.br, lDone);
-
-                _marshallingCodeStream.EmitLabel(lNullString);
-                _marshallingCodeStream.Emit(ILOpcode.ldnull);
-                _marshallingCodeStream.Emit(ILOpcode.conv_i);
-
-                _marshallingCodeStream.EmitLabel(lDone);
+                return EmitArrayMarshalling(_context.GetWellKnownType(WellKnownType.Byte).MakeArrayType());
             }
-
-            return _targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr);
         }
 
-        /// <summary>
-        /// Marshals a boolean.
-        /// </summary>
-        /// <returns>The type the boolean was marshalled into.</returns>
+        private TypeDesc EmitStringBuilderMarshalling()
+        {
+            if (GetCharSet() == PInvokeAttributes.CharSetUnicode)
+            {
+                // TODO: Handles [out] marshalling only for now
+
+                var stringBuilderType = _context.SystemModule.GetKnownType("System.Text", "StringBuilder");
+                var charArrayType = _context.GetWellKnownType(WellKnownType.Char).MakeArrayType();
+
+                ILLocalVariable vStringBuilder = _emitter.NewLocal(stringBuilderType);
+                ILLocalVariable vBuffer = _emitter.NewLocal(charArrayType);
+
+                _marshallingCodeStream.EmitStLoc(vStringBuilder);
+
+                _marshallingCodeStream.EmitLdLoc(vStringBuilder);
+                _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(
+                    _context.GetHelperEntryPoint("InteropHelpers", "GetEmptyStringBuilderBuffer")));
+                _marshallingCodeStream.EmitStLoc(vBuffer);
+
+                _unmarshallingCodestream.EmitLdLoc(vStringBuilder);
+                _unmarshallingCodestream.EmitLdLoc(vBuffer);
+                _unmarshallingCodestream.Emit(ILOpcode.call, _emitter.NewToken(
+                    _context.GetHelperEntryPoint("InteropHelpers", "ReplaceStringBuilderBuffer")));
+
+                _marshallingCodeStream.EmitLdLoc(vBuffer);
+                return EmitArrayMarshalling(charArrayType);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         private TypeDesc EmitBooleanMarshalling()
         {
             _marshallingCodeStream.EmitLdc(0);
@@ -301,13 +268,9 @@ namespace Internal.IL.Stubs
             _marshallingCodeStream.EmitLdc(0);
             _marshallingCodeStream.Emit(ILOpcode.ceq);
 
-            return _targetMethod.Context.GetWellKnownType(WellKnownType.Int32);
+            return _context.GetWellKnownType(WellKnownType.Int32);
         }
 
-        /// <summary>
-        /// Marshals a boolean return value.
-        /// </summary>
-        /// <returns>The type the boolean was marshalled from.</returns>
         private TypeDesc EmitBooleanReturnValueMarshalling()
         {
             _returnValueMarshallingCodeStream.EmitLdc(0);
@@ -315,20 +278,191 @@ namespace Internal.IL.Stubs
             _returnValueMarshallingCodeStream.EmitLdc(0);
             _returnValueMarshallingCodeStream.Emit(ILOpcode.ceq);
 
-            return _targetMethod.Context.GetWellKnownType(WellKnownType.Int32);
+            return _context.GetWellKnownType(WellKnownType.Int32);
+        }
+
+        private MetadataType SafeHandleType
+        {
+            get
+            {
+                return _context.SystemModule.GetKnownType("System.Runtime.InteropServices", "SafeHandle");
+            }
+        }
+
+        private bool IsSafeHandle(TypeDesc type)
+        {
+            var safeHandleType = this.SafeHandleType;
+            while (type != null)
+            {
+                if (type == safeHandleType)
+                    return true;
+                type = type.BaseType;
+            }
+            return false;
+        }
+
+        private TypeDesc EmitSafeHandleMarshalling(TypeDesc type)
+        {
+            var safeHandleType = this.SafeHandleType;
+
+            var vAddRefed = _emitter.NewLocal(_context.GetWellKnownType(WellKnownType.Boolean));
+            var vSafeHandle = _emitter.NewLocal(type);
+
+            _marshallingCodeStream.EmitStLoc(vSafeHandle);
+
+            _marshallingCodeStream.EmitLdLoc(vSafeHandle);
+            _marshallingCodeStream.EmitLdLoca(vAddRefed);
+            _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(
+                safeHandleType.GetKnownMethod("DangerousAddRef", null)));
+
+            _marshallingCodeStream.EmitLdLoc(vSafeHandle);
+            _marshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(
+                safeHandleType.GetKnownMethod("DangerousGetHandle", null)));
+
+            // TODO: This should be inside finally block and only executed it the handle was addrefed
+            _unmarshallingCodestream.EmitLdLoc(vSafeHandle);
+            _unmarshallingCodestream.Emit(ILOpcode.call, _emitter.NewToken(
+                safeHandleType.GetKnownMethod("DangerousRelease", null)));
+
+            return _context.GetWellKnownType(WellKnownType.IntPtr);
+        }
+
+        private TypeDesc EmitSafeHandleReturnValueMarshalling(TypeDesc type)
+        {
+            var nativeType = _context.GetWellKnownType(WellKnownType.IntPtr);
+
+            var vSafeHandle = _emitter.NewLocal(type);
+            var vReturnValue = _emitter.NewLocal(nativeType);
+
+            _marshallingCodeStream.Emit(ILOpcode.newobj, _emitter.NewToken(type.GetDefaultConstructor()));
+            _marshallingCodeStream.EmitStLoc(vSafeHandle);
+
+            _returnValueMarshallingCodeStream.EmitStLoc(vReturnValue);
+
+            _returnValueMarshallingCodeStream.EmitLdLoc(vSafeHandle);
+            _returnValueMarshallingCodeStream.EmitLdLoc(vReturnValue);
+            _returnValueMarshallingCodeStream.Emit(ILOpcode.call, _emitter.NewToken(
+                this.SafeHandleType.GetKnownMethod("SetHandle", null)));
+
+            _returnValueMarshallingCodeStream.EmitLdLoc(vSafeHandle);
+
+            return nativeType;
+        }
+
+        private TypeDesc MarshalArgument(TypeDesc type)
+        {
+            if (IsBlittableType(type))
+            {
+                return type.UnderlyingType;
+            }
+
+            if (type.IsSzArray)
+            {
+                var arrayType = (ArrayType)type;
+                if (IsBlittableType(arrayType.ParameterType))
+                    return EmitArrayMarshalling(arrayType);
+
+                if (arrayType.ParameterType == _context.GetWellKnownType(WellKnownType.Char))
+                {
+                    if (GetCharSet() == PInvokeAttributes.CharSetUnicode)
+                    {
+                        return EmitArrayMarshalling(arrayType);
+                    }
+                }
+            }
+
+            if (type.IsByRef)
+            {
+                var byRefType = (ByRefType)type;
+                if (IsBlittableType(byRefType.ParameterType))
+                    return EmitByRefMarshalling(byRefType);
+
+                if (byRefType.ParameterType == _context.GetWellKnownType(WellKnownType.Char))
+                {
+                    if (GetCharSet() == PInvokeAttributes.CharSetUnicode)
+                    {
+                        return EmitByRefMarshalling(byRefType);
+                    }
+                }
+            }
+
+            if (type.IsString)
+            {
+                return EmitStringMarshalling();
+            }
+
+            if (type.Category == TypeFlags.Boolean)
+            {
+                return EmitBooleanMarshalling();
+            }
+
+            if (type is MetadataType)
+            {
+                var metadataType = (MetadataType)type;
+
+                if (metadataType.Module == _context.SystemModule)
+                {
+                    var nameSpace = metadataType.Namespace;
+                    var name = metadataType.Name;
+
+                    if (name == "StringBuilder" && nameSpace == "System.Text")
+                    {
+                        return EmitStringBuilderMarshalling();
+                    }
+                }
+            }
+
+            if (IsSafeHandle(type))
+            {
+                return EmitSafeHandleMarshalling(type);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        private TypeDesc MarshalReturnValue(TypeDesc type)
+        {
+            if (type.IsVoid)
+            {
+                return type;
+            }
+
+            if (IsBlittableType(type))
+            {
+                return type.UnderlyingType;
+            }
+
+            if (type.Category == TypeFlags.Boolean)
+            {
+                return EmitBooleanReturnValueMarshalling();
+            }
+
+            if (IsSafeHandle(type))
+            {
+                return EmitSafeHandleReturnValueMarshalling(type);
+            }
+
+            throw new NotSupportedException();
         }
 
         public MethodIL EmitIL()
         {
             MethodSignature targetMethodSignature = _targetMethod.Signature;
 
-            // We have two code streams - one is used to convert each argument into a native type
-            // and store that into the local. The other is used to load each previously generated local
+            // We have 4 code streams:
+            // - _marshallingCodeStream is used to convert each argument into a native type and 
+            // store that into the local
+            // - callsiteSetupCodeStream is used to used to load each previously generated local
             // and call the actual target native method.
+            // - _returnValueMarshallingCodeStream is used to convert the native return value 
+            // to managed one.
+            // - _unmarshallingCodestream is used to propagate [out] native arguments values to 
+            // managed ones.
             _emitter = new ILEmitter();
             _marshallingCodeStream = _emitter.NewCodeStream();
             ILCodeStream callsiteSetupCodeStream = _emitter.NewCodeStream();
             _returnValueMarshallingCodeStream = _emitter.NewCodeStream();
+            _unmarshallingCodestream = _emitter.NewCodeStream();
 
             TypeDesc[] nativeParameterTypes = new TypeDesc[targetMethodSignature.Length];
 
@@ -343,34 +477,10 @@ namespace Internal.IL.Stubs
             for (int i = 0; i < targetMethodSignature.Length; i++)
             {
                 // TODO: throw if there's custom marshalling
-                TypeDesc parameterType = targetMethodSignature[i];
 
                 _marshallingCodeStream.EmitLdArg(i);
 
-                TypeDesc nativeType;
-                if (parameterType.IsSzArray)
-                {
-                    nativeType = EmitArrayMarshalling((ArrayType)parameterType);
-                }
-                else if (parameterType.IsByRef)
-                {
-                    nativeType = EmitByRefMarshalling((ByRefType)parameterType);
-                }
-                else if (parameterType.IsString)
-                {
-                    nativeType = EmitStringMarshalling();
-                }
-                else if (parameterType.Category == TypeFlags.Boolean)
-                {
-                    nativeType = EmitBooleanMarshalling();
-                }
-                else
-                {
-                    if (!IsBlittableType(parameterType))
-                        throw new NotSupportedException();
-
-                    nativeType = parameterType.UnderlyingType;
-                }
+                TypeDesc nativeType = MarshalArgument(targetMethodSignature[i]);
 
                 nativeParameterTypes[i] = nativeType;
 
@@ -386,24 +496,8 @@ namespace Internal.IL.Stubs
 
             // TODO: throw if SetLastError is true
             // TODO: throw if there's custom marshalling
-            TypeDesc returnType = targetMethodSignature.ReturnType;
 
-            TypeDesc nativeReturnType;
-            if (returnType.IsVoid)
-            {
-                nativeReturnType = returnType;
-            }
-            else if (returnType.Category == TypeFlags.Boolean)
-            {
-                nativeReturnType = EmitBooleanReturnValueMarshalling();
-            }
-            else
-            {
-                if (!IsBlittableType(returnType))
-                    throw new NotSupportedException();
-
-                nativeReturnType = returnType;
-            }
+            TypeDesc nativeReturnType = MarshalReturnValue(targetMethodSignature.ReturnType);
 
             MethodSignature nativeSig = new MethodSignature(
                 targetMethodSignature.Flags, 0, nativeReturnType, nativeParameterTypes);
@@ -412,7 +506,8 @@ namespace Internal.IL.Stubs
 
             // Call the native method
             callsiteSetupCodeStream.Emit(ILOpcode.call, _emitter.NewToken(nativeMethod));
-            callsiteSetupCodeStream.Emit(ILOpcode.ret);
+
+            _unmarshallingCodestream.Emit(ILOpcode.ret);
 
             return _emitter.Link();
         }
@@ -435,7 +530,7 @@ namespace Internal.IL.Stubs
                 TypeSystemContext context = method.Context;
                 MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
                     new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
-                MethodDesc exceptionCtor = method.Context.GetWellKnownType(WellKnownType.Exception).GetMethod(".ctor", ctorSignature);
+                MethodDesc exceptionCtor = method.Context.GetWellKnownType(WellKnownType.Exception).GetKnownMethod(".ctor", ctorSignature);
 
                 ILCodeStream codeStream = emitter.NewCodeStream();
                 codeStream.Emit(ILOpcode.ldstr, emitter.NewToken(message));
@@ -455,15 +550,20 @@ namespace Internal.IL.Stubs
     /// </summary>
     internal sealed class PInvokeTargetNativeMethod : MethodDesc
     {
+        private static int nativeMethodCounter;
+
         private TypeDesc _owningType;
         private MethodSignature _signature;
         private PInvokeMetadata _methodMetadata;
+        private int sequenceNumber;
 
         public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata)
         {
             _owningType = owningType;
             _signature = signature;
             _methodMetadata = methodMetadata;
+
+            sequenceNumber = System.Threading.Interlocked.Increment(ref nativeMethodCounter);
         }
 
         public override TypeSystemContext Context
@@ -494,7 +594,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "__pInvokeImpl" + _methodMetadata.Name;
+                return "__pInvokeImpl" + _methodMetadata.Name + sequenceNumber;
             }
         }
 

@@ -428,7 +428,8 @@ namespace Internal.TypeSystem.Ecma
                 an.SetPublicKeyToken(publicKeyOrToken);
             }
 
-            // TODO: ContentType, Culture - depends on newer version of the System.Reflection contract
+            an.CultureName = _metadataReader.GetString(assemblyReference.Culture);
+            an.ContentType = GetContentTypeFromAssemblyFlags(assemblyReference.Flags);
 
             return Context.ResolveAssembly(an);
         }
@@ -470,13 +471,18 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public TypeDesc GetGlobalModuleType()
+        public override TypeDesc GetGlobalModuleType()
         {
             int typeDefinitionsCount = _metadataReader.TypeDefinitions.Count;
             if (typeDefinitionsCount == 0)
                 return null;
 
             return GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
+        }
+
+        private static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
+        {
+            return (AssemblyContentType)(((int)flags & 0x0E00) >> 9);
         }
 
         private AssemblyName _assemblyName;
@@ -491,7 +497,8 @@ namespace Internal.TypeSystem.Ecma
                 an.Version = _assemblyDefinition.Version;
                 an.SetPublicKey(_metadataReader.GetBlobBytes(_assemblyDefinition.PublicKey));
 
-                // TODO: ContentType, Culture - depends on newer version of the System.Reflection contract
+                an.CultureName = _metadataReader.GetString(_assemblyDefinition.Culture);
+                an.ContentType = GetContentTypeFromAssemblyFlags(_assemblyDefinition.Flags);
 
                 _assemblyName = an;
             }

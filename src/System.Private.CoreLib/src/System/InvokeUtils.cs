@@ -436,7 +436,7 @@ namespace System
             {
                 // If the passed in array is not an actual object[] instance, we need to copy it over to an actual object[]
                 // instance so that the rest of the code can safely create managed object references to individual elements.
-                if (parameters != null && !typeof(object[]).TypeHandle.Equals(new RuntimeTypeHandle(parameters.EETypePtr)))
+                if (parameters != null && EETypePtr.EETypePtrOf<object[]>() != parameters.EETypePtr)
                 {
                     s_parameters = new object[parameters.Length];
                     Array.Copy(parameters, s_parameters, parameters.Length);

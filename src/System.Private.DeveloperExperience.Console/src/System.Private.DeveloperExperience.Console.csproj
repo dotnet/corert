@@ -34,15 +34,25 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Console.cs" />
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.HandleTypes.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Console.cs" >
+      <Link>Interop\Windows\mincore\Interop.Console.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.HandleTypes.cs" >
+      <Link>Interop\Windows\mincore\Interop.HandleTypes.cs</Link>
+    </Compile>
     <Compile Include="Internal\DeveloperExperience\ConsolePal.Windows.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Write.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\libc\Interop.FileDescriptors.cs" />
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" >
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Write.cs" >
+      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Write.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Unix\libc\Interop.FileDescriptors.cs" >
+      <Link>Interop\Unix\libc\Interop.FileDescriptors.cs</Link>
+    </Compile>
     <Compile Include="Internal\DeveloperExperience\ConsolePal.Unix.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

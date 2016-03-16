@@ -380,6 +380,32 @@ namespace System
             return new AggregateException(Message, flattenedExceptions);
         }
 
+#if CORERT
+        /// <summary>Gets a message that describes the exception.</summary>
+        public override string Message
+        {
+            get
+            {
+                if (m_innerExceptions.Count == 0)
+                {
+                    return base.Message;
+                }
+
+                StringBuilder sb = new StringBuilder();
+                sb.Append(base.Message);
+                sb.Append(' ');
+                for (int i = 0; i < m_innerExceptions.Count; i++)
+                {
+                    sb.Append('(');
+                    sb.Append(m_innerExceptions[i].Message);
+                    sb.Append(") ");
+                }
+                sb.Length -= 1;
+                return sb.ToString();
+            }
+        }
+#endif
+
         /// <summary>
         /// Creates and returns a string representation of the current <see cref="AggregateException"/>.
         /// </summary>

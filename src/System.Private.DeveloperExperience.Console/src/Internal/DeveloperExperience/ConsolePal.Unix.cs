@@ -14,12 +14,12 @@ namespace Internal.DeveloperExperience
             byte[] errorMessageAsBytes = Encoding.UTF8.GetBytes(errorMessage);
             fixed (byte* pBuffer = errorMessageAsBytes)
             {
-                Interop.Sys.Write2(Interop.Sys.FileDescriptors.STDERR_FILENO, pBuffer, errorMessageAsBytes.Length);
+                Interop.Sys.Write(Interop.Sys.FileDescriptors.STDERR_FILENO, pBuffer, errorMessageAsBytes.Length);
             }
 
             // Write new line
             byte newLine = (byte) '\n';
-            Interop.Sys.Write2(Interop.Sys.FileDescriptors.STDERR_FILENO, &newLine, 1);
+            Interop.Sys.Write(Interop.Sys.FileDescriptors.STDERR_FILENO, &newLine, 1);
 
         }
     }

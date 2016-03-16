@@ -30,14 +30,14 @@
 
 void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
 {
-    GetRuntimeInstance()->EnumAllStaticGCRefs(fn, sc);
+    GetRuntimeInstance()->EnumAllStaticGCRefs(reinterpret_cast<void*>(fn), sc);
 }
 
 /*
  * Scan all stack and statics roots
  */
  
-VOID GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, EnumGcRefScanContext * sc)
+void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, EnumGcRefScanContext * sc)
 {
     // STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Phase = %s\n", sc->promotion ? "promote" : "relocate");
 
@@ -65,7 +65,7 @@ VOID GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
             sc->dwEtwRootKind = kEtwGCRootKindStack;
 #endif
-            pThread->GcScanRoots(fn, sc);
+            pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
             sc->dwEtwRootKind = kEtwGCRootKindOther;

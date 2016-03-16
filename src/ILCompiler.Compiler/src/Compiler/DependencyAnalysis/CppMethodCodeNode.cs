@@ -11,7 +11,7 @@ using System.Collections.Generic;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class CppMethodCodeNode : DependencyNodeCore<NodeFactory>, ISymbolNode
+    internal class CppMethodCodeNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
         private MethodDesc _method;
         private string _methodCode;

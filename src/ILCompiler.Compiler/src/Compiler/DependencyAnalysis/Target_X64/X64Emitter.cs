@@ -24,16 +24,37 @@ namespace ILCompiler.DependencyAnalysis.X64
             EmitIndirInstructionSize(0x8a, regDst, ref memory);
         }
 
+        public void EmitMOV(Register regDst, Register regSrc)
+        {
+            AddrMode rexAddrMode = new AddrMode(regSrc, null, 0, 0, AddrModeSize.Int64);
+            EmitRexPrefix(regDst, ref rexAddrMode);
+            Builder.EmitByte(0x89);
+            Builder.EmitByte((byte)(0xC0 | (((int)regSrc & 0x07) << 3) | (((int)regDst & 0x07))));
+        }
+
         public void EmitLEAQ(Register reg, ISymbolNode symbol)
         {
             AddrMode rexAddrMode = new AddrMode(Register.RAX, null, 0, 0, AddrModeSize.Int64);
             EmitRexPrefix(reg, ref rexAddrMode);
             Builder.EmitByte(0x8D);
-            int regNumLowBits = ((int)reg) & 0x07;
-            int regNumLowBitsShifted = regNumLowBits << 3;
-            byte modRM = (byte)(regNumLowBitsShifted | 0x05);
-            Builder.EmitByte(modRM);
+            Builder.EmitByte((byte)(0x05 | (((int)reg) & 0x07) << 3));
             Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+        }
+
+        public void EmitCMP(ref AddrMode addrMode, sbyte immediate)
+        {
+            if (addrMode.Size == AddrModeSize.Int16)
+                Builder.EmitByte(0x66);
+            EmitIndirInstruction((byte)((addrMode.Size != AddrModeSize.Int8) ? 0x83 : 0x80), 0x7, ref addrMode);
+            Builder.EmitByte((byte)immediate);
+        }
+
+        public void EmitADD(ref AddrMode addrMode, sbyte immediate)
+        {
+            if (addrMode.Size == AddrModeSize.Int16)
+                Builder.EmitByte(0x66);
+            EmitIndirInstruction((byte)((addrMode.Size != AddrModeSize.Int8) ? 0x83 : 0x80), (byte)0, ref addrMode);
+            Builder.EmitByte((byte)immediate);
         }
 
         public void EmitJMP(ISymbolNode symbol)
@@ -54,6 +75,16 @@ namespace ILCompiler.DependencyAnalysis.X64
 
         public void EmitRET()
         {
+            Builder.EmitByte(0xC3);
+        }
+
+        public void EmitRETIfEqual()
+        {
+            // jne @+1
+            Builder.EmitByte(0x75);
+            Builder.EmitByte(0x01);
+
+            // ret
             Builder.EmitByte(0xC3);
         }
 
@@ -251,7 +282,7 @@ namespace ILCompiler.DependencyAnalysis.X64
             Debug.Assert(addrMode.Size != 0);
             if (addrMode.Size == AddrModeSize.Int16)
                 Builder.EmitByte(0x66);
-            EmitIndirInstruction(opcode + ((((int)addrMode.Size) > 1) ? 1 : 0), dstReg, ref addrMode);
+            EmitIndirInstruction(opcode + ((addrMode.Size != AddrModeSize.Int8) ? 1 : 0), dstReg, ref addrMode);
         }
     }
 }

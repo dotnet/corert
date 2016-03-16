@@ -63,8 +63,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
+#endif
 
                 IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.ReflectionDomain, _reader, _typeDefinition.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
@@ -84,8 +86,10 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaredNestedTypes(this);
+#endif
 
                 foreach (TypeDefinitionHandle nestedTypeHandle in _typeDefinition.NestedTypes)
                 {

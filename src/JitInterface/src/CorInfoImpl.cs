@@ -8,13 +8,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
-using System.Reflection;
 
 using Internal.TypeSystem;
 
 using Internal.IL;
 
 using ILCompiler;
+using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysis;
 
 namespace Internal.JitInterface
@@ -83,6 +83,8 @@ namespace Internal.JitInterface
 
         private MethodCodeNode _methodCodeNode;
 
+        private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
+
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
         {
             try
@@ -92,32 +94,43 @@ namespace Internal.JitInterface
                 CORINFO_METHOD_INFO methodInfo;
                 Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
-                uint flags = (uint)(
-                    CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
-                    CorJitFlag.CORJIT_FLG_READYTORUN |
-                    CorJitFlag.CORJIT_FLG_RELOC |
-                    CorJitFlag.CORJIT_FLG_DEBUG_INFO |
-                    CorJitFlag.CORJIT_FLG_PREJIT);
+                _methodScope = methodInfo.scope;
 
-                if (!_compilation.Options.NoLineNumbers)
+                try
                 {
                     CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
-                    IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
-                    if (ilSequencePoints != null)
+
+                    if (!_compilation.Options.NoLineNumbers)
                     {
-                        Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
-                        foreach (var point in ilSequencePoints)
+                        IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
+                        if (ilSequencePoints != null)
                         {
-                            sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
+                            SetSequencePoints(ilSequencePoints);
                         }
-                        _sequencePoints = sequencePoints;
                     }
+
+                    IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(MethodBeingCompiled);
+                    if (localVariables != null)
+                    {
+                        SetLocalVariables(localVariables);
+                    }
+
+                    IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(MethodBeingCompiled);
+                    if (parameters != null)
+                    {
+                        SetParameterNames(parameters);
+                    }
+                }
+                catch (Exception e)
+                {
+                    // Debug info not successfully loaded.
+                    _compilation.Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.GetName() + ")");
                 }
 
                 IntPtr exception;
                 IntPtr nativeEntry;
                 uint codeSize;
-                JitWrapper(out exception, _jit, _comp, ref methodInfo, flags, out nativeEntry, out codeSize);
+                JitWrapper(out exception, _jit, _comp, ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
                 if (exception != IntPtr.Zero)
                 {
                     char* szMessage = GetExceptionMessage(exception);
@@ -133,6 +146,74 @@ namespace Internal.JitInterface
             }
         }
 
+        enum RhEHClauseKind
+        {
+            RH_EH_CLAUSE_TYPED = 0,
+            RH_EH_CLAUSE_FAULT = 1,
+            RH_EH_CLAUSE_FILTER = 2
+        }
+
+        private ObjectNode.ObjectData EncodeEHInfo()
+        {
+            var builder = new ObjectDataBuilder();
+            builder.Alignment = 1;
+
+            // TODO: Filter out duplicate clauses
+
+            builder.EmitCompressedUInt((uint)_ehClauses.Length);
+
+            for (int i = 0; i < _ehClauses.Length; i++)
+            {
+                var clause = _ehClauses[i];
+                RhEHClauseKind clauseKind;
+
+                if (((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FAULT) != 0) ||
+                    ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FINALLY) != 0))
+                {
+                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FAULT;
+                }
+                else
+                if ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_FILTER) != 0)
+                {
+                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FILTER;
+                }
+                else
+                {
+                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_TYPED;
+                }
+
+                builder.EmitCompressedUInt((uint)clause.TryOffset);
+
+                // clause.TryLength returned by the JIT is actually end offset...
+                // https://github.com/dotnet/coreclr/issues/3585
+                int tryLength = (int)clause.TryLength - (int)clause.TryOffset;
+                builder.EmitCompressedUInt((uint)((tryLength << 2) | (int)clauseKind));
+
+                switch (clauseKind)
+                {
+                    case RhEHClauseKind.RH_EH_CLAUSE_TYPED:
+                        {
+                            builder.EmitCompressedUInt(clause.HandlerOffset);
+
+                            var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
+                            var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
+                            var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
+
+                            builder.EmitReloc(typeSymbol, RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                        }
+                        break;
+                    case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
+                        builder.EmitCompressedUInt(clause.HandlerOffset);
+                        break;
+                    case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
+                        builder.EmitCompressedUInt(clause.ClassTokenOrOffset);
+                        break;
+                }
+            }
+
+            return builder.ToObjectData();
+        }
+
         private void PublishCode()
         {
             var relocs = _relocs.ToArray();
@@ -146,7 +227,11 @@ namespace Internal.JitInterface
             _methodCodeNode.SetCode(objectData);
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
+            if (_ehClauses != null)
+                _methodCodeNode.InitializeEHInfo(EncodeEHInfo());
+
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
+            _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
         }
 
         private MethodDesc MethodBeingCompiled
@@ -207,8 +292,11 @@ namespace Internal.JitInterface
             _usedFrameInfos = 0;
             _frameInfos = null;
 
+            _ehClauses = null;
+
             _sequencePoints = null;
             _debugLocInfos = null;
+            _debugVarInfos = null;
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -694,7 +782,9 @@ namespace Internal.JitInterface
 
         [return: MarshalAs(UnmanagedType.Bool)]
         private bool canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("canInlineTypeCheckWithObjectVTable"); }
+        {
+            return true;
+        }
 
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -1012,7 +1102,7 @@ namespace Internal.JitInterface
             MethodDesc md = HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
-            if (!type.HasStaticConstructor)
+            if (!_compilation.HasLazyStaticConstructor(type))
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
@@ -1284,6 +1374,47 @@ namespace Internal.JitInterface
             return HandleToObject(fldHnd).IsStatic;
         }
 
+        public void SetSequencePoints(IEnumerable<ILSequencePoint> ilSequencePoints)
+        {
+            Debug.Assert(ilSequencePoints != null);
+            Dictionary<int, SequencePoint> sequencePoints = new Dictionary<int, SequencePoint>();
+
+            foreach (var point in ilSequencePoints)
+            {
+                sequencePoints.Add(point.Offset, new SequencePoint() { Document = point.Document, LineNumber = point.LineNumber });
+            }
+
+            _sequencePoints = sequencePoints;
+        }
+
+        public void SetLocalVariables(IEnumerable<ILLocalVariable> localVariables)
+        {
+            Debug.Assert(localVariables != null);
+            var localSlotToInfoMap = new Dictionary<uint, ILLocalVariable>();
+
+            foreach (var v in localVariables)
+            {
+                localSlotToInfoMap[(uint)v.Slot] = v;
+            }
+
+            _localSlotToInfoMap = localSlotToInfoMap;
+        }
+
+        public void SetParameterNames(IEnumerable<string> parameters)
+        {
+            Debug.Assert(parameters != null);
+            var parameterIndexToNameMap = new Dictionary<uint, string>();
+            uint index = 0;
+
+            foreach (var p in parameters)
+            {
+                parameterIndexToNameMap[index] = p;
+                ++index;
+            }
+
+            _parameterIndexToNameMap = parameterIndexToNameMap;
+        }
+
         private void getBoundaries(CORINFO_METHOD_STRUCT_* ftn, ref uint cILOffsets, ref uint* pILOffsets, BoundaryTypes* implicitBoundaries)
         {
             // TODO: Debugging
@@ -1320,9 +1451,7 @@ namespace Internal.JitInterface
                     // from the first entry.
                     if (debugLocInfos.Count == 0 && nativeOffset != 0)
                     {
-                        DebugLocInfo firstLoc = loc;
-                        firstLoc.NativeOffset = 0;
-                        firstLoc.LineNumber--;
+                        DebugLocInfo firstLoc = new DebugLocInfo(0, loc.FileName, loc.LineNumber - 1, loc.ColNumber);
                         debugLocInfos.Add(firstLoc);
                     }
 
@@ -1346,9 +1475,61 @@ namespace Internal.JitInterface
             // Just tell the JIT to extend everything.
             extendOthers = true;
         }
+
         private void setVars(CORINFO_METHOD_STRUCT_* ftn, uint cVars, NativeVarInfo* vars)
         {
-            // TODO: Debugging
+            if (_localSlotToInfoMap == null && _parameterIndexToNameMap == null)
+            {
+                return;
+            }
+
+            uint paramCount = (_parameterIndexToNameMap == null) ? 0 : (uint)_parameterIndexToNameMap.Count;
+            Dictionary<uint, DebugVarInfo> debugVars = new Dictionary<uint, DebugVarInfo>();
+            int i;
+
+            for (i = 0; i < cVars; i++)
+            {
+                NativeVarInfo nativeVarInfo = vars[i];
+
+                if (nativeVarInfo.varNumber < paramCount)
+                {
+                    string name = _parameterIndexToNameMap[nativeVarInfo.varNumber];
+                    updateDebugVarInfo(debugVars, name, true, nativeVarInfo);
+                }
+                else if (_localSlotToInfoMap != null)
+                {
+                    ILLocalVariable ilVar;
+                    uint slotNumber = nativeVarInfo.varNumber - paramCount;
+                    if (_localSlotToInfoMap.TryGetValue(slotNumber, out ilVar))
+                    {
+                        updateDebugVarInfo(debugVars, ilVar.Name, false, nativeVarInfo);
+                    }
+                }
+            }
+
+            i = 0;
+            _debugVarInfos = new DebugVarInfo[debugVars.Count];
+            foreach (var debugVar in debugVars)
+            {
+                _debugVarInfos[i] = debugVar.Value;
+                i++;
+            }
+        }
+
+        private void updateDebugVarInfo(Dictionary<uint, DebugVarInfo> debugVars, string name,
+                                        bool isParam, NativeVarInfo nativeVarInfo)
+        {
+            DebugVarInfo debugVar;
+
+            if (!debugVars.TryGetValue(nativeVarInfo.varNumber, out debugVar))
+            {
+                // TODO: Force an INT32 type (0x0074 in CodeView) for now. Fix it later.
+                // ISSUE #784. 
+                debugVar = new DebugVarInfo(name, isParam, typeIndex : 0x0074);
+                debugVars[nativeVarInfo.varNumber] = debugVar;
+            }
+
+            debugVar.Ranges.Add(nativeVarInfo);
         }
 
         private void* allocateArray(uint cBytes)
@@ -1606,10 +1787,21 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.FltRound; break;
 
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(ftnNum.ToString());
             }
 
-            return (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(JitHelper.GetMangledName(id)));
+            string mangledName;
+            MethodDesc methodDesc;
+            JitHelper.GetEntryPoint(_compilation.TypeSystemContext, id, out mangledName, out methodDesc);
+            Debug.Assert(mangledName != null || methodDesc != null);
+
+            ISymbolNode entryPoint;
+            if (mangledName != null)
+                entryPoint = _compilation.NodeFactory.ExternSymbol(mangledName);
+            else
+                entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
+
+            return (void*)ObjectToHandle(entryPoint);
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
@@ -1681,7 +1873,13 @@ namespace Internal.JitInterface
                 // can simply do a static look up
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
 
-                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
+                if (td.IsArray && !td.IsSzArray)
+                {
+                    // TODO: Use CORINFO_TOKENKIND_NewObj to track that this is because of CORINFO_HELP_NEW_MDARR.
+                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ConstructedTypeSymbol(td));
+                }
+                else
+                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
                 pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
             }
 
@@ -1701,6 +1899,8 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
+        private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
+        { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
         [return: MarshalAs(UnmanagedType.I1)]
@@ -1816,10 +2016,6 @@ namespace Internal.JitInterface
                 }
             }
 
-            // TODO: Interface methods
-            if (targetMethod.IsVirtual && targetMethod.OwningType.IsInterface)
-                throw new NotImplementedException("Interface method");
-
             pResult.hMethod = ObjectToHandle(targetMethod);
             pResult.methodFlags = getMethodAttribsInternal(targetMethod);
 
@@ -1857,7 +2053,20 @@ namespace Internal.JitInterface
 
             pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
-            if (!directCall)
+            if (directCall)
+            {
+                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
+                {
+                    // Calling a string constructor doesn't call the actual constructor.
+                    targetMethod = targetMethod.GetStringInitializer();
+                }
+
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                pResult.nullInstanceCheck = resolvedCallVirt;
+            }
+            else if (!targetMethod.OwningType.IsInterface)
             {
                 // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
                 // call that should not be inlined.
@@ -1874,17 +2083,13 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
-                {
-                    // Calling a string constructor doesn't call the actual constructor.
-                    targetMethod = targetMethod.GetStringInitializer();
-                }
-
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                pResult.nullInstanceCheck = true;
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
+                pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
 
-                pResult.nullInstanceCheck = resolvedCallVirt;
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, targetMethod));
             }
 
             // TODO: Generics
@@ -1978,8 +2183,13 @@ namespace Internal.JitInterface
         private int _usedFrameInfos;
         private FrameInfo[] _frameInfos;
 
+        private CORINFO_EH_CLAUSE[] _ehClauses;
+
         private Dictionary<int, SequencePoint> _sequencePoints;
+        private Dictionary<uint, ILLocalVariable> _localSlotToInfoMap;
+        private Dictionary<uint, string> _parameterIndexToNameMap;
         private DebugLocInfo[] _debugLocInfos;
+        private DebugVarInfo[] _debugVarInfos;
 
         private void allocMem(uint hotCodeSize, uint coldCodeSize, uint roDataSize, uint xcptnsCount, CorJitAllocMemFlag flag, ref void* hotCodeBlock, ref void* coldCodeBlock, ref void* roDataBlock)
         {
@@ -2023,17 +2233,29 @@ namespace Internal.JitInterface
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
         {
-            FrameInfo frameInfo = new FrameInfo();
-            frameInfo.StartOffset = (int)startOffset;
-            frameInfo.EndOffset = (int)endOffset;
-            frameInfo.BlobData = new byte[unwindSize];
-            for (uint i = 0; i < unwindSize; i++)
+            int extraBlobData = 0;
+
+            if (_compilation.Options.TargetOS == TargetOS.Windows)
             {
-                frameInfo.BlobData[i] = pUnwindBlock[i];
+                // The unwind info blob are followed by byte that identifies the type of the funclet
+                // and other optional data that follows
+                extraBlobData = 1;
             }
 
-            Debug.Assert(_usedFrameInfos < _frameInfos.Length);
-            _frameInfos[_usedFrameInfos++] = frameInfo;
+            byte[] blobData = new byte[unwindSize + extraBlobData];
+
+            for (uint i = 0; i < unwindSize; i++)
+            {
+                blobData[i] = pUnwindBlock[i];
+            }
+
+            if (extraBlobData != 0)
+            {
+                // Capture the type of the funclet in unwind info blob
+                pUnwindBlock[unwindSize] = (byte)funcKind;
+            }
+
+            _frameInfos[_usedFrameInfos++] = new FrameInfo((int)startOffset, (int)endOffset, blobData);
         }
 
         private void* allocGCInfo(UIntPtr size)
@@ -2049,12 +2271,12 @@ namespace Internal.JitInterface
 
         private void setEHcount(uint cEH)
         {
-            // TODO: EH
+            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
         }
 
         private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
         {
-            // TODO: EH
+            _ehClauses[EHnumber] = clause;
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -2202,6 +2424,25 @@ namespace Internal.JitInterface
         private uint getExpectedTargetArchitecture()
         {
             return 0x8664; // AMD64
+        }
+
+        private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
+        {
+            flags.corJitFlags = 
+                CorJitFlag.CORJIT_FLG_SKIP_VERIFICATION |
+                CorJitFlag.CORJIT_FLG_READYTORUN |
+                CorJitFlag.CORJIT_FLG_RELOC |
+                CorJitFlag.CORJIT_FLG_DEBUG_INFO |
+                CorJitFlag.CORJIT_FLG_PREJIT;
+
+            if (_compilation.Options.TargetOS != TargetOS.Windows)
+            {
+                flags.corJitFlags |= CorJitFlag.CORJIT_FLG_CFI_UNWIND;
+            }
+
+            flags.corJitFlags2 = 0;
+
+            return (uint)sizeof(CORJIT_FLAGS);
         }
     }
 }

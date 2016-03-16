@@ -8,7 +8,6 @@
 enum class UnixHandleType
 {
     Thread,
-    Mutex,
     Event
 };
 
@@ -23,8 +22,14 @@ protected:
     }
 
 public:
+
     virtual ~UnixHandleBase()
     {
+    }
+
+    virtual bool Destroy()
+    {
+        return true;
     }
 
     UnixHandleType GetType()
@@ -36,6 +41,7 @@ public:
 template<UnixHandleType HT, typename T>
 class UnixHandle : UnixHandleBase
 {
+protected:
     T m_object;
 public:
 

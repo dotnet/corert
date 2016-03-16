@@ -61,8 +61,10 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.FieldInfo_CustomAttributes(this);
+#endif
 
                 ReflectionDomain reflectionDomain = _definingTypeInfo.ReflectionDomain;
                 IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(reflectionDomain, _reader, _field.CustomAttributes);
@@ -89,8 +91,10 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.FieldInfo_DeclaringType(this);
+#endif
 
                 return _contextTypeInfo.AsType();
             }
@@ -106,8 +110,10 @@ namespace System.Reflection.Runtime.FieldInfos
 
         public sealed override Object GetValue(Object obj)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.FieldInfo_GetValue(this, obj);
+#endif
 
             FieldAccessor fieldAccessor = this.FieldAccessor;
             return fieldAccessor.GetField(obj);
@@ -125,8 +131,10 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.FieldInfo_Name(this);
+#endif
 
                 return _field.Name.GetString(_reader);
             }
@@ -134,8 +142,10 @@ namespace System.Reflection.Runtime.FieldInfos
 
         public sealed override void SetValue(Object obj, Object value)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.FieldInfo_SetValue(this, obj, value);
+#endif
 
             FieldAccessor fieldAccessor = this.FieldAccessor;
             fieldAccessor.SetField(obj, value);

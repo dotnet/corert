@@ -105,11 +105,8 @@ namespace System.Runtime
         {
             RH_EH_CLAUSE_TYPED = 0,
             RH_EH_CLAUSE_FAULT = 1,
-
-#region CLR Exceptions
             RH_EH_CLAUSE_FILTER = 2,
             RH_EH_CLAUSE_UNUSED = 3,
-#endregion
         }
 
         private struct RhEHClause

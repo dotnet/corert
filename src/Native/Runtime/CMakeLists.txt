@@ -1,6 +1,7 @@
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
     assert.cpp
+    CachedInterfaceDispatch.cpp
     Crst.cpp
     DebugEventSource.cpp
     dllmain.cpp
@@ -19,11 +20,11 @@ set(COMMON_RUNTIME_SOURCES
     MathHelpers.cpp
     MiscHelpers.cpp
     module.cpp
+    ModuleManager.cpp
     ObjectLayout.cpp
     OptionalFieldsRuntime.cpp
     portable.cpp
     profheapwalkhelper.cpp
-    Profiling.cpp
     RestrictedCallouts.cpp
     RHCodeMan.cpp
     RhConfig.cpp
@@ -68,6 +69,7 @@ if(WIN32)
   list(APPEND COMMON_RUNTIME_SOURCES
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
+    windows/CoffNativeCodeManager.cpp
   )
 
   if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
@@ -77,6 +79,8 @@ if(WIN32)
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX}
+    ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
+    ${ARCH_SOURCES_DIR}/ManagedCalloutThunk.${ASM_SUFFIX}
   )
 
 else()
@@ -103,6 +107,7 @@ endif()
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
 )
 
 # Add architecture specific folder for looking up headers.
@@ -118,7 +123,7 @@ add_compile_options($<$<CONFIG:Debug>:-DFEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_REDHAWK)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DCORERT)
-
+add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
 
 if(WIN32)

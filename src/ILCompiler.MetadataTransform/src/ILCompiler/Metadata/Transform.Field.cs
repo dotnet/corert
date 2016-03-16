@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
+using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
 using FieldAttributes = System.Reflection.FieldAttributes;
@@ -44,8 +45,19 @@ namespace ILCompiler.Metadata
             };
             record.Flags = GetFieldAttributes(entity);
 
+            var ecmaField = entity as Cts.Ecma.EcmaField;
+            if (ecmaField != null)
+            {
+                Ecma.MetadataReader reader = ecmaField.MetadataReader;
+                Ecma.FieldDefinition fieldDef = reader.GetFieldDefinition(ecmaField.Handle);
+                Ecma.ConstantHandle defaultValueHandle = fieldDef.GetDefaultValue();
+                if (!defaultValueHandle.IsNil)
+                {
+                    record.DefaultValue = HandleConstant(ecmaField.Module, defaultValueHandle);
+                }
+            }
+
             // TODO: CustomAttributes
-            // TODO: DefaultValue
             // TODO: Offset
         }
 

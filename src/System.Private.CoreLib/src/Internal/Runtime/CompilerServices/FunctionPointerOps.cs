@@ -90,7 +90,7 @@ namespace Internal.Runtime.CompilerServices
 
                         // New generic descriptors are allocated on the native heap and not tracked in the GC.
                         UIntPtr allocationSize = new UIntPtr((uint)(c_genericDictionaryChunkSize * sizeof(RuntimeGeneratedGenericMethodDescriptor)));
-                        IntPtr pNewMem = Interop.mincore.HeapAlloc(Interop.mincore.GetProcessHeap(), 0, allocationSize);
+                        IntPtr pNewMem = Interop.MemAlloc(allocationSize);
                         s_genericFunctionPointerCollection.Add(pNewMem);
                     }
 

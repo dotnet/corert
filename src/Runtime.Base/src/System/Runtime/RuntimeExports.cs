@@ -13,6 +13,7 @@ namespace System.Runtime
 {
     internal static class RuntimeExports
     {
+#if !CORERT
         //
         // internalcalls for System.Runtime.InteropServices.GCHandle.
         //
@@ -79,6 +80,7 @@ namespace System.Runtime
 
             return h;
         }
+#endif // !CORERT
 
         //
         // internal calls for allocation
@@ -266,6 +268,57 @@ namespace System.Runtime
             }
         }
 
+#if CORERT
+        //
+        // Unbox helpers with RyuJIT conventions
+        //
+        [RuntimeExport("RhUnbox2")]
+        static public unsafe void* RhUnbox2(EETypePtr pUnboxToEEType, Object obj)
+        {
+            EEType * ptrUnboxToEEType = (EEType *)pUnboxToEEType.ToPointer();
+            if (obj.EEType != ptrUnboxToEEType)
+            {
+                // We allow enums and their primtive type to be interchangable
+                if (obj.EEType->CorElementType != ptrUnboxToEEType->CorElementType)
+                {
+                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
+                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
+
+                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                }
+            }
+
+            fixed (void* pObject = &obj.m_pEEType)
+            {
+                // CORERT-TODO: This code has GC hole - the method return type should really be byref.
+                // Requires byref returns in C# to fix cleanly (https://github.com/dotnet/roslyn/issues/118)
+                return (IntPtr*)pObject + 1;
+            }
+        }
+
+        [RuntimeExport("RhUnboxNullable")]
+        static public unsafe void RhUnboxNullable(ref Hack_o_p data, EETypePtr pUnboxToEEType, Object obj)
+        {
+            EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
+
+            // HACK: we would really want to take the address of o here,
+            // but the rules of the C# language don't let us do that,
+            // so we arrive at the same result by taking the address of p
+            // and going back one pointer-sized unit
+            fixed (IntPtr* pData = &data.p)
+            {
+                if ((obj != null) && (obj.EEType != ptrUnboxToEEType->GetNullableType()))
+                {
+                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
+                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
+
+                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                }
+                InternalCalls.RhUnbox(obj, pData - 1, ptrUnboxToEEType);
+            }
+        }
+#endif // CORERT
+
         [RuntimeExport("RhArrayStoreCheckAny")]
         static public unsafe void RhArrayStoreCheckAny(object array, ref Hack_o_p data)
         {
@@ -336,6 +389,9 @@ namespace System.Runtime
         [RuntimeExport("RhpReversePInvokeBadTransition")]
         public static void RhpReversePInvokeBadTransition()
         {
+#if CORERT
+            EH.FallbackFailFast(RhFailFastReason.IllegalNativeCallableEntry, null);
+#else
             IntPtr returnAddress = BinderIntrinsics.GetReturnAddress();
             if (returnAddress != IntPtr.Zero)
             {
@@ -351,6 +407,7 @@ namespace System.Runtime
                 EH.FallbackFailFast(RhFailFastReason.InternalError, null);
                 throw EH.GetClasslibException(ExceptionIDs.Arithmetic, returnAddress);
             }
+#endif
         }
 
         // EEType interrogation methods.

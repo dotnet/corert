@@ -37,27 +37,44 @@
 // we have to (in which case these definitions will move to CommonTypes.h).
 typedef WCHAR *             LPWSTR;
 typedef const WCHAR *       LPCWSTR;
+typedef char *              LPSTR;
+typedef const char *        LPCSTR;
 typedef void *              HINSTANCE;
 
 typedef void *              LPSECURITY_ATTRIBUTES;
 typedef void *              LPOVERLAPPED;
 
-typedef void(__stdcall *PFLS_CALLBACK_FUNCTION) (void* lpFlsData);
-#define FLS_OUT_OF_INDEXES ((UInt32)0xFFFFFFFF)
-
 #ifndef GCENV_INCLUDED
 #define CALLBACK            __stdcall
 #define WINAPI              __stdcall
 #define WINBASEAPI          __declspec(dllimport)
+#endif //!GCENV_INCLUDED
+
+#ifdef PLATFORM_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '/'
+#else // PLATFORM_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '\\'
+#endif // PLATFORM_UNIX
+
+typedef union _LARGE_INTEGER {
+    struct {
+#if BIGENDIAN
+        int32_t HighPart;
+        uint32_t LowPart;
+#else
+        uint32_t LowPart;
+        int32_t HighPart;
+#endif
+    } u;
+    int64_t QuadPart;
+} LARGE_INTEGER, *PLARGE_INTEGER;
 
 typedef struct _GUID {
-    unsigned long  Data1;
-    unsigned short Data2;
-    unsigned short Data3;
-    unsigned char  Data4[8];
+    uint32_t Data1;
+    uint16_t Data2;
+    uint16_t Data3;
+    uint8_t Data4[8];
 } GUID;
-
-#endif //!GCENV_INCLUDED
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
 
@@ -499,13 +516,11 @@ typedef UInt32 (WINAPI *PTHREAD_START_ROUTINE)(_In_opt_ void* lpThreadParameter)
 typedef IntNative (WINAPI *FARPROC)();
 
 #ifndef GCENV_INCLUDED
-
 #define TRUE                    1
 #define FALSE                   0
+#endif // !GCENV_INCLUDED
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(IntNative)-1)
-
-#endif // !GCENV_INCLUDED
 
 #define DLL_PROCESS_ATTACH      1
 #define DLL_THREAD_ATTACH       2
@@ -606,7 +621,7 @@ typedef IntNative (WINAPI *FARPROC)();
 typedef UInt64 REGHANDLE;
 typedef UInt64 TRACEHANDLE;
 
-#ifndef EVENT_PROVIDER_INCLUDED
+#ifndef _EVNTPROV_H_
 struct EVENT_DATA_DESCRIPTOR
 {
     UInt64  Ptr;
@@ -641,7 +656,7 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
     EventDataDescriptor->Size = DataSize;
     EventDataDescriptor->Reserved = 0;
 }
-#endif // EVENT_PROVIDER_INCLUDED
+#endif // _EVNTPROV_H_
 
 #ifndef GCENV_INCLUDED
 extern GCSystemInfo g_SystemInfo;
@@ -650,6 +665,7 @@ extern GCSystemInfo g_SystemInfo;
 #define REDHAWK_PALAPI __stdcall
 #endif // GCENV_INCLUDED
 
+bool InitializeSystemInfo();
 
 #ifndef DACCESS_COMPILE
 
@@ -690,7 +706,7 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ 
 
 REDHAWK_PALIMPORT Int32 REDHAWK_PALAPI PalGetProcessCpuCount();
 
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_ const WCHAR *, _Out_ char * buff, _In_ UInt32 maxBytesToRead);
+REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_z_ const TCHAR *, _Out_writes_all_(maxBytesToRead) char * buff, _In_ UInt32 maxBytesToRead);
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than 
@@ -698,7 +714,7 @@ REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalReadFileContents(_In_ const WCHAR *, 
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
 
 // Return value:  number of characters in name string
-REDHAWK_PALIMPORT Int32 PalGetModuleFileName(_Out_ wchar_t** pModuleNameOut, HANDLE moduleBase);
+REDHAWK_PALIMPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
 // Various intrinsic declarations needed for the PalGetCurrentTEB implementation below.
 #if defined(_X86_)
@@ -751,39 +767,13 @@ inline UInt8 * PalNtCurrentTeb()
 EXTERN_C void * __cdecl _alloca(size_t);
 #pragma intrinsic(_alloca)
 
-//
-// Export PAL blessed versions of *printf functions we use (mostly debug only).
-//
-REDHAWK_PALIMPORT void __cdecl PalPrintf(_In_z_ _Printf_format_string_ const char * szFormat, ...);
-REDHAWK_PALIMPORT void __cdecl PalFlushStdout();
-
-#ifndef DACCESS_COMPILE
-REDHAWK_PALIMPORT int __cdecl PalSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, ...);
-REDHAWK_PALIMPORT int __cdecl PalVSprintf(_Out_writes_z_(cchBuffer) char * szBuffer, size_t cchBuffer, _In_z_ _Printf_format_string_ const char * szFormat, va_list args);
-#else
-#define PalSprintf sprintf_s
-#define PalVSprintf vsprintf_s
-#endif
-
-// An annoying side-effect of enabling full compiler warnings is that it complains about constant expressions
-// in control flow predicates. These happen to be useful in certain macros, such as the va_start definitions
-// below. The following macros will allow the warning to be turned off for the duration of the macro expansion
-// only. If this finds broader use we can consider moving them to a more global location.
-#define ALLOW_CONSTANT_EXPR_BEGIN __pragma(warning(push)) __pragma(warning(disable:4127))
-#define ALLOW_CONSTANT_EXPR_END __pragma(warning(pop))
-
-struct GCMemoryStatus;
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalGlobalMemoryStatusEx(_Out_ GCMemoryStatus* pBuffer);
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, UIntNative size, UInt32 allocationType, UInt32 protect);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, UIntNative size, UInt32 freeType);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(UInt32 milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
-REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateMutexW(_In_opt_ LPSECURITY_ATTRIBUTES pMutexAttributes, UInt32_BOOL initialOwner, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalGetTickCount();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateFileW(_In_z_ LPCWSTR pFileName, uint32_t desiredAccess, uint32_t shareMode, _In_opt_ void* pSecurityAttributes, uint32_t creationDisposition, uint32_t flagsAndAttributes, HANDLE hTemplateFile);
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalGetWriteWatch(UInt32 flags, _In_ void* pBaseAddress, UIntNative regionSize, _Out_writes_to_opt_(*pCount, *pCount) void** pAddresses, _Inout_opt_ UIntNative* pCount, _Inout_opt_ UInt32* pGranularity);
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalResetWriteWatch(_In_ void* pBaseAddress, UIntNative regionSize);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateLowMemoryNotification();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(UInt32 exitCode);
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
@@ -814,9 +804,20 @@ REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ 
 
 REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, UInt32 timeout, UInt32 count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
 
-#ifndef _MSC_VER
-REDHAWK_PALIMPORT Int32 __cdecl _wcsicmp(const wchar_t *string1, const wchar_t *string2);
-#endif // _MSC_VER
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
+
+REDHAWK_PALIMPORT UInt64 PalGetCurrentThreadIdForLogging();
+
+#ifdef PLATFORM_UNIX
+REDHAWK_PALIMPORT Int32 __cdecl _stricmp(const char *string1, const char *string2);
+#endif // PLATFORM_UNIX
+
+#ifdef UNICODE
+#define _tcsicmp _wcsicmp
+#else
+#define _tcsicmp _stricmp
+#endif
 
 #include "PalRedhawkInline.h"
 

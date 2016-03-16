@@ -79,7 +79,15 @@ install_dotnet_cli()
     echo "Installing the dotnet/cli..."
     local __tools_dir=${__scriptpath}/bin/tools
     local __cli_dir=${__tools_dir}/cli
-    
+    if [ ${__CleanBuild} == 1 ]; then
+        if [ -d "${__cli_dir}" ]; then
+            rm -rf "${__cli_dir}"
+        fi
+        if [ -d "${__cli_dir}" ]; then
+            echo "Exiting... could not clean ${__cli_dir}"
+            exit 1
+        fi
+    fi
     if [ ! -d "${__cli_dir}" ]; then
         mkdir -p "${__cli_dir}"
     fi
@@ -91,11 +99,10 @@ install_dotnet_cli()
             __build_os_lowercase="ubuntu"
         fi
         
-        local __cli_version=1.0.0.000973
         local __build_arch_lowercase=$(echo "${__BuildArch}" | tr '[:upper:]' '[:lower:]')
-        local __cli_tarball=dotnet-${__build_os_lowercase}-${__build_arch_lowercase}.${__cli_version}.tar.gz
+        local __cli_tarball=dotnet-${__build_os_lowercase}-${__build_arch_lowercase}.1.0.0.001672.tar.gz
         local __cli_tarball_path=${__tools_dir}/${__cli_tarball}
-        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/${__cli_version}/${__cli_tarball}"
+        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/1.0.0.001672/${__cli_tarball}"
         tar -xzf ${__cli_tarball_path} -C ${__cli_dir}
         export DOTNET_HOME=${__cli_dir}
         #
@@ -121,6 +128,9 @@ install_dotnet_cli()
         echo "CLI could not be installed or not present."
         exit 1
     fi
+
+    echo "cat ${__cli_dir}/.version"
+    cat "${__cli_dir}/.version"
 }
 
 check_native_prereqs()
@@ -147,7 +157,7 @@ prepare_managed_build()
     # Grab the MSBuild package if we don't have it already
     if [ ! -e "$__msbuildpath" ]; then
         echo "Restoring MSBuild..."
-        mono "$__nugetpath" install $__msbuildpackageid -Version $__msbuildpackageversion -source "https://www.myget.org/F/dotnet-buildtools/" -OutputDirectory "$__packageroot"
+        mono "$__nugetpath" install $__msbuildpackageid -Version $__msbuildpackageversion -source "https://dotnet.myget.org/F/dotnet-buildtools/" -OutputDirectory "$__packageroot"
         if [ $? -ne 0 ]; then
             echo "Failed to restore MSBuild."
             exit 1
@@ -175,11 +185,11 @@ build_managed_corert()
     __buildproj=$__scriptpath/build.proj
     __buildlog=$__scriptpath/msbuild.$__BuildArch.log
 
-    if [ -n ${ToolchainMilestone:+1} ]; then
+    if [ -z "${ToolchainMilestone}" ]; then
         ToolchainMilestone=testing
     fi
 
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs
+    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -212,6 +222,8 @@ build_native_corert()
     # processors available to a single process.
     if [ `uname` = "FreeBSD" ]; then
         NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
+    elif [ `uname` = "NetBSD" ]; then
+        NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
     else
         NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
     fi
@@ -251,6 +263,11 @@ export MONO_THREADS_PER_CPU=2000
 
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [ $CPUName == "unknown" ]; then
+    CPUName=$(uname -m)
+fi
+
 case $CPUName in
     i686)
         __BuildArch=x86
@@ -279,10 +296,6 @@ esac
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case $OSName in
-    Linux)
-        __BuildOS=Linux
-        ;;
-
     Darwin)
         __BuildOS=OSX
         __ToolNugetRuntimeId=osx.10.10-x64
@@ -291,6 +304,18 @@ case $OSName in
 
     FreeBSD)
         __BuildOS=FreeBSD
+        # TODO: Add proper FreeBSD target
+        __ToolNugetRuntimeId=osx.10.10-x64
+        __TestNugetRuntimeId=osx.10.10-x64
+        ;;
+
+    Linux)
+        __BuildOS=Linux
+        ;;
+
+    NetBSD)
+        __BuildOS=NetBSD
+        # TODO: Add proper NetBSD target
         __ToolNugetRuntimeId=osx.10.10-x64
         __TestNugetRuntimeId=osx.10.10-x64
         ;;
@@ -397,6 +422,7 @@ fi
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__BuildType"
 __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
+__RelativeProductBinDir="bin/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
 # Make the directories necessary for build if they don't exist
 

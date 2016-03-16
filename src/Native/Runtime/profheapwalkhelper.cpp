@@ -24,15 +24,15 @@
 // which does the real work.
 //
 // Arguments:
-//      ppObject - Object reference encountered
-///     ppObjectRef - Address that references ppObject
+//      pObj - Object reference encountered
+///     ppRoot - Address that references ppObject (can be interior pointer)
 //      pSC - ProfilingScanContext * containing the root kind and GCReferencesData used
 //            by RootReference2 
 //      dwFlags - Properties of the root as GC_CALL* constants (this function converts
 //                to COR_PRF_GC_ROOT_FLAGS.
 //
 
-void ScanRootsHelper(Object** ppObject, Object** ppObjectRef, ScanContext * pSC, DWORD dwFlags)
+void ScanRootsHelper(Object* pObj, Object** ppRoot, ScanContext * pSC, DWORD dwFlags)
 {
     ProfilingScanContext *pPSC = (ProfilingScanContext *)pSC;
 
@@ -42,18 +42,13 @@ void ScanRootsHelper(Object** ppObject, Object** ppObjectRef, ScanContext * pSC,
     if (dwFlags & GC_CALL_PINNED)
         dwEtwRootFlags |= kEtwGCRootFlagsPinning;
 
-    void *rootID = ppObjectRef;
-
-    if (pPSC->dwEtwRootKind == kEtwGCRootKindFinalizer)
-        ppObject = ppObjectRef;
-
     // Notify ETW of the root
 
     if (ETW::GCLog::ShouldWalkHeapRootsForEtw())
     {
         ETW::GCLog::RootReference(
-            rootID,         // root address
-            *ppObject,      // object being rooted
+            ppRoot,         // root address
+            pObj,           // object being rooted
             NULL,           // pSecondaryNodeForDependentHandle is NULL, cuz this isn't a dependent handle
             FALSE,          // is dependent handle
             pPSC,

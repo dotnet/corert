@@ -14,17 +14,22 @@ namespace ILCompiler.DependencyAnalysis
     internal class EETypeOptionalFieldsNode : ObjectNode, ISymbolNode
     {
         EETypeOptionalFieldsBuilder _fieldBuilder = new EETypeOptionalFieldsBuilder();
+        TargetDetails _target;
 
-        public EETypeOptionalFieldsNode(EETypeOptionalFieldsBuilder fieldBuilder)
+        public EETypeOptionalFieldsNode(EETypeOptionalFieldsBuilder fieldBuilder, TargetDetails target)
         {
             _fieldBuilder = fieldBuilder;
+            _target = target;
         }
 
         public override string Section
         {
             get
             {
-                return "data";
+                if (_target.IsWindows)
+                    return "rdata";
+                else
+                    return "data";
             }
         }
 
@@ -57,12 +62,26 @@ namespace ILCompiler.DependencyAnalysis
             return ((ISymbolNode)this).MangledName;
         }
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory)
+        {
+            // Ensure that no duplicate EETypeOptionalFieldsNodes are emitted by letting the node Factory
+            // pick a winner for each given EETypeOptionalFieldsBuilder
+            if (factory.EETypeOptionalFields(_fieldBuilder) != this)
+                return true;
+
+            return !_fieldBuilder.IsAtLeastOneFieldUsed();
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
             objData.RequirePointerAlignment();
             objData.DefinedSymbols.Add(this);
-            objData.EmitBytes(_fieldBuilder.GetBytes());
+
+            if (!relocsOnly)
+            {
+                objData.EmitBytes(_fieldBuilder.GetBytes());
+            }
             
             return objData.ToObjectData();
         }

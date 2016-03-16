@@ -107,11 +107,51 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLastGCDuration")]
         internal static extern long RhGetLastGCDuration(int generation);
+
         //
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
         //
+#if CORERT
+        // Allocate handle.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
+        private static extern IntPtr RhpHandleAlloc(Object value, GCHandleType type);
 
+        internal static IntPtr RhHandleAlloc(Object value, GCHandleType type)
+        {
+            IntPtr h = RhpHandleAlloc(value, type);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+
+        // Allocate handle for dependent handle case where a secondary can be set at the same time.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAllocDependent")]
+        private static extern IntPtr RhpHandleAllocDependent(Object primary, Object secondary);
+
+        internal static IntPtr RhHandleAllocDependent(Object primary, Object secondary)
+        {
+            IntPtr h = RhpHandleAllocDependent(primary, secondary);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+
+        // Allocate variable handle with its initial type.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpHandleAllocVariable")]
+        private static extern IntPtr RhpHandleAllocVariable(Object value, uint type);
+
+        internal static IntPtr RhHandleAllocVariable(Object value, uint type)
+        {
+            IntPtr h = RhHandleAllocVariable(value, type);
+            if (h == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            return h;
+        }
+#else // CORERT
         // Allocate handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleAlloc")]
@@ -126,6 +166,7 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleAllocVariable")]
         internal static extern IntPtr RhHandleAllocVariable(Object value, uint type);
+#endif // CORERT
 
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -490,7 +531,11 @@ namespace System.Runtime
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetModuleFileName")]
+#if PLATFORM_UNIX
+        internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out byte* moduleName);
+#else
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out char* moduleName);
+#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetExceptionsForCurrentThread")]
@@ -615,10 +660,12 @@ namespace System.Runtime
         internal static extern double fabs(double x);
 #endif // CORERT
 
+#if !CORERT
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "_copysign")]
         internal static extern double _copysign(double x, double y);
+#endif // !CORERT
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -715,9 +762,11 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "modf")]
         internal static unsafe extern double modf(double x, double* intptr);
 
+#if !PLATFORM_UNIX
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
         internal static unsafe extern void _ecvt_s(byte* buffer, int sizeInBytes, double value, int count, int* dec, int* sign);
+#endif
 
 #if BIT64
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]

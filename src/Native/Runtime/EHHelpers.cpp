@@ -25,35 +25,38 @@
 #include "thread.h"
 #include "stressLog.h"
 
-// Find the module containing the given address, which might be a return address from a managed function. The
+// Find the code manager containing the given address, which might be a return address from a managed function. The
 // address may be to another managed function, or it may be to an unmanaged function, or it may be to a GC
 // hijack. The address may also refer to an EEType if we've been called from RhpGetClasslibFunction. If it is
-// a GC hijack, we will recgonize that and use the real return address, updating the address passed in.
-static Module * FindModuleRespectingReturnAddressHijacks(void * address)
+// a GC hijack, we will recognize that and use the real return address.
+static ICodeManager * FindCodeManagerRespectingReturnAddressHijacks(void * address)
 {
     RuntimeInstance * pRI = GetRuntimeInstance();
 
-    // Try looking up the module assuming the address is for code first. This is expected to be most common.
-    Module * pModule = pRI->FindModuleByCodeAddress(address);
-    if (pModule == NULL)
+    // Try looking up the code manager assuming the address is for code first. This is expected to be most common.
+    ICodeManager * pCodeManager = pRI->FindCodeManagerByAddress(address);
+    if (pCodeManager != NULL)
+        return pCodeManager;
+
+    // @TODO: CORERT: Do we need to make this work for CoreRT?
+    // Less common, we will look for the address in any of the sections of the module.  This is slower, but is 
+    // necessary for EEType pointers and jump stubs.
+    Module * pModule = pRI->FindModuleByAddress(address);
+    if (pModule != NULL)
+        return pModule;
+
+    // Corner-case: The thread might be hijacked -- @TODO: this is a bit brittle because there is no validation that
+    // the hijacked return address from the thread is actually related to place where the caller got the hijack 
+    // target.
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
+    if (pCurThread->IsHijacked() && Thread::IsHijackTarget(address))
     {
-        // Less common, we will look for the address in any of the sections of the module.  This is slower, but is 
-        // necessary for EEType pointers and jump stubs.
-        pModule = pRI->FindModuleByAddress(address);
-
-        // Corner-case: The thread might be hijacked -- @TODO: this is a bit brittle because there is no validation that
-        // the hijacked return address from the thread is actually related to place where the caller got the hijack 
-        // target.  
-        Thread * pCurThread = ThreadStore::GetCurrentThread();
-        if ((pModule == NULL) && pCurThread->IsHijacked() && Thread::IsHijackTarget(address))
-        {
-            pModule = pRI->FindModuleByCodeAddress(pCurThread->GetHijackedReturnAddress());
-
-            ASSERT_MSG(pModule != NULL, "expected to find the module for a hijacked return address");
-        }
+        ICodeManager * pCodeManagerForHijack = pRI->FindCodeManagerByAddress(pCurThread->GetHijackedReturnAddress());
+        ASSERT_MSG(pCodeManagerForHijack != NULL, "expected to find the module for a hijacked return address");
+        return pCodeManagerForHijack;
     }
 
-    return pModule;
+    return NULL;
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (
@@ -70,68 +73,23 @@ COOP_PINVOKE_HELPER(Boolean, RhpEHEnumNext, (EHEnum* pEHEnum, EHClause* pEHClaus
     return pEHEnum->m_pCodeManager->EHEnumNext(&pEHEnum->m_state, pEHClause);
 }
 
-//------------------------------------------------------------------------------------------------------------
-// @TODO:EXCEPTIONS: the code below is related to throwing exceptions out of Rtm. If we did not have to throw
-// out of Rtm, then we would note have to have the code below to get a classlib exception object given
-// an exception id, or the special functions to back up the MDIL THROW_* instructions, or the allocation
-// failure helper. If we could move to a world where we never throw out of Rtm, perhaps by moving parts
-// of Rtm that do need to throw out to Bartok- or Binder-generated functions, then we could remove all of this.
-//------------------------------------------------------------------------------------------------------------
-
-
-// Constants used with RhpGetClasslibFunction, to indicate which classlib function
-// we are interested in. 
-// Note: make sure you change the def in rtm\System\Runtime\exceptionhandling.cs if you change this!
-enum ClasslibFunctionId
-{
-    GetRuntimeException = 0,
-    FailFast = 1,
-    UnhandledExceptionHandler = 2,
-    AppendExceptionStackFrame = 3,
-};
-
 // Unmanaged helper to locate one of two classlib-provided functions that the runtime needs to 
 // implement throwing of exceptions out of Rtm, and fail-fast. This may return NULL if the classlib
 // found via the provided address does not have the necessary exports.
 COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunction, (void * address, ClasslibFunctionId functionId))
 {
-    // Find the module contianing the given address, which is an address into some managed module. It could
+    // Find the code manager for the given address, which is an address into some managed module. It could
     // be code, or it could be an EEType. No matter what, it's an address into a managed module in some non-Rtm
     // type system.
-    Module * pModule = FindModuleRespectingReturnAddressHijacks(address);
-     
+    ICodeManager * pCodeManager = FindCodeManagerRespectingReturnAddressHijacks(address);
+
     // If the address isn't in a managed module then we have no classlib function.
-    if (pModule == NULL)
+    if (pCodeManager == NULL)
     {
         return NULL;
     }
 
-    // Now, find the classlib module that the first module was compiled against. This one will contain definitions
-    // for the classlib functions we need here at runtime.
-    Module * pClasslibModule = pModule->GetClasslibModule();
-    ASSERT(pClasslibModule != NULL);
-
-    // Lookup the method and return it. If we don't find it, we just return NULL.
-    void * pMethod = NULL;
-    
-    if (functionId == GetRuntimeException)
-    {
-        pMethod = pClasslibModule->GetClasslibRuntimeExceptionHelper();
-    }
-    else if (functionId == AppendExceptionStackFrame)
-    {
-        pMethod = pClasslibModule->GetClasslibAppendExceptionStackFrameHelper();
-    }
-    else if (functionId == FailFast)
-    {
-        pMethod = pClasslibModule->GetClasslibFailFastHelper();
-    }
-    else if (functionId == UnhandledExceptionHandler)
-    {
-        pMethod = pClasslibModule->GetClasslibUnhandledExceptionHandlerHelper();
-    }
-
-    return pMethod;
+    return pCodeManager->GetClasslibFunction(functionId);
 }
 
 COOP_PINVOKE_HELPER(void, RhpValidateExInfoStack, ())
@@ -160,7 +118,7 @@ COOP_PINVOKE_HELPER(void, RhpSetThreadDoNotTriggerGC, ())
     pThisThread->SetDoNotTriggerGc();
 }
 
-COOP_PINVOKE_HELPER(Int32, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ wchar_t** pModuleNameOut))
+COOP_PINVOKE_HELPER(Int32, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ const TCHAR** pModuleNameOut))
 {
     return PalGetModuleFileName(pModuleNameOut, moduleHandle);
 }
@@ -437,7 +395,8 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
         return EXCEPTION_CONTINUE_EXECUTION;
     }
-    else
+
+#ifndef PLATFORM_UNIX
     {
         static UInt8 *s_pbRuntimeModuleLower = NULL;
         static UInt8 *s_pbRuntimeModuleUpper = NULL;
@@ -449,7 +408,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         {
             // Get the module handle for this runtime. Do this by passing an address definitely within the
             // module (the address of this function) to GetModuleHandleEx with the "from address" flag.
-            HANDLE hRuntimeModule = PalGetModuleHandleFromPointer(RhpVectoredExceptionHandler);
+            HANDLE hRuntimeModule = PalGetModuleHandleFromPointer(reinterpret_cast<void*>(RhpVectoredExceptionHandler));
             if (!hRuntimeModule)
             {
                 ASSERT_UNCONDITIONALLY("Failed to locate our own module handle");
@@ -466,9 +425,10 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             ASSERT_UNCONDITIONALLY("Hardware exception raised inside the runtime.");
             RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
         }
-
-        return EXCEPTION_CONTINUE_SEARCH;
     }
+#endif // PLATFORM_UNIX
+
+    return EXCEPTION_CONTINUE_SEARCH;
 }
 
 COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())

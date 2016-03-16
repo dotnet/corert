@@ -8,12 +8,18 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class MethodCodeNode : ObjectNode, INodeWithFrameInfo, INodeWithDebugInfo, ISymbolNode
+    internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
     {
+        public static readonly string StartSectionName = ".managedcode$A";
+        public static readonly string SectionName = ".managedcode$I";
+        public static readonly string EndSectionName = ".managedcode$Z";
+
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
+        private ObjectData _ehInfo;
         private DebugLocInfo[] _debugLocInfos;
+        private DebugVarInfo[] _debugVarInfos;
 
         public MethodCodeNode(MethodDesc method)
         {
@@ -43,7 +49,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return "text";
+                // TODO: Exception handling on Unix
+                return _method.Context.Target.IsWindows ? SectionName : "text";
             }
         }
 
@@ -71,6 +78,32 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        {
+            DependencyList dependencies = null;
+
+            TypeDesc owningType = _method.OwningType;
+            if (context.TypeInitializationManager.HasEagerStaticConstructor(owningType))
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+                dependencies.Add(context.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
+            }
+
+            if (_ehInfo != null && _ehInfo.Relocs != null)
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
+                foreach (Relocation reloc in _ehInfo.Relocs)
+                {
+                    dependencies.Add(reloc.Target, "reloc");
+                }
+            }
+
+            return dependencies;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             return _methodCode;
@@ -84,10 +117,24 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public ObjectData EHInfo
+        {
+            get
+            {
+                return _ehInfo;
+            }
+        }
+
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {
             Debug.Assert(_frameInfos == null);
             _frameInfos = frameInfos;
+        }
+
+        public void InitializeEHInfo(ObjectData ehInfo)
+        {
+            Debug.Assert(_ehInfo == null);
+            _ehInfo = ehInfo;
         }
 
         public DebugLocInfo[] DebugLocInfos
@@ -98,10 +145,24 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public DebugVarInfo[] DebugVarInfos
+        {
+            get
+            {
+                return _debugVarInfos;
+            }
+        }
+
         public void InitializeDebugLocInfos(DebugLocInfo[] debugLocInfos)
         {
             Debug.Assert(_debugLocInfos == null);
             _debugLocInfos = debugLocInfos;
+        }
+
+        public void InitializeDebugVarInfos(DebugVarInfo[] debugVarInfos)
+        {
+            Debug.Assert(_debugVarInfos == null);
+            _debugVarInfos = debugVarInfos;
         }
     }
 }

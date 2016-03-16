@@ -649,12 +649,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static IntPtr AllocHGlobal(IntPtr cb)
         {
-            IntPtr pNewMem = ExternalInterop.MemAlloc(cb);
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return pNewMem;
+            return ExternalInterop.MemAlloc(cb);
         }
 
         public static IntPtr AllocHGlobal(int cb)
@@ -672,12 +667,7 @@ namespace System.Runtime.InteropServices
 
         public unsafe static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
-            IntPtr pNewMem = ExternalInterop.MemReAlloc(pv, cb);
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return pNewMem;
+            return ExternalInterop.MemReAlloc(pv, cb);
         }
 
         private unsafe static void ConvertToAnsi(string source, IntPtr pbNativeBuffer, int cbNativeBuffer)
@@ -790,15 +780,8 @@ namespace System.Runtime.InteropServices
                     throw new ArgumentOutOfRangeException("s");
 
                 IntPtr hglobal = ExternalInterop.MemAlloc(new IntPtr(nb));
-                if (hglobal == IntPtr.Zero)
-                {
-                    throw new OutOfMemoryException();
-                }
-                else
-                {
-                    ConvertToAnsi(s, hglobal, nb);
-                    return hglobal;
-                }
+                ConvertToAnsi(s, hglobal, nb);
+                return hglobal;
             }
         }
 
@@ -817,19 +800,11 @@ namespace System.Runtime.InteropServices
                     throw new ArgumentOutOfRangeException("s");
 
                 IntPtr hglobal = ExternalInterop.MemAlloc(new UIntPtr((uint)nb));
-
-                if (hglobal == IntPtr.Zero)
+                fixed (char* firstChar = s)
                 {
-                    throw new OutOfMemoryException();
+                    InteropExtensions.Memcpy(hglobal, new IntPtr(firstChar), nb);
                 }
-                else
-                {
-                    fixed (char* firstChar = s)
-                    {
-                        InteropExtensions.Memcpy(hglobal, new IntPtr(firstChar), nb);
-                    }
-                    return hglobal;
-                }
+                return hglobal;
             }
         }
 

@@ -8,6 +8,6 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
-        internal const string SystemPrivateCoreLibNative = "System.Private.CoreLib.Native";
+        internal const string CoreLibNative = "System.Private.CoreLib.Native";
     }
 }

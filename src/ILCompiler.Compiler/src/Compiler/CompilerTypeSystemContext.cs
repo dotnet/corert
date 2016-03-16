@@ -10,7 +10,8 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
+
+using ILCompiler.SymbolReader;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -18,43 +19,8 @@ using Internal.IL;
 
 namespace ILCompiler
 {
-    public class CompilerTypeSystemContext : TypeSystemContext, IMetadataStringDecoderProvider
+    public class CompilerTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider
     {
-        private static readonly string[] s_wellKnownTypeNames = new string[] {
-            "Void",
-            "Boolean",
-            "Char",
-            "SByte",
-            "Byte",
-            "Int16",
-            "UInt16",
-            "Int32",
-            "UInt32",
-            "Int64",
-            "UInt64",
-            "IntPtr",
-            "UIntPtr",
-            "Single",
-            "Double",
-
-            "ValueType",
-            "Enum",
-            "Nullable`1",
-
-            "Object",
-            "String",
-            "Array",
-            "MulticastDelegate",
-
-            "RuntimeTypeHandle",
-            "RuntimeMethodHandle",
-            "RuntimeFieldHandle",
-
-            "Exception",
-        };
-
-        private MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
-
         private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -69,7 +35,7 @@ namespace ILCompiler
             public EcmaModule Module;
             public MemoryMappedViewAccessor MappedViewAccessor;
 
-            public Microsoft.DiaSymReader.ISymUnmanagedReader PdbReader;
+            public PdbSymbolReader PdbReader;
         }
 
         private class ModuleHashtable : LockFreeReaderHashtable<EcmaModule, ModuleData>
@@ -143,33 +109,12 @@ namespace ILCompiler
             set;
         }
 
-        public void SetSystemModule(EcmaModule systemModule)
+        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
-            InitializeSystemModule(systemModule);
-
-            // Sanity check the name table
-            Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == "MulticastDelegate");
-
-            // Initialize all well known types - it will save us from checking the name for each loaded type
-            for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
-            {
-                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex]);
-                type.SetWellKnownType((WellKnownType)(typeIndex + 1));
-                _wellKnownTypes[typeIndex] = type;
-            }
+            return GetModuleForSimpleName(name.Name, throwIfNotFound);
         }
 
-        public override DefType GetWellKnownType(WellKnownType wellKnownType)
-        {
-            return _wellKnownTypes[(int)wellKnownType - 1];
-        }
-
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name)
-        {
-            return GetModuleForSimpleName(name.Name);
-        }
-
-        public EcmaModule GetModuleForSimpleName(string simpleName)
+        public EcmaModule GetModuleForSimpleName(string simpleName, bool throwIfNotFound = true)
         {
             ModuleData existing;
             if (_simpleNameHashtable.TryGetValue(simpleName, out existing))
@@ -179,7 +124,11 @@ namespace ILCompiler
             if (!InputFilePaths.TryGetValue(simpleName, out filePath))
             {
                 if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
-                    throw new FileNotFoundException("Assembly not found: " + simpleName);
+                {
+                    if (throwIfNotFound)
+                        throw new FileNotFoundException("Assembly not found: " + simpleName);
+                    return null;
+                }
             }
 
             return AddModule(filePath, simpleName);
@@ -203,12 +152,15 @@ namespace ILCompiler
             // well for us since it can make IL access very slow (call to OS for each method IL query). We will map the file
             // ourselves to get the desired performance characteristics reliably.
 
+            FileStream fileStream = null;
             MemoryMappedFile mappedFile = null;
             MemoryMappedViewAccessor accessor = null;
-
             try
             {
-                mappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+                // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+                mappedFile = MemoryMappedFile.CreateFromFile(
+                    fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
                 accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
 
                 var safeBuffer = accessor.SafeMemoryMappedViewHandle;
@@ -227,6 +179,8 @@ namespace ILCompiler
                     accessor.Dispose();
                 if (mappedFile != null)
                     mappedFile.Dispose();
+                if (fileStream != null)
+                    fileStream.Dispose();
             }
         }
 
@@ -284,21 +238,21 @@ namespace ILCompiler
             return _metadataFieldLayoutAlgorithm;
         }
 
-        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             if (_arrayOfTRuntimeInterfacesAlgorithm == null)
             {
-                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System", "Array`1"));
+                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetKnownType("System", "Array`1"));
             }
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
-        public override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
         }
 
-        MetadataStringDecoder IMetadataStringDecoderProvider.GetMetadataStringDecoder()
+        public MetadataStringDecoder GetMetadataStringDecoder()
         {
             if (_metadataStringDecoder == null)
                 _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
@@ -309,14 +263,23 @@ namespace ILCompiler
         // Symbols
         //
 
-        private PdbSymbolProvider _pdbSymbolProvider;
-
         private void InitializeSymbolReader(ModuleData moduleData)
         {
-            if (_pdbSymbolProvider == null)
-                _pdbSymbolProvider = new PdbSymbolProvider();
+            // Assume that the .pdb file is next to the binary
+            var pdbFilename = Path.ChangeExtension(moduleData.FilePath, ".pdb");
 
-            moduleData.PdbReader = _pdbSymbolProvider.GetSymbolReaderForFile(moduleData.FilePath);
+            if (!File.Exists(pdbFilename))
+                return;
+
+            // Try to open the symbol file as portable pdb first
+            PdbSymbolReader reader = PortablePdbSymbolReader.TryOpen(pdbFilename, GetMetadataStringDecoder());
+            if (reader == null)
+            {
+                // Fallback to the diasymreader for non-portable pdbs
+                reader = UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(moduleData.FilePath);
+            }
+
+            moduleData.PdbReader = reader;
         }
 
         public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodDesc method)
@@ -332,7 +295,7 @@ namespace ILCompiler
             if (moduleData.PdbReader == null)
                 return null;
 
-            return _pdbSymbolProvider.GetSequencePointsForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+            return moduleData.PdbReader.GetSequencePointsForMethod(MetadataTokens.GetToken(ecmaMethod.Handle));
         }
 
         public IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(MethodDesc method)
@@ -348,7 +311,7 @@ namespace ILCompiler
             if (moduleData.PdbReader == null)
                 return null;
 
-            return _pdbSymbolProvider.GetLocalVariableNamesForMethod(moduleData.PdbReader, MetadataTokens.GetToken(ecmaMethod.Handle));
+            return moduleData.PdbReader.GetLocalVariableNamesForMethod(MetadataTokens.GetToken(ecmaMethod.Handle));
         }
 
         public IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)

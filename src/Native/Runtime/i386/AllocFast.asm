@@ -56,10 +56,10 @@ AllocFailed:
 
         PUSH_COOP_PINVOKE_FRAME edx
 
-if DBG
+ifdef _DEBUG
         ;; save the Thread pointer in ebx
         mov         ebx, edx
-endif ; DBG
+endif ; _DEBUG
 
         ;; Push alloc helper arguments (thread, size, flags, EEType).
         push        ecx                                             ; EEType

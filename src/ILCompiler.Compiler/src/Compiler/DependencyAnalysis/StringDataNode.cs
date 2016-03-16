@@ -38,10 +38,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_id.HasValue)
-                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToString(CultureInfo.InvariantCulture);
-                else
-                    return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _data;
+                if (!_id.HasValue)
+                {
+                    throw new InvalidOperationException("MangledName called before String Id was initialized.");
+                }
+
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToString(CultureInfo.InvariantCulture);
             }
         }
 

@@ -16,12 +16,12 @@ FORCEINLINE Int32 PalInterlockedDecrement(_Inout_ _Interlocked_operand_ Int32 vo
 
 FORCEINLINE UInt32 PalInterlockedOr(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
 {
-    return __sync_fetch_and_or(pDst, iValue);
+    return __sync_or_and_fetch(pDst, iValue);
 }
 
 FORCEINLINE UInt32 PalInterlockedAnd(_Inout_ _Interlocked_operand_ UInt32 volatile *pDst, UInt32 iValue)
 {
-    return __sync_fetch_and_and(pDst, iValue);
+    return __sync_and_and_fetch(pDst, iValue);
 }
 
 FORCEINLINE Int32 PalInterlockedExchange(_Inout_ _Interlocked_operand_ Int32 volatile *pDst, Int32 iValue)
@@ -45,10 +45,9 @@ FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ 
 }
 
 #if defined(_AMD64_)
-EXTERN_C UInt8 _InterlockedCompareExchange128(Int64 volatile *, Int64, Int64, Int64 *);
 FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComperand)
 {
-    return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComperand);
+    return __sync_val_compare_and_swap((__int128_t volatile*)pDst, *(__int128_t*)pComperand, ((__int128_t)iValueHigh << 64) + iValueLow);
 }
 #endif // _AMD64_
 

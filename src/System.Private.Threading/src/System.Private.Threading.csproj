@@ -14,6 +14,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -83,9 +87,6 @@
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
       <Link>Common\Interop\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MEMORY_BASIC_INFORMATION.cs">
-      <Link>Common\Interop\Interop.MEMORY_BASIC_INFORMATION.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
       <Link>Common\Interop\Interop.GetNativeSystemInfo.cs</Link>
     </Compile>
@@ -97,10 +98,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\__HResults.cs" />
+    <Compile Include="..\..\Common\src\System\__HResults.cs" >
+      <Link>System\__HResults.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
+      <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

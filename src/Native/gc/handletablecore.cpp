@@ -238,7 +238,7 @@ BOOL TableCanFreeSegmentNow(HandleTable *pTable, TableSegment *pSegment)
     // fail but by the time a dump was created the lock was unowned so
     // there was no way to tell who the previous owner was.
     EEThreadId threadId = pTable->Lock.GetHolderThreadId();
-    _ASSERTE(threadId.IsSameThread());
+    _ASSERTE(threadId.IsCurrentThread());
 #endif // _DEBUG
 
     // deterine if any segment is currently being scanned asynchronously
@@ -525,7 +525,7 @@ BOOL SegmentInitialize(TableSegment *pSegment, HandleTable *pTable)
     dwCommit &= ~(g_SystemInfo.dwPageSize - 1);
 
     // commit the header
-    if (!ClrVirtualAlloc(pSegment, dwCommit, MEM_COMMIT, PAGE_READWRITE))
+    if (!GCToOSInterface::VirtualCommit(pSegment, dwCommit))
     {
         //_ASSERTE(FALSE);
         return FALSE;
@@ -580,7 +580,7 @@ void SegmentFree(TableSegment *pSegment)
     */
     
     // free the segment's memory
-    ClrVirtualFree(pSegment, 0, MEM_RELEASE);
+    GCToOSInterface::VirtualRelease(pSegment, HANDLE_SEGMENT_SIZE);
 }
 
 
@@ -610,7 +610,7 @@ TableSegment *SegmentAlloc(HandleTable *pTable)
     _ASSERTE(HANDLE_SEGMENT_ALIGNMENT >= HANDLE_SEGMENT_SIZE);
     _ASSERTE(HANDLE_SEGMENT_ALIGNMENT == 0x10000);
 
-    pSegment = (TableSegment *)ClrVirtualAllocAligned(NULL, HANDLE_SEGMENT_SIZE, MEM_RESERVE, PAGE_NOACCESS, HANDLE_SEGMENT_ALIGNMENT);
+    pSegment = (TableSegment *)GCToOSInterface::VirtualReserve(NULL, HANDLE_SEGMENT_SIZE, HANDLE_SEGMENT_ALIGNMENT, VirtualReserveFlags::None);
     _ASSERTE(((size_t)pSegment % HANDLE_SEGMENT_ALIGNMENT) == 0);
     
     // bail out if we couldn't get any memory
@@ -1433,13 +1433,13 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
             if (uBlock >= uCommitLine)
             {
                 // figure out where to commit next
-                LPVOID pvCommit = pSegment->rgValue + (uCommitLine * HANDLE_HANDLES_PER_BLOCK);
+                void * pvCommit = pSegment->rgValue + (uCommitLine * HANDLE_HANDLES_PER_BLOCK);
 
                 // we should commit one more page of handles
                 uint32_t dwCommit = g_SystemInfo.dwPageSize;
 
                 // commit the memory
-                if (!ClrVirtualAlloc(pvCommit, dwCommit, MEM_COMMIT, PAGE_READWRITE))
+                if (!GCToOSInterface::VirtualCommit(pvCommit, dwCommit))
                     return BLOCK_INVALID;
 
                 // use the previous commit line as the new decommit line
@@ -1843,7 +1843,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment)
         if (dwHi > dwLo)
         {
             // decommit the memory
-            ClrVirtualFree((LPVOID)dwLo, dwHi - dwLo, MEM_DECOMMIT);
+            GCToOSInterface::VirtualDecommit((void *)dwLo, dwHi - dwLo);
 
             // update the commit line
             pSegment->bCommitLine = (uint8_t)((dwLo - (size_t)pSegment->rgValue) / HANDLE_BYTES_PER_BLOCK);
@@ -1983,14 +1983,16 @@ uint32_t BlockAllocHandlesInitial(TableSegment *pSegment, uint32_t uType, uint32
         uint32_t uAlloc = uRemain;
 
         // compute the default mask based on that count
-        uint32_t dwNewMask = (MASK_EMPTY << uAlloc);
-
+        uint32_t dwNewMask;
         // are we allocating all of them?
         if (uAlloc >= HANDLE_HANDLES_PER_MASK)
         {
-            // shift above has unpredictable results in this case
-            dwNewMask = MASK_FULL;
+            dwNewMask = MASK_FULL; // avoid unpredictable shift
             uAlloc = HANDLE_HANDLES_PER_MASK;
+        }
+        else
+        {
+            dwNewMask = (MASK_EMPTY << uAlloc);
         }
 
         // set the free mask

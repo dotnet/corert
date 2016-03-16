@@ -30,7 +30,7 @@ namespace TypeSystemTests
             DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            ArrayType objectMDArray = (ArrayType)_context.GetArrayType(objectType, 2);
+            ArrayType objectMDArray = _context.GetArrayType(objectType, 2);
 
             // MD array should have the same set of interfaces as System.Array
             Assert.Equal(systemArrayType.RuntimeInterfaces, objectMDArray.RuntimeInterfaces);
@@ -44,7 +44,7 @@ namespace TypeSystemTests
 
             TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
 
-            ArrayType objectArray = (ArrayType)_context.GetArrayType(objectType);
+            ArrayType objectArray = _context.GetArrayType(objectType);
 
             // The set of interfaces on an array shall start with the same set that exists on System.Array
             for (int i = 0; i < systemArrayType.RuntimeInterfaces.Length; i++)
@@ -132,7 +132,7 @@ namespace TypeSystemTests
             TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
             TypeDesc intPointerType = _context.GetPointerType(intType);
 
-            ArrayType intPointerArray = (ArrayType)_context.GetArrayType(intPointerType);
+            ArrayType intPointerArray = _context.GetArrayType(intPointerType);
 
             // Pointer arrays should have the same set of interfaces as System.Array
             Assert.Equal(systemArrayType.RuntimeInterfaces, intPointerArray.RuntimeInterfaces);

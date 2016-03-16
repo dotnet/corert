@@ -1197,7 +1197,6 @@ namespace System.Runtime.InteropServices
         internal const int DefaultCapacity = 100;       // Default initial capacity of this list
         internal const int ShrinkHintThreshold = 5;     // The number of hints we've seen before we really
                                                         // shrink the list
-        internal const int HEAP_ZERO_MEMORY = 0x8;      // Flag to zero memory
 
         /// <summary>
         /// Reset the list of handles to be used by the current GC
@@ -1218,7 +1217,7 @@ namespace System.Runtime.InteropServices
                 //
                 m_capacity = DefaultCapacity;
                 uint newCapacity = (uint)(sizeof(IntPtr) * m_capacity);
-                m_pHandles = (IntPtr*)ExternalInterop.MemAlloc(new UIntPtr(newCapacity) , HEAP_ZERO_MEMORY);
+                m_pHandles = (IntPtr*)ExternalInterop.MemAllocWithZeroInitializeNoThrow(new UIntPtr(newCapacity));
 
                 if (m_pHandles == null)
                     return false;
@@ -1311,9 +1310,9 @@ namespace System.Runtime.InteropServices
             int newCapacity = m_capacity * 2;
 
             // NOTE: Call must be used instead of StdCall to avoid deadlock
-            IntPtr* pNewHandles = (IntPtr*)ExternalInterop.MemReAlloc((IntPtr)m_pHandles,
-                                                                      new UIntPtr( (uint) (sizeof(IntPtr) * newCapacity)),
-                                                                      HEAP_ZERO_MEMORY);
+            IntPtr* pNewHandles = (IntPtr*)ExternalInterop.MemReAllocWithZeroInitializeNoThrow((IntPtr)m_pHandles,
+                                                                      new UIntPtr( (uint) (sizeof(IntPtr) * m_capacity)),
+                                                                      new UIntPtr( (uint) (sizeof(IntPtr) * newCapacity)));
 
             if (pNewHandles == null)
                 return false;
@@ -1354,8 +1353,9 @@ namespace System.Runtime.InteropServices
             // If this fails, we don't really care (very unlikely to fail, though)
             // NOTE: Call must be used instead of StdCall to avoid deadlock
             //
-            IntPtr* pNewHandles = (IntPtr*)ExternalInterop.MemReAlloc((IntPtr)m_pHandles, new UIntPtr((uint)(sizeof(IntPtr) * newCapacity) ) , HEAP_ZERO_MEMORY);
-
+            IntPtr* pNewHandles = (IntPtr*)ExternalInterop.MemReAllocWithZeroInitializeNoThrow((IntPtr) m_pHandles, 
+                                                                        new UIntPtr((uint)(sizeof(IntPtr) * m_capacity)),
+                                                                        new UIntPtr((uint)(sizeof(IntPtr) * newCapacity)));
             if (pNewHandles == null)
                 return false;
 

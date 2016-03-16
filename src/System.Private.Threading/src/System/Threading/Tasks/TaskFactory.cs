@@ -1629,6 +1629,8 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(_tasks);
                 }
             }
+
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
 
         // Performs some logic common to all ContinueWhenAll() overloads
@@ -1699,6 +1701,8 @@ namespace System.Threading.Tasks
                         Task.AnyTaskRequiresNotifyDebuggerOfWaitCompletion(_tasks);
                 }
             }
+
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
 
 
@@ -2362,6 +2366,8 @@ namespace System.Threading.Tasks
                     _tasks = null;
                 }
             }
+
+            public bool InvokeMayRunArbitraryCode { get { return true; } }
         }
         // Common ContinueWhenAny logic
         // If the tasks list is not an array, it must be an internal defensive copy so that 

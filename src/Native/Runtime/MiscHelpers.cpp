@@ -563,3 +563,15 @@ COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
 {
     return (void*)RhpUniversalTransition;
 }
+
+#ifdef CORERT
+COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (ModuleManager* pModule, Int32 headerId, Int32* length))
+{
+    return pModule->GetModuleSection((ReadyToRunSectionType)headerId, length);
+}
+
+COOP_PINVOKE_HELPER(void*, RhpCreateModuleManager, (void* pModuleHeader))
+{
+    return ModuleManager::Create(pModuleHeader);
+}
+#endif

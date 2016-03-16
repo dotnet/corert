@@ -378,15 +378,11 @@ size_t GCHeap::GetLastGCDuration(int generation)
     return dd_gc_elapsed_time (hp->dynamic_data_of (generation));
 }
 
+size_t GetHighPrecisionTimeStamp();
+
 size_t GCHeap::GetNow()
 {
-#ifdef MULTIPLE_HEAPS
-    gc_heap* hp = gc_heap::g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-    return hp->get_time_now();
+    return GetHighPrecisionTimeStamp();
 }
 
 void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
@@ -406,7 +402,7 @@ void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
         pObj = (Object*) hp->find_object(o, hp->gc_low);
     }
 #endif //INTERIOR_POINTERS
-    ScanRootsHelper(&pObj, ppObject, pSC, dwFlags);
+    ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
@@ -480,7 +476,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
                 // heap.
                 gc_heap* hp = gc_heap::g_heaps [hn];
                 SC.thread_number = hn;
-                CNameSpace::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
+                GCScan::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
 
                 // The finalizer queue is also a source of roots
                 SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
@@ -488,7 +484,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
             }
 #else
             // Ask the vm to go over all of the roots
-            CNameSpace::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
+            GCScan::GcScanRoots(&ProfScanRootsHelper, max_generation, max_generation, &SC);
 
             // The finalizer queue is also a source of roots
             SC.dwEtwRootKind = kEtwGCRootKindFinalizer;
@@ -497,7 +493,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 #endif // MULTIPLE_HEAPS
             // Handles are kept independent of wks/svr/concurrent builds
             SC.dwEtwRootKind = kEtwGCRootKindHandle;
-            CNameSpace::GcScanHandlesForProfilerAndETW(max_generation, &SC);
+            GCScan::GcScanHandlesForProfilerAndETW(max_generation, &SC);
 
             // indicate that regular handle scanning is over, so we can flush the buffered roots
             // to the profiler.  (This is for profapi only.  ETW will flush after the
@@ -515,7 +511,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
             // GcScanDependentHandlesForProfiler double-checks
             // CORProfilerTrackConditionalWeakTableElements() before calling into the profiler
 
-            CNameSpace::GcScanDependentHandlesForProfilerAndETW(max_generation, &SC);
+            GCScan::GcScanDependentHandlesForProfilerAndETW(max_generation, &SC);
 
             // indicate that dependent handle scanning is over, so we can flush the buffered roots
             // to the profiler.  (This is for profapi only.  ETW will flush after the
@@ -545,12 +541,14 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
 #endif //MULTIPLE_HEAPS
         }
 
+#ifdef FEATURE_EVENT_TRACE
         // **** Done! Indicate to ETW helpers that the heap walk is done, so any buffers
         // should be flushed into the ETW stream
         if (fShouldWalkHeapObjectsForEtw || fShouldWalkHeapRootsForEtw)
         {
             ETW::GCLog::EndHeapDump(&profilerWalkHeapContext);
         }
+#endif // FEATURE_EVENT_TRACE
     }
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
@@ -579,7 +577,7 @@ void GCProfileWalkHeap()
     }
 #endif // defined (GC_PROFILING)
 
-#if  defined (GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#if defined (GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     // we need to walk the heap if one of GC_PROFILING or FEATURE_EVENT_TRACE
     // is defined, since both of them make use of the walk heap worker.
     if (!fWalkedHeapForProfiler &&

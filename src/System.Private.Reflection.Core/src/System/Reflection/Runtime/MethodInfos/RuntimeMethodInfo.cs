@@ -62,8 +62,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Delegate CreateDelegate(Type delegateType)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodInfo_CreateDelegate(this, delegateType);
+#endif
 
             // Legacy: The only difference between calling CreateDelegate(type) and CreateDelegate(type, null) is that the former
             // disallows closed instance delegates for V1.1 backward compatibility.
@@ -72,8 +74,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Delegate CreateDelegate(Type delegateType, Object target)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodInfo_CreateDelegate(this, delegateType, target);
+#endif
 
             return CreateDelegate(delegateType, target, allowClosedInstanceDelegates: true);
         }
@@ -87,8 +91,11 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodBase_DeclaringType(this);
+#endif
+
                 return this.RuntimeDeclaringType;
             }
         }
@@ -112,8 +119,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override ParameterInfo[] GetParameters()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_GetParameters(this);
+#endif
 
             RuntimeParameterInfo[] runtimeParameterInfos = this.GetRuntimeParametersAndReturn(this);
             if (runtimeParameterInfos.Length == 1)
@@ -126,8 +135,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Object Invoke(Object obj, Object[] parameters)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
+#endif
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();
@@ -161,8 +172,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodBase_Name(this);
+#endif
                 return this.RuntimeName;
             }
         }
@@ -171,8 +184,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodInfo_ReturnParameter(this);
+#endif
 
                 return this.GetRuntimeParametersAndReturn(this)[0];
             }
@@ -182,8 +197,10 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.MethodInfo_ReturnType(this);
+#endif
 
                 return ReturnParameter.ParameterType;
             }

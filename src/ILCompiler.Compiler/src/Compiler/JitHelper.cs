@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 using Internal.TypeSystem;
 
+using Internal.IL;
+using Internal.Runtime;
+
 namespace ILCompiler
 {
     public enum JitHelperId
@@ -92,44 +95,155 @@ namespace ILCompiler
 
     internal class JitHelper
     {
-        static public string GetMangledName(JitHelperId id)
+        /// <summary>
+        /// Returns JIT helper entrypoint. JIT helpers can be either implemented by entrypoint with given mangled name or 
+        /// by a method in class library.
+        /// </summary>
+        static public void GetEntryPoint(TypeSystemContext context, JitHelperId id, out string mangledName, out MethodDesc methodDesc)
         {
+            mangledName = null;
+            methodDesc = null;
+
             switch (id)
             {
+                case JitHelperId.Throw:
+                    mangledName = "RhpThrowEx";
+                    break;
+                case JitHelperId.Rethrow:
+                    mangledName = "RhRethrow";
+                    break;
+
+                case JitHelperId.Overflow:
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowOverflowException");
+                    break;
                 case JitHelperId.RngChkFail:
-                    return "__range_check_fail";
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
+                    break;
+                case JitHelperId.FailFast:
+                    mangledName = "__fail_fast"; // TODO: Report stack buffer overrun
+                    break;
+                case JitHelperId.ThrowNullRef:
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNullReferenceException");
+                    break;
+                case JitHelperId.ThrowDivZero:
+                    methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowDivideByZeroException");
+                    break;
 
                 case JitHelperId.WriteBarrier:
-                    return "RhpAssignRef";
-
+                    mangledName = "RhpAssignRef";
+                    break;
                 case JitHelperId.CheckedWriteBarrier:
-                    return "RhpCheckedAssignRef";
-
+                    mangledName = "RhpCheckedAssignRef";
+                    break;
                 case JitHelperId.ByRefWriteBarrier:
-                    return "RhpByRefAssignRef";
+                    mangledName = "RhpByRefAssignRef";
+                    break;
 
-                case JitHelperId.Throw:
-                    return "__throw_exception";
-
-                case JitHelperId.FailFast:
-                    return "__fail_fast";
+                case JitHelperId.Box:
+                case JitHelperId.Box_Nullable:
+                    mangledName = "RhBox";
+                    break;
+                case JitHelperId.Unbox:
+                    mangledName = "RhUnbox2";
+                    break;
+                case JitHelperId.Unbox_Nullable:
+                    mangledName = "RhUnboxNullable";
+                    break;
 
                 case JitHelperId.NewMultiDimArr:
-                    return "RhNewMDArray";
+                    mangledName = "RhNewMDArray";
+                    break;
 
                 case JitHelperId.Stelem_Ref:
-                    return "__stelem_ref";
+                    mangledName = "RhpStelemRef";
+                    break;
                 case JitHelperId.Ldelema_Ref:
-                    return "__ldelema_ref";
+                    mangledName = "RhpLdelemaRef";
+                    break;
 
                 case JitHelperId.MemCpy:
-                    return "memcpy";
+                    mangledName = "memcpy"; // TODO: Null reference handling
+                    break;
+                case JitHelperId.MemSet:
+                    mangledName = "memset"; // TODO: Null reference handling
+                    break;
+
+                case JitHelperId.GetRuntimeTypeHandle:
+                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
+                    break;
+                case JitHelperId.GetRuntimeMethodHandle: // TODO: Reflection
+                case JitHelperId.GetRuntimeFieldHandle: // TODO: Reflection
+                    mangledName = "__fail_fast";
+                    break;
+
+                case JitHelperId.Lng2Dbl:
+                    mangledName = "RhpLng2Dbl";
+                    break;
+                case JitHelperId.ULng2Dbl:
+                    mangledName = "RhpULng2Dbl";
+                    break;
+
+                case JitHelperId.Dbl2Lng:
+                    mangledName = "RhpDbl2Lng";
+                    break;
+                case JitHelperId.Dbl2ULng:
+                    mangledName = "RhpDbl2ULng";
+                    break;
+
+                case JitHelperId.Dbl2IntOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
+                    break;
+                case JitHelperId.Dbl2LngOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
+                    break;
+                case JitHelperId.Dbl2ULngOvf:
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2ULngOvf");
+                    break;
 
                 default:
-                    // TODO: Uncomment once all helpers are implemented
-                    // throw new NotImplementedException();
-                    return "__fail_fast";
+                    throw new NotImplementedException(id.ToString());
             }
+        }
+
+        //
+        // These methods are static compiler equivalent of RhGetRuntimeHelperForType
+        //
+        static public string GetNewObjectHelperForType(TypeDesc type)
+        {
+            if (EETypeBuilderHelpers.ComputeRequiresAlign8(type))
+            {
+                if (type.HasFinalizer)
+                    return "RhpNewFinalizableAlign8";
+
+                if (type.IsValueType)
+                    return "RhpNewFastMisalign";
+
+                return "RhpNewFastAlign8";
+            }
+
+            if (type.HasFinalizer)
+                return "RhpNewFinalizable";
+
+            return "RhpNewFast";
+        }
+
+        static public string GetNewArrayHelperForType(TypeDesc type)
+        {
+            if (EETypeBuilderHelpers.ComputeRequiresAlign8(type))
+                return "RhpNewArrayAlign8";
+
+            return "RhpNewArray";
+        }
+
+        static public string GetCastingHelperNameForType(TypeDesc type, bool throwing)
+        {
+            if (type.IsSzArray)
+                return throwing ? "RhTypeCast_CheckCastArray" : "RhTypeCast_IsInstanceOfArray";
+
+            if (type.IsInterface)
+                return throwing ? "RhTypeCast_CheckCastInterface" : "RhTypeCast_IsInstanceOfInterface";
+
+            return throwing ? "RhTypeCast_CheckCastClass" : "RhTypeCast_IsInstanceOfClass";
         }
     }
 }

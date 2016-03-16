@@ -81,7 +81,8 @@ struct ThreadBuffer
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
-    UInt32                  m_uPalThreadId;                         // @TODO: likely debug-only 
+    UInt64                  m_uPalThreadIdForLogging;               // @TODO: likely debug-only 
+    EEThreadId              m_threadId;               
     PTR_VOID                m_pThreadStressLog;                     // pointer to head of thread's StressLogChunks
 #ifdef FEATURE_GC_STRESS
     UInt32                  m_uRand;                                // current per-thread random number
@@ -165,9 +166,11 @@ public:
     bool                IsInitialized();
 
     alloc_context *     GetAllocContext();  // @TODO: I would prefer to not expose this in this way
-    UInt32              GetPalThreadId();
 
 #ifndef DACCESS_COMPILE
+    UInt64              GetPalThreadIdForLogging();
+    bool                IsCurrentThread();
+
     void                GcScanRoots(void * pfnEnumCallback, void * pvCallbackData);
 #else
     typedef void GcScanRootsCallbackFunc(PTR_RtuObjectRef ppObject, void* token, UInt32 flags);

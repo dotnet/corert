@@ -30,22 +30,85 @@ struct GCMemoryStatus
 
 typedef void * HANDLE;
 
+#ifdef PLATFORM_UNIX
+
+typedef char TCHAR;
+#define _T(s) s
+
+#else
+
+#ifndef _INC_WINDOWS
+typedef wchar_t TCHAR;
+#define _T(s) L##s
+#endif
+
+#endif
+
+#ifdef PLATFORM_UNIX
+
+class EEThreadId
+{
+    pthread_t m_id;
+    // Indicates whether the m_id is valid or not. pthread_t doesn't have any
+    // portable "invalid" value.
+    bool m_isValid;
+
+public:
+    bool IsCurrentThread()
+    {
+        return m_isValid && pthread_equal(m_id, pthread_self());
+    }
+
+    void SetToCurrentThread()
+    {
+        m_id = pthread_self();
+        m_isValid = true;
+    }
+
+    void Clear()
+    {
+        m_isValid = false;
+    }
+};
+
+#else // PLATFORM_UNIX
+
+#ifndef _INC_WINDOWS
+extern "C" uint32_t __stdcall GetCurrentThreadId();
+#endif
+
+class EEThreadId
+{
+    uint32_t m_uiId;
+public:
+
+    bool IsCurrentThread()
+    {
+        return m_uiId == ::GetCurrentThreadId();
+    }
+
+    void SetToCurrentThread()
+    {
+        m_uiId = ::GetCurrentThreadId();
+    }
+
+    void Clear()
+    {
+        m_uiId = 0;
+    }
+};
+
+#endif // PLATFORM_UNIX
+
 #ifndef _INC_WINDOWS
 
-typedef union _LARGE_INTEGER {
-    struct {
-#if BIGENDIAN
-        int32_t HighPart;
-        uint32_t LowPart;
-#else
-        uint32_t LowPart;
-        int32_t HighPart;
-#endif
-    } u;
-    int64_t QuadPart;
-} LARGE_INTEGER, *PLARGE_INTEGER;
+#ifdef PLATFORM_UNIX
 
-#ifdef WIN32
+typedef struct _RTL_CRITICAL_SECTION {
+    pthread_mutex_t mutex;
+} CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
+
+#else
 
 #pragma pack(push, 8)
 
@@ -65,12 +128,6 @@ typedef struct _RTL_CRITICAL_SECTION {
 } CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
 
 #pragma pack(pop)
-
-#else
-
-typedef struct _RTL_CRITICAL_SECTION {
-    pthread_mutex_t mutex;
-} CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
 
 #endif
 

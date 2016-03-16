@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Globalization;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Linq;
-
+using ILCompiler.Compiler.CppCodeGen;
+using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
@@ -95,7 +95,7 @@ namespace ILCompiler.CppCodeGen
 
         public string GetCppMethodDeclaration(MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new CppGenerationBuffer();
 
             if (methodSignature == null)
                 methodSignature = method.Signature;
@@ -121,10 +121,12 @@ namespace ILCompiler.CppCodeGen
             {
                 if (implementation)
                 {
-                    sb.Append(GetCppTypeName(method.OwningType));
-                    sb.Append("::");
+                    sb.Append(GetCppMethodDeclarationName(method.OwningType, GetCppMethodName(method)));
                 }
-                sb.Append(GetCppMethodName(method));
+                else
+                {
+                    sb.Append(GetCppMethodName(method));
+                }
             }
             sb.Append("(");
             bool hasThis = !methodSignature.IsStatic;
@@ -133,17 +135,20 @@ namespace ILCompiler.CppCodeGen
                 argCount++;
 
             List<string> parameterNames = null;
-            IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
-            if (parameters != null)
+            if (method != null)
             {
-                parameterNames = new List<string>(parameters);
-                if (parameterNames.Count != 0)
+                IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+                if (parameters != null)
                 {
-                    System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
-                }
-                else
-                {
-                    parameterNames = null;
+                    parameterNames = new List<string>(parameters);
+                    if (parameterNames.Count != 0)
+                    {
+                        System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
+                    }
+                    else
+                    {
+                        parameterNames = null;
+                    }
                 }
             }
 
@@ -178,7 +183,7 @@ namespace ILCompiler.CppCodeGen
                     else
                     {
                         sb.Append("_a");
-                        sb.Append(i.ToString());
+                        sb.Append(i.ToStringInvariant());
                     }
                 }
                 if (i != argCount - 1)
@@ -193,7 +198,7 @@ namespace ILCompiler.CppCodeGen
 
         public string GetCppMethodCallParamList(MethodDesc method)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new CppGenerationBuffer();
 
             var methodSignature = method.Signature;
 
@@ -226,7 +231,7 @@ namespace ILCompiler.CppCodeGen
                 else
                 {
                     sb.Append("_a");
-                    sb.Append(i.ToString());
+                    sb.Append(i.ToStringInvariant());
                 }
                 if (i != argCount - 1)
                     sb.Append(", ");
@@ -244,6 +249,25 @@ namespace ILCompiler.CppCodeGen
                 default:
                     return _compilation.NameMangler.GetMangledTypeName(type);
             }
+        }
+
+        /// <summary>
+        /// Compute a proper declaration for <param name="methodName"/> defined in <param name="owningType"/>.
+        /// Usually the C++ name for a type is prefixed by "::" but this is not a valid way to declare a method,
+        /// so we need to strip it if present.
+        /// </summary>
+        /// <param name="owningType">Type where <param name="methodName"/> belongs.</param>
+        /// <param name="methodName">Name of method from <param name="owningType"/>.</param>
+        /// <returns>C++ declaration name for <param name="methodName"/>.</returns>
+        public string GetCppMethodDeclarationName(TypeDesc owningType, string methodName)
+        {
+            var s = GetCppTypeName(owningType);
+            if (s.StartsWith("::"))
+            {
+                // For a Method declaration we do not need the starting ::
+                s = s.Substring(2, s.Length - 2);
+            }
+            return string.Concat(s, "::", methodName);
         }
 
         public string GetCppMethodName(MethodDesc method)
@@ -274,7 +298,7 @@ namespace ILCompiler.CppCodeGen
 
         private string CompileSpecialMethod(MethodDesc method, SpecialMethodKind kind)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new CppGenerationBuffer();
             switch (kind)
             {
                 case SpecialMethodKind.PInvoke:
@@ -298,22 +322,22 @@ namespace ILCompiler.CppCodeGen
                         }
                         else
                         {
+                            _externCSignatureMap.Add(importName, methodSignature);
                             externCSignature = methodSignature;
                         }
 
-                        // TODO: hacky special-case
-                        if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
-                        {
-                            builder.AppendLine(GetCppMethodDeclaration(method, false, importName, externCSignature));
-                        }
-                        builder.AppendLine(GetCppMethodDeclaration(method, true));
-                        builder.AppendLine("{");
+                        builder.AppendLine();
+                        builder.Append(GetCppMethodDeclaration(method, true));
+                        builder.AppendLine();
+                        builder.Append("{");
+                        builder.Indent();
 
                         if (slotCastRequired)
                         {
                             AppendSlotTypeDef(builder, method);
                         }
 
+                        builder.AppendLine();
                         if (!method.Signature.ReturnType.IsVoid)
                         {
                             builder.Append("return ");
@@ -328,14 +352,27 @@ namespace ILCompiler.CppCodeGen
 
                         builder.Append("(");
                         builder.Append(GetCppMethodCallParamList(method));
-                        builder.AppendLine(");");
-                        builder.AppendLine("}");
+                        builder.Append(");");
+                        builder.Exdent();
+                        builder.AppendLine();
+                        builder.Append("}");
 
                         return builder.ToString();
                     }
 
                 default:
-                    return GetCppMethodDeclaration(method, true) + " { throw 0xC000C000; }" + Environment.NewLine;
+                    builder.AppendLine();
+                    builder.Append(GetCppMethodDeclaration(method, true));
+                    builder.AppendLine();
+                    builder.Append("{");
+                    builder.Indent();
+                    builder.AppendLine();
+                    builder.Append("throw 0xC000C000;");
+                    builder.Exdent();
+                    builder.AppendLine();
+                    builder.Append("}");
+
+                    return builder.ToString();
             }
         }
 
@@ -359,7 +396,6 @@ namespace ILCompiler.CppCodeGen
             if (methodIL == null)
                 return;
 
-            string methodCode;
             try
             {
                 var ilImporter = new ILImporter(_compilation, this, method, methodIL);
@@ -387,9 +423,19 @@ namespace ILCompiler.CppCodeGen
             {
                 _compilation.Log.WriteLine(e.Message + " (" + method + ")");
 
-                methodCode = GetCppMethodDeclaration(method, true) + " { throw 0xC000C000; }" + Environment.NewLine;
+                var builder = new CppGenerationBuffer();
+                builder.AppendLine();
+                builder.Append(GetCppMethodDeclaration(method, true));
+                builder.AppendLine();
+                builder.Append("{");
+                builder.Indent();
+                builder.AppendLine();
+                builder.Append("throw 0xC000C000;");
+                builder.Exdent();
+                builder.AppendLine();
+                builder.Append("}");
 
-                methodCodeNodeNeedingCode.SetCode(methodCode, Array.Empty<Object>());
+                methodCodeNodeNeedingCode.SetCode(builder.ToString(), Array.Empty<Object>());
             }
         }
 
@@ -405,10 +451,10 @@ namespace ILCompiler.CppCodeGen
 
         private Dictionary<TypeDesc, List<MethodDesc>> _methodLists;
 
-        private StringBuilder _statics;
-        private StringBuilder _gcStatics;
-        private StringBuilder _threadStatics;
-        private StringBuilder _gcThreadStatics;
+        private CppGenerationBuffer _statics;
+        private CppGenerationBuffer _gcStatics;
+        private CppGenerationBuffer _threadStatics;
+        private CppGenerationBuffer _gcThreadStatics;
 
         // Base classes and valuetypes has to be emitted before they are used.
         private HashSet<TypeDesc> _emittedTypes;
@@ -456,7 +502,7 @@ namespace ILCompiler.CppCodeGen
 
             if (type.IsDelegate)
             {
-                MethodDesc method = type.GetMethod("Invoke", null);
+                MethodDesc method = type.GetKnownMethod("Invoke", null);
 
                 var sig = method.Signature;
                 ExpandType(sig.ReturnType);
@@ -472,12 +518,17 @@ namespace ILCompiler.CppCodeGen
 
         private void OutputTypes(bool full)
         {
+            var sb = new CppGenerationBuffer();
             if (full)
             {
-                _statics = new StringBuilder();
-                _gcStatics = new StringBuilder();
-                _threadStatics = new StringBuilder();
-                _gcThreadStatics = new StringBuilder();
+                _statics = new CppGenerationBuffer();
+                _statics.Indent();
+                _gcStatics = new CppGenerationBuffer();
+                _gcStatics.Indent();
+                _threadStatics = new CppGenerationBuffer();
+                _threadStatics.Indent();
+                _gcThreadStatics = new CppGenerationBuffer();
+                _gcThreadStatics.Indent();
             }
 
             _emittedTypes = new HashSet<TypeDesc>();
@@ -491,44 +542,40 @@ namespace ILCompiler.CppCodeGen
                 if (_emittedTypes.Contains(t))
                     continue;
 
-                OutputType(t, full);
+                OutputType(sb, t, full);
             }
             _emittedTypes = null;
 
             if (full)
             {
-                Out.WriteLine();
-                Out.WriteLine("struct {");
-                Out.Write(_statics.ToString());
-                Out.WriteLine("} __statics;");
+                sb.AppendLine();
+                sb.Append("struct {");
+                // No need to indent or add a new line as _statics is already properly indented
+                sb.Append(_statics.ToString());
+                sb.AppendLine();
+                sb.Append("} __statics;");
 
                 // TODO: Register GC statics with GC
-                Out.WriteLine();
-                Out.WriteLine("struct {");
-                Out.Write(_gcStatics.ToString());
-                Out.WriteLine("} __gcStatics;");
+                sb.AppendLine();
+                sb.Append("struct {");
+                // No need to indent or add a new line as _gcStatics is already properly indented
+                sb.Append(_gcStatics.ToString());
+                sb.AppendLine();
+                sb.Append("} __gcStatics;");
 
-                Out.WriteLine();
-                // @TODO_SDM: do for real - note: the 'extra' series are just testing the init syntax for 0-length arrays, they should be removed
-                // TODO: preinitialized 0-length arrays are not supported in CLang
-                Out.WriteLine("#ifdef _MSC_VER");
-                Out.WriteLine("StaticGcDesc __gcStaticsDescs = { 1, { { sizeof(__gcStatics), 0 }, { 123, 456 }, { 789, 101112 } } };");
-                Out.WriteLine("#else");
-                Out.WriteLine("StaticGcDesc __gcStaticsDescs;");
-                Out.WriteLine("#endif");
-
-                Out.WriteLine();
-                Out.WriteLine("SimpleModuleHeader __module = { &__gcStatics, &__gcStaticsDescs };");
-
+                sb.AppendLine();
 
                 _statics = null;
                 _gcStatics = null;
                 _threadStatics = null;
                 _gcThreadStatics = null;
             }
+
+            Out.Write(sb.ToString());
+            sb.Clear();
         }
 
-        private void OutputType(TypeDesc t, bool full)
+        private void OutputType(CppGenerationBuffer sb, TypeDesc t, bool full)
         {
             _emittedTypes.Add(t);
 
@@ -541,7 +588,7 @@ namespace ILCompiler.CppCodeGen
                     {
                         if (!_emittedTypes.Contains(baseType))
                         {
-                            OutputType(baseType, full);
+                            OutputType(sb, baseType, full);
                         }
                     }
                 }
@@ -553,7 +600,7 @@ namespace ILCompiler.CppCodeGen
                     {
                         if (!_emittedTypes.Contains(fieldType))
                         {
-                            OutputType(fieldType, full);
+                            OutputType(sb, fieldType, full);
                         }
                     }
                 }
@@ -563,36 +610,46 @@ namespace ILCompiler.CppCodeGen
 
             int nesting = 0;
             int current = 0;
+            // Create Namespaces. If a mangledName starts with just :: we will simply ignore it.
+            sb.AppendLine();
             for (;;)
             {
                 int sep = mangledName.IndexOf("::", current);
                 if (sep < 0)
                     break;
 
-                Out.Write("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                if (sep != 0)
+                {
+                    // Case of a name not starting with ::
+                    sb.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                    nesting++;
+                }
                 current = sep + 2;
 
-                nesting++;
             }
 
             if (full)
             {
-                Out.Write("class " + mangledName.Substring(current));
+                sb.Append("class " + mangledName.Substring(current));
                 if (!t.IsValueType)
                 {
                     var baseType = t.BaseType;
                     if (baseType != null)
                     {
-                        Out.Write(" : public " + GetCppTypeName(baseType));
+                        sb.Append(" : public " + GetCppTypeName(baseType));
                     }
                 }
-                Out.WriteLine(" { public:");
+                sb.Append(" {");
+                sb.AppendLine();
+                sb.Append("public:");
+                sb.Indent();
 
                 // TODO: Enable once the dependencies are tracked for arrays
                 // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
                 if (!t.IsPointer && !t.IsByRef)
                 {
-                    Out.WriteLine("static MethodTable * __getMethodTable();");
+                    sb.AppendLine();
+                    sb.Append("static MethodTable * __getMethodTable();");
                 }
 
                 List<MethodDesc> virtualSlots;
@@ -613,19 +670,22 @@ namespace ILCompiler.CppCodeGen
                     for (int slot = 0; slot < virtualSlots.Count; slot++)
                     {
                         MethodDesc virtualMethod = virtualSlots[slot];
-                        Out.WriteLine(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
+                        sb.AppendLine();
+                        sb.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
                     }
                 }
                 if (t.IsDelegate)
                 {
-                    Out.WriteLine(GetCodeForDelegate(t));
+                    sb.AppendLine();
+                    sb.Append(GetCodeForDelegate(t));
                 }
 
-                OutputTypeFields(t);
+                OutputTypeFields(sb, t);
 
                 if (t.HasStaticConstructor)
                 {
-                    _statics.AppendLine("bool __cctor_" + GetCppTypeName(t).Replace("::", "__") + ";");
+                    _statics.AppendLine();
+                    _statics.Append("bool __cctor_" + GetCppTypeName(t).Replace("::", "__") + ";");
                 }
 
                 List<MethodDesc> methodList;
@@ -633,25 +693,30 @@ namespace ILCompiler.CppCodeGen
                 {
                     foreach (var m in methodList)
                     {
-                        OutputMethod(m);
+                        OutputMethod(sb, m);
                     }
                 }
-                Out.Write("};");
+                sb.Exdent();
+                sb.AppendLine();
+                sb.Append("};");
             }
             else
             {
-                Out.Write("class " + mangledName.Substring(current) + ";");
+                sb.Append("class " + mangledName.Substring(current) + ";");
             }
 
             while (nesting > 0)
             {
-                Out.Write(" };");
+                sb.Append("};");
                 nesting--;
             }
-            Out.WriteLine();
+
+            // Make some rooms between two type definitions
+            if (full)
+                sb.AppendEmptyLine();
         }
 
-        private void OutputTypeFields(TypeDesc t)
+        private void OutputTypeFields(CppGenerationBuffer sb, TypeDesc t)
         {
             bool explicitLayout = false;
             ClassLayoutMetadata classLayoutMetadata = default(ClassLayoutMetadata);
@@ -669,7 +734,11 @@ namespace ILCompiler.CppCodeGen
             int instanceFieldIndex = 0;
 
             if (explicitLayout)
-                Out.WriteLine("union {");
+            {
+                sb.AppendLine();
+                sb.Append("union {");
+                sb.Indent();
+            }
 
             foreach (var field in t.GetFields())
             {
@@ -679,48 +748,62 @@ namespace ILCompiler.CppCodeGen
                         continue;
 
                     TypeDesc fieldType = GetFieldTypeOrPlaceholder(field);
-                    StringBuilder builder;
+                    CppGenerationBuffer builder;
                     if (!fieldType.IsValueType)
                     {
-                        _gcStatics.Append(GetCppSignatureTypeName(fieldType));
                         builder = _gcStatics;
                     }
                     else
                     {
                         // TODO: Valuetype statics with GC references
-                        _statics.Append(GetCppSignatureTypeName(fieldType));
                         builder = _statics;
                     }
-                    builder.AppendLine(" " + GetCppStaticFieldName(field) + ";");
+                    builder.AppendLine();
+                    builder.Append(GetCppSignatureTypeName(fieldType));
+                    builder.Append(" ");
+                    builder.Append(GetCppStaticFieldName(field) + ";");
                 }
                 else
                 {
                     if (explicitLayout)
                     {
-                        Out.WriteLine("struct {");
+                        sb.AppendLine();
+                        sb.Append("struct {");
+                        sb.Indent();
                         int offset = classLayoutMetadata.Offsets[instanceFieldIndex].Offset;
                         if (offset > 0)
-                            Out.WriteLine("char __pad" + instanceFieldIndex + "[" + offset + "];");
+                        {
+                            sb.AppendLine();
+                            sb.Append("char __pad" + instanceFieldIndex + "[" + offset + "];");
+                        }
                     }
-                    Out.WriteLine(GetCppSignatureTypeName(GetFieldTypeOrPlaceholder(field)) + " " + GetCppFieldName(field) + ";");
+                    sb.AppendLine();
+                    sb.Append(GetCppSignatureTypeName(GetFieldTypeOrPlaceholder(field)) + " " + GetCppFieldName(field) + ";");
                     if (explicitLayout)
                     {
-                        Out.WriteLine("};");
+                        sb.Exdent();
+                        sb.AppendLine();
+                        sb.Append("};");
                     }
                     instanceFieldIndex++;
                 }
             }
 
             if (explicitLayout)
-                Out.WriteLine("};");
+            {
+                sb.Exdent();
+                sb.AppendLine();
+                sb.Append("};");
+            }
         }
 
-        private void OutputMethod(MethodDesc m)
+        private void OutputMethod(CppGenerationBuffer sb, MethodDesc m)
         {
-            Out.WriteLine(GetCppMethodDeclaration(m, false));
+            sb.AppendLine();
+            sb.Append(GetCppMethodDeclaration(m, false));
         }
 
-        private void AppendSlotTypeDef(StringBuilder sb, MethodDesc method)
+        private void AppendSlotTypeDef(CppGenerationBuffer sb, MethodDesc method)
         {
             MethodSignature methodSignature = method.Signature;
 
@@ -731,8 +814,9 @@ namespace ILCompiler.CppCodeGen
             AppendSignatureTypeDef(sb, "__slot__" + GetCppMethodName(method), methodSignature, thisArgument);
         }
 
-        internal void AppendSignatureTypeDef(StringBuilder sb, string name, MethodSignature methodSignature, TypeDesc thisArgument)
+        internal void AppendSignatureTypeDef(CppGenerationBuffer sb, string name, MethodSignature methodSignature, TypeDesc thisArgument)
         {
+            sb.AppendLine();
             sb.Append("typedef ");
             sb.Append(GetCppSignatureTypeName(methodSignature.ReturnType));
             sb.Append("(*");
@@ -762,52 +846,69 @@ namespace ILCompiler.CppCodeGen
                 if (i != argCount - 1)
                     sb.Append(", ");
             }
-            sb.AppendLine(");");
+            sb.Append(");");
         }
 
 
         private String GetCodeForDelegate(TypeDesc delegateType)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new CppGenerationBuffer();
 
-            MethodDesc method = delegateType.GetMethod("Invoke", null);
+            MethodDesc method = delegateType.GetKnownMethod("Invoke", null);
 
             AppendSlotTypeDef(sb, method);
 
+            sb.AppendLine();
             sb.Append("static __slot__");
             sb.Append(GetCppMethodName(method));
             sb.Append(" __invoke__");
             sb.Append(GetCppMethodName(method));
-            sb.Append("(void * pThis) { return (__slot__");
+            sb.Append("(void * pThis)");
+            sb.AppendLine();
+            sb.Append("{");
+            sb.Indent();
+            sb.AppendLine();
+            sb.Append("return (__slot__");
             sb.Append(GetCppMethodName(method));
             sb.Append(")(((");
             sb.Append(GetCppSignatureTypeName(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.MulticastDelegate)));
             sb.Append(")pThis)->m_functionPointer);");
-            sb.AppendLine(" };");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("};");
 
             return sb.ToString();
         }
 
         private String GetCodeForVirtualMethod(MethodDesc method, int slot)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new CppGenerationBuffer();
 
             AppendSlotTypeDef(sb, method);
 
+            sb.AppendLine();
             sb.Append("static __slot__");
             sb.Append(GetCppMethodName(method));
             sb.Append(" __getslot__");
             sb.Append(GetCppMethodName(method));
-            sb.Append("(void * pThis) { return (__slot__");
+            sb.Append("(void * pThis)");
+            sb.AppendLine();
+            sb.Append("{");
+            sb.Indent();
+            sb.AppendLine();
+            sb.Append(" return (__slot__");
             sb.Append(GetCppMethodName(method));
             sb.Append(")*((void **)(*((RawEEType **)pThis) + 1) + ");
-            sb.Append(slot.ToString());
-            sb.AppendLine("); };");
+            sb.Append(slot.ToStringInvariant());
+            sb.Append(");");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("};");
 
             return sb.ToString();
         }
 
-        private void AppendVirtualSlots(StringBuilder sb, TypeDesc implType, TypeDesc declType)
+        private void AppendVirtualSlots(CppGenerationBuffer sb, TypeDesc implType, TypeDesc declType)
         {
             var baseType = declType.BaseType;
             if (baseType != null)
@@ -822,6 +923,7 @@ namespace ILCompiler.CppCodeGen
                     MethodDesc declMethod = virtualSlots[i];
                     MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
 
+                    sb.AppendLine();
                     if (implMethod.IsAbstract)
                     {
                         sb.Append("NULL,");
@@ -829,9 +931,7 @@ namespace ILCompiler.CppCodeGen
                     else
                     {
                         sb.Append("(void*)&");
-                        sb.Append(GetCppTypeName(implMethod.OwningType));
-                        sb.Append("::");
-                        sb.Append(GetCppMethodName(implMethod));
+                        sb.Append(GetCppMethodDeclarationName(implMethod.OwningType, GetCppMethodName(implMethod)));
                         sb.Append(",");
                     }
                 }
@@ -840,7 +940,7 @@ namespace ILCompiler.CppCodeGen
 
         private String GetCodeForType(TypeDesc type)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new CppGenerationBuffer();
 
             int totalSlots = 0;
 
@@ -866,86 +966,136 @@ namespace ILCompiler.CppCodeGen
             }
 
             sb.Append("MethodTable * ");
-            sb.Append(GetCppTypeName(type));
-            sb.AppendLine("::__getMethodTable() {");
+            sb.Append(GetCppMethodDeclarationName(type, "__getMethodTable"));
+            sb.Append("()");
+            sb.AppendLine();
+            sb.Append("{");
+            sb.Indent();
 
+            sb.AppendLine();
             sb.Append("static struct {");
+            sb.Indent();
             // sb.Append(GCDesc);
+            sb.AppendLine();
             sb.Append("RawEEType EEType;");
             if (totalSlots != 0)
             {
+                sb.AppendLine();
                 sb.Append("void * slots[");
                 sb.Append(totalSlots);
                 sb.Append("];");
             }
-            sb.AppendLine("} mt = {");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("} mt = {");
+            sb.Indent();
             // gcdesc
             if (type.IsString)
             {
                 // String has non-standard layout
-                sb.Append("{ sizeof(uint16_t), 0x");                            // EEType::_usComponentSize
-                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
-                sb.Append(", 2 * sizeof(void*) + sizeof(int32_t) + 2, ");       // EEType::_uBaseSize
+                sb.AppendLine();
+                sb.Append("{");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("sizeof(uint16_t),");
+                sb.AppendLine();
+                sb.Append("0x");                             // EEType::_usComponentSize
+                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
+                sb.Append(",");
+                sb.AppendLine();
+                sb.Append("2 * sizeof(void*) + sizeof(int32_t) + 2,");       // EEType::_uBaseSize
             }
             else
-            if (type.IsArray && ((ArrayType)type).Rank == 1)
+            if (type.IsSzArray)
             {
-                sb.Append("{ sizeof(");
+                sb.AppendLine();
+                sb.Append("{");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("sizeof(");
                 sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // EEType::_usComponentSize
-                sb.Append("), 0x");
-                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
-                sb.Append(", 3 * sizeof(void*), "); // EEType::_uBaseSize
+                sb.Append("),");
+                sb.AppendLine();
+                sb.Append("0x");
+                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
+                sb.Append(",");
+                sb.AppendLine();
+                sb.Append("3 * sizeof(void*),"); // EEType::_uBaseSize
             }
             else
             if (type.IsArray)
             {
-                Debug.Assert(((ArrayType)type).Rank > 1);
-                sb.Append("{ sizeof(");
+                sb.AppendLine();
+                sb.Append("{");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("sizeof(");
                 sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // EEType::_usComponentSize
-                sb.Append("), 0x");
-                sb.Append(flags.ToString("x4", CultureInfo.InvariantCulture));  // EEType::_usFlags
-                sb.Append(", 3 * sizeof(void*) + ");                            // EEType::_uBaseSize
-                sb.Append(((ArrayType)type).Rank.ToString());
-                sb.Append("* sizeof(int32_t) * 2, ");
+                sb.Append("),");
+                sb.AppendLine();
+                sb.Append("0x");
+                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
+                sb.Append(",");
+                sb.AppendLine();
+                sb.Append("3 * sizeof(void*) + ");                            // EEType::_uBaseSize
+                sb.Append(((ArrayType)type).Rank.ToStringInvariant());
+                sb.Append("* sizeof(int32_t) * 2,");
             }
             else
             {
                 // sizeof(void*) == size of object header
-                sb.Append("{ 0, 0x");                                           // EEType::_usComponentSize
-                sb.Append(flags.ToString("x", CultureInfo.InvariantCulture));   // EEType::_usFlags
-                sb.Append(", AlignBaseSize(sizeof(void*)+sizeof(");             // EEType::_uBaseSize
+                sb.AppendLine();
+                sb.Append("{");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("0,");
+                sb.AppendLine();
+                sb.Append("0x");                                           // EEType::_usComponentSize
+                sb.Append(flags.ToStringInvariant("x"));   // EEType::_usFlags
+                sb.Append(",");
+                sb.AppendLine();
+                sb.Append("AlignBaseSize(sizeof(void*)+sizeof(");             // EEType::_uBaseSize
                 sb.Append(GetCppTypeName(type));
-                sb.Append(")), ");
+                sb.Append(")),");
             }
+
+            sb.AppendLine();
 
             // base type
             if (type.IsArray)
             {
-                sb.Append(GetCppTypeName(((ArrayType)type).ElementType));
-                sb.Append("::__getMethodTable()");
+                sb.Append(GetCppMethodDeclarationName(((ArrayType)type).ElementType, "__getMethodTable"));
+                sb.Append("()");
             }
             else
             {
                 var baseType = type.BaseType;
                 if (baseType != null)
                 {
-                    sb.Append(GetCppTypeName(type.BaseType));
-                    sb.Append("::__getMethodTable()");
+                    sb.Append(GetCppMethodDeclarationName(type.BaseType, "__getMethodTable"));
+                    sb.Append("()");
                 }
                 else
                 {
                     sb.Append("NULL");
                 }
             }
-            sb.AppendLine("},");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("},");
 
             // virtual slots
             if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(type)).Marked)
                 AppendVirtualSlots(sb, type, type);
 
-            sb.AppendLine("};");
-            sb.AppendLine("return (MethodTable *)&mt.EEType;");
-            sb.AppendLine("}");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("};");
+            sb.AppendLine();
+            sb.Append("return (MethodTable *)&mt.EEType;");
+            sb.Exdent();
+            sb.AppendLine();
+            sb.Append("}");
 
             return sb.ToString();
         }
@@ -981,7 +1131,7 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        public void OutputCode(IEnumerable<DependencyNode> nodes)
+        public void OutputCode(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint)
         {
             BuildMethodLists(nodes);
 
@@ -990,10 +1140,27 @@ namespace ILCompiler.CppCodeGen
             Out.WriteLine("#include \"common.h\"");
             Out.WriteLine();
 
+            Out.Write("/* Forward type definitions */");
             OutputTypes(false);
             Out.WriteLine();
-            OutputTypes(true);
             Out.WriteLine();
+            Out.Write("/* Type definitions  */");
+            OutputTypes(true);
+
+            var sb = new CppGenerationBuffer();
+
+            foreach (var externC in _externCSignatureMap)
+            {
+                string importName = externC.Key;
+                // TODO: hacky special-case
+                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
+                {
+                    sb.AppendLine();
+                    sb.Append(GetCppMethodDeclaration(null, false, importName, externC.Value));
+                }
+            }
+            Out.Write(sb.ToString());
+            sb.Clear();
 
             foreach (var t in _cppSignatureNames.Keys)
             {
@@ -1001,7 +1168,8 @@ namespace ILCompiler.CppCodeGen
                 // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
                 if (!t.IsPointer && !t.IsByRef)
                 {
-                    Out.WriteLine(GetCodeForType(t));
+                    sb.AppendLine();
+                    sb.Append(GetCodeForType(t));
                 }
 
                 List<MethodDesc> methodList;
@@ -1010,64 +1178,83 @@ namespace ILCompiler.CppCodeGen
                     foreach (var m in methodList)
                     {
                         var methodCodeNode = (CppMethodCodeNode)_compilation.NodeFactory.MethodEntrypoint(m);
-                        Out.WriteLine(methodCodeNode.CppCode);
+                        sb.AppendLine();
+                        sb.Append(methodCodeNode.CppCode);
 
                         var alternateName = _compilation.NodeFactory.GetSymbolAlternateName(methodCodeNode);
                         if (alternateName != null)
                         {
-                            Out.WriteLine(GetCppMethodDeclaration(m, true, alternateName));
-                            Out.WriteLine("{");
-                            Out.Write("    ");
+                            sb.AppendLine();
+                            sb.Append(GetCppMethodDeclaration(m, true, alternateName));
+                            sb.AppendLine();
+                            sb.Append("{");
+                            sb.Indent();
+                            sb.AppendLine();
                             if (!m.Signature.ReturnType.IsVoid)
                             {
-                                Out.Write("return ");
+                                sb.Append("return ");
                             }
-                            Out.Write(GetCppTypeName(m.OwningType));
-                            Out.Write("::");
-                            Out.Write(GetCppMethodName(m));
-                            Out.Write("(");
-                            Out.Write(GetCppMethodCallParamList(m));
-                            Out.WriteLine(");");
-                            Out.WriteLine("}");
+                            sb.Append(GetCppMethodDeclarationName(m.OwningType, GetCppMethodName(m)));
+                            sb.Append("(");
+                            sb.Append(GetCppMethodCallParamList(m));
+                            sb.Append(");");
+                            sb.Exdent();
+                            sb.AppendLine();
+                            sb.Append("}");
                         }
                     }
                 }
             }
+            Out.Write(sb.ToString());
+            sb.Clear();
 
-            if (_compilation.MainMethod != null)
+            if (entrypoint != null)
             {
-                var mainMethod = _compilation.MainMethod;
-
                 // Stub for main method
-                Out.WriteLine("int main(int argc, char * argv[]) { ");
-
-                Out.WriteLine("if (__initialize_runtime() != 0) return -1;");
-                Out.WriteLine("__register_module(&__module);");
-                Out.WriteLine("ReversePInvokeFrame frame; __reverse_pinvoke(&frame);");
-                Out.WriteLine();
-
-                bool voidReturn = mainMethod.Signature.ReturnType.IsVoid;
-                if (!voidReturn) Out.Write("int ret = ");
-                Out.Write(GetCppTypeName(mainMethod.OwningType));
-                Out.Write("::");
-                Out.Write(GetCppMethodName(mainMethod));
-                if (mainMethod.Signature.Length > 0)
+                sb.AppendLine();
+                if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    var stringType = mainMethod.Context.GetWellKnownType(WellKnownType.String);
-                    var arrayOfStringType = stringType.Context.GetArrayType(stringType);
-                    Out.WriteLine("((" + GetCppSignatureTypeName(arrayOfStringType) + ")__get_commandline_args(argc-1,argv+1));");
+                    sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
                 }
                 else
-                    Out.WriteLine("();");
-                Out.WriteLine();
+                {
+                    sb.Append("int main(int argc, char * argv[]) {");
+                }
+                sb.Indent();
 
-                Out.WriteLine("__reverse_pinvoke_return(&frame);");
-                Out.WriteLine("__shutdown_runtime();");
+                sb.AppendLine();
+                sb.Append("if (__initialize_runtime() != 0)");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("return -1;");
+                sb.Exdent();
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("ReversePInvokeFrame frame;");
+                sb.AppendLine();
+                sb.Append("__reverse_pinvoke(&frame);");
 
-                Out.WriteLine(voidReturn ? "return 0;" : "return ret;");
-                Out.WriteLine("}");
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("int ret = ");
+                sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
+                sb.Append("(argc-1, (intptr_t)(argv+1));");
+
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("__reverse_pinvoke_return(&frame);");
+                sb.AppendLine();
+                sb.Append("__shutdown_runtime();");
+                
+                sb.AppendLine();
+                sb.Append("return ret;");
+                sb.Exdent();
+                sb.AppendLine();
+                sb.Append("}");
             }
 
+            Out.Write(sb.ToString());
+            sb.Clear();
             Out.Dispose();
         }
     }

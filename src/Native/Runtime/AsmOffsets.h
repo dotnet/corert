@@ -33,7 +33,13 @@ ASM_OFFSET(    4,     8, Array, m_Length)
 ASM_OFFSET(    0,     0, EEType, m_usComponentSize)
 ASM_OFFSET(    2,     2, EEType, m_usFlags)
 ASM_OFFSET(    4,     4, EEType, m_uBaseSize)
+#if defined(CORERT)
+// If this ever changes, you must update src\ILCompiler.Compiler\src\Compiler\DependencyAnalysis\EETypeNode.cs GetVTableOffset()
+// to reflect the updated VTable offset
+ASM_OFFSET(   18,    20, EEType, m_VTable)
+#else
 ASM_OFFSET(   14,    18, EEType, m_VTable)
+#endif
 
 ASM_OFFSET(    0,     0, Thread, m_rgbAllocContextBuffer)
 ASM_OFFSET(   28,    38, Thread, m_ThreadStateFlags)
@@ -56,6 +62,7 @@ ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
+ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
 #endif
 
 ASM_OFFSET(    4,     8, StaticClassConstructionContext, m_initialized)

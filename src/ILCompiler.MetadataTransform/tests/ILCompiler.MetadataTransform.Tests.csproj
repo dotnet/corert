@@ -44,6 +44,7 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MockPolicy.cs" />
     <Compile Include="MultifileMetadataPolicy.cs" />
     <Compile Include="NativeFormatExtensions.cs" />
     <Compile Include="SimpleTests.cs" />

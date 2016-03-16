@@ -1315,7 +1315,7 @@ namespace System.Text
             if (encoder != null)
             {
                 Contract.Assert(!encoder.MustFlush || ch == 0,
-                    "[UTF8Encoding.GetBytes] Expected no mustflush or 0 leftover ch " + ch.ToString("X2", FormatProvider.InvariantCulture));
+                    "[UTF8Encoding.GetBytes] Expected no mustflush or 0 leftover ch");
 
                 encoder.surrogateChar = ch;
                 encoder.m_charsUsed = (int)(pSrc - chars);

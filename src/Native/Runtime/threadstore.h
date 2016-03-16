@@ -39,7 +39,7 @@ public:
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
-    static void             DetachCurrentThreadIfHomeFiber();
+    static void             DetachCurrentThread();
 #ifdef DACCESS_COMPILE
     static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
 #endif // DACCESS_COMPILE

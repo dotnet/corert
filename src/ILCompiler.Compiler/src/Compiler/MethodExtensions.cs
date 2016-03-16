@@ -20,6 +20,8 @@ namespace ILCompiler
 
     internal static class MethodExtensions
     {
+        // TODO: This method looks like a general purpose helper, but the implementation is actually specific to
+        // reading overloads of RuntimeImport attributes.
         public static string GetAttributeStringValue(this EcmaMethod This, string nameSpace, string name)
         {
             var metadataReader = This.MetadataReader;
@@ -51,9 +53,7 @@ namespace ILCompiler
                         if (constructor.Signature[i] != This.Context.GetWellKnownType(WellKnownType.String))
                             throw new BadImageFormatException();
 
-                    var attributeBlob = metadataReader.GetBlobReader(metadataReader.GetCustomAttribute(attributeHandle).Value);
-                    if (attributeBlob.ReadInt16() != 1)
-                        throw new BadImageFormatException();
+                    var attributeBlob = metadataReader.GetCustomAttributeBlobReader(attributeHandle);
 
                     // Skip module name if present
                     if (constructor.Signature.Length == 2)
@@ -68,9 +68,18 @@ namespace ILCompiler
 
         public static SpecialMethodKind DetectSpecialMethodKind(this MethodDesc method)
         {
-            if (method.IsPInvoke && !Internal.IL.Stubs.PInvokeMarshallingILEmitter.RequiresMarshalling(method))
+            if (method.IsPInvoke)
             {
-                return SpecialMethodKind.PInvoke;
+                // Marshalling is never required for pregenerated interop code
+                if (Internal.IL.McgInteropSupport.IsPregeneratedInterop(method))
+                {
+                    return SpecialMethodKind.PInvoke;
+                }
+
+                if (!Internal.IL.Stubs.PInvokeMarshallingILEmitter.RequiresMarshalling(method))
+                {
+                    return SpecialMethodKind.PInvoke;
+                }
             }
 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))

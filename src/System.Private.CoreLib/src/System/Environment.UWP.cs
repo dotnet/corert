@@ -42,7 +42,7 @@ namespace System
         {
             get
             {
-                // Store apps doesn't support MachineName, Issue: dotnet/corert#650.
+                // Store apps don't support MachineName
                 throw new PlatformNotSupportedException();
             }
         }

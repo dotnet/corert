@@ -98,13 +98,13 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     unsigned epilogCount = pHeader->GetEpilogCount();
     bool     epilogAtEnd = pHeader->IsEpilogAtEnd();
 
-    gcPrintf("   prologSize:     %d\r\n", pHeader->GetPrologSize());
+    gcPrintf("   prologSize:     %d\n", pHeader->GetPrologSize());
     if (pHeader->HasVaryingEpilogSizes())
-        gcPrintf("   epilogSize:     (varies)\r\n");
+        gcPrintf("   epilogSize:     (varies)\n");
     else
-        gcPrintf("   epilogSize:     %d\r\n", pHeader->GetFixedEpilogSize());
+        gcPrintf("   epilogSize:     %d\n", pHeader->GetFixedEpilogSize());
 
-    gcPrintf("   epilogCount:    %d %s\r\n", epilogCount, epilogAtEnd ? "[end]" : "");
+    gcPrintf("   epilogCount:    %d %s\n", epilogCount, epilogAtEnd ? "[end]" : "");
     const char * returnKind = "????";
     unsigned reversePinvokeFrameOffset = 0;     // it can't be 0 because [ebp+0] is the previous ebp
     switch (pHeader->GetReturnKind())
@@ -120,19 +120,19 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
             //ASSERT("Unexpected return kind")
             break;
     }
-    gcPrintf("   returnKind:     %s\r\n", returnKind);
+    gcPrintf("   returnKind:     %s\n", returnKind);
     gcPrintf("   frameKind:      %s", pHeader->HasFramePointer() ? "EBP" : "ESP");
 #ifdef _TARGET_AMD64_
     if (pHeader->HasFramePointer())
         gcPrintf(" offset: %d", pHeader->GetFramePointerOffset());
 #endif // _AMD64_
-    gcPrintf("\r\n");
-    gcPrintf("   frameSize:      %d\r\n", pHeader->GetFrameSize());
+    gcPrintf("\n");
+    gcPrintf("   frameSize:      %d\n", pHeader->GetFrameSize());
 
     if (pHeader->HasDynamicAlignment()) {
-        gcPrintf("   alignment:      %d\r\n", (1 << pHeader->GetDynamicAlignment()));
+        gcPrintf("   alignment:      %d\n", (1 << pHeader->GetDynamicAlignment()));
         if (pHeader->GetParamPointerReg() != RN_NONE) {
-            gcPrintf("   paramReg:       %d\r\n", pHeader->GetParamPointerReg());
+            gcPrintf("   paramReg:       %d\n", pHeader->GetParamPointerReg());
         }
     }
 
@@ -147,14 +147,14 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
         }
         mask = (CalleeSavedRegMask)(mask << 1);
     }
-    gcPrintf("\r\n");
+    gcPrintf("\n");
 
 #ifdef _TARGET_ARM_
-    gcPrintf("   parmRegsPushedCount: %d\r\n", pHeader->ParmRegsPushedCount());
+    gcPrintf("   parmRegsPushedCount: %d\n", pHeader->ParmRegsPushedCount());
 #endif
 
 #ifdef _TARGET_X86_
-    gcPrintf("   returnPopSize:  %d\r\n", pHeader->GetReturnPopSize());
+    gcPrintf("   returnPopSize:  %d\n", pHeader->GetReturnPopSize());
     if (pHeader->HasStackChanges())
     {
         // @TODO: need to read the stack changes string that follows
@@ -164,7 +164,7 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
 
     if (reversePinvokeFrameOffset != 0)
     {
-        gcPrintf("   reversePinvokeFrameOffset: 0x%02x\r\n", reversePinvokeFrameOffset);
+        gcPrintf("   reversePinvokeFrameOffset: 0x%02x\n", reversePinvokeFrameOffset);
     }
 
 
@@ -180,7 +180,7 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
                 gcPrintf("(%u bytes) ", VarInt::ReadUnsigned(gcInfo));
             previousOffset = newOffset;
         }
-        gcPrintf("\r\n");
+        gcPrintf("\n");
     }
 
     return gcInfo - gcInfoStart;
@@ -190,7 +190,7 @@ void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
 {
     // @TODO: print both EBP/ESP offsets where appropriate
 #ifdef _TARGET_ARM_
-    gcPrintf("local slot 0n%d, [R7+%02X] \r\n", slotNum, 
+    gcPrintf("local slot 0n%d, [R7+%02X] \n", slotNum, 
                 ((GCInfoHeader*)pHeader)->GetFrameSize() - ((slotNum + 1) * POINTER_SIZE));
 #else
     const char* regAndSign = "EBP-";
@@ -206,7 +206,7 @@ void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
         offset = (slotNum * POINTER_SIZE);
     }
 # endif
-    gcPrintf("local slot 0n%d, [%s%02X] \r\n", slotNum, regAndSign, offset);
+    gcPrintf("local slot 0n%d, [%s%02X] \n", slotNum, regAndSign, offset);
 #endif
 }
 
@@ -251,7 +251,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 if (b & CSR_MASK_RBP) { gcPrintf("RBP "); count++; }
                 if (b & CSR_MASK_R12) { gcPrintf("R12 "); count++; }
 #endif // _ARM_
-                gcPrintf("\r\n");
+                gcPrintf("\n");
             }
             break;
 
@@ -284,7 +284,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_R15: regName = "R15"; break;
 #endif // _ARM_
                 }
-                gcPrintf("%02x          | 3  %s%s%s \r\n", b, regName, interior, pinned);
+                gcPrintf("%02x          | 3  %s%s%s \n", b, regName, interior, pinned);
                 count++; 
             }
             break;
@@ -361,7 +361,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                     gcPrintf("   ");
                 }
 
-                gcPrintf("| 6  [%s%s%02X]%s%s\r\n", baseReg, sign, offset, interior, pinned);
+                gcPrintf("| 6  [%s%s%02X]%s%s\n", baseReg, sign, offset, interior, pinned);
                 count++; 
 
                 while (mask > 0)
@@ -372,7 +372,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                         if (!first)
                             gcPrintf("      ");
 
-                        gcPrintf("            |    [%s%s%02X]%s%s\r\n", baseReg, sign, offset, interior, pinned);
+                        gcPrintf("            |    [%s%s%02X]%s%s\n", baseReg, sign, offset, interior, pinned);
                         count++; 
                     }
                     mask >>= 1;
@@ -383,7 +383,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
     }
     while (!last);
 
-    //gcPrintf("\r\n");
+    //gcPrintf("\n");
 }
 
 
@@ -449,7 +449,7 @@ size_t   FASTCALL   GCDump::DumpGCTable (PTR_UInt8              gcInfo,
         DumpCallsiteString(curOffset, pTables->pbCallsiteInfoBlob + infoOffset, &header);
     }
 
-    gcPrintf("-------\r\n");
+    gcPrintf("-------\n");
 
     return 0;
 }

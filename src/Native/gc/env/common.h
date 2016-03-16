@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #include <wchar.h>
 #include <assert.h>
 #include <stdarg.h>
@@ -21,7 +22,7 @@
 
 #include <new>
 
-#ifndef WIN32
+#ifdef PLATFORM_UNIX
 #include <pthread.h>
 #endif
 

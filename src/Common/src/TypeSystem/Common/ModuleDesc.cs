@@ -28,6 +28,11 @@ namespace Internal.TypeSystem
         public abstract MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true);
 
         /// <summary>
+        /// Gets the global &lt;Module&gt; type.
+        /// </summary>
+        public abstract TypeDesc GetGlobalModuleType();
+
+        /// <summary>
         /// Retrieves a collection of all types defined in the current module. This includes nested types.
         /// </summary>
         public abstract IEnumerable<MetadataType> GetAllTypes();

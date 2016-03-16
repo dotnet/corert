@@ -131,5 +131,45 @@ namespace MetadataTransformTests
             Assert.Null(transformResult.GetTransformedTypeDefinition(objectType));
             Assert.Null(transformResult.GetTransformedTypeDefinition(stringType));
         }
+
+        [Fact]
+        public void TestNestedTypeReference()
+        {
+            // A type reference nested under a type that has a definition record. The transform is required
+            // to create a type reference for the containing type because a type *definition* can't be a parent
+            // to a type *reference*.
+
+            var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
+            Cts.MetadataType genericOutside = sampleMetadataModule.GetType("SampleMetadata", "GenericOutside`1");
+            Cts.MetadataType inside = genericOutside.GetNestedType("Inside");
+
+            {
+                MockPolicy policy = new MockPolicy(
+                    type =>
+                    {
+                        return type == genericOutside;
+                    });
+
+                var result = MetadataTransform.Run(policy, new[] { sampleMetadataModule });
+
+                Assert.Equal(1, result.Scopes.Count);
+                Assert.Equal(1, result.Scopes.Single().GetAllTypes().Count());
+
+                var genericOutsideDefRecord = result.GetTransformedTypeDefinition(genericOutside);
+                Assert.NotNull(genericOutsideDefRecord);
+
+                Assert.Null(result.GetTransformedTypeReference(inside));
+
+                var insideRecord = result.Transform.HandleType(inside);
+                Assert.IsType<TypeReference>(insideRecord);
+
+                var genericOutsideRefRecord = ((TypeReference)insideRecord).ParentNamespaceOrType as TypeReference;
+                Assert.NotNull(genericOutsideRefRecord);
+                Assert.Equal(genericOutside.Name, genericOutsideRefRecord.TypeName.Value);
+
+                Assert.Same(genericOutsideDefRecord, result.GetTransformedTypeDefinition(genericOutside));
+            }
+
+        }
     }
 }

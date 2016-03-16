@@ -107,14 +107,14 @@ PushProbeFrame macro BITMASK_REG_OR_VALUE
         push        esi                     ; ESI
         push        ebx                     ; EBX
         push        BITMASK_REG_OR_VALUE    ; register bitmask
-if DBG
+ifdef _DEBUG
         mov         eax, BITMASK_REG_OR_VALUE
         and         eax, DEFAULT_PROBE_SAVE_FLAGS
         cmp         eax, DEFAULT_PROBE_SAVE_FLAGS ; make sure we have at least the flags to match what the macro pushes
         je          @F
         call        PALDEBUGBREAK
 @@:
-endif ;; DBG
+endif ;; _DEBUG
         push        edx                     ; Thread *
         mov         eax, [ebp + 0]                      ; find previous EBP value
         push        eax                     ; m_FramePointer
@@ -496,7 +496,7 @@ RhpGCProbeForEHJump proc
 
         ClearHijackState
 
-if DBG
+ifdef _DEBUG
         ;;
         ;; If we get here, then we have been hijacked for a real GC, and our SyncState must
         ;; reflect that we've been requested to synchronize.
@@ -506,7 +506,7 @@ if DBG
 
         call        PALDEBUGBREAK
 @@:
-endif ;; DBG
+endif ;; _DEBUG
 
 
         PushProbeFrame  PROBE_SAVE_FLAGS_RAX_IS_GCREF

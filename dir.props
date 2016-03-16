@@ -1,5 +1,5 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="CheckRoslyn" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="CheckRoslyn;OverrideBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Condition="Exists('..\dir.props') And '$(RepoLocalBuild)'!='true'" Project="..\dir.props" />
 
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
@@ -118,7 +118,7 @@
 
   <!-- list of nuget package sources passed to nuget.exe -->
   <ItemGroup>
-    <NuGetSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools" />
+    <NuGetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools" />
     <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
   </ItemGroup>
 
@@ -140,17 +140,17 @@
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup>
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-core/" />
-    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-corefxtestdata/" />
-    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet-buildtools/" />
-    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/dotnet/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxtestdata/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corert/" />
     <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
   </ItemGroup>
 
     <!-- list of directories to perform batch restore -->
   <ItemGroup>
     <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\src&quot;" />
-    <DnuRestoreDir Include="&quot;$(ToolsDir)&quot;" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -294,5 +294,20 @@
   <Target Name="CheckRoslyn" Condition="'$(UseRoslynCompiler)'=='true' and '$(MSBuildProjectFile)'!='build.proj'">
     <Warning Condition="!Exists('$(RoslynPropsFile)')"
              Text="The Roslyn targets do not exist- Roslyn will not be used for this build, but the package should be restored if you build again." />
+  </Target>
+
+
+  <Target Name="OverrideBuildTools">
+    <Error Condition="'$(BuildToolsVersion)'!='1.0.25-prerelease-00111'" Text="Confirm below project.json overrides are still compatibile with this version."></Error>
+    <PropertyGroup>
+      <!--
+          These overrides are for $(PackagesDir)\Microsoft.DotNet.BuildTools.1.0.25-prerelease-00111\lib\tool-runtime\project.json and test-runtime\project.json
+          This is similar to how CoreFX handles these files.
+      -->
+      <TestRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.json</TestRuntimeProjectJson>
+      <TestRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
+      <ToolRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/tool-runtime/project.json</ToolRuntimeProjectJson>
+      <ToolRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/tool-runtime/project.lock.json</ToolRuntimeProjectLockJson>
+    </PropertyGroup>
   </Target>
 </Project>

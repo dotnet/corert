@@ -103,5 +103,41 @@ namespace Internal.Runtime
 
             return sb.ToString();
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (!(obj is EETypeOptionalFieldsBuilder))
+                return false;
+
+            EETypeOptionalFieldsBuilder other = obj as EETypeOptionalFieldsBuilder;
+
+            if (ReferenceEquals(this, other))
+                return true;
+
+            for (EETypeOptionalFieldsElement eTag = 0; eTag < EETypeOptionalFieldsElement.Count; eTag++)
+            {
+                int index = (int)eTag;
+                if (_rgFields[index]._fieldPresent != other._rgFields[index]._fieldPresent ||
+                    (_rgFields[index]._fieldPresent && _rgFields[index]._value != other._rgFields[index]._value))
+                    return false;
+            }
+
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 31;
+
+            for (EETypeOptionalFieldsElement eTag = 0; eTag < EETypeOptionalFieldsElement.Count; eTag++)
+            {
+                hash = hash * 486187739 + (int)GetFieldValue(eTag, 0);
+            }
+
+            return hash;
+        }
     }
 }

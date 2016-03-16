@@ -130,7 +130,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = result, source = value)
+                    fixed (char* dest = &result._firstChar, source = value)
                     {
                         wstrcpy(dest, source, value.Length);
                     }
@@ -173,7 +173,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = result, source = value)
+                    fixed (char* dest = &result._firstChar, source = value)
                     {
                         wstrcpy(dest, source + startIndex, length);
                     }
@@ -214,7 +214,7 @@ namespace System
                     return String.Empty;
 
                 String result = FastAllocateString(count);
-                fixed (char* dest = result)
+                fixed (char* dest = &result._firstChar)
                     wstrcpy(dest, ptr, count);
                 return result;
             }
@@ -264,7 +264,7 @@ namespace System
 
             try
             {
-                fixed (char* dest = result)
+                fixed (char* dest = &result._firstChar)
                     wstrcpy(dest, pFrom, length);
                 return result;
             }
@@ -296,7 +296,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = result)
+                    fixed (char* dest = &result._firstChar)
                     {
                         uint cc = (uint)((c << 16) | c);
                         uint* dmem = (uint*)dest;
@@ -523,7 +523,7 @@ namespace System
             }
 
             // Set up the loop variables.
-            fixed (char* pStrA = strA, pStrB = strB)
+            fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)
             {
                 char* strAChars = pStrA + indexA;
                 char* strBChars = pStrB + indexB;
@@ -688,19 +688,23 @@ namespace System
                 char* a = ap;
                 char* b = bp;
 
-                // unroll the loop
 #if BIT64
+                // Single int read aligns pointers for the following long reads
+                // PERF: No length check needed as there is always an int32 worth of string allocated
+                //       This read can also include the null terminator which both strings will have
+                if (*(int*)a != *(int*)b) return false;
+                length -= 2; a += 2; b += 2;
+
                 // for 64-bit platforms we unroll by 12 and
                 // check 3 qword at a time. This is less code
                 // than the 32 bit case and is a shorter path length
-                // Reads are unaligned
 
                 while (length >= 12)
                 {
                     if (*(long*)a != *(long*)b) return false;
                     if (*(long*)(a + 4) != *(long*)(b + 4)) return false;
                     if (*(long*)(a + 8) != *(long*)(b + 8)) return false;
-                    a += 12; b += 12; length -= 12;
+                    length -= 12; a += 12; b += 12;
                 }
 #else
                 while (length >= 10)
@@ -710,7 +714,7 @@ namespace System
                     if (*(int*)(a + 4) != *(int*)(b + 4)) return false;
                     if (*(int*)(a + 6) != *(int*)(b + 6)) return false;
                     if (*(int*)(a + 8) != *(int*)(b + 8)) return false;
-                    a += 10; b += 10; length -= 10;
+                    length -= 10; a += 10; b += 10;
                 }
 #endif
 
@@ -721,10 +725,65 @@ namespace System
                 while (length > 0)
                 {
                     if (*(int*)a != *(int*)b) break;
-                    a += 2; b += 2; length -= 2;
+                    length -= 2; a += 2; b += 2;
                 }
 
                 return (length <= 0);
+            }
+        }
+
+        private unsafe static bool StartsWithOrdinalHelper(String str, String startsWith)
+        {
+            Debug.Assert(str != null);
+            Debug.Assert(startsWith != null);
+            Debug.Assert(str.Length >= startsWith.Length);
+
+            int length = startsWith.Length;
+
+            fixed (char* ap = &str._firstChar) fixed (char* bp = &startsWith._firstChar)
+            {
+                char* a = ap;
+                char* b = bp;
+
+#if BIT64
+                // Single int read aligns pointers for the following long reads
+                // No length check needed as this method is called when length >= 2
+                Debug.Assert(length >= 2);
+                if (*(int*)a != *(int*)b) goto ReturnFalse;
+                length -= 2; a += 2; b += 2;
+
+                while (length >= 12)
+                {
+                    if (*(long*)a != *(long*)b) goto ReturnFalse;
+                    if (*(long*)(a + 4) != *(long*)(b + 4)) goto ReturnFalse;
+                    if (*(long*)(a + 8) != *(long*)(b + 8)) goto ReturnFalse;
+                    length -= 12; a += 12; b += 12;
+                }
+#else
+                while (length >= 10)
+                {
+                    if (*(int*)a != *(int*)b) goto ReturnFalse;
+                    if (*(int*)(a + 2) != *(int*)(b + 2)) goto ReturnFalse;
+                    if (*(int*)(a + 4) != *(int*)(b + 4)) goto ReturnFalse;
+                    if (*(int*)(a + 6) != *(int*)(b + 6)) goto ReturnFalse;
+                    if (*(int*)(a + 8) != *(int*)(b + 8)) goto ReturnFalse;
+                    length -= 10; a += 10; b += 10;
+                }
+#endif
+
+                while (length >= 2)
+                {
+                    if (*(int*)a != *(int*)b) goto ReturnFalse;
+                    length -= 2; a += 2; b += 2;
+                }
+
+                // PERF: This depends on the fact that the String objects are always zero terminated 
+                // and that the terminating zero is not included in the length. For even string sizes
+                // this compare can include the zero terminator. Bitwise OR avoids a branch.
+                return length == 0 | *a == *b;
+
+                ReturnFalse:
+                return false;
             }
         }
 
@@ -770,9 +829,9 @@ namespace System
                         diffOffset = 8;
                         break;
                     }
+                    length -= 10;
                     a += 10;
                     b += 10;
-                    length -= 10;
                 }
 
                 if (diffOffset != -1)
@@ -800,9 +859,9 @@ namespace System
                     {
                         break;
                     }
+                    length -= 2;
                     a += 2;
                     b += 2;
-                    length -= 2;
                 }
 
                 if (length > 0)
@@ -1095,7 +1154,7 @@ namespace System
         {
             unsafe
             {
-                fixed (char* src = this)
+                fixed (char* src = &_firstChar)
                 {
 #if BIT64
                     int hash1 = 5381;
@@ -1212,7 +1271,7 @@ namespace System
             }
 
             int[] sepList = new int[Length];
-            int numReplaces = MakeSeparatorList(separator, ref sepList);
+            int numReplaces = MakeSeparatorList(separator, sepList);
 
             // Handle the special case of no replaces.
             if (0 == numReplaces)
@@ -1267,7 +1326,7 @@ namespace System
 
             int[] sepList = new int[Length];
             int[] lengthList = new int[Length];
-            int numReplaces = MakeSeparatorList(separator, ref sepList, ref lengthList);
+            int numReplaces = MakeSeparatorList(separator, sepList, lengthList);
 
             //Handle the special case of no replaces.
             if (0 == numReplaces)
@@ -1379,7 +1438,7 @@ namespace System
         // Args: separator  -- A string containing all of the split characters.
         //       sepList    -- an array of ints for split char indicies.
         //--------------------------------------------------------------------    
-        private unsafe int MakeSeparatorList(char[] separator, ref int[] sepList)
+        private unsafe int MakeSeparatorList(char[] separator, int[] sepList)
         {
             int foundCount = 0;
 
@@ -1428,7 +1487,7 @@ namespace System
         //       sepList    -- an array of ints for split string indicies.
         //       lengthList -- an array of ints for split string lengths.
         //--------------------------------------------------------------------    
-        private unsafe int MakeSeparatorList(String[] separators, ref int[] sepList, ref int[] lengthList)
+        private unsafe int MakeSeparatorList(String[] separators, int[] sepList, int[] lengthList)
         {
             int foundCount = 0;
             int sepListCount = sepList.Length;
@@ -1590,7 +1649,7 @@ namespace System
                 // We allocate one extra char as an interop convenience so that our strings are null-
                 // terminated, however, we don't pass the extra +1 to the array allocation because the base
                 // size of this object includes the _firstChar field.
-                string newStr = RuntimeImports.RhNewArrayAsString(String.Empty.EETypePtr, length);
+                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.EETypePtrOf<string>(), length);
                 Debug.Assert(newStr._stringLength == length);
                 return newStr;
             }
@@ -1839,7 +1898,7 @@ namespace System
         // if this is equal to value, or a value greater than 0 if this is greater than value.
         //
 
-        private int CompareTo(Object value)
+        int IComparable.CompareTo(Object value)
         {
             if (value == null)
             {
@@ -1852,11 +1911,6 @@ namespace System
             }
 
             return String.Compare(this, (String)value, StringComparison.CurrentCulture);
-        }
-
-        int IComparable.CompareTo(Object value)
-        {
-            return this.CompareTo(value);
         }
 
         // Determines the sorting relation of StrB to the current instance.
@@ -2001,7 +2055,7 @@ namespace System
             if (count < 0 || count > Length - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
                 for (int i = 0; i < count; i++)
@@ -2035,7 +2089,7 @@ namespace System
                 throw new ArgumentNullException("anyOf");
 
             if (startIndex < 0 || startIndex > Length)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_Index);
 
             if (count < 0 || count > Length - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
@@ -2044,7 +2098,7 @@ namespace System
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
             InitializeProbabilisticMap(charMap, anyOf);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
                 for (int i = 0; i < count; i++)
@@ -2214,7 +2268,7 @@ namespace System
             if (count < 0 || count - 1 > startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_Count);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
                 //We search [startIndex..EndIndex]
@@ -2267,7 +2321,7 @@ namespace System
             uint* charMap = stackalloc uint[PROBABILISTICMAP_SIZE];
             InitializeProbabilisticMap(charMap, anyOf);
 
-            fixed (char* pChars = this)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
 
@@ -2472,7 +2526,7 @@ namespace System
                     }
                     return (value.Length == 1) ?
                             true :                 // First char is the same and thats all there is to compare  
-                            (nativeCompareOrdinalEx(this, 0, value, 0, value.Length) == 0);
+                            StartsWithOrdinalHelper(this, value);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if (this.Length < value.Length)
@@ -2629,6 +2683,12 @@ namespace System
 
             int oldLength = Length;
             int insertLength = value.Length;
+            
+            if (oldLength == 0)
+                return value;
+            if (insertLength == 0)
+                return this;
+            
             int newLength = oldLength + insertLength;
             if (newLength < 0)
                 throw new OutOfMemoryException();
@@ -2653,43 +2713,68 @@ namespace System
 
         // Replaces all instances of oldChar with newChar.
         //
-        private unsafe String ReplaceInternal(char oldChar, char newChar)
-        {
-            int firstFoundIndex = -1;
-
-            fixed (char* pChars = this)
-            {
-                for (int i = 0; i < Length; i++)
-                {
-                    if (oldChar == pChars[i])
-                    {
-                        firstFoundIndex = i;
-                        break;
-                    }
-                }
-            }
-
-            if (-1 == firstFoundIndex)
-                return this;
-
-            char[] newChars = new char[Length];
-
-            fixed (char* pChars = this)
-            {
-                //Copy the characters, doing the replacement as we go.
-                for (int i = 0; i < firstFoundIndex; i++)
-                    newChars[i] = pChars[i];
-
-                for (int i = firstFoundIndex; i < Length; i++)
-                    newChars[i] = (pChars[i] == oldChar) ? newChar : pChars[i];
-            }
-
-            return new string(newChars);
-        }
-
         public String Replace(char oldChar, char newChar)
         {
-            return ReplaceInternal(oldChar, newChar);
+            if (oldChar == newChar)
+                return this;
+
+            unsafe
+            {
+                int remainingLength = Length;
+
+                fixed (char* pChars = &_firstChar)
+                {
+                    char* pSrc = pChars;
+
+                    while (remainingLength > 0)
+                    {
+                        if (*pSrc == oldChar)
+                        {
+                            break;
+                        }
+
+                        remainingLength--;
+                        pSrc++;
+                    }
+                }
+
+                if (remainingLength == 0)
+                    return this;
+
+                String result = FastAllocateString(Length);
+
+                fixed (char* pChars = &_firstChar)
+                {
+                    fixed (char* pResult = &result._firstChar)
+                    {
+                        int copyLength = Length - remainingLength;
+
+                        //Copy the characters already proven not to match.
+                        if (copyLength > 0)
+                        {
+                            wstrcpy(pResult, pChars, copyLength);
+                        }
+
+                        //Copy the remaining characters, doing the replacement as we go.
+                        char* pSrc = pChars + copyLength;
+                        char* pDst = pResult + copyLength;
+
+                        do
+                        {
+                            char currentChar = *pSrc;
+                            if (currentChar == oldChar)
+                                currentChar = newChar;
+                            *pDst = currentChar;
+
+                            remainingLength--;
+                            pSrc++;
+                            pDst++;
+                        } while (remainingLength > 0);
+                    }
+                }
+
+                return result;
+            }
         }
 
         public String Replace(String oldValue, String newValue)
@@ -2706,9 +2791,9 @@ namespace System
 
                 int numOccurrences = 0;
                 int[] replacementIndices = new int[this.Length];
-                fixed (char* pThis = this)
+                fixed (char* pThis = &_firstChar)
                 {
-                    fixed (char* pOldValue = oldValue)
+                    fixed (char* pOldValue = &oldValue._firstChar)
                     {
                         int idx = 0;
                         int lastPossibleMatchIdx = this.Length - oldValue.Length;
@@ -2749,11 +2834,11 @@ namespace System
 
                 int dstLength = checked(this.Length + (newValue.Length - oldValue.Length) * numOccurrences);
                 String dst = FastAllocateString(dstLength);
-                fixed (char* pThis = this)
+                fixed (char* pThis = &_firstChar)
                 {
-                    fixed (char* pDst = dst)
+                    fixed (char* pDst = &dst._firstChar)
                     {
-                        fixed (char* pNewValue = newValue)
+                        fixed (char* pNewValue = &newValue._firstChar)
                         {
                             int dstIdx = 0;
                             int thisIdx = 0;
@@ -2804,7 +2889,13 @@ namespace System
             int oldLength = this.Length;
             if (count > oldLength - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_IndexCount);
+            
+            if (count == 0)
+                return this;
             int newLength = oldLength - count;
+            if (newLength == 0)
+                return string.Empty;
+            
             String result = FastAllocateString(newLength);
             unsafe
             {
@@ -3041,24 +3132,19 @@ namespace System
 
         public static String Concat(String str0, String str1, String str2)
         {
-            if (str0 == null && str1 == null && str2 == null)
+            if (IsNullOrEmpty(str0))
             {
-                return String.Empty;
+                return Concat(str1, str2);
             }
 
-            if (str0 == null)
+            if (IsNullOrEmpty(str1))
             {
-                str0 = String.Empty;
+                return Concat(str0, str2);
             }
 
-            if (str1 == null)
+            if (IsNullOrEmpty(str2))
             {
-                str1 = String.Empty;
-            }
-
-            if (str2 == null)
-            {
-                str2 = String.Empty;
+                return Concat(str0, str1);
             }
 
             int totalLength = str0.Length + str1.Length + str2.Length;
@@ -3073,29 +3159,24 @@ namespace System
 
         public static String Concat(String str0, String str1, String str2, String str3)
         {
-            if (str0 == null && str1 == null && str2 == null && str3 == null)
+            if (IsNullOrEmpty(str0))
             {
-                return String.Empty;
+                return Concat(str1, str2, str3);
             }
 
-            if (str0 == null)
+            if (IsNullOrEmpty(str1))
             {
-                str0 = String.Empty;
+                return Concat(str0, str2, str3);
             }
 
-            if (str1 == null)
+            if (IsNullOrEmpty(str2))
             {
-                str1 = String.Empty;
+                return Concat(str0, str1, str3);
             }
 
-            if (str2 == null)
+            if (IsNullOrEmpty(str3))
             {
-                str2 = String.Empty;
-            }
-
-            if (str3 == null)
-            {
-                str3 = String.Empty;
+                return Concat(str0, str1, str2);
             }
 
             int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;

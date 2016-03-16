@@ -64,7 +64,13 @@ namespace Internal.TypeSystem
         /// If true, this is the special &lt;Module&gt; type that contains the definitions
         /// of global fields and methods in the module.
         /// </summary>
-        public abstract bool IsModuleType { get; }
+        public bool IsModuleType
+        {
+            get
+            {
+                return Module.GetGlobalModuleType() == this;
+            }
+        }
 
         /// <summary>
         /// Gets the module that defines this type.

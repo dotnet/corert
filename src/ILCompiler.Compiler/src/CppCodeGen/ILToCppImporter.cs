@@ -6,33 +6,18 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 
 using Internal.TypeSystem;
-using Internal.IL.Stubs;
 
 using ILCompiler;
+using ILCompiler.Compiler.CppCodeGen;
 using ILCompiler.CppCodeGen;
+using ILCompiler.SymbolReader;
 
 using ILCompiler.DependencyAnalysis;
 
 namespace Internal.IL
 {
-    public struct ILSequencePoint
-    {
-        public int Offset;
-        public string Document;
-        public int LineNumber;
-        // TODO: The remaining info
-    }
-
-    public struct ILLocalVariable
-    {
-        public int Slot;
-        public string Name;
-        public bool CompilerGenerated;
-    }
-
     internal partial class ILImporter
     {
         private Compilation _compilation;
@@ -88,7 +73,7 @@ namespace Internal.IL
         private Prefix _pendingPrefix;
         private TypeDesc _constrained;
 
-        private StringBuilder _builder = new StringBuilder();
+        private CppGenerationBuffer _builder = new CppGenerationBuffer();
         private ArrayBuilder<object> _dependencies = new ArrayBuilder<object>();
 
         private class BasicBlock
@@ -287,15 +272,10 @@ namespace Internal.IL
             }
         }
 
-        private static string IntToString(int x)
-        {
-            return x.ToString(CultureInfo.InvariantCulture);
-        }
-
         private int _currentTemp = 1;
         private string NewTempName()
         {
-            return "_" + IntToString(_currentTemp++);
+            return "_" + (_currentTemp++).ToStringInvariant();
         }
 
         private void PushTemp(StackValueKind kind, TypeDesc type = null)
@@ -304,10 +284,12 @@ namespace Internal.IL
 
             Push(kind, new Value(temp), type);
 
-            _builder.Append(GetStackValueKindCPPTypeName(kind, type));
-            _builder.Append(" ");
-            _builder.Append(temp);
-            _builder.Append("=");
+            // Start declaration on a new line
+            AppendLine();
+            Append(GetStackValueKindCPPTypeName(kind, type));
+            Append(" ");
+            Append(temp);
+            Append(" = ");
         }
 
         private void AppendCastIfNecessary(TypeDesc destType, StackValueKind srcType)
@@ -342,22 +324,76 @@ namespace Internal.IL
             SpillSlot spillSlot = new SpillSlot();
             spillSlot.Kind = kind;
             spillSlot.Type = type;
-            spillSlot.Name = "_s" + IntToString(_spillSlots.Count);
+            spillSlot.Name = "_s" + _spillSlots.Count.ToStringInvariant();
 
             _spillSlots.Add(spillSlot);
 
             return new Value() { Name = spillSlot.Name };
         }
 
+        /// <summary>
+        /// If no sequence points are available, append an empty new line into 
+        /// <see cref="_builder"/> and the required number of tabs. Otherwise does nothing.
+        /// </summary>
+        private void AppendLine()
+        {
+            if (_sequencePoints != null)
+                return;
+            _builder.AppendLine();
+        }
+
+        /// <summary>
+        /// If no sequence points are available, append an empty new line into
+        /// <see cref="_builder"/> without emitting any indentation. Otherwise does nothing.
+        /// Useful to just skip a line.
+        /// </summary>
+        private void AppendEmptyLine()
+        {
+            if (_sequencePoints != null)
+                return;
+            _builder.AppendEmptyLine();
+        }
+
+        /// <summary>
+        /// Append an empty new line into <see cref="_builder"/> without emitting any indentation.
+        /// Useful to just skip a line.
+        /// </summary>
+        private void ForceAppendEmptyLine()
+        {
+            _builder.AppendEmptyLine();
+        }
+
+        /// <summary>
+        /// Append string <param name="s"/> to <see cref="_builder"/>.
+        /// </summary>
+        /// <param name="s">String value to print.</param>
         private void Append(string s)
         {
             _builder.Append(s);
         }
 
-        private void Finish()
+        /// <summary>
+        /// Append a semicolon to <see cref="_builder"/>.
+        /// </summary>
+        private void AppendSemicolon()
         {
-            // _builder.AppendLine(";");
-            _builder.Append("; ");
+            _builder.Append(";");
+        }
+
+        /// <summary>
+        /// Increase level of indentation by one in <see cref="_builder"/>.
+        /// </summary>
+        public void Indent()
+        {
+            _builder.Indent();
+        }
+
+        /// <summary>
+        /// Decrease level of indentation by one in <see cref="_builder"/>.
+        /// </summary>
+        private void Exdent()
+        {
+            _builder.Exdent();   
         }
 
         private string GetVarName(int index, bool argument)
@@ -372,7 +408,7 @@ namespace Internal.IL
                 return _writer.SanitizeCppVarName(_parameterIndexToNameMap[index]);
             }
 
-            return (argument ? "_a" : "_l") + IntToString(index);
+            return (argument ? "_a" : "_l") + index.ToStringInvariant();
         }
 
         private TypeDesc GetVarType(int index, bool argument)
@@ -418,21 +454,18 @@ namespace Internal.IL
             if (sequencePoint.Document == null)
                 return;
 
-            _builder.AppendLine();
-
+            ForceAppendEmptyLine();
             Append("#line ");
-            Append(IntToString(sequencePoint.LineNumber));
+            Append(sequencePoint.LineNumber.ToStringInvariant());
             Append(" \"");
             Append(sequencePoint.Document.Replace("\\", "\\\\"));
             Append("\"");
-
-            _builder.AppendLine();
+            ForceAppendEmptyLine();
         }
 
         private void EndImportingInstruction()
         {
-            if (_sequencePoints == null)
-                _builder.AppendLine();
+            // Nothing to do, formatting is properly done.
         }
 
         public void Compile(CppMethodCodeNode methodCodeNodeNeedingCode)
@@ -445,22 +478,24 @@ namespace Internal.IL
             {
                 var sequencePoint = _sequencePoints[0];
 
+                ForceAppendEmptyLine();
                 Append("#line ");
-                Append(IntToString(sequencePoint.LineNumber));
+                Append(sequencePoint.LineNumber.ToStringInvariant());
                 Append(" \"");
                 Append(sequencePoint.Document.Replace("\\", "\\\\"));
                 Append("\"");
-
-                _builder.AppendLine();
             }
 
+            ForceAppendEmptyLine();
             Append(_writer.GetCppMethodDeclaration(_method, true));
-
-            _builder.Append("{");
+            AppendLine();
+            Append("{");
+            Indent();
 
             bool initLocals = _methodIL.GetInitLocals();
             for (int i = 0; i < _locals.Length; i++)
             {
+                AppendLine();
                 Append(_writer.GetCppSignatureTypeName(_locals[i].Type));
                 Append(" ");
                 Append(GetVarName(i, false));
@@ -469,7 +504,8 @@ namespace Internal.IL
                     TypeDesc localType = _locals[i].Type;
                     if (localType.IsValueType && !localType.IsPrimitive && !localType.IsEnum)
                     {
-                        Finish();
+                        AppendSemicolon();
+                        AppendLine();
                         Append("memset(&");
                         Append(GetVarName(i, false));
                         Append(",0,sizeof(");
@@ -478,10 +514,10 @@ namespace Internal.IL
                     }
                     else
                     {
-                        Append("=0");
+                        Append(" = 0");
                     }
                 }
-                Finish();
+                AppendSemicolon();
             }
 
             if (_spillSlots != null)
@@ -489,10 +525,11 @@ namespace Internal.IL
                 for (int i = 0; i < _spillSlots.Count; i++)
                 {
                     SpillSlot spillSlot = _spillSlots[i];
+                    AppendLine();
                     Append(GetStackValueKindCPPTypeName(spillSlot.Kind, spillSlot.Type));
                     Append(" ");
                     Append(spillSlot.Name);
-                    Finish();
+                    AppendSemicolon();
                 }
             }
 
@@ -501,23 +538,31 @@ namespace Internal.IL
                 var r = _exceptionRegions[i];
                 if (r.ReturnLabels != 0)
                 {
-                    _builder.Append("int __finallyReturn");
-                    _builder.Append(IntToString(i));
-                    _builder.Append("=0;");
+                    AppendLine();
+                    Append("int __finallyReturn");
+                    Append(i.ToStringInvariant());
+                    Append(" = 0");
+                    AppendSemicolon();
                 }
             }
 
+            // Temporary the indentation while printing blocks.
+            // We want block to start on the first character of the line
+            Exdent();
             for (int i = 0; i < _basicBlocks.Length; i++)
             {
                 BasicBlock basicBlock = _basicBlocks[i];
                 if (basicBlock != null)
                 {
-                    _builder.Append("_bb");
-                    _builder.Append(IntToString(i));
-                    _builder.AppendLine(": {");
-                    _builder.Append(basicBlock.Code);
-                    // _builder.AppendLine("}");
-                    _builder.Append("} ");
+                    AppendEmptyLine();
+                    AppendLine();
+                    Append("_bb");
+                    Append(i.ToStringInvariant());
+                    Append(": {");
+                    ForceAppendEmptyLine();
+                    Append(basicBlock.Code);
+                    AppendLine();
+                    Append("}");
                 }
             }
 
@@ -526,24 +571,42 @@ namespace Internal.IL
                 var r = _exceptionRegions[i];
                 if (r.ReturnLabels != 0)
                 {
-                    _builder.AppendLine("__endFinally" + IntToString(i) + ": switch(__finallyReturn" + IntToString(i) + ") {");
+                    AppendEmptyLine();
+                    AppendLine();
+                    Append("__endFinally" + i.ToStringInvariant() + ":");
+                    Indent();
+                    AppendLine();
+                    Append("switch(__finallyReturn" + i.ToStringInvariant() + ") {");
+                    Indent();
                     for (int j = 1; j <= r.ReturnLabels; j++)
-                        _builder.AppendLine("case " + IntToString(j) + ": goto __returnFromFinally" + IntToString(i) + "_" + IntToString(j) + ";");
-                    _builder.AppendLine("default: " + (_msvc ? "__assume(0)" : "__builtin_unreachable()") + "; }");
+                    {
+                        AppendLine();
+                        Append("case " + j.ToStringInvariant() + ": goto __returnFromFinally" + i.ToStringInvariant() +
+                                            "_" + j.ToStringInvariant() + ";");
+                    }
+                    AppendLine();
+                    Append("default: " + (_msvc ? "__assume(0)" : "__builtin_unreachable()") + ";");
+                    Exdent();
+                    AppendLine();
+                    Append("}");
+                    Exdent();
                 }
             }
 
-            _builder.AppendLine("}");
+            AppendEmptyLine();
+            Append("}");
 
             methodCodeNodeNeedingCode.SetCode(_builder.ToString(), _dependencies.ToArray());
         }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            Indent();
         }
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
         {
+            Exdent();
             basicBlock.Code = _builder.ToString();
             _builder.Clear();
         }
@@ -568,7 +631,7 @@ namespace Internal.IL
             PushTemp(kind, type);
             AppendCastIfNecessary(kind, type);
             Append(name);
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportStoreVar(int index, bool argument)
@@ -577,12 +640,13 @@ namespace Internal.IL
 
             string name = GetVarName(index, argument);
 
+            AppendLine();
             Append(name);
-            Append("=");
+            Append(" = ");
             TypeDesc type = GetVarType(index, argument);
             AppendCastIfNecessary(type, value.Kind);
             Append(value.Value.Name);
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportAddressOfVar(int index, bool argument)
@@ -597,7 +661,7 @@ namespace Internal.IL
             AppendCastIfNecessary(StackValueKind.ByRef, type);
             Append("&");
             Append(name);
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportDup()
@@ -619,21 +683,18 @@ namespace Internal.IL
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
-            if (type.IsInterface || type.IsArray)
-                throw new NotImplementedException();
-
             var value = Pop();
             PushTemp(StackValueKind.ObjRef, type);
 
             AddTypeReference(type, false);
 
-            Append(opcode == ILOpcode.isinst ? "__isinst_class" : "__castclass_class");
+            Append(opcode == ILOpcode.isinst ? "__isinst" : "__castclass");
             Append("(");
             Append(value.Value.Name);
             Append(", ");
             Append(_writer.GetCppTypeName(type));
             Append("::__getMethodTable())");
-            Finish();
+            AppendSemicolon();
         }
 
         private static bool IsTypeName(MethodDesc method, string typeNamespace, string typeName)
@@ -661,28 +722,56 @@ namespace Internal.IL
 
                         // TODO: Need to do more for arches with different endianness?
                         var preinitDataHolder = NewTempName();
-                        Append("static const char ");
+                        AppendLine();
+                        Append("static const unsigned char ");
                         Append(preinitDataHolder);
                         Append("[] = { ");
 
+                        // Format arrays to have 16 entries per line or less.
+                        if (memBlock.Length > 16)
+                        {
+                            Indent();
+                            AppendLine();
+                        }
                         for (int i = 0; i < memBlock.Length; i++)
                         {
                             if (i != 0)
+                            {
                                 Append(", ");
-                            Append(String.Format(CultureInfo.InvariantCulture, "0x{0:X}", memBlock[i]));
+                                if ((i % 16) == 0)
+                                    AppendLine();
+                            }
+                            Append("0x");
+                            Append(memBlock[i].ToStringInvariant("x2"));
                         }
-                        Append(" }");
-                        Finish();
+                        if (memBlock.Length > 16)
+                        {
+                            Exdent();
+                            AppendLine();
+                        }
+                        Append("}");
+                        AppendSemicolon();
 
+                        AppendLine();
                         Append("memcpy((char*)");
                         Append(arraySlot.Value.Name);
                         Append(" + ARRAY_BASE, ");
                         Append(preinitDataHolder);
                         Append(", ");
-                        Append(IntToString(memBlock.Length));
+                        Append(memBlock.Length.ToStringInvariant());
                         Append(")");
 
-                        Finish();
+                        AppendSemicolon();
+                        return true;
+                    }
+                    break;
+                case "GetValueInternal":
+                    if (IsTypeName(method, "System", "RuntimeTypeHandle"))
+                    {
+                        StackValue typeHandleSlot = Pop();
+                        TypeDesc typeOfEEType = (TypeDesc)typeHandleSlot.Value.Aux;
+                        Push(StackValueKind.NativeInt, new Value(
+                            String.Concat("((intptr_t)", _writer.GetCppTypeName(typeOfEEType), "::__getMethodTable())")));
                         return true;
                     }
                     break;
@@ -715,8 +804,13 @@ namespace Internal.IL
                     _pendingPrefix &= ~Prefix.Constrained;
                     constrained = _constrained;
 
-                    // TODO:
-                    throw new NotImplementedException();
+                    bool forceUseRuntimeLookup;
+                    MethodDesc directMethod = constrained.GetClosestMetadataType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                    if (directMethod == null || forceUseRuntimeLookup)
+                        throw new NotImplementedException();
+
+                    method = directMethod;
+                    opcode = ILOpcode.call;
                 }
             }
 
@@ -800,22 +894,25 @@ namespace Internal.IL
 
             string temp = null;
             StackValueKind retKind = StackValueKind.Unknown;
+            var needNewLine = false;
 
             if (!retType.IsVoid)
             {
                 retKind = GetStackValueKind(retType);
                 temp = NewTempName();
 
+                AppendLine();
                 Append(GetStackValueKindCPPTypeName(retKind, retType));
                 Append(" ");
                 Append(temp);
                 if (retType.IsValueType && opcode == ILOpcode.newobj)
                 {
                     Append(";");
+                    needNewLine = true;
                 }
                 else
                 {
-                    Append("=");
+                    Append(" = ");
 
                     if (retType.IsPointer)
                     {
@@ -823,15 +920,23 @@ namespace Internal.IL
                     }
                 }
             }
+            else
+            {
+                needNewLine = true;
+            }
 
             if (opcode == ILOpcode.newobj && !mdArrayCreate)
             {
                 if (!retType.IsValueType)
                 {
+                    // We do not reset needNewLine since we still need for the next statement.
+                    if (needNewLine)
+                        AppendLine();
                     Append("__allocate_object(");
                     Append(_writer.GetCppTypeName(retType));
                     Append("::__getMethodTable())");
-                    Finish();
+                    AppendSemicolon();
+                    needNewLine = true;
 
                     if (delegateInfo != null && delegateInfo.ShuffleThunk != null)
                     {
@@ -839,7 +944,8 @@ namespace Internal.IL
 
                         _stack[_stackTop - 2].Value.Name = temp;
 
-                        StringBuilder sb = new StringBuilder();
+                        var sb = new CppGenerationBuffer();
+                        AppendLine();
                         sb.Append("(intptr_t)&");
                         sb.Append(_writer.GetCppTypeName(delegateInfo.ShuffleThunk.OwningType));
                         sb.Append("::");
@@ -849,6 +955,9 @@ namespace Internal.IL
                     }
                 }
             }
+
+            if (needNewLine)
+                AppendLine();
 
             if (callViaSlot || delegateInvoke)
             {
@@ -885,7 +994,7 @@ namespace Internal.IL
             {
                 Append(_writer.GetCppTypeName(method.OwningType));
                 Append("::__getMethodTable(), ");
-                Append(IntToString(((ArrayType)method.OwningType).Rank));
+                Append(((ArrayType)method.OwningType).Rank.ToStringInvariant());
                 Append(", ");
             }
             else if (opcode == ILOpcode.newobj)
@@ -920,7 +1029,7 @@ namespace Internal.IL
 
             if (temp != null)
                 Push(retKind, new Value(temp), retType);
-            Finish();
+            AppendSemicolon();
         }
 
         private void PassCallArguments(MethodSignature methodSignature, TypeDesc thisArgument)
@@ -960,7 +1069,7 @@ namespace Internal.IL
                     thisArgument = thisArgument.MakeByRefType();
             }
 
-            string typeDefName = "__calli__" + token.ToString("x8", CultureInfo.InvariantCulture);
+            string typeDefName = "__calli__" + token.ToStringInvariant("x8");
             _writer.AppendSignatureTypeDef(_builder, typeDefName, methodSignature, thisArgument);
 
             TypeDesc retType = methodSignature.ReturnType;
@@ -973,15 +1082,20 @@ namespace Internal.IL
                 retKind = GetStackValueKind(retType);
                 temp = NewTempName();
 
+                AppendLine();
                 Append(GetStackValueKindCPPTypeName(retKind, retType));
                 Append(" ");
                 Append(temp);
-                Append("=");
+                Append(" = ");
 
                 if (retType.IsPointer)
                 {
                     Append("(intptr_t)");
                 }
+            }
+            else
+            {
+                AppendLine();
             }
 
             var fnPtrValue = Pop();
@@ -996,7 +1110,7 @@ namespace Internal.IL
             if (temp != null)
                 Push(retKind, new Value(temp), retType);
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
@@ -1019,7 +1133,7 @@ namespace Internal.IL
 
             _stack[_stackTop - 1].Value.Aux = method;
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportLoadInt(long value, StackValueKind kind)
@@ -1030,14 +1144,14 @@ namespace Internal.IL
                 if (value == Int64.MinValue)
                     val = "(int64_t)(0x8000000000000000" + (_msvc ? "i64" : "LL") + ")";
                 else
-                    val = value.ToString(CultureInfo.InvariantCulture) + (_msvc ? "i64" : "LL");
+                    val = value.ToStringInvariant() + (_msvc ? "i64" : "LL");
             }
             else
             {
                 if (value == Int32.MinValue)
                     val = "(int32_t)(0x80000000)";
                 else
-                    val = ((int)value).ToString(CultureInfo.InvariantCulture);
+                    val = ((int)value).ToStringInvariant();
             }
 
             Push(kind, new Value(val));
@@ -1046,7 +1160,10 @@ namespace Internal.IL
         private void ImportLoadFloat(double value)
         {
             // TODO: Handle infinity, NaN, etc.
-            string val = value.ToString();
+            if (Double.IsNaN(value) || Double.IsInfinity(value) || Double.IsPositiveInfinity(value) || Double.IsNegativeInfinity(value))
+                throw new NotImplementedException();
+
+            string val = value.ToStringInvariant();
             Push(StackValueKind.Float, new Value(val));
         }
 
@@ -1058,6 +1175,7 @@ namespace Internal.IL
         private void ImportReturn()
         {
             var returnType = _methodSignature.ReturnType;
+            AppendLine();
             if (returnType.IsVoid)
             {
                 Append("return");
@@ -1069,7 +1187,7 @@ namespace Internal.IL
                 AppendCastIfNecessary(returnType, value.Kind);
                 Append(value.Value.Name);
             }
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportFallthrough(BasicBlock next)
@@ -1110,10 +1228,11 @@ namespace Internal.IL
 
             for (int i = 0; i < entryStack.Length; i++)
             {
+                AppendLine();
                 Append(entryStack[i].Value.Name);
-                Append("=");
+                Append(" = ");
                 Append(_stack[i].Value.Name);
-                Finish();
+                AppendSemicolon();
             }
 
             MarkBasicBlock(next);
@@ -1123,23 +1242,31 @@ namespace Internal.IL
         {
             var op = Pop();
 
+            AppendLine();
             Append("switch (");
             Append(op.Value.Name);
-            Append(") { ");
+            Append(") {");
+            Indent();
 
 
             for (int i = 0; i < jmpDelta.Length; i++)
             {
                 BasicBlock target = _basicBlocks[jmpBase + jmpDelta[i]];
-
+                AppendLine();
                 Append("case " + i + ": ");
+                Indent();
                 ImportFallthrough(target);
+                AppendLine();
                 Append("goto _bb");
-                Append(IntToString(target.StartOffset));
-                Append("; break; ");
+                Append(target.StartOffset.ToStringInvariant());
+                AppendSemicolon();
+                AppendLine();
+                Append("break; ");
+                Exdent();
             }
+            Exdent();
+            AppendLine();
             Append("}");
-            Finish();
 
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
@@ -1147,6 +1274,7 @@ namespace Internal.IL
 
         private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
+            AppendLine();
             if (opcode != ILOpcode.br)
             {
                 Append("if (");
@@ -1154,7 +1282,7 @@ namespace Internal.IL
                 {
                     var op = Pop();
                     Append(op.Value.Name);
-                    Append((opcode == ILOpcode.brtrue) ? "!=0" : "==0");
+                    Append((opcode == ILOpcode.brtrue) ? " != 0" : " == 0");
                 }
                 else
                 {
@@ -1248,7 +1376,9 @@ namespace Internal.IL
                         Append(")");
                     }
                     Append(op2.Value.Name);
+                    Append(" ");
                     Append(op);
+                    Append(" ");
                     if (unsigned)
                     {
                         Append("(u");
@@ -1263,13 +1393,16 @@ namespace Internal.IL
                 }
                 Append(") ");
             }
-
-            Append("{ ");
+            Append("{");
+            Indent();
             ImportFallthrough(target);
+            AppendLine();
             Append("goto _bb");
-            Append(IntToString(target.StartOffset));
-            Append("; }");
-            Finish();
+            Append(target.StartOffset.ToStringInvariant());
+            AppendSemicolon();
+            Exdent();
+            AppendLine();
+            Append("}");
 
             if (fallthrough != null)
                 ImportFallthrough(fallthrough);
@@ -1338,7 +1471,9 @@ namespace Internal.IL
                 Append(")");
             }
             Append(op2.Value.Name);
+            Append(" ");
             Append(op);
+            Append(" ");
             if (unsigned)
             {
                 Append("(u");
@@ -1347,7 +1482,7 @@ namespace Internal.IL
             }
             Append(op1.Value.Name);
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportShiftOperation(ILOpcode opcode)
@@ -1365,10 +1500,10 @@ namespace Internal.IL
             }
             Append(op.Value.Name);
 
-            Append((opcode == ILOpcode.shl) ? "<<" : ">>");
+            Append((opcode == ILOpcode.shl) ? " << " : " >> ");
 
             Append(shiftAmount.Value.Name);
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportCompareOperation(ILOpcode opcode)
@@ -1438,7 +1573,9 @@ namespace Internal.IL
                 Append(")");
             }
             Append(op2.Value.Name);
+            Append(" ");
             Append(op);
+            Append(" ");
             if (unsigned)
             {
                 Append("(u");
@@ -1450,7 +1587,7 @@ namespace Internal.IL
             {
                 Append(")");
             }
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
@@ -1464,7 +1601,7 @@ namespace Internal.IL
             Append(_writer.GetCppSignatureTypeName(type));
             Append(")");
             Append(op.Value.Name);
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportLoadField(int token, bool isStatic)
@@ -1512,9 +1649,12 @@ namespace Internal.IL
                 Append(thisPtr.Value.Name);
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
+
+                // TODO: Remove
+                _writer.GetCppSignatureTypeName(owningType);
             }
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportAddressOfField(int token, bool isStatic)
@@ -1563,9 +1703,12 @@ namespace Internal.IL
                 Append(thisPtr.Value.Name);
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
+
+                // TODO: Remove
+                _writer.GetCppSignatureTypeName(owningType);
             }
 
-            Finish();
+            AppendSemicolon();
         }
 
 
@@ -1590,6 +1733,7 @@ namespace Internal.IL
 
             // TODO: Write barrier as necessary!!!
 
+            AppendLine();
             if (field.IsStatic)
             {
                 if (!fieldType.IsValueType)
@@ -1598,8 +1742,7 @@ namespace Internal.IL
                     Append("__statics.");
                 Append(_writer.GetCppStaticFieldName(field));
             }
-            else
-            if (thisPtr.Kind == StackValueKind.ValueType)
+            else if (thisPtr.Kind == StackValueKind.ValueType)
             {
                 throw new NotImplementedException();
             }
@@ -1611,8 +1754,11 @@ namespace Internal.IL
                 Append(thisPtr.Value.Name);
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
+
+                // TODO: Remove
+                _writer.GetCppSignatureTypeName(owningType);
             }
-            Append("=");
+            Append(" = ");
             if (!fieldType.IsValueType)
             {
                 Append("(");
@@ -1620,8 +1766,7 @@ namespace Internal.IL
                 Append(")");
             }
             Append(value.Value.Name);
-
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportLoadIndirect(int token)
@@ -1643,7 +1788,7 @@ namespace Internal.IL
             Append("*)");
             Append(addr.Value.Name);
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportStoreIndirect(int token)
@@ -1661,25 +1806,26 @@ namespace Internal.IL
 
             // TODO: Write barrier as necessary!!!
 
+            AppendLine();
             Append("*(");
             Append(_writer.GetCppSignatureTypeName(type));
             Append("*)");
             Append(addr.Value.Name);
-            Append("=");
+            Append(" = ");
             AppendCastIfNecessary(type, value.Kind);
             Append(value.Value.Name);
-
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportThrow()
         {
             var obj = Pop();
 
+            AppendLine();
             Append("__throw_exception(");
             Append(obj.Value.Name);
             Append(")");
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportLoadString(int token)
@@ -1688,7 +1834,7 @@ namespace Internal.IL
 
             PushTemp(StackValueKind.ObjRef, GetWellKnownType(WellKnownType.String));
 
-            StringBuilder escaped = new StringBuilder();
+            var escaped = new CppGenerationBuffer();
             foreach (char c in str)
             {
                 switch (c)
@@ -1715,7 +1861,7 @@ namespace Internal.IL
             Append("__load_string_literal(\"");
             Append(escaped.ToString());
             Append("\")");
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportInitObj(int token)
@@ -1723,12 +1869,13 @@ namespace Internal.IL
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
             var addr = Pop();
+            AppendLine();
             Append("memset((void*)");
             Append(addr.Value.Name);
             Append(",0,sizeof(");
             Append(_writer.GetCppSignatureTypeName(type));
             Append("))");
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportBox(int token)
@@ -1749,13 +1896,14 @@ namespace Internal.IL
                 Append("__allocate_object(");
                 Append(_writer.GetCppTypeName(type));
                 Append("::__getMethodTable())");
-                Finish();
+                AppendSemicolon();
 
                 string typeName = GetStackValueKindCPPTypeName(GetStackValueKind(type), type);
 
                 // TODO: Write barrier as necessary
+                AppendLine();
                 Append("*(" + typeName + " *)((void **)" + _stack[_stackTop - 1].Value.Name + "+1) = " + value.Value.Name);
-                Finish();
+                AppendSemicolon();
             }
         }
 
@@ -1767,7 +1915,7 @@ namespace Internal.IL
         private static string AddReturnLabel(ExceptionRegion r)
         {
             r.ReturnLabels++;
-            return IntToString(r.ReturnLabels);
+            return r.ReturnLabels.ToStringInvariant();
         }
 
         private void ImportLeave(BasicBlock target)
@@ -1777,7 +1925,12 @@ namespace Internal.IL
 
             // Close the scope and open a new one so that we don't put a goto label in the middle
             // of a scope.
-            Append("} {");
+            Exdent();
+            AppendLine();
+            Append("}");
+            AppendLine();
+            Append("{");
+            Indent();
 
             for (int i = 0; i < _exceptionRegions.Length; i++)
             {
@@ -1789,30 +1942,34 @@ namespace Internal.IL
                 {
                     string returnLabel = AddReturnLabel(r);
 
+                    AppendLine();
                     Append("__finallyReturn");
-                    Append(IntToString(i));
-                    Append("=");
+                    Append(i.ToStringInvariant());
+                    Append(" = ");
                     Append(returnLabel);
-                    Finish();
+                    AppendSemicolon();
 
+                    AppendLine();
                     Append("goto _bb");
-                    Append(IntToString(r.ILRegion.HandlerOffset));
-                    Finish();
+                    Append(r.ILRegion.HandlerOffset.ToStringInvariant());
+                    AppendSemicolon();
 
+                    AppendEmptyLine();
                     Append("__returnFromFinally");
-                    Append(IntToString(i));
+                    Append(i.ToStringInvariant());
                     Append("_");
                     Append(returnLabel);
                     Append(":");
-                    Finish();
+                    AppendSemicolon();
 
                     MarkBasicBlock(_basicBlocks[r.ILRegion.HandlerOffset]);
                 }
             }
 
+            AppendLine();
             Append("goto _bb");
-            Append(IntToString(target.StartOffset));
-            Finish();
+            Append(target.StartOffset.ToStringInvariant());
+            AppendSemicolon();
 
             MarkBasicBlock(target);
         }
@@ -1841,9 +1998,10 @@ namespace Internal.IL
         {
             int finallyIndex = FindNearestFinally(_currentOffset - 1);
 
+            AppendLine();
             Append("goto __endFinally");
-            Append(IntToString(finallyIndex));
-            Finish();
+            Append(finallyIndex.ToStringInvariant());
+            AppendSemicolon();
         }
 
         private void ImportNewArray(int token)
@@ -1863,7 +2021,7 @@ namespace Internal.IL
             Append(_writer.GetCppTypeName(arrayType));
             Append("::__getMethodTable()");
             Append(")");
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportLoadElement(int token)
@@ -1881,6 +2039,7 @@ namespace Internal.IL
             var arrayPtr = Pop();
 
             // Range check
+            AppendLine();
             Append("__range_check(");
             Append(arrayPtr.Value.Name);
             Append(",");
@@ -1899,7 +2058,7 @@ namespace Internal.IL
             Append(index.Value.Name);
             Append(")");
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportStoreElement(int token)
@@ -1918,6 +2077,7 @@ namespace Internal.IL
             var arrayPtr = Pop();
 
             // Range check
+            AppendLine();
             Append("__range_check(");
             Append(arrayPtr.Value.Name);
             Append(",");
@@ -1927,6 +2087,7 @@ namespace Internal.IL
             // TODO: Array covariance
             // TODO: Write barrier as necessary!!!
 
+            AppendLine();
             Append("*(");
             Append(_writer.GetCppSignatureTypeName(elementType));
             Append("*)((char *)");
@@ -1940,7 +2101,7 @@ namespace Internal.IL
             AppendCastIfNecessary(elementType, value.Kind);
             Append(value.Value.Name);
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportAddressOfElement(int token)
@@ -1950,6 +2111,7 @@ namespace Internal.IL
             var arrayPtr = Pop();
 
             // Range check
+            AppendLine();
             Append("__range_check(");
             Append(arrayPtr.Value.Name);
             Append(",");
@@ -1971,7 +2133,7 @@ namespace Internal.IL
             Append(index.Value.Name);
             Append(")");
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportLoadLength()
@@ -1984,19 +2146,22 @@ namespace Internal.IL
             Append(arrayPtr.Value.Name);
             Append("+ 1)");
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportUnaryOperation(ILOpcode opCode)
         {
             var argument = Pop();
 
+            if (argument.Kind == StackValueKind.Float)
+                throw new NotImplementedException();
+
             PushTemp(argument.Kind, argument.Type);
 
             Append((opCode == ILOpcode.neg) ? "~" : "!");
             Append(argument.Value.Name);
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportCpOpj(int token)
@@ -2043,7 +2208,7 @@ namespace Internal.IL
                 Append(obj.Value.Name);
             }
 
-            Finish();
+            AppendSemicolon();
         }
 
         private void ImportRefAnyVal(int token)
@@ -2065,24 +2230,42 @@ namespace Internal.IL
         {
             var ldtokenValue = _methodIL.GetObject(token);
             WellKnownType ldtokenKind;
+            string name;
             if (ldtokenValue is TypeDesc)
+            {
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;
+                AddTypeReference((TypeDesc)ldtokenValue, false);
+
+                MethodDesc helper = _typeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
+                AddMethodReference(helper);
+
+                name = String.Concat(
+                    _writer.GetCppTypeName(helper.OwningType),
+                    "::",
+                    _writer.GetCppMethodName(helper),
+                    "((intptr_t)",
+                    _writer.GetCppTypeName((TypeDesc)ldtokenValue),
+                    "::__getMethodTable())");
+            }
             else if (ldtokenValue is FieldDesc)
+            {
                 ldtokenKind = WellKnownType.RuntimeFieldHandle;
+                name = null;
+            }
             else if (ldtokenValue is MethodDesc)
-                ldtokenKind = WellKnownType.RuntimeMethodHandle;
+            {
+                throw new NotImplementedException();
+            }
             else
                 throw new InvalidOperationException();
-
-            if (ldtokenKind != WellKnownType.RuntimeFieldHandle)
-                throw new NotImplementedException();
 
             var value = new StackValue
             {
                 Kind = StackValueKind.ValueType,
                 Value = new Value
                 {
-                    Aux = ldtokenValue
+                    Aux = ldtokenValue,
+                    Name = name
                 },
                 Type = GetWellKnownType(ldtokenKind),
             };
@@ -2097,21 +2280,23 @@ namespace Internal.IL
             // TODO: might not have enough alignment guarantees for the allocated buffer
 
             var bufferName = NewTempName();
+            AppendLine();
             Append("void* ");
             Append(bufferName);
             Append(" = alloca(");
             Append(count.Value.Name);
             Append(")");
-            Finish();
+            AppendSemicolon();
 
             if (_methodIL.GetInitLocals())
             {
+                AppendLine();
                 Append("memset(");
                 Append(bufferName);
                 Append(", 0, ");
                 Append(count.Value.Name);
                 Append(")");
-                Finish();
+                AppendSemicolon();
             }
 
             Push(StackValueKind.NativeInt, new Value(bufferName));
@@ -2201,11 +2386,19 @@ namespace Internal.IL
             // TODO: Thread safety
 
             string ctorHasRun = "__statics.__cctor_" + _writer.GetCppTypeName(type).Replace("::", "__");
-            Append("if (!" + ctorHasRun + ") { " + ctorHasRun + " = true; ");
+            AppendLine();
+            Append("if (!" + ctorHasRun + ") {");
+            Indent();
+            AppendLine();
+            Append(ctorHasRun + " = true;");
+            AppendLine();
             Append(_writer.GetCppTypeName(cctor.OwningType));
             Append("::");
             Append(_writer.GetCppMethodName(cctor));
-            Append("(); }");
+            Append("();");
+            Exdent();
+            AppendLine();
+            Append("}");
 
             AddMethodReference(cctor);
         }

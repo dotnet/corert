@@ -337,7 +337,7 @@ ClearSuccess_Catch
 
         ldr         r2, [sp, #rsp_offset_r2]                    ;; r2 <- REGDISPLAY*
 
-;; @TODO: add DBG-only validation code for ExInfo pop
+;; @TODO: add debug-only validation code for ExInfo pop
 
         INLINE_GETTHREAD r1, r3                                 ;; r1 <- Thread*, r3 <- trashed
 

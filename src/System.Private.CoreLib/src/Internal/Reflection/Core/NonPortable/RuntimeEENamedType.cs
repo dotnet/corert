@@ -7,7 +7,10 @@ using System.Diagnostics;
 using System.Collections.Generic;
 
 using Internal.Runtime.Augments;
+
+#if ENABLE_REFLECTION_TRACE
 using Internal.Reflection.Tracing;
+#endif
 
 namespace Internal.Reflection.Core.NonPortable
 {
@@ -53,8 +56,10 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_FullName(this);
+#endif
 
                 RuntimeType shadowNamedType = ShadowNamedTypeIfAvailable;
                 if (shadowNamedType != null)
@@ -69,8 +74,10 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.Type_Namespace(this);
+#endif
 
                 RuntimeType shadowNamedType = ShadowNamedTypeIfAvailable;
                 if (shadowNamedType != null)

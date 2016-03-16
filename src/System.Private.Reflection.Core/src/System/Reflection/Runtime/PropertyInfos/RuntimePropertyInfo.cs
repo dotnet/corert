@@ -89,8 +89,10 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.PropertyInfo_CustomAttributes(this);
+#endif
 
                 foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _property.CustomAttributes))
                     yield return cad;
@@ -107,8 +109,10 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.PropertyInfo_DeclaringType(this);
+#endif
 
                 return _contextTypeInfo.AsType();
             }
@@ -135,8 +139,10 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         public sealed override Object GetConstantValue()
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetConstantValue(this);
+#endif
 
             if (!(_definingTypeInfo.ReflectionDomain is ExecutionDomain))
                 throw new NotSupportedException(); // Cannot instantiate a boxed enum on a non-execution domain.
@@ -174,8 +180,10 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.PropertyInfo_GetMethod(this);
+#endif
 
                 return Getter;
             }
@@ -183,8 +191,10 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         public sealed override Object GetValue(Object obj, Object[] index)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
+#endif
 
             if (_lazyGetterInvoker == null)
             {
@@ -211,8 +221,10 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.PropertyInfo_Name(this);
+#endif
 
                 return _property.Name.GetString(_reader);
             }
@@ -222,8 +234,10 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.PropertyInfo_PropertyType(this);
+#endif
 
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
                 Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
@@ -235,8 +249,10 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.PropertyInfo_SetMethod(this);
+#endif
 
                 return Setter;
             }
@@ -244,8 +260,10 @@ namespace System.Reflection.Runtime.PropertyInfos
 
         public sealed override void SetValue(Object obj, Object value, Object[] index)
         {
+#if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
+#endif
 
             if (_lazySetterInvoker == null)
             {

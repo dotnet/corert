@@ -30,7 +30,7 @@ namespace Internal.IL.Stubs
             
             // This helper field is needed to generate proper GC tracking. There is no direct way
             // to create interior pointer. 
-            _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetField("m_pEEType"));
+            _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"));
         }
 
         private void EmitLoadInteriorAddress(ILCodeStream codeStream, int offset)
@@ -68,20 +68,63 @@ namespace Internal.IL.Stubs
 
         private void EmitILForAccessor()
         {
-            Debug.Assert(_rank > 0);
+            Debug.Assert(!_method.OwningType.IsSzArray);
 
             var codeStream = _emitter.NewCodeStream();
+            var context = _method.Context;
 
-            var int32Type = _method.Context.GetWellKnownType(WellKnownType.Int32);
+            var int32Type = context.GetWellKnownType(WellKnownType.Int32);
 
             var totalLocalNum = _emitter.NewLocal(int32Type);
             var lengthLocalNum = _emitter.NewLocal(int32Type);
 
-            int pointerSize = _method.Context.Target.PointerSize;
+            int pointerSize = context.Target.PointerSize;
 
             var rangeExceptionLabel = _emitter.NewCodeLabel();
+            ILCodeLabel typeMismatchExceptionLabel = null;
 
-            // TODO: type check
+            if (!_elementType.IsValueType)
+            {
+                // Type check
+                if (_method.Kind == ArrayMethodKind.Set)
+                {
+                    MethodDesc checkArrayStore =
+                        context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports").GetKnownMethod("RhCheckArrayStore", null);
+
+                    codeStream.EmitLdArg(0);
+                    codeStream.EmitLdArg(_rank + 1);
+
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(checkArrayStore));
+                }
+                else if (_method.Kind == ArrayMethodKind.Address)
+                {
+                    TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+                    TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
+
+                    MethodDesc eetypePtrOfMethod = eetypePtrType.GetKnownMethod("EETypePtrOf", null)
+                        .MakeInstantiatedMethod(new Instantiation(new[] { _elementType }));
+
+                    typeMismatchExceptionLabel = _emitter.NewCodeLabel();
+
+                    ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
+
+                    // EETypePtr actualElementType = this.EETypePtr.ArrayElementType;
+                    codeStream.EmitLdArg(0);
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EETypePtr", null)));
+                    codeStream.EmitStLoc(thisEEType);
+                    codeStream.EmitLdLoca(thisEEType);
+                    codeStream.Emit(ILOpcode.call,
+                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
+                    
+                    // EETypePtr expectedElementType = EETypePtr.EETypePtrOf<_elementType>();
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrOfMethod));
+                    
+                    // if (expectedElementType != actualElementType)
+                    //     ThrowHelpers.ThrowArrayTypeMismatchException();
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrType.GetKnownMethod("op_Equality", null)));
+                    codeStream.Emit(ILOpcode.brfalse, typeMismatchExceptionLabel);
+                }
+            }
 
             for (int i = 0; i < _rank; i++)
             {
@@ -146,19 +189,14 @@ namespace Internal.IL.Stubs
             codeStream.EmitLabel(rangeExceptionLabel); // Assumes that there is one "int" pushed on the stack
             codeStream.Emit(ILOpcode.pop);
 
-            MethodDesc throwHelper = _method.Context.GetHelperEntryPoint("ArrayMethodILHelpers", "ThrowIndexOutOfRangeException");
+            MethodDesc throwHelper = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
             codeStream.EmitCallThrowHelper(_emitter, throwHelper);
 
-#if false
             if (typeMismatchExceptionLabel != null)
             {
-                var tokTypeMismatchExcepCtor = GetToken(GetException(kArrayTypeMismatchException).GetDefaultConstructor());
-
                 codeStream.EmitLabel(typeMismatchExceptionLabel);
-                codeStream.Emit(ILOpcode.newobj, tokTypeMismatchExcepCtor, 0);
-                codeStream.Emit(ILOpcode.throw_);
+                codeStream.EmitCallThrowHelper(_emitter, context.GetHelperEntryPoint("ThrowHelpers", "ThrowArrayTypeMismatchException"));
             }
-#endif
         }
     }
 }

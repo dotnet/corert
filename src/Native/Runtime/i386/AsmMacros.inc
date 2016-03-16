@@ -130,9 +130,6 @@ TSF_Attached                    equ 01h
 TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
 
-;; Slot number of the Finalize virtual method.
-METHOD_SLOT_Finalize            equ 0
-
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1
 
@@ -153,10 +150,12 @@ PTFF_RAX_IS_BYREF       equ 00020000h   ;; iff PTFF_SAVE_RAX: set -> eax is ByRe
 ;;
 MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -4
 
+ifndef CORERT ; Hardcoded TLS offsets are not compatible with static linking
 ;;
 ;; This constant, unfortunately, cannot be validated at build time.
 ;;
 OFFSETOF__TLS__tls_CurrentThread                    equ  8h
+endif
 
 ;;
 ;; Rename fields of nested structs

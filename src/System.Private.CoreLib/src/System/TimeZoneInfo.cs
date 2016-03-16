@@ -26,6 +26,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
+using TIME_ZONE_INFORMATION = Interop.mincore.TIME_ZONE_INFORMATION;
+using TIME_DYNAMIC_ZONE_INFORMATION = Interop.mincore.TIME_DYNAMIC_ZONE_INFORMATION;
+
 namespace System
 {
     //
@@ -194,7 +197,7 @@ namespace System
             {
                 LowLevelListWithIList<TimeZoneInfo> enumeratedTimeZoneList = new LowLevelListWithIList<TimeZoneInfo>();
                 uint index = 0;
-                Interop._TIME_DYNAMIC_ZONE_INFORMATION tdzi;
+                TIME_DYNAMIC_ZONE_INFORMATION tdzi;
                 while (Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi) != Interop.mincore.Errors.ERROR_NO_MORE_ITEMS)
                 {
                     TimeZoneInformation timeZoneInformation = new TimeZoneInformation(tdzi);
@@ -973,7 +976,7 @@ namespace System
 
         internal static bool GetTimeZoneInfo(out TimeZoneInformation timeZoneInfo)
         {
-            Interop._TIME_DYNAMIC_ZONE_INFORMATION dtzi = new Interop._TIME_DYNAMIC_ZONE_INFORMATION();
+            TIME_DYNAMIC_ZONE_INFORMATION dtzi = new TIME_DYNAMIC_ZONE_INFORMATION();
             long result = Interop.mincore.GetDynamicTimeZoneInformation(out dtzi);
             if (result == TIME_ZONE_ID_INVALID)
             {
@@ -1202,7 +1205,6 @@ namespace System
         //
         // Converts TimeZoneInformation to an AdjustmentRule
         //
-        [MethodImpl(MethodImplOptions.NoInlining)]
         static internal AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(TimeZoneInformation timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
         {
             bool supportsDst = (timeZoneInformation.Dtzi.StandardDate.wMonth != 0);
@@ -1254,7 +1256,7 @@ namespace System
                 new TimeSpan(0, defaultBaseUtcOffset - timeZoneInformation.Dtzi.Bias, 0));
         }
 
-        static internal AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(ref Interop._TIME_ZONE_INFORMATION timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
+        static internal AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(ref TIME_ZONE_INFORMATION timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
         {
             bool supportsDst = (timeZoneInformation.StandardDate.wMonth != 0);
 
@@ -1703,7 +1705,7 @@ namespace System
             return isInvalid;
         }
 
-        static private bool EqualStandardDates(TimeZoneInformation timeZone, ref Interop._TIME_DYNAMIC_ZONE_INFORMATION tdzi)
+        static private bool EqualStandardDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)
         {
             return timeZone.Dtzi.Bias == tdzi.Bias
                    && timeZone.Dtzi.StandardBias == tdzi.StandardBias
@@ -1717,7 +1719,7 @@ namespace System
                    && timeZone.Dtzi.StandardDate.wMilliseconds == tdzi.StandardDate.wMilliseconds;
         }
 
-        static private bool EqualDaylightDates(TimeZoneInformation timeZone, ref Interop._TIME_DYNAMIC_ZONE_INFORMATION tdzi)
+        static private bool EqualDaylightDates(TimeZoneInformation timeZone, ref TIME_DYNAMIC_ZONE_INFORMATION tdzi)
         {
             return timeZone.Dtzi.DaylightBias == tdzi.DaylightBias
                     && timeZone.Dtzi.DaylightDate.wYear == tdzi.DaylightDate.wYear
@@ -1745,19 +1747,19 @@ namespace System
         //
         // enumerate all time zones till find a match and with valid key name
         //
-        static internal bool FindMatchToCurrentTimeZone(TimeZoneInformation timeZoneInformation)
+        static internal unsafe bool FindMatchToCurrentTimeZone(TimeZoneInformation timeZoneInformation)
         {
             uint index = 0;
             uint result = 0; // ERROR_SUCCESS
             bool notSupportedDaylightSaving = CheckDaylightSavingTimeNotSupported(timeZoneInformation);
-            Interop._TIME_DYNAMIC_ZONE_INFORMATION tdzi = new Interop._TIME_DYNAMIC_ZONE_INFORMATION();
+            TIME_DYNAMIC_ZONE_INFORMATION tdzi = new TIME_DYNAMIC_ZONE_INFORMATION();
 
             while (result == 0)
             {
                 result = Interop.mincore.EnumDynamicTimeZoneInformation(index, out tdzi);
                 if (result == 0)
                 {
-                    string s = tdzi.StandardName.CopyToString();
+                    string s = new String(tdzi.StandardName);
 
                     if (!String.IsNullOrEmpty(s) &&
                         EqualStandardDates(timeZoneInformation, ref tdzi) &&
@@ -1971,7 +1973,7 @@ namespace System
         // * when the argument 'readStart' is true the corresponding daylightTransitionTimeStart field is read
         // * when the argument 'readStart' is false the corresponding dayightTransitionTimeEnd field is read
         //
-        static private bool TransitionTimeFromTimeZoneInformation(Interop._TIME_ZONE_INFORMATION timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
+        static private bool TransitionTimeFromTimeZoneInformation(TIME_ZONE_INFORMATION timeZoneInformation, out TransitionTime transitionTime, bool readStartDate)
         {
             //
             // SYSTEMTIME - 
@@ -2272,7 +2274,7 @@ namespace System
                 }
                 else
                 {
-                    Interop._TIME_ZONE_INFORMATION tzdi = new Interop._TIME_ZONE_INFORMATION();
+                    TIME_ZONE_INFORMATION tzdi = new TIME_ZONE_INFORMATION();
                     LowLevelList<AdjustmentRule> rules = new LowLevelList<AdjustmentRule>();
 
                     //
@@ -3000,13 +3002,13 @@ namespace System
             public string TimeZoneKeyName;
 
             // we need to keep this one for subsequent interops.
-            public Interop._TIME_DYNAMIC_ZONE_INFORMATION Dtzi;
+            public TIME_DYNAMIC_ZONE_INFORMATION Dtzi;
 
-            public TimeZoneInformation(Interop._TIME_DYNAMIC_ZONE_INFORMATION dtzi)
+            public unsafe TimeZoneInformation(TIME_DYNAMIC_ZONE_INFORMATION dtzi)
             {
-                StandardName = dtzi.StandardName.CopyToString();
-                DaylightName = dtzi.DaylightName.CopyToString();
-                TimeZoneKeyName = dtzi.TimeZoneKeyName.CopyToString();
+                StandardName = new String(dtzi.StandardName);
+                DaylightName = new String(dtzi.DaylightName);
+                TimeZoneKeyName = new String(dtzi.TimeZoneKeyName);
                 Dtzi = dtzi;
             }
         }

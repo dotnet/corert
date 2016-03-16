@@ -24,7 +24,7 @@
 
 inline void FATAL_GC_ERROR()
 {
-    DebugBreak();
+    GCToOSInterface::DebugBreak();
     _ASSERTE(!"Fatal Error in GC.");
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
@@ -141,13 +141,13 @@ inline void FATAL_GC_ERROR()
 
 #if defined (SYNCHRONIZATION_STATS) || defined (STAGE_STATS)
 #define BEGIN_TIMING(x) \
-    LARGE_INTEGER x##_start; \
-    QueryPerformanceCounter (&x##_start)
+    int64_t x##_start; \
+    x##_start = GCToOSInterface::QueryPerformanceCounter()
 
 #define END_TIMING(x) \
-    LARGE_INTEGER x##_end; \
-    QueryPerformanceCounter (&x##_end); \
-    x += x##_end.QuadPart - x##_start.QuadPart
+    int64_t x##_end; \
+    x##_end = GCToOSInterface::QueryPerformanceCounter(); \
+    x += x##_end - x##_start
 
 #else
 #define BEGIN_TIMING(x)
@@ -203,70 +203,7 @@ void GCLogConfig (const char *fmt, ... );
 
 #define CLREvent CLREventStatic
 
-#ifdef CreateFileMapping
-
-#undef CreateFileMapping
-
-#endif //CreateFileMapping
-
-#define CreateFileMapping WszCreateFileMapping
-
 // hosted api
-#ifdef InitializeCriticalSection
-#undef InitializeCriticalSection
-#endif //ifdef InitializeCriticalSection
-#define InitializeCriticalSection UnsafeInitializeCriticalSection
-
-#ifdef DeleteCriticalSection
-#undef DeleteCriticalSection
-#endif //ifdef DeleteCriticalSection
-#define DeleteCriticalSection UnsafeDeleteCriticalSection
-
-#ifdef EnterCriticalSection
-#undef EnterCriticalSection
-#endif //ifdef EnterCriticalSection
-#define EnterCriticalSection UnsafeEEEnterCriticalSection
-
-#ifdef LeaveCriticalSection
-#undef LeaveCriticalSection
-#endif //ifdef LeaveCriticalSection
-#define LeaveCriticalSection UnsafeEELeaveCriticalSection
-
-#ifdef TryEnterCriticalSection
-#undef TryEnterCriticalSection
-#endif //ifdef TryEnterCriticalSection
-#define TryEnterCriticalSection UnsafeEETryEnterCriticalSection
-
-#ifdef CreateSemaphore
-#undef CreateSemaphore
-#endif //CreateSemaphore
-#define CreateSemaphore UnsafeCreateSemaphore
-
-#ifdef CreateEvent
-#undef CreateEvent
-#endif //ifdef CreateEvent
-#define CreateEvent UnsafeCreateEvent
-
-#ifdef VirtualAlloc
-#undef VirtualAlloc
-#endif //ifdef VirtualAlloc
-#define VirtualAlloc ClrVirtualAlloc
-
-#ifdef VirtualFree
-#undef VirtualFree
-#endif //ifdef VirtualFree
-#define VirtualFree ClrVirtualFree
-
-#ifdef VirtualQuery
-#undef VirtualQuery
-#endif //ifdef VirtualQuery
-#define VirtualQuery ClrVirtualQuery
-
-#ifdef VirtualProtect
-#undef VirtualProtect
-#endif //ifdef VirtualProtect
-#define VirtualProtect ClrVirtualProtect
-
 #ifdef memcpy
 #undef memcpy
 #endif //memcpy
@@ -553,6 +490,7 @@ enum gc_type
     gc_type_max = 3
 };
 
+#define v_high_memory_load_th 97
 
 //encapsulates the mechanism for the current gc
 class gc_mechanisms
@@ -672,7 +610,7 @@ struct GCStatistics
     : public StatisticsBase
 {
     // initialized to the contents of COMPLUS_GcMixLog, or NULL, if not present
-    static WCHAR* logFileName;
+    static TCHAR* logFileName;
     static FILE*  logFile;
 
     // number of times we executed a background GC, a foreground GC, or a
@@ -1043,7 +981,7 @@ struct spinlock_info
 {
     msl_enter_state enter_state;
     msl_take_state take_state;
-    uint32_t thread_id;
+    EEThreadId thread_id;
 };
 
 const unsigned HS_CACHE_LINE_SIZE = 128;
@@ -1291,7 +1229,7 @@ public:
     static 
     gc_heap* balance_heaps_loh (alloc_context* acontext, size_t size);
     static
-    uint32_t __stdcall gc_thread_stub (void* arg);
+    void __stdcall gc_thread_stub (void* arg);
 #endif //MULTIPLE_HEAPS
 
     CObjectHeader* try_fast_alloc (size_t jsize);
@@ -1388,11 +1326,11 @@ protected:
     int joined_generation_to_condemn (BOOL should_evaluate_elevation, int n_initial, BOOL* blocking_collection
                                         STRESS_HEAP_ARG(int n_original));
 
-    PER_HEAP_ISOLATED
-    size_t min_reclaim_fragmentation_threshold(uint64_t total_mem, uint32_t num_heaps);
+    PER_HEAP
+    size_t min_reclaim_fragmentation_threshold (uint32_t num_heaps);
 
     PER_HEAP_ISOLATED
-    uint64_t min_high_fragmentation_threshold(uint64_t available_mem, uint32_t num_heaps);
+    uint64_t min_high_fragmentation_threshold (uint64_t available_mem, uint32_t num_heaps);
 
     PER_HEAP
     void concurrent_print_time_delta (const char* msg);
@@ -1619,13 +1557,13 @@ protected:
     struct loh_state_info
     {
         allocation_state alloc_state;
-        uint32_t thread_id;
+        EEThreadId thread_id;
     };
 
     PER_HEAP
     loh_state_info last_loh_states[max_saved_loh_states];
     PER_HEAP
-    void add_saved_loh_state (allocation_state loh_state_to_save, uint32_t thread_id);
+    void add_saved_loh_state (allocation_state loh_state_to_save, EEThreadId thread_id);
 #endif //RECORD_LOH_STATE
     PER_HEAP
     BOOL allocate_large (int gen_number,
@@ -2468,6 +2406,8 @@ protected:
     PER_HEAP
     void compute_new_ephemeral_size();
     PER_HEAP
+    BOOL expand_reused_seg_p();
+    PER_HEAP
     BOOL can_expand_into_p (heap_segment* seg, size_t min_free_size,
                             size_t min_cont_size, allocator* al);
     PER_HEAP
@@ -2512,8 +2452,6 @@ protected:
 
     PER_HEAP
     void save_ephemeral_generation_starts();
-
-    static size_t get_time_now();
 
     PER_HEAP
     bool init_dynamic_data ();
@@ -2608,9 +2546,9 @@ protected:
     PER_HEAP_ISOLATED
     void destroy_thread_support ();
     PER_HEAP
-    HANDLE create_gc_thread();
+    bool create_gc_thread();
     PER_HEAP
-    uint32_t gc_thread_function();
+    void gc_thread_function();
 #ifdef MARK_LIST
 #ifdef PARALLEL_MARK_LIST_SORT
     PER_HEAP
@@ -2984,22 +2922,25 @@ public:
 
 #ifdef SHORT_PLUGS
     PER_HEAP_ISOLATED
-    float short_plugs_pad_ratio;
+    double short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
 #ifdef BIT64
     PER_HEAP_ISOLATED
     size_t youngest_gen_desired_th;
+#endif //BIT64
 
     PER_HEAP_ISOLATED
-    size_t mem_one_percent;
+    uint32_t high_memory_load_th;
+
+    PER_HEAP_ISOLATED
+    uint64_t mem_one_percent;
 
     PER_HEAP_ISOLATED
     uint64_t total_physical_mem;
 
     PER_HEAP_ISOLATED
     uint64_t available_physical_mem;
-#endif // BIT64
 
     PER_HEAP_ISOLATED
     size_t last_gc_index;
@@ -3102,7 +3043,7 @@ protected:
 #ifdef BACKGROUND_GC
 
     PER_HEAP
-    uint32_t bgc_thread_id;
+    EEThreadId bgc_thread_id;
 
 #ifdef WRITE_WATCH
     PER_HEAP
@@ -3145,7 +3086,7 @@ protected:
     Thread* bgc_thread;
 
     PER_HEAP
-    CRITICAL_SECTION bgc_threads_timeout_cs;
+    CLRCriticalSection bgc_threads_timeout_cs;
 
     PER_HEAP_ISOLATED
     CLREvent background_gc_done_event;
@@ -3499,7 +3440,7 @@ protected:
     BOOL dt_high_frag_p (gc_tuning_point tp, int gen_number, BOOL elevate_p=FALSE);
     PER_HEAP
     BOOL 
-    dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number, uint64_t total_mem);
+    dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number);
     PER_HEAP
     BOOL dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem);
     PER_HEAP
@@ -3721,8 +3662,6 @@ public:
     SPTR_DECL(PTR_gc_heap, g_heaps);
 
     static
-    HANDLE*   g_gc_threads; // keep all of the gc threads.
-    static
     size_t*   g_promoted;
 #ifdef BACKGROUND_GC
     static
@@ -3777,7 +3716,7 @@ private:
     
     VOLATILE(int32_t) lock;
 #ifdef _DEBUG
-    uint32_t lockowner_threadid;
+    EEThreadId lockowner_threadid;
 #endif // _DEBUG
 
     BOOL GrowArray();

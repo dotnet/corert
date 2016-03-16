@@ -342,12 +342,12 @@ TSF_Attached                    equ 01h
 TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
 
-METHOD_SLOT_Finalize            equ 0       ;; Slot number of the Finalize virtual method.
-
+ifndef CORERT ; Hardcoded TLS offsets are not compatible with static linking
 ;;
 ;; This constant, unfortunately, cannot be validated at build time.
 ;;
 OFFSETOF__TLS__tls_CurrentThread                    equ 20h
+endif
 
 ;;
 ;; Rename fields of nested structs

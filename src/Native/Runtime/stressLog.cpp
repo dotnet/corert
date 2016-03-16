@@ -353,7 +353,7 @@ void ThreadStressLog::LogMsg ( UInt32 facility, int cArgs, const char* format, v
         msg->args[i] = data;
     }
 
-    ASSERT(IsValid() && threadId == PalGetCurrentThreadId ());
+    ASSERT(IsValid() && threadId == PalGetCurrentThreadIdForLogging());
 }
 
 
@@ -361,13 +361,13 @@ void ThreadStressLog::Activate (Thread * pThread)
 {
     _ASSERTE(pThread != NULL);
     //there is no need to zero buffers because we could handle garbage contents
-    threadId = PalGetCurrentThreadId ();       
+    threadId = PalGetCurrentThreadIdForLogging(); 
     isDead = FALSE;        
     curWriteChunk = chunkListTail;
     curPtr = (StressMsg *)curWriteChunk->EndPtr ();
     writeHasWrapped = FALSE;
     this->pThread = pThread;
-    ASSERT(pThread->GetPalThreadId() == threadId);
+    ASSERT(pThread->IsCurrentThread());
 }
 
 /* static */
@@ -542,7 +542,9 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
             // Pass a copy of the args to the callback to avoid foreign code overwriting the stress log 
             // entries (this was the case for %s arguments)
             memcpy_s(argsCopy, sizeof(argsCopy), latestMsg->args, (latestMsg->numberOfArgs)*sizeof(void*));
-            if (!smcb(latestLog->threadId, deltaTime, latestMsg->facility, format, argsCopy, token))
+
+            // @TODO: CORERT: Truncating threadId to 32-bit
+            if (!smcb((UINT32)latestLog->threadId, deltaTime, latestMsg->facility, format, argsCopy, token))
                 break;
         }
 
@@ -550,7 +552,9 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
         if (latestLog->CompletedDump())
         {
             latestLog->readPtr = NULL;
-            if (!etcb(latestLog->threadId, token))
+
+            // @TODO: CORERT: Truncating threadId to 32-bit
+            if (!etcb((UINT32)latestLog->threadId, token))
                 break;
         }
     }

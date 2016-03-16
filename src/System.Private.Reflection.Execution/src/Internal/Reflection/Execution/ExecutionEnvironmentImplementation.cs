@@ -23,7 +23,7 @@ namespace Internal.Reflection.Execution
         /// <summary>
         /// List of callbacks to execute when a module gets registered.
         /// </summary>
-        Action<IntPtr> _moduleRegistrationCallbacks;
+        List<Action<IntPtr>> _moduleRegistrationCallbacks = new List<Action<IntPtr>>();
 
         public unsafe ExecutionEnvironmentImplementation()
         {
@@ -41,7 +41,7 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleRegistrationCallback">Callback gets passed the module handle</param>
         internal void AddModuleRegistrationCallback(Action<IntPtr> moduleRegistrationCallback)
         {
-            _moduleRegistrationCallbacks += moduleRegistrationCallback;
+            _moduleRegistrationCallbacks.Add(moduleRegistrationCallback);
             int loadedModulesCount = RuntimeAugments.GetLoadedModules(null);
             IntPtr[] loadedModuleHandles = new IntPtr[loadedModulesCount];
             int loadedModules = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
@@ -61,7 +61,8 @@ namespace Internal.Reflection.Execution
         {
             lock (this)
             {
-                _moduleRegistrationCallbacks(moduleHandle);
+                foreach (var callback in _moduleRegistrationCallbacks)
+                    callback(moduleHandle);
             }
         }
 

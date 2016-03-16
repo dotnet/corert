@@ -169,7 +169,10 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
 #endif // FEATURE_ETW
 
-    InitializeSystemInfo();
+    if (!InitializeSystemInfo())
+    {
+        return false;
+    }
 
     // Initialize the special EEType used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
@@ -630,7 +633,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
     // Carefully attempt to set the global callback function (careful in that we won't overwrite another scan
     // that's being scheduled or in-progress). If someone beat us to it back off and wait for the
     // corresponding GC to complete.
-    while (FastInterlockCompareExchangePointer(&g_pfnHeapScan, pfnScanCallback, NULL) != NULL)
+    while (Interlocked::CompareExchangePointer(&g_pfnHeapScan, pfnScanCallback, NULL) != NULL)
     {
         // Wait in pre-emptive mode to avoid stalling another thread that's attempting a collection.
         Thread * pCurThread = GetThread();
@@ -660,7 +663,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
 
     // Release our hold on the global scanning pointers.
     g_pvHeapScanContext = NULL;
-    FastInterlockExchangePointer(&g_pfnHeapScan, NULL);
+    Interlocked::ExchangePointer(&g_pfnHeapScan, NULL);
 #else
     UNREFERENCED_PARAMETER(pfnScanCallback);
     UNREFERENCED_PARAMETER(pContext);
@@ -714,7 +717,7 @@ void RedhawkGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnS
     sContext.m_pfnCallback = pfnScanCallback;
     sContext.m_pContext = pContext;
 
-    pThread->GcScanRoots(ScanRootsCallbackWrapper, &sContext);
+    pThread->GcScanRoots(reinterpret_cast<void*>(ScanRootsCallbackWrapper), &sContext);
 #else
     UNREFERENCED_PARAMETER(pThread);
     UNREFERENCED_PARAMETER(pfnScanCallback);
@@ -732,7 +735,7 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
     sContext.m_pfnCallback = pfnScanCallback;
     sContext.m_pContext = pContext;
 
-    GetRuntimeInstance()->EnumAllStaticGCRefs(ScanRootsCallbackWrapper, &sContext);
+    GetRuntimeInstance()->EnumAllStaticGCRefs(reinterpret_cast<void*>(ScanRootsCallbackWrapper), &sContext);
 #else
     UNREFERENCED_PARAMETER(pfnScanCallback);
     UNREFERENCED_PARAMETER(pContext);
@@ -800,8 +803,8 @@ UInt32 RedhawkGCInterface::GetGCDescSize(void * pType)
 
 COOP_PINVOKE_HELPER(void, RhpCopyObjectContents, (Object* pobjDest, Object* pobjSrc))
 {
-    SIZE_T cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
-    SIZE_T cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
+    size_t cbDest = pobjDest->GetSize() - sizeof(ObjHeader);
+    size_t cbSrc = pobjSrc->GetSize() - sizeof(ObjHeader);
     if (cbSrc != cbDest)
         return;
 
@@ -827,9 +830,9 @@ COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
     // cbObject includes ObjHeader (sync block index) and the EEType* field from Object and is rounded up to
     // suit GC allocation alignment requirements. cbFields on the other hand is just the raw size of the field
     // data.
-    SIZE_T cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-    SIZE_T cbObject = pEEType->get_BaseSize();
-    SIZE_T cbFields = cbObject - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
+    size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
+    size_t cbObject = pEEType->get_BaseSize();
+    size_t cbFields = cbObject - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
     
     UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
 
@@ -887,8 +890,8 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
 
         // Clear the value (in case there were GC references we wish to stop reporting).
         EEType * pEEType = pUnboxToEEType->GetNullableType();
-        SIZE_T cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-        SIZE_T cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
+        size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
+        size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
         GCSafeZeroMemory((UInt8*)pData + pUnboxToEEType->GetNullableValueOffset(), cbFields);
 
         return;
@@ -913,8 +916,8 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
         pData = (UInt8*)pData + pUnboxToEEType->GetNullableValueOffset();
     }
 
-    SIZE_T cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-    SIZE_T cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
+    size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
+    size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
     UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
 
     if (pEEType->HasReferenceFields())
@@ -1172,12 +1175,12 @@ bool StartFinalizerThread()
     //
     static volatile Int32 fFinalizerThreadCreated;
 
-    if (FastInterlockExchange(&fFinalizerThreadCreated, 1) != 1)
+    if (Interlocked::Exchange(&fFinalizerThreadCreated, 1) != 1)
     {
         if (!PalStartFinalizerThread(FinalizerStart, (void*)FinalizerThread::GetFinalizerEvent()))
         {
             // Need to try again another time...
-            FastInterlockExchange(&fFinalizerThreadCreated, 0);
+            Interlocked::Exchange(&fFinalizerThreadCreated, 0);
         }
     }
 
@@ -1275,9 +1278,9 @@ bool FinalizerThread::WatchDog()
 
         // Wait for any outstanding finalization run to complete. Time this initial operation so that it forms
         // part of the overall timeout budget.
-        DWORD dwStartTime = GetTickCount();
+        DWORD dwStartTime = PalGetTickCount();
         Wait(dwTimeout);
-        DWORD dwEndTime = GetTickCount();
+        DWORD dwEndTime = PalGetTickCount();
 
         // In the exceedingly rare case that the tick count wrapped then we'll just reset the timeout to its
         // initial value. Otherwise we'll subtract the time we waited from the timeout budget (being mindful
@@ -1336,11 +1339,6 @@ void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
 #ifndef DACCESS_COMPILE
-void GetProcessMemoryLoad(GCMemoryStatus* pGCMemStatus)
-{
-    // @TODO: no way to communicate failure
-    PalGlobalMemoryStatusEx(pGCMemStatus);
-}
 
 bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
 {
@@ -1352,48 +1350,7 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
     return !!PalSwitchToThread();
 }
 
-void * ClrVirtualAlloc(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect)
-{
-    return PalVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
-}
-
-void * ClrVirtualAllocAligned(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flAllocationType,
-    uint32_t flProtect,
-    size_t /*dwAlignment*/)
-{
-    return PalVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
-}
-
-bool ClrVirtualFree(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t dwFreeType)
-{
-    return !!PalVirtualFree(lpAddress, dwSize, dwFreeType);
-}
 #endif // DACCESS_COMPILE
-
-bool
-ClrVirtualProtect(
-    void * lpAddress,
-    size_t dwSize,
-    uint32_t flNewProtect,
-    uint32_t * lpflOldProtect)
-{
-    UNREFERENCED_PARAMETER(lpAddress);
-    UNREFERENCED_PARAMETER(dwSize);
-    UNREFERENCED_PARAMETER(flNewProtect);
-    UNREFERENCED_PARAMETER(lpflOldProtect);
-    ASSERT(!"ClrVirtualProtect");
-    return false;
-}
 
 MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
@@ -1411,41 +1368,9 @@ void StompWriteBarrierResize(bool /*bReqUpperBoundsCheck*/)
 {
 }
 
-VOID LogSpewAlways(const char * /*fmt*/, ...)
+void LogSpewAlways(const char * /*fmt*/, ...)
 {
 }
-
-CLR_MUTEX_COOKIE ClrCreateMutex(CLR_MUTEX_ATTRIBUTES lpMutexAttributes, bool bInitialOwner, LPCWSTR lpName)
-{
-    UNREFERENCED_PARAMETER(lpMutexAttributes);
-    UNREFERENCED_PARAMETER(bInitialOwner);
-    UNREFERENCED_PARAMETER(lpName);
-    ASSERT(!"ClrCreateMutex");
-    return NULL;
-}
-
-void ClrCloseMutex(CLR_MUTEX_COOKIE mutex)
-{
-    UNREFERENCED_PARAMETER(mutex);
-    ASSERT(!"ClrCloseMutex");
-}
-
-bool ClrReleaseMutex(CLR_MUTEX_COOKIE mutex)
-{
-    UNREFERENCED_PARAMETER(mutex);
-    ASSERT(!"ClrReleaseMutex");
-    return true;
-}
-
-uint32_t ClrWaitForMutex(CLR_MUTEX_COOKIE mutex, uint32_t dwMilliseconds, bool bAlertable)
-{
-    UNREFERENCED_PARAMETER(mutex);
-    UNREFERENCED_PARAMETER(dwMilliseconds);
-    UNREFERENCED_PARAMETER(bAlertable);
-    ASSERT(!"ClrWaitForMutex");
-    return WAIT_OBJECT_0;
-}
-
 
 uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
 {
@@ -1475,7 +1400,7 @@ uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
     }
 }
 
-HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, __out_z wchar_t * * outVal)
+HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, __out_z TCHAR * * outVal)
 {
     *outVal = NULL;
     return 0;

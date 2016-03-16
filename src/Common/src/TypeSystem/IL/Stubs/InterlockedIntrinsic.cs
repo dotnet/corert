@@ -35,13 +35,8 @@ namespace Internal.IL.Stubs
                 parameters[i] = objectType;
 
             MethodSignature nonGenericSignature = new MethodSignature(MethodSignatureFlags.Static, 0, objectType, parameters);
-
-            MethodDesc nonGenericMethod = target.OwningType.GetMethod(target.Name, nonGenericSignature);
-
-            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
-            if (nonGenericMethod == null)
-                throw new NotImplementedException();
-
+            MethodDesc nonGenericMethod = target.OwningType.GetKnownMethod(target.Name, nonGenericSignature);
+            
             //
             // Emit the forwarder
             //

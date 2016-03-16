@@ -104,7 +104,7 @@ namespace Internal.JitInterface
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_StringLength, "get_Length", "System", "String");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray, "InitializeArray", "System.Runtime.CompilerServices", "RuntimeHelpers");
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_GetTypeFromHandle, "GetTypeFromHandle", "System", "Type");
-            // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal, "GetValueInternal", "System", "RuntimeTypeHandle"); // not in .NET Core
+            table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal, "GetValueInternal", "System", "RuntimeTypeHandle");
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeEQ, "op_Equality", "System", "Type"); // not in .NET Core
             // table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_TypeNEQ, "op_Inequality", "System", "Type"); // not in .NET Core
             table.Add(CorInfoIntrinsics.CORINFO_INTRINSIC_Object_GetType, "GetType", "System", "Object");
@@ -131,8 +131,10 @@ namespace Internal.JitInterface
 
         static IntrinsicHashtable s_IntrinsicHashtable = InitializeIntrinsicHashtable();
 
-        private CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_STRUCT_* ftn)
+        private CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_STRUCT_* ftn, ref bool pMustExpand)
         {
+            pMustExpand = false;
+
             var method = HandleToObject(ftn);
 
             Debug.Assert(method.IsIntrinsic);
@@ -189,6 +191,12 @@ namespace Internal.JitInterface
                         }
                     }
                     break;
+
+                // TODO: Implementation of pMustExpand in RyuJIT is not correct
+                // case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
+                // case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
+                //    pMustExpand = true;
+                //    break;
 
                 default:
                     break;

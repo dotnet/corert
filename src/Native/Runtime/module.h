@@ -4,6 +4,7 @@
 #include "ICodeManager.h"
 
 #include "SectionMethodList.h"
+#include "ModuleManager.h"
 
 struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
@@ -13,7 +14,6 @@ class DispatchMap;
 struct BlobHeader;
 struct GenericInstanceDesc;
 typedef SPTR(struct GenericInstanceDesc) PTR_GenericInstanceDesc;
-struct SimpleModuleHeader;
 
 class Module : public ICodeManager
 {
@@ -24,7 +24,6 @@ public:
     virtual ~Module();
 
     static Module *     Create(ModuleHeader *pModuleHeader);
-    static Module *     Create(SimpleModuleHeader *pModuleHeader);
 
     void                Destroy();
 
@@ -43,10 +42,7 @@ public:
     bool IsClasslibModule();
 
     // Get classlib-defined helpers for the exception system.
-    void * GetClasslibRuntimeExceptionHelper();
-    void * GetClasslibFailFastHelper();
-    void * GetClasslibUnhandledExceptionHandlerHelper();
-    void * GetClasslibAppendExceptionStackFrameHelper();
+    void * GetClasslibFunction(ClasslibFunctionId functionId);
 
     // Get classlib-defined helper for running deferred static class constructors.
     void * GetClasslibCheckStaticClassConstruction();
@@ -164,7 +160,6 @@ private:
     PTR_UInt8                   m_pbDeltaShortcutTable;   // 16-byte array of the most popular deltas
 
     PTR_ModuleHeader            m_pModuleHeader;
-    SimpleModuleHeader *        m_pSimpleModuleHeader;
     void *                      m_pEHTypeTable;
     SectionMethodList           m_MethodList;
     GcSegmentHandle             m_FrozenSegment;
@@ -178,4 +173,3 @@ private:
     ReaderWriterLock            m_loopHijackMapLock;
     MapSHash<UInt32, void*>     m_loopHijackIndexToTargetMap;
 };
-

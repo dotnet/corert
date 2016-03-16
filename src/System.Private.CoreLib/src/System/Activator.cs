@@ -68,7 +68,16 @@ namespace System
         }
 
         [Intrinsic]
+#if CORERT
+        // CORERT-TODO: Add CreateInstanceIntrinsic intrinsic support.
+        // https://github.com/dotnet/corert/issues/368
+        private static T CreateInstanceIntrinsic<T>()
+        {
+            throw new NotSupportedException("CreateInstance");
+        }
+#else
         private extern static T CreateInstanceIntrinsic<T>();
+#endif
 
         [ThreadStatic]
         internal static bool s_createInstanceMissingDefaultConstructor;
