@@ -24,6 +24,15 @@ namespace Internal.TypeSystem
             return type.Context.GetArrayType(type);
         }
 
+        /// <summary>
+        /// Creates a multidimensional array type with the specified rank.
+        /// To create a vector, use the <see cref="MakeArrayType(TypeDesc)"/> overload.
+        /// </summary>
+        static public ArrayType MakeArrayType(this TypeDesc type, int rank)
+        {
+            return type.Context.GetArrayType(type, rank);
+        }
+
         static public ByRefType MakeByRefType(this TypeDesc type)
         {
             return type.Context.GetByRefType(type);
