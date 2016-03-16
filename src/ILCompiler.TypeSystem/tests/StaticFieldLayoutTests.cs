@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using Xunit;
 
@@ -262,6 +263,31 @@ namespace TypeSystemTests
                         throw new Exception(field.Name);
                 }
             }
+        }
+
+        [Fact]
+        public void TestRvaStatics()
+        {
+            //
+            // Test that an RVA mapped field has the right value for the offset.
+            //
+
+            var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
+            var t = ilModule.GetType("StaticFieldLayout", "RvaStatics");
+            var field = t.GetField("StaticInitedInt");
+
+            Assert.True(field.HasRva);
+
+            byte[] rvaData = ((EcmaField)field).GetFieldRvaData();
+
+            Assert.Equal(4, rvaData.Length);
+
+            int value = rvaData[0] |
+                rvaData[1] << 8 |
+                rvaData[2] << 16 |
+                rvaData[3] << 24;
+
+            Assert.Equal(0x78563412, value);
         }
     }
 }
