@@ -36,6 +36,7 @@ namespace ILCompiler.Metadata
                 _namespaceDefs.Add(key, rootNamespace);
                 ScopeDefinition rootScope = HandleScopeDefinition(parentScope);
                 rootScope.RootNamespaceDefinition = rootNamespace;
+                rootNamespace.ParentScopeOrNamespace = rootScope;
                 return rootNamespace;
             }
 
