@@ -4,13 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using ILCompiler.DependencyAnalysisFramework;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+
+using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.TypeSystem;
 using Internal.JitInterface;
 
@@ -324,7 +323,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     // TODO: Make sure that the same blobs get folded by emitting them to comdat sections
 
-                    string blobSymbolName = "_unwind" + (i++).ToString() + _currentNodeName;
+                    string blobSymbolName = "_unwind" + (i++).ToStringInvariant() + _currentNodeName;
                     EmitSymbolDef(blobSymbolName);
 
                     if (ehInfo != null)

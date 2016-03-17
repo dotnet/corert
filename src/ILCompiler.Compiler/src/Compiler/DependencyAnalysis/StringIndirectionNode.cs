@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + Offset.ToString(CultureInfo.InvariantCulture);
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + Offset.ToStringInvariant();
             }
         }
 
