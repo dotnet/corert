@@ -8,6 +8,8 @@ using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.Metadata
 {
     partial class Transform<TPolicy>
@@ -16,12 +18,7 @@ namespace ILCompiler.Metadata
 
         private NamespaceDefinition HandleNamespaceDefinition(Cts.ModuleDesc parentScope, string namespaceString)
         {
-            NamespaceDefinition rootNamespace = HandleScopeDefinition(parentScope).RootNamespaceDefinition;
-
-            if (String.IsNullOrEmpty(namespaceString))
-            {
-                return rootNamespace;
-            }
+            Debug.Assert(namespaceString != null);
 
             NamespaceDefinition result;
             NamespaceKey key = new NamespaceKey(parentScope, namespaceString);
@@ -30,8 +27,20 @@ namespace ILCompiler.Metadata
                 return result;
             }
 
-            NamespaceDefinition currentNamespace = rootNamespace;
+            if (namespaceString.Length == 0)
+            {
+                var rootNamespace = new NamespaceDefinition
+                {
+                    Name = null,
+                };
+                _namespaceDefs.Add(key, rootNamespace);
+                ScopeDefinition rootScope = HandleScopeDefinition(parentScope);
+                rootScope.RootNamespaceDefinition = rootNamespace;
+                return rootNamespace;
+            }
+
             string currentNamespaceName = String.Empty;
+            NamespaceDefinition currentNamespace = HandleNamespaceDefinition(parentScope, currentNamespaceName);
             foreach (var segment in namespaceString.Split('.'))
             {
                 string nextNamespaceName = currentNamespaceName;

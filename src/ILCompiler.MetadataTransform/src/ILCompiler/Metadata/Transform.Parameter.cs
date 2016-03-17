@@ -54,11 +54,15 @@ namespace ILCompiler.Metadata
 
                 result.Flags = genParamDef.Attributes;
                 result.Name = HandleString(reader.GetString(genParamDef.Name));
+
+                Ecma.CustomAttributeHandleCollection customAttributes = genParamDef.GetCustomAttributes();
+                if (customAttributes.Count > 0)
+                {
+                    result.CustomAttributes = HandleCustomAttributes(ecmaGenParam.Module, customAttributes);
+                }
             }
             else
                 throw new NotImplementedException();
-
-            // TODO: CustomAttributes
 
             return result;
         }

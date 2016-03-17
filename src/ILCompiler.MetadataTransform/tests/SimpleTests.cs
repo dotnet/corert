@@ -171,5 +171,41 @@ namespace MetadataTransformTests
             }
 
         }
+
+        [Fact]
+        public void TestBlockedAttributes()
+        {
+            // Test that custom attributes referring to blocked types don't show up in metadata
+
+            var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
+            Cts.MetadataType attributeHolder = sampleMetadataModule.GetType("BlockedMetadata", "AttributeHolder");
+
+            var policy = new SingleFileMetadataPolicy();
+            var transformResult = MetadataTransform.Run(policy,
+                new[] { _systemModule, sampleMetadataModule });
+
+            int blockedCount = 0;
+            int allowedCount = 0;
+            foreach (var field in attributeHolder.GetFields())
+            {
+                var transformedRecord = transformResult.GetTransformedFieldDefinition(field);
+                Assert.NotNull(transformedRecord);
+
+                if (field.Name.StartsWith("Blocked"))
+                {
+                    blockedCount++;
+                    Assert.Equal(0, transformedRecord.CustomAttributes.Count);
+                }
+                else
+                {
+                    allowedCount++;
+                    Assert.StartsWith("Allowed", field.Name);
+                    Assert.Equal(1, transformedRecord.CustomAttributes.Count);
+                }
+            }
+
+            Assert.Equal(5, allowedCount);
+            Assert.Equal(8, blockedCount);
+        }
     }
 }

@@ -67,7 +67,11 @@ namespace ILCompiler.Metadata
                 });
             }
 
-            // TODO: CustomAttributes
+            Ecma.CustomAttributeHandleCollection customAttributes = eventDef.GetCustomAttributes();
+            if (customAttributes.Count > 0)
+            {
+                result.CustomAttributes = HandleCustomAttributes(module, customAttributes);
+            }
 
             return result;
         }

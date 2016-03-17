@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
+using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
@@ -61,18 +62,20 @@ namespace ILCompiler.Metadata
 
                 scopeDefinition.PublicKey = assemblyName.GetPublicKey();
 
-                // TODO: CustomAttributes
+                Cts.Ecma.EcmaModule ecmaModule = module as Cts.Ecma.EcmaModule;
+                if (ecmaModule != null)
+                {
+                    Ecma.CustomAttributeHandleCollection customAttributes = ecmaModule.AssemblyDefinition.GetCustomAttributes();
+                    if (customAttributes.Count > 0)
+                    {
+                        scopeDefinition.CustomAttributes = HandleCustomAttributes(ecmaModule, customAttributes);
+                    }
+                }
             }
             else
             {
                 throw new NotSupportedException("Multi-module assemblies");
             }
-
-            scopeDefinition.RootNamespaceDefinition = new NamespaceDefinition
-            {
-                Name = null,
-                ParentScopeOrNamespace = scopeDefinition,
-            };
         }
 
         private EntityMap<Cts.ModuleDesc, ScopeReference> _scopeRefs

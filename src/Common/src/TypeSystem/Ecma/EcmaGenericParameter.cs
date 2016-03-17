@@ -47,6 +47,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public EcmaModule Module
+        {
+            get
+            {
+                return _module;
+            }
+        }
+
         public override TypeSystemContext Context
         {
             get
