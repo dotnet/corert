@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Globalization;
 using System.Text;
 
 namespace ILCompiler.DependencyAnalysis
@@ -43,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                     throw new InvalidOperationException("MangledName called before String Id was initialized.");
                 }
 
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToString(CultureInfo.InvariantCulture);
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToStringInvariant();
             }
         }
 

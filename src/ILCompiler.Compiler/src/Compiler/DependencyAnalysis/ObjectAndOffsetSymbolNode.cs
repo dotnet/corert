@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
+
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
@@ -24,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override string GetName()
         {
-            return "Symbol " + _name + " at offset " + _offset.ToString(CultureInfo.InvariantCulture);
+            return "Symbol " + _name + " at offset " + _offset.ToStringInvariant();
         }
 
         public override bool HasConditionalStaticDependencies
