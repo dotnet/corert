@@ -62,14 +62,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            Encoding encoding = UTF8Encoding.UTF8;
+            byte[] objectData = Array.Empty<byte>();
 
-            ObjectDataBuilder objDataBuilder = new ObjectDataBuilder(factory);
-            AsmStringWriter stringWriter = new AsmStringWriter((byte b) => objDataBuilder.EmitByte(b));
-            stringWriter.WriteString(_data);
-            objDataBuilder.DefinedSymbols.Add(this);
+            if (!relocsOnly)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(_data);
 
-            return objDataBuilder.ToObjectData();
+                var encoder = new Internal.NativeFormat.NativePrimitiveEncoder();
+                encoder.Init();
+
+                encoder.WriteUnsigned((uint)bytes.Length);
+                foreach (var b in bytes)
+                {
+                    encoder.WriteByte(b);
+                }
+
+                objectData = encoder.GetBytes();
+            }
+
+            return new ObjectData(objectData, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
         }
 
         public override string GetName()
