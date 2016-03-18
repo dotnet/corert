@@ -156,7 +156,6 @@ namespace System.Globalization
             return true;
         }
 
-        [System.Security.SecurityCritical]
         private string GetLocaleInfo(LocaleStringData type)
         {
             Contract.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected this.sWindowsName to be populated by already");
@@ -165,7 +164,6 @@ namespace System.Globalization
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        [System.Security.SecurityCritical]
         private string GetLocaleInfo(string localeName, LocaleStringData type)
         {
             uint lctype = (uint)type;
@@ -291,7 +289,6 @@ namespace System.Globalization
 
         // PAL methods end here.
 
-        [System.Security.SecurityCritical]
         private static string GetLocaleInfoFromLCType(string localeName, uint lctype, bool useUserOveride)
         {
             Contract.Assert(localeName != null, "[CultureData.GetLocaleInfoFromLCType] Expected localeName to be not be null");

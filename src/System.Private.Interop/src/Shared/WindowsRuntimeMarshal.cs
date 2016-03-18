@@ -23,9 +23,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // delegate.  It then stores the corresponding token in a dictionary for easy access by RemoveEventHandler
         // later.  Note that the dictionary is indexed by the remove method that will be used for RemoveEventHandler
         // so the removeMethod given here must match the remove method supplied there exactly.
-#if false
-        [SecurityCritical]
-#endif
         public static void AddEventHandler<T>(Func<T, EventRegistrationToken> addMethod,
                                               Action<EventRegistrationToken> removeMethod,
                                               T handler)
@@ -62,9 +59,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // Remove the delegate handler from the Windows Runtime style event registration by looking for
         // its token, previously stored via AddEventHandler<T>
-#if false
-        [SecurityCritical]
-#endif
         public static void RemoveEventHandler<T>(Action<EventRegistrationToken> removeMethod, T handler)
         {
             if (removeMethod == null)
@@ -91,9 +85,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             ManagedEventRegistrationImpl.RemoveEventHandler<T>(removeMethod, handler);
         }
 
-#if false
-        [SecurityCritical]
-#endif
         public static void RemoveAllEventHandlers(Action<EventRegistrationToken> removeMethod)
         {
             if (removeMethod == null)
@@ -258,9 +249,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             internal static Lock s_eventRegistrationsLock = new Lock();
 
-#if false
-            [SecurityCritical]
-#endif
             internal static void AddEventHandler<T>(Func<T, EventRegistrationToken> addMethod,
                                                   Action<EventRegistrationToken> removeMethod,
                                                   T handler)
@@ -346,9 +334,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
             }
 
-#if false
-            [SecurityCritical]
-#endif
             internal static void RemoveEventHandler<T>(Action<EventRegistrationToken> removeMethod, T handler)
             {
                 Contract.Requires(removeMethod != null);
@@ -418,9 +403,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 #endif
             }
 
-#if false
-            [SecurityCritical]
-#endif
             internal static void RemoveAllEventHandlers(Action<EventRegistrationToken> removeMethod)
             {
                 Contract.Requires(removeMethod != null);
@@ -673,9 +655,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             private static Object s_dummyStaticEventKey = new Object();
             // Get InstanceKey to use in the cache
-#if false
-            [SecuritySafeCritical]
-#endif
             private static object GetInstanceKey(Action<EventRegistrationToken> removeMethod)
             {
                 object target = removeMethod.Target;
@@ -694,9 +673,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return (object)comObject.BaseIUnknown_UnsafeNoAddRef;
             }
 
-#if false
-            [SecurityCritical]
-#endif
             internal static void AddEventHandler<T>(Func<T, EventRegistrationToken> addMethod,
                                                   Action<EventRegistrationToken> removeMethod,
                                                   T handler)
@@ -848,9 +824,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
             }
 
-#if false
-            [SecurityCritical]
-#endif
             internal static void RemoveEventHandler<T>(Action<EventRegistrationToken> removeMethod, T handler)
             {
                 object instanceKey = GetInstanceKey(removeMethod);
@@ -937,9 +910,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 removeMethod(token);
             }
 
-#if false
-            [SecurityCritical]
-#endif
             internal static void RemoveAllEventHandlers(Action<EventRegistrationToken> removeMethod)
             {
                 object instanceKey = GetInstanceKey(removeMethod);

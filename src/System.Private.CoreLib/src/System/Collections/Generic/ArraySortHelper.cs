@@ -323,7 +323,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private static ArraySortHelper<TKey, TValue> CreateArraySortHelper()
         {
             s_defaultArraySortHelper = new ArraySortHelper<TKey, TValue>();

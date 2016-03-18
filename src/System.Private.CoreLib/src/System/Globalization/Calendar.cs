@@ -829,7 +829,6 @@ namespace System.Globalization
             throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
             // Call nativeGetTwoDigitYearMax

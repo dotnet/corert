@@ -198,7 +198,6 @@ namespace System.Globalization
         // TODO: This ignores other cultures that might want to do something similar
         private String LanguageName
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_langName == null)
@@ -326,7 +325,6 @@ namespace System.Globalization
             this.Calendar = cal;
         }
 
-        [System.Security.SecuritySafeCritical]
         private void InitializeOverridableProperties(CultureData cultureData, CalendarId calendarId)
         {
             Contract.Requires(cultureData != null);
@@ -453,7 +451,6 @@ namespace System.Globalization
         public String AMDesignator
         {
             // auto-generated
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (this.amDesignator == null)
@@ -960,7 +957,6 @@ namespace System.Globalization
         public String PMDesignator
         {
             // auto-generated
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (this.pmDesignator == null)
@@ -2227,7 +2223,6 @@ namespace System.Globalization
             formatFlags = DateTimeFormatFlags.NotInitialized;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal TokenHashValue[] CreateTokenHashTable()
         {
             TokenHashValue[] temp = _dtfiTokenHash;
@@ -2575,7 +2570,6 @@ namespace System.Globalization
             return (ch >= '\x0590' && ch <= '\x05ff');
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal bool Tokenize(TokenType TokenMask, out TokenType tokenType, out int tokenValue, ref FormatProvider.__DTString str)
         {
             tokenType = TokenType.UnknownToken;

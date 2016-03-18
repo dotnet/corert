@@ -29,7 +29,6 @@ namespace System.Threading
     {
         private static bool s_dummyBool;
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public Mutex(bool initiallyOwned, String name, out bool createdNew)
         {
             if (null != name && ((int)Interop.Constants.MaxPath) < (uint)name.Length)
@@ -54,31 +53,26 @@ namespace System.Threading
         }
 
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public Mutex(bool initiallyOwned, String name)
             : this(initiallyOwned, name, out s_dummyBool)
         {
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Mutex(bool initiallyOwned)
             : this(initiallyOwned, null, out s_dummyBool)
         {
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public Mutex()
             : this(false, null, out s_dummyBool)
         {
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private Mutex(SafeWaitHandle handle)
         {
             SafeWaitHandle = handle;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static Mutex OpenExisting(string name)
         {
             Mutex result;
@@ -98,13 +92,11 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static bool TryOpenExisting(string name, out Mutex result)
         {
             return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
         }
 
-        [System.Security.SecurityCritical]
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex result)
         {
             if (name == null)
@@ -153,7 +145,6 @@ namespace System.Threading
         // Note: To call ReleaseMutex, you must have an ACL granting you
         // MUTEX_MODIFY_STATE rights (0x0001).  The other interesting value
         // in a Mutex's ACL is MUTEX_ALL_ACCESS (0x1F0001).
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public void ReleaseMutex()
         {
             waitHandle.DangerousAddRef();
@@ -168,7 +159,6 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private static int CreateMutexHandle(bool initiallyOwned, String name, out SafeWaitHandle mutexHandle)
         {
             int errorCode;

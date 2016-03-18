@@ -119,7 +119,6 @@ namespace System.Globalization
         }
 
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal NumberFormatInfo(CultureData cultureData)
         {
             if (cultureData != null)

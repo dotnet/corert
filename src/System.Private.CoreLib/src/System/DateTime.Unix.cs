@@ -12,7 +12,6 @@ namespace System
     {
         public static DateTime UtcNow
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<DateTime>().Kind == DateTimeKind.Utc);

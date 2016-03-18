@@ -67,7 +67,6 @@ namespace System.Threading
         private static SynchronizationContext s_current;
 
         // Set the SynchronizationContext on the current thread
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static void SetSynchronizationContext(SynchronizationContext syncContext)
         {
             s_current = syncContext;
@@ -187,7 +186,6 @@ namespace System.Threading
             }
         }
 
-        [SecuritySafeCritical]
         public override void Post(SendOrPostCallback d, object state)
         {
             if (d == null)
@@ -198,7 +196,6 @@ namespace System.Threading
             WinRTInterop.Callbacks.PostToCoreDispatcher(m_dispatcher, Invoker.InvokeDelegate, invoker);
         }
 
-        [SecuritySafeCritical]
         public override void Send(SendOrPostCallback d, object state)
         {
             throw new NotSupportedException(SR.InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext);

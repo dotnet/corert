@@ -77,7 +77,6 @@ namespace System.Runtime.InteropServices
         /// <param name="runtimeClassName">RCW runtime class name.</param>
         /// <param name="context">RCW context.</param>
         /// <param name="flags">RCW control flags.</param>
-        [SecuritySafeCritical]
         [Event(TASKRCWCREATION_ID, Message = "New RCW created", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskRCWCreation(long objectID, long typeRawValue, string runtimeClassName, long context, long flags)
         {
@@ -116,7 +115,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the RCW.</param>
         /// <param name="refCount">New reference counter value.</param>
-        [SecuritySafeCritical]
         [Event(TASKRCWREFCOUNTINC_ID, Message = "RCW refCount incremented", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskRCWRefCountInc(long objectID, int refCount)
         {
@@ -145,7 +143,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the RCW.</param>
         /// <param name="refCount">New reference counter value.</param>
-        [SecuritySafeCritical]
         [Event(TASKRCWREFCOUNTDEC_ID, Message = "RCW refCount decremented", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskRCWRefCountDec(long objectID, int refCount)
         {
@@ -175,7 +172,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the RCW.</param>
         /// <param name="refCount">RCW reference counter.</param>
-        [SecuritySafeCritical]
         [Event(TASKRCWFINALIZATION_ID, Message = "RCW Finalized", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskRCWFinalization(long objectID, int refCount)
         {
@@ -206,7 +202,6 @@ namespace System.Runtime.InteropServices
         /// <param name="interfaceIId">Queried interface IID.</param>
         /// <param name="reason">Failure reason.</param>
         /// <remarks>Not used</remarks>
-        [SecuritySafeCritical]
         [Event(TASKRCWQUERYINTERFACEFAILURE_ID, Message = "RCW Queried Interface Failure", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskRCWQueryInterfaceFailure(long objectID, long context, Guid interfaceIId, int reason)
         {
@@ -260,7 +255,6 @@ namespace System.Runtime.InteropServices
         /// <param name="objectID">Base address that unique identify the CCW.</param>
         /// <param name="targetObjectID">Base address that unique identify the target object in CCW.</param>
         /// <param name="targetObjectIDType">Raw value for the type of the target Object.</param>
-        [SecuritySafeCritical]
         [Event(TASKCCWCREATION_ID, Message = "New CCW created", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskCCWCreation(long objectID, long targetObjectID, long targetObjectIDType)
         {
@@ -291,7 +285,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the CCW.</param>
         /// <param name="refCount">The reference counter value at the ending time.</param>
-        [SecuritySafeCritical]
         [Event(TASKCCWFINALIZATION_ID, Message = "CCW Finalized", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskCCWFinalization(long objectID, long refCount)
         {
@@ -320,7 +313,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the CCW.</param>
         /// <param name="refCount">New reference counter value.</param>
-        [SecuritySafeCritical]
         [Event(TASKCCWREFCOUNTINC_ID, Message = "CCW refCount incremented", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskCCWRefCountInc(long objectID, long refCount)
         {
@@ -349,7 +341,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the CCW.</param>
         /// <param name="refCount">New reference counter value.</param>
-        [SecuritySafeCritical]
         [Event(TASKCCWREFCOUNTDEC_ID, Message = "CCW refCount decremented", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskCCWRefCountDec(long objectID, long refCount)
         {
@@ -378,7 +369,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the CCW.</param>
         /// <param name="runtimeClassName">Required runtime class name.</param>
-        [SecuritySafeCritical]
         [Event(TASKCCWQUERYRUNTIMECLASSNAME_ID, Message = "CCW runtime class name required", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskCCWQueryRuntimeClassName(long objectID, string runtimeClassName)
         {
@@ -411,7 +401,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the CCW.</param>
         /// <param name="interfaceIId">Guid of the queried interface.</param>
-        [SecuritySafeCritical]
         [Event(TASKCCWQUERYINTERFACEFAILURE_ID, Message = "CCW queried interface failure", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskCCWQueryInterfaceFailure(long objectID, Guid interfaceIId)
         {
@@ -442,7 +431,6 @@ namespace System.Runtime.InteropServices
         /// <param name="interfaceAddress">Address of the interface that must be resolved</param>
         /// <param name="interfaceIId">Guid of the queried interface.</param>
         /// <param name="rejectedReason">Rejected reason.</param>
-        [SecuritySafeCritical]
         [Event(TASKCCWRESOLVEFAILURE_ID, Message = "CCW resolve failure", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskCCWResolveFailure(long objectID, long interfaceAddress, Guid interfaceIId, int rejectedReason)
         {
@@ -488,7 +476,6 @@ namespace System.Runtime.InteropServices
         /// <scenarios>
         /// - Monitoring the frequency of GarbageCollect is being triggered by Jupiter
         /// </scenarios>
-        [SecuritySafeCritical]
         [Event(TASKJUPITERGARBAGECOLLECT_ID, Message = "Garbage Collect", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskJupiterGarbageCollect()
         {
@@ -508,7 +495,6 @@ namespace System.Runtime.InteropServices
         /// <scenarios>
         /// - Monitoring the frequency of wait for pending finalizer callback is being triggered by Jupiter
         /// </scenarios>
-        [SecuritySafeCritical]
         [Event(TASKJUPITERDISCONNECTERCWSINCURRENTAPARTMENT_ID, Message = "Jupiter disconnect RCWs in current apartment", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskJupiterDisconnectRCWsInCurrentApartment()
         {
@@ -529,7 +515,6 @@ namespace System.Runtime.InteropServices
         /// - Monitoring memory pressure added by Jupiter
         /// </scenarios>
         /// <param name="memorySize">Number of bytes in the added memory.</param>
-        [SecuritySafeCritical]
         [Event(TASKJUPITERADDMEMORYPRESSURE_ID, Message = "Jupiter add memory pressure", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskJupiterAddMemoryPressure(long memorySize)
         {
@@ -555,7 +540,6 @@ namespace System.Runtime.InteropServices
         /// - Monitoring memory pressure Removeed by Jupiter
         /// </scenarios>
         /// <param name="memorySize">Number of bytes in the memory removed.</param>
-        [SecuritySafeCritical]
         [Event(TASKJUPITERREMOVEMEMORYPRESSURE_ID, Message = "Jupiter Remove memory pressure", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskJupiterRemoveMemoryPressure(long memorySize)
         {
@@ -582,7 +566,6 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="IUnknown">Base address that unique identify the Jupiter.</param>
         /// <param name="objectType">Jupiter type.</param>
-        [SecuritySafeCritical]
         [Event(TASKJUPITERCREATEMANAGEDREFERENCE_ID, Message = "Jupiter create managed reference", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
         public void TaskJupiterCreateManagedReference(long IUnknown, long objectType)
         {

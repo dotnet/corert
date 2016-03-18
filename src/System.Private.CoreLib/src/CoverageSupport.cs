@@ -29,7 +29,6 @@ namespace MS.Magellan.Runtime
         private static CoverageIL2 m_BBRegHeaderField;
         internal unsafe byte* m_Vector;
 
-        [SecuritySafeCritical]
         internal CoverageBase(byte[] header)
         {
             m_BBRegHeader = header;

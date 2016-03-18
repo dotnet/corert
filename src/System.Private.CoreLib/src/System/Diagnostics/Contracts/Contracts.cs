@@ -783,7 +783,6 @@ namespace System.Diagnostics.Contracts
         [CLSCompliant(false)]
         [Pure]
         [ContractRuntimeIgnored]
-        [SecurityCritical]
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif
@@ -830,7 +829,6 @@ namespace System.Diagnostics.Contracts
         [CLSCompliant(false)]
         [Pure]
         [ContractRuntimeIgnored]
-        [SecurityCritical]
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
 #endif

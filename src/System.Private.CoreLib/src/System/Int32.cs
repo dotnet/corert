@@ -91,7 +91,6 @@ namespace System
             return m_value;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         public override String ToString()
         {
@@ -99,7 +98,6 @@ namespace System
             return FormatProvider.FormatInt32(m_value, null, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         public String ToString(String format)
         {
@@ -107,7 +105,6 @@ namespace System
             return FormatProvider.FormatInt32(m_value, format, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [Pure]
         public String ToString(IFormatProvider provider)
         {
@@ -116,7 +113,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);

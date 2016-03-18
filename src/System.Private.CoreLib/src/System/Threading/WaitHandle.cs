@@ -42,7 +42,6 @@ namespace System.Threading
 
         public SafeWaitHandle SafeWaitHandle
         {
-            [System.Security.SecurityCritical]
             get
             {
                 if (waitHandle == null)
@@ -52,7 +51,6 @@ namespace System.Threading
                 return waitHandle;
             }
 
-            [System.Security.SecurityCritical]
             set
             { waitHandle = value; }
         }
@@ -83,13 +81,11 @@ namespace System.Threading
             return WaitOne(-1);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         private bool WaitOne(long timeout)
         {
             return InternalWaitOne(waitHandle, timeout);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static bool InternalWaitOne(SafeWaitHandle waitableSafeHandle, long millisecondsTimeout)
         {
             if (waitableSafeHandle == null)
@@ -112,7 +108,6 @@ namespace System.Threading
         }
 
 #if FEATURE_LEGACYNETCFFAS
-        [System.Security.SecurityCritical]
         internal bool WaitOneWithoutFAS()
         {
             // version of waitone without fast application switch (FAS) support
@@ -176,7 +171,6 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool WaitAll(WaitHandle[] waitHandles, int millisecondsTimeout)
         {
             if (waitHandles == null)
@@ -262,7 +256,6 @@ namespace System.Threading
         ** signalled or timeout milliseonds have elapsed.
         ========================================================================*/
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static int WaitAny(WaitHandle[] waitHandles, int millisecondsTimeout)
         {
             if (waitHandles == null)
@@ -347,7 +340,6 @@ namespace System.Threading
             throw new AbandonedMutexException(location, handle);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         protected virtual void Dispose(bool explicitDisposing)
         {
             if (waitHandle != null)

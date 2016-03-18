@@ -513,7 +513,6 @@ namespace System.Threading.Tasks
 
             /// <summary>Queues a task to the scheduler.</summary>
             /// <param name="task">The task to be queued.</param>
-            [SecurityCritical]
             protected internal override void QueueTask(Task task)
             {
                 Contract.Assert(task != null, "Infrastructure should have provided a non-null task.");
@@ -530,7 +529,6 @@ namespace System.Threading.Tasks
 
             /// <summary>Executes a task on this scheduler.</summary>
             /// <param name="task">The task to be executed.</param>
-            [SecuritySafeCritical]
             internal void ExecuteTask(Task task)
             {
                 Contract.Assert(task != null, "Infrastructure should have provided a non-null task.");
@@ -541,7 +539,6 @@ namespace System.Threading.Tasks
             /// <param name="task">The task to execute.</param>
             /// <param name="taskWasPreviouslyQueued">Whether the task was previously queued to the scheduler.</param>
             /// <returns>true if the task could be executed; otherwise, false.</returns>
-            [SecurityCritical]
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
             {
                 Contract.Assert(task != null, "Infrastructure should have provided a non-null task.");
@@ -628,7 +625,6 @@ namespace System.Threading.Tasks
             /// This method is separated out not because of performance reasons but so that
             /// the SecuritySafeCritical attribute may be employed.
             /// </remarks>
-            [SecuritySafeCritical]
             private static bool TryExecuteTaskShim(object state)
             {
                 var tuple = (Tuple<ConcurrentExclusiveTaskScheduler, Task>)state;
@@ -637,7 +633,6 @@ namespace System.Threading.Tasks
 
             /// <summary>Gets for debugging purposes the tasks scheduled to this scheduler.</summary>
             /// <returns>An enumerable of the tasks queued.</returns>
-            [SecurityCritical]
             protected override IEnumerable<Task> GetScheduledTasks() { return m_tasks; }
 
             /// <summary>Gets the number of tasks queued to this scheduler.</summary>

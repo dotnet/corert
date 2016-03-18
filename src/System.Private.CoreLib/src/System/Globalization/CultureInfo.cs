@@ -395,7 +395,6 @@ namespace System.Globalization
         public static CultureInfo DefaultThreadCurrentCulture
         {
             get { return s_DefaultThreadCurrentCulture; }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
                 // If you add pre-conditions to this method, check to see if you also need to
@@ -408,7 +407,6 @@ namespace System.Globalization
         public static CultureInfo DefaultThreadCurrentUICulture
         {
             get { return s_DefaultThreadCurrentUICulture; }
-            [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
                 //If they're trying to use a Culture with a name that we can't use in resource lookup,
@@ -539,7 +537,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String DisplayName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
@@ -560,7 +557,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String NativeName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
@@ -579,7 +575,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual String EnglishName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
@@ -590,7 +585,6 @@ namespace System.Globalization
         // ie: en
         public virtual String TwoLetterISOLanguageName
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
