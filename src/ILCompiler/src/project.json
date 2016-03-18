@@ -4,7 +4,7 @@
     "System.IO.MemoryMappedFiles": "4.0.0-rc2-23910",
     "System.Reflection.Metadata": "1.3.0-rc2-23910",
     "System.CommandLine": "0.1.0-e160208-1",
-    "Microsoft.DotNet.RyuJit": "1.0.5-prerelease-00001",
+    "Microsoft.DotNet.RyuJit": "1.0.6-prerelease-00001",
     "Microsoft.DotNet.ObjectWriter": "1.0.9-prerelease-00001"
   },
   "frameworks": {

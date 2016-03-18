@@ -119,9 +119,6 @@ public:
     virtual unsigned getMethodHash(CorInfoException** ppException, void* ftn) = 0;
     virtual size_t findNameOfToken(CorInfoException** ppException, void* moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity) = 0;
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(CorInfoException** ppException, void* structHnd, void* structPassInRegDescPtr) = 0;
-    virtual int getIntConfigValue(CorInfoException** ppException, const wchar_t* name, int defaultValue) = 0;
-    virtual wchar_t* getStringConfigValue(CorInfoException** ppException, const wchar_t* name) = 0;
-    virtual void freeStringConfigValue(CorInfoException** ppException, wchar_t* value) = 0;
     virtual unsigned int getThreadTLSIndex(CorInfoException** ppException, void** ppIndirection) = 0;
     virtual const void* getInlinedCallFrameVptr(CorInfoException** ppException, void** ppIndirection) = 0;
     virtual long* getAddrOfCaptureThreadGlobal(CorInfoException** ppException, void** ppIndirection) = 0;
@@ -1201,35 +1198,6 @@ public:
             throw pException;
         }
         return _ret;
-    }
-    virtual int getIntConfigValue(const wchar_t* name, int defaultValue)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getIntConfigValue(&pException, name, defaultValue);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual wchar_t* getStringConfigValue(const wchar_t* name)
-    {
-        CorInfoException* pException = nullptr;
-        wchar_t* _ret = _pCorInfo->getStringConfigValue(&pException, name);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual void freeStringConfigValue(wchar_t* value)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->freeStringConfigValue(&pException, value);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
     }
     virtual unsigned int getThreadTLSIndex(void** ppIndirection)
     {

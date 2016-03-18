@@ -1345,6 +1345,9 @@ namespace Internal.JitInterface
 
         // token comes from CEE_CONSTRAINED
         CORINFO_TOKENKIND_Constrained = 0x100 | CORINFO_TOKENKIND_Class,
+
+        // token comes from CEE_NEWOBJ
+        CORINFO_TOKENKIND_NewObj = 0x200 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
