@@ -192,11 +192,10 @@ namespace Internal.JitInterface
                     }
                     break;
 
-                // TODO: Implementation of pMustExpand in RyuJIT is not correct
-                // case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
-                // case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
-                //    pMustExpand = true;
-                //    break;
+                case CorInfoIntrinsics.CORINFO_INTRINSIC_RTH_GetValueInternal:
+                case CorInfoIntrinsics.CORINFO_INTRINSIC_InitializeArray:
+                    pMustExpand = true;
+                    break;
 
                 default:
                     break;

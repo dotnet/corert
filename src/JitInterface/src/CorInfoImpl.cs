@@ -24,7 +24,13 @@ namespace Internal.JitInterface
         private IntPtr _comp;
 
         [DllImport("ryujit")]
+        private extern static IntPtr jitStartup(IntPtr host);
+
+        [DllImport("ryujit")]
         private extern static IntPtr getJit();
+
+        [DllImport("jitinterface")]
+        private extern static IntPtr GetJitHost();
 
         [DllImport("jitinterface")]
         private extern static IntPtr GetJitInterfaceWrapper(IntPtr unwrapped);
@@ -61,6 +67,8 @@ namespace Internal.JitInterface
         public CorInfoImpl(Compilation compilation)
         {
             _compilation = compilation;
+
+            jitStartup(GetJitHost());
 
             _comp = GetJitInterfaceWrapper(CreateUnmanagedInstance());
 
@@ -1706,12 +1714,6 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private int getIntConfigValue(String name, int defaultValue)
-        { throw new NotImplementedException("getIntConfigValue"); }
-        private short* getStringConfigValue(String name)
-        { throw new NotImplementedException("getStringConfigValue"); }
-        private void freeStringConfigValue(short* value)
-        { throw new NotImplementedException("freeStringConfigValue"); }
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
@@ -1873,9 +1875,8 @@ namespace Internal.JitInterface
                 // can simply do a static look up
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
 
-                if (td.IsArray && !td.IsSzArray)
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj)
                 {
-                    // TODO: Use CORINFO_TOKENKIND_NewObj to track that this is because of CORINFO_HELP_NEW_MDARR.
                     pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ConstructedTypeSymbol(td));
                 }
                 else

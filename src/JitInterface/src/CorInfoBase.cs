@@ -224,12 +224,6 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
         [return: MarshalAs(UnmanagedType.I1)]delegate bool _getSystemVAmd64PassStructInRegisterDescriptor_wrapper(IntPtr _this, out IntPtr exception, CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
-        delegate int _getIntConfigValue_wrapper(IntPtr _this, out IntPtr exception, String name, int defaultValue);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
-        delegate short* _getStringConfigValue_wrapper(IntPtr _this, out IntPtr exception, String name);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
-        delegate void _freeStringConfigValue_wrapper(IntPtr _this, out IntPtr exception, short* value);
-        [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
         delegate uint _getThreadTLSIndex_wrapper(IntPtr _this, out IntPtr exception, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]
         delegate void* _getInlinedCallFrameVptr_wrapper(IntPtr _this, out IntPtr exception, ref void* ppIndirection);
@@ -1907,50 +1901,6 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public virtual int getIntConfigValue_wrapper(IntPtr _this, out IntPtr exception, String name, int defaultValue)
-        {
-            exception = IntPtr.Zero;
-            try
-            {
-                return getIntConfigValue(name, defaultValue);
-
-            }
-            catch (Exception ex)
-            {
-                exception = AllocException(ex);
-            }
-            return (int)0;
-        }
-
-        public virtual short* getStringConfigValue_wrapper(IntPtr _this, out IntPtr exception, String name)
-        {
-            exception = IntPtr.Zero;
-            try
-            {
-                return getStringConfigValue(name);
-
-            }
-            catch (Exception ex)
-            {
-                exception = AllocException(ex);
-            }
-            return (short*)0;
-        }
-
-        public virtual void freeStringConfigValue_wrapper(IntPtr _this, out IntPtr exception, short* value)
-        {
-            exception = IntPtr.Zero;
-            try
-            {
-                freeStringConfigValue(value);
-                return;
-            }
-            catch (Exception ex)
-            {
-                exception = AllocException(ex);
-            }
-        }
-
         public virtual uint getThreadTLSIndex_wrapper(IntPtr _this, out IntPtr exception, ref void* ppIndirection)
         {
             exception = IntPtr.Zero;
@@ -2777,8 +2727,8 @@ namespace Internal.JitInterface
 
         protected IntPtr CreateUnmanagedInstance()
         {
-            IntPtr * vtable = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 165);
-            Object[] keepalive = new Object[165];
+            IntPtr * vtable = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 162);
+            Object[] keepalive = new Object[162];
 
             _keepalive = keepalive;
 
@@ -3100,183 +3050,174 @@ namespace Internal.JitInterface
             var d105 = new _getSystemVAmd64PassStructInRegisterDescriptor_wrapper(getSystemVAmd64PassStructInRegisterDescriptor_wrapper);
             vtable[105] = Marshal.GetFunctionPointerForDelegate(d105);
             keepalive[105] = d105;
-            var d106 = new _getIntConfigValue_wrapper(getIntConfigValue_wrapper);
+            var d106 = new _getThreadTLSIndex_wrapper(getThreadTLSIndex_wrapper);
             vtable[106] = Marshal.GetFunctionPointerForDelegate(d106);
             keepalive[106] = d106;
-            var d107 = new _getStringConfigValue_wrapper(getStringConfigValue_wrapper);
+            var d107 = new _getInlinedCallFrameVptr_wrapper(getInlinedCallFrameVptr_wrapper);
             vtable[107] = Marshal.GetFunctionPointerForDelegate(d107);
             keepalive[107] = d107;
-            var d108 = new _freeStringConfigValue_wrapper(freeStringConfigValue_wrapper);
+            var d108 = new _getAddrOfCaptureThreadGlobal_wrapper(getAddrOfCaptureThreadGlobal_wrapper);
             vtable[108] = Marshal.GetFunctionPointerForDelegate(d108);
             keepalive[108] = d108;
-            var d109 = new _getThreadTLSIndex_wrapper(getThreadTLSIndex_wrapper);
+            var d109 = new _getAddrModuleDomainID_wrapper(getAddrModuleDomainID_wrapper);
             vtable[109] = Marshal.GetFunctionPointerForDelegate(d109);
             keepalive[109] = d109;
-            var d110 = new _getInlinedCallFrameVptr_wrapper(getInlinedCallFrameVptr_wrapper);
+            var d110 = new _getHelperFtn_wrapper(getHelperFtn_wrapper);
             vtable[110] = Marshal.GetFunctionPointerForDelegate(d110);
             keepalive[110] = d110;
-            var d111 = new _getAddrOfCaptureThreadGlobal_wrapper(getAddrOfCaptureThreadGlobal_wrapper);
+            var d111 = new _getFunctionEntryPoint_wrapper(getFunctionEntryPoint_wrapper);
             vtable[111] = Marshal.GetFunctionPointerForDelegate(d111);
             keepalive[111] = d111;
-            var d112 = new _getAddrModuleDomainID_wrapper(getAddrModuleDomainID_wrapper);
+            var d112 = new _getFunctionFixedEntryPoint_wrapper(getFunctionFixedEntryPoint_wrapper);
             vtable[112] = Marshal.GetFunctionPointerForDelegate(d112);
             keepalive[112] = d112;
-            var d113 = new _getHelperFtn_wrapper(getHelperFtn_wrapper);
+            var d113 = new _getMethodSync_wrapper(getMethodSync_wrapper);
             vtable[113] = Marshal.GetFunctionPointerForDelegate(d113);
             keepalive[113] = d113;
-            var d114 = new _getFunctionEntryPoint_wrapper(getFunctionEntryPoint_wrapper);
+            var d114 = new _getLazyStringLiteralHelper_wrapper(getLazyStringLiteralHelper_wrapper);
             vtable[114] = Marshal.GetFunctionPointerForDelegate(d114);
             keepalive[114] = d114;
-            var d115 = new _getFunctionFixedEntryPoint_wrapper(getFunctionFixedEntryPoint_wrapper);
+            var d115 = new _embedModuleHandle_wrapper(embedModuleHandle_wrapper);
             vtable[115] = Marshal.GetFunctionPointerForDelegate(d115);
             keepalive[115] = d115;
-            var d116 = new _getMethodSync_wrapper(getMethodSync_wrapper);
+            var d116 = new _embedClassHandle_wrapper(embedClassHandle_wrapper);
             vtable[116] = Marshal.GetFunctionPointerForDelegate(d116);
             keepalive[116] = d116;
-            var d117 = new _getLazyStringLiteralHelper_wrapper(getLazyStringLiteralHelper_wrapper);
+            var d117 = new _embedMethodHandle_wrapper(embedMethodHandle_wrapper);
             vtable[117] = Marshal.GetFunctionPointerForDelegate(d117);
             keepalive[117] = d117;
-            var d118 = new _embedModuleHandle_wrapper(embedModuleHandle_wrapper);
+            var d118 = new _embedFieldHandle_wrapper(embedFieldHandle_wrapper);
             vtable[118] = Marshal.GetFunctionPointerForDelegate(d118);
             keepalive[118] = d118;
-            var d119 = new _embedClassHandle_wrapper(embedClassHandle_wrapper);
+            var d119 = new _embedGenericHandle_wrapper(embedGenericHandle_wrapper);
             vtable[119] = Marshal.GetFunctionPointerForDelegate(d119);
             keepalive[119] = d119;
-            var d120 = new _embedMethodHandle_wrapper(embedMethodHandle_wrapper);
+            var d120 = new _getLocationOfThisType_wrapper(getLocationOfThisType_wrapper);
             vtable[120] = Marshal.GetFunctionPointerForDelegate(d120);
             keepalive[120] = d120;
-            var d121 = new _embedFieldHandle_wrapper(embedFieldHandle_wrapper);
+            var d121 = new _getPInvokeUnmanagedTarget_wrapper(getPInvokeUnmanagedTarget_wrapper);
             vtable[121] = Marshal.GetFunctionPointerForDelegate(d121);
             keepalive[121] = d121;
-            var d122 = new _embedGenericHandle_wrapper(embedGenericHandle_wrapper);
+            var d122 = new _getAddressOfPInvokeFixup_wrapper(getAddressOfPInvokeFixup_wrapper);
             vtable[122] = Marshal.GetFunctionPointerForDelegate(d122);
             keepalive[122] = d122;
-            var d123 = new _getLocationOfThisType_wrapper(getLocationOfThisType_wrapper);
+            var d123 = new _getAddressOfPInvokeTarget_wrapper(getAddressOfPInvokeTarget_wrapper);
             vtable[123] = Marshal.GetFunctionPointerForDelegate(d123);
             keepalive[123] = d123;
-            var d124 = new _getPInvokeUnmanagedTarget_wrapper(getPInvokeUnmanagedTarget_wrapper);
+            var d124 = new _GetCookieForPInvokeCalliSig_wrapper(GetCookieForPInvokeCalliSig_wrapper);
             vtable[124] = Marshal.GetFunctionPointerForDelegate(d124);
             keepalive[124] = d124;
-            var d125 = new _getAddressOfPInvokeFixup_wrapper(getAddressOfPInvokeFixup_wrapper);
+            var d125 = new _canGetCookieForPInvokeCalliSig_wrapper(canGetCookieForPInvokeCalliSig_wrapper);
             vtable[125] = Marshal.GetFunctionPointerForDelegate(d125);
             keepalive[125] = d125;
-            var d126 = new _getAddressOfPInvokeTarget_wrapper(getAddressOfPInvokeTarget_wrapper);
+            var d126 = new _getJustMyCodeHandle_wrapper(getJustMyCodeHandle_wrapper);
             vtable[126] = Marshal.GetFunctionPointerForDelegate(d126);
             keepalive[126] = d126;
-            var d127 = new _GetCookieForPInvokeCalliSig_wrapper(GetCookieForPInvokeCalliSig_wrapper);
+            var d127 = new _GetProfilingHandle_wrapper(GetProfilingHandle_wrapper);
             vtable[127] = Marshal.GetFunctionPointerForDelegate(d127);
             keepalive[127] = d127;
-            var d128 = new _canGetCookieForPInvokeCalliSig_wrapper(canGetCookieForPInvokeCalliSig_wrapper);
+            var d128 = new _getCallInfo_wrapper(getCallInfo_wrapper);
             vtable[128] = Marshal.GetFunctionPointerForDelegate(d128);
             keepalive[128] = d128;
-            var d129 = new _getJustMyCodeHandle_wrapper(getJustMyCodeHandle_wrapper);
+            var d129 = new _canAccessFamily_wrapper(canAccessFamily_wrapper);
             vtable[129] = Marshal.GetFunctionPointerForDelegate(d129);
             keepalive[129] = d129;
-            var d130 = new _GetProfilingHandle_wrapper(GetProfilingHandle_wrapper);
+            var d130 = new _isRIDClassDomainID_wrapper(isRIDClassDomainID_wrapper);
             vtable[130] = Marshal.GetFunctionPointerForDelegate(d130);
             keepalive[130] = d130;
-            var d131 = new _getCallInfo_wrapper(getCallInfo_wrapper);
+            var d131 = new _getClassDomainID_wrapper(getClassDomainID_wrapper);
             vtable[131] = Marshal.GetFunctionPointerForDelegate(d131);
             keepalive[131] = d131;
-            var d132 = new _canAccessFamily_wrapper(canAccessFamily_wrapper);
+            var d132 = new _getFieldAddress_wrapper(getFieldAddress_wrapper);
             vtable[132] = Marshal.GetFunctionPointerForDelegate(d132);
             keepalive[132] = d132;
-            var d133 = new _isRIDClassDomainID_wrapper(isRIDClassDomainID_wrapper);
+            var d133 = new _getVarArgsHandle_wrapper(getVarArgsHandle_wrapper);
             vtable[133] = Marshal.GetFunctionPointerForDelegate(d133);
             keepalive[133] = d133;
-            var d134 = new _getClassDomainID_wrapper(getClassDomainID_wrapper);
+            var d134 = new _canGetVarArgsHandle_wrapper(canGetVarArgsHandle_wrapper);
             vtable[134] = Marshal.GetFunctionPointerForDelegate(d134);
             keepalive[134] = d134;
-            var d135 = new _getFieldAddress_wrapper(getFieldAddress_wrapper);
+            var d135 = new _constructStringLiteral_wrapper(constructStringLiteral_wrapper);
             vtable[135] = Marshal.GetFunctionPointerForDelegate(d135);
             keepalive[135] = d135;
-            var d136 = new _getVarArgsHandle_wrapper(getVarArgsHandle_wrapper);
+            var d136 = new _emptyStringLiteral_wrapper(emptyStringLiteral_wrapper);
             vtable[136] = Marshal.GetFunctionPointerForDelegate(d136);
             keepalive[136] = d136;
-            var d137 = new _canGetVarArgsHandle_wrapper(canGetVarArgsHandle_wrapper);
+            var d137 = new _getFieldThreadLocalStoreID_wrapper(getFieldThreadLocalStoreID_wrapper);
             vtable[137] = Marshal.GetFunctionPointerForDelegate(d137);
             keepalive[137] = d137;
-            var d138 = new _constructStringLiteral_wrapper(constructStringLiteral_wrapper);
+            var d138 = new _setOverride_wrapper(setOverride_wrapper);
             vtable[138] = Marshal.GetFunctionPointerForDelegate(d138);
             keepalive[138] = d138;
-            var d139 = new _emptyStringLiteral_wrapper(emptyStringLiteral_wrapper);
+            var d139 = new _addActiveDependency_wrapper(addActiveDependency_wrapper);
             vtable[139] = Marshal.GetFunctionPointerForDelegate(d139);
             keepalive[139] = d139;
-            var d140 = new _getFieldThreadLocalStoreID_wrapper(getFieldThreadLocalStoreID_wrapper);
+            var d140 = new _GetDelegateCtor_wrapper(GetDelegateCtor_wrapper);
             vtable[140] = Marshal.GetFunctionPointerForDelegate(d140);
             keepalive[140] = d140;
-            var d141 = new _setOverride_wrapper(setOverride_wrapper);
+            var d141 = new _MethodCompileComplete_wrapper(MethodCompileComplete_wrapper);
             vtable[141] = Marshal.GetFunctionPointerForDelegate(d141);
             keepalive[141] = d141;
-            var d142 = new _addActiveDependency_wrapper(addActiveDependency_wrapper);
+            var d142 = new _getTailCallCopyArgsThunk_wrapper(getTailCallCopyArgsThunk_wrapper);
             vtable[142] = Marshal.GetFunctionPointerForDelegate(d142);
             keepalive[142] = d142;
-            var d143 = new _GetDelegateCtor_wrapper(GetDelegateCtor_wrapper);
+            var d143 = new _getMemoryManager_wrapper(getMemoryManager_wrapper);
             vtable[143] = Marshal.GetFunctionPointerForDelegate(d143);
             keepalive[143] = d143;
-            var d144 = new _MethodCompileComplete_wrapper(MethodCompileComplete_wrapper);
+            var d144 = new _allocMem_wrapper(allocMem_wrapper);
             vtable[144] = Marshal.GetFunctionPointerForDelegate(d144);
             keepalive[144] = d144;
-            var d145 = new _getTailCallCopyArgsThunk_wrapper(getTailCallCopyArgsThunk_wrapper);
+            var d145 = new _reserveUnwindInfo_wrapper(reserveUnwindInfo_wrapper);
             vtable[145] = Marshal.GetFunctionPointerForDelegate(d145);
             keepalive[145] = d145;
-            var d146 = new _getMemoryManager_wrapper(getMemoryManager_wrapper);
+            var d146 = new _allocUnwindInfo_wrapper(allocUnwindInfo_wrapper);
             vtable[146] = Marshal.GetFunctionPointerForDelegate(d146);
             keepalive[146] = d146;
-            var d147 = new _allocMem_wrapper(allocMem_wrapper);
+            var d147 = new _allocGCInfo_wrapper(allocGCInfo_wrapper);
             vtable[147] = Marshal.GetFunctionPointerForDelegate(d147);
             keepalive[147] = d147;
-            var d148 = new _reserveUnwindInfo_wrapper(reserveUnwindInfo_wrapper);
+            var d148 = new _yieldExecution_wrapper(yieldExecution_wrapper);
             vtable[148] = Marshal.GetFunctionPointerForDelegate(d148);
             keepalive[148] = d148;
-            var d149 = new _allocUnwindInfo_wrapper(allocUnwindInfo_wrapper);
+            var d149 = new _setEHcount_wrapper(setEHcount_wrapper);
             vtable[149] = Marshal.GetFunctionPointerForDelegate(d149);
             keepalive[149] = d149;
-            var d150 = new _allocGCInfo_wrapper(allocGCInfo_wrapper);
+            var d150 = new _setEHinfo_wrapper(setEHinfo_wrapper);
             vtable[150] = Marshal.GetFunctionPointerForDelegate(d150);
             keepalive[150] = d150;
-            var d151 = new _yieldExecution_wrapper(yieldExecution_wrapper);
+            var d151 = new _logMsg_wrapper(logMsg_wrapper);
             vtable[151] = Marshal.GetFunctionPointerForDelegate(d151);
             keepalive[151] = d151;
-            var d152 = new _setEHcount_wrapper(setEHcount_wrapper);
+            var d152 = new _doAssert_wrapper(doAssert_wrapper);
             vtable[152] = Marshal.GetFunctionPointerForDelegate(d152);
             keepalive[152] = d152;
-            var d153 = new _setEHinfo_wrapper(setEHinfo_wrapper);
+            var d153 = new _reportFatalError_wrapper(reportFatalError_wrapper);
             vtable[153] = Marshal.GetFunctionPointerForDelegate(d153);
             keepalive[153] = d153;
-            var d154 = new _logMsg_wrapper(logMsg_wrapper);
+            var d154 = new _allocBBProfileBuffer_wrapper(allocBBProfileBuffer_wrapper);
             vtable[154] = Marshal.GetFunctionPointerForDelegate(d154);
             keepalive[154] = d154;
-            var d155 = new _doAssert_wrapper(doAssert_wrapper);
+            var d155 = new _getBBProfileData_wrapper(getBBProfileData_wrapper);
             vtable[155] = Marshal.GetFunctionPointerForDelegate(d155);
             keepalive[155] = d155;
-            var d156 = new _reportFatalError_wrapper(reportFatalError_wrapper);
+            var d156 = new _recordCallSite_wrapper(recordCallSite_wrapper);
             vtable[156] = Marshal.GetFunctionPointerForDelegate(d156);
             keepalive[156] = d156;
-            var d157 = new _allocBBProfileBuffer_wrapper(allocBBProfileBuffer_wrapper);
+            var d157 = new _recordRelocation_wrapper(recordRelocation_wrapper);
             vtable[157] = Marshal.GetFunctionPointerForDelegate(d157);
             keepalive[157] = d157;
-            var d158 = new _getBBProfileData_wrapper(getBBProfileData_wrapper);
+            var d158 = new _getRelocTypeHint_wrapper(getRelocTypeHint_wrapper);
             vtable[158] = Marshal.GetFunctionPointerForDelegate(d158);
             keepalive[158] = d158;
-            var d159 = new _recordCallSite_wrapper(recordCallSite_wrapper);
+            var d159 = new _getModuleNativeEntryPointRange_wrapper(getModuleNativeEntryPointRange_wrapper);
             vtable[159] = Marshal.GetFunctionPointerForDelegate(d159);
             keepalive[159] = d159;
-            var d160 = new _recordRelocation_wrapper(recordRelocation_wrapper);
+            var d160 = new _getExpectedTargetArchitecture_wrapper(getExpectedTargetArchitecture_wrapper);
             vtable[160] = Marshal.GetFunctionPointerForDelegate(d160);
             keepalive[160] = d160;
-            var d161 = new _getRelocTypeHint_wrapper(getRelocTypeHint_wrapper);
+            var d161 = new _getJitFlags_wrapper(getJitFlags_wrapper);
             vtable[161] = Marshal.GetFunctionPointerForDelegate(d161);
             keepalive[161] = d161;
-            var d162 = new _getModuleNativeEntryPointRange_wrapper(getModuleNativeEntryPointRange_wrapper);
-            vtable[162] = Marshal.GetFunctionPointerForDelegate(d162);
-            keepalive[162] = d162;
-            var d163 = new _getExpectedTargetArchitecture_wrapper(getExpectedTargetArchitecture_wrapper);
-            vtable[163] = Marshal.GetFunctionPointerForDelegate(d163);
-            keepalive[163] = d163;
-            var d164 = new _getJitFlags_wrapper(getJitFlags_wrapper);
-            vtable[164] = Marshal.GetFunctionPointerForDelegate(d164);
-            keepalive[164] = d164;
 
             IntPtr instance = Marshal.AllocCoTaskMem(sizeof(IntPtr));
             *(IntPtr**)instance = vtable;
