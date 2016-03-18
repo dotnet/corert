@@ -35,5 +35,10 @@ namespace Internal.Runtime.CompilerHelpers
         {
             throw new ArrayTypeMismatchException();
         }
+
+        private static void ThrowPlatformNotSupportedException()
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }
