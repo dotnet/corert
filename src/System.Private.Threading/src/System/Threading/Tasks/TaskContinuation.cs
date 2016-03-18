@@ -437,9 +437,7 @@ namespace System.Threading.Tasks
         /// A delegate for PostAction, which expects a SynchronizationContextAwaitTaskContinuation 
         /// to be passed as state.
         /// </returns>
-#if !FEATURE_CORECLR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [SecurityCritical]
         private static ContextCallback GetPostActionCallback()
         {
@@ -626,9 +624,7 @@ namespace System.Threading.Tasks
         [SecurityCritical]
         private static void InvokeAction(object state) { ((Action)state)(); }
 
-#if !FEATURE_CORECLR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [SecurityCritical]
         protected static ContextCallback GetInvokeActionCallback()
         {
@@ -745,11 +741,7 @@ namespace System.Threading.Tasks
         internal override Delegate[] GetDelegateContinuationsForDebugger()
         {
             Contract.Assert(m_action != null);
-#if !FEATURE_CORECLR || FEATURE_NETCORE
             return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(m_action) };
-#else
-            return new Delegate[] { m_action };
-#endif
         }
     }
 }

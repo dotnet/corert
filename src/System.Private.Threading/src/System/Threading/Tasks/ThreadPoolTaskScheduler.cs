@@ -18,9 +18,6 @@ using System.Diagnostics.Contracts;
 using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics.Tracing;
-#if !FEATURE_PAL && !FEATURE_CORECLR    // PAL and CoreClr don't support  eventing
-//using System.Diagnostics.Tracing;
-#endif
 
 
 namespace System.Threading.Tasks
@@ -44,7 +41,6 @@ namespace System.Threading.Tasks
         [SecurityCritical]
         protected internal override void QueueTask(Task task)
         {
-#if !FEATURE_PAL && !FEATURE_CORECLR    // PAL and CoreClr don't support  eventing
             var etwLog = TplEtwProvider.Log;
             if (etwLog.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1))))
             {
@@ -55,7 +51,6 @@ namespace System.Threading.Tasks
                                                  task.Id, creatingTask == null ? 0 : creatingTask.Id,
                                                  (int)task.Options);
             }
-#endif
 
             if ((task.Options & TaskCreationOptions.LongRunning) != 0)
             {

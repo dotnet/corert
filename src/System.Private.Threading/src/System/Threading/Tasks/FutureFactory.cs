@@ -73,9 +73,7 @@ namespace System.Threading.Tasks
         {
             if (m_defaultScheduler != null) return m_defaultScheduler;
             else if ((currTask != null)
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                 && ((currTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0)
-#endif
                 )
                 return currTask.ExecutingTaskScheduler;
             else return TaskScheduler.Default;
@@ -1632,9 +1630,7 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                 && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
                 )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
@@ -1666,10 +1662,8 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
- && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
-)
+                 && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
+                )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
             }
@@ -1702,9 +1696,7 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                 && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
                 )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
@@ -1742,10 +1734,8 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
- && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
-)
+                 && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
+                )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
             }
@@ -2063,10 +2053,8 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
- && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
-)
+                 && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
+                )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
             }
@@ -2100,10 +2088,8 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
- && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
-)
+                && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
+                )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
             }
@@ -2136,9 +2122,7 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                 && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
                 )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
@@ -2168,10 +2152,8 @@ namespace System.Threading.Tasks
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
- && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
-#endif
-)
+                 && ((continuationOptions & TaskContinuationOptions.LazyCancellation) == 0)
+                )
             {
                 return CreateCanceledTask(continuationOptions, cancellationToken);
             }

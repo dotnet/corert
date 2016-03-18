@@ -297,12 +297,10 @@ namespace System.Threading
                 startTime = TimeoutHelper.GetTime();
             }
 
-#if !FEATURE_PAL && !FEATURE_CORECLR   // PAL doesn't support  eventing, and we don't compile CDS providers for Coreclr
             if (CdsSyncEtwBCLProvider.Log.IsEnabled())
             {
                 CdsSyncEtwBCLProvider.Log.SpinLock_FastPathFailed(m_owner);
             }
-#endif
 
             if (IsThreadOwnerTrackingEnabled)
             {

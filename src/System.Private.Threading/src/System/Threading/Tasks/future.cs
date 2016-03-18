@@ -562,7 +562,6 @@ namespace System.Threading.Tasks
             Contract.Assert(false, "Invalid m_action in Task<TResult>");
         }
 
-#if !FEATURE_CORECLR || FEATURE_NETCORE
         #region Await Support
 
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
@@ -584,7 +583,6 @@ namespace System.Threading.Tasks
         }
 
         #endregion
-#endif
         #region Continuation methods
 
         #region Action<Task<TResult>> continuations

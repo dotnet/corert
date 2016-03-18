@@ -332,9 +332,7 @@ namespace System.Threading.Tasks
             {
                 Task currentTask = Task.InternalCurrent;
                 return ((currentTask != null)
-#if !FEATURE_CORECLR || FEATURE_NETCORE
                     && ((currentTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0)
-#endif
                     ) ? currentTask.ExecutingTaskScheduler : null;
             }
         }
