@@ -47,6 +47,18 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets a value specifying whether the implementation of this method
+        /// is provided by the runtime.
+        /// </summary>
+        public virtual bool IsRuntimeImplemented
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 
     // Additional members of InstantiatedMethod related to code generation.
@@ -75,6 +87,14 @@ namespace Internal.TypeSystem
                 return _methodDef.IsAggressiveInlining;
             }
         }
+
+        public override bool IsRuntimeImplemented
+        {
+            get
+            {
+                return _methodDef.IsRuntimeImplemented;
+            }
+        }
     }
 
     // Additional members of MethodForInstantiatedType related to code generation.
@@ -101,6 +121,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsAggressiveInlining;
+            }
+        }
+
+        public override bool IsRuntimeImplemented
+        {
+            get
+            {
+                return _typicalMethodDef.IsRuntimeImplemented;
             }
         }
     }
