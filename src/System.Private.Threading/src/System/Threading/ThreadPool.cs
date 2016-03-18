@@ -533,9 +533,6 @@ namespace System.Threading
         // The head and tail of the queue.  We enqueue to the head, and dequeue from the tail.
         internal volatile QueueSegment queueHead;
         internal volatile QueueSegment queueTail;
-#if !FEATURE_CORECLR
-        //internal bool loggingEnabled;
-#endif
 
         internal static SparseArray<WorkStealingQueue> allThreadQueues = new SparseArray<WorkStealingQueue>(16); //TODO: base this on processor count, once the security restrictions are removed from Environment.ProcessorCount
 
@@ -544,9 +541,6 @@ namespace System.Threading
         public ThreadPoolWorkQueue()
         {
             queueTail = queueHead = new QueueSegment();
-#if !FEATURE_CORECLR
-            //loggingEnabled = System.Diagnostics.Tracing.FrameworkEventSource.Log.IsEnabled(System.Diagnostics.Tracing.EventLevel.Verbose, System.Diagnostics.Tracing.FrameworkEventSource.Keywords.ThreadPool);
-#endif
         }
 
         [SecurityCritical]
@@ -605,11 +599,6 @@ namespace System.Threading
             ThreadPoolWorkQueueThreadLocals tl = null;
             if (!forceGlobal)
                 tl = ThreadPoolWorkQueueThreadLocals.Current;
-
-#if !FEATURE_CORECLR
-            //if (loggingEnabled)
-            //    System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolEnqueueWorkObject(callback);
-#endif
 
             if (null != tl)
             {
@@ -724,11 +713,6 @@ namespace System.Threading
             //
             workQueue.MarkThreadRequestSatisfied();
 
-#if !FEATURE_CORECLR
-            // Has the desire for logging changed since the last time we entered?
-            //workQueue.loggingEnabled = System.Diagnostics.Tracing.FrameworkEventSource.Log.IsEnabled(System.Diagnostics.Tracing.EventLevel.Verbose, System.Diagnostics.Tracing.FrameworkEventSource.Keywords.ThreadPool);
-#endif
-
             //
             // Assume that we're going to need another thread if this one returns to the VM.  We'll set this to 
             // false later, but only if we're absolutely certain that the queue is empty.
@@ -786,11 +770,6 @@ namespace System.Threading
                     }
                     else
                     {
-#if !FEATURE_CORECLR
-                        //if (workQueue.loggingEnabled)
-                        //    System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
-#endif
-
                         //
                         // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
                         //

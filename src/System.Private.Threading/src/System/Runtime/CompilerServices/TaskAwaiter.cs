@@ -47,9 +47,6 @@ using System.Diagnostics.Tracing;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
-#if !FEATURE_PAL && !FEATURE_CORECLR   // PAL doesn't support  eventing
-//using System.Diagnostics.Tracing;
-#endif
 
 // NOTE: For performance reasons, initialization is not verified.  If a developer
 //       incorrectly initializes a task awaiter, which should only be done by the compiler,
@@ -210,18 +207,15 @@ namespace System.Runtime.CompilerServices
 
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
-#if !FEATURE_PAL && !FEATURE_CORECLR    // PAL and CoreClr don't support  eventing
             if (TplEtwProvider.Log.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1))))
             {
                 continuation = OutputWaitEtwEvents(task, continuation);
             }
-#endif
 
             // Set the continuation onto the awaited task.
             task.SetContinuationForAwait(continuation, continueOnCapturedContext, flowExecutionContext);
         }
 
-#if !FEATURE_PAL && !FEATURE_CORECLR    // PAL and CoreClr don't support  eventing
         /// <summary>
         /// Outputs a WaitBegin ETW event, and augments the continuation action to output a WaitEnd ETW event.
         /// </summary>
@@ -263,7 +257,6 @@ namespace System.Runtime.CompilerServices
                 continuation();
             };
         }
-#endif
     }
 
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>

@@ -67,9 +67,7 @@ namespace System.Threading.Tasks
         {
             if (m_defaultScheduler != null) return m_defaultScheduler;
             else if ((currTask != null)
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                 && ((currTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0)
-#endif
                 )
                 return currTask.ExecutingTaskScheduler;
             else return TaskScheduler.Default;
@@ -227,10 +225,8 @@ namespace System.Threading.Tasks
             // Check for validity of options
             if ((creationOptions &
                     ~(TaskCreationOptions.AttachedToParent |
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                       TaskCreationOptions.DenyChildAttach |
                       TaskCreationOptions.HideScheduler |
-#endif
                       TaskCreationOptions.LongRunning |
                       TaskCreationOptions.PreferFairness |
                       TaskCreationOptions.RunContinuationsAsynchronously)) != 0)
@@ -1554,10 +1550,8 @@ namespace System.Threading.Tasks
             // Check for general validity of options
             if ((creationOptions &
                     ~(TaskCreationOptions.AttachedToParent |
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                       TaskCreationOptions.DenyChildAttach |
                       TaskCreationOptions.HideScheduler |
-#endif
                       TaskCreationOptions.PreferFairness |
                       TaskCreationOptions.LongRunning)) != 0)
             {
@@ -3053,11 +3047,9 @@ namespace System.Threading.Tasks
                 TaskContinuationOptions.LongRunning |
                 TaskContinuationOptions.PreferFairness |
                 TaskContinuationOptions.AttachedToParent |
-#if !FEATURE_CORECLR ||  FEATURE_NETCORE
                 TaskContinuationOptions.DenyChildAttach |
                 TaskContinuationOptions.HideScheduler |
                 TaskContinuationOptions.LazyCancellation |
-#endif
                 NotOnAny |
                 TaskContinuationOptions.ExecuteSynchronously)) != 0)
             {
