@@ -24,10 +24,8 @@ namespace System.Threading
     [ComVisibleAttribute(true)]
     public class EventWaitHandle : WaitHandle
     {
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public EventWaitHandle(bool initialState, EventResetMode mode) : this(initialState, mode, null) { }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
         {
             if (null != name)
@@ -70,7 +68,6 @@ namespace System.Threading
             SafeWaitHandle = _handle;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew)
         {
             if (null != name && ((int)Interop.Constants.MaxPath) < name.Length)
@@ -109,13 +106,11 @@ namespace System.Threading
             SafeWaitHandle = _handle;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private EventWaitHandle(SafeWaitHandle handle)
         {
             SafeWaitHandle = handle;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static EventWaitHandle OpenExisting(string name)
         {
             EventWaitHandle result;
@@ -135,13 +130,11 @@ namespace System.Threading
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         public static bool TryOpenExisting(string name, out EventWaitHandle result)
         {
             return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated_required
         private static OpenExistingResult OpenExistingWorker(string name, out EventWaitHandle result)
         {
             if (name == null)
@@ -182,7 +175,6 @@ namespace System.Threading
             result = new EventWaitHandle(myHandle);
             return OpenExistingResult.Success;
         }
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Reset()
         {
             waitHandle.DangerousAddRef();
@@ -198,7 +190,6 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Set()
         {
             waitHandle.DangerousAddRef();

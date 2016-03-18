@@ -49,7 +49,6 @@ namespace System
 
         public override String Message
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 SetMessageField();
@@ -57,7 +56,6 @@ namespace System
             }
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         private void SetMessageField()
         {
             if (_message == null)

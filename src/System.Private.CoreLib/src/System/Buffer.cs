@@ -211,7 +211,6 @@ namespace System
 
         // The attributes on this method are chosen for best JIT performance. 
         // Please do not edit unless intentional.
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy)
@@ -226,7 +225,6 @@ namespace System
 
         // The attributes on this method are chosen for best JIT performance. 
         // Please do not edit unless intentional.
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy)
@@ -239,7 +237,6 @@ namespace System
             Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
-        [System.Security.SecurityCritical]
         internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping and the copy needs to be performed backwards
@@ -460,7 +457,6 @@ namespace System
 
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
         // with P/Invoke prolog/epilog.
-        [System.Security.SecurityCritical]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private unsafe static void _Memmove(byte* dest, byte* src, nuint len)
         {

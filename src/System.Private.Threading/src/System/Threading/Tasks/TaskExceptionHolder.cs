@@ -60,7 +60,6 @@ namespace System.Threading.Tasks
             m_task = task;
         }
 
-        [SecuritySafeCritical]
         private static bool ShouldFailFastOnUnobservedException()
         {
             bool shouldFailFast = false;

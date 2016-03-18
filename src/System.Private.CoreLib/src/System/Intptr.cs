@@ -53,7 +53,6 @@ namespace System
 
         [CLSCompliant(false)]
         [Intrinsic]
-        [SecurityCritical] // required to match contract
         [NonVersionable]
         public unsafe IntPtr(void* value)
         {
@@ -107,7 +106,6 @@ namespace System
 
         [CLSCompliant(false)]
         [Intrinsic]
-        [SecurityCritical] // required to match contract
         [NonVersionable]
         public unsafe static explicit operator IntPtr(void* value)
         {

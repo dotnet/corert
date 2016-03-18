@@ -18,7 +18,6 @@ namespace System.Runtime.CompilerServices
         where TValue : class
     {
         #region Constructors
-        [System.Security.SecuritySafeCritical]
         public ConditionalWeakTable()
         {
             _container = new Container().Resize();
@@ -37,7 +36,6 @@ namespace System.Runtime.CompilerServices
         // Note: The key may get garbaged collected during the TryGetValue operation. If so, TryGetValue
         // may at its discretion, return "false" and set "value" to the default (as if the key was not present.)
         //--------------------------------------------------------------------------------------------
-        [System.Security.SecuritySafeCritical]
         public bool TryGetValue(TKey key, out TValue value)
         {
             if (key == null)
@@ -58,7 +56,6 @@ namespace System.Runtime.CompilerServices
         // has the right to consider any prior entries successfully removed and add a new entry without
         // throwing an exception.
         //--------------------------------------------------------------------------------------------
-        [System.Security.SecuritySafeCritical]
         public void Add(TKey key, TValue value)
         {
             if (key == null)
@@ -88,7 +85,6 @@ namespace System.Runtime.CompilerServices
         // Remove() will not fail or throw, however, the return value can be either true or false
         // depending on who wins the race.
         //--------------------------------------------------------------------------------------------
-        [System.Security.SecuritySafeCritical]
         public bool Remove(TKey key)
         {
             if (key == null)
@@ -118,7 +114,6 @@ namespace System.Runtime.CompilerServices
         // This rule permits the table to invoke createValueCallback outside the internal table lock
         // to prevent deadlocks.
         //--------------------------------------------------------------------------------------------
-        [System.Security.SecuritySafeCritical]
         public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
         {
             // Our call to TryGetValue() validates key so no need for us to.
@@ -192,7 +187,6 @@ namespace System.Runtime.CompilerServices
         // if you know for sure that either you won't run into dead locks or you need to live with the
         // possiblity
         //--------------------------------------------------------------------------------------------
-        [System.Security.SecuritySafeCritical]
         internal TKey FindEquivalentKeyUnsafe(TKey key, out TValue value)
         {
             lock (_lock)
@@ -206,7 +200,6 @@ namespace System.Runtime.CompilerServices
         //--------------------------------------------------------------------------------------------
         internal ICollection<TKey> Keys
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 lock (_lock)
@@ -221,7 +214,6 @@ namespace System.Runtime.CompilerServices
         //--------------------------------------------------------------------------------------------
         internal ICollection<TValue> Values
         {
-            [System.Security.SecuritySafeCritical]
             get
             {
                 lock (_lock)
@@ -234,7 +226,6 @@ namespace System.Runtime.CompilerServices
         //--------------------------------------------------------------------------------------------
         // Clear all the key/value pairs
         //--------------------------------------------------------------------------------------------
-        [System.Security.SecuritySafeCritical]
         internal void Clear()
         {
             lock (_lock)
@@ -255,7 +246,6 @@ namespace System.Runtime.CompilerServices
         //     Must hold _lock.
         //     Key already validated as non-null and not already in table.
         //----------------------------------------------------------------------------------------
-        [System.Security.SecurityCritical]
         private void CreateEntry(TKey key, TValue value)
         {
             Contract.Assert(_lock.IsAcquired);
@@ -330,7 +320,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            [System.Security.SecurityCritical]
             //----------------------------------------------------------------------------------------
             // Worker for adding a new key/value pair.
             // Preconditions:
@@ -359,7 +348,6 @@ namespace System.Runtime.CompilerServices
                 _invalid = false;
             }
 
-            [System.Security.SecurityCritical]
             //----------------------------------------------------------------------------------------
             // Worker for finding a key/value pair
             //
@@ -388,7 +376,6 @@ namespace System.Runtime.CompilerServices
             //     Must hold _lock, or be prepared to retry the search while holding _lock.
             //     Key already validated as non-null.
             //----------------------------------------------------------------------------------------
-            [System.Security.SecurityCritical]
             internal int FindEntry(TKey key, out object value)
             {
                 int hashCode = RuntimeHelpers.GetHashCode(key) & Int32.MaxValue;
@@ -434,7 +421,6 @@ namespace System.Runtime.CompilerServices
             // Postcondition:
             //      _firstEntry is less than _entries.Length on exit, that is, the table has at least one free entry.
             //----------------------------------------------------------------------------------------
-            [System.Security.SecurityCritical]
             internal Container Resize()
             {
                 // Start by assuming we won't resize.
@@ -507,7 +493,6 @@ namespace System.Runtime.CompilerServices
 
             internal ICollection<TKey> Keys
             {
-                [System.Security.SecuritySafeCritical]
                 get
                 {
                     LowLevelListWithIList<TKey> list = new LowLevelListWithIList<TKey>();
@@ -531,7 +516,6 @@ namespace System.Runtime.CompilerServices
 
             internal ICollection<TValue> Values
             {
-                [System.Security.SecuritySafeCritical]
                 get
                 {
                     LowLevelListWithIList<TValue> list = new LowLevelListWithIList<TValue>();
@@ -560,7 +544,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            [System.Security.SecuritySafeCritical]
             internal TKey FindEquivalentKeyUnsafe(TKey key, out TValue value)
             {
                 for (int bucket = 0; bucket < _buckets.Length; ++bucket)
@@ -600,7 +583,6 @@ namespace System.Runtime.CompilerServices
             //----------------------------------------------------------------------------------------
             // Finalizer.
             //----------------------------------------------------------------------------------------
-            [System.Security.SecuritySafeCritical]
             ~Container()
             {
                 // We're just freeing per-appdomain unmanaged handles here. If we're already shutting down the AD,
@@ -681,9 +663,7 @@ namespace System.Runtime.CompilerServices
     {
         #region Constructors
 #if FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical] // auto-generated
 #else
-        [System.Security.SecurityCritical]
 #endif
         public DependentHandle(Object primary, Object secondary)
         {
@@ -704,9 +684,7 @@ namespace System.Runtime.CompilerServices
         // we provide a separate primary-only accessor for those times we only want the
         // primary.
 #if FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical] // auto-generated
 #else
-        [System.Security.SecurityCritical]
 #endif
         public Object GetPrimary()
         {
@@ -714,9 +692,7 @@ namespace System.Runtime.CompilerServices
         }
 
 #if FEATURE_CORECLR
-        [System.Security.SecuritySafeCritical] // auto-generated
 #else
-        [System.Security.SecurityCritical]
 #endif
         public object GetPrimaryAndSecondary(out Object secondary)
         {
@@ -727,7 +703,6 @@ namespace System.Runtime.CompilerServices
         // Forces dependentHandle back to non-allocated state (if not already there)
         // and frees the handle if needed.
         //----------------------------------------------------------------------
-        [System.Security.SecurityCritical]
         public void Free()
         {
             if (_handle != (IntPtr)0)
@@ -738,7 +713,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [System.Security.SecurityCritical]
         internal DependentHandle AllocateCopy()
         {
             object primary, secondary;

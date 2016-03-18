@@ -36,7 +36,6 @@ namespace System
 
         public override String Message
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 return base.Message;

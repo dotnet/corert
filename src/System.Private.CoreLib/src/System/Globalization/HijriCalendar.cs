@@ -192,7 +192,6 @@ namespace System.Globalization
 
         public int HijriAdjustment
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (_hijriAdvance == Int32.MinValue)

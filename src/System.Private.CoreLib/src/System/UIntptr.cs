@@ -48,7 +48,6 @@ namespace System
         }
 
         [Intrinsic]
-        [SecurityCritical] // required to match contract
         [NonVersionable]
         public unsafe UIntPtr(void* value)
         {
@@ -95,7 +94,6 @@ namespace System
         }
 
         [Intrinsic]
-        [SecurityCritical] // required to match contract
         [NonVersionable]
         public static unsafe explicit operator UIntPtr(void* value)
         {
@@ -103,7 +101,6 @@ namespace System
         }
 
         [Intrinsic]
-        [SecurityCritical] // required to match contract
         [NonVersionable]
         public static unsafe explicit operator void* (UIntPtr value)
         {

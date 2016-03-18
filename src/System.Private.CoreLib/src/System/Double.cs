@@ -47,7 +47,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static bool IsInfinity(double d)
         {
             return (*(long*)(&d) & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
@@ -83,7 +82,6 @@ namespace System
 
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal unsafe static bool IsNegative(double d)
         {
             return (*(UInt64*)(&d) & 0x8000000000000000) == 0x8000000000000000;
@@ -91,7 +89,6 @@ namespace System
 
 
         [Pure]
-        [System.Security.SecuritySafeCritical]
         public unsafe static bool IsNaN(double d)
         {
             return (*(UInt64*)(&d) & 0x7FFFFFFFFFFFFFFFL) > 0x7FF0000000000000L;
@@ -204,7 +201,6 @@ namespace System
         //The hashcode for a double is the absolute value of the integer representation
         //of that double.
         //
-        [System.Security.SecuritySafeCritical]
         public unsafe override int GetHashCode()
         {
             double d = m_value;
@@ -217,28 +213,24 @@ namespace System
             return unchecked((int)value) ^ ((int)(value >> 32));
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatDouble(m_value, null, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatDouble(m_value, format, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatDouble(m_value, null, provider);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);

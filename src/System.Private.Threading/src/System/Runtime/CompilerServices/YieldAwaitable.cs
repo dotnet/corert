@@ -57,7 +57,6 @@ namespace System.Runtime.CompilerServices
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>
             /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            [SecuritySafeCritical]
             public void OnCompleted(Action continuation)
             {
                 QueueContinuation(continuation);
@@ -66,7 +65,6 @@ namespace System.Runtime.CompilerServices
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>
             /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            [SecurityCritical]
             public void UnsafeOnCompleted(Action continuation)
             {
                 QueueContinuation(continuation);
@@ -75,7 +73,6 @@ namespace System.Runtime.CompilerServices
             /// <summary>Posts the <paramref name="continuation"/> back to the current context.</summary>
             /// <param name="continuation">The action to invoke asynchronously.</param>
             /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-            [SecurityCritical]
             private static void QueueContinuation(Action continuation)
             {
                 // Validate arguments

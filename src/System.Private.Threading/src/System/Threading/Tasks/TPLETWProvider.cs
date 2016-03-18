@@ -97,7 +97,6 @@ namespace System.Threading.Tasks
         /// <param name="TaskID">The task ID.</param>
         /// <param name="CreatingTaskID">The task ID</param>
         /// <param name="TaskCreationOptions">The options used to create the task.</param>
-        [SecuritySafeCritical]
         [Event(TASKSCHEDULED_ID, Level = EventLevel.Verbose)]
         public void TaskScheduled(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
@@ -156,7 +155,6 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         /// <param name="IsExceptional">Whether the task completed due to an error.</param>
-        [SecuritySafeCritical]
         [Event(TASKCOMPLETED_ID, Level = EventLevel.Verbose, Version = 1, Task = TplEtwProvider.Tasks.TaskExecute, Opcode = EventOpcode.Stop)]
         public void TaskCompleted(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER
@@ -197,7 +195,6 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         /// <param name="Behavior">Configured behavior for the wait.</param>
-        [SecuritySafeCritical]
         [Event(TASKWAITBEGIN_ID, Level = EventLevel.Verbose, Version = 1, Task = TplEtwProvider.Tasks.TaskWait, Opcode = EventOpcode.Start)]
         public void TaskWaitBegin(
             int OriginatingTaskSchedulerID, int OriginatingTaskID,  // PFX_COMMON_EVENT_HEADER

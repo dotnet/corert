@@ -1278,7 +1278,6 @@ namespace System
 
         // This will create a new guid.  Since we've now decided that constructors should 0-init,
         // we need a method that allows users to create a guid.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Guid NewGuid()
         {
             // CoCreateGuid should never return Guid.Empty, since it attempts to maintain some
@@ -1311,13 +1310,11 @@ namespace System
             return (char)((a > 9) ? a - 10 + 0x61 : a + 0x30);
         }
 
-        [System.Security.SecurityCritical]
         unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b)
         {
             return HexsToChars(guidChars, offset, a, b, false);
         }
 
-        [System.Security.SecurityCritical]
         unsafe private static int HexsToChars(char* guidChars, int offset, int a, int b, bool hex)
         {
             if (hex)
@@ -1340,7 +1337,6 @@ namespace System
 
         // IFormattable interface
         // We currently ignore provider
-        [System.Security.SecuritySafeCritical]
         private String ToString(String format, IFormatProvider provider)
         {
             if (format == null || format.Length == 0)

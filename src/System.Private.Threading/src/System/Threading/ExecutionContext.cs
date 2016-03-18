@@ -25,7 +25,6 @@ namespace System.Threading
 {
     public delegate void ContextCallback(Object state);
 
-    [SecurityCritical]
     internal struct ExecutionContextSwitcher
     {
         internal ExecutionContext m_ec;
@@ -43,7 +42,6 @@ namespace System.Threading
         public static readonly ExecutionContext Default = new ExecutionContext();
 
         [ThreadStatic]
-        [SecurityCritical]
         static ExecutionContext t_currentMaybeNull;
 
         private readonly Dictionary<IAsyncLocal, object> m_localValues;
@@ -61,13 +59,11 @@ namespace System.Threading
             m_localChangeNotifications = new List<IAsyncLocal>(other.m_localChangeNotifications);
         }
 
-        [SecuritySafeCritical]
         public static ExecutionContext Capture()
         {
             return t_currentMaybeNull ?? ExecutionContext.Default;
         }
 
-        [SecurityCritical]
         public static void Run(ExecutionContext executionContext, ContextCallback callback, Object state)
         {
             ExecutionContextSwitcher ecsw = default(ExecutionContextSwitcher);
@@ -90,7 +86,6 @@ namespace System.Threading
             ecsw.Undo();
         }
 
-        [SecurityCritical]
         internal static void Restore(ExecutionContext executionContext)
         {
             if (executionContext == null)
@@ -103,14 +98,12 @@ namespace System.Threading
                 OnContextChanged(previous, executionContext);
         }
 
-        [SecurityCritical]
         static internal void EstablishCopyOnWriteScope(ref ExecutionContextSwitcher ecsw)
         {
             ecsw.m_ec = Capture();
             ecsw.m_sc = SynchronizationContext.CurrentExplicit;
         }
 
-        [SecurityCritical]
         private static void OnContextChanged(ExecutionContext previous, ExecutionContext current)
         {
             previous = previous ?? Default;
@@ -152,7 +145,6 @@ namespace System.Threading
             }
         }
 
-        [SecurityCritical]
         internal static object GetLocalValue(IAsyncLocal local)
         {
             ExecutionContext current = t_currentMaybeNull;
@@ -164,7 +156,6 @@ namespace System.Threading
             return value;
         }
 
-        [SecurityCritical]
         internal static void SetLocalValue(IAsyncLocal local, object newValue, bool needChangeNotifications)
         {
             ExecutionContext current = t_currentMaybeNull ?? ExecutionContext.Default;
@@ -201,7 +192,6 @@ namespace System.Threading
 
         internal static ExecutionContext PreAllocatedDefault
         {
-            [SecuritySafeCritical]
             get
             { return ExecutionContext.Default; }
         }

@@ -226,7 +226,6 @@ namespace System
                 return _readonlySystemTimeZones;
             }
 
-            [System.Security.SecuritySafeCritical]
             private static TimeZoneInfo GetCurrentOneYearLocal()
             {
                 // load the data from the OS
@@ -1038,7 +1037,6 @@ namespace System
         //
         // private ctor
         //
-        [System.Security.SecurityCritical]  // auto-generated
         private TimeZoneInfo(TimeZoneInformation zone, Boolean dstDisabled)
         {
             if (String.IsNullOrEmpty(zone.StandardName))
@@ -1789,7 +1787,6 @@ namespace System
         // assumes cachedData lock is taken
         //
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         static private TimeZoneInfo GetLocalTimeZone(CachedData cachedData)
         {
             ////
@@ -1826,7 +1823,6 @@ namespace System
         // try/catch logic for handling the TimeZoneInfo private constructor that takes
         // a Win32Native.TimeZoneInformation structure.
         //
-        [System.Security.SecurityCritical]  // auto-generated
         static private TimeZoneInfo GetLocalTimeZoneFromWin32Data(TimeZoneInformation timeZoneInformation, Boolean dstDisabled)
         {
             // first try to create the TimeZoneInfo with the original 'dstDisabled' flag
