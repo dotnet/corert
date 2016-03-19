@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadStaticBase,
         DelegateCtor,
         InterfaceDispatch,
+        ResolveVirtualFunction,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
@@ -85,6 +86,8 @@ namespace ILCompiler.DependencyAnalysis
                         return "__DelegateCtor_" + NodeFactory.NameMangler.GetMangledMethodName(((DelegateInfo)_target).Target);
                     case ReadyToRunHelperId.InterfaceDispatch:
                         return "__InterfaceDispatch_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
+                    case ReadyToRunHelperId.ResolveVirtualFunction:
+                        return "__ResolveVirtualFunction_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
                     default:
                         throw new NotImplementedException();
                 }
@@ -103,6 +106,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 DependencyList dependencyList = new DependencyList();
                 dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Interface Method Call");
+                return dependencyList;
+            }
+            else if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
+            {
+                DependencyList dependencyList = new DependencyList();
+                dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
                 return dependencyList;
             }
             else

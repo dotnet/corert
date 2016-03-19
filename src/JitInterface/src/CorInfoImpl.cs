@@ -2062,9 +2062,26 @@ namespace Internal.JitInterface
                     targetMethod = targetMethod.GetStringInitializer();
                 }
 
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+
+                ISymbolNode targetNode;
+
+                // Compensate for always treating delegates as direct calls above
+                if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 &&
+                    (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !resolvedCallVirt)
+                {
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    targetNode = _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod);
+                }
+                else
+                {
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                    targetNode = _compilation.NodeFactory.MethodEntrypoint(targetMethod);
+                }
+
+                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(targetNode);
+
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
             else if (!targetMethod.OwningType.IsInterface)

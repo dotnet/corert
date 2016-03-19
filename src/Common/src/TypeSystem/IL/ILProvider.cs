@@ -32,15 +32,7 @@ namespace Internal.IL
 
             if (owningType.IsDelegate)
             {
-                if (method.Name == "BeginInvoke" || method.Name == "EndInvoke")
-                {
-                    // BeginInvoke and EndInvoke are not supported on .NET Core
-                    ILEmitter emit = new ILEmitter();
-                    ILCodeStream codeStream = emit.NewCodeStream();
-                    MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
-                    codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
-                    return emit.Link();
-                }
+                return DelegateMethodILEmitter.EmitIL(method);
             }
 
             return null;
