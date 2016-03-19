@@ -67,7 +67,6 @@ namespace System.Threading.Tasks
         /// </remarks>
         /// <param name="task">The <see cref="T:System.Threading.Tasks.Task">Task</see> to be queued.</param>
         /// <exception cref="T:System.ArgumentNullException">The <paramref name="task"/> argument is null.</exception>
-        [SecurityCritical]
         protected internal abstract void QueueTask(Task task);
 
         /// <summary>
@@ -110,7 +109,6 @@ namespace System.Threading.Tasks
         /// null.</exception>
         /// <exception cref="T:System.InvalidOperationException">The <paramref name="task"/> was already
         /// executed.</exception>
-        [SecurityCritical]
         protected abstract bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued);
 
         /// <summary>
@@ -154,7 +152,6 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.NotSupportedException">
         /// This scheduler is unable to generate a list of queued tasks at this time.
         /// </exception>
-        [SecurityCritical]
         protected abstract IEnumerable<Task> GetScheduledTasks();
 
         /// <summary>
@@ -182,7 +179,6 @@ namespace System.Threading.Tasks
         /// <param name="taskWasPreviouslyQueued">True if the task may have been previously queued,
         /// false if the task was absolutely not previously queued.</param>
         /// <returns>True if it ran, false otherwise.</returns>
-        [SecuritySafeCritical]
         internal bool TryRunInline(Task task, bool taskWasPreviouslyQueued)
         {
             // Do not inline unstarted tasks (i.e., task.ExecutingTaskScheduler == null).
@@ -233,7 +229,6 @@ namespace System.Threading.Tasks
         /// <param name="task">The <see cref="T:System.Threading.Tasks.Task">Task</see> to be dequeued.</param>
         /// <returns>A Boolean denoting whether the <paramref name="task"/> argument was successfully dequeued.</returns>
         /// <exception cref="T:System.ArgumentNullException">The <paramref name="task"/> argument is null.</exception>
-        [SecurityCritical]
         protected internal virtual bool TryDequeue(Task task)
         {
             return false;
@@ -332,9 +327,7 @@ namespace System.Threading.Tasks
             {
                 Task currentTask = Task.InternalCurrent;
                 return ((currentTask != null)
-#if !FEATURE_CORECLR || FEATURE_NETCORE
                     && ((currentTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0)
-#endif
                     ) ? currentTask.ExecutingTaskScheduler : null;
             }
         }
@@ -414,7 +407,6 @@ namespace System.Threading.Tasks
         /// <returns>A Boolean that is true if <paramref name="task"/> was successfully executed, false if it
         /// was not. A common reason for execution failure is that the task had previously been executed or
         /// is in the process of being executed by another thread.</returns>
-        [SecurityCritical]
         protected bool TryExecuteTask(Task task)
         {
             if (task.ExecutingTaskScheduler != this)
@@ -445,7 +437,6 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static event EventHandler<UnobservedTaskExceptionEventArgs> UnobservedTaskException
         {
-            [System.Security.SecurityCritical]
             add
             {
                 if (value != null)
@@ -454,7 +445,6 @@ namespace System.Threading.Tasks
                 }
             }
 
-            [System.Security.SecurityCritical]
             remove
             {
                 lock (_unobservedTaskExceptionLockObject) _unobservedTaskException -= value;
@@ -500,7 +490,6 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.NotSupportedException">
         /// This scheduler is unable to generate a list of queued tasks at this time.
         /// </exception>
-        [SecurityCritical]
         internal Task[] GetScheduledTasksForDebugger()
         {
             // this can throw InvalidOperationException indicating that they are unable to provide the info
@@ -535,7 +524,6 @@ namespace System.Threading.Tasks
         /// It should not be called by any other codepaths.
         /// </remarks>
         /// <returns>An array of <see cref="System.Threading.Tasks.TaskScheduler">TaskScheduler</see> instances.</returns> 
-        //[SecurityCritical]
         //internal static TaskScheduler[] GetTaskSchedulersForDebugger()
         //{
         //    Contract.Assert(s_activeTaskSchedulers != null, "Expected non-null s_activeTaskSchedulers");
@@ -571,7 +559,6 @@ namespace System.Threading.Tasks
             // returns the scheduler’s GetScheduledTasks
             public IEnumerable<Task> ScheduledTasks
             {
-                [SecurityCritical]
                 get
                 { return m_taskScheduler.GetScheduledTasks(); }
             }
@@ -613,7 +600,6 @@ namespace System.Threading.Tasks
         /// Simply posts the tasks to be executed on the associated <see cref="T:System.Threading.SynchronizationContext"/>.
         /// </summary>
         /// <param name="task"></param>
-        [SecurityCritical]
         protected internal override void QueueTask(Task task)
         {
             m_synchronizationContext.Post(s_postCallback, (object)task);
@@ -627,7 +613,6 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="task"></param>
         /// <param name="taskWasPreviouslyQueued"></param>
-        [SecurityCritical]
         protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
         {
             if (SynchronizationContext.Current == m_synchronizationContext)
@@ -639,7 +624,6 @@ namespace System.Threading.Tasks
         }
 
         // not implemented
-        [SecurityCritical]
         protected override IEnumerable<Task> GetScheduledTasks()
         {
             return null;

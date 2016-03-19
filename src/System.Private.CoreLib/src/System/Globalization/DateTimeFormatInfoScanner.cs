@@ -501,7 +501,6 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////////
 
         // auto-generated
-        [System.Security.SecurityCritical] // auto-generated
         internal String[] GetDateWordsOfDTFI(DateTimeFormatInfo dtfi)
         {
             // Enumarate all LongDatePatterns, and get the DateWords and scan for month postfix.

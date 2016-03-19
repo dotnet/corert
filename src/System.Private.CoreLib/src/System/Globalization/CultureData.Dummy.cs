@@ -22,13 +22,11 @@ namespace System.Globalization
             return true;
         }
 
-        [System.Security.SecurityCritical]
         private string GetLocaleInfo(LocaleStringData type)
         {
             return "";
         }
 
-        [System.Security.SecurityCritical]
         private string GetLocaleInfo(string localeName, LocaleStringData type)
         {
             return "";

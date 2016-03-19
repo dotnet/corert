@@ -37,10 +37,6 @@ namespace System.Threading.Tasks
     {
         /// <summary>Whether we should propagate exceptions on the finalizer.</summary>
         private readonly static bool s_failFastOnUnobservedException = ShouldFailFastOnUnobservedException();
-        /// <summary>Whether the AppDomain has started to unload.</summary>
-        //private static volatile bool s_domainUnloadStarted;
-        /// <summary>An event handler used to notify of domain unload.</summary>
-        //private static volatile EventHandler s_adUnloadEventHandler;
 
         /// <summary>The task with which this holder is associated.</summary>
         private readonly Task m_task;
@@ -62,34 +58,14 @@ namespace System.Threading.Tasks
         {
             Contract.Requires(task != null, "Expected a non-null task.");
             m_task = task;
-            EnsureADUnloadCallbackRegistered();
         }
 
-        [SecuritySafeCritical]
         private static bool ShouldFailFastOnUnobservedException()
         {
             bool shouldFailFast = false;
-            //#if !FEATURE_CORECLR
             //shouldFailFast = System.CLRConfig.CheckThrowUnobservedTaskExceptions();
-            //#endif
             return shouldFailFast;
         }
-
-        private static void EnsureADUnloadCallbackRegistered()
-        {
-            //if (s_adUnloadEventHandler == null && 
-            //    Interlocked.CompareExchange( ref s_adUnloadEventHandler,
-            //                                 AppDomainUnloadCallback, 
-            //                                 null) == null)
-            //{
-            //    AppDomain.CurrentDomain.DomainUnload += s_adUnloadEventHandler;
-            //}
-        }
-
-        //private static void AppDomainUnloadCallback(object sender, EventArgs e)
-        //{
-        //    s_domainUnloadStarted = true;
-        //}
 
         /// <summary>
         /// A finalizer that repropagates unhandled exceptions.
@@ -103,28 +79,6 @@ namespace System.Threading.Tasks
             if (m_faultExceptions != null && !m_isHandled
                 && !Environment.HasShutdownStarted /*&& !AppDomain.CurrentDomain.IsFinalizingForUnload() && !s_domainUnloadStarted*/)
             {
-                //// We don't want to crash the finalizer thread if any ThreadAbortExceptions 
-                //// occur in the list or in any nested AggregateExceptions.  
-                //// (Don't rethrow ThreadAbortExceptions.)
-                //foreach (ExceptionDispatchInfo edi in m_faultExceptions)
-                //{
-                //    var exp = edi.SourceException;
-                //    AggregateException aggExp = exp as AggregateException;
-                //    if (aggExp != null)
-                //    {
-                //        AggregateException flattenedAggExp = aggExp.Flatten();
-                //        foreach (Exception innerExp in flattenedAggExp.InnerExceptions)
-                //        {
-                //            if (innerExp is ThreadAbortException)
-                //                return;
-                //        }
-                //    }
-                //    else if (exp is ThreadAbortException)
-                //    {
-                //        return;
-                //    }
-                //}
-
                 // We will only propagate if this is truly unhandled. The reason this could
                 // ever occur is somewhat subtle: if a Task's exceptions are observed in some
                 // other finalizer, and the Task was finalized before the holder, the holder

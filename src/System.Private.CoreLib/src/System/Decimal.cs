@@ -280,7 +280,6 @@ namespace System
 
         // Adds two Decimal values.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Add(Decimal d1, Decimal d2)
         {
             DecCalc.VarDecAdd(ref d1, ref d2);
@@ -298,7 +297,6 @@ namespace System
         // Compares two Decimal values, returning an integer that indicates their
         // relationship.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static int Compare(Decimal d1, Decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2);
@@ -310,7 +308,6 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Decimal, this method throws an ArgumentException.
         // 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         int IComparable.CompareTo(Object value)
         {
             if (value == null)
@@ -322,7 +319,6 @@ namespace System
             return DecCalc.VarDecCmp(ref this, ref other);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public int CompareTo(Decimal value)
         {
             return DecCalc.VarDecCmp(ref this, ref value);
@@ -330,7 +326,6 @@ namespace System
 
         // Divides two Decimal values.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Divide(Decimal d1, Decimal d2)
         {
             DecCalc.VarDecDiv(ref d1, ref d2);
@@ -341,7 +336,6 @@ namespace System
         // if the given object is a boxed Decimal and its value is equal to the
         // value of this Decimal. Returns false otherwise.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override bool Equals(Object value)
         {
             if (value is Decimal)
@@ -352,7 +346,6 @@ namespace System
             return false;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public bool Equals(Decimal value)
         {
             return DecCalc.VarDecCmp(ref this, ref value) == 0;
@@ -383,7 +376,6 @@ namespace System
         // Compares two Decimal values for equality. Returns true if the two
         // Decimal values are equal, or false if they are not equal.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool Equals(Decimal d1, Decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) == 0;
@@ -392,7 +384,6 @@ namespace System
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
         // towards negative infinity.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Floor(Decimal d)
         {
             DecCalc.VarDecInt(ref d);
@@ -404,28 +395,24 @@ namespace System
         // optionally followed by a decimal point (".") and another sequence of
         // digits.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatDecimal(this, null, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatDecimal(this, format, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatDecimal(this, null, provider);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -510,7 +497,6 @@ namespace System
 
         // Returns the larger of two Decimal values.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static Decimal Max(Decimal d1, Decimal d2)
         {
             return Compare(d1, d2) >= 0 ? d1 : d2;
@@ -518,7 +504,6 @@ namespace System
 
         // Returns the smaller of two Decimal values.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static Decimal Min(Decimal d1, Decimal d2)
         {
             return Compare(d1, d2) < 0 ? d1 : d2;
@@ -532,7 +517,6 @@ namespace System
 
         // Multiplies two Decimal values.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Multiply(Decimal d1, Decimal d2)
         {
             Decimal decRes;
@@ -556,7 +540,6 @@ namespace System
         // By default a mid-point value is rounded to the nearest even number. If the mode is
         // passed in, it can also round away from zero.
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static Decimal Round(Decimal d, int decimals)
         {
             Decimal result = new Decimal();
@@ -570,7 +553,6 @@ namespace System
             return d;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         internal static Decimal Round(Decimal d, int decimals, MidpointRounding mode)
         {
             if (decimals < 0 || decimals > 28)
@@ -594,7 +576,6 @@ namespace System
 
         // Subtracts two Decimal values.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Subtract(Decimal d1, Decimal d2)
         {
             DecCalc.VarDecSub(ref d1, ref d2);
@@ -671,7 +652,6 @@ namespace System
         // zero to the nearest integer value, and the result of this operation is
         // returned as an integer.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static int ToInt32(Decimal d)
         {
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
@@ -695,7 +675,6 @@ namespace System
         // to the nearest integer value, and the result of this operation is
         // returned as a long.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static long ToInt64(Decimal d)
         {
             if (d.Scale != 0) DecCalc.VarDecFix(ref d);
@@ -739,7 +718,6 @@ namespace System
         // value is rounded towards zero to the nearest integer value, and the 
         // result of this operation is returned as an unsigned integer.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public static uint ToUInt32(Decimal d)
         {
@@ -756,7 +734,6 @@ namespace System
         // value is rounded towards zero to the nearest integer value, and the 
         // result of this operation is returned as a long.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [CLSCompliant(false)]
         public static ulong ToUInt64(Decimal d)
         {
@@ -782,7 +759,6 @@ namespace System
         // towards zero to the nearest integer value, corresponding to removing all
         // digits after the decimal point.
         //
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal Truncate(Decimal d)
         {
             DecCalc.VarDecFix(ref d);
@@ -937,25 +913,21 @@ namespace System
             return Subtract(d, One);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal operator +(Decimal d1, Decimal d2)
         {
             return Add(d1, d2);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal operator -(Decimal d1, Decimal d2)
         {
             return Subtract(d1, d2);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal operator *(Decimal d1, Decimal d2)
         {
             return Multiply(d1, d2);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static Decimal operator /(Decimal d1, Decimal d2)
         {
             return Divide(d1, d2);
@@ -966,31 +938,26 @@ namespace System
             return Remainder(d1, d2);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool operator ==(Decimal d1, Decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) == 0;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool operator !=(Decimal d1, Decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) != 0;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool operator <(Decimal d1, Decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) < 0;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool operator <=(Decimal d1, Decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) <= 0;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static bool operator >(Decimal d1, Decimal d2)
         {
             return DecCalc.VarDecCmp(ref d1, ref d2) > 0;

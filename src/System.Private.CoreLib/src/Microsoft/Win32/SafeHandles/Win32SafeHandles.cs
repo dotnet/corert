@@ -24,7 +24,6 @@ using System.Runtime.CompilerServices;
 namespace Microsoft.Win32.SafeHandles
 {
     // Class of safe handle which uses 0 or -1 as an invalid handle.
-    [System.Security.SecurityCritical]  // auto-generated_required
     public abstract class SafeHandleZeroOrMinusOneIsInvalid : SafeHandle
     {
         protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(IntPtr.Zero, ownsHandle)
@@ -33,14 +32,12 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            [System.Security.SecurityCritical]
             get
             { return DangerousGetHandle() == IntPtr.Zero || DangerousGetHandle() == new IntPtr(-1); }
         }
     }
 
     // Class of safe handle which uses only -1 as an invalid handle.
-    [System.Security.SecurityCritical]  // auto-generated_required
     public abstract class SafeHandleMinusOneIsInvalid : SafeHandle
     {
         protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(new IntPtr(-1), ownsHandle)
@@ -49,13 +46,11 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            [System.Security.SecurityCritical]
             get
             { return DangerousGetHandle() == new IntPtr(-1); }
         }
     }
     //    // Class of critical handle which uses 0 or -1 as an invalid handle.
-    //    [System.Security.SecurityCritical]  // auto-generated_required
     //    public abstract class CriticalHandleZeroOrMinusOneIsInvalid : CriticalHandle
     //    {
     //        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -64,13 +59,11 @@ namespace Microsoft.Win32.SafeHandles
     //        }
 
     //        public override bool IsInvalid {
-    //            [System.Security.SecurityCritical]
     //            get { return handle.IsNull() || handle == new IntPtr(-1); }
     //        }
     //    }
 
     //    // Class of critical handle which uses only -1 as an invalid handle.
-    //    [System.Security.SecurityCritical]  // auto-generated_required
     //#if !FEATURE_CORECLR
     //    [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode=true)]
     //#endif
@@ -82,7 +75,6 @@ namespace Microsoft.Win32.SafeHandles
     //        }
 
     //        public override bool IsInvalid {
-    //            [System.Security.SecurityCritical]
     //            get { return handle == new IntPtr(-1); }
     //        }
     //    }

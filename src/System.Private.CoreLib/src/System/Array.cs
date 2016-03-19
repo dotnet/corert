@@ -1922,7 +1922,6 @@ namespace System
             Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length, IComparer<TKey> comparer)
         {
             if (keys == null)

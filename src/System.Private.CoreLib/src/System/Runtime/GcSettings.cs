@@ -33,7 +33,6 @@ namespace System.Runtime
             {
                 return RuntimeImports.RhGetGcLatencyMode();
             }
-            [SecurityCritical] // required to match contract
             set
             {
                 if ((value < GCLatencyMode.Batch) || (value > GCLatencyMode.SustainedLowLatency))
@@ -53,7 +52,6 @@ namespace System.Runtime
             }
 
             // We don't want to allow this API when hosted.
-            [SecurityCritical] // required to match contract
             set
             {
                 if ((value < GCLargeObjectHeapCompactionMode.Default) ||

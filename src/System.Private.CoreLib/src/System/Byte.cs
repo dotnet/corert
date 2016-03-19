@@ -149,7 +149,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -157,7 +156,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -165,7 +163,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
@@ -176,7 +173,6 @@ namespace System
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);

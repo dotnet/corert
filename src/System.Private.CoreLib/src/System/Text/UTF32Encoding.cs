@@ -93,7 +93,6 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
             // Validate input parameters
@@ -124,7 +123,6 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetByteCount(String s)
         {
             // Validate input
@@ -140,7 +138,6 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
@@ -163,7 +160,6 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetBytes(String s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
@@ -210,7 +206,6 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                                byte[] bytes, int byteIndex)
         {
@@ -254,7 +249,6 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
@@ -279,7 +273,6 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
             // Validate Parameters
@@ -309,7 +302,6 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
@@ -331,7 +323,6 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
         {
@@ -375,7 +366,6 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
-        [System.Security.SecurityCritical]  // auto-generated
         [CLSCompliant(false)]
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
@@ -400,7 +390,6 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override unsafe String GetString(byte[] bytes, int index, int count)
         {
             // Validate Parameters
@@ -429,7 +418,6 @@ namespace System.Text
         // End of standard methods copied from EncodingNLS.cs
         //
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)
         {
             Contract.Assert(chars != null, "[UTF32Encoding.GetByteCount]chars!=null");
@@ -553,7 +541,6 @@ namespace System.Text
             return byteCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, EncoderNLS encoder)
         {
@@ -748,7 +735,6 @@ namespace System.Text
             return (int)(bytes - byteStart);
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
         {
             Contract.Assert(bytes != null, "[UTF32Encoding.GetCharCount]bytes!=null");
@@ -891,7 +877,6 @@ namespace System.Text
             return charCount;
         }
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS baseDecoder)
         {

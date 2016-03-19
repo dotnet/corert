@@ -83,28 +83,24 @@ namespace System
             return ((int)_value) ^ (int)(_value >> 32);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatUInt64(_value, null, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatUInt64(_value, null, provider);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatUInt64(_value, format, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);

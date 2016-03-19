@@ -49,7 +49,6 @@ namespace Internal.Runtime.CompilerHelpers
         //
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static int GetCharCount(byte* bytes, int count)
         {
             Contract.Assert(count >= 0);
@@ -448,7 +447,6 @@ namespace Internal.Runtime.CompilerHelpers
         //
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
-        [System.Security.SecurityCritical]  // auto-generated
         internal unsafe static int GetChars(byte* bytes, int byteCount,
                                         char* chars, int charCount)
         {

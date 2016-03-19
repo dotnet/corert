@@ -186,7 +186,6 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical] // required to match contract
 #if CORERT
         unsafe public extern String(char* value);   // CtorCharPtr
 
@@ -226,7 +225,6 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [SecurityCritical] // required to match contract
 #if CORERT
         unsafe public extern String(char* value, int startIndex, int length);   // CtorCharPtrStartLength
 

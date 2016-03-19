@@ -35,7 +35,6 @@ namespace System.Diagnostics.Contracts
         /// It is NEVER used to indicate failure of actual contracts at runtime.
         /// </summary>
 #if FEATURE_UNTRUSTED_CALLERS
-        [SecuritySafeCritical]
 #endif
         static partial void AssertMustUseRewriter(ContractFailureKind kind, String contractKind)
         {
@@ -82,7 +81,6 @@ namespace System.Diagnostics.Contracts
         /// System.Runtime.CompilerServices.ContractHelper.RaiseContractFailedEvent, followed by 
         /// System.Runtime.CompilerServices.ContractHelper.TriggerFailure.
         /// </summary>
-        [SuppressMessage("Microsoft.Portability", "CA1903:UseOnlyApiFromTargetedFramework", MessageId = "System.Security.SecuritySafeCriticalAttribute")]
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -114,7 +112,6 @@ namespace System.Diagnostics.Contracts
         public static event EventHandler<ContractFailedEventArgs> ContractFailed
         {
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #if FEATURE_LINK_DEMAND
             [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
@@ -124,7 +121,6 @@ namespace System.Diagnostics.Contracts
                 System.Runtime.CompilerServices.ContractHelper.InternalContractFailed += value;
             }
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #if FEATURE_LINK_DEMAND
             [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
@@ -175,7 +171,6 @@ namespace System.Diagnostics.Contracts
         }
 
 #if FEATURE_UNTRUSTED_CALLERS
-        [SecurityCritical]
 #if FEATURE_LINK_DEMAND
         [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
@@ -191,7 +186,6 @@ namespace System.Diagnostics.Contracts
         }
 
 #if FEATURE_UNTRUSTED_CALLERS
-        [SecurityCritical]
 #if FEATURE_LINK_DEMAND
         [SecurityPermission(SecurityAction.LinkDemand, Unrestricted = true)]
 #endif
@@ -249,7 +243,6 @@ namespace System.Diagnostics.Contracts
 #endif // FEATURE_SERIALIZATION
 
 #if FEATURE_UNTRUSTED_CALLERS && FEATURE_SERIALIZATION
-        [SecurityCritical]
 #if FEATURE_LINK_DEMAND && FEATURE_SERIALIZATION
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
 #endif // FEATURE_LINK_DEMAND
@@ -294,7 +287,6 @@ namespace System.Runtime.CompilerServices
         internal static event EventHandler<ContractFailedEventArgs> InternalContractFailed
         {
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #endif
             add
             {
@@ -314,7 +306,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 #if FEATURE_UNTRUSTED_CALLERS
-            [SecurityCritical]
 #endif
             remove
             {
@@ -341,7 +332,6 @@ namespace System.Runtime.CompilerServices
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_RELIABILITY_CONTRACTS
-        [SecuritySafeCritical]
 #endif
         static partial void RaiseContractFailedEventImplementation(ContractFailureKind failureKind, String userMessage, String conditionText, Exception innerException, ref string resultFailureMessage)
         {
@@ -413,7 +403,6 @@ namespace System.Runtime.CompilerServices
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "innerException")]
         [System.Diagnostics.DebuggerNonUserCode]
 #if FEATURE_UNTRUSTED_CALLERS && !FEATURE_CORECLR
-        [SecuritySafeCritical]
 #endif
         static partial void TriggerFailureImplementation(ContractFailureKind kind, String displayMessage, String userMessage, String conditionText, Exception innerException)
         {
@@ -516,7 +505,6 @@ namespace System.Runtime.CompilerServices
         //        // because our security team does not yet support SecuritySafeCritical on P/Invoke methods.
         //        // Note this can be called in the context of throwing another exception (EnsuresOnThrow).
         //#if FEATURE_UNTRUSTED_CALLERS
-        //        [SecuritySafeCritical]
         //#endif 
         //#if FEATURE_RELIABILITY_CONTRACTS
         //        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]

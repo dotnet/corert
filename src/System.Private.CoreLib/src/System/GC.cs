@@ -216,7 +216,6 @@ namespace System
         /// Xnew = UMDeath/UMTotal * 0.5 + Xprev
         /// </summary>
         /// <param name="bytesAllocated"></param>
-        [SecurityCritical] // required to match contract
         public static void AddMemoryPressure(long bytesAllocated)
         {
             if (bytesAllocated <= 0)
@@ -286,7 +285,6 @@ namespace System
             }
         }
 
-        [SecurityCritical] // required to match contract
         public static void RemoveMemoryPressure(long bytesAllocated)
         {
             if (bytesAllocated <= 0)

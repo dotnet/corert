@@ -290,7 +290,6 @@ namespace System.Globalization
         private static volatile LowLevelDictionary<String, CultureData> s_cachedRegions;
         private static volatile LowLevelDictionary<string, string> s_RegionNames;
 
-        [System.Security.SecurityCritical]  // auto-generated
         internal static CultureData GetCultureDataForRegion(String cultureName, bool useUserOverride)
         {
             // First do a shortcut for Invariant
@@ -664,7 +663,6 @@ namespace System.Globalization
         // Localized pretty name for this locale (ie: Inglis (estados Unitos))
         internal String SLOCALIZEDDISPLAYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sLocalizedDisplayName == null)
@@ -740,7 +738,6 @@ namespace System.Globalization
         // English pretty name for this locale (ie: English (United States))
         internal String SENGDISPLAYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sEnglishDisplayName == null)
@@ -790,7 +787,6 @@ namespace System.Globalization
         // Native pretty name for this locale (ie: Deutsch (Deutschland))
         internal String SNATIVEDISPLAYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sNativeDisplayName == null)
@@ -847,7 +843,6 @@ namespace System.Globalization
         // This is only valid for Windows 8 and higher neutrals:
         internal String SLOCALIZEDLANGUAGE
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sLocalizedLanguage == null)
@@ -875,7 +870,6 @@ namespace System.Globalization
         // English name for this language (Windows Only) ie: German
         internal String SENGLISHLANGUAGE
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sEnglishLanguage == null)
@@ -889,7 +883,6 @@ namespace System.Globalization
         // Native name of this language (Windows Only) ie: Deutsch
         internal String SNATIVELANGUAGE
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sNativeLanguage == null)
@@ -907,7 +900,6 @@ namespace System.Globalization
         // region name (eg US)
         internal String SREGIONNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sRegionName == null)
@@ -922,7 +914,6 @@ namespace System.Globalization
         // localized name for the country
         internal string SLOCALIZEDCOUNTRY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sLocalizedCountry == null)
@@ -948,7 +939,6 @@ namespace System.Globalization
         // english country name (RegionInfo) ie: Germany
         internal String SENGCOUNTRY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sEnglishCountry == null)
@@ -962,7 +952,6 @@ namespace System.Globalization
         // native country name (RegionInfo) ie: Deutschland
         internal String SNATIVECOUNTRY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sNativeCountry == null)
@@ -976,7 +965,6 @@ namespace System.Globalization
         // ISO 3166 Country Name
         internal String SISO3166CTRYNAME
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sISO3166CountryName == null)
@@ -1121,7 +1109,6 @@ namespace System.Globalization
         // (user can override) local monetary symbol, eg: $
         internal String SCURRENCY
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sCurrency == null)
@@ -1135,7 +1122,6 @@ namespace System.Globalization
         // international monetary symbol (RegionInfo), eg: USD
         internal String SINTLSYMBOL
         {
-            [System.Security.SecurityCritical]  // auto-generated
             get
             {
                 if (_sIntlMonetarySymbol == null)

@@ -36,28 +36,24 @@ namespace System
         public const float NaN = (float)0.0 / (float)0.0;
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static bool IsInfinity(float f)
         {
             return (*(int*)(&f) & 0x7FFFFFFF) == 0x7F800000;
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static bool IsPositiveInfinity(float f)
         {
             return *(int*)(&f) == 0x7F800000;
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe static bool IsNegativeInfinity(float f)
         {
             return *(int*)(&f) == unchecked((int)0xFF800000);
         }
 
         [Pure]
-        [System.Security.SecuritySafeCritical]
         public unsafe static bool IsNaN(float f)
         {
             return (*(int*)(&f) & 0x7FFFFFFF) > 0x7F800000;
@@ -160,7 +156,6 @@ namespace System
             return IsNaN(obj) && IsNaN(m_value);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public unsafe override int GetHashCode()
         {
             float f = m_value;
@@ -173,28 +168,24 @@ namespace System
             return v;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatSingle(m_value, null, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatSingle(m_value, null, provider);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
             return FormatProvider.FormatSingle(m_value, format, null);
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);

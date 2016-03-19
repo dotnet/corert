@@ -17,7 +17,6 @@ namespace System.Diagnostics
 
         internal sealed class NetNativeDebugLogger : IDebugLogger
         {
-            [SecuritySafeCritical]
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
                 string fullMessage = message + Environment.NewLine + detailMessage;
@@ -54,7 +53,6 @@ namespace System.Diagnostics
                 }
             }
 
-            [System.Security.SecuritySafeCritical]
             private static void WriteToDebugger(string message)
             {
                 Interop.mincore.OutputDebugString(message ?? string.Empty);
