@@ -2136,42 +2136,12 @@ namespace Internal.JitInterface
         private void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
         { throw new NotImplementedException("getTailCallCopyArgsThunk"); }
 
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        private delegate IntPtr _ClrVirtualAlloc(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect);
-        private static IntPtr ClrVirtualAlloc(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect)
-        {
-            return Marshal.AllocCoTaskMem((int)dwSize);
-        }
-        private _ClrVirtualAlloc _clrVirtualAlloc;
-
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        private delegate bool _ClrVirtualFree(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint dwFreeType);
-        private static bool ClrVirtualFree(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint dwFreeType)
-        {
-            Marshal.FreeCoTaskMem(lpAddress);
-            return true;
-        }
-        private _ClrVirtualFree _clrVirtualFree;
-
-        private IntPtr _memoryManager;
-
         private void* getMemoryManager()
         {
-            if (_memoryManager != new IntPtr(0))
-                return (void*)_memoryManager;
-
-            int vtableSlots = 14;
-            IntPtr* vtable = (IntPtr*)Marshal.AllocCoTaskMem(sizeof(IntPtr) * vtableSlots);
-            for (int i = 0; i < vtableSlots; i++) vtable[i] = new IntPtr(0);
-
-            // JIT only ever uses IEEMemoryManager::ClrVirtualAlloc/IEEMemoryManager::ClrVirtualFree
-            vtable[3] = Marshal.GetFunctionPointerForDelegate<_ClrVirtualAlloc>(_clrVirtualAlloc = new _ClrVirtualAlloc(ClrVirtualAlloc));
-            vtable[4] = Marshal.GetFunctionPointerForDelegate<_ClrVirtualFree>(_clrVirtualFree = new _ClrVirtualFree(ClrVirtualFree));
-
-            IntPtr instance = Marshal.AllocCoTaskMem(sizeof(IntPtr));
-            *(IntPtr**)instance = vtable;
-
-            return (void*)(_memoryManager = instance);
+            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
+            // and should never reach the managed implementation.
+            Debug.Assert(false, "CorInfoImpl.getMemoryManager should not be called");
+            throw new NotSupportedException("getMemoryManager");
         }
 
         private byte[] _code;

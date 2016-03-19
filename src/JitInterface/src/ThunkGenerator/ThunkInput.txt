@@ -299,7 +299,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     void* getTailCallCopyArgsThunk (CORINFO_SIG_INFO       *pSig, CorInfoHelperTailCallSpecialHandling flags);
-    IEEMemoryManager* getMemoryManager();
+    [ManualNativeWrapper] IEEMemoryManager* getMemoryManager();
     void allocMem(        ULONG               hotCodeSize,    ULONG               coldCodeSize,     ULONG               roDataSize,             ULONG               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );
     void reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
     void allocUnwindInfo(BYTE* pHotCode, BYTE* pColdCode, ULONG startOffset, ULONG endOffset, ULONG unwindSize, BYTE* pUnwindBlock, CorJitFuncKind funcKind)

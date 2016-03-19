@@ -7,3 +7,17 @@
 #else
 #define DLL_EXPORT extern "C" __attribute((visibility("default")))
 #endif
+
+#ifdef __i386__
+
+#if !defined(__stdcall)
+#define __stdcall      __attribute__((stdcall))
+#endif
+
+#else
+
+#if !defined(__stdcall)
+#define __stdcall
+#endif
+
+#endif
