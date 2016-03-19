@@ -2546,12 +2546,12 @@ namespace System.Threading.Tasks
             // rather than inlining it, the latter of which could result in a rare but possible stack overflow).
             if (tc != null)
             {
-                if (!AddTaskContinuation(tc))
+                if (!AddTaskContinuation(tc, addBeforeOthers: false))
                     tc.Run(this, bCanInlineContinuationTask: false);
             }
             else
             {
-                if (!AddTaskContinuation(continuationAction))
+                if (!AddTaskContinuation(continuationAction, addBeforeOthers: false))
                     AwaitTaskContinuation.UnsafeScheduleAction(continuationAction);
             }
         }
@@ -2819,7 +2819,7 @@ namespace System.Threading.Tasks
         //      AddCompletionAction(completionAction);
         // with this:
         //      SetOnInvokeMres mres = new SetOnInvokeMres();
-        //      AddCompletionAction(mres);
+        //      AddCompletionAction(mres, addBeforeOthers: true);
         // which saves a couple of allocations.
         //
         // Used in SpinThenBlockingWait (below), but could be seen as a general purpose mechanism.
@@ -2847,7 +2847,7 @@ namespace System.Threading.Tasks
                 var mres = new SetOnInvokeMres();
                 try
                 {
-                    AddCompletionAction(mres);
+                    AddCompletionAction(mres, addBeforeOthers: true);
                     if (infiniteWait)
                     {
                         returnValue = mres.Wait(Timeout.Infinite, cancellationToken);
@@ -2888,7 +2888,7 @@ namespace System.Threading.Tasks
                 return false;
             }
 
-            //This code is pretty similar to the custome spinning in MRES excpt there is no yieling afte we exceeds the spin count
+            //This code is pretty similar to the custom spinning in MRES except there is no yieling after we exceed the spin count
             const int YIELD_THRESHOLD = 10; // When to switch over to a true yield.
             int spinCount = PlatformHelper.IsSingleProcessor ? 1 : YIELD_THRESHOLD; //spin only once if we are running on a single CPU
             for (int i = 0; i < spinCount; i++)
@@ -4150,7 +4150,7 @@ namespace System.Threading.Tasks
             if (!continuationTask.IsCompleted)
             {
                 // Attempt to enqueue the continuation
-                bool continuationQueued = AddTaskContinuation(continuation);
+                bool continuationQueued = AddTaskContinuation(continuation, addBeforeOthers: false);
 
                 // If the continuation was not queued (because the task completed), then run it now.
                 if (!continuationQueued) continuation.Run(this, bCanInlineContinuationTask: true);
@@ -4165,7 +4165,12 @@ namespace System.Threading.Tasks
         // Used internally by ContinueWhenAll() and ContinueWhenAny().
         internal void AddCompletionAction(ITaskCompletionAction action)
         {
-            if (!AddTaskContinuation(action))
+            AddCompletionAction(action, addBeforeOthers: false);
+        }
+        
+        private void AddCompletionAction(ITaskCompletionAction action, bool addBeforeOthers)
+        {
+            if (!AddTaskContinuation(action, addBeforeOthers))
                 action.Invoke(this); // run the action directly if we failed to queue the continuation (i.e., the task completed)
         }
 
@@ -4173,7 +4178,7 @@ namespace System.Threading.Tasks
         // Returns true if and only if the continuation was successfully queued.
         // THIS METHOD ASSUMES THAT m_continuationObject IS NOT NULL.  That case was taken
         // care of in the calling method, AddTaskContinuation().
-        private bool AddTaskContinuationComplex(object tc)
+        private bool AddTaskContinuationComplex(object tc, bool addBeforeOthers)
         {
             Contract.Requires(tc != null, "Expected non-null tc object in AddTaskContinuationComplex");
 
@@ -4221,7 +4226,11 @@ namespace System.Threading.Tasks
                             list.RemoveAll(s_IsTaskContinuationNullPredicate);
                         }
 
-                        list.Add(tc);
+                        if (addBeforeOthers)
+                            list.Insert(0, tc);
+                        else
+                            list.Add(tc);
+
                         return true; // continuation successfully queued, so return true.
                     }
                 }
@@ -4233,7 +4242,7 @@ namespace System.Threading.Tasks
 
         // Record a continuation task or action.
         // Return true if and only if we successfully queued a continuation.
-        private bool AddTaskContinuation(object tc)
+        private bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
             Contract.Requires(tc != null);
 
@@ -4246,7 +4255,7 @@ namespace System.Threading.Tasks
             {
                 // If we get here, it means that we failed to CAS tc into m_continuationObject.
                 // Therefore, we must go the more complicated route.
-                return AddTaskContinuationComplex(tc);
+                return AddTaskContinuationComplex(tc, addBeforeOthers);
             }
             else return true;
         }
@@ -4631,7 +4640,7 @@ namespace System.Threading.Tasks
             {
                 foreach (var task in tasks)
                 {
-                    task.AddCompletionAction(mres);
+                    task.AddCompletionAction(mres, addBeforeOthers: true);
                 }
                 waitCompleted = mres.Wait(millisecondsTimeout, cancellationToken);
             }
