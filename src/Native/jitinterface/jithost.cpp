@@ -43,7 +43,7 @@ public:
 
 static JitHost instance;
 
-DLL_EXPORT void* GetJitHost()
+DLL_EXPORT void* __stdcall GetJitHost()
 {
     return &instance;
 }
