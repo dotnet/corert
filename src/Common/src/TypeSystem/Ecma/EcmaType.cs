@@ -490,5 +490,13 @@ namespace Internal.TypeSystem.Ecma
                 return (_typeDefinition.Attributes & TypeAttributes.Sealed) != 0;
             }
         }
+
+        public override PInvokeStringFormat PInvokeStringFormat
+        {
+            get
+            {
+                return (PInvokeStringFormat)(_typeDefinition.Attributes & TypeAttributes.StringFormatMask);
+            }
+        }
     }
 }

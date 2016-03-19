@@ -97,7 +97,16 @@ namespace Internal.IL.Stubs
 
                     // TODO: we should also reject fields that specify custom marshalling
                     if (!IsBlittableType(fieldType))
-                        return false;
+                    {
+                        // This field can still be blittable if it's a Char and marshals as Unicode
+                        var owningType = field.OwningType as MetadataType;
+                        if (owningType == null)
+                            return false;
+
+                        if (fieldType.Category != TypeFlags.Char ||
+                            owningType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass)
+                            return false;
+                    }
                 }
                 return true;
             }
