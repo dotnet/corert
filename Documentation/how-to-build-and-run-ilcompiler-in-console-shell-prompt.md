@@ -40,10 +40,10 @@ From the shell/command prompt, issue the following commands, from the folder con
 
 ``` 
     dotnet restore
-    dotnet build --native --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1
+    dotnet build --native --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\.nuget\publish1
 ``` 
 
-Native executable will be dropped in `./bin/[configuration]/[framework]/native/` folder and will have the same name as the folder in which your source file is present.
+Native executable will be dropped in `./bin/[configuration]/[framework]/[runtime]/native/` folder and will have the same name as the folder in which your source file is present.
 
 ## Using CPP Code Generator ##
 
@@ -53,7 +53,7 @@ From the shell/command prompt, issue the following commands to generate the nati
 
 ``` 
     dotnet restore
-    dotnet build --native --cpp --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1 --cppcompilerflags /MTd
+    dotnet build --native --cpp --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\.nuget\publish1 --cppcompilerflags /MTd
 ```
 
 Omit `--cppcompilerflags /MTd` for release CoreRT build.
