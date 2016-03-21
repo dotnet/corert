@@ -1117,6 +1117,16 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowFailed(int hr, System.RuntimeTypeHandle typeHnd)
+        {
+#if ENABLE_WINRT
+            throw McgMarshal.GetExceptionForHR(hr, McgModuleManager.GetTypeInfoByHandle(typeHnd).IsIInspectable);
+#else
+            throw McgMarshal.GetExceptionForHR(hr, false/*isWinRTScenario*/);
+#endif
+        }
+
         /// <summary>
         /// This method returns a new Exception object given the HR value.
         /// </summary>

@@ -144,12 +144,12 @@ namespace System.Runtime.InteropServices
             internal System.IntPtr pfnGetLanguageException;
         }
 
-        private unsafe struct __com_IRestrictedErrorInfo
+        internal unsafe struct __com_IRestrictedErrorInfo
         {
             internal __vtable_IRestrictedErrorInfo* pVtable;
         }
 
-        private unsafe struct __vtable_IRestrictedErrorInfo
+        internal unsafe struct __vtable_IRestrictedErrorInfo
         {
             private IntPtr pfnQueryInterface;
             private IntPtr pfnAddRef;

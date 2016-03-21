@@ -174,16 +174,31 @@ namespace System.Runtime.InteropServices
 
 
         /// <summary>
-        /// Interface lookup on m_interfaceTypeInfo array using on-demand generated hash table
+        /// Interface lookup on m_interfaceTypeInfo array using on-demand generated hash table(if available)
+        /// Derived McgModule can overide this method to implement its own way to Look up RuntimeTypeHandle in m_interfaceData
         /// </summary>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        int InterfaceDataLookup(RuntimeTypeHandle typeHandle)
+        internal int InterfaceDataLookup(RuntimeTypeHandle typeHandle)
         {
-            return LookupTypeHandleInHashtable(
-                typeHandle,
-                ref m_interfaceTypeInfo_Hashtable,
-                m_interfaceDataLookup_GetEntryTypeHandleCallback,
-                m_interfaceDataLookup_GetTableSizeCallback);
+            if (m_interfaceTypeInfo_Hashtable != null)
+            {
+                return LookupTypeHandleInHashtable(
+                    typeHandle,
+                    ref m_interfaceTypeInfo_Hashtable,
+                    m_interfaceDataLookup_GetEntryTypeHandleCallback,
+                    m_interfaceDataLookup_GetTableSizeCallback);
+            }
+            else
+            {
+                // InternalModule doesn't provide HashTable
+                Debug.Assert(this is InternalModule);
+                for (int i = 0; i < m_interfaceData.Length; i++)
+                {
+                    if (m_interfaceData[i].ItfType.Equals(typeHandle))
+                        return i;
+                }
+                return -1;
+            }            
         }
 
         private Func<int, RuntimeTypeHandle> m_interfaceDataLookup_GetEntryTypeHandleCallback;
@@ -793,7 +808,7 @@ namespace System.Runtime.InteropServices
             return ComInterfaceToObject(data, m_genericArgumentMarshalInfo[marshalIndex].AsyncOperationType);
         }
 
-        public  object ComInterfaceToObject(System.IntPtr pComItf, RuntimeTypeHandle interfaceType)
+        internal object ComInterfaceToObject(System.IntPtr pComItf, RuntimeTypeHandle interfaceType)
         {
             return ComInterfaceToObject(pComItf, interfaceType, /* classIndexInSignature */ default(RuntimeTypeHandle));
         }
@@ -803,7 +818,7 @@ namespace System.Runtime.InteropServices
             return ComInterfaceToObject(pComItf, interfaceTypeInfo, McgClassInfo.Null);
         }
 
-        public object ComInterfaceToObject(System.IntPtr pComItf, RuntimeTypeHandle interfaceType,
+        internal object ComInterfaceToObject(System.IntPtr pComItf, RuntimeTypeHandle interfaceType,
                                            RuntimeTypeHandle classTypeInSignature)
         {
 #if  ENABLE_WINRT
@@ -903,7 +918,7 @@ namespace System.Runtime.InteropServices
         /// Given a GUID, retrieve the corresponding type info
         /// @TODO: we should switch everything to McgTypeInfo instead of relying on Guid
         /// </summary>
-        unsafe public McgTypeInfo GetTypeInfo(ref Guid guid)
+        unsafe internal McgTypeInfo GetTypeInfo(ref Guid guid)
         {
             if (m_interfaceData != null)
             {
@@ -941,7 +956,7 @@ namespace System.Runtime.InteropServices
         /// NOTE: This method only search InterfaceData.
         /// NOTE: Don't call this method directory--call McgModuleManager.GetTypeInfoFromTypeHandle instead
         /// </summary>
-        public unsafe McgTypeInfo GetTypeInfoFromTypeHandleInInterfaceData(RuntimeTypeHandle typeHandle)
+        internal unsafe McgTypeInfo GetTypeInfoFromTypeHandleInInterfaceData(RuntimeTypeHandle typeHandle)
         {
             int slot = InterfaceDataLookup(typeHandle);
 
@@ -964,7 +979,7 @@ namespace System.Runtime.InteropServices
         /// <param name="typeHandle"></param>
         /// <param name="secondaryTypeInfo"></param>
         /// <returns></returns>
-        public McgTypeInfo GetTypeInfoFromTypeHandleInCollectionData(RuntimeTypeHandle typeHandle, out McgTypeInfo secondaryTypeInfo)
+        internal McgTypeInfo GetTypeInfoFromTypeHandleInCollectionData(RuntimeTypeHandle typeHandle, out McgTypeInfo secondaryTypeInfo)
         {
             secondaryTypeInfo = McgTypeInfo.Null;
 
@@ -992,7 +1007,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Can the target object be casted to the type?
         /// </summary>
-        public bool SupportsInterface(object obj, McgTypeInfo typeInfo)
+        internal bool SupportsInterface(object obj, McgTypeInfo typeInfo)
         {
             return InteropExtensions.IsInstanceOfInterface(obj, typeInfo.InterfaceType);
         }
@@ -1001,11 +1016,11 @@ namespace System.Runtime.InteropServices
         /// Get the WinRT name of a given Type.  If the type is projected, returns the projected name.
         /// Sets isWinRT to true if the type definition is from a WinMD file.
         /// </summary>
-        public unsafe string GetTypeName(RuntimeTypeHandle type, ref bool isWinRT)
+        internal string GetTypeName(RuntimeTypeHandle type, ref bool isWinRT)
         {
             int slot = InterfaceDataLookup(type);
 
-            if (slot >= 0)
+            if (slot >= 0 && m_interfaceNameMap != null)
             {
                 //
                 // WinRT interface or WinRT delegate
@@ -1015,7 +1030,7 @@ namespace System.Runtime.InteropServices
                 return m_interfaceNameMap.GetString(slot);
             }
 
-            if (m_classData != null)
+            if (m_classData != null && m_classNameMap != null)
             {
                 int i = ClassDataLookup(type);
 
@@ -1034,7 +1049,7 @@ namespace System.Runtime.InteropServices
         /// Get a Type object representing the named type, along with a boolean indicating if the type
         /// definition is from a WinMD file.
         /// </summary>
-        public Type GetTypeFromName(string name, ref bool isWinRT)
+        internal Type GetTypeFromName(string name, ref bool isWinRT)
         {
             if (m_interfaceNameMap != null)
             {
@@ -1354,7 +1369,7 @@ namespace System.Runtime.InteropServices
         /// You might want to specify how to box this. For example, any object[] derived array could
         /// potentially boxed as object[] if everything else fails
         /// </param>
-        public object BoxIfBoxable(object target, RuntimeTypeHandle typeHandleOverride)
+        internal object BoxIfBoxable(object target, RuntimeTypeHandle typeHandleOverride)
         {
             if ((m_boxingData == null) || (m_boxingData.Length == 0))
             {
@@ -1391,7 +1406,7 @@ namespace System.Runtime.InteropServices
             return null;
         }
 
-        public object Box(object target, int boxingIndex)
+        internal object Box(object target, int boxingIndex)
         {
             if (!IsInvalidTypeHandle(m_boxingData[boxingIndex].CLRBoxingWrapperType))
             {
@@ -1442,7 +1457,7 @@ namespace System.Runtime.InteropServices
         /// Unbox the WinRT boxed IReference<T>/IReferenceArray<T> and box it into Object so that managed
         /// code can unbox it later into the real T
         /// </summary>
-        public object UnboxIfBoxed(object target, string className)
+        internal object UnboxIfBoxed(object target, string className)
         {
             if (m_boxingData == null)
             {
@@ -1471,7 +1486,7 @@ namespace System.Runtime.InteropServices
             return CalliIntrinsics.Call<object>(m_boxingData[boxingIndex].UnboxingStub, obj);
         }
 
-        public object Unbox(object obj, int boxingIndex)
+        internal object Unbox(object obj, int boxingIndex)
         {
             //
             // If it is our managed wrapper, unbox it
@@ -1513,7 +1528,7 @@ namespace System.Runtime.InteropServices
         /// <param name="structTypeHandle">TypeHandle for the safe struct</param>
         /// <param name="structMarshalData">McgStructMarshalData for the struct</param>
         /// <returns>True if the struct marshal data is available in this module</returns>
-        public bool TryGetStructMarshalData(RuntimeTypeHandle structTypeHandle, out McgStructMarshalData structMarshalData)
+        internal bool TryGetStructMarshalData(RuntimeTypeHandle structTypeHandle, out McgStructMarshalData structMarshalData)
         {
             structMarshalData = default(McgStructMarshalData);
 
@@ -1569,11 +1584,11 @@ namespace System.Runtime.InteropServices
         static Guid s_IID_IActivationFactory = new Guid(0x00000035, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
         /// <summary>
-        /// Returns the requested interface pointer specified by itfTypeInfo from the CCWActivationFactory
+        /// Returns the requested interface pointer specified by itfType from the CCWActivationFactory
         /// object instance. Typically the requested interface is the
         /// System.Runtime.InteropServices.WindowsRuntime.IActivationFactory interface.
         /// </summary>
-        public unsafe int GetCCWActivationFactory(HSTRING activatableClassId, McgTypeInfo itfTypeInfo, IntPtr* factoryOut)
+        public unsafe int GetCCWActivationFactory(HSTRING activatableClassId, RuntimeTypeHandle itfType, IntPtr* factoryOut)
         {
             try
             {
@@ -1599,9 +1614,9 @@ namespace System.Runtime.InteropServices
 
                 object factory = InteropExtensions.RuntimeNewObject(factoryTypeHandle);
 
-                *factoryOut = McgMarshal.ObjectToComInterface(
+                *factoryOut = McgModuleManager.ObjectToComInterface(
                                      factory,
-                                     itfTypeInfo);
+                                     itfType);
             }
             catch (Exception ex)
             {
