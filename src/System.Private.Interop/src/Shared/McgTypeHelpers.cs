@@ -690,6 +690,17 @@ namespace System.Runtime.InteropServices
             return handle.ToString();
 #endif
         }
+
+        internal static bool IsClass(this RuntimeTypeHandle handle)
+        {
+#if ENABLE_WINRT
+            return  !InteropExtensions.IsInterface(handle) && 
+                    !handle.IsValueType() && 
+                    !InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
+#else
+            return false;
+#endif
+        }
     }
     public static class TypeOfHelper
     {
