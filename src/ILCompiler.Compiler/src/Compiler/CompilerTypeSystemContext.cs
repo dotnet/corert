@@ -247,7 +247,7 @@ namespace ILCompiler
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
-        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
         }

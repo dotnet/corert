@@ -7,17 +7,29 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
+    public enum InstanceLayoutKind
+    {
+        TypeOnly,
+        TypeAndFields
+    }
+
+    public enum StaticLayoutKind
+    {
+        StaticRegionSizes,
+        StaticRegionSizesAndFields
+    }
+
     public abstract class FieldLayoutAlgorithm
     {
         /// <summary>
         /// Compute the instance field layout for a DefType. Must not depend on static field layout for any other type.
         /// </summary>
-        public abstract ComputedInstanceFieldLayout ComputeInstanceFieldLayout(DefType type);
+        public abstract ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind);
 
         /// <summary>
         /// Compute the static field layout for a DefType. Must not depend on static field layout for any other type.
         /// </summary>
-        public abstract ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type);
+        public abstract ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind);
 
         /// <summary>
         /// Compute if the fields of the specified type contain a GC pointer
@@ -32,6 +44,11 @@ namespace Internal.TypeSystem
         public int FieldAlignment;
         public int ByteCountUnaligned;
         public int ByteCountAlignment;
+
+        /// <summary>
+        /// If Offsets is non-null, then all field based layout is complete.
+        /// Otherwise, only the non-field based data is considered to be complete
+        /// </summary>
         public FieldAndOffset[] Offsets;
     }
 
@@ -47,6 +64,10 @@ namespace Internal.TypeSystem
         public StaticsBlock GcStatics;
         public StaticsBlock ThreadStatics;
 
+        /// <summary>
+        /// If Offsets is non-null, then all field based layout is complete.
+        /// Otherwise, only the non-field based data is considered to be complete
+        /// </summary>
         public FieldAndOffset[] Offsets;
     }
 }
