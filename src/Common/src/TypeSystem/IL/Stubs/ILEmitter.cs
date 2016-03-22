@@ -170,7 +170,21 @@ namespace Internal.IL.Stubs
 
             Emit(opcode);
             _offsetsNeedingPatching.Add(new LabelAndOffset(label, _length));
-            EmitUInt32(0);
+            EmitUInt32(4);
+        }
+
+        public void EmitSwitch(ILCodeLabel[] labels)
+        {
+            Emit(ILOpcode.switch_);
+            EmitUInt32(labels.Length);
+
+            int remainingBytes = labels.Length * 4;
+            foreach (var label in labels)
+            {
+                _offsetsNeedingPatching.Add(new LabelAndOffset(label, _length));
+                EmitUInt32(remainingBytes);
+                remainingBytes -= 4;
+            }
         }
 
         public void EmitLabel(ILCodeLabel label)
@@ -187,8 +201,15 @@ namespace Internal.IL.Stubs
                 Debug.Assert(patch.Label.IsPlaced);
                 Debug.Assert(_startOffsetForLinking > -1);
 
-                int value = patch.Label.AbsoluteOffset - _startOffsetForLinking - patch.Offset - 4;
                 int offset = patch.Offset;
+
+                int delta = _instructions[offset + 3] << 24 |
+                    _instructions[offset + 2] << 16 |
+                    _instructions[offset + 1] << 8 |
+                    _instructions[offset];
+
+                int value = patch.Label.AbsoluteOffset - _startOffsetForLinking - patch.Offset - delta;
+                
                 _instructions[offset] = (byte)value;
                 _instructions[offset + 1] = (byte)(value >> 8);
                 _instructions[offset + 2] = (byte)(value >> 16);
