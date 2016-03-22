@@ -29,13 +29,13 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.VirtualCall:
-                    if (relocsOnly)
-                        break;
-
-                    AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                    encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-
                     {
+                        if (relocsOnly)
+                            break;
+
+                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+                    
                         int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, (MethodDesc)Target);
                         Debug.Assert(slot != -1);
                         AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
@@ -131,8 +131,11 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.DelegateCtor:
                     {
                         DelegateInfo target = (DelegateInfo)Target;
+                        MethodDesc targetMethod = target.Target;
 
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.MethodEntrypoint(target.Target));
+                        bool needsUnboxingStub = targetMethod.OwningType.IsValueType && !targetMethod.Signature.IsStatic;
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.MethodEntrypoint(targetMethod, needsUnboxingStub));
+
                         if (target.ShuffleThunk != null)
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg3, factory.MethodEntrypoint(target.ShuffleThunk));
 
@@ -145,6 +148,31 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
                         AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
                         encoder.EmitJmpToAddrMode(ref jmpAddrMode);
+                    }
+                    break;
+
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    {
+                        MethodDesc targetMethod = (MethodDesc)Target;
+                        if (targetMethod.OwningType.IsInterface)
+                        {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
+                            encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
+                        }
+                        else
+                        {
+                            if (relocsOnly)
+                                break;
+
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
+                            Debug.Assert(slot != -1);
+                            AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);
+                            encoder.EmitRET();
+                        }
                     }
                     break;
 

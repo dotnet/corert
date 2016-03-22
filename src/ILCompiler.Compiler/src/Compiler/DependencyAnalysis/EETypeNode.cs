@@ -255,7 +255,8 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc implMethod = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, mdType);
                     if (implMethod != null)
                     {
-                        yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
+                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
+                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, interfaceMethod), "Interface method address");
                     }
                 }
             }
