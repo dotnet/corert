@@ -2010,7 +2010,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.GetClosestMetadataType().IsSealed)
+                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.IsSealed())
                 {
                     resolvedCallVirt = true;
                     directCall = true;
