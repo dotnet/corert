@@ -20,7 +20,7 @@
 #include "stressLog.h"
 #include "holder.h"
 #include "Crst.h"
-#include "assert.h"
+#include "rhassert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "varint.h"

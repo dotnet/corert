@@ -7,7 +7,7 @@
 #include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "assert.h"
+#include "rhassert.h"
 #include "CommonMacros.inl"
 #include "regdisplay.h"
 #include "TargetPtrs.h"

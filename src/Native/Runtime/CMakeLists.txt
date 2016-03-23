@@ -1,6 +1,6 @@
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
-    assert.cpp
+    rhassert.cpp
     CachedInterfaceDispatch.cpp
     Crst.cpp
     DebugEventSource.cpp
