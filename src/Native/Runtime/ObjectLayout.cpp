@@ -9,7 +9,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "assert.h"
+#include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"

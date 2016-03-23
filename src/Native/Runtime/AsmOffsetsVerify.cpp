@@ -4,7 +4,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gc.h"
-#include "assert.h"
+#include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "slist.h"
 #include "gcrhinterface.h"

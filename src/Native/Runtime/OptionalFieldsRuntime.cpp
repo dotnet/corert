@@ -12,7 +12,7 @@
 #include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "assert.h"
+#include "rhassert.h"
 #include "rhbinder.h"
 #include "eetype.h"
 #include "ObjectLayout.h"

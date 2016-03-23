@@ -4,7 +4,7 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "assert.h"
+#include "rhassert.h"
 
 //
 // Floating point and 64-bit integer math helpers.

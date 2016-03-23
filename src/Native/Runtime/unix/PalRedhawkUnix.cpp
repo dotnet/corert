@@ -79,10 +79,6 @@ using std::nullptr_t;
 
 #include "gcenv.structs.h"
 
-#ifdef CORERT // @TODO: Collisions between assert.h headers
-#define assert(expr) ASSERT(expr)
-#endif
-
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI
 
@@ -957,9 +953,9 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size, uint32_t freeType)
 {
-    assert(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
-    assert((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
-    assert(freeType != 0);
+    ASSERT(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
+    ASSERT((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
+    ASSERT(freeType != 0);
 
     // UNIXTODO: Implement this function
     return UInt32_TRUE;

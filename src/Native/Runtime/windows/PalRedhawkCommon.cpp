@@ -21,11 +21,8 @@
 #include "PalRedhawk.h"
 #include <winternl.h>
 #include "CommonMacros.h"
-#include "assert.h"
+#include "rhassert.h"
 
-#ifdef CORERT // @TODO: Collisions between assert.h headers
-#define assert(expr) ASSERT(expr)
-#endif
 
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
@@ -185,7 +182,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetPDBInfo(HANDLE hOsHandle, _Out_ GUID
         
         // How much space is available for the path?
         size_t cchPathMaxIncludingNullTerminator = (cbDebugData - offsetof(CV_INFO_PDB70, path)) / sizeof(char);
-        assert(cchPathMaxIncludingNullTerminator >= 1);   // Guaranteed above
+        ASSERT(cchPathMaxIncludingNullTerminator >= 1);   // Guaranteed above
 
         // Verify path string fits inside the declared size
         size_t cchPathActualExcludingNullTerminator = strnlen_s(pPdb70->path, cchPathMaxIncludingNullTerminator);
@@ -219,7 +216,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetPDBInfo(HANDLE hOsHandle, _Out_ GUID
         if ((ret != 0) && (ret != STRUNCATE))
         {
             // PDB path isn't essential.  An empty string will do if we hit an error.
-            assert(cchPath > 0);        // Guaranteed at top of function
+            ASSERT(cchPath > 0);        // Guaranteed at top of function
             wszPath[0] = L'\0';
         }
     }
