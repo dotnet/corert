@@ -11,6 +11,18 @@ namespace ILCompiler
 {
     static class TypeExtensions
     {
+        public static bool IsSealed(this TypeDesc type)
+        {
+            var metadataType = type as MetadataType;
+            if (metadataType != null)
+            {
+                return metadataType.IsSealed;
+            }
+
+            Debug.Assert(type.IsArray, "IsSealed on a type with no virtual methods?");
+            return true;
+        }
+
         static public MetadataType GetClosestMetadataType(this TypeDesc type)
         {
             if (type.IsSzArray && !((ArrayType)type).ElementType.IsPointer)
