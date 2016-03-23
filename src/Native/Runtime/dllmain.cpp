@@ -9,7 +9,7 @@
 #include "PalRedhawk.h"
 #include "gcrhinterface.h"
 
-#include "assert.h"
+#include "rhassert.h"
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"

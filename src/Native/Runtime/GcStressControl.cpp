@@ -11,7 +11,7 @@
 #include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "assert.h"
+#include "rhassert.h"
 #include "holder.h"
 #include "Crst.h"
 #include "RhConfig.h"
