@@ -10,6 +10,7 @@ using Internal.Metadata.NativeFormat.Writer;
 using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
 
+using CallingConventions = System.Reflection.CallingConventions;
 using Debug = System.Diagnostics.Debug;
 using MethodAttributes = System.Reflection.MethodAttributes;
 using MethodImplAttributes = System.Reflection.MethodImplAttributes;
@@ -121,7 +122,7 @@ namespace ILCompiler.Metadata
         {
             record.Name = HandleString(entity.Name);
             record.Parent = HandleType(entity.OwningType);
-            record.Signature = HandleMethodSignature(entity.Signature);
+            record.Signature = HandleMethodSignature(entity.GetTypicalMethodDefinition().Signature);
         }
 
         private MethodInstantiation HandleMethodInstantiation(Cts.MethodDesc method)
@@ -146,7 +147,7 @@ namespace ILCompiler.Metadata
 
             var result = new MethodSignature
             {
-                // TODO: CallingConvention
+                CallingConvention = GetSignatureCallingConvention(signature),
                 GenericParameterCount = signature.GenericParameterCount,
                 ReturnType = new ReturnTypeSignature
                 {
@@ -189,6 +190,17 @@ namespace ILCompiler.Metadata
             }
             else
                 throw new NotImplementedException();
+        }
+
+        private CallingConventions GetSignatureCallingConvention(Cts.MethodSignature signature)
+        {
+            CallingConventions callingConvention = CallingConventions.Standard;
+            if ((signature.Flags & Cts.MethodSignatureFlags.Static) == 0)
+            {
+                callingConvention = CallingConventions.HasThis;
+            }
+            // TODO: additional calling convention flags like stdcall / cdecl etc.
+            return callingConvention;
         }
     }
 }
