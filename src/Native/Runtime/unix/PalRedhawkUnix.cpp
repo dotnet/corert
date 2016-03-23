@@ -79,10 +79,6 @@ using std::nullptr_t;
 
 #include "gcenv.structs.h"
 
-#ifdef CORERT // @TODO: Collisions between assert.h headers
-#define assert(expr) ASSERT(expr)
-#endif
-
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI
 
