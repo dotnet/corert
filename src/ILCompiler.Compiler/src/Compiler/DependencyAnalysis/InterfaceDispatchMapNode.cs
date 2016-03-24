@@ -75,16 +75,16 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void SetDispatchMapIndex(NodeFactory context, int index)
+        public void SetDispatchMapIndex(NodeFactory factory, int index)
         {
             _dispatchMapTableIndex = index;
-            ((EETypeNode)context.ConstructedTypeSymbol(_type)).SetDispatchMapIndex(_dispatchMapTableIndex);
+            ((EETypeNode)factory.ConstructedTypeSymbol(_type)).SetDispatchMapIndex(_dispatchMapTableIndex);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             var result = new DependencyList();
-            result.Add(context.InterfaceDispatchMapIndirection(_type), "Interface dispatch map indirection node");
+            result.Add(factory.InterfaceDispatchMapIndirection(_type), "Interface dispatch map indirection node");
             return result;
         }
 

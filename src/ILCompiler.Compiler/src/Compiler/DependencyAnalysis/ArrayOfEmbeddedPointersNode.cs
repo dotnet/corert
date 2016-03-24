@@ -82,14 +82,14 @@ namespace ILCompiler.DependencyAnalysis
                 return "Embedded pointer to " + Target.MangledName;
             }
 
-            protected override void OnMarked(NodeFactory context)
+            protected override void OnMarked(NodeFactory factory)
             {
                 // We don't want the child in the parent collection unless it's necessary.
                 // Only when this node gets marked, the parent node becomes the actual parent.
                 _parentNode.AddEmbeddedObject(this);
             }
 
-            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
             {
                 return new[]
                 {
@@ -128,9 +128,9 @@ namespace ILCompiler.DependencyAnalysis
                 _onMarkedCallback = onMarkedCallback;
             }
 
-            protected override void OnMarked(NodeFactory context)
+            protected override void OnMarked(NodeFactory factory)
             {
-                base.OnMarked(context);
+                base.OnMarked(factory);
                 _onMarkedCallback(this);
             }
         }

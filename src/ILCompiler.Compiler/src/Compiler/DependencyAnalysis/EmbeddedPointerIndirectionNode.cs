@@ -47,6 +47,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         // At minimum, Target needs to be reported as a static dependency by inheritors.
-        public abstract override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context);
+        public abstract override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory);
     }
 }
