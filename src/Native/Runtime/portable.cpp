@@ -10,7 +10,7 @@
 #include "CommonMacros.inl"
 #include "Volatile.h"
 #include "PalRedhawk.h"
-#include "assert.h"
+#include "rhassert.h"
 
 #include "slist.h"
 #include "gcrhinterface.h"

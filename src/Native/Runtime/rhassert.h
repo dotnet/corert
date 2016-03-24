@@ -38,8 +38,6 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #endif 
 
-#define assert(expr) ASSERT(expr)
-
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
     ASSUME(0); \

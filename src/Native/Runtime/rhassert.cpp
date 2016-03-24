@@ -6,7 +6,7 @@
 #include "CommonMacros.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "assert.h"
+#include "rhassert.h"
 
 
 #include "RhConfig.h"
