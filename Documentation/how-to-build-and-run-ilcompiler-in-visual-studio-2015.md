@@ -25,7 +25,7 @@ build.cmd clean
   - Set "desktop" project in solution explorer as your startup project
 
   - Set startup command line to:
-`-r:C:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib.dll @c:\corert\bin\obj\Windows_NT.x64.Debug\ryujit.rsp`
+`-r:C:\corert\bin\Product\Windows_NT.x64.Debug\System.Private.CoreLib\System.Private.CoreLib.dll @c:\corert\bin\obj\Windows_NT.x64.Debug\ryujit.rsp`
 
   - Build & run using **F5**
     - This will run the compiler. The output is `c:\corert\src\ILCompiler\repro\obj\Debug\dnxcore50\native\repro.obj` file.

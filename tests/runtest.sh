@@ -153,7 +153,6 @@ done
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
 __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
 __LogDir=${CoreRT_TestRoot}/../bin/Logs/${__BuildStr}/tests
-__BuiltNuPkgDir=${CoreRT_TestRoot}/../bin/Product/${__BuildStr}/.nuget
 __PackageRestoreCmd=$CoreRT_TestRoot/restore.sh
 __build_os_lowcase=$(echo "${CoreRT_BuildOS}" | tr '[:upper:]' '[:lower:]')
 if [ ${__build_os_lowcase} != "osx" ]; then
@@ -161,7 +160,7 @@ if [ ${__build_os_lowcase} != "osx" ]; then
 else
     __BuildRid=osx.10.10-{CoreRT_BuildArch}
 fi
-source ${__PackageRestoreCmd} -nugetexedir ${CoreRT_TestRoot}/../packages -nupkgdir ${__BuiltNuPkgDir} -nugetopt ${CoreRT_NuGetOptions}
+source ${__PackageRestoreCmd} -nugetexedir ${CoreRT_TestRoot}/../packages -nugetopt ${CoreRT_NuGetOptions}
 
 if [ ! -d ${CoreRT_AppDepSdkDir} ]; then
     echo "AppDep SDK not installed at ${CoreRT_AppDepSdkDir}"

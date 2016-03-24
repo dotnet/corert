@@ -45,7 +45,7 @@
             <ILCompilerFiles Include="ILCompiler.MetadataWriter.dll" />
             <ILCompilerFiles Include="ILCompiler.TypeSystem.dll" />
             <ILCompilerBinPlace Include="@(ILCompilerFiles)">
-                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/ILCompiler/%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <ILCompilerNativeFiles Include="jitinterface.dll" Condition="'$(OSGroup)'=='Windows_NT'" />
@@ -83,7 +83,7 @@
             </ILCompilerSdkBinPlace>
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFilesManaged)">
-                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkCppCodegenFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
@@ -180,7 +180,7 @@
     %(NuSpecPackageMetadata)
   </metadata>
   <files>
-      <file src="$(RelativeProductBinDir)/.nuget/%(RedirPackage).runtime.json" target="runtime.json"></file>
+      <file src="$(RelativeProductBinDir)/packaging/%(RedirPackage).runtime.json" target="runtime.json"></file>
   </files>
 </package>
 ]]>
