@@ -32,13 +32,13 @@ namespace ILCompiler.DependencyAnalysis.X64
             Builder.EmitByte((byte)(0xC0 | (((int)regSrc & 0x07) << 3) | (((int)regDst & 0x07))));
         }
 
-        public void EmitLEAQ(Register reg, ISymbolNode symbol)
+        public void EmitLEAQ(Register reg, ISymbolNode symbol, int delta = 0)
         {
             AddrMode rexAddrMode = new AddrMode(Register.RAX, null, 0, 0, AddrModeSize.Int64);
             EmitRexPrefix(reg, ref rexAddrMode);
             Builder.EmitByte(0x8D);
             Builder.EmitByte((byte)(0x05 | (((int)reg) & 0x07) << 3));
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32, delta);
         }
 
         public void EmitCMP(ref AddrMode addrMode, sbyte immediate)

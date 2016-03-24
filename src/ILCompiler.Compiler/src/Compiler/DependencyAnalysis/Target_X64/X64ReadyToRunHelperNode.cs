@@ -73,17 +73,17 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
+                        bool hasLazyStaticConstructor = factory.TypeInitializationManager.HasLazyStaticConstructor(target);
+                        encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target), hasLazyStaticConstructor ? NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target) : 0);
 
-                        encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
-
-                        if (!factory.TypeInitializationManager.HasLazyStaticConstructor(target))
+                        if (!hasLazyStaticConstructor)
                         {
                             encoder.EmitRET();
                         }
                         else
                         {
-                            // We need to trigger the cctor before returning the base
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol(target));
+                            // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target));
 
                             AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
                             encoder.EmitCMP(ref initialized, 1);
@@ -114,8 +114,8 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
-                            // We need to trigger the cctor before returning the base
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeCctorContextSymbol(target));
+                            // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target));
 
                             AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
                             encoder.EmitCMP(ref initialized, 1);

@@ -9,11 +9,11 @@ namespace ILCompiler.DependencyAnalysis
     public class BlobNode : ObjectNode, ISymbolNode
     {
         private string _name;
-        private string _section;
+        private ObjectNodeSection _section;
         private byte[] _data;
         private int _alignment;
 
-        public BlobNode(string name, string section, byte[] data, int alignment)
+        public BlobNode(string name, ObjectNodeSection section, byte[] data, int alignment)
         {
             _name = name;
             _section = section;
@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis
             _alignment = alignment;
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {

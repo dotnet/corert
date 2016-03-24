@@ -390,3 +390,40 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 {
     PalMemoryBarrier();
 }
+
+COOP_PINVOKE_HELPER(void, Native_GetThunksBase, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, Native_GetNumThunksPerMapping, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, Native_GetThunkSize, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(Int64, RhGetGcTotalMemory, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+
+COOP_PINVOKE_HELPER(void, RhpETWLogLiveCom, (Int32 eventType, void * ccwHandle, void * objectId, void * typeRawValue, void * iUnknown, void * vTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+}
+
+COOP_PINVOKE_HELPER(bool, RhpETWShouldWalkCom, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return false;
+}

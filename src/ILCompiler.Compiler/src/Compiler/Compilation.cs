@@ -223,7 +223,7 @@ namespace ILCompiler
         {
             _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(type), reason);
         }
-
+        
         #endregion
 
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)

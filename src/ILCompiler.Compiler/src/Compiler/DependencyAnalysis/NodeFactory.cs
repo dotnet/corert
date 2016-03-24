@@ -40,6 +40,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public CompilationModuleGroup CompilationModuleGroup
+        {
+            get
+            {
+                return _compilationModuleGroup;
+            }
+        }
+
         public TypeInitialization TypeInitializationManager
         {
             get; private set;
@@ -103,6 +111,13 @@ namespace ILCompiler.DependencyAnalysis
                 return new GCStaticsNode(type);
             });
 
+            _GCStaticIndirectionNodes = new NodeCache<MetadataType, EmbeddedObjectNode>((MetadataType type) =>
+            {
+                ISymbolNode gcStaticsNode = TypeGCStaticsSymbol(type);
+                Debug.Assert(gcStaticsNode is GCStaticsNode);
+                return GCStaticsRegion.NewNode((GCStaticsNode)gcStaticsNode);
+            });
+
             _threadStatics = new NodeCache<MetadataType, ThreadStaticsNode>((MetadataType type) =>
             {
                 return new ThreadStaticsNode(type, this);
@@ -115,12 +130,17 @@ namespace ILCompiler.DependencyAnalysis
 
             _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
             {
-                return new BlobNode(key.Item1, "rdata", key.Item2, key.Item3);
+                return new BlobNode(key.Item1, ObjectNodeSection.TextSection, key.Item2, key.Item3);
             }, new BlobTupleEqualityComparer());
 
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
             {
                 return new ExternSymbolNode(name);
+            });
+
+            _externMethodSymbols = new NodeCache<MethodDesc, ExternMethodSymbolNode>((MethodDesc method) =>
+            {
+                return new ExternMethodSymbolNode(method);
             });
 
             _internalSymbols = new NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode>(
@@ -197,12 +217,15 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(TypeInitializationManager.HasEagerStaticConstructor((MetadataType)method.OwningType));
 
                 ISymbolNode entrypoint = MethodEntrypoint(method);
-
-                // TODO: multifile: We will likely hit this assert with ExternSymbolNode. We probably need ExternMethodSymbolNode
-                //       deriving from ExternSymbolNode that carries around the target method.
+                
                 Debug.Assert(entrypoint is IMethodNode);
 
                 return EagerCctorTable.NewNode((IMethodNode)entrypoint);
+            });
+            
+            _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
+            {
+                return new VTableSliceNode(type, this);
             });
         }
 
@@ -210,8 +233,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode NecessaryTypeSymbol(TypeDesc type)
         {
-
-            if (_compilationModuleGroup.IsTypeInCompilationGroup(type))
+            if (_compilationModuleGroup.ContainsType(type))
             {
                 return _typeSymbols.GetOrAdd(type);
             }
@@ -225,7 +247,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode ConstructedTypeSymbol(TypeDesc type)
         {
-            if (_compilationModuleGroup.IsTypeInCompilationGroup(type))
+            if (_compilationModuleGroup.ContainsType(type))
             {
                 return _constructedTypeSymbols.GetOrAdd(type);
             }
@@ -239,26 +261,49 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode TypeNonGCStaticsSymbol(MetadataType type)
         {
-            return _nonGCStatics.GetOrAdd(type);
+            if (_compilationModuleGroup.ContainsType(type))
+            {
+                return _nonGCStatics.GetOrAdd(type);
+            }
+            else
+            {
+                return ExternSymbol("__NonGCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+            }
         }
-
-        public ISymbolNode TypeCctorContextSymbol(MetadataType type)
-        {
-            return _nonGCStatics.GetOrAdd(type).ClassConstructorContext;
-        }
-
+        
         private NodeCache<MetadataType, GCStaticsNode> _GCStatics;
 
-        public GCStaticsNode TypeGCStaticsSymbol(MetadataType type)
+        public ISymbolNode TypeGCStaticsSymbol(MetadataType type)
         {
-            return _GCStatics.GetOrAdd(type);
+            if (_compilationModuleGroup.ContainsType(type))
+            {
+                return _GCStatics.GetOrAdd(type);
+            }
+            else
+            {
+                return ExternSymbol("__GCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+            }
+        }
+
+        private NodeCache<MetadataType, EmbeddedObjectNode> _GCStaticIndirectionNodes;
+
+        public EmbeddedObjectNode GCStaticIndirection(MetadataType type)
+        {
+            return _GCStaticIndirectionNodes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, ThreadStaticsNode> _threadStatics;
 
-        public ThreadStaticsNode TypeThreadStaticsSymbol(MetadataType type)
+        public ISymbolNode TypeThreadStaticsSymbol(MetadataType type)
         {
-            return _threadStatics.GetOrAdd(type);
+            if (_compilationModuleGroup.ContainsType(type))
+            {
+                return _threadStatics.GetOrAdd(type);
+            }
+            else
+            {
+                return ExternSymbol("__ThreadStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(type));
+            }
         }
 
         private NodeCache<MethodDesc, InterfaceDispatchCellNode> _interfaceDispatchCells;
@@ -353,11 +398,20 @@ namespace ILCompiler.DependencyAnalysis
             return _externSymbols.GetOrAdd(name);
         }
 
+        private NodeCache<MethodDesc, ExternMethodSymbolNode> _externMethodSymbols;
+        
         private NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode> _internalSymbols;
 
         public ISymbolNode ObjectAndOffset(ObjectNode obj, int offset, string name)
         {
             return _internalSymbols.GetOrAdd(new Tuple<ObjectNode, int, string>(obj, offset, name));
+        }
+
+        private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;
+
+        internal VTableSliceNode VTable(TypeDesc type)
+        {
+            return _vTableNodes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, ISymbolNode> _methodCode;
@@ -386,13 +440,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
             
-            if (_compilationModuleGroup.IsMethodInCompilationGroup(method))
+            if (_compilationModuleGroup.ContainsMethod(method))
             {
                 return _methodCode.GetOrAdd(method);
             }
             else
             {
-                return ExternSymbol(NodeFactory.NameMangler.GetMangledMethodName(method));
+                return _externMethodSymbols.GetOrAdd(method);
             }
         }
 
@@ -461,7 +515,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<Tuple<ReadyToRunHelperId, Object>, ReadyToRunHelperNode> _readyToRunHelpers;
 
-        public ReadyToRunHelperNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
+        public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
         {
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
         }
@@ -499,7 +553,7 @@ namespace ILCompiler.DependencyAnalysis
             return value;
         }
 
-        public ArrayOfEmbeddedDataNode GCStaticsRegion = new ArrayOfEmbeddedDataNode(
+        public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
             NameMangler.CompilationUnitPrefix + "__GCStaticRegionStart", 
             NameMangler.CompilationUnitPrefix + "__GCStaticRegionEnd", 
             null);
@@ -523,8 +577,6 @@ namespace ILCompiler.DependencyAnalysis
             null);
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
-
-        public Dictionary<TypeDesc, List<MethodDesc>> VirtualSlots = new Dictionary<TypeDesc, List<MethodDesc>>();
 
         public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
 

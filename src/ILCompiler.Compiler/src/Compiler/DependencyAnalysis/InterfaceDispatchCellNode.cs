@@ -39,12 +39,17 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "data";
+                return ObjectNodeSection.DataSection;
             }
+        }
+
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return true;
         }
 
         public override bool StaticDependenciesAreComputed

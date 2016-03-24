@@ -21,15 +21,12 @@ namespace ILCompiler
 
             while (baseType != null)
             {
-                List<MethodDesc> baseVirtualSlots;
-                factory.VirtualSlots.TryGetValue(baseType, out baseVirtualSlots);
-
-                if (baseVirtualSlots != null)
-                    baseSlots += baseVirtualSlots.Count;
+                IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
+                baseSlots += baseVirtualSlots.Count;
                 baseType = baseType.BaseType;
             }
 
-            List<MethodDesc> virtualSlots = factory.VirtualSlots[owningType];
+            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(owningType).Slots;
             int methodSlot = -1;
             for (int slot = 0; slot < virtualSlots.Count; slot++)
             {

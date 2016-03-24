@@ -633,10 +633,9 @@ namespace ILCompiler.CppCodeGen
                 sb.Append("class " + mangledName.Substring(current));
                 if (!t.IsValueType)
                 {
-                    var baseType = t.BaseType;
-                    if (baseType != null)
+                    if (t.BaseType != null)
                     {
-                        sb.Append(" : public " + GetCppTypeName(baseType));
+                        sb.Append(" : public " + GetCppTypeName(t.BaseType));
                     }
                 }
                 sb.Append(" {");
@@ -652,28 +651,25 @@ namespace ILCompiler.CppCodeGen
                     sb.Append("static MethodTable * __getMethodTable();");
                 }
 
-                List<MethodDesc> virtualSlots;
-                _compilation.NodeFactory.VirtualSlots.TryGetValue(t, out virtualSlots);
-                if (virtualSlots != null)
+                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(t).Slots;
+                
+                int baseSlots = 0;
+                var baseType = t.BaseType;
+                while (baseType != null)
                 {
-                    int baseSlots = 0;
-                    var baseType = t.BaseType;
-                    while (baseType != null)
-                    {
-                        List<MethodDesc> baseVirtualSlots;
-                        _compilation.NodeFactory.VirtualSlots.TryGetValue(baseType, out baseVirtualSlots);
-                        if (baseVirtualSlots != null)
-                            baseSlots += baseVirtualSlots.Count;
-                        baseType = baseType.BaseType;
-                    }
-
-                    for (int slot = 0; slot < virtualSlots.Count; slot++)
-                    {
-                        MethodDesc virtualMethod = virtualSlots[slot];
-                        sb.AppendLine();
-                        sb.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
-                    }
+                    IReadOnlyList<MethodDesc> baseVirtualSlots = _compilation.NodeFactory.VTable(baseType).Slots;
+                    if (baseVirtualSlots != null)
+                        baseSlots += baseVirtualSlots.Count;
+                    baseType = baseType.BaseType;
                 }
+
+                for (int slot = 0; slot < virtualSlots.Count; slot++)
+                {
+                    MethodDesc virtualMethod = virtualSlots[slot];
+                    sb.AppendLine();
+                    sb.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
+                }
+
                 if (t.IsDelegate)
                 {
                     sb.AppendLine();
@@ -914,26 +910,22 @@ namespace ILCompiler.CppCodeGen
             if (baseType != null)
                 AppendVirtualSlots(sb, implType, baseType);
 
-            List<MethodDesc> virtualSlots;
-            _compilation.NodeFactory.VirtualSlots.TryGetValue(declType, out virtualSlots);
-            if (virtualSlots != null)
+            IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(declType).Slots;
+            for (int i = 0; i < virtualSlots.Count; i++)
             {
-                for (int i = 0; i < virtualSlots.Count; i++)
-                {
-                    MethodDesc declMethod = virtualSlots[i];
-                    MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
+                MethodDesc declMethod = virtualSlots[i];
+                MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
 
-                    sb.AppendLine();
-                    if (implMethod.IsAbstract)
-                    {
-                        sb.Append("NULL,");
-                    }
-                    else
-                    {
-                        sb.Append("(void*)&");
-                        sb.Append(GetCppMethodDeclarationName(implMethod.OwningType, GetCppMethodName(implMethod)));
-                        sb.Append(",");
-                    }
+                sb.AppendLine();
+                if (implMethod.IsAbstract)
+                {
+                    sb.Append("NULL,");
+                }
+                else
+                {
+                    sb.Append("(void*)&");
+                    sb.Append(GetCppMethodDeclarationName(implMethod.OwningType, GetCppMethodName(implMethod)));
+                    sb.Append(",");
                 }
             }
         }
@@ -947,10 +939,8 @@ namespace ILCompiler.CppCodeGen
             TypeDesc t = type;
             while (t != null)
             {
-                List<MethodDesc> virtualSlots;
-                _compilation.NodeFactory.VirtualSlots.TryGetValue(t, out virtualSlots);
-                if (virtualSlots != null)
-                    totalSlots += virtualSlots.Count;
+                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(t).Slots;
+                totalSlots += virtualSlots.Count;
                 t = t.BaseType;
             }
 

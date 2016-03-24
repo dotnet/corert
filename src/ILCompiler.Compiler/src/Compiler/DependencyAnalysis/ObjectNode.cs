@@ -28,9 +28,20 @@ namespace ILCompiler.DependencyAnalysis
 
         public abstract ObjectData GetData(NodeFactory factory, bool relocsOnly = false);
 
-        public abstract string Section
+        public abstract ObjectNodeSection Section
         {
             get;
+        }
+
+        /// <summary>
+        /// Override this function for node types that can be shared amongst object files
+        /// when linked together (using a COMDAT section for each node or equivalent on
+        /// each platform). For instance, generic type and method instantiations
+        /// should be shared to prevent duplicate symbol linker errors.
+        /// </summary>
+        public virtual bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return false;
         }
 
         /// <summary>

@@ -49,6 +49,9 @@ namespace ILCompiler.DependencyAnalysis
         // The first defined symbol name of the current node being processed.
         private string _currentNodeName;
 
+        // The set of custom section names that have been created so far
+        private HashSet<string> _customSectionNames = new HashSet<string>();
+
         private const string NativeObjectWriterFileName = "objwriter";
 
         // Target platform ObjectWriter is instantiated for.
@@ -69,10 +72,15 @@ namespace ILCompiler.DependencyAnalysis
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern void SwitchSection(IntPtr objWriter, string sectionName);
-        public void SetSection(string sectionName)
+        public void SetSection(ObjectNodeSection section)
         {
-            _currentSectionName = sectionName;
-            SwitchSection(_nativeObjectWriter, sectionName);
+            if (!section.IsStandardSection && !_customSectionNames.Contains(section.Name))
+            {
+                CreateCustomSection(section);
+            }
+
+            _currentSectionName = section.Name;
+            SwitchSection(_nativeObjectWriter, section.Name);
         }
 
         public void EnsureCurrentSection()
@@ -83,18 +91,42 @@ namespace ILCompiler.DependencyAnalysis
         [Flags]
         public enum CustomSectionAttributes
         {
-            ReadOnly    = 0x0000,
-            Writeable   = 0x0001,
-            Executable  = 0x0002,
+            ReadOnly = 0x0000,
+            Writeable = 0x0001,
+            Executable = 0x0002,
         };
 
-        [DllImport(NativeObjectWriterFileName)]
-        private static extern bool CreateCustomSection(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes);
-        public void CreateCustomSection(string sectionName, CustomSectionAttributes attributes)
+        /// <summary>
+        /// Builds a set of CustomSectionAttributes flags from an ObjectNodeSection.
+        /// </summary>
+        private CustomSectionAttributes GetCustomSectionAttributes(ObjectNodeSection section)
         {
-            CreateCustomSection(_nativeObjectWriter, sectionName, attributes);
+            CustomSectionAttributes attributes = 0;
+
+            switch (section.Type)
+            {
+                case SectionType.Executable:
+                    attributes |= CustomSectionAttributes.Executable;
+                    break;
+                case SectionType.ReadOnly:
+                    attributes |= CustomSectionAttributes.ReadOnly;
+                    break;
+                case SectionType.Writeable:
+                    attributes |= CustomSectionAttributes.Writeable;
+                    break;
+            }
+
+            return attributes;
         }
 
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern bool CreateCustomSection(IntPtr objWriter, string sectionName, CustomSectionAttributes attributes, string comdatName);
+        public void CreateCustomSection(ObjectNodeSection section)
+        {
+            CreateCustomSection(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
+            _customSectionNames.Add(section.Name);
+        }
+        
         [DllImport(NativeObjectWriterFileName)]
         private static extern void EmitAlignment(IntPtr objWriter, int byteAlignment);
         public void EmitAlignment(int byteAlignment)
@@ -287,7 +319,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void BuildCFIMap(ObjectNode node)
+        public void BuildCFIMap(NodeFactory context, ObjectNode node)
         {
             _offsetToCfis.Clear();
             _offsetToCfiStart.Clear();
@@ -318,12 +350,17 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_targetPlatform.OperatingSystem == TargetOS.Windows)
                 {
-                    SwitchSection(_nativeObjectWriter, "xdata");
-                    EmitAlignment(4);
-
-                    // TODO: Make sure that the same blobs get folded by emitting them to comdat sections
-
                     string blobSymbolName = "_unwind" + (i++).ToStringInvariant() + _currentNodeName;
+
+                    ObjectNodeSection section = ObjectNodeSection.XDataSection;
+                    if (node.ShouldShareNodeAcrossModules(context) && context.Target.OperatingSystem == TargetOS.Windows)
+                    {
+                        section = section.GetSharedSection(blobSymbolName);
+                        CreateCustomSection(section);
+                    }
+                    SwitchSection(_nativeObjectWriter, section.Name);
+                    
+                    EmitAlignment(4);
                     EmitSymbolDef(blobSymbolName);
 
                     if (ehInfo != null)
@@ -341,8 +378,13 @@ namespace ILCompiler.DependencyAnalysis
                         ehInfo = null;
                     }
 
-                    // For window, just emit the frame blob (UNWIND_INFO) as a whole.
-                    EmitWinFrameInfo(start, end, len, blobSymbolName);
+                    // TODO: Currently we get linker errors if we emit frame info for shared types.
+                    //       This needs follow-up investigation.
+                    if (!node.ShouldShareNodeAcrossModules(context))
+                    {
+                        // For window, just emit the frame blob (UNWIND_INFO) as a whole.
+                        EmitWinFrameInfo(start, end, len, blobSymbolName);
+                    }
 
                     EnsureCurrentSection();
                 }
@@ -553,20 +595,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
-                objectWriter.CreateCustomSection(ModulesSectionNode.SectionName, CustomSectionAttributes.ReadOnly);
-
                 // TODO: Exception handling on Unix
                 if (factory.Target.IsWindows)
                 {
-                    objectWriter.CreateCustomSection(MethodCodeNode.StartSectionName, CustomSectionAttributes.Executable);
-                    objectWriter.CreateCustomSection(MethodCodeNode.SectionName, CustomSectionAttributes.Executable);
-                    objectWriter.CreateCustomSection(MethodCodeNode.EndSectionName, CustomSectionAttributes.Executable);
+                    objectWriter.CreateCustomSection(MethodCodeNode.ContentSection);
 
                     // Emit sentinels for managed code section.
-                    objectWriter.SetSection(MethodCodeNode.StartSectionName);
+                    ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ? MethodCodeNode.StartSection : MethodCodeNode.StartSection.GetSharedSection("__managedcode_a");
+                    objectWriter.SetSection(codeStartSection);
                     objectWriter.EmitSymbolDef("__managedcode_a");
                     objectWriter.EmitIntValue(0, 1);
-                    objectWriter.SetSection(MethodCodeNode.EndSectionName);
+                    ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ? MethodCodeNode.EndSection : MethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
+                    objectWriter.SetSection(codeEndSection);
                     objectWriter.EmitSymbolDef("__managedcode_z");
                     objectWriter.EmitIntValue(0, 1);
                 }
@@ -587,15 +627,23 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Assert(_previouslyWrittenNodeNames.Add(node.GetName()), "Duplicate node name emitted to file", "Node {0} has already been written to the output object file {1}", node.GetName(), objectFilePath);
 #endif
                     ObjectNode.ObjectData nodeContents = node.GetData(factory);
+
+                    ObjectNodeSection section = node.Section;
+                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
+                    {
+                        Debug.Assert(node is ISymbolNode);
+                        section = section.GetSharedSection(((ISymbolNode)node).MangledName);
+                    }
+
                     // Ensure section and alignment for the node.
-                    objectWriter.SetSection(node.Section);
+                    objectWriter.SetSection(section);
                     objectWriter.EmitAlignment(nodeContents.Alignment);
 
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(nodeContents.DefinedSymbols);
 
                     // Build CFI map (Unix) or publish unwind blob (Windows).
-                    objectWriter.BuildCFIMap(node);
+                    objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map
                     objectWriter.BuildDebugLocInfoMap(node);

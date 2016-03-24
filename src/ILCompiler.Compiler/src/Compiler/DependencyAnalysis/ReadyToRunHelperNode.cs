@@ -94,12 +94,18 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return true;
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
         {
             if (_id == ReadyToRunHelperId.VirtualCall)
             {
                 DependencyList dependencyList = new DependencyList();
                 dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                dependencyList.Add(context.VTable(((MethodDesc)_target).OwningType), "ReadyToRun Virtual Method Call Target VTable");
                 return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.InterfaceDispatch)
