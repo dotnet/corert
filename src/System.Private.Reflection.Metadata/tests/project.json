@@ -1,8 +1,7 @@
 {
   "dependencies": {
     "NETStandard.Library": "1.0.0-rc2-23910",
-    "xunit": "2.1.0",
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"
+    "xunit": "2.1.0"
   },
   "frameworks": {
     "dnxcore50": { 
