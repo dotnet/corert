@@ -169,7 +169,8 @@ namespace Internal.TypeSystem
                 // TODO: this code assumes no shared generics
                 Debug.Assert(interfaceType == interfaceMethod.OwningType);
 
-                method = constrainedType.ResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod);
+                if (!constrainedType.TryResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod, out method))
+                    method = null;
             }
             else if (genInterfaceMethod.IsVirtual)
             {
@@ -229,9 +230,9 @@ namespace Internal.TypeSystem
             return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualSlots(type);
         }
 
-        public static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
+        public static bool TryResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc resolvedMethod)
         {
-            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, type);
+            return type.Context.GetVirtualMethodAlgorithmForType(type).TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, type, out resolvedMethod);
         }
 
         public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(this TypeDesc type, MethodDesc targetMethod)

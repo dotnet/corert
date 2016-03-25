@@ -102,11 +102,11 @@ namespace ILCompiler.DependencyAnalysis
                 for (int j = 0; j < virtualSlots.Count; j++)
                 {
                     MethodDesc declMethod = virtualSlots[j];
-                    var implMethod = _type.ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    MethodDesc implMethod;
 
-                    // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
+                    // Interface methods first implemented by a base type in the hierarchy will return false (runtime interface
                     // dispatch will walk the inheritance chain).
-                    if (implMethod != null)
+                    if (_type.TryResolveInterfaceMethodToVirtualMethodOnType(declMethod, out implMethod))
                     {
                         var entry = new DispatchMapEntry();
                         entry.InterfaceIndex = checked((short)i);

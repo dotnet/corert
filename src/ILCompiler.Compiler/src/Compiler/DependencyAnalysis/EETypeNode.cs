@@ -247,8 +247,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
                 {
-                    MethodDesc implMethod = _type.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
-                    if (implMethod != null)
+                    MethodDesc implMethod;
+                    if (_type.TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, out implMethod))
                     {
                         yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
                         yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, interfaceMethod), "Interface method address");

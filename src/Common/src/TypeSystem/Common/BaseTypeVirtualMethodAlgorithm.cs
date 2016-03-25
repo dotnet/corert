@@ -42,9 +42,10 @@ namespace Internal.TypeSystem
             return objectType.BaseType.FindVirtualFunctionTargetMethodOnObjectType(targetMethod);
         }
 
-        public override MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
+        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc resolvedMethod)
         {
-            return null;
+            resolvedMethod = null;
+            return false;
         }
     }
 }

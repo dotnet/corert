@@ -448,9 +448,10 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
+        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc resolvedMethod)
         {
-            return ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
+            resolvedMethod = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
+            return resolvedMethod != null;
         }
 
         //////////////////////// INTERFACE RESOLUTION

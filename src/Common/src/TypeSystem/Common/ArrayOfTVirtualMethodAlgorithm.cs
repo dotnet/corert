@@ -71,10 +71,18 @@ namespace Internal.TypeSystem
             return Reparent(arrayOfT.FindVirtualFunctionTargetMethodOnObjectType(targetMethod), arrayOfT, objectType);
         }
 
-        public override MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
+        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc resolvedMethod)
         {
             var arrayOfT = GetMatchingArrayOfT(currentType);
-            return Reparent(arrayOfT.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod), arrayOfT, currentType);
+            MethodDesc resolvedMethodOnArrayOfT;
+            if (!arrayOfT.TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, out resolvedMethodOnArrayOfT))
+            {
+                resolvedMethod = null;
+                return false;
+            }
+
+            resolvedMethod = Reparent(resolvedMethodOnArrayOfT, arrayOfT, currentType);
+            return true;
         }
     }
 }

@@ -62,7 +62,9 @@ namespace TypeSystemTests
             }
             Assert.NotNull(expectedVirtualMethod);
 
-            Assert.Equal(expectedVirtualMethod, objectType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod));
+            MethodDesc resolvedVirtualMethod;
+            Assert.True(objectType.TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, out resolvedVirtualMethod));
+            Assert.Equal(expectedVirtualMethod, resolvedVirtualMethod);
         }
 
         [Fact]
