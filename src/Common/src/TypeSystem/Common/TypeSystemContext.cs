@@ -620,6 +620,47 @@ namespace Internal.TypeSystem
 
         private SignatureVariableHashtable _signatureVariables;
 
+        private struct ReparentedMethodKey
+        {
+            public readonly TypeDesc Owner;
+            public readonly MethodDesc ShadowMethod;
+
+            public ReparentedMethodKey(TypeDesc owner, MethodDesc shadowMethod)
+            {
+                Owner = owner;
+                ShadowMethod = shadowMethod;
+            }
+
+            public class ReparentedMethodHashtable : LockFreeReaderHashtable<ReparentedMethodKey, ReparentedMethodDesc>
+            {
+                protected override int GetKeyHashCode(ReparentedMethodKey key)
+                {
+                    return key.ShadowMethod.GetHashCode() ^ key.Owner.GetHashCode();
+                }
+
+                protected override int GetValueHashCode(ReparentedMethodDesc value)
+                {
+                    return value.ShadowMethod.GetHashCode() ^ value.OwningType.GetHashCode();
+                }
+
+                protected override bool CompareKeyToValue(ReparentedMethodKey key, ReparentedMethodDesc value)
+                {
+                    return key.ShadowMethod == value.ShadowMethod && key.Owner == value.OwningType;
+                }
+
+                protected override bool CompareValueToValue(ReparentedMethodDesc value1, ReparentedMethodDesc value2)
+                {
+                    return value1.ShadowMethod == value2.ShadowMethod && value1.OwningType == value2.OwningType;
+                }
+
+                protected override ReparentedMethodDesc CreateValueFromKey(ReparentedMethodKey key)
+                {
+                    return new ReparentedMethodDesc(key.Owner, key.ShadowMethod);
+                }
+            }
+        }
+        private ReparentedMethodKey.ReparentedMethodHashtable _reparentedMethods = new ReparentedMethodKey.ReparentedMethodHashtable();
+
         public TypeDesc GetSignatureVariable(int index, bool method)
         {
             if (index < 0)
@@ -683,6 +724,54 @@ namespace Internal.TypeSystem
         {
             // Type system contexts that support computing runtime interfaces need to override this.
             throw new NotSupportedException();
+        }
+
+        public VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
+        {
+            if (type is DefType)
+            {
+                return GetVirtualMethodAlgorithmForDefType((DefType)type);
+            }
+            else if (type is ArrayType)
+            {
+                ArrayType arrType = (ArrayType)type;
+                if (arrType.IsSzArray && !arrType.ElementType.IsPointer)
+                {
+                    return GetVirtualMethodAlgorithmForNonPointerArrayType((ArrayType)type);
+                }
+                else
+                {
+                    return BaseTypeVirtualMethodAlgorithm.Instance;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Abstraction to allow the type system context to control the virtual method algorithm
+        /// used by single dimensional array types.
+        /// </summary>
+        protected virtual VirtualMethodAlgorithm GetVirtualMethodAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            // Type system contexts that support virtual and interface method resolution need to override.
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Abstraction to allow the type system context to control the virtual method
+        /// algorithm used by types.
+        /// </summary>
+        protected virtual VirtualMethodAlgorithm GetVirtualMethodAlgorithmForDefType(DefType type)
+        {
+            // Type system contexts that support virtual and interface method resolution need to override.
+            throw new NotSupportedException();
+        }
+
+
+        public ReparentedMethodDesc GetReparentedMethod(TypeDesc newOwner, MethodDesc method)
+        {
+            return _reparentedMethods.GetOrCreateValue(new ReparentedMethodKey(newOwner, method));
         }
     }
 }

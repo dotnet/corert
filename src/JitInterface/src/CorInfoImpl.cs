@@ -1954,7 +1954,7 @@ namespace Internal.JitInterface
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                MethodDesc directMethod = constrainedType.GetClosestMetadataType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
                 if (directMethod != null)
                 {
                     // Either

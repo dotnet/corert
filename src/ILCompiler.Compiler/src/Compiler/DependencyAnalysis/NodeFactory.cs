@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new JumpStubNode(node);
             });
 
-            _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
+            _virtMethods = new NodeCache<ResolvedVirtualMethod, VirtualMethodUseNode>((ResolvedVirtualMethod method) =>
             {
                 return new VirtualMethodUseNode(method);
             });
@@ -506,9 +506,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;
+        private NodeCache<ResolvedVirtualMethod, VirtualMethodUseNode> _virtMethods;
 
-        public DependencyNode VirtualMethodUse(MethodDesc decl)
+        public DependencyNode VirtualMethodUse(ResolvedVirtualMethod decl)
         {
             return _virtMethods.GetOrAdd(decl);
         }

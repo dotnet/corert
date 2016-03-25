@@ -104,20 +104,20 @@ namespace ILCompiler.DependencyAnalysis
             if (_id == ReadyToRunHelperId.VirtualCall)
             {
                 DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                dependencyList.Add(context.VirtualMethodUse(new ResolvedVirtualMethod((MethodDesc)_target)), "ReadyToRun Virtual Method Call");
                 dependencyList.Add(context.VTable(((MethodDesc)_target).OwningType), "ReadyToRun Virtual Method Call Target VTable");
                 return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.InterfaceDispatch)
             {
                 DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Interface Method Call");
+                dependencyList.Add(context.VirtualMethodUse(new ResolvedVirtualMethod((MethodDesc)_target)), "ReadyToRun Interface Method Call");
                 return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
                 DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
+                dependencyList.Add(context.VirtualMethodUse(new ResolvedVirtualMethod((MethodDesc)_target)), "ReadyToRun Virtual Method Address Load");
                 return dependencyList;
             }
             else

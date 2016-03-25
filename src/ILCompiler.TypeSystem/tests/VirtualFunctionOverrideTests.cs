@@ -62,7 +62,9 @@ namespace TypeSystemTests
             }
             Assert.NotNull(expectedVirtualMethod);
 
-            Assert.Equal(expectedVirtualMethod, VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, objectType));
+            MethodDesc resolvedVirtualMethod;
+            Assert.True(objectType.TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, out resolvedVirtualMethod));
+            Assert.Equal(expectedVirtualMethod, resolvedVirtualMethod);
         }
 
         [Fact]
@@ -77,7 +79,7 @@ namespace TypeSystemTests
             InstantiatedType testInstance = openTestType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { objectType }));
             MethodDesc targetOnInstance = testInstance.GetMethod("ToString", toStringSig);
 
-            MethodDesc targetMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(objectToString, testInstance);
+            MethodDesc targetMethod = testInstance.FindVirtualFunctionTargetMethodOnObjectType(objectToString);
             Assert.Equal(targetOnInstance, targetMethod);        
         }
 
@@ -90,12 +92,12 @@ namespace TypeSystemTests
 
             MethodDesc baseNongenericOverload = baseInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _stringType }));
             MethodDesc derivedNongenericOverload = derivedInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _stringType }));
-            MethodDesc nongenericTargetOverload = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(baseNongenericOverload, derivedInstance);
+            MethodDesc nongenericTargetOverload = derivedInstance.FindVirtualFunctionTargetMethodOnObjectType(baseNongenericOverload);
             Assert.Equal(derivedNongenericOverload, nongenericTargetOverload);
 
             MethodDesc baseGenericOverload = baseInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _context.GetSignatureVariable(0, false) }));
             MethodDesc derivedGenericOverload = derivedInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _context.GetSignatureVariable(0, false) }));
-            MethodDesc genericTargetOverload = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(baseGenericOverload, derivedInstance);
+            MethodDesc genericTargetOverload = derivedInstance.FindVirtualFunctionTargetMethodOnObjectType(baseGenericOverload);
             Assert.Equal(derivedGenericOverload, genericTargetOverload);
         }
 
@@ -106,7 +108,7 @@ namespace TypeSystemTests
             DefType objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
             MethodDesc finalizeMethod = objectType.GetMethod("Finalize", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { }));
 
-            MethodDesc actualFinalizer = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(finalizeMethod, classWithFinalizer);
+            MethodDesc actualFinalizer = classWithFinalizer.FindVirtualFunctionTargetMethodOnObjectType(finalizeMethod);
             Assert.NotNull(actualFinalizer);
             Assert.NotEqual(actualFinalizer, finalizeMethod);
         }

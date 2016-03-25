@@ -805,7 +805,7 @@ namespace Internal.IL
                     constrained = _constrained;
 
                     bool forceUseRuntimeLookup;
-                    MethodDesc directMethod = constrained.GetClosestMetadataType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                    MethodDesc directMethod = constrained.TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
                     if (directMethod == null || forceUseRuntimeLookup)
                         throw new NotImplementedException();
 
@@ -875,7 +875,7 @@ namespace Internal.IL
                     if (method.OwningType.IsInterface)
                         throw new NotImplementedException();
 
-                    _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
+                    _dependencies.Add(_nodeFactory.VirtualMethodUse(new ResolvedVirtualMethod(method)));
 
                     callViaSlot = true;
                 }

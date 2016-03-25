@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -131,7 +132,7 @@ namespace Internal.TypeSystem
         /// for generic code.
         /// </summary>
         /// <returns>The resolved method or null if the constraint couldn't be resolved.</returns>
-        static public MethodDesc TryResolveConstraintMethodApprox(this MetadataType constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
+        static public MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
         {
             forceRuntimeLookup = false;
 
@@ -148,7 +149,7 @@ namespace Internal.TypeSystem
                 return null;
             }
 
-            MetadataType canonMT = constrainedType;
+            TypeDesc canonMT = constrainedType;
 
             MethodDesc method;
 
@@ -168,11 +169,16 @@ namespace Internal.TypeSystem
                 // TODO: this code assumes no shared generics
                 Debug.Assert(interfaceType == interfaceMethod.OwningType);
 
-                method = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod, constrainedType);
+                ResolvedVirtualMethod resolvedVirtualMethod;
+                if (!constrainedType.TryResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod, out resolvedVirtualMethod))
+                    method = null;
+                else
+                    method = resolvedVirtualMethod.Target;
             }
             else if (genInterfaceMethod.IsVirtual)
             {
-                method = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod, constrainedType);
+                ResolvedVirtualMethod resolvedVirtualMethod = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod);
+                method = resolvedVirtualMethod.Target;
             }
             else
             {
@@ -216,6 +222,26 @@ namespace Internal.TypeSystem
         {
             string ns = metadataType.Namespace;
             return ns.Length > 0 ? String.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+        }
+
+        public static IEnumerable<MethodDesc> GetAllVirtualMethods(this TypeDesc type)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualMethods(type);
+        }
+
+        public static IEnumerable<ResolvedVirtualMethod> EnumAllVirtualSlots(this TypeDesc type)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualSlots(type);
+        }
+
+        public static bool TryResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod, out ResolvedVirtualMethod resolvedMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, type, out resolvedMethod);
+        }
+
+        public static ResolvedVirtualMethod FindVirtualFunctionTargetMethodOnObjectType(this TypeDesc type, MethodDesc targetMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).FindVirtualFunctionTargetMethodOnObjectType(targetMethod, type);
         }
     }
 }

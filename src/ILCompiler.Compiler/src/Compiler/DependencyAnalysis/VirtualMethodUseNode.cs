@@ -20,9 +20,9 @@ namespace ILCompiler.DependencyAnalysis
     // vtables are properly constructed
     internal class VirtualMethodUseNode : DependencyNodeCore<NodeFactory>
     {
-        private MethodDesc _decl;
+        private ResolvedVirtualMethod _decl;
 
-        public VirtualMethodUseNode(MethodDesc decl)
+        public VirtualMethodUseNode(ResolvedVirtualMethod decl)
         {
             _decl = decl;
         }

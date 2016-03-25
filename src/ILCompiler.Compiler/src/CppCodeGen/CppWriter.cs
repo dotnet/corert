@@ -651,13 +651,13 @@ namespace ILCompiler.CppCodeGen
                     sb.Append("static MethodTable * __getMethodTable();");
                 }
 
-                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(t).Slots;
+                IReadOnlyList<ResolvedVirtualMethod> virtualSlots = _compilation.NodeFactory.VTable(t).Slots;
                 
                 int baseSlots = 0;
                 var baseType = t.BaseType;
                 while (baseType != null)
                 {
-                    IReadOnlyList<MethodDesc> baseVirtualSlots = _compilation.NodeFactory.VTable(baseType).Slots;
+                    IReadOnlyList<ResolvedVirtualMethod> baseVirtualSlots = _compilation.NodeFactory.VTable(baseType).Slots;
                     if (baseVirtualSlots != null)
                         baseSlots += baseVirtualSlots.Count;
                     baseType = baseType.BaseType;
@@ -665,7 +665,7 @@ namespace ILCompiler.CppCodeGen
 
                 for (int slot = 0; slot < virtualSlots.Count; slot++)
                 {
-                    MethodDesc virtualMethod = virtualSlots[slot];
+                    MethodDesc virtualMethod = virtualSlots[slot].Target;
                     sb.AppendLine();
                     sb.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
                 }
@@ -910,21 +910,21 @@ namespace ILCompiler.CppCodeGen
             if (baseType != null)
                 AppendVirtualSlots(sb, implType, baseType);
 
-            IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(declType).Slots;
+            IReadOnlyList<ResolvedVirtualMethod> virtualSlots = _compilation.NodeFactory.VTable(declType).Slots;
             for (int i = 0; i < virtualSlots.Count; i++)
             {
-                MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
+                MethodDesc declMethod = virtualSlots[i].Target;
+                ResolvedVirtualMethod implMethod = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 sb.AppendLine();
-                if (implMethod.IsAbstract)
+                if (implMethod.Target.IsAbstract)
                 {
                     sb.Append("NULL,");
                 }
                 else
                 {
                     sb.Append("(void*)&");
-                    sb.Append(GetCppMethodDeclarationName(implMethod.OwningType, GetCppMethodName(implMethod)));
+                    sb.Append(GetCppMethodDeclarationName(implMethod.OwningType, GetCppMethodName(implMethod.Target)));
                     sb.Append(",");
                 }
             }
@@ -939,7 +939,7 @@ namespace ILCompiler.CppCodeGen
             TypeDesc t = type;
             while (t != null)
             {
-                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(t).Slots;
+                IReadOnlyList<ResolvedVirtualMethod> virtualSlots = _compilation.NodeFactory.VTable(t).Slots;
                 totalSlots += virtualSlots.Count;
                 t = t.BaseType;
             }

@@ -24,6 +24,8 @@ namespace ILCompiler
         private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private StandardVirtualMethodAlgorithm _metadataVirtualMethodAlgorithm = new StandardVirtualMethodAlgorithm();
+        private ArrayOfTVirtualMethodAlgorithm _arrayOfTVirtualMethodAlgorithm;
 
         private MetadataStringDecoder _metadataStringDecoder;
 
@@ -250,6 +252,20 @@ namespace ILCompiler
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
+        }
+
+        protected override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForDefType(DefType type)
+        {
+            return _metadataVirtualMethodAlgorithm;
+        }
+
+        protected override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            if (_arrayOfTVirtualMethodAlgorithm == null)
+            {
+                _arrayOfTVirtualMethodAlgorithm = new ArrayOfTVirtualMethodAlgorithm(SystemModule.GetKnownType("System", "Array`1"));
+            }
+            return _arrayOfTVirtualMethodAlgorithm;
         }
 
         public MetadataStringDecoder GetMetadataStringDecoder()
