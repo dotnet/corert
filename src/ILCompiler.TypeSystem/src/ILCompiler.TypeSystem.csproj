@@ -25,11 +25,20 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ArrayOfTVirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\ArrayOfTVirtualMethodAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\BaseTypeVirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\BaseTypeVirtualMethodAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>IAssemblyDesc.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>ModuleDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ReparentedMethodDesc.cs">
+      <Link>TypeSystem\Common\ReparentedMethodDesc.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
@@ -133,11 +142,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs" >
       <Link>TypeSystem\Common\WellKnownType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\VirtualMethodAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.cs" >
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualFunctionResolution.cs" >
-      <Link>TypeSystem\Common\VirtualFunctionResolution.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\StandardVirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.cs" >
       <Link>TypeSystem\Common\TypeDesc.cs</Link>

@@ -70,12 +70,8 @@ namespace ILCompiler.DependencyAnalysis
                 // When building a full VTable (such as for a type from a library), add dependencies on
                 // the virtual methods so that methods overriding them will be marked in the graph
                 // and compiled.
-                MetadataType mdType = _type.GetClosestMetadataType();
-                foreach (var method in mdType.GetMethods())
+                foreach (var method in _type.GetAllVirtualMethods())
                 {
-                    if (!method.IsVirtual)
-                        continue;
-
                     dependencies.Add(new DependencyListEntry(context.VirtualMethodUse(method), "VTable method dependency"));
                     _slots.Add(method);
                 }

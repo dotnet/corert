@@ -142,6 +142,10 @@ namespace Internal.IL
                 return ArrayMethodILEmitter.EmitIL((ArrayMethod)method);
             }
             else
+            if (method is ReparentedMethodDesc)
+            {
+                return CreateMethodIL(((ReparentedMethodDesc)method).ShadowMethod);
+            }
             {
                 return null;
             }

@@ -22,21 +22,5 @@ namespace ILCompiler
             Debug.Assert(type.IsArray, "IsSealed on a type with no virtual methods?");
             return true;
         }
-
-        static public MetadataType GetClosestMetadataType(this TypeDesc type)
-        {
-            if (type.IsSzArray && !((ArrayType)type).ElementType.IsPointer)
-            {
-                MetadataType arrayType = type.Context.SystemModule.GetKnownType("System", "Array`1");
-                return arrayType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { ((ArrayType)type).ElementType }));
-            }
-            else if (type.IsArray)
-            {
-                return (MetadataType)type.Context.GetWellKnownType(WellKnownType.Array);
-            }
-
-            Debug.Assert(type is MetadataType);
-            return (MetadataType)type;
-        }
     }
 }

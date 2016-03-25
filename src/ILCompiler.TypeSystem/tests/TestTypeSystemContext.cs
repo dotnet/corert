@@ -23,6 +23,9 @@ namespace TypeSystemTests
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private StandardVirtualMethodAlgorithm _metadataVirtualMethodAlgorithm = new StandardVirtualMethodAlgorithm();
+        private ArrayOfTVirtualMethodAlgorithm _arrayOfTVirtualMethodAlgorithm;
+
 
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown))
@@ -67,6 +70,20 @@ namespace TypeSystemTests
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
+        }
+
+        protected override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForDefType(DefType type)
+        {
+            return _metadataVirtualMethodAlgorithm;
+        }
+
+        protected override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForNonPointerArrayType(ArrayType type)
+        {
+            if (_arrayOfTVirtualMethodAlgorithm == null)
+            {
+                _arrayOfTVirtualMethodAlgorithm = new ArrayOfTVirtualMethodAlgorithm(SystemModule.GetType("System", "Array`1"));
+            }
+            return _arrayOfTVirtualMethodAlgorithm;
         }
     }
 }

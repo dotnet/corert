@@ -213,10 +213,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Since the vtable is dependency driven, generate conditional static dependencies for
                 // all possible vtable entries
-                foreach (MethodDesc method in _type.GetMethods())
+                if (_type.GetAllVirtualMethods().GetEnumerator().MoveNext())
                 {
-                    if (method.IsVirtual)
-                        return true;
+                    return true;
                 }
 
                 // If the type implements at least one interface, calls against that interface could result in this type's
@@ -230,36 +229,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            MetadataType mdType = _type.GetClosestMetadataType();
-
-            foreach (MethodDesc decl in VirtualFunctionResolution.EnumAllVirtualSlots(mdType))
+            foreach (MethodDesc decl in _type.EnumAllVirtualSlots())
             {
-                MethodDesc impl = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(decl, mdType);
-                if (impl.OwningType == mdType && !impl.IsAbstract)
+                MethodDesc impl = _type.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                if (impl.OwningType == _type && !impl.IsAbstract)
                 {
                     yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                 }
             }
 
-            Debug.Assert(
-                _type == mdType ||
-                ((System.Collections.IStructuralEquatable)mdType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
-                EqualityComparer<DefType>.Default));
-
             // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
             // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
             // possible for any IFoo object to actually be an instance of T.
-            foreach (DefType interfaceType in mdType.RuntimeInterfaces)
+            foreach (DefType interfaceType in _type.RuntimeInterfaces)
             {
                 Debug.Assert(interfaceType.IsInterface);
 
-                foreach (MethodDesc interfaceMethod in interfaceType.GetMethods())
+                foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
                 {
-                    if (interfaceMethod.Signature.IsStatic)
-                        continue;
-
-                    Debug.Assert(interfaceMethod.IsVirtual);
-                    MethodDesc implMethod = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, mdType);
+                    MethodDesc implMethod = _type.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
                         yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
@@ -397,7 +385,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             int virtualSlotCount = 0;
-            TypeDesc currentTypeSlice = _type.GetClosestMetadataType();
+            TypeDesc currentTypeSlice = _type;
 
             while (currentTypeSlice != null)
             {
@@ -411,8 +399,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType)
         {
-            declType = declType.GetClosestMetadataType();
-
             var baseType = declType.BaseType;
             if (baseType != null)
                 OutputVirtualSlots(factory, ref objData, implType, baseType);
@@ -422,7 +408,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = 0; i < virtualSlots.Count; i++)
             {
                 MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
+                MethodDesc implMethod = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 if (!implMethod.IsAbstract)
                     objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
