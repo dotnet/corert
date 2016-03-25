@@ -160,14 +160,24 @@ namespace ILCompiler.DependencyAnalysis
             OutputFlags(factory, ref objData);
             OutputBaseSize(ref objData);
             OutputRelatedType(factory, ref objData);
-            OutputVirtualSlotAndInterfaceCount(factory, ref objData);
+
+            // Avoid consulting VTable slots until they're guaranteed complete during final data emission
+            if (!relocsOnly)
+            {
+                OutputVirtualSlotAndInterfaceCount(factory, ref objData);
+            }
 
             objData.EmitInt(_type.GetHashCode());
             objData.EmitPointerReloc(factory.ModuleManagerIndirection);
 
             if (_constructed)
             {
-                OutputVirtualSlots(factory, ref objData, _type, _type);
+                // Avoid consulting VTable slots until they're guaranteed complete during final data emission
+                if (!relocsOnly)
+                {
+                    OutputVirtualSlots(factory, ref objData, _type, _type);
+                }
+
                 OutputInterfaceMap(factory, ref objData);
             }
 
