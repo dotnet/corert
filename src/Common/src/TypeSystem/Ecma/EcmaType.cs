@@ -320,7 +320,7 @@ namespace Internal.TypeSystem.Ecma
 
             if (decl != null)
             {
-                MethodDesc impl = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(decl, this);
+                MethodDesc impl = this.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType != objectType)
                 {
                     return impl;
