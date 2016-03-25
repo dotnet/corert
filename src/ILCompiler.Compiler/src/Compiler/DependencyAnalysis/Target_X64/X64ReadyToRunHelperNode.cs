@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
                         AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
                     
-                        int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, (MethodDesc)Target);
+                        int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, new ResolvedVirtualMethod((MethodDesc)Target));
                         Debug.Assert(slot != -1);
                         AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
                         encoder.EmitJmpToAddrMode(ref jmpAddrMode);
@@ -167,7 +167,7 @@ namespace ILCompiler.DependencyAnalysis
                             AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
                             encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
 
-                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
+                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, new ResolvedVirtualMethod(targetMethod));
                             Debug.Assert(slot != -1);
                             AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
                             encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);

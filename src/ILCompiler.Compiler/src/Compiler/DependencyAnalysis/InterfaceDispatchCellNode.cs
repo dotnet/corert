@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis
             // End the run of dispatch cells
             objData.EmitZeroPointer();
             
-            int interfaceMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod);
+            int interfaceMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, new ResolvedVirtualMethod(_targetMethod));
             if (factory.Target.PointerSize == 8)
             {
                 objData.EmitLong(interfaceMethodSlot);

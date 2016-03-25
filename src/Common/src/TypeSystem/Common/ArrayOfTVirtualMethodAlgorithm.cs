@@ -29,20 +29,17 @@ namespace Internal.TypeSystem
             return _arrayOfTType.Context.GetInstantiatedType(_arrayOfTType, arrayInstantiation);
         }
 
-        private static MethodDesc Reparent(MethodDesc method, TypeDesc oldType, TypeDesc newType)
+        private static ResolvedVirtualMethod Reparent(ResolvedVirtualMethod method, TypeDesc oldType, TypeDesc newType)
         {
-            if (method == null)
-                return null;
-
             if (method.OwningType == oldType)
             {
-                return method.Context.GetReparentedMethod(newType, method);
+                return new ResolvedVirtualMethod(newType, method.Target);
             }
             else
                 return method;
         }
 
-        private static IEnumerable<MethodDesc> Reparent(IEnumerable<MethodDesc> methods, TypeDesc oldType, TypeDesc newType)
+        private static IEnumerable<ResolvedVirtualMethod> Reparent(IEnumerable<ResolvedVirtualMethod> methods, TypeDesc oldType, TypeDesc newType)
         {
             foreach (var method in methods)
                 yield return Reparent(method, oldType, newType);
@@ -51,33 +48,28 @@ namespace Internal.TypeSystem
         public override IEnumerable<MethodDesc> ComputeAllVirtualMethods(TypeDesc type)
         {
             var arrayOfT = GetMatchingArrayOfT(type);
-            return Reparent(arrayOfT.GetAllVirtualMethods(), arrayOfT, type);
+            return arrayOfT.GetAllVirtualMethods();
         }
 
-        public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)
+        public override IEnumerable<ResolvedVirtualMethod> ComputeAllVirtualSlots(TypeDesc type)
         {
             var arrayOfT = GetMatchingArrayOfT(type);
             return Reparent(arrayOfT.EnumAllVirtualSlots(), arrayOfT, type);
         }
 
-        public override MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
+        public override ResolvedVirtualMethod FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
         {
             var arrayOfT = GetMatchingArrayOfT(objectType);
-
-            ReparentedMethodDesc reparentedTarget = targetMethod as ReparentedMethodDesc;
-            if (reparentedTarget != null)
-                targetMethod = reparentedTarget.ShadowMethod;
-
             return Reparent(arrayOfT.FindVirtualFunctionTargetMethodOnObjectType(targetMethod), arrayOfT, objectType);
         }
 
-        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc resolvedMethod)
+        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out ResolvedVirtualMethod resolvedMethod)
         {
             var arrayOfT = GetMatchingArrayOfT(currentType);
-            MethodDesc resolvedMethodOnArrayOfT;
+            ResolvedVirtualMethod resolvedMethodOnArrayOfT;
             if (!arrayOfT.TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, out resolvedMethodOnArrayOfT))
             {
-                resolvedMethod = null;
+                resolvedMethod = default(ResolvedVirtualMethod);
                 return false;
             }
 

@@ -167,9 +167,9 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
+        public override ResolvedVirtualMethod FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
         {
-            return FindVirtualFunctionTargetMethodOnObjectType(targetMethod, (MetadataType)objectType);
+            return new ResolvedVirtualMethod(FindVirtualFunctionTargetMethodOnObjectType(targetMethod, (MetadataType)objectType));
         }
 
         /// <summary>
@@ -448,10 +448,19 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc resolvedMethod)
+        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out ResolvedVirtualMethod resolvedMethod)
         {
-            resolvedMethod = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
-            return resolvedMethod != null;
+            MethodDesc method = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
+            if (method != null)
+            {
+                resolvedMethod = new ResolvedVirtualMethod(method);
+                return true;
+            }
+            else
+            {
+                resolvedMethod = default(ResolvedVirtualMethod);
+                return false;
+            }
         }
 
         //////////////////////// INTERFACE RESOLUTION
@@ -568,9 +577,12 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)
+        public override IEnumerable<ResolvedVirtualMethod> ComputeAllVirtualSlots(TypeDesc type)
         {
-            return EnumAllVirtualSlots((MetadataType)type);
+            foreach (var method in EnumAllVirtualSlots((MetadataType)type))
+            {
+                yield return new ResolvedVirtualMethod(method);
+            }
         }
 
         // Enumerate all possible virtual slots of a type

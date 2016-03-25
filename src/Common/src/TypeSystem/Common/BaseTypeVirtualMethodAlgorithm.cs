@@ -32,19 +32,19 @@ namespace Internal.TypeSystem
             return Array.Empty<MethodDesc>();
         }
 
-        public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)
+        public override IEnumerable<ResolvedVirtualMethod> ComputeAllVirtualSlots(TypeDesc type)
         {
             return type.BaseType.EnumAllVirtualSlots();
         }
 
-        public override MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
+        public override ResolvedVirtualMethod FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
         {
             return objectType.BaseType.FindVirtualFunctionTargetMethodOnObjectType(targetMethod);
         }
 
-        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc resolvedMethod)
+        public override bool TryResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType, out ResolvedVirtualMethod resolvedMethod)
         {
-            resolvedMethod = null;
+            resolvedMethod = default(ResolvedVirtualMethod);
             return false;
         }
     }

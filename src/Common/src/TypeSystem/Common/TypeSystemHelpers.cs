@@ -169,12 +169,16 @@ namespace Internal.TypeSystem
                 // TODO: this code assumes no shared generics
                 Debug.Assert(interfaceType == interfaceMethod.OwningType);
 
-                if (!constrainedType.TryResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod, out method))
+                ResolvedVirtualMethod resolvedVirtualMethod;
+                if (!constrainedType.TryResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod, out resolvedVirtualMethod))
                     method = null;
+                else
+                    method = resolvedVirtualMethod.Target;
             }
             else if (genInterfaceMethod.IsVirtual)
             {
-                method = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod);
+                ResolvedVirtualMethod resolvedVirtualMethod = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod);
+                method = resolvedVirtualMethod.Target;
             }
             else
             {
@@ -225,17 +229,17 @@ namespace Internal.TypeSystem
             return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualMethods(type);
         }
 
-        public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)
+        public static IEnumerable<ResolvedVirtualMethod> EnumAllVirtualSlots(this TypeDesc type)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualSlots(type);
         }
 
-        public static bool TryResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc resolvedMethod)
+        public static bool TryResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod, out ResolvedVirtualMethod resolvedMethod)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, type, out resolvedMethod);
         }
 
-        public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(this TypeDesc type, MethodDesc targetMethod)
+        public static ResolvedVirtualMethod FindVirtualFunctionTargetMethodOnObjectType(this TypeDesc type, MethodDesc targetMethod)
         {
             return type.Context.GetVirtualMethodAlgorithmForType(type).FindVirtualFunctionTargetMethodOnObjectType(targetMethod, type);
         }

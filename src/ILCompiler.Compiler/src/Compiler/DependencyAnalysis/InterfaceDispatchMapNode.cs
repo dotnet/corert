@@ -97,16 +97,16 @@ namespace ILCompiler.DependencyAnalysis
                 var interfaceType = _type.RuntimeInterfaces[i];
                 Debug.Assert(interfaceType.IsInterface);
 
-                IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
+                IReadOnlyList<ResolvedVirtualMethod> virtualSlots = factory.VTable(interfaceType).Slots;
                 
                 for (int j = 0; j < virtualSlots.Count; j++)
                 {
-                    MethodDesc declMethod = virtualSlots[j];
-                    MethodDesc implMethod;
+                    ResolvedVirtualMethod declMethod = virtualSlots[j];
+                    ResolvedVirtualMethod implMethod;
 
                     // Interface methods first implemented by a base type in the hierarchy will return false (runtime interface
                     // dispatch will walk the inheritance chain).
-                    if (_type.TryResolveInterfaceMethodToVirtualMethodOnType(declMethod, out implMethod))
+                    if (_type.TryResolveInterfaceMethodToVirtualMethodOnType(declMethod.Target, out implMethod))
                     {
                         var entry = new DispatchMapEntry();
                         entry.InterfaceIndex = checked((short)i);

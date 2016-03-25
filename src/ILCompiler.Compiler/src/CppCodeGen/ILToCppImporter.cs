@@ -875,7 +875,7 @@ namespace Internal.IL
                     if (method.OwningType.IsInterface)
                         throw new NotImplementedException();
 
-                    _dependencies.Add(_nodeFactory.VirtualMethodUse(method));
+                    _dependencies.Add(_nodeFactory.VirtualMethodUse(new ResolvedVirtualMethod(method)));
 
                     callViaSlot = true;
                 }

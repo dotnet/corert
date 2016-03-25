@@ -229,12 +229,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            foreach (MethodDesc decl in _type.EnumAllVirtualSlots())
+            foreach (ResolvedVirtualMethod decl in _type.EnumAllVirtualSlots())
             {
-                MethodDesc impl = _type.FindVirtualFunctionTargetMethodOnObjectType(decl);
-                if (impl.OwningType == _type && !impl.IsAbstract)
+                ResolvedVirtualMethod impl = decl.Target.OwningType.FindVirtualFunctionTargetMethodOnObjectType(decl.Target);
+                if (impl.OwningType == _type && !impl.Target.IsAbstract)
                 {
-                    yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
+                    yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl.Target, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                 }
             }
 
@@ -247,7 +247,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
                 {
-                    MethodDesc implMethod;
+                    ResolvedVirtualMethod implMethod;
                     if (_type.TryResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, out implMethod))
                     {
                         yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
@@ -403,15 +403,15 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
                 OutputVirtualSlots(factory, ref objData, implType, baseType);
 
-            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
+            IReadOnlyList<ResolvedVirtualMethod> virtualSlots = factory.VTable(declType).Slots;
             
             for (int i = 0; i < virtualSlots.Count; i++)
             {
-                MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                ResolvedVirtualMethod declMethod = virtualSlots[i];
+                ResolvedVirtualMethod implMethod = implType.FindVirtualFunctionTargetMethodOnObjectType(declMethod.Target);
 
-                if (!implMethod.IsAbstract)
-                    objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
+                if (!implMethod.Target.IsAbstract)
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod.Target, implMethod.OwningType.IsValueType));
                 else
                     objData.EmitZeroPointer();
             }
@@ -529,8 +529,8 @@ namespace ILCompiler.DependencyAnalysis
                     var isInstMethod = itf.GetKnownMethod("IsInstanceOfInterface", null);
                     var getImplTypeMethod = itf.GetKnownMethod("GetImplType", null);
 
-                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethod);
-                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethod);
+                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, new ResolvedVirtualMethod(isInstMethod));
+                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, new ResolvedVirtualMethod(getImplTypeMethod));
 
                     if (isInstMethodSlot != -1 || getImplTypeMethodSlot != -1)
                     {

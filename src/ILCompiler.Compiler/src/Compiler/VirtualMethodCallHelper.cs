@@ -12,7 +12,7 @@ namespace ILCompiler
         /// Given a virtual method decl, return its VTable slot if the method is used on its containing type.
         /// Return -1 if the virtual method is not used.
         /// </summary>
-        public static int GetVirtualMethodSlot(NodeFactory factory, MethodDesc method)
+        public static int GetVirtualMethodSlot(NodeFactory factory, ResolvedVirtualMethod method)
         {
             // TODO: More efficient lookup of the slot
             TypeDesc owningType = method.OwningType;
@@ -21,16 +21,16 @@ namespace ILCompiler
 
             while (baseType != null)
             {
-                IReadOnlyList<MethodDesc> baseVirtualSlots = factory.VTable(baseType).Slots;
+                IReadOnlyList<ResolvedVirtualMethod> baseVirtualSlots = factory.VTable(baseType).Slots;
                 baseSlots += baseVirtualSlots.Count;
                 baseType = baseType.BaseType;
             }
 
-            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(owningType).Slots;
+            IReadOnlyList<ResolvedVirtualMethod> virtualSlots = factory.VTable(owningType).Slots;
             int methodSlot = -1;
             for (int slot = 0; slot < virtualSlots.Count; slot++)
             {
-                if (virtualSlots[slot] == method)
+                if (virtualSlots[slot].Target == method.Target)
                 {
                     methodSlot = slot;
                     break;

@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         TypeDesc _type;
         bool _shouldBuildFullVTable;
-        List<MethodDesc> _slots = new List<MethodDesc>();
+        List<ResolvedVirtualMethod> _slots = new List<ResolvedVirtualMethod>();
 
         public VTableSliceNode(TypeDesc type, NodeFactory context)
         {
@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
         
-        public IReadOnlyList<MethodDesc> Slots
+        public IReadOnlyList<ResolvedVirtualMethod> Slots
         {
             get
             {
@@ -37,9 +37,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void AddEntry(NodeFactory context, MethodDesc virtualMethod)
+        public void AddEntry(NodeFactory context, ResolvedVirtualMethod virtualMethod)
         {
-            Debug.Assert(virtualMethod.IsVirtual);
+            Debug.Assert(virtualMethod.Target.IsVirtual);
 
             if (_shouldBuildFullVTable)
                 return;
@@ -72,8 +72,9 @@ namespace ILCompiler.DependencyAnalysis
                 // and compiled.
                 foreach (var method in _type.GetAllVirtualMethods())
                 {
-                    dependencies.Add(new DependencyListEntry(context.VirtualMethodUse(method), "VTable method dependency"));
-                    _slots.Add(method);
+                    ResolvedVirtualMethod resolvedMethod = new ResolvedVirtualMethod(_type, method);
+                    dependencies.Add(new DependencyListEntry(context.VirtualMethodUse(resolvedMethod), "VTable method dependency"));
+                    _slots.Add(resolvedMethod);
                 }
             }
 
