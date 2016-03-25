@@ -319,7 +319,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void BuildCFIMap(NodeFactory context, ObjectNode node)
+        public void BuildCFIMap(NodeFactory factory, ObjectNode node)
         {
             _offsetToCfis.Clear();
             _offsetToCfiStart.Clear();
@@ -353,7 +353,7 @@ namespace ILCompiler.DependencyAnalysis
                     string blobSymbolName = "_unwind" + (i++).ToStringInvariant() + _currentNodeName;
 
                     ObjectNodeSection section = ObjectNodeSection.XDataSection;
-                    if (node.ShouldShareNodeAcrossModules(context) && context.Target.OperatingSystem == TargetOS.Windows)
+                    if (node.ShouldShareNodeAcrossModules(factory) && factory.Target.OperatingSystem == TargetOS.Windows)
                     {
                         section = section.GetSharedSection(blobSymbolName);
                         CreateCustomSection(section);
@@ -380,7 +380,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     // TODO: Currently we get linker errors if we emit frame info for shared types.
                     //       This needs follow-up investigation.
-                    if (!node.ShouldShareNodeAcrossModules(context))
+                    if (!node.ShouldShareNodeAcrossModules(factory))
                     {
                         // For window, just emit the frame blob (UNWIND_INFO) as a whole.
                         EmitWinFrameInfo(start, end, len, blobSymbolName);

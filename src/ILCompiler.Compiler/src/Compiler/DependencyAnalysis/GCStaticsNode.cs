@@ -34,25 +34,25 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private ISymbolNode GetGCStaticEETypeNode(NodeFactory context)
+        private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
             // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
-            bool[] gcDesc = new bool[_type.GCStaticFieldSize / context.Target.PointerSize + 1];
-            return context.GCStaticEEType(gcDesc);
+            bool[] gcDesc = new bool[_type.GCStaticFieldSize / factory.Target.PointerSize + 1];
+            return factory.GCStaticEEType(gcDesc);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = new DependencyList();
             
-            if (context.TypeInitializationManager.HasEagerStaticConstructor(_type))
+            if (factory.TypeInitializationManager.HasEagerStaticConstructor(_type))
             {
-                dependencyList.Add(context.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            dependencyList.Add(context.GCStaticsRegion, "GCStatics Region");
-            dependencyList.Add(GetGCStaticEETypeNode(context), "GCStatic EEType");
-            dependencyList.Add(context.GCStaticIndirection(_type), "GC statics indirection");
+            dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
+            dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
+            dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
             return dependencyList;
         }
 

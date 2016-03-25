@@ -20,10 +20,10 @@ namespace ILCompiler.DependencyAnalysis
         bool _shouldBuildFullVTable;
         List<MethodDesc> _slots = new List<MethodDesc>();
 
-        public VTableSliceNode(TypeDesc type, NodeFactory context)
+        public VTableSliceNode(TypeDesc type, NodeFactory factory)
         {
             _type = type;
-            if (context.CompilationModuleGroup.ShouldProduceFullType(_type))
+            if (factory.CompilationModuleGroup.ShouldProduceFullType(_type))
             {
                 _shouldBuildFullVTable = true;
             }
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void AddEntry(NodeFactory context, MethodDesc virtualMethod)
+        public void AddEntry(NodeFactory factory, MethodDesc virtualMethod)
         {
             Debug.Assert(virtualMethod.IsVirtual);
 
@@ -55,12 +55,12 @@ namespace ILCompiler.DependencyAnalysis
             return "__vtable_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             List<DependencyListEntry> dependencies = new List<DependencyListEntry>();
             if (_type.HasBaseType)
             {
-                dependencies.Add(new DependencyListEntry(context.VTable(_type.BaseType), "Base type VTable"));
+                dependencies.Add(new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable"));
             }
 
             if (_shouldBuildFullVTable)
@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (!method.IsVirtual)
                         continue;
 
-                    dependencies.Add(new DependencyListEntry(context.VirtualMethodUse(method), "VTable method dependency"));
+                    dependencies.Add(new DependencyListEntry(factory.VirtualMethodUse(method), "VTable method dependency"));
                     _slots.Add(method);
                 }
             }
@@ -92,12 +92,12 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
         {
             return null;
         }

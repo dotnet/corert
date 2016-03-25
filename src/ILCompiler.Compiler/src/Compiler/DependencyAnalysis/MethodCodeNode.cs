@@ -83,16 +83,16 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = null;
 
             TypeDesc owningType = _method.OwningType;
-            if (context.TypeInitializationManager.HasEagerStaticConstructor(owningType))
+            if (factory.TypeInitializationManager.HasEagerStaticConstructor(owningType))
             {
                 if (dependencies == null)
                     dependencies = new DependencyList();
-                dependencies.Add(context.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
+                dependencies.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
             }
 
             if (_ehInfo != null && _ehInfo.Relocs != null)

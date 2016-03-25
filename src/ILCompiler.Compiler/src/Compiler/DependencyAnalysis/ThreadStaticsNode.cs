@@ -38,27 +38,27 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private ISymbolNode GetGCStaticEETypeNode(NodeFactory context)
+        private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
             // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
             // TODO This logic should be shared with GCStaticsNode.
-            bool[] gcDesc = new bool[_type.ThreadStaticFieldSize / context.Target.PointerSize + 1];
-            return context.GCStaticEEType(gcDesc);
+            bool[] gcDesc = new bool[_type.ThreadStaticFieldSize / factory.Target.PointerSize + 1];
+            return factory.GCStaticEEType(gcDesc);
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyListEntry[] result;
-            if (context.TypeInitializationManager.HasEagerStaticConstructor(_type))
+            if (factory.TypeInitializationManager.HasEagerStaticConstructor(_type))
             {
                 result = new DependencyListEntry[3];
-                result[2] = new DependencyListEntry(context.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                result[2] = new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
             else
                 result = new DependencyListEntry[2];
 
-            result[0] = new DependencyListEntry(context.ThreadStaticsRegion, "ThreadStatics Region");
-            result[1] = new DependencyListEntry(GetGCStaticEETypeNode(context), "ThreadStatic EEType");
+            result[0] = new DependencyListEntry(factory.ThreadStaticsRegion, "ThreadStatics Region");
+            result[1] = new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType");
             return result;
         }
 

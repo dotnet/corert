@@ -80,15 +80,15 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DependencyList dependencies = ComputeNonRelocationBasedDependencies(context);
-            Relocation[] relocs = GetData(context, true).Relocs;
+            DependencyList dependencies = ComputeNonRelocationBasedDependencies(factory);
+            Relocation[] relocs = GetData(factory, true).Relocs;
 
             if (relocs != null)
             {
@@ -107,12 +107,12 @@ namespace ILCompiler.DependencyAnalysis
                 return dependencies;
         }
 
-        protected virtual DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        protected virtual DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
         {
             return null;
         }
