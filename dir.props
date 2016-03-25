@@ -101,10 +101,10 @@
     <OSPlatformConfig>$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)</OSPlatformConfig>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(ProductBinDir)</BaseOutputPath>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\</OutputPath>
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/</OutputPath>
 
     <!-- Folder where we will drop the Nuget package for the toolchain -->
-    <ProductPackageDir Condition="'$(ProductPackageDir)'==''">$(OutputPath).nuget/</ProductPackageDir>
+    <ProductPackageDir Condition="'$(ProductPackageDir)'==''">$(BaseOutputPath)$(OSPlatformConfig)/packaging/</ProductPackageDir>
     
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
     <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>

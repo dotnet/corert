@@ -233,7 +233,7 @@ if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
     "%__DotNetCliPath%\bin\dotnet.exe" restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "%__ReproProjectDir%"
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
-    "%__DotNetCliPath%\bin\dotnet.exe" build --native --ilcpath "%__BinDir%\.nuget\publish1" "%__ReproProjectDir%" -c %__BuildType%
+    "%__DotNetCliPath%\bin\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType%
     copy /y "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
     rem Workaround for https://github.com/dotnet/cli/issues/1956
@@ -244,7 +244,7 @@ if "%__GenRespFiles%"=="1" (
     if /i "%__BuildType%"=="debug" (
         set __AdditionalCompilerFlags=--cppcompilerflags /MTd
     )
-    "%__DotNetCliPath%\bin\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\.nuget\publish1" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
+    "%__DotNetCliPath%\bin\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
     copy /y "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
 )
 :AfterVsDevGenerateRespFiles

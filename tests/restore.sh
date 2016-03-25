@@ -36,7 +36,7 @@ export CoreRT_AppDepSdkVer=1.0.6-prerelease-00003
 
 __ScriptDir=$(cd "$(dirname "$0")"; pwd -P)
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
-__NuPkgInstallDir=${CoreRT_TestRoot}/../bin/Product/${__BuildStr}/.nuget/publish1
+__NuPkgInstallDir=${CoreRT_TestRoot}/../bin/Product/${__BuildStr}/packaging/publish1
 
 while test $# -gt 0
     do
