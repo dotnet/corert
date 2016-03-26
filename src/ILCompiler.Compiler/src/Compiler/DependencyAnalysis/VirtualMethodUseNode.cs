@@ -34,7 +34,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory factory)
         {
-            factory.VTable(_decl.OwningType).AddEntry(factory, _decl);
+            // If the VTable slice is getting built on demand, the fact that the virtual method is used means
+            // that the slot is used.
+            var lazyVTableSlice = factory.VTable(_decl.OwningType) as LazilyBuiltVTableSliceNode;
+            if (lazyVTableSlice != null)
+                lazyVTableSlice.AddEntry(factory, _decl);
         }
 
         public override bool HasConditionalStaticDependencies
