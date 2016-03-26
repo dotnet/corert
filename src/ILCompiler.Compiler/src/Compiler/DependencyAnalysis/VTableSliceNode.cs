@@ -20,6 +20,9 @@ namespace ILCompiler.DependencyAnalysis
         bool _shouldBuildFullVTable;
         List<MethodDesc> _slots = new List<MethodDesc>();
 
+#if DEBUG
+        bool _slotsCommitted;
+#endif
         public VTableSliceNode(TypeDesc type, NodeFactory factory)
         {
             _type = type;
@@ -33,6 +36,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
+#if DEBUG
+                _slotsCommitted = true;
+#endif
                 return _slots;
             }
         }
@@ -40,6 +46,9 @@ namespace ILCompiler.DependencyAnalysis
         public void AddEntry(NodeFactory factory, MethodDesc virtualMethod)
         {
             Debug.Assert(virtualMethod.IsVirtual);
+#if DEBUG
+            Debug.Assert(!_slotsCommitted);
+#endif
 
             if (_shouldBuildFullVTable)
                 return;
