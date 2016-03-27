@@ -1335,28 +1335,40 @@ namespace Internal.JitInterface
 
                 if (field.HasRva)
                 {
-                    throw new NotSupportedException("getFieldInfo for RVA mapped field");
-                }
+                    fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
 
-                fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
-                pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
+                    // TODO: Handle the case when the RVA is in the TLS range
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
 
-                ReadyToRunHelperId helperId;
-                if (field.IsThreadStatic)
-                {
-                    helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                }
-                else if (field.HasGCStaticBase)
-                {
-                    helperId = ReadyToRunHelperId.GetGCStaticBase;
+                    // We are not going through a helper. The constructor has to be triggered explicitly.
+                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                    {
+                        fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                    }
                 }
                 else
                 {
-                    helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                }
 
-                pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
-                pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
+                    pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
+
+                    ReadyToRunHelperId helperId;
+                    if (field.IsThreadStatic)
+                    {
+                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                    }
+                    else if (field.HasGCStaticBase)
+                    {
+                        helperId = ReadyToRunHelperId.GetGCStaticBase;
+                    }
+                    else
+                    {
+                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                    }
+
+                    pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                    pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                }
             }
             else
             {
@@ -1370,7 +1382,11 @@ namespace Internal.JitInterface
             pResult.fieldFlags = fieldFlags;
             pResult.fieldType = getFieldType(pResolvedToken.hField, ref pResult.structType, pResolvedToken.hClass);
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
-            pResult.offset = (uint)field.Offset;
+
+            if (!field.IsStatic || !field.HasRva)
+                pResult.offset = (uint)field.Offset;
+            else
+                pResult.offset = 0xBAADF00D;
 
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
             //       and STS::AccessCheck::CanAccess.
@@ -2122,8 +2138,14 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("isRIDClassDomainID"); }
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
+
         private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
-        { throw new NotImplementedException("getFieldAddress"); }
+        {
+            FieldDesc fieldDesc = HandleToObject(field);
+            Debug.Assert(fieldDesc.HasRva);
+            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
+        }
+
         private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, ref void* ppIndirection)
         { throw new NotImplementedException("getVarArgsHandle"); }
         [return: MarshalAs(UnmanagedType.I1)]
