@@ -234,7 +234,7 @@ if "%__GenRespFiles%"=="1" (
     "%__DotNetCliPath%\bin\dotnet.exe" restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "%__ReproProjectDir%"
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
     "%__DotNetCliPath%\bin\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType%
-    copy /y "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
+    call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
     rem Workaround for https://github.com/dotnet/cli/issues/1956
     rmdir /s /q "%__ReproProjectBinDir%"
@@ -245,7 +245,7 @@ if "%__GenRespFiles%"=="1" (
         set __AdditionalCompilerFlags=--cppcompilerflags /MTd
     )
     "%__DotNetCliPath%\bin\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
-    copy /y "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
+    call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
 )
 :AfterVsDevGenerateRespFiles
 
@@ -274,3 +274,32 @@ echo Visual Studio version: ^(default: VS2015^).
 echo clean: force a clean build ^(default is to perform an incremental build^).
 echo skiptests: skip building tests ^(default: tests are built^).
 exit /b 1
+
+rem Copies the dotnet generated response file while patching up references
+rem to System.Private assemblies to the live built ones.
+rem This is to make sure that making changes in a private library doesn't require
+rem a full rebuild. It also helps with locating the symbols.
+:CopyResponseFile
+setlocal
+> %~2 (
+  for /f "tokens=*" %%l in (%~1) do (
+    set line=%%l
+    if "!line:publish1\sdk=!"=="!line!" (
+        echo !line!
+    ) ELSE (
+        set assemblyPath=!line:~3!
+        call :ExtractFileName !assemblyPath! assemblyFileName
+        echo -r:%__BinDir%\!assemblyFileName!\!assemblyFileName!.dll
+    )
+  )
+)
+endlocal
+goto:eof
+
+rem Extracts a file name from a full path
+rem %1 Full path to the file, %2 Variable to receive the file name
+:ExtractFileName
+setlocal
+for %%i in ("%1") DO set fileName=%%~ni
+endlocal & set "%2=%fileName%"
+goto:eof
