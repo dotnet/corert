@@ -154,7 +154,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DnuToolPath Condition="'$(DnuToolPath)'==''">$(BinDir)/tools/cli/bin/dotnet</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'==''">$(BinDir)/tools/cli/dotnet</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
     <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
