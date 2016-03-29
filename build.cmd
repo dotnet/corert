@@ -205,8 +205,8 @@ if not exist "%__DotNetCliPath%" (
     exit /b 1
 )
 
-echo type "%__DotNetCliPath%\.version"
-type "%__DotNetCliPath%\.version"
+echo Using CLI tools version:
+dir /b "%__DotNetCliPath%\sdk"
 
 :: Set the environment for the managed build
 :SetupManagedBuild
@@ -231,9 +231,9 @@ set __GenRespFiles=0
 if not exist "%__ObjDir%\ryujit.rsp" set __GenRespFiles=1
 if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
-    "%__DotNetCliPath%\bin\dotnet.exe" restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "%__ReproProjectDir%"
+    "%__DotNetCliPath%\dotnet.exe" restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "%__ReproProjectDir%"
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
-    "%__DotNetCliPath%\bin\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType%
+    "%__DotNetCliPath%\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType%
     call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
     rem Workaround for https://github.com/dotnet/cli/issues/1956
@@ -244,7 +244,7 @@ if "%__GenRespFiles%"=="1" (
     if /i "%__BuildType%"=="debug" (
         set __AdditionalCompilerFlags=--cppcompilerflags /MTd
     )
-    "%__DotNetCliPath%\bin\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
+    "%__DotNetCliPath%\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
     call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
 )
 :AfterVsDevGenerateRespFiles
