@@ -225,7 +225,10 @@ namespace ILCompiler.DependencyAnalysis
             
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
             {
-                return new VTableSliceNode(type, this);
+                if (CompilationModuleGroup.ShouldProduceFullType(type))
+                    return new EagerlyBuiltVTableSliceNode(type);
+                else
+                    return new LazilyBuiltVTableSliceNode(type);
             });
         }
 
