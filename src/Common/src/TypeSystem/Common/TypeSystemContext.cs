@@ -684,5 +684,17 @@ namespace Internal.TypeSystem
             // Type system contexts that support computing runtime interfaces need to override this.
             throw new NotSupportedException();
         }
+
+        public virtual VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
+        {
+            // Type system contexts that support virtual method resolution need to override this.
+            throw new NotSupportedException();
+        }
+
+        public virtual VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+        {
+            // Type system contexts that support this need to override this.
+            throw new NotSupportedException();
+        }
     }
 }

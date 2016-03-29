@@ -24,6 +24,8 @@ namespace ILCompiler
         private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
+        private MetadataVirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
 
         private MetadataStringDecoder _metadataStringDecoder;
 
@@ -250,6 +252,20 @@ namespace ILCompiler
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
+        }
+
+        public override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
+        {
+            Debug.Assert(!type.IsArray, "Wanted to call GetClosestMetadataType?");
+
+            return _virtualMethodAlgorithm;
+        }
+
+        public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+        {
+            Debug.Assert(!type.IsArray, "Wanted to call GetClosestMetadataType?");
+
+            return _virtualMethodEnumAlgorithm;
         }
 
         public MetadataStringDecoder GetMetadataStringDecoder()

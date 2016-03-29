@@ -223,10 +223,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Since the vtable is dependency driven, generate conditional static dependencies for
                 // all possible vtable entries
-                foreach (MethodDesc method in _type.GetMethods())
+                if (_type.GetClosestMetadataType().GetAllVirtualMethods().GetEnumerator().MoveNext())
                 {
-                    if (method.IsVirtual)
-                        return true;
+                    return true;
                 }
 
                 // If the type implements at least one interface, calls against that interface could result in this type's
@@ -242,9 +241,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             MetadataType mdType = _type.GetClosestMetadataType();
 
-            foreach (MethodDesc decl in VirtualFunctionResolution.EnumAllVirtualSlots(mdType))
+            foreach (MethodDesc decl in mdType.EnumAllVirtualSlots())
             {
-                MethodDesc impl = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(decl, mdType);
+                MethodDesc impl = mdType.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType == mdType && !impl.IsAbstract)
                 {
                     yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
@@ -263,13 +262,9 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Debug.Assert(interfaceType.IsInterface);
 
-                foreach (MethodDesc interfaceMethod in interfaceType.GetMethods())
+                foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
                 {
-                    if (interfaceMethod.Signature.IsStatic)
-                        continue;
-
-                    Debug.Assert(interfaceMethod.IsVirtual);
-                    MethodDesc implMethod = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, mdType);
+                    MethodDesc implMethod = mdType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
                         yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
@@ -432,7 +427,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = 0; i < virtualSlots.Count; i++)
             {
                 MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
+                MethodDesc implMethod = implType.GetClosestMetadataType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 if (!implMethod.IsAbstract)
                     objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));

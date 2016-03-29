@@ -28,6 +28,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>IAssemblyDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs">
+      <Link>TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>ModuleDesc.cs</Link>
     </Compile>
@@ -130,14 +133,20 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemHelpers.cs" >
       <Link>TypeSystem\Common\TypeSystemHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs">
+      <Link>TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs" >
       <Link>TypeSystem\Common\WellKnownType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\VirtualMethodAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.cs" >
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualFunctionResolution.cs" >
-      <Link>TypeSystem\Common\VirtualFunctionResolution.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.cs" >
       <Link>TypeSystem\Common\TypeDesc.cs</Link>

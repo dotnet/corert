@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Internal.TypeSystem
@@ -131,7 +132,7 @@ namespace Internal.TypeSystem
         /// for generic code.
         /// </summary>
         /// <returns>The resolved method or null if the constraint couldn't be resolved.</returns>
-        static public MethodDesc TryResolveConstraintMethodApprox(this MetadataType constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
+        static public MethodDesc TryResolveConstraintMethodApprox(this TypeDesc constrainedType, TypeDesc interfaceType, MethodDesc interfaceMethod, out bool forceRuntimeLookup)
         {
             forceRuntimeLookup = false;
 
@@ -148,7 +149,7 @@ namespace Internal.TypeSystem
                 return null;
             }
 
-            MetadataType canonMT = constrainedType;
+            TypeDesc canonMT = constrainedType;
 
             MethodDesc method;
 
@@ -168,11 +169,11 @@ namespace Internal.TypeSystem
                 // TODO: this code assumes no shared generics
                 Debug.Assert(interfaceType == interfaceMethod.OwningType);
 
-                method = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod, constrainedType);
+                method = constrainedType.ResolveInterfaceMethodToVirtualMethodOnType(genInterfaceMethod);
             }
             else if (genInterfaceMethod.IsVirtual)
             {
-                method = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod, constrainedType);
+                method = constrainedType.FindVirtualFunctionTargetMethodOnObjectType(genInterfaceMethod);
             }
             else
             {
@@ -216,6 +217,38 @@ namespace Internal.TypeSystem
         {
             string ns = metadataType.Namespace;
             return ns.Length > 0 ? String.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+        }
+
+        /// <summary>
+        /// Enumerates all virtual methods introduced or overriden by '<paramref name="type"/>'.
+        /// Note that this is not just a convenience method. This method is capable of enumerating
+        /// virtual method injected by the type system host.
+        /// </summary>
+        public static IEnumerable<MethodDesc> GetAllVirtualMethods(this TypeDesc type)
+        {
+            return type.Context.GetVirtualMethodEnumerationAlgorithmForType(type).ComputeAllVirtualMethods(type);
+        }
+
+        public static IEnumerable<MethodDesc> EnumAllVirtualSlots(this TypeDesc type)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ComputeAllVirtualSlots(type);
+        }
+
+        /// <summary>
+        /// Resolves interface method '<paramref name="interfaceMethod"/>' to a method on '<paramref name="type"/>'
+        /// that implements the the method.
+        /// </summary>
+        public static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(this TypeDesc type, MethodDesc interfaceMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, type);
+        }
+
+        /// <summary>
+        /// Resolves a virtual method call.
+        /// </summary>
+        public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(this TypeDesc type, MethodDesc targetMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).FindVirtualFunctionTargetMethodOnObjectType(targetMethod, type);
         }
     }
 }
