@@ -1083,18 +1083,19 @@ namespace Internal.JitInterface
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR:
-                    {
-                        var method = HandleToObject(pResolvedToken.hMethod);
-
-                        DelegateInfo delegateInfo = _compilation.GetDelegateCtor(method);
-
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
-                    }
-                    break;
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
+        }
+
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
+        {
+            var method = HandleToObject(pTargetMethod.hMethod);
+
+            DelegateInfo delegateInfo = _compilation.GetDelegateCtor(method);
+
+            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+            pLookup.accessType = InfoAccessType.IAT_VALUE;
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)

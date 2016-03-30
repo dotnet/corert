@@ -217,6 +217,7 @@ FUNCTIONS
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     void getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
+    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_CONST_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context, BOOL speculative)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
