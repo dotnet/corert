@@ -29,6 +29,14 @@ echo.
 echo Installing CoreRT external dependencies
 %__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_AppDepSdkVer% %CoreRT_AppDepSdkPkg% -prerelease %__NuGetOptions%
 
+rem Allow overriding RyuJit retrieved from NuGet with a locally built one.
+if exist "%LIVE_RYUJIT_PATH%" (
+    echo.
+    echo Overwriting RyuJit in "%__NuPkgInstallDir%" with "%LIVE_RYUJIT_PATH%"
+    copy /y "%LIVE_RYUJIT_PATH%" "%__NuPkgInstallDir%\"
+    echo.
+)
+
 endlocal & (
   set CoreRT_ToolchainDir=%__NuPkgInstallDir%
   set CoreRT_AppDepSdkDir=%__NuPkgInstallDir%\%CoreRT_AppDepSdkPkg%.%CoreRT_AppDepSdkVer%
