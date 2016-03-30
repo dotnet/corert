@@ -11,7 +11,7 @@ build[.cmd|.sh] clean [Debug|Release]
 This will result in the following:
 
 - Restore nuget packages required for building
-- Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\Product\<OS>.<arch>.<Config>\.nuget\publish1`.
+- Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\Product\<OS>.<arch>.<Config>\packaging\publish1`.
 - Build and run tests
 - Installs the latest CLI tools at `<repo_root>\bin\tools\cli`
 
@@ -40,7 +40,7 @@ From the shell/command prompt, issue the following commands, from the folder con
 
 ``` 
     dotnet restore
-    dotnet build --native --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\.nuget\publish1
+    dotnet build --native --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1
 ``` 
 
 Native executable will be dropped in `./bin/[configuration]/[framework]/[runtime]/native/` folder and will have the same name as the folder in which your source file is present.
@@ -53,7 +53,7 @@ From the shell/command prompt, issue the following commands to generate the nati
 
 ``` 
     dotnet restore
-    dotnet build --native --cpp --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\.nuget\publish1 --cppcompilerflags /MTd
+    dotnet build --native --cpp --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1 --cppcompilerflags /MTd
 ```
 
 Omit `--cppcompilerflags /MTd` for release CoreRT build.
