@@ -72,6 +72,7 @@ public:
     virtual int getBoxHelper(CorInfoException** ppException, void* cls) = 0;
     virtual int getUnBoxHelper(CorInfoException** ppException, void* cls) = 0;
     virtual void getReadyToRunHelper(CorInfoException** ppException, void* pResolvedToken, int id, void* pLookup) = 0;
+    virtual void getReadyToRunDelegateCtorHelper(CorInfoException** ppException, void* pTargetMethod, void* delegateType, void* pLookup) = 0;
     virtual const char* getHelperName(CorInfoException** ppException, int helpFunc) = 0;
     virtual int initClass(CorInfoException** ppException, void* field, void* method, void* context, bool speculative) = 0;
     virtual void classMustBeLoadedBeforeCodeIsRun(CorInfoException** ppException, void* cls) = 0;
@@ -770,6 +771,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         _pCorInfo->getReadyToRunHelper(&pException, pResolvedToken, id, pLookup);
+        if (pException != nullptr)
+        {
+            throw pException;
+        }
+    }
+    virtual void getReadyToRunDelegateCtorHelper(void* pTargetMethod, void* delegateType, void* pLookup)
+    {
+        CorInfoException* pException = nullptr;
+        _pCorInfo->getReadyToRunDelegateCtorHelper(&pException, pTargetMethod, delegateType, pLookup);
         if (pException != nullptr)
         {
             throw pException;
