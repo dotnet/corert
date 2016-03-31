@@ -95,7 +95,7 @@ namespace Internal.Runtime
             {
                 if (_rgFields[i]._fieldPresent)
                 {
-                    sb.Append(_rgFields[i]._value.ToString());
+                    sb.Append(_rgFields[i]._value.ToStringInvariant());
                 }
                 else
                 {
