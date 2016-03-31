@@ -83,7 +83,14 @@ namespace ILCompiler.DependencyAnalysis
                     case ReadyToRunHelperId.GetThreadStaticBase:
                         return "__GetThreadStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
                     case ReadyToRunHelperId.DelegateCtor:
-                        return "__DelegateCtor_" + NodeFactory.NameMangler.GetMangledMethodName(((DelegateInfo)_target).Target);
+                        {
+                            var createInfo = (DelegateCreationInfo)_target;
+                            string mangledName = String.Concat("__DelegateCtor_",
+                                createInfo.Constructor.MangledName, "__", createInfo.Target.MangledName);
+                            if (createInfo.Thunk != null)
+                                mangledName += String.Concat("__", createInfo.Thunk.MangledName);
+                            return mangledName;
+                        }
                     case ReadyToRunHelperId.InterfaceDispatch:
                         return "__InterfaceDispatch_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
                     case ReadyToRunHelperId.ResolveVirtualFunction:

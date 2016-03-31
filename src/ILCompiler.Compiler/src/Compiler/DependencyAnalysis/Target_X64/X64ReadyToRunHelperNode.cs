@@ -130,16 +130,21 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
-                        DelegateInfo target = (DelegateInfo)Target;
-                        MethodDesc targetMethod = target.Target;
+                        DelegateCreationInfo target = (DelegateCreationInfo)Target;
 
-                        bool needsUnboxingStub = targetMethod.OwningType.IsValueType && !targetMethod.Signature.IsStatic;
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.MethodEntrypoint(targetMethod, needsUnboxingStub));
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.Target);
 
-                        if (target.ShuffleThunk != null)
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg3, factory.MethodEntrypoint(target.ShuffleThunk));
+                        if (target.Thunk != null)
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 3);
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg3, target.Thunk);
+                        }
+                        else
+                        {
+                            Debug.Assert(target.Constructor.Method.Signature.Length == 2);
+                        }
 
-                        encoder.EmitJMP(factory.MethodEntrypoint(target.Ctor));
+                        encoder.EmitJMP(target.Constructor);
                     }
                     break;
 

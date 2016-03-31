@@ -1090,9 +1090,10 @@ namespace Internal.JitInterface
 
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
         {
-            var method = HandleToObject(pTargetMethod.hMethod);
+            MethodDesc method = HandleToObject(pTargetMethod.hMethod);
+            TypeDesc type = HandleToObject(delegateType);
 
-            DelegateInfo delegateInfo = _compilation.GetDelegateCtor(method);
+            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method);
 
             pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
             pLookup.accessType = InfoAccessType.IAT_VALUE;
