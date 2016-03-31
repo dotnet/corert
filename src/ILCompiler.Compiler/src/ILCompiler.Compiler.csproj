@@ -99,7 +99,6 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
-    <Compile Include="Compiler\FormattingHelpers.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
@@ -119,6 +118,9 @@
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>Common\FormattingHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>
