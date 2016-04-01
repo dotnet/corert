@@ -375,6 +375,106 @@ namespace System.Runtime.InteropServices
         }
     }
 
+    [CLSCompliant(false)]
+    public unsafe struct __com_IDispatch
+    {
+#pragma warning disable 649 // Field 'blah' is never assigned to, and will always have its default value null
+        internal __vtable_IDispatch* pVtable;
+#pragma warning restore 649
+    }
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [CLSCompliant(false)]
+    public unsafe struct __vtable_IDispatch
+    {
+        // IUnknown
+        internal IntPtr pfnQueryInterface;
+        internal IntPtr pfnAddRef;
+        internal IntPtr pfnRelease;
+
+        // IDispatch
+        internal IntPtr pfnGetTypeInfoCount;
+        internal IntPtr pfnGetTypeInfo;
+        internal IntPtr pfnGetIDsOfNames;
+        internal IntPtr pfnInvoke;
+
+        public static IntPtr pNativeVtable;
+        private static __vtable_IDispatch s_theCcwVtable = new __vtable_IDispatch
+        {
+            // IUnknown
+            pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(__vtable_IUnknown.QueryInterface),
+            pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(__vtable_IUnknown.AddRef),
+            pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(__vtable_IUnknown.Release),
+            // IDispatch
+            pfnGetTypeInfoCount = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfTarget3>(GetTypeInfoCount),
+            pfnGetTypeInfo = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfGetTypeInfo>(GetTypeInfo),
+            pfnGetIDsOfNames = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfGetIDsOfNames>(GetIDsOfNames),
+            pfnInvoke = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfInvoke>(Invoke),
+        };
+        internal static IntPtr GetVtableFuncPtr()
+        {
+            return AddrOfIntrinsics.AddrOf<AddrOfGetCCWVtable>(GetCcwvtable_IDispatch);
+        }
+        internal static unsafe IntPtr GetCcwvtable_IDispatch()
+        {
+            if (pNativeVtable == default(IntPtr))
+            {
+                fixed (void* pVtbl = &s_theCcwVtable)
+                {
+                    McgMarshal.GetCCWVTableCopy(pVtbl, ref __vtable_IDispatch.pNativeVtable, sizeof(__vtable_IDispatch));
+                }
+            }
+            return __vtable_IDispatch.pNativeVtable;
+        }
+
+        const int E_NOTIMPL = unchecked((int)0x80000001);
+
+        [NativeCallable]
+        public static int GetTypeInfoCount(
+            IntPtr pComThis, 
+            IntPtr pctinfo)
+        {
+            return E_NOTIMPL;
+        }
+
+        [NativeCallable]
+        public static int GetTypeInfo(
+            IntPtr pComThis,
+            uint iTInfo,
+            uint lcid,
+            IntPtr ppTInfo)
+        {
+            return E_NOTIMPL;
+        }
+
+        [NativeCallable]
+        public static int GetIDsOfNames(
+            IntPtr pComThis,
+            IntPtr riid,
+            IntPtr rgszNames,
+            uint cNames,
+            uint lcid,
+            IntPtr rgDispId)
+        {
+            return E_NOTIMPL;
+        }
+
+        [NativeCallable]
+        public static int Invoke(
+            IntPtr pComThis,
+            int dispIdMember,
+            IntPtr riid,
+            uint lcid,
+            ushort wFlags,
+            IntPtr pDispParams,
+            IntPtr pVarResult,
+            IntPtr pExcepInfo,
+            IntPtr puArgErr)
+        {
+            return E_NOTIMPL;
+        }
+    }
+
 #if ENABLE_WINRT
     internal unsafe struct __com_ICustomPropertyProvider
     {
@@ -691,11 +791,11 @@ namespace System.Runtime.InteropServices
     }
 #endif //ENABLE_WINRT
 
-    /// <summary>
-    /// This is a special type we'll create CCW for but does not implement any WinRT interfaces
-    /// We need to ask MCG to generate templates for it explicitly by marking with McgComCallableAttribute
-    /// </summary>
-    [McgComCallableAttribute]
+            /// <summary>
+            /// This is a special type we'll create CCW for but does not implement any WinRT interfaces
+            /// We need to ask MCG to generate templates for it explicitly by marking with McgComCallableAttribute
+            /// </summary>
+        [McgComCallableAttribute]
     internal class StandardCustomPropertyProviderProxy : IManagedWrapper
     {
         Object m_target;

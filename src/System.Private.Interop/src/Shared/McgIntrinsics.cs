@@ -523,6 +523,29 @@ namespace System.Runtime.InteropServices
 
         internal delegate bool AddrOfIsAlive(ComCallableObject comCallableObject);
 
+        internal delegate int AddrOfGetTypeInfo(
+            IntPtr pComThis,
+            uint iTInfo,
+            uint lcid,
+            IntPtr ppTInfo);
+        internal delegate int AddrOfGetIDsOfNames(
+            IntPtr pComThis,
+            IntPtr riid,
+            IntPtr rgszNames,
+            uint cNames,
+            uint lcid,
+            IntPtr rgDispId);
+        internal delegate int AddrOfInvoke(
+            IntPtr pComThis,
+            int dispIdMember,
+            IntPtr riid,
+            uint lcid,
+            ushort wFlags,
+            IntPtr pDispParams,
+            IntPtr pVarResult,
+            IntPtr pExcepInfo,
+            IntPtr puArgErr);
+
         // IStream
         internal delegate int AddrOfIStreamClone(IntPtr pComThis, out IntPtr ppstm);
         internal delegate int AddrOfIStreamCopyTo(IntPtr pComThis, IntPtr pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
