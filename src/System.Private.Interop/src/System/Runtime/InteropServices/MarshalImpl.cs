@@ -55,7 +55,12 @@ namespace System.Runtime.InteropServices
         {
             if (o == null)
                 throw new ArgumentNullException("o");
-            return McgMarshal.Release(o as __ComObject);
+            return McgMarshal.Release(o as __ComObject);            
+        }
+
+        public static int FinalReleaseComObject(object o)
+        {
+            return McgMarshal.FinalReleaseComObject(o);          
         }
 
         public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)

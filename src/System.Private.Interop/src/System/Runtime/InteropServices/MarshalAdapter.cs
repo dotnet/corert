@@ -102,6 +102,11 @@ namespace System.Runtime.InteropServices
             return MarshalImpl.ReleaseComObject(o);            
         }
 
+        public static int FinalReleaseComObject(object o)
+        {
+            return MarshalImpl.FinalReleaseComObject(o);
+        }
+
         public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
             return MarshalImpl.QueryInterface(pUnk, ref iid, out ppv);

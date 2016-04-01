@@ -802,6 +802,27 @@ namespace System.Runtime.InteropServices
             return 0;
         }
 
+        public static int FinalReleaseComObject(object o)
+        {
+            if (o == null)
+                throw new ArgumentNullException("o");
+
+            __ComObject co = null;
+
+            // Make sure the obj is an __ComObject.
+            try
+            {
+                co = (__ComObject)o;
+            }
+            catch (InvalidCastException)
+            {
+                throw new ArgumentException(SR.Argument_ObjNotComObject, "o");
+            }
+            co.FinalReleaseSelf();
+            return 0;
+        }
+
+
         /// <summary>
         /// Returns the cached WinRT factory RCW under the current context
         /// </summary>
@@ -1137,7 +1158,7 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
             return ExceptionHelpers.GetExceptionForHRInternalNoThrow(hr, isWinRTScenario, !isWinRTScenario);
 #else
-            return new COMException(hr.ToString());
+            return new COMException(hr.ToString(),hr);
 #endif
         }
 
