@@ -31,6 +31,18 @@ public class BringUpTests
             result = Fail;
         }
 
+        if (!TestStaticOpenClosedDelegates())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
+
+        if (!TestMulticastDelegates())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
+
         return result;
     }
 
@@ -106,6 +118,58 @@ public class BringUpTests
             IFoo t = new StructWithIFoo("Struct");
             Func<int, string> d = t.DoFoo;
             if (d(654) != "Struct654")
+                return false;
+        }
+
+        Console.WriteLine("OK");
+        return true;
+    }
+
+    public static bool TestStaticOpenClosedDelegates()
+    {
+        Console.Write("Testing static open and closed delegates...");
+
+        {
+            Func<string, string, string> d = ExtensionClass.Combine;
+            if (d("Hello", "World") != "HelloWorld")
+                return false;
+        }
+
+        {
+            Func<string, string> d = "Hi".Combine;
+            if (d("There") != "HiThere")
+                return false;
+        }
+
+        Console.WriteLine("OK");
+        return true;
+    }
+
+    public static bool TestMulticastDelegates()
+    {
+        Console.Write("Testing multicast delegates...");
+
+        {
+            ClassThatMutates t = new ClassThatMutates();
+
+            Action d = t.AddOne;
+            d();
+
+            if (t.State != 1)
+                return false;
+            t.State = 0;
+
+            d += t.AddTwo;
+            d();
+
+            if (t.State != 3)
+                return false;
+            t.State = 0;
+
+            d += t.AddOne;
+            d();
+
+            if (t.State != 4)
                 return false;
         }
 
@@ -200,5 +264,28 @@ public class BringUpTests
         {
             return _prefix + x.ToString();
         }
+    }
+
+    class ClassThatMutates
+    {
+        public int State;
+
+        public void AddOne()
+        {
+            State++;
+        }
+
+        public void AddTwo()
+        {
+            State += 2;
+        }
+    }
+}
+
+static class ExtensionClass
+{
+    public static string Combine(this string s1, string s2)
+    {
+        return s1 + s2;
     }
 }

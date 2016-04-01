@@ -26,6 +26,7 @@ namespace ILCompiler
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
         private MetadataVirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
+        private DelegateVirtualMethodEnumerationAlgorithm _delegateVirtualMethodEnumAlgorithm = new DelegateVirtualMethodEnumerationAlgorithm();
 
         private MetadataStringDecoder _metadataStringDecoder;
 
@@ -93,6 +94,31 @@ namespace ILCompiler
             }
         }
         private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
+
+        private class DelegateInfoHashtable : LockFreeReaderHashtable<TypeDesc, DelegateInfo>
+        {
+            protected override int GetKeyHashCode(TypeDesc key)
+            {
+                return key.GetHashCode();
+            }
+            protected override int GetValueHashCode(DelegateInfo value)
+            {
+                return value.Type.GetHashCode();
+            }
+            protected override bool CompareKeyToValue(TypeDesc key, DelegateInfo value)
+            {
+                return Object.ReferenceEquals(key, value.Type);
+            }
+            protected override bool CompareValueToValue(DelegateInfo value1, DelegateInfo value2)
+            {
+                return Object.ReferenceEquals(value1.Type, value2.Type);
+            }
+            protected override DelegateInfo CreateValueFromKey(TypeDesc key)
+            {
+                return new DelegateInfo(key);
+            }
+        }
+        private DelegateInfoHashtable _delegateInfoHashtable = new DelegateInfoHashtable();
 
         public CompilerTypeSystemContext(TargetDetails details)
             : base(details)
@@ -235,6 +261,11 @@ namespace ILCompiler
             }
         }
 
+        public DelegateInfo GetDelegateInfo(TypeDesc delegateType)
+        {
+            return _delegateInfoHashtable.GetOrCreateValue(delegateType);
+        }
+
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
             return _metadataFieldLayoutAlgorithm;
@@ -264,6 +295,9 @@ namespace ILCompiler
         public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
         {
             Debug.Assert(!type.IsArray, "Wanted to call GetClosestMetadataType?");
+
+            if (type.IsDelegate)
+                return _delegateVirtualMethodEnumAlgorithm;
 
             return _virtualMethodEnumAlgorithm;
         }

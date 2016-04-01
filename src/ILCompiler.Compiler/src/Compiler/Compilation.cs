@@ -278,17 +278,9 @@ namespace ILCompiler
             }
         }
 
-        private Dictionary<MethodDesc, DelegateInfo> _delegateInfos = new Dictionary<MethodDesc, DelegateInfo>();
-        public DelegateInfo GetDelegateCtor(MethodDesc target)
+        public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target)
         {
-            DelegateInfo info;
-
-            if (!_delegateInfos.TryGetValue(target, out info))
-            {
-                _delegateInfos.Add(target, info = new DelegateInfo(this, target));
-            }
-
-            return info;
+            return DelegateCreationInfo.Create(delegateType, target, _nodeFactory);
         }
 
         /// <summary>
