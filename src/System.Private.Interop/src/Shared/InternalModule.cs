@@ -41,6 +41,7 @@ namespace System.Runtime.InteropServices
             IRestrictedErrorInfo,
 #endif
             IMarshal,
+            IDispatch,
 #if ENABLE_WINRT
             HSTRING
 #endif
@@ -200,6 +201,16 @@ namespace System.Runtime.InteropServices
             Flags = McgInterfaceFlags.isInternal,
             MarshalIndex = (short)Indexes.IMarshal
         };
+
+        // IDispatch
+        static internal McgInterfaceData s_IDispatch = new McgInterfaceData
+        {
+            ItfType = typeof(System.Runtime.InteropServices.__com_IDispatch).TypeHandle,
+            ItfGuid = Interop.COM.IID_IDispatch,
+            CcwVtable = __vtable_IDispatch.GetVtableFuncPtr(),
+            Flags = McgInterfaceFlags.isInternal,
+            MarshalIndex = (short)Indexes.IDispatch
+        };
 #if ENABLE_WINRT
         // HSTRING, just needed for McgTypeInfo comparison
         static internal McgInterfaceData s_HSTRING = new McgInterfaceData
@@ -225,6 +236,7 @@ namespace System.Runtime.InteropServices
                 s_IRestrictedErrorInfo,
 #endif
                 s_IMarshal,
+                s_IDispatch,
 
 #if ENABLE_WINRT
                 s_HSTRING
