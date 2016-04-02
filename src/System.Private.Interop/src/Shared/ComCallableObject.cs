@@ -1361,6 +1361,10 @@ namespace System.Runtime.InteropServices
                         // Every CCW implements IMarshal
                         return true;
 
+                    case InternalModule.Indexes.IDispatch:
+                        // IDispatch is not supported for UWP apps
+                        return false;
+
                     default:
                         Debug.Assert(false, "Unrecgonized InternalModule.Index");
                         break;
