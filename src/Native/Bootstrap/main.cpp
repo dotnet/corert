@@ -52,7 +52,7 @@ extern "C" void * RhTypeCast_IsInstanceOf(void * pObject, MethodTable * pMT);
 extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
 extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
 extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
-extern "C" __declspec(noreturn) void RhpThrowEx(void * pEx);
+extern "C" __NORETURN void RhpThrowEx(void * pEx);
 
 #ifdef CPPCODEGEN
 
