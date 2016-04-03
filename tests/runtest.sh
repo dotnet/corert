@@ -67,7 +67,7 @@ run_test_dir()
 }
 
 CoreRT_TestRoot=$(cd "$(dirname "$0")"; pwd -P)
-CoreRT_CliBinDir=${CoreRT_TestRoot}/../bin/tools/cli/bin
+CoreRT_CliBinDir=${CoreRT_TestRoot}/../bin/tools/cli
 CoreRT_BuildArch=x64
 CoreRT_BuildType=Debug
 CoreRT_TestRun=true
@@ -142,7 +142,7 @@ while [ "$1" != "" ]; do
             ;;
         -dotnetclipath) 
             shift
-            CoreRT_CliBinDir=$1/bin
+            CoreRT_CliBinDir=$1
             ;;
         *)
             ;;
