@@ -1244,7 +1244,7 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
     {
         // Get an address of the "main" function, which causes the dladdr to return
         // path of the main executable
-        moduleBase = &main;
+        moduleBase = (HANDLE)&main;
     }
 
     Dl_info dl;
