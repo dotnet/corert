@@ -36,6 +36,12 @@ using namespace std;
 class MethodTable;
 class Object;
 
+#ifdef _MSC_VER
+#define __NORETURN __declspec(noreturn)
+#else
+#define __NORETURN __attribute((noreturn))
+#endif
+
 int __initialize_runtime();
 void __shutdown_runtime();
 
@@ -44,7 +50,7 @@ extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT);
 extern "C" Object * RhNewMDArray(MethodTable * pMT, int32_t rank, ...);
 extern "C" Object * __castclass(void * obj, MethodTable * pMT);
 extern "C" Object * __isinst(void * obj, MethodTable * pMT);
-extern "C" void __declspec(noreturn) __throw_exception(void * pEx);
+extern "C" __NORETURN void __throw_exception(void * pEx);
 
 Object * __load_string_literal(const char * string);
 
