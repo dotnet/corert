@@ -75,6 +75,8 @@
             <ILCompilerSdkFilesManaged Include="System.Private.StackTraceGenerator" />
             <ILCompilerSdkFilesManaged Include="System.Private.Threading" />
 
+            <ILCompilerSdkContentFiles Include="scripts/linkerscript" />
+
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
@@ -88,7 +90,10 @@
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkCppCodegenFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
-            
+            <ILCompilerSdkBinPlace Include="@(ILCompilerSdkContentFiles)">
+                <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/sdk/%(Filename)%(Extension)" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+
             <!-- ILCompiler nuspec file -->
             <NuSpecFile Include="$(ToolchainPackageName)">
                 <Stage>1</Stage>
@@ -98,7 +103,7 @@
                 <Files>@(ILCompilerBinPlace -> '%(Text)', '')</Files>
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
-        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.9-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.11-prerelease-00001" />
         <dependency id="Microsoft.DotNet.RyuJit" version="1.0.7-prerelease-00001" />
         <dependency id="NETStandard.Library" version="1.0.0-rc2-23910" />
         <dependency id="System.Collections.Immutable" version="1.2.0-rc2-23910" />
