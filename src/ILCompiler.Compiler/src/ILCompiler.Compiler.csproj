@@ -56,6 +56,7 @@
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
@@ -63,7 +64,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
@@ -92,7 +93,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64PInvokeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />

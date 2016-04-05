@@ -98,9 +98,9 @@ namespace ILCompiler
                 // We use InitializeClosedStaticThunk for both because RyuJIT generates same code for both,
                 // but passes null as the first parameter for the open one.
                 return new DelegateCreationInfo(
-                    (IMethodNode)factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null)),
+                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null)),
                     factory.MethodEntrypoint(targetMethod),
-                    (IMethodNode)factory.MethodEntrypoint(invokeThunk));
+                    factory.MethodEntrypoint(invokeThunk));
             }
             else
             {
@@ -110,7 +110,7 @@ namespace ILCompiler
                 bool useUnboxingStub = targetMethod.OwningType.IsValueType;
 
                 return new DelegateCreationInfo(
-                    (IMethodNode)factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedInstance", null)),
+                    factory.MethodEntrypoint(systemDelegate.GetKnownMethod("InitializeClosedInstance", null)),
                     factory.MethodEntrypoint(targetMethod, useUnboxingStub));
             }
         }
