@@ -162,9 +162,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new UnboxingStubNode(method);
             });
 
-            _jumpStubs = new NodeCache<ISymbolNode, JumpStubNode>((ISymbolNode node) =>
+            _jumpStubs = new NodeCache<MethodDesc, PInvokeMethodNode>((MethodDesc method) =>
             {
-                return new JumpStubNode(node);
+                return new PInvokeMethodNode(method);
             });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
@@ -418,7 +418,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodDesc, ISymbolNode> _methodCode;
-        private NodeCache<ISymbolNode, JumpStubNode> _jumpStubs;
+        private NodeCache<MethodDesc, PInvokeMethodNode> _jumpStubs;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
 
         public ISymbolNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
@@ -430,7 +430,7 @@ namespace ILCompiler.DependencyAnalysis
                 var kind = method.DetectSpecialMethodKind();
                 if (kind == SpecialMethodKind.PInvoke)
                 {
-                    return _jumpStubs.GetOrAdd(ExternSymbol(method.GetPInvokeMethodMetadata().Name));
+                    return _jumpStubs.GetOrAdd(method);
                 }
                 else if (kind == SpecialMethodKind.RuntimeImport)
                 {
