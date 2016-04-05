@@ -429,6 +429,12 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc declMethod = virtualSlots[i];
                 MethodDesc implMethod = implType.GetClosestMetadataType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
+                if (declMethod.HasInstantiation)
+                {
+                    // Generic virtual methods will "compile", but will fail to link. Check for it here.
+                    throw new NotImplementedException("VTable for " + _type + " has generic virtual methods.");
+                }
+
                 if (!implMethod.IsAbstract)
                     objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
                 else
