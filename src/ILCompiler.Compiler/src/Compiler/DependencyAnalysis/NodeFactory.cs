@@ -138,33 +138,43 @@ namespace ILCompiler.DependencyAnalysis
                 return new ExternSymbolNode(name);
             });
 
-            _externMethodSymbols = new NodeCache<MethodDesc, ExternMethodSymbolNode>((MethodDesc method) =>
-            {
-                return new ExternMethodSymbolNode(method);
-            });
-
             _internalSymbols = new NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode>(
                 (Tuple<ObjectNode, int, string> key) =>
                 {
                     return new ObjectAndOffsetSymbolNode(key.Item1, key.Item2, key.Item3);
                 });
 
-            _methodCode = new NodeCache<MethodDesc, ISymbolNode>((MethodDesc method) =>
+            _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
             {
-                if (_cppCodeGen)
-                   return new CppMethodCodeNode(method);
+                if (!_cppCodeGen)
+                {
+                    SpecialMethodKind kind = method.DetectSpecialMethodKind();
+                    if (kind == SpecialMethodKind.PInvoke)
+                    {
+                        return new PInvokeMethodNode(method);
+                    }
+                    else if (kind == SpecialMethodKind.RuntimeImport)
+                    {
+                        return new RuntimeImportMethodNode(method);
+                    }
+                }
+
+                if (_compilationModuleGroup.ContainsMethod(method))
+                {
+                    if (_cppCodeGen)
+                        return new CppMethodCodeNode(method);
+                    else
+                        return new MethodCodeNode(method);
+                }
                 else
-                    return new MethodCodeNode(method);
+                {
+                    return new ExternMethodSymbolNode(method);
+                }
             });
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
             {
                 return new UnboxingStubNode(method);
-            });
-
-            _jumpStubs = new NodeCache<MethodDesc, PInvokeMethodNode>((MethodDesc method) =>
-            {
-                return new PInvokeMethodNode(method);
             });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
@@ -215,12 +225,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Debug.Assert(method.IsStaticConstructor);
                 Debug.Assert(TypeInitializationManager.HasEagerStaticConstructor((MetadataType)method.OwningType));
-
-                ISymbolNode entrypoint = MethodEntrypoint(method);
-                
-                Debug.Assert(entrypoint is IMethodNode);
-
-                return EagerCctorTable.NewNode((IMethodNode)entrypoint);
+                return EagerCctorTable.NewNode(MethodEntrypoint(method));
             });
             
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
@@ -401,8 +406,6 @@ namespace ILCompiler.DependencyAnalysis
             return _externSymbols.GetOrAdd(name);
         }
 
-        private NodeCache<MethodDesc, ExternMethodSymbolNode> _externMethodSymbols;
-        
         private NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode> _internalSymbols;
 
         public ISymbolNode ObjectAndOffset(ObjectNode obj, int offset, string name)
@@ -417,40 +420,17 @@ namespace ILCompiler.DependencyAnalysis
             return _vTableNodes.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, ISymbolNode> _methodCode;
-        private NodeCache<MethodDesc, PInvokeMethodNode> _jumpStubs;
+        private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
 
-        public ISymbolNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
+        public IMethodNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            // TODO: NICE: make this method always return IMethodNode. We will likely be able to get rid of the
-            //             cppCodeGen special casing here that way, and other places won't need to cast this from ISymbolNode.
-            if (!_cppCodeGen)
+            if (unboxingStub)
             {
-                var kind = method.DetectSpecialMethodKind();
-                if (kind == SpecialMethodKind.PInvoke)
-                {
-                    return _jumpStubs.GetOrAdd(method);
-                }
-                else if (kind == SpecialMethodKind.RuntimeImport)
-                {
-                    return ExternSymbol(((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute"));
-                }
+                return _unboxingStubs.GetOrAdd(method);
+            }
 
-                if (unboxingStub)
-                {
-                    return _unboxingStubs.GetOrAdd(method);
-                }
-            }
-            
-            if (_compilationModuleGroup.ContainsMethod(method))
-            {
-                return _methodCode.GetOrAdd(method);
-            }
-            else
-            {
-                return _externMethodSymbols.GetOrAdd(method);
-            }
+            return _methodEntrypoints.GetOrAdd(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
