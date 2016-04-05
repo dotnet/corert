@@ -91,7 +91,7 @@ install_dotnet_cli()
     if [ ! -d "${__cli_dir}" ]; then
         mkdir -p "${__cli_dir}"
     fi
-    if [ ! -f "${__cli_dir}/bin/dotnet" ]; then
+    if [ ! -f "${__cli_dir}/dotnet" ]; then
         local __build_os_lowercase=$(echo "${__BuildOS}" | tr '[:upper:]' '[:lower:]')
 
         # For Linux, we currently only support Ubuntu.
@@ -100,9 +100,9 @@ install_dotnet_cli()
         fi
         
         local __build_arch_lowercase=$(echo "${__BuildArch}" | tr '[:upper:]' '[:lower:]')
-        local __cli_tarball=dotnet-${__build_os_lowercase}-${__build_arch_lowercase}.1.0.0.001672.tar.gz
+        local __cli_tarball=dotnet-dev-${__build_os_lowercase}-${__build_arch_lowercase}.1.0.0-beta-002209.tar.gz
         local __cli_tarball_path=${__tools_dir}/${__cli_tarball}
-        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/1.0.0.001672/${__cli_tarball}"
+        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/1.0.0-beta-002209/${__cli_tarball}"
         tar -xzf ${__cli_tarball_path} -C ${__cli_dir}
         export DOTNET_HOME=${__cli_dir}
         #
@@ -124,13 +124,13 @@ install_dotnet_cli()
         __dotnetclipath=${__cli_dir}
     fi
 
-    if [ ! -f "${__cli_dir}/bin/dotnet" ]; then
+    if [ ! -f "${__cli_dir}/dotnet" ]; then
         echo "CLI could not be installed or not present."
         exit 1
     fi
 
-    echo "cat ${__cli_dir}/.version"
-    cat "${__cli_dir}/.version"
+    echo "Using CLI tools version:"
+    ls "${__cli_dir}/sdk"
 }
 
 check_native_prereqs()

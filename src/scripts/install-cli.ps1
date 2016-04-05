@@ -14,12 +14,23 @@ $ProgressPreference="SilentlyContinue"
 
 $Feed="https://dotnetcli.blob.core.windows.net/dotnet"
 $Channel="beta"
-$DotNetFileName="dotnet-win-" + $TargetPlatform + ".1.0.0.001672.zip"
-$DotNetUrl="$Feed/$Channel/Binaries/1.0.0.001672"
+$DotNetFileName="dotnet-dev-win-" + $TargetPlatform + ".1.0.0-beta-002209.zip"
+$DotNetUrl="$Feed/$Channel/Binaries/1.0.0-beta-002209"
 
 function say($str)
 {
     Write-Host "dotnet_install: $str"
+}
+
+# Should be kept in sync with CLI's implementation (cli/scripts/obtain/install.ps1)
+function Get-Version-Info-From-Version-Text([string]$VersionText)
+{
+    $Data = @($VersionText.Split([char[]]@(), [StringSplitOptions]::RemoveEmptyEntries));
+
+    $VersionInfo = @{}
+    $VersionInfo.CommitHash = $Data[0].Trim()
+    $VersionInfo.Version = $Data[1].Trim()
+    return $VersionInfo
 }
 
 if (!$InstallDir) {
@@ -29,19 +40,33 @@ if (!$InstallDir) {
 say "Preparing to install .NET Tools to $InstallDir"
 
 # Check if we need to bother
-$LocalFile = "$InstallDir\cli\.version"
-if (Test-Path $LocalFile)
+$CliSdkFolder = "$InstallDir\cli\sdk"
+if (Test-Path $CliSdkFolder)
+{
+  $SdkFolders = Get-ChildItem -Directory  $CliSdkFolder
+  foreach ($folder in $SdkFolders)
+  {
+    $LocalFile = Join-Path $folder.FullName ".version"
+    if (Test-Path $LocalFile)
+    {
+      break
+    }
+  }
+}
+
+if ($LocalFile -And (Test-Path $LocalFile))
 {
     $LocalData = @(cat $LocalFile)
     $LocalHash = $LocalData[0].Trim()
     $LocalVersion = $LocalData[1].Trim()
     if ($LocalVersion -and $LocalHash)
     {
-        $RemoteResponse = Invoke-WebRequest -UseBasicParsing "$Feed/$Channel/dnvm/latest.win.version"
-        $RemoteData = @([Text.Encoding]::UTF8.GetString($RemoteResponse.Content).Split());
-        $RemoteHash = $RemoteData[0].Trim()
-        $RemoteVersion = $RemoteData[1].Trim()
-
+        say "$Feed/$Channel/dnvm/latest.win.$TargetPlatform.version"
+        $RemoteResponse = Invoke-WebRequest -UseBasicParsing "$Feed/$Channel/dnvm/latest.win.$TargetPlatform.version"
+        $RemoteVersionText = [Text.Encoding]::UTF8.GetString($RemoteResponse.Content)
+        $RemoteVersionInfo = Get-Version-Info-From-Version-Text $RemoteVersionText
+        $RemoteHash = $RemoteVersionInfo.CommitHash
+        $RemoteVersion = $RemoteVersionInfo.Version
         if (!$RemoteVersion -or !$RemoteHash) {
             throw "Invalid response from feed"
         }
@@ -93,5 +118,5 @@ if (Test-Path "$InstallDir\$DotNetFileName") {
 say "The .NET Tools have been installed to $InstallDir\cli!"
 
 # New layout
-say "Add '$InstallDir\cli\bin' to your PATH to use dotnet"
+say "Add '$InstallDir\cli' to your PATH to use dotnet"
 
