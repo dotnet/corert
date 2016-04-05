@@ -2199,6 +2199,9 @@ namespace Internal.IL
                     Append("*)");
                 }
 
+                Append("(");
+                Append(_writer.GetCppSignatureTypeName(type));
+                Append("*)");
                 Append("((void **)");
                 Append(obj.Value.Name);
                 Append("+1)");
