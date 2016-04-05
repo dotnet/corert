@@ -219,7 +219,7 @@ namespace Internal.IL.Stubs
             ILLocalVariable delegateArrayLocal = emitter.NewLocal(invocationListArrayType);
             ILLocalVariable invocationCountLocal = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
             ILLocalVariable iteratorLocal = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-            ILLocalVariable delegateToCallLocal = emitter.NewLocal(OwningType);
+            ILLocalVariable delegateToCallLocal = emitter.NewLocal(SystemDelegateType);
 
             ILLocalVariable returnValueLocal = 0;
             if (Signature.ReturnType is SignatureVariable || !Signature.ReturnType.IsVoid)
@@ -270,7 +270,7 @@ namespace Internal.IL.Stubs
             // stloc delegateToCallLocal
             codeStream.EmitLdLoc(delegateArrayLocal);
             codeStream.EmitLdLoc(iteratorLocal);
-            codeStream.Emit(ILOpcode.ldelem, emitter.NewToken(OwningType));
+            codeStream.Emit(ILOpcode.ldelem, emitter.NewToken(SystemDelegateType));
             codeStream.EmitStLoc(delegateToCallLocal);
 
             // Call the delegate
