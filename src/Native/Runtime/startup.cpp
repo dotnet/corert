@@ -223,6 +223,8 @@ void DllThreadAttach(HANDLE /*hPalInstance*/)
     // threads themselves will do this on their first reverse pinvoke.
 }
 
+volatile bool g_processShutdownHasStarted = false;
+
 void DllThreadDetach()
 {
     // BEWARE: loader lock is held here!
@@ -231,18 +233,30 @@ void DllThreadDetach()
     Thread* pCurrentThread = ThreadStore::GetCurrentThreadIfAvailable();
     if (pCurrentThread != NULL && !pCurrentThread->IsDetached())
     {
-        ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
-        RhFailFast();
+        // Once shutdown starts, RuntimeThreadShutdown callbacks are ignored, implying that
+        // it is no longer guaranteed that exiting threads will be detached.
+        if (!g_processShutdownHasStarted)
+        {
+            ASSERT_UNCONDITIONALLY("Detaching thread whose home fiber has not been detached");
+            RhFailFast();
+        }
     }
 }
 
 void __stdcall RuntimeThreadShutdown(void* thread)
 {
-    // Note: loader lock is *not* held here!
+    // Note: loader lock is normally *not* held here!
+    // The one exception is that the loader lock may be held during the thread shutdown callback
+    // that is made for the single thread that runs the final stages of orderly process
+    // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
+    // process is being torn down via an ExitProcess call).
     UNREFERENCED_PARAMETER(thread);
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
-    ThreadStore::DetachCurrentThread();
+    if (!g_processShutdownHasStarted)
+    {
+        ThreadStore::DetachCurrentThread();
+    }
 }
 
 COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterModule, (ModuleHeader *pModuleHeader))
@@ -318,6 +332,8 @@ COOP_PINVOKE_HELPER(void, RhpShutdownHelper, (UInt32 /*uExitCode*/))
 #ifdef FEATURE_PROFILING
     GetRuntimeInstance()->WriteProfileInfo();
 #endif // FEATURE_PROFILING
+    // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
+    g_processShutdownHasStarted = true;
 }
 
 #endif // !DACCESS_COMPILE
