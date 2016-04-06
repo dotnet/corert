@@ -10,8 +10,8 @@
          however since the project names are unique it will essentially force each to run in its own batch -->
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity);DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
+             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultBuildAllTarget)"
@@ -34,8 +34,8 @@
          however since the project names are unique it will essentially force each to run in its own batch -->
     <MSBuild Targets="$(DefaultCleanAllTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity);CleanAllProjects=true"
+             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
+             Properties="CleanAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultCleanAllTarget)"
@@ -60,8 +60,8 @@
       however since the project names are unique it will essentially force each to run in its own batch -->
     <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"
              Projects="@(Project)"
-             Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity);RestoreAllPackages=true"
+             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
+             Properties="RestoreAllPackages=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"

@@ -1,34 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <UsingTask TaskName="GetBuildUid" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.v12.0">
-        <ParameterGroup>
-            <BuildUid ParameterType="System.String" Output="true" />
-        </ParameterGroup>
-        <Task>
-            <Code>
-                BuildUid = System.Guid.NewGuid().ToString().Replace("-", "").Substring(0, 8);
-            </Code>
-        </Task>
-    </UsingTask>
     <Target Name="BuildNuGetPackages" AfterTargets="Build">
-        <!-- This is to fool the machine local DNX cache so each build is treated as unique. %USERPROFILE%\.dnx -->
-        <GetBuildUid>
-            <Output PropertyName="BuildUid" TaskParameter="BuildUid" />
-        </GetBuildUid>
-
         <!-- Property needed for creating nupkgs -->
         <PropertyGroup>
             <ToolchainMilestone Condition="'$(ToolchainMilestone)'==''">prerelease</ToolchainMilestone>
             <ToolchainVersion>1.0.6-$(ToolchainMilestone)-00003</ToolchainVersion>
             <RuntimeSdkVersion>$(ToolchainVersion)</RuntimeSdkVersion>
             <NuPkgRid>$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform)</NuPkgRid>
-            
+
             <ToolchainPackageName>Microsoft.DotNet.ILCompiler</ToolchainPackageName>
-            
+
             <RuntimeSdkPackageNameSuffix Condition="'$(Configuration)'=='Debug'">.Debug</RuntimeSdkPackageNameSuffix>
             <RuntimeSdkPackageName>Microsoft.DotNet.ILCompiler.SDK$(RuntimeSdkPackageNameSuffix)</RuntimeSdkPackageName>
 
             <!-- Uniqify package name per machine-local DNX cache for development purposes -->
+            <BuildUid>$([System.Guid]::NewGuid().ToString().Replace('-', '').Substring(0, 8))</BuildUid>
+
             <ToolchainPackageName Condition="'$(ToolchainMilestone)'=='testing'">$(ToolchainPackageName).$(BuildUid)</ToolchainPackageName>
             <RuntimeSdkPackageName Condition="'$(ToolchainMilestone)'=='testing'">$(RuntimeSdkPackageName).$(BuildUid)</RuntimeSdkPackageName>
 
@@ -221,7 +208,12 @@
             <Stage1NuSpecs Include="%(NuSpecCollection.RedirFile)" Condition="'%(NuSpecCollection.Stage)'=='1'" />
         </ItemGroup>
 
-        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage1NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -BasePath &quot;$(RepoPath)&quot; -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+        <PropertyGroup>
+            <NuGetToolRunner Condition="'$(OsEnvironment)'!='Unix'"></NuGetToolRunner>
+            <NuGetToolRunner Condition="'$(OsEnvironment)'=='Unix'">mono</NuGetToolRunner>
+        </PropertyGroup>
+
+        <Exec Command="$(NuGetToolRunner) &quot;$(NuGetToolPath)&quot; pack &quot;%(Stage1NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -BasePath &quot;$(RepoPath)&quot; -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
 
         <PropertyGroup>
             <Stage1ProjectDir>$(ProductPackageDir)stage1/</Stage1ProjectDir>

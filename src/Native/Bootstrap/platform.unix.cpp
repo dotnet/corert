@@ -70,4 +70,24 @@ extern "C"
     {
         throw "RhCompatibleReentrantWaitAny";
     }
+
+    void EnumDynamicTimeZoneInformation()
+    {
+        throw "EnumDynamicTimeZoneInformation";
+    }
+
+    void GetDynamicTimeZoneInformation()
+    {
+        throw "GetDynamicTimeZoneInformation";
+    }
+
+    void GetDynamicTimeZoneInformationEffectiveYears()
+    {
+        throw "GetDynamicTimeZoneInformationEffectiveYears";
+    }
+
+    void GetTimeZoneInformationForYear()
+    {
+        throw "GetTimeZoneInformationForYear";
+    }
 }
