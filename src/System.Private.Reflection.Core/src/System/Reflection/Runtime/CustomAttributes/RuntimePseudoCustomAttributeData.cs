@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using global::System;
-using global::System.Linq;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
@@ -11,6 +10,7 @@ using global::System.Collections.ObjectModel;
 using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
 
+using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.NonPortable;
 using global::Internal.Metadata.NativeFormat;
