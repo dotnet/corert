@@ -4,13 +4,14 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
 using System.Reflection;
+
+using Internal.LowLevelLinq;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {

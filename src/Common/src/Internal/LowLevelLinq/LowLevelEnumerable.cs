@@ -6,9 +6,9 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 
-namespace System.Linq
+namespace Internal.LowLevelLinq
 {
-    internal static class LowLevelEnumerable
+    internal static partial class LowLevelEnumerable
     {
         public static bool Any<T>(this IEnumerable<T> values)
         {
@@ -40,16 +40,49 @@ namespace System.Linq
             }
         }
 
-        public static T[] ToArray<T>(this IEnumerable<T> values)
+        public static IEnumerable<U> Select<T, U>(this T[] values, Func<T, U> func)
         {
             Debug.Assert(values != null);
 
-            LowLevelList<T> list = new LowLevelList<T>();
             foreach (T value in values)
             {
-                list.Add(value);
+                yield return func(value);
             }
-            return list.ToArray();
+        }
+
+        public static IEnumerable<T> Where<T>(this IEnumerable<T> source, Func<T, bool> filter)
+        {
+            Debug.Assert(source != null);
+            Debug.Assert(filter != null);
+
+            foreach (T value in source)
+            {
+                if (filter(value))
+                    yield return value;
+            }
+        }
+
+        public static IEnumerable<T> AsEnumerable<T>(this IEnumerable<T> source)
+        {
+            Debug.Assert(source != null);
+            return source;
+        }
+
+        public static int Count<T>(this IEnumerable<T> enumeration)
+        {
+            Debug.Assert(enumeration != null);
+
+            var collection = enumeration as ICollection<T>;
+            if (collection != null)
+                return collection.Count;
+
+            int i = 0;
+            foreach (T element in enumeration)
+            {
+                i++;
+            }
+
+            return i;
         }
     }
 }

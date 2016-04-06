@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <NativeFormatCommonPath>$(MSBuildThisFileDirectory)..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
-    <MetadataCommonPath>$(MSBuildThisFileDirectory)..\..\Common\src\Internal\Metadata\NativeFormat</MetadataCommonPath>
+    <CommonSourcePath>$(MSBuildThisFileDirectory)..\..\Common\src\</CommonSourcePath>
+    <NativeFormatCommonPath>$(CommonSourcePath)Internal\NativeFormat</NativeFormatCommonPath>
+    <MetadataCommonPath>$(CommonSourcePath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
     <MetadataWriterPath>$(MSBuildThisFileDirectory)Internal\Metadata\NativeFormat\Writer</MetadataWriterPath>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.cs" />
+    <Compile Include="$(CommonSourcePath)Internal\LowLevelLinq\LowLevelEnumerable.ToList.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
