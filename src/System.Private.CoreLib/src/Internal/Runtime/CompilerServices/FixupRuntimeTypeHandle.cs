@@ -8,13 +8,13 @@ namespace Internal.Runtime.CompilerServices
 {
     public unsafe struct FixupRuntimeTypeHandle
     {
-#if !CORERT
+#if !CLR_RUNTIMETYPEHANDLE
         private IntPtr _value;
 #endif
 
         public FixupRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
         {
-#if CORERT
+#if CLR_RUNTIMETYPEHANDLE
             throw new NotImplementedException(); // CORERT-TODO: RuntimeTypeHandle
 #else
             _value = *(IntPtr*)&runtimeTypeHandle;
@@ -25,7 +25,7 @@ namespace Internal.Runtime.CompilerServices
         {
             get
             {
-#if CORERT
+#if CLR_RUNTIMETYPEHANDLE
                 throw new NotImplementedException(); // CORERT-TODO: RuntimeTypeHandle
 #else
                 // Managed debugger uses this logic to figure out the interface's type
