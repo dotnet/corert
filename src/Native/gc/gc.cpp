@@ -35590,7 +35590,6 @@ size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 
     if ((gen0size == 0) || !GCHeap::IsValidGen0MaxSize(gen0size))
     {
-#if !defined(FEATURE_REDHAWK)
 #ifdef SERVER_GC
         // performance data seems to indicate halving the size results
         // in optimal perf.  Ask for adjusted gen0 size.
@@ -35622,9 +35621,6 @@ size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 #else //SERVER_GC
         gen0size = max((4*GCToOSInterface::GetLargestOnDieCacheSize(TRUE)/5),(256*1024));
 #endif //SERVER_GC
-#else //!FEATURE_REDHAWK
-        gen0size = (256*1024);
-#endif //!FEATURE_REDHAWK
     }
 
     // Generation 0 must never be more than 1/2 the segment size.
