@@ -21,6 +21,8 @@ namespace Internal.TypeSystem
 
         public override bool Equals(Object o)
         {
+            // Its only valid to compare two FieldDescs in the same context
+            Debug.Assert(Object.ReferenceEquals(o, null) || !(o is FieldDesc) || Object.ReferenceEquals(((FieldDesc)o).Context, this.Context));
             return Object.ReferenceEquals(this, o);
         }
 
