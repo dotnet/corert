@@ -420,6 +420,7 @@ namespace System
             }
         }
 
+        [DebuggerGuidedStepThroughAttribute]
         internal static object CallDynamicInvokeMethod(object thisPtr, IntPtr methodToCall, object thisPtrDynamicInvokeMethod, IntPtr dynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperGenericDictionary, string defaultValueString, object[] parameters, bool invokeMethodHelperIsThisCall = true, bool methodToCallIsThisCall = true)
         {
             bool fDontWrapInTargetInvocationException = false;
@@ -453,18 +454,28 @@ namespace System
 
                 try
                 {
+                    object result = null;
                     if (invokeMethodHelperIsThisCall)
                     {
                         Debug.Assert(methodToCallIsThisCall == true);
-                        return CallIHelperThisCall(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, ref argSetupState);
+                        result = CallIHelperThisCall(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, ref argSetupState);
+                        System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                     }
                     else
                     {
                         if (dynamicInvokeHelperGenericDictionary != IntPtr.Zero)
-                            return CallIHelperStaticCallWithInstantiation(thisPtr, methodToCall, dynamicInvokeHelperMethod, ref argSetupState, methodToCallIsThisCall, dynamicInvokeHelperGenericDictionary);
+                        {
+                            result = CallIHelperStaticCallWithInstantiation(thisPtr, methodToCall, dynamicInvokeHelperMethod, ref argSetupState, methodToCallIsThisCall, dynamicInvokeHelperGenericDictionary);
+                            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                        }
                         else
-                            return CallIHelperStaticCall(thisPtr, methodToCall, dynamicInvokeHelperMethod, ref argSetupState, methodToCallIsThisCall);
+                        {
+                            result = CallIHelperStaticCall(thisPtr, methodToCall, dynamicInvokeHelperMethod, ref argSetupState, methodToCallIsThisCall);
+                            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+                        }
                     }
+                    
+                    return result;
                 }
                 finally
                 {
