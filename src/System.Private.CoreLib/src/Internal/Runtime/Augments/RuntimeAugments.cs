@@ -300,9 +300,12 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        [DebuggerGuidedStepThroughAttribute]
         public static object CallDynamicInvokeMethod(object thisPtr, IntPtr methodToCall, object thisPtrDynamicInvokeMethod, IntPtr dynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperGenericDictionary, string defaultValueString, object[] parameters, bool invokeMethodHelperIsThisCall, bool methodToCallIsThisCall)
         {
-            return InvokeUtils.CallDynamicInvokeMethod(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, defaultValueString, parameters, invokeMethodHelperIsThisCall, methodToCallIsThisCall);
+            object result = InvokeUtils.CallDynamicInvokeMethod(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, defaultValueString, parameters, invokeMethodHelperIsThisCall, methodToCallIsThisCall);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public unsafe static void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
@@ -844,7 +847,7 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        [System.Diagnostics.DebuggerStepThrough]
+        [DebuggerStepThrough]
         /* TEMP workaround due to bug 149078 */
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void CallDescrWorker(IntPtr callDescr)

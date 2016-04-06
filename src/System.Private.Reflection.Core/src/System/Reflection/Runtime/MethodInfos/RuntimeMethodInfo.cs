@@ -133,6 +133,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return result;
         }
 
+        [DebuggerGuidedStepThroughAttribute]
         public sealed override Object Invoke(Object obj, Object[] parameters)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -143,7 +144,9 @@ namespace System.Reflection.Runtime.MethodInfos
             if (parameters == null)
                 parameters = Array.Empty<Object>();
             MethodInvoker methodInvoker = this.MethodInvoker;
-            return methodInvoker.Invoke(obj, parameters);
+            object result = methodInvoker.Invoke(obj, parameters);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public abstract override bool IsGenericMethod
