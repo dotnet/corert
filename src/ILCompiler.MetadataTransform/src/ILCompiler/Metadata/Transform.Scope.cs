@@ -103,17 +103,16 @@ namespace ILCompiler.Metadata
 
                 Debug.Assert((int)AssemblyFlags.PublicKey == (int)AssemblyNameFlags.PublicKey);
                 Debug.Assert((int)AssemblyFlags.Retargetable == (int)AssemblyNameFlags.Retargetable);
-                scopeReference.Flags = (AssemblyFlags)assemblyName.Flags;
+
+                // References use a public key token instead of full public key.
+                scopeReference.Flags = (AssemblyFlags)(assemblyName.Flags & ~AssemblyNameFlags.PublicKey);
 
                 if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
                 {
                     scopeReference.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
                 }
 
-                if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
-                    scopeReference.PublicKeyOrToken = assemblyName.GetPublicKey();
-                else
-                    scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
+                scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
             }
             else
             {
