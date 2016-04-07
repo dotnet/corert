@@ -217,6 +217,7 @@ FUNCTIONS
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     void getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
+    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_CONST_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context, BOOL speculative)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
@@ -262,9 +263,6 @@ FUNCTIONS
     unsigned getMethodHash(CORINFO_METHOD_HANDLE       ftn);
     size_t findNameOfToken(CORINFO_MODULE_HANDLE       moduleHandle,mdToken                     token, char * szFQName,size_t FQNameCapacity);
     bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_HANDLE  structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
-    int getIntConfigValue(const wchar_t *name, int defaultValue);
-    wchar_t *getStringConfigValue(const wchar_t *name);
-    void freeStringConfigValue(wchar_t *value);
     DWORD getThreadTLSIndex(void                  **ppIndirection);
     const void * getInlinedCallFrameVptr(void **ppIndirection);
     LONG * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
@@ -302,7 +300,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     void* getTailCallCopyArgsThunk (CORINFO_SIG_INFO       *pSig, CorInfoHelperTailCallSpecialHandling flags);
-    IEEMemoryManager* getMemoryManager();
+    [ManualNativeWrapper] IEEMemoryManager* getMemoryManager();
     void allocMem(        ULONG               hotCodeSize,    ULONG               coldCodeSize,     ULONG               roDataSize,             ULONG               xcptnsCount,            CorJitAllocMemFlag  flag,        void**             hotCodeBlock,           void**             coldCodeBlock,          void**             roDataBlock             );
     void reserveUnwindInfo(BOOL isFunclet, BOOL isColdCode, ULONG unwindSize)
     void allocUnwindInfo(BYTE* pHotCode, BYTE* pColdCode, ULONG startOffset, ULONG endOffset, ULONG unwindSize, BYTE* pUnwindBlock, CorJitFuncKind funcKind)

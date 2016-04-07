@@ -20,9 +20,9 @@ namespace Internal.TypeSystem
                 if (_offset == FieldAndOffset.InvalidOffset)
                 {
                     if (IsStatic)
-                        OwningType.ComputeStaticFieldLayout();
+                        OwningType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
                     else
-                        OwningType.ComputeInstanceFieldLayout();
+                        OwningType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
 
                     if (_offset == FieldAndOffset.InvalidOffset)
                     {
@@ -38,7 +38,7 @@ namespace Internal.TypeSystem
         /// For static fields, represents whether or not the field is held in the GC or non GC statics region
         /// Does not apply to thread static fields.
         /// </summary>
-        public bool HasGCStaticBase
+        public virtual bool HasGCStaticBase
         {
             get
             {

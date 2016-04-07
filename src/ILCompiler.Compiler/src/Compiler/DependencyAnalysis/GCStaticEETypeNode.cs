@@ -4,10 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -46,14 +44,14 @@ namespace ILCompiler.DependencyAnalysis
             return ((ISymbolNode)this).MangledName;
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
                 if (_target.IsWindows)
-                    return "rdata";
+                    return ObjectNodeSection.ReadOnlyDataSection;
                 else
-                    return "data";
+                    return ObjectNodeSection.DataSection;
             }
         }
 
@@ -74,11 +72,11 @@ namespace ILCompiler.DependencyAnalysis
                 int totalSize = 0;
                 foreach (int run in _runLengths)
                 {
-                    nameBuilder.Append(run.ToString(CultureInfo.InvariantCulture));
+                    nameBuilder.Append(run.ToStringInvariant());
                     nameBuilder.Append("_");
                     totalSize += run;
                 }
-                nameBuilder.Append(totalSize.ToString(CultureInfo.InvariantCulture));
+                nameBuilder.Append(totalSize.ToStringInvariant());
                 nameBuilder.Append("_");
 
                 return nameBuilder.ToString();

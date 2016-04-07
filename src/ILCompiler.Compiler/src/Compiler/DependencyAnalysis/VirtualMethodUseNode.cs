@@ -34,22 +34,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory factory)
         {
-            // For each virtual method use in the graph, ensure that our side
-            // table of live virtual method slots is kept up to date.
-
-            MethodDesc virtualMethod = (MethodDesc)_decl;
-            TypeDesc typeOfVirtual = virtualMethod.OwningType;
-
-            List<MethodDesc> virtualSlots;
-            if (!factory.VirtualSlots.TryGetValue(typeOfVirtual, out virtualSlots))
-            {
-                virtualSlots = new List<MethodDesc>();
-                factory.VirtualSlots.Add(typeOfVirtual, virtualSlots);
-            }
-            if (!virtualSlots.Contains(virtualMethod))
-            {
-                virtualSlots.Add(virtualMethod);
-            }
+            // If the VTable slice is getting built on demand, the fact that the virtual method is used means
+            // that the slot is used.
+            var lazyVTableSlice = factory.VTable(_decl.OwningType) as LazilyBuiltVTableSliceNode;
+            if (lazyVTableSlice != null)
+                lazyVTableSlice.AddEntry(factory, _decl);
         }
 
         public override bool HasConditionalStaticDependencies
@@ -84,17 +73,17 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
         {
             return null;
         }

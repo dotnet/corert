@@ -24,6 +24,7 @@ namespace Internal.TypeSystem.Ecma
             public const int Final                  = 0x0010;
             public const int NoInlining             = 0x0020;
             public const int AggressiveInlining     = 0x0040;
+            public const int RuntimeImplemented     = 0x0080;
 
             public const int AttributeMetadataCache = 0x0100;
             public const int Intrinsic            = 0x0200;
@@ -145,6 +146,9 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodImplAttributes & MethodImplAttributes.AggressiveInlining) != 0)
                     flags |= MethodFlags.AggressiveInlining;
 
+                if ((methodImplAttributes & MethodImplAttributes.Runtime) != 0)
+                    flags |= MethodFlags.RuntimeImplemented;
+
                 flags |= MethodFlags.BasicMetadataCache;
             }
 
@@ -233,6 +237,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.AggressiveInlining) & MethodFlags.AggressiveInlining) != 0;
+            }
+        }
+
+        public override bool IsRuntimeImplemented
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.RuntimeImplemented) & MethodFlags.RuntimeImplemented) != 0;
             }
         }
 

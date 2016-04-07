@@ -25,6 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         GetThreadStaticBase,
         DelegateCtor,
         InterfaceDispatch,
+        ResolveVirtualFunction,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
@@ -82,27 +83,48 @@ namespace ILCompiler.DependencyAnalysis
                     case ReadyToRunHelperId.GetThreadStaticBase:
                         return "__GetThreadStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
                     case ReadyToRunHelperId.DelegateCtor:
-                        return "__DelegateCtor_" + NodeFactory.NameMangler.GetMangledMethodName(((DelegateInfo)_target).Target);
+                        {
+                            var createInfo = (DelegateCreationInfo)_target;
+                            string mangledName = String.Concat("__DelegateCtor_",
+                                createInfo.Constructor.MangledName, "__", createInfo.Target.MangledName);
+                            if (createInfo.Thunk != null)
+                                mangledName += String.Concat("__", createInfo.Thunk.MangledName);
+                            return mangledName;
+                        }
                     case ReadyToRunHelperId.InterfaceDispatch:
                         return "__InterfaceDispatch_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
+                    case ReadyToRunHelperId.ResolveVirtualFunction:
+                        return "__ResolveVirtualFunction_" + NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target);
                     default:
                         throw new NotImplementedException();
                 }
             }
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return true;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             if (_id == ReadyToRunHelperId.VirtualCall)
             {
                 DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                dependencyList.Add(factory.VTable(((MethodDesc)_target).OwningType), "ReadyToRun Virtual Method Call Target VTable");
                 return dependencyList;
             }
             else if (_id == ReadyToRunHelperId.InterfaceDispatch)
             {
                 DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(context.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Interface Method Call");
+                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Interface Method Call");
+                return dependencyList;
+            }
+            else if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
+            {
+                DependencyList dependencyList = new DependencyList();
+                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
                 return dependencyList;
             }
             else

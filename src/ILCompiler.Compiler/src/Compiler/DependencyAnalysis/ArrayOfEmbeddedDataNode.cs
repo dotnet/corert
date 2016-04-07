@@ -23,14 +23,12 @@ namespace ILCompiler.DependencyAnalysis
         private ObjectAndOffsetSymbolNode _startSymbol;
         private ObjectAndOffsetSymbolNode _endSymbol;
         private IComparer<TEmbedded> _sorter;
-        private string _section;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter, string section = "data")
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter)
         {
             _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName);
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName);
             _sorter = nodeSorter;
-            _section = section;
         }
 
         internal ObjectAndOffsetSymbolNode StartSymbol
@@ -68,11 +66,11 @@ namespace ILCompiler.DependencyAnalysis
             return "Region " + ((ISymbolNode)_startSymbol).MangledName;
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return _section;
+                return ObjectNodeSection.DataSection;
             }
         }
 

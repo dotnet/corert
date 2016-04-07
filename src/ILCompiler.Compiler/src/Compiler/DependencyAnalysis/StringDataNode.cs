@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Globalization;
 using System.Text;
 
 namespace ILCompiler.DependencyAnalysis
@@ -18,11 +17,11 @@ namespace ILCompiler.DependencyAnalysis
             _data = data;
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "data";
+                return ObjectNodeSection.DataSection;
             }
         }
 
@@ -43,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                     throw new InvalidOperationException("MangledName called before String Id was initialized.");
                 }
 
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToString(CultureInfo.InvariantCulture);
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToStringInvariant();
             }
         }
 
@@ -62,14 +61,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            Encoding encoding = UTF8Encoding.UTF8;
+            byte[] objectData = Array.Empty<byte>();
 
-            ObjectDataBuilder objDataBuilder = new ObjectDataBuilder(factory);
-            AsmStringWriter stringWriter = new AsmStringWriter((byte b) => objDataBuilder.EmitByte(b));
-            stringWriter.WriteString(_data);
-            objDataBuilder.DefinedSymbols.Add(this);
+            if (!relocsOnly)
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(_data);
 
-            return objDataBuilder.ToObjectData();
+                var encoder = new Internal.NativeFormat.NativePrimitiveEncoder();
+                encoder.Init();
+
+                encoder.WriteUnsigned((uint)bytes.Length);
+                foreach (var b in bytes)
+                {
+                    encoder.WriteByte(b);
+                }
+
+                objectData = encoder.GetBytes();
+            }
+
+            return new ObjectData(objectData, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
         }
 
         public override string GetName()

@@ -27,11 +27,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "text";
+                return ObjectNodeSection.TextSection;
             }
         }
 

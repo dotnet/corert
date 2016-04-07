@@ -18,7 +18,7 @@ goto Usage
 :ArgsDone
 
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
-set __NuPkgInstallDir=%CoreRT_TestRoot%\..\bin\Product\%__BuildStr%\.nuget\publish1
+set __NuPkgInstallDir=%CoreRT_TestRoot%\..\bin\Product\%__BuildStr%\packaging\publish1
 if not exist %__NuGetExeDir%\NuGet.exe ((call :Fail "No NuGet.exe found at %__NuGetExeDir%. Specify /nugetexedir option") & exit /b -1)
 
 REM ** Install packages from NuGet
@@ -28,6 +28,14 @@ REM ** Install AppDep SDK
 echo.
 echo Installing CoreRT external dependencies
 %__NuGetExeDir%\NuGet.exe install -Source %__NuGetFeedUrl% -OutputDir %__NuPkgInstallDir% -Version %CoreRT_AppDepSdkVer% %CoreRT_AppDepSdkPkg% -prerelease %__NuGetOptions%
+
+rem Allow overriding RyuJit retrieved from NuGet with a locally built one.
+if exist "%LIVE_RYUJIT_PATH%" (
+    echo.
+    echo Overwriting RyuJit in "%__NuPkgInstallDir%" with "%LIVE_RYUJIT_PATH%"
+    copy /y "%LIVE_RYUJIT_PATH%" "%__NuPkgInstallDir%\"
+    echo.
+)
 
 endlocal & (
   set CoreRT_ToolchainDir=%__NuPkgInstallDir%

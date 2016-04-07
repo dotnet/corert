@@ -229,6 +229,8 @@ namespace Internal.TypeSystem
 
         public override bool Equals(Object o)
         {
+            // Its only valid to compare two MethodDescs in the same context
+            Debug.Assert(Object.ReferenceEquals(o, null) || !(o is MethodDesc) || Object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
             return Object.ReferenceEquals(this, o);
         }
 
@@ -372,14 +374,7 @@ namespace Internal.TypeSystem
 
         public virtual MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            MethodDesc method = this;
-
-            TypeDesc owningType = method.OwningType;
-            TypeDesc instantiatedOwningType = owningType.InstantiateSignature(typeInstantiation, methodInstantiation);
-            if (owningType != instantiatedOwningType)
-                method = instantiatedOwningType.Context.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedOwningType);
-
-            Instantiation instantiation = method.Instantiation;
+            Instantiation instantiation = Instantiation;
             TypeDesc[] clone = null;
 
             for (int i = 0; i < instantiation.Length; i++)
@@ -400,7 +395,18 @@ namespace Internal.TypeSystem
                 }
             }
 
-            return (clone == null) ? method : method.Context.GetInstantiatedMethod(method.GetMethodDefinition(), new Instantiation(clone));
+            MethodDesc method = this;
+
+            TypeDesc owningType = method.OwningType;
+            TypeDesc instantiatedOwningType = owningType.InstantiateSignature(typeInstantiation, methodInstantiation);
+            if (owningType != instantiatedOwningType)
+            {
+                method = Context.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedOwningType);
+                if (clone == null && instantiation.Length != 0)
+                    return Context.GetInstantiatedMethod(method, instantiation);
+            }
+
+            return (clone == null) ? method : Context.GetInstantiatedMethod(method.GetMethodDefinition(), new Instantiation(clone));
         }
     }
 }

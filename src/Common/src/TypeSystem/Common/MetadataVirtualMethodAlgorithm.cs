@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
-    public static class VirtualFunctionResolution
+    public class MetadataVirtualMethodAlgorithm : VirtualMethodAlgorithm
     {
         private class MethodDescHashtable : LockFreeReaderHashtable<MethodDesc, MethodDesc>
         {
@@ -24,11 +24,13 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(MethodDesc key, MethodDesc value)
             {
+                Debug.Assert(key.Context == value.Context);
                 return Object.ReferenceEquals(key, value);
             }
 
             protected override bool CompareValueToValue(MethodDesc value1, MethodDesc value2)
             {
+                Debug.Assert(value1.Context == value2.Context);
                 return Object.ReferenceEquals(value1, value2);
             }
 
@@ -167,13 +169,18 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, TypeDesc objectType)
+        {
+            return FindVirtualFunctionTargetMethodOnObjectType(targetMethod, (MetadataType)objectType);
+        }
+
         /// <summary>
         /// Resolve a virtual function call (to a virtual method, not an interface method)
         /// </summary>
         /// <param name="targetMethod"></param>
         /// <param name="objectType"></param>
         /// <returns>The override of the virtual method that should be called</returns>
-        public static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, MetadataType objectType)
+        private static MethodDesc FindVirtualFunctionTargetMethodOnObjectType(MethodDesc targetMethod, MetadataType objectType)
         {
             // Step 1, convert objectType to uninstantiated form
             MetadataType uninstantiatedType = objectType;
@@ -270,7 +277,7 @@ namespace Internal.TypeSystem
             // it to the uninstantiated version
             //MethodDesc implMethod = currentType.GetMethod(name, sig);
             MethodDesc implMethod = null;
-            foreach (MethodDesc candidate in currentType.GetMethods())
+            foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
                 if (candidate.Name == name)
                 {
@@ -284,10 +291,6 @@ namespace Internal.TypeSystem
                     }
                 }
             }
-
-            // Only find virtual methods
-            if ((implMethod != null) && !implMethod.IsVirtual)
-                implMethod = null;
 
             return implMethod;
         }
@@ -447,6 +450,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
+        {
+            return ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
+        }
+
         //////////////////////// INTERFACE RESOLUTION
         //Interface function resolution
         //    Interface function resolution follows the following rules
@@ -461,7 +469,7 @@ namespace Internal.TypeSystem
         //    function returns null if the interface method implementation is not defined by the current type in 
         //    the hierarchy.For variance to work correctly, this requires that interfaces be queried in correct order.
         //    See current interface call resolution for details on how that happens.
-        public static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
+        private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
             if (currentType.IsInterface)
                 return null;
@@ -561,6 +569,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)
+        {
+            return EnumAllVirtualSlots((MetadataType)type);
+        }
+
         // Enumerate all possible virtual slots of a type
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(MetadataType type)
         {
@@ -569,16 +582,13 @@ namespace Internal.TypeSystem
             {
                 do
                 {
-                    foreach (MethodDesc m in type.GetMethods())
+                    foreach (MethodDesc m in type.GetAllVirtualMethods())
                     {
-                        if (m.IsVirtual)
+                        MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
+                        if (!alreadyEnumerated.Contains(possibleVirtual))
                         {
-                            MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
-                            if (!alreadyEnumerated.Contains(possibleVirtual))
-                            {
-                                alreadyEnumerated.AddOrGetExisting(possibleVirtual);
-                                yield return possibleVirtual;
-                            }
+                            alreadyEnumerated.AddOrGetExisting(possibleVirtual);
+                            yield return possibleVirtual;
                         }
                     }
 

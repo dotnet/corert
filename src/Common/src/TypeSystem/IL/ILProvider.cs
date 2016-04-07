@@ -21,6 +21,23 @@ namespace Internal.IL
         {
         }
 
+        private MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
+        {
+            // Provides method bodies for runtime implemented methods. It can return null for
+            // methods that are treated specially by the codegen.
+
+            Debug.Assert(method.IsRuntimeImplemented);
+
+            TypeDesc owningType = method.OwningType;
+
+            if (owningType.IsDelegate)
+            {
+                return DelegateMethodILEmitter.EmitIL(method);
+            }
+
+            return null;
+        }
+
         private MethodIL TryGetIntrinsicMethodIL(MethodDesc method)
         {
             // Provides method bodies for intrinsics recognized by the compiler.
@@ -87,6 +104,13 @@ namespace Internal.IL
                     if (pregenerated == null)
                         return PInvokeMarshallingILEmitter.EmitIL(method);
                     method = pregenerated;
+                }
+
+                if (method.IsRuntimeImplemented)
+                {
+                    MethodIL result = TryGetRuntimeImplementedMethodIL(method);
+                    if (result != null)
+                        return result;
                 }
 
                 return EcmaMethodIL.Create((EcmaMethod)method);

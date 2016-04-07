@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     /// </summary>
     public class MetadataFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
-        public override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(DefType defType)
+        public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType defType, InstanceLayoutKind layoutKind)
         {
             MetadataType type = (MetadataType)defType;
             // CLI - Partition 1, section 9.5 - Generic types shall not be marked explicitlayout.  
@@ -39,6 +39,7 @@ namespace Internal.TypeSystem
                 // Global types do not do the rest of instance field layout.
                 ComputedInstanceFieldLayout result = new ComputedInstanceFieldLayout();
                 result.PackValue = type.Context.Target.DefaultPackingSize;
+                result.Offsets = Array.Empty<FieldAndOffset>();
                 return result;
             }
 
@@ -112,6 +113,10 @@ namespace Internal.TypeSystem
                         new FieldAndOffset(instanceField, 0)
                     };
                 }
+                else
+                {
+                    result.Offsets = Array.Empty<FieldAndOffset>();
+                }
 
                 return result;
             }
@@ -155,7 +160,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType)
+        public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
         {
             MetadataType type = (MetadataType)defType;
             int numStaticFields = 0;
@@ -175,7 +180,7 @@ namespace Internal.TypeSystem
 
             if (numStaticFields == 0)
             {
-                result.Offsets = null;
+                result.Offsets = Array.Empty<FieldAndOffset>();
                 return result;
             }
 

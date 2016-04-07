@@ -11,14 +11,14 @@ build[.cmd|.sh] clean [Debug|Release]
 This will result in the following:
 
 - Restore nuget packages required for building
-- Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\Product\<OS>.<arch>.<Config>\.nuget\publish1`.
+- Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\Product\<OS>.<arch>.<Config>\packaging\publish1`.
 - Build and run tests
 - Installs the latest CLI tools at `<repo_root>\bin\tools\cli`
 
 # Setup CLI
 To consume the CLI tools installed as part of the build, do the following:
 
-* Add `<repo_root>\bin\tools\cli\bin` to the path
+* Add `<repo_root>\bin\tools\cli` to the path
 * set `DOTNET_HOME` environment variable to `<repo_root>\bin\tools\cli`
 * On windows ensure you are using the 'VS2015 x64 Native Tools Command Prompt'
     (This is distinct from the 'Developer Command Prompt for VS2015')
@@ -40,10 +40,10 @@ From the shell/command prompt, issue the following commands, from the folder con
 
 ``` 
     dotnet restore
-    dotnet build --native --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1
+    dotnet build --native --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1
 ``` 
 
-Native executable will be dropped in `./bin/[configuration]/[framework]/native/` folder and will have the same name as the folder in which your source file is present.
+Native executable will be dropped in `./bin/[configuration]/[framework]/[runtime]/native/` folder and will have the same name as the folder in which your source file is present.
 
 ## Using CPP Code Generator ##
 
@@ -53,7 +53,7 @@ From the shell/command prompt, issue the following commands to generate the nati
 
 ``` 
     dotnet restore
-    dotnet build --native --cpp --ilcpath bin\Product\Windows_NT.x64.Debug\.nuget\publish1 --cppcompilerflags /MTd
+    dotnet build --native --cpp --ilcpath <repo_root>\bin\Product\Windows_NT.x64.Debug\packaging\publish1 --cppcompilerflags /MTd
 ```
 
 Omit `--cppcompilerflags /MTd` for release CoreRT build.

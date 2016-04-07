@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="BlockedMetadata.cs" />
     <Compile Include="SampleMetadata.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

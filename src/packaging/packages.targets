@@ -41,9 +41,11 @@
             <ILCompilerFiles Include="ilc.exe" />
             <ILCompilerFiles Include="ILCompiler.Compiler.dll" />
             <ILCompilerFiles Include="ILCompiler.DependencyAnalysisFramework.dll" />
+            <ILCompilerFiles Include="ILCompiler.MetadataTransform.dll" />
+            <ILCompilerFiles Include="ILCompiler.MetadataWriter.dll" />
             <ILCompilerFiles Include="ILCompiler.TypeSystem.dll" />
             <ILCompilerBinPlace Include="@(ILCompilerFiles)">
-                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/ILCompiler/%(Identity)" target="runtimes/any/lib/dotnet/%(Identity)" /> ]]></Text>
             </ILCompilerBinPlace>
 
             <ILCompilerNativeFiles Include="jitinterface.dll" Condition="'$(OSGroup)'=='Windows_NT'" />
@@ -81,7 +83,7 @@
             </ILCompilerSdkBinPlace>
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFilesManaged)">
-                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
+                <Text><![CDATA[        <file src="$(RelativeProductBinDir)/%(Identity)/%(Identity).dll" target="runtimes/$(NuPkgRid)/native/sdk/%(Identity).dll" /> ]]></Text>
             </ILCompilerSdkBinPlace>
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkCppCodegenFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
@@ -97,7 +99,7 @@
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
         <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.9-prerelease-00001" />
-        <dependency id="Microsoft.DotNet.RyuJit" version="1.0.5-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.RyuJit" version="1.0.7-prerelease-00001" />
         <dependency id="NETStandard.Library" version="1.0.0-rc2-23910" />
         <dependency id="System.Collections.Immutable" version="1.2.0-rc2-23910" />
         <dependency id="System.IO.MemoryMappedFiles" version="4.0.0-rc2-23910" />
@@ -178,7 +180,7 @@
     %(NuSpecPackageMetadata)
   </metadata>
   <files>
-      <file src="$(RelativeProductBinDir)/.nuget/%(RedirPackage).runtime.json" target="runtime.json"></file>
+      <file src="$(RelativeProductBinDir)/packaging/%(RedirPackage).runtime.json" target="runtime.json"></file>
   </files>
 </package>
 ]]>

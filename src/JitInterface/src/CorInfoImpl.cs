@@ -24,7 +24,13 @@ namespace Internal.JitInterface
         private IntPtr _comp;
 
         [DllImport("ryujit")]
+        private extern static IntPtr jitStartup(IntPtr host);
+
+        [DllImport("ryujit")]
         private extern static IntPtr getJit();
+
+        [DllImport("jitinterface")]
+        private extern static IntPtr GetJitHost();
 
         [DllImport("jitinterface")]
         private extern static IntPtr GetJitInterfaceWrapper(IntPtr unwrapped);
@@ -61,6 +67,8 @@ namespace Internal.JitInterface
         public CorInfoImpl(Compilation compilation)
         {
             _compilation = compilation;
+
+            jitStartup(GetJitHost());
 
             _comp = GetJitInterfaceWrapper(CreateUnmanagedInstance());
 
@@ -1075,18 +1083,20 @@ namespace Internal.JitInterface
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_DELEGATE_CTOR:
-                    {
-                        var method = HandleToObject(pResolvedToken.hMethod);
-
-                        DelegateInfo delegateInfo = _compilation.GetDelegateCtor(method);
-
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
-                    }
-                    break;
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
+        }
+
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
+        {
+            MethodDesc method = HandleToObject(pTargetMethod.hMethod);
+            TypeDesc type = HandleToObject(delegateType);
+
+            DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(type, method);
+
+            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, delegateInfo));
+            pLookup.accessType = InfoAccessType.IAT_VALUE;
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)
@@ -1327,28 +1337,40 @@ namespace Internal.JitInterface
 
                 if (field.HasRva)
                 {
-                    throw new NotSupportedException("getFieldInfo for RVA mapped field");
-                }
+                    fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
 
-                fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
-                pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
+                    // TODO: Handle the case when the RVA is in the TLS range
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
 
-                ReadyToRunHelperId helperId;
-                if (field.IsThreadStatic)
-                {
-                    helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                }
-                else if (field.HasGCStaticBase)
-                {
-                    helperId = ReadyToRunHelperId.GetGCStaticBase;
+                    // We are not going through a helper. The constructor has to be triggered explicitly.
+                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                    {
+                        fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
+                    }
                 }
                 else
                 {
-                    helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                }
 
-                pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
-                pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
+                    pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
+
+                    ReadyToRunHelperId helperId;
+                    if (field.IsThreadStatic)
+                    {
+                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
+                    }
+                    else if (field.HasGCStaticBase)
+                    {
+                        helperId = ReadyToRunHelperId.GetGCStaticBase;
+                    }
+                    else
+                    {
+                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                    }
+
+                    pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                    pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                }
             }
             else
             {
@@ -1362,7 +1384,11 @@ namespace Internal.JitInterface
             pResult.fieldFlags = fieldFlags;
             pResult.fieldType = getFieldType(pResolvedToken.hField, ref pResult.structType, pResolvedToken.hClass);
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
-            pResult.offset = (uint)field.Offset;
+
+            if (!field.IsStatic || !field.HasRva)
+                pResult.offset = (uint)field.Offset;
+            else
+                pResult.offset = 0xBAADF00D;
 
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
             //       and STS::AccessCheck::CanAccess.
@@ -1706,12 +1732,6 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private int getIntConfigValue(String name, int defaultValue)
-        { throw new NotImplementedException("getIntConfigValue"); }
-        private short* getStringConfigValue(String name)
-        { throw new NotImplementedException("getStringConfigValue"); }
-        private void freeStringConfigValue(short* value)
-        { throw new NotImplementedException("freeStringConfigValue"); }
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
@@ -1873,9 +1893,8 @@ namespace Internal.JitInterface
                 // can simply do a static look up
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
 
-                if (td.IsArray && !td.IsSzArray)
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj)
                 {
-                    // TODO: Use CORINFO_TOKENKIND_NewObj to track that this is because of CORINFO_HELP_NEW_MDARR.
                     pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ConstructedTypeSymbol(td));
                 }
                 else
@@ -2009,7 +2028,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.GetClosestMetadataType().IsSealed)
+                if (!targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.IsSealed())
                 {
                     resolvedCallVirt = true;
                     directCall = true;
@@ -2061,9 +2080,26 @@ namespace Internal.JitInterface
                     targetMethod = targetMethod.GetStringInitializer();
                 }
 
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+
+                ISymbolNode targetNode;
+
+                // Compensate for always treating delegates as direct calls above
+                if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 &&
+                    (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !resolvedCallVirt)
+                {
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                    targetNode = _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod);
+                }
+                else
+                {
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                    targetNode = _compilation.NodeFactory.MethodEntrypoint(targetMethod);
+                }
+
+                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(targetNode);
+
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
             else if (!targetMethod.OwningType.IsInterface)
@@ -2104,8 +2140,14 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("isRIDClassDomainID"); }
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
+
         private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
-        { throw new NotImplementedException("getFieldAddress"); }
+        {
+            FieldDesc fieldDesc = HandleToObject(field);
+            Debug.Assert(fieldDesc.HasRva);
+            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fieldDesc));
+        }
+
         private IntPtr getVarArgsHandle(CORINFO_SIG_INFO* pSig, ref void* ppIndirection)
         { throw new NotImplementedException("getVarArgsHandle"); }
         [return: MarshalAs(UnmanagedType.I1)]
@@ -2135,42 +2177,12 @@ namespace Internal.JitInterface
         private void* getTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
         { throw new NotImplementedException("getTailCallCopyArgsThunk"); }
 
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        private delegate IntPtr _ClrVirtualAlloc(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect);
-        private static IntPtr ClrVirtualAlloc(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint flAllocationType, uint flProtect)
-        {
-            return Marshal.AllocCoTaskMem((int)dwSize);
-        }
-        private _ClrVirtualAlloc _clrVirtualAlloc;
-
-        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
-        private delegate bool _ClrVirtualFree(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint dwFreeType);
-        private static bool ClrVirtualFree(IntPtr _this, IntPtr lpAddress, IntPtr dwSize, uint dwFreeType)
-        {
-            Marshal.FreeCoTaskMem(lpAddress);
-            return true;
-        }
-        private _ClrVirtualFree _clrVirtualFree;
-
-        private IntPtr _memoryManager;
-
         private void* getMemoryManager()
         {
-            if (_memoryManager != new IntPtr(0))
-                return (void*)_memoryManager;
-
-            int vtableSlots = 14;
-            IntPtr* vtable = (IntPtr*)Marshal.AllocCoTaskMem(sizeof(IntPtr) * vtableSlots);
-            for (int i = 0; i < vtableSlots; i++) vtable[i] = new IntPtr(0);
-
-            // JIT only ever uses IEEMemoryManager::ClrVirtualAlloc/IEEMemoryManager::ClrVirtualFree
-            vtable[3] = Marshal.GetFunctionPointerForDelegate<_ClrVirtualAlloc>(_clrVirtualAlloc = new _ClrVirtualAlloc(ClrVirtualAlloc));
-            vtable[4] = Marshal.GetFunctionPointerForDelegate<_ClrVirtualFree>(_clrVirtualFree = new _ClrVirtualFree(ClrVirtualFree));
-
-            IntPtr instance = Marshal.AllocCoTaskMem(sizeof(IntPtr));
-            *(IntPtr**)instance = vtable;
-
-            return (void*)(_memoryManager = instance);
+            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
+            // and should never reach the managed implementation.
+            Debug.Assert(false, "CorInfoImpl.getMemoryManager should not be called");
+            throw new NotSupportedException("getMemoryManager");
         }
 
         private byte[] _code;

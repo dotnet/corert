@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Internal.Metadata.NativeFormat.Writer;
 
 using Ecma = System.Reflection.Metadata;
@@ -248,12 +247,12 @@ namespace ILCompiler.Metadata
                 record.BaseType = HandleType(entity.BaseType);
             }
 
-            if (entity.ExplicitlyImplementedInterfaces.Length > 0)
+            record.Interfaces.Capacity = entity.ExplicitlyImplementedInterfaces.Length;
+            foreach (var interfaceType in entity.ExplicitlyImplementedInterfaces)
             {
-                record.Interfaces.Capacity = entity.ExplicitlyImplementedInterfaces.Length;
-                record.Interfaces.AddRange(entity.ExplicitlyImplementedInterfaces
-                    .Where(i => !IsBlocked(i))
-                    .Select(i => HandleType(i)));
+                if (IsBlocked(interfaceType))
+                    continue;
+                record.Interfaces.Add(HandleType(interfaceType));
             }
 
             if (entity.HasInstantiation)
@@ -298,7 +297,11 @@ namespace ILCompiler.Metadata
                         record.Properties.Add(prop);
                 }
 
-                // TODO: CustomAttributes
+                Ecma.CustomAttributeHandleCollection customAttributes = ecmaRecord.GetCustomAttributes();
+                if (customAttributes.Count > 0)
+                {
+                    record.CustomAttributes = HandleCustomAttributes(ecmaEntity.EcmaModule, customAttributes);
+                }
             }
 
             // TODO: MethodImpls

@@ -15,6 +15,17 @@ namespace System
     public class Object
     {
         internal IntPtr m_pEEType;
+
+        public virtual bool Equals(object other)
+        {
+            return false;
+        }
+
+        public virtual int GetHashCode()
+        {
+            return 0;
+        }
+
         public virtual string ToString() { return null; }
 
         ~Object()

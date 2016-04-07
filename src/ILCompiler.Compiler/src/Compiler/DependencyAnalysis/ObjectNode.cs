@@ -28,9 +28,20 @@ namespace ILCompiler.DependencyAnalysis
 
         public abstract ObjectData GetData(NodeFactory factory, bool relocsOnly = false);
 
-        public abstract string Section
+        public abstract ObjectNodeSection Section
         {
             get;
+        }
+
+        /// <summary>
+        /// Override this function for node types that can be shared amongst object files
+        /// when linked together (using a COMDAT section for each node or equivalent on
+        /// each platform). For instance, generic type and method instantiations
+        /// should be shared to prevent duplicate symbol linker errors.
+        /// </summary>
+        public virtual bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return false;
         }
 
         /// <summary>
@@ -69,15 +80,15 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DependencyList dependencies = ComputeNonRelocationBasedDependencies(context);
-            Relocation[] relocs = GetData(context, true).Relocs;
+            DependencyList dependencies = ComputeNonRelocationBasedDependencies(factory);
+            Relocation[] relocs = GetData(factory, true).Relocs;
 
             if (relocs != null)
             {
@@ -96,12 +107,12 @@ namespace ILCompiler.DependencyAnalysis
                 return dependencies;
         }
 
-        protected virtual DependencyList ComputeNonRelocationBasedDependencies(NodeFactory context)
+        protected virtual DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
         {
             return null;
         }

@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + Offset.ToString(CultureInfo.InvariantCulture);
+                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + Offset.ToStringInvariant();
             }
         }
 
@@ -50,14 +50,14 @@ namespace ILCompiler.DependencyAnalysis
             return ((ISymbolNode)this).MangledName;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new DependencyListEntry[] { new DependencyListEntry(context.StringData(_data), "string contents") };
+            return new DependencyListEntry[] { new DependencyListEntry(factory.StringData(_data), "string contents") };
         }
 
-        protected override void OnMarked(NodeFactory context)
+        protected override void OnMarked(NodeFactory factory)
         {
-            context.StringTable.AddEmbeddedObject(this);
+            factory.StringTable.AddEmbeddedObject(this);
         }
     }
 }

@@ -4,11 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Debug = System.Diagnostics.Debug;
 
 using Internal.TypeSystem;
 using System.Reflection.PortableExecutable;
@@ -23,6 +18,8 @@ namespace TypeSystemTests
         MetadataFieldLayoutAlgorithm _metadataFieldLayout = new TestMetadataFieldLayoutAlgorithm();
         MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
+        VirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
+        VirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
 
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown))
@@ -64,9 +61,19 @@ namespace TypeSystemTests
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 
-        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
             return _metadataRuntimeInterfacesAlgorithm;
+        }
+
+        public override VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
+        {
+            return _virtualMethodAlgorithm;
+        }
+
+        public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+        {
+            return _virtualMethodEnumAlgorithm;
         }
     }
 }

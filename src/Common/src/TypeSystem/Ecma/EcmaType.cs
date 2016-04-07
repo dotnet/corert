@@ -320,7 +320,7 @@ namespace Internal.TypeSystem.Ecma
 
             if (decl != null)
             {
-                MethodDesc impl = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(decl, this);
+                MethodDesc impl = this.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType != objectType)
                 {
                     return impl;
@@ -488,6 +488,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (_typeDefinition.Attributes & TypeAttributes.Sealed) != 0;
+            }
+        }
+
+        public override PInvokeStringFormat PInvokeStringFormat
+        {
+            get
+            {
+                return (PInvokeStringFormat)(_typeDefinition.Attributes & TypeAttributes.StringFormatMask);
             }
         }
     }

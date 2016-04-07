@@ -785,7 +785,7 @@ namespace Internal.IL
         {
             bool callViaSlot = false;
             bool delegateInvoke = false;
-            DelegateInfo delegateInfo = null;
+            DelegateCreationInfo delegateInfo = null;
             bool mdArrayCreate = false;
 
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
@@ -846,8 +846,8 @@ namespace Internal.IL
                     }
                     else if (owningType.IsDelegate)
                     {
-                        delegateInfo = _compilation.GetDelegateCtor((MethodDesc)_stack[_stackTop - 1].Value.Aux);
-                        method = delegateInfo.Ctor;
+                        delegateInfo = _compilation.GetDelegateCtor(owningType, (MethodDesc)_stack[_stackTop - 1].Value.Aux);
+                        method = delegateInfo.Constructor.Method;
                     }
                 }
                 else
@@ -938,18 +938,19 @@ namespace Internal.IL
                     AppendSemicolon();
                     needNewLine = true;
 
-                    if (delegateInfo != null && delegateInfo.ShuffleThunk != null)
+                    if (delegateInfo != null && delegateInfo.Thunk != null)
                     {
-                        AddMethodReference(delegateInfo.ShuffleThunk);
+                        MethodDesc thunkMethod = delegateInfo.Thunk.Method;
+                        AddMethodReference(thunkMethod);
 
                         _stack[_stackTop - 2].Value.Name = temp;
 
                         var sb = new CppGenerationBuffer();
                         AppendLine();
                         sb.Append("(intptr_t)&");
-                        sb.Append(_writer.GetCppTypeName(delegateInfo.ShuffleThunk.OwningType));
+                        sb.Append(_writer.GetCppTypeName(thunkMethod.OwningType));
                         sb.Append("::");
-                        sb.Append(_writer.GetCppMethodName(delegateInfo.ShuffleThunk));
+                        sb.Append(_writer.GetCppMethodName(thunkMethod));
 
                         Push(StackValueKind.NativeInt, new Value(sb.ToString()), null);
                     }
@@ -2198,6 +2199,9 @@ namespace Internal.IL
                     Append("*)");
                 }
 
+                Append("(");
+                Append(_writer.GetCppSignatureTypeName(type));
+                Append("*)");
                 Append("((void **)");
                 Append(obj.Value.Name);
                 Append("+1)");

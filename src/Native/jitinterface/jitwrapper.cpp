@@ -8,7 +8,7 @@
 class Jit
 {
 public:
-    virtual int compileMethod(
+    virtual int __stdcall compileMethod(
         void* compHnd,
         void* methodInfo,
         unsigned flags,

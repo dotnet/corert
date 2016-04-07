@@ -76,17 +76,17 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
         {
             return null;
         }

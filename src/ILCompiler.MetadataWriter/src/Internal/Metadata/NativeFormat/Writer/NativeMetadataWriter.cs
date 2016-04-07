@@ -5,13 +5,13 @@
 #pragma warning disable 649
 
 using System;
-using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Reflection;
 using Debug = System.Diagnostics.Debug;
 using ConditionalAttribute = System.Diagnostics.ConditionalAttribute;
 using HandleType = Internal.Metadata.NativeFormat.HandleType;
+using Internal.LowLevelLinq;
 using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat.Writer
@@ -810,7 +810,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return this.GenericType.ToString() + "<" + String.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString()).ToArray()) + ">";
+            return this.GenericType.ToString() + "<" + String.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString())) + ">";
         }
     }
 
@@ -851,7 +851,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString()
         {
             string str = Constructor.ToString();
-            str += "(" + String.Join(", ", FixedArguments.Select(fa => fa.ToString()).Concat(NamedArguments.Select(na => na.ToString())).ToArray()) + ")";
+            str += "(" + String.Join(", ", FixedArguments.Select(fa => fa.ToString()))
+                + String.Join(", ", NamedArguments.Select(na => na.ToString())) + ")";
             str += "(ctor: " + Constructor.Handle.ToString();
             return str;
         }
@@ -927,7 +928,8 @@ namespace Internal.Metadata.NativeFormat.Writer
                 ReturnType.ToString(false),
                 name
                     + (GenericParameterCount == 0 ? "" : "`" + GenericParameterCount.ToString())
-                    + "(" + String.Join(", ", Parameters.Select(p => p.ToString(false)).Concat(VarArgParameters.Select(p => p.ToString(false)))) + ")"}.Where(e => !String.IsNullOrWhiteSpace(e)));
+                    + "(" + String.Join(", ", Parameters.Select(p => p.ToString(false))) + 
+                    String.Join(", ", VarArgParameters.Select(p => p.ToString(false))) + ")"}.Where(e => !String.IsNullOrWhiteSpace(e)));
         }
     }
 

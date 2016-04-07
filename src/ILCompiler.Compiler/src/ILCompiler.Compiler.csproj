@@ -23,31 +23,52 @@
       <Project>{dac23e9f-f826-4577-ae7a-0849ff83280c}</Project>
       <Name>ILCompiler.DependencyAnalysisFramework</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj">
+      <Project>{a965ea82-219d-48f7-ad51-bc030c16cc6f}</Project>
+      <Name>ILCompiler.MetadataTransform</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
+      <Project>{d66338d4-f9e4-4051-b302-232c6bfb6ef6}</Project>
+      <Name>ILCompiler.MetadataWriter</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
       <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
       <Name>ILCompiler.TypeSystem</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
+      <Link>Common\MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\DelegateInfo.cs">
+      <Link>IL\DelegateInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\DelegateMethodILEmitter.cs">
+      <Link>IL\Stubs\DelegateMethodILEmitter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EETypePtrOfIntrinsic.cs">
       <Link>IL\Stubs\EETypePtrOfIntrinsic.cs</Link>
     </Compile>
-    <Compile Include="Compiler\AsmStringWriter.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
-    <Compile Include="Compiler\DelegateInfo.cs" />
+    <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectNodeSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModulesSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleManagerIndirectionNode.cs" />
@@ -72,19 +93,20 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64PInvokeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
-    <Compile Include="Compiler\FormattingHelpers.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
+    <Compile Include="Compiler\MetadataGeneration.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
@@ -95,11 +117,15 @@
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\TypeInitialization.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
+    <Compile Include="Compiler\VirtualMethodEnumeration.cs" />
     <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>Common\FormattingHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\ArrayBuilder.cs</Link>
     </Compile>

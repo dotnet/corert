@@ -27,8 +27,34 @@ namespace ILCompiler
             _rootProvider = rootProvider;
         }
 
-        public abstract bool IsTypeInCompilationGroup(TypeDesc type);
-        public abstract bool IsMethodInCompilationGroup(MethodDesc method);
+        /// <summary>
+        /// If true, "type" is in the set of input assemblies being compiled
+        /// </summary>
+        public abstract bool ContainsType(TypeDesc type);
+        /// <summary>
+        /// If true, "method" is in the set of input assemblies being compiled
+        /// </summary>
+        public abstract bool ContainsMethod(MethodDesc method);
+        /// <summary>
+        /// If true, it's possible for "type" to be generated in multiple modules independently and should be shared
+        /// TODO: This API is in flux. Please do not add a dependency on it.
+        /// </summary>
+        public abstract bool ShouldShareAcrossModules(TypeDesc type);
+        /// <summary>
+        /// If true, it's possible for "method" to be generated in multiple modules independently and should be shared
+        /// TODO: This API is in flux. Please do not add a dependency on it.
+        /// </summary>
+        public abstract bool ShouldShareAcrossModules(MethodDesc method);
+        /// <summary>
+        /// If true, all code is compiled into a single module
+        /// </summary>
+        public abstract bool IsSingleFileCompilation { get; }
+        /// <summary>
+        /// If true, the full type should be generated. This occurs in situations where the type is 
+        /// shared between modules (generics, parameterized types), or the type lives in a different module
+        /// and therefore needs a full VTable
+        /// </summary>
+        public abstract bool ShouldProduceFullType(TypeDesc type);
 
         public virtual void AddCompilationRoots()
         {
@@ -47,7 +73,7 @@ namespace ILCompiler
         {
             var stringType = _typeSystemContext.GetWellKnownType(WellKnownType.String);
 
-            if (IsTypeInCompilationGroup(stringType))
+            if (ContainsType(stringType))
             {
                 _rootProvider.AddCompilationRoot(stringType, "String type is always generated");
             }

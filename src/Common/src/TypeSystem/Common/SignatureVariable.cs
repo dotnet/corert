@@ -68,6 +68,11 @@ namespace Internal.TypeSystem
         {
             return typeInstantiation.IsNull ? this : typeInstantiation[Index];
         }
+
+        public override string ToString()
+        {
+            return "!" + Index.ToString();
+        }
     }
 
     public sealed partial class SignatureMethodVariable : SignatureVariable
@@ -97,6 +102,11 @@ namespace Internal.TypeSystem
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             return methodInstantiation.IsNull ? this : methodInstantiation[Index];
+        }
+
+        public override string ToString()
+        {
+            return "!!" + Index.ToString();
         }
     }
 }

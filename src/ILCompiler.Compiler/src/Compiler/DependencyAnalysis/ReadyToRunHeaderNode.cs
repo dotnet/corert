@@ -62,14 +62,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
                 if (_target.IsWindows)
-                    return "rdata";
+                    return ObjectNodeSection.ReadOnlyDataSection;
                 else
-                    return "data";
+                    return ObjectNodeSection.DataSection;
             }
         }
 

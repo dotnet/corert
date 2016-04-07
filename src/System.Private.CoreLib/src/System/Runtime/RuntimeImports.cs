@@ -507,9 +507,21 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhFindBlob")]
         internal static unsafe extern bool RhFindBlob(IntPtr hOsModule, uint blobId, byte** ppbBlob, uint* pcbBlob);
 
+#if CORERT
+        internal static uint RhGetLoadedModules(IntPtr[] resultArray)
+        {
+            IntPtr[] loadedModules = Internal.Runtime.CompilerHelpers.StartupCodeHelpers.Modules;
+            if (resultArray != null)
+            {
+                Array.Copy(loadedModules, resultArray, Math.Min(loadedModules.Length, resultArray.Length));
+            }
+            return (uint)loadedModules.Length;
+        }
+#else
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetLoadedModules")]
         internal static extern uint RhGetLoadedModules(IntPtr[] resultArray);
+#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetModuleFromPointer")]

@@ -645,9 +645,9 @@ namespace Internal.TypeSystem
         /// </summary>
         public RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForType(TypeDesc type)
         {
-            if (type is MetadataType)
+            if (type is DefType)
             {
-                return GetRuntimeInterfacesAlgorithmForMetadataType((MetadataType)type);
+                return GetRuntimeInterfacesAlgorithmForDefType((DefType)type);
             }
             else if (type is ArrayType)
             {
@@ -667,9 +667,9 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Abstraction to allow the type system context to control the interfaces
-        /// algorithm used by metadata types.
+        /// algorithm used by types.
         /// </summary>
-        protected virtual RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForMetadataType(MetadataType type)
+        protected virtual RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForDefType(DefType type)
         {
             // Type system contexts that support computing runtime interfaces need to override this.
             throw new NotSupportedException();
@@ -682,6 +682,18 @@ namespace Internal.TypeSystem
         protected virtual RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             // Type system contexts that support computing runtime interfaces need to override this.
+            throw new NotSupportedException();
+        }
+
+        public virtual VirtualMethodAlgorithm GetVirtualMethodAlgorithmForType(TypeDesc type)
+        {
+            // Type system contexts that support virtual method resolution need to override this.
+            throw new NotSupportedException();
+        }
+
+        public virtual VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+        {
+            // Type system contexts that support this need to override this.
             throw new NotSupportedException();
         }
     }

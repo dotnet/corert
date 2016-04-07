@@ -20,6 +20,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "desktop", "desktop\desktop.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.CoreLib", "..\System.Private.CoreLib\src\System.Private.CoreLib.csproj", "{BE95C560-B508-4588-8907-F9FC5BC1A0CF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataWriter", "..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj", "{D66338D4-F9E4-4051-B302-232C6BFB6EF6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform", "..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj", "{A965EA82-219D-48F7-AD51-BC030C16CC6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -54,6 +58,14 @@ Global
 		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Debug|x64.Build.0 = Debug|x64
 		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x64.ActiveCfg = Release|x64
 		{BE95C560-B508-4588-8907-F9FC5BC1A0CF}.Release|x64.Build.0 = Release|x64
+		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Debug|x64.Build.0 = Debug|Any CPU
+		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Release|x64.ActiveCfg = Release|Any CPU
+		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Release|x64.Build.0 = Release|Any CPU
+		{A965EA82-219D-48F7-AD51-BC030C16CC6F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A965EA82-219D-48F7-AD51-BC030C16CC6F}.Debug|x64.Build.0 = Debug|Any CPU
+		{A965EA82-219D-48F7-AD51-BC030C16CC6F}.Release|x64.ActiveCfg = Release|Any CPU
+		{A965EA82-219D-48F7-AD51-BC030C16CC6F}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

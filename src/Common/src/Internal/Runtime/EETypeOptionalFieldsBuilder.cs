@@ -93,7 +93,15 @@ namespace Internal.Runtime
 
             for (int i = 0; i < (int)EETypeOptionalFieldsElement.Count; i++)
             {
-                sb.Append(_rgFields[i]._value.ToString());
+                if (_rgFields[i]._fieldPresent)
+                {
+                    sb.Append(_rgFields[i]._value.ToStringInvariant());
+                }
+                else
+                {
+                    sb.Append("x");
+                }
+                
 
                 if (i != (int)EETypeOptionalFieldsElement.Count - 1)
                 {

@@ -39,12 +39,17 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
-                return "data";
+                return ObjectNodeSection.DataSection;
             }
+        }
+
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return true;
         }
 
         public override bool StaticDependenciesAreComputed
@@ -71,15 +76,19 @@ namespace ILCompiler.DependencyAnalysis
             
             // End the run of dispatch cells
             objData.EmitZeroPointer();
-            
-            int interfaceMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod);
-            if (factory.Target.PointerSize == 8)
+
+            // Avoid consulting VTable slots until they're guaranteed complete during final data emission
+            if (!relocsOnly)
             {
-                objData.EmitLong(interfaceMethodSlot);
-            }
-            else
-            {
-                throw new NotImplementedException();
+                int interfaceMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod);
+                if (factory.Target.PointerSize == 8)
+                {
+                    objData.EmitLong(interfaceMethodSlot);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
 
             return objData.ToObjectData();

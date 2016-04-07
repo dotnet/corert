@@ -444,6 +444,11 @@ public:
     bool IsGeneric()
         { return (m_usFlags & IsGenericFlag) != 0; }
 
+#if defined(CORERT)
+    ModuleManager* GetModuleManager()
+         { return *m_ppModuleManager; }
+#endif
+
 #ifndef BINDER
     DispatchMap *GetDispatchMap();
 

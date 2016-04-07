@@ -95,15 +95,20 @@ namespace ILCompiler.DependencyAnalysis
             get { return _constructed; }
         }
 
-        public override string Section
+        public override ObjectNodeSection Section
         {
             get
             {
                 if (_type.Context.Target.IsWindows)
-                    return "rdata";
+                    return ObjectNodeSection.ReadOnlyDataSection;
                 else
-                    return "data";
+                    return ObjectNodeSection.DataSection;
             }
+        }
+
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
         }
 
         public override bool StaticDependenciesAreComputed
@@ -155,14 +160,24 @@ namespace ILCompiler.DependencyAnalysis
             OutputFlags(factory, ref objData);
             OutputBaseSize(ref objData);
             OutputRelatedType(factory, ref objData);
-            OutputVirtualSlotAndInterfaceCount(factory, ref objData);
+
+            // Avoid consulting VTable slots until they're guaranteed complete during final data emission
+            if (!relocsOnly)
+            {
+                OutputVirtualSlotAndInterfaceCount(factory, ref objData);
+            }
 
             objData.EmitInt(_type.GetHashCode());
             objData.EmitPointerReloc(factory.ModuleManagerIndirection);
 
             if (_constructed)
             {
-                OutputVirtualSlots(factory, ref objData, _type, _type);
+                // Avoid consulting VTable slots until they're guaranteed complete during final data emission
+                if (!relocsOnly)
+                {
+                    OutputVirtualSlots(factory, ref objData, _type, _type);
+                }
+
                 OutputInterfaceMap(factory, ref objData);
             }
 
@@ -190,6 +205,8 @@ namespace ILCompiler.DependencyAnalysis
                     dependencyList.Add(factory.ConstructedTypeSymbol(_type.BaseType), "Array base type");
                 }
 
+                dependencyList.Add(factory.VTable(_type), "VTable");
+                
                 return dependencyList;
             }
 
@@ -206,10 +223,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Since the vtable is dependency driven, generate conditional static dependencies for
                 // all possible vtable entries
-                foreach (MethodDesc method in _type.GetMethods())
+                if (_type.GetClosestMetadataType().GetAllVirtualMethods().GetEnumerator().MoveNext())
                 {
-                    if (method.IsVirtual)
-                        return true;
+                    return true;
                 }
 
                 // If the type implements at least one interface, calls against that interface could result in this type's
@@ -225,9 +241,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             MetadataType mdType = _type.GetClosestMetadataType();
 
-            foreach (MethodDesc decl in VirtualFunctionResolution.EnumAllVirtualSlots(mdType))
+            foreach (MethodDesc decl in mdType.EnumAllVirtualSlots())
             {
-                MethodDesc impl = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(decl, mdType);
+                MethodDesc impl = mdType.FindVirtualFunctionTargetMethodOnObjectType(decl);
                 if (impl.OwningType == mdType && !impl.IsAbstract)
                 {
                     yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
@@ -246,16 +262,13 @@ namespace ILCompiler.DependencyAnalysis
             {
                 Debug.Assert(interfaceType.IsInterface);
 
-                foreach (MethodDesc interfaceMethod in interfaceType.GetMethods())
+                foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
                 {
-                    if (interfaceMethod.Signature.IsStatic)
-                        continue;
-
-                    Debug.Assert(interfaceMethod.IsVirtual);
-                    MethodDesc implMethod = VirtualFunctionResolution.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, mdType);
+                    MethodDesc implMethod = mdType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
-                        yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
+                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
+                        yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, interfaceMethod), "Interface method address");
                     }
                 }
             }
@@ -393,13 +406,7 @@ namespace ILCompiler.DependencyAnalysis
 
             while (currentTypeSlice != null)
             {
-                List<MethodDesc> virtualSlots;
-                factory.VirtualSlots.TryGetValue(currentTypeSlice, out virtualSlots);
-                if (virtualSlots != null)
-                {
-                    virtualSlotCount += virtualSlots.Count;
-                }
-
+                virtualSlotCount += factory.VTable(currentTypeSlice).Slots.Count;
                 currentTypeSlice = currentTypeSlice.BaseType;
             }
 
@@ -415,21 +422,23 @@ namespace ILCompiler.DependencyAnalysis
             if (baseType != null)
                 OutputVirtualSlots(factory, ref objData, implType, baseType);
 
-            List<MethodDesc> virtualSlots;
-            factory.VirtualSlots.TryGetValue(declType, out virtualSlots);
-
-            if (virtualSlots != null)
+            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
+            
+            for (int i = 0; i < virtualSlots.Count; i++)
             {
-                for (int i = 0; i < virtualSlots.Count; i++)
-                {
-                    MethodDesc declMethod = virtualSlots[i];
-                    MethodDesc implMethod = VirtualFunctionResolution.FindVirtualFunctionTargetMethodOnObjectType(declMethod, implType.GetClosestMetadataType());
+                MethodDesc declMethod = virtualSlots[i];
+                MethodDesc implMethod = implType.GetClosestMetadataType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                    if (!implMethod.IsAbstract)
-                        objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
-                    else
-                        objData.EmitZeroPointer();
+                if (declMethod.HasInstantiation)
+                {
+                    // Generic virtual methods will "compile", but will fail to link. Check for it here.
+                    throw new NotImplementedException("VTable for " + _type + " has generic virtual methods.");
                 }
+
+                if (!implMethod.IsAbstract)
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
+                else
+                    objData.EmitZeroPointer();
             }
         }
 
@@ -595,10 +604,10 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
         {
             List<CombinedDependencyListEntry> dynamicNodes = new List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
-            dynamicNodes.Add(new CombinedDependencyListEntry(context.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
+            dynamicNodes.Add(new CombinedDependencyListEntry(factory.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
             return dynamicNodes;
         }
     }

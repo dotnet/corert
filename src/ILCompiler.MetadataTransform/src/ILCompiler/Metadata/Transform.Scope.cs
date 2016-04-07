@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
+using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
@@ -61,18 +62,20 @@ namespace ILCompiler.Metadata
 
                 scopeDefinition.PublicKey = assemblyName.GetPublicKey();
 
-                // TODO: CustomAttributes
+                Cts.Ecma.EcmaModule ecmaModule = module as Cts.Ecma.EcmaModule;
+                if (ecmaModule != null)
+                {
+                    Ecma.CustomAttributeHandleCollection customAttributes = ecmaModule.AssemblyDefinition.GetCustomAttributes();
+                    if (customAttributes.Count > 0)
+                    {
+                        scopeDefinition.CustomAttributes = HandleCustomAttributes(ecmaModule, customAttributes);
+                    }
+                }
             }
             else
             {
                 throw new NotSupportedException("Multi-module assemblies");
             }
-
-            scopeDefinition.RootNamespaceDefinition = new NamespaceDefinition
-            {
-                Name = null,
-                ParentScopeOrNamespace = scopeDefinition,
-            };
         }
 
         private EntityMap<Cts.ModuleDesc, ScopeReference> _scopeRefs
@@ -100,17 +103,16 @@ namespace ILCompiler.Metadata
 
                 Debug.Assert((int)AssemblyFlags.PublicKey == (int)AssemblyNameFlags.PublicKey);
                 Debug.Assert((int)AssemblyFlags.Retargetable == (int)AssemblyNameFlags.Retargetable);
-                scopeReference.Flags = (AssemblyFlags)assemblyName.Flags;
+
+                // References use a public key token instead of full public key.
+                scopeReference.Flags = (AssemblyFlags)(assemblyName.Flags & ~AssemblyNameFlags.PublicKey);
 
                 if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
                 {
                     scopeReference.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
                 }
 
-                if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
-                    scopeReference.PublicKeyOrToken = assemblyName.GetPublicKey();
-                else
-                    scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
+                scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
             }
             else
             {

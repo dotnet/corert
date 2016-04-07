@@ -44,6 +44,9 @@ namespace MetadataTransformTests
             if (typeDef.Name == "ICastable")
                 return true;
 
+            if (typeDef.HasCustomAttribute("System.Runtime.CompilerServices", "__BlockReflectionAttribute"))
+                return true;
+
             return false;
         }
     }

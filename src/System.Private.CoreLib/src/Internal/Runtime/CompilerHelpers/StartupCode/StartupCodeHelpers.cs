@@ -17,6 +17,11 @@ namespace Internal.Runtime.CompilerHelpers
     [McgIntrinsics]
     internal static class StartupCodeHelpers
     {
+        public static IntPtr[] Modules
+        {
+            get; private set;
+        }
+
         [RuntimeExport("InitializeModules")] // TODO: Change to NativeCallable
         internal static void InitializeModules(IntPtr moduleHeaders, int count)
         {
@@ -26,6 +31,10 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 InitializeGlobalTablesForModule(moduleManager);
             }
+
+            // We are now at a stage where we can use GC statics - publish the list of modules
+            // so that the eager constructors can access it.
+            Modules = modules;
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
@@ -165,8 +174,16 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
             for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
             {
-                object obj = RuntimeImports.RhNewObject(new EETypePtr(*block));
-                *block = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
+                // Gc Static regions can be shared by modules linked together during compilation. To ensure each
+                // is initialized once, the static region pointer is stored with lowest bit set in the image.
+                // The first time we initialize the static region its pointer is replaced with an object reference
+                // whose lowest bit is no longer set.
+                IntPtr* pBlock = (IntPtr*)*block;
+                if (((*pBlock).ToInt64() & 0x1L) == 1)
+                {
+                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr((*pBlock).ToInt64() & ~0x1L)));
+                    *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
+                }
             }
         }
 

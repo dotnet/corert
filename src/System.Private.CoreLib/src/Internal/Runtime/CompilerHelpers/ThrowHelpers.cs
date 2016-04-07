@@ -13,7 +13,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         private static void ThrowOverflowException()
         {
-            throw new IndexOutOfRangeException();
+            throw new OverflowException();
         }
 
         private static void ThrowIndexOutOfRangeException()
@@ -23,17 +23,22 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static void ThrowNullReferenceException()
         {
-            throw new IndexOutOfRangeException();
+            throw new NullReferenceException();
         }
 
         private static void ThrowDivideByZeroException()
         {
-            throw new IndexOutOfRangeException();
+            throw new DivideByZeroException();
         }
 
         private static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
+        }
+
+        private static void ThrowPlatformNotSupportedException()
+        {
+            throw new PlatformNotSupportedException();
         }
     }
 }

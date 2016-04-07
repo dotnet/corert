@@ -227,7 +227,7 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
         {
-#if CORERT // CORERT-TODO: RuntimeTypeHandle
+#if CLR_RUNTIMETYPEHANDLE // CORERT-TODO: RuntimeTypeHandle
             throw new NotImplementedException();
 #else
             return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));

@@ -28,8 +28,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>IAssemblyDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs">
+      <Link>TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>ModuleDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
+      <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
@@ -127,14 +133,20 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeSystemHelpers.cs" >
       <Link>TypeSystem\Common\TypeSystemHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs">
+      <Link>TypeSystem\Common\VirtualMethodEnumerationAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\WellKnownType.cs" >
       <Link>TypeSystem\Common\WellKnownType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\VirtualMethodAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.cs" >
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualFunctionResolution.cs" >
-      <Link>TypeSystem\Common\VirtualFunctionResolution.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodAlgorithm.cs">
+      <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeDesc.cs" >
       <Link>TypeSystem\Common\TypeDesc.cs</Link>
@@ -150,6 +162,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs" >
       <Link>TypeSystem\Common\RuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
+      <Link>Ecma\CustomAttributeTypeProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.cs">
       <Link>Ecma\EcmaField.cs</Link>
@@ -184,8 +199,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Ecma\CachingMetadataStringDecoder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
+      <Link>TypeSystem\Interop\InstantiatedType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MetadataType.Interop.cs">
+      <Link>TypeSystem\Interop\MetadataType.Interop.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
-      <Link>MethodDesc.Interop.cs</Link>
+      <Link>TypeSystem\Interop\MethodDesc.Interop.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
       <Link>Utilities\ArrayBuilder.cs</Link>

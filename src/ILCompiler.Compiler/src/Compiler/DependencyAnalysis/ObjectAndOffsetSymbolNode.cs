@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
@@ -24,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override string GetName()
         {
-            return "Symbol " + _name + " at offset " + _offset.ToString(CultureInfo.InvariantCulture);
+            return "Symbol " + _name + " at offset " + _offset.ToStringInvariant();
         }
 
         public override bool HasConditionalStaticDependencies
@@ -80,17 +79,17 @@ namespace ILCompiler.DependencyAnalysis
             _offset = offset;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             return null;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             return new DependencyListEntry[] { new DependencyListEntry(_object, "ObjectAndOffsetDependency") };
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context)
+        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
         {
             return null;
         }

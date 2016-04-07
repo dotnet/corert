@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 13accf3d-12d7-4fd4-bc65-d73578b1a474 */
-    0x13accf3d,
-    0x12d7,
-    0x4fd4,
-    { 0xbc, 0x65, 0xd7, 0x35, 0x78, 0xb1, 0xa4, 0x74 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 27626524-7315-4ed0-b74e-a0e4579883bb */
+    0x27626524, 
+    0x7315, 
+    0x4ed0, 
+    { 0xb7, 0x4e, 0xa0, 0xe4, 0x57, 0x98, 0x83, 0xbb }
 };
 
 #else
@@ -1584,6 +1584,11 @@ enum CorInfoTokenKind
 
     // token comes from CEE_CONSTRAINED
     CORINFO_TOKENKIND_Constrained = 0x100 | CORINFO_TOKENKIND_Class,
+
+#if COR_JIT_EE_VERSION > 460
+    // token comes from CEE_NEWOBJ
+    CORINFO_TOKENKIND_NewObj    = 0x200 | CORINFO_TOKENKIND_Method,
+#endif
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -2385,6 +2390,14 @@ public:
             CORINFO_CONST_LOOKUP *   pLookup
             ) = 0;
 
+#if COR_JIT_EE_VERSION > 460
+    virtual void getReadyToRunDelegateCtorHelper(
+            CORINFO_RESOLVED_TOKEN * pTargetMethod,
+            CORINFO_CLASS_HANDLE     delegateType,
+            CORINFO_CONST_LOOKUP *   pLookup
+            ) = 0;
+#endif
+
     virtual const char* getHelperName(
             CorInfoHelpFunc
             ) = 0;
@@ -2756,33 +2769,6 @@ public:
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(
         /* IN */    CORINFO_CLASS_HANDLE        structHnd,
         /* OUT */   SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr
-        ) = 0;
-
-    /*************************************************************************/
-    //
-    // Configuration values - Allows querying of the CLR configuration.
-    //
-    /*************************************************************************/
-
-    //  Return an integer ConfigValue if any.
-    //
-    virtual int getIntConfigValue(
-        const wchar_t *name, 
-        int defaultValue
-        ) = 0;
-
-    //  Return a string ConfigValue if any.
-    //
-    virtual wchar_t *getStringConfigValue(
-        const wchar_t *name
-        ) = 0;
-
-    // Free a string ConfigValue returned by the runtime.
-    // JITs using the getStringConfigValue query are required
-    // to return the string values to the runtime for deletion.
-    // this avoid leaking the memory in the JIT.
-    virtual void freeStringConfigValue(
-        __in_z wchar_t *value
         ) = 0;
 
 #endif // COR_JIT_EE_VERSION
