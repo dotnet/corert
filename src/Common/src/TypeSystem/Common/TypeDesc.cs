@@ -103,8 +103,26 @@ namespace Internal.TypeSystem
 
         public override bool Equals(Object o)
         {
+            // Its only valid to compare two TypeDescs in the same context
+            Debug.Assert(o == null || !(o is TypeDesc) || Object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
             return Object.ReferenceEquals(this, o);
         }
+
+#if DEBUG
+        public static bool operator ==(TypeDesc left, TypeDesc right)
+        {
+            // Its only valid to compare two TypeDescs in the same context
+            Debug.Assert(Object.ReferenceEquals(left, null) || Object.ReferenceEquals(right, null) || Object.ReferenceEquals(left.Context, right.Context));
+            return Object.ReferenceEquals(left, right);
+        }
+
+        public static bool operator !=(TypeDesc left, TypeDesc right)
+        {
+            // Its only valid to compare two TypeDescs in the same context
+            Debug.Assert(Object.ReferenceEquals(left, null) || Object.ReferenceEquals(right, null) || Object.ReferenceEquals(left.Context, right.Context));
+            return !Object.ReferenceEquals(left, right);
+        }
+#endif
 
         // The most frequently used type properties are cached here to avoid excesive virtual calls
         private TypeFlags _typeFlags;

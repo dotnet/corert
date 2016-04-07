@@ -24,11 +24,13 @@ namespace Internal.TypeSystem
 
             protected override bool CompareKeyToValue(MethodDesc key, MethodDesc value)
             {
+                Debug.Assert(key.Context == value.Context);
                 return Object.ReferenceEquals(key, value);
             }
 
             protected override bool CompareValueToValue(MethodDesc value1, MethodDesc value2)
             {
+                Debug.Assert(value1.Context == value2.Context);
                 return Object.ReferenceEquals(value1, value2);
             }
 
