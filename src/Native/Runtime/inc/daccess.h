@@ -1647,12 +1647,12 @@ public:
         return !*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr);
     }
 
-    typename store_type::_Type operator[](int index)
+    typename store_type operator[](int index) const
     {
         return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr))[index];
     }
 
-    typename store_type::_Type operator[](unsigned int index)
+    typename store_type operator[](unsigned int index) const
     {
         return (*__DPtr< store_type >(DacGlobalBase() + *m_rvaPtr))[index];
     }
