@@ -2011,6 +2011,7 @@ namespace Internal.JitInterface
             {
                 // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
                 directCall = true;
+                resolvedCallVirt = !targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.IsSealed();
             }
             else if (targetMethod.Signature.IsStatic)
             {
