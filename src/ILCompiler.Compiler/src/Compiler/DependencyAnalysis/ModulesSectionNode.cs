@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return new ObjectNodeSection(SectionName, SectionType.ReadOnly);
+                return new ObjectNodeSection(SectionName, SectionType.ReadOnly, SectionAttributes.MachOInitFuncPointers);
             }
         }
 
@@ -55,23 +55,13 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
             objData.RequirePointerAlignment();
             objData.DefinedSymbols.Add(this);
-            ObjectAndOffsetSymbolNode startNode = new ObjectAndOffsetSymbolNode(this, 0, "__modules_a");
-            ObjectAndOffsetSymbolNode endNode = new ObjectAndOffsetSymbolNode(this, 0, "__modules_z");
-
-            if (factory.Target.OperatingSystem != Internal.TypeSystem.TargetOS.Windows)
+            if (factory.Target.OperatingSystem == Internal.TypeSystem.TargetOS.OSX)
             {
-                // Temporary work-around for Linux / OSX until CLI is updated
-                objData.DefinedSymbols.Add(startNode);
+                objData.EmitPointerReloc(factory.JumpThunk((ExternSymbolNode)factory.ExternSymbol("RegisterReadyToRunModule"), factory.ReadyToRunHeader));
             }
-
-            objData.EmitPointerReloc(factory.ReadyToRunHeader);
-
-            if (factory.Target.OperatingSystem != Internal.TypeSystem.TargetOS.Windows)
+            else
             {
-                // Temporary work-around for Linux / OSX until CLI is updated
-                endNode.SetSymbolOffset(objData.CountBytes);
-                objData.DefinedSymbols.Add(endNode);
-                objData.EmitZeroPointer();
+                objData.EmitPointerReloc(factory.ReadyToRunHeader);
             }
 
             return objData.ToObjectData();

@@ -9,9 +9,30 @@
 #include "gcenv.base.h"
 
 #include <stdlib.h> 
+#include "vector.h"
 
 #ifndef CPPCODEGEN
-
+NoStl::vector<void*> __myVector;
+//
+// This is the mechanism whereby multiple linked modules contribute their global data for initialization at
+// startup of the application.
+//
+// Sections are created in the output obj file to mark the beginning and end of merged global data. They 
+// are named .modules$A and .modules$Z. Each section defines a sentinel symbol that is used to
+// get the addresses of the start and end of global data at runtime.
+//
+// Each obj file compiled from managed code has a .modules$I section containing a pointer to its ReadyToRun
+// data (which points at eager class constructors, frozen strings, etc).
+//
+// On Windows, the #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
+// obj files into .rdata in alphabetical order.
+//
+// On Linux, a linker script is used (see src/scripts/linkerscript) to do the equivalent since there is no similar
+// #pragma directive.
+//
+// On OSX, neither of these options are available but we can use a feature of MachO sections that invokes
+// each pointer in the section as a function to achieve the same effect with the helper RegisterReadyToRunModule
+//
 #if defined(_MSC_VER)
 
 #pragma section(".modules$A", read)
@@ -28,17 +49,32 @@ __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
 extern "C" void __managedcode_a();
 extern "C" void __managedcode_z();
 
-#else
-// TODO: Once the dotnet compiler is modified to configure the linker to merge sections
-// on OSX / Linux, store these externs in the .modules section and remove work-around
-// in ModuleHeaderNode.cs.
-//extern "C" __attribute((section ("__DATA,.modules$A"))) void * __modules_a[];
-//extern "C" __attribute((section ("__DATA,.modules$Z"))) void * __modules_z[];
-//__attribute((section ("__DATA,.modules$A"))) void * __modules_a[] = { nullptr };
-//__attribute((section ("__DATA,.modules$Z"))) void * __modules_z[] = { nullptr };
+#else // _MSC_VER
 
-extern "C" void * __modules_a[];
-extern "C" void * __modules_z[];
+#if defined(__APPLE__)
+
+//
+// On platforms with MachO binaries (OSX), we cannot use the above mechanism to register
+// global data for each module. Instead, we use a special section type whose contents
+// are a list of function pointers to call.  We create a jump stub that passes the global
+// data pointer into RegisterReadyToRunModule where we save it in a list for the startup
+// code to consume.
+//
+NoStl::vector<void*> __registeredModules;
+
+extern "C" void RegisterReadyToRunModule(void * pModule)
+{
+    __registeredModules.push_back(pModule);
+}
+
+#else // __APPLE__
+
+extern "C" __attribute((section (".modules$A"))) void * __modules_a[];
+extern "C" __attribute((section (".modules$Z"))) void * __modules_z[];
+__attribute((section (".modules$A"))) void * __modules_a[] = { nullptr };
+__attribute((section (".modules$Z"))) void * __modules_z[] = { nullptr };
+
+#endif // __APPLE__
 
 #endif // _MSC_VER
 
@@ -322,8 +358,11 @@ int main(int argc, char* argv[])
 #endif
 
     ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
-
+#if defined (__APPLE__)
+    InitializeModules(&__registeredModules[0], __registeredModules.size());
+#else
     InitializeModules(__modules_a, (int)((__modules_z - __modules_a))); 
+#endif
 
     int retval;
     try

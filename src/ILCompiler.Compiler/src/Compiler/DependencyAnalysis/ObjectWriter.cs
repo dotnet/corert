@@ -94,6 +94,11 @@ namespace ILCompiler.DependencyAnalysis
             ReadOnly = 0x0000,
             Writeable = 0x0001,
             Executable = 0x0002,
+
+            //
+            // Flags specific to particular binary formats
+            //
+            MachOInitFuncPointers = 0x0100,
         };
 
         /// <summary>
@@ -113,6 +118,13 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case SectionType.Writeable:
                     attributes |= CustomSectionAttributes.Writeable;
+                    break;
+            }
+
+            switch (section.Attributes)
+            {
+                case SectionAttributes.MachOInitFuncPointers:
+                    attributes |= CustomSectionAttributes.MachOInitFuncPointers;
                     break;
             }
 

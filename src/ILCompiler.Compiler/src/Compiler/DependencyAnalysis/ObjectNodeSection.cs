@@ -13,6 +13,18 @@ namespace ILCompiler.DependencyAnalysis
         Executable
     }
 
+    [Flags]
+    public enum SectionAttributes
+    {
+        None                    = 0x0000,
+
+        /// <summary>
+        /// On MachO, apply the S_MOD_INIT_FUNC_POINTERS section type. Data in this section is
+        /// treated as a list of function pointers that the OS loader will call on startup.
+        /// </summary>
+        MachOInitFuncPointers   = 0x0100,
+    }
+
     /// <summary>
     /// Specifies the object file section a node will be placed in; ie "text" or "data"
     /// </summary>
@@ -21,15 +33,17 @@ namespace ILCompiler.DependencyAnalysis
         public string Name { get; private set; }
         public SectionType Type { get; private set; }
         public string ComdatName { get; private set; }
+        public SectionAttributes Attributes {get; private set; }
 
-        private ObjectNodeSection(string name, SectionType attributes, string comdatName)
+        private ObjectNodeSection(string name, SectionType type, SectionAttributes attributes, string comdatName)
         {
             Name = name;
-            Type = attributes;
+            Type = type;
+            Attributes = attributes;
             ComdatName = comdatName;
         }
 
-        public ObjectNodeSection(string name, SectionType attributes) : this(name, attributes, null)
+        public ObjectNodeSection(string name, SectionType type, SectionAttributes attributes = SectionAttributes.None) : this(name, type, attributes, null)
         { }
 
         /// <summary>
@@ -49,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
             if (IsStandardSection)
                 standardSectionPrefix = ".";
 
-            return new ObjectNodeSection(standardSectionPrefix + Name + "$" + key, Type, key);
+            return new ObjectNodeSection(standardSectionPrefix + Name + "$" + key, Type, Attributes, key);
         }
 
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
