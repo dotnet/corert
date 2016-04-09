@@ -2007,13 +2007,7 @@ namespace Internal.JitInterface
             bool directCall = false;
             bool resolvedCallVirt = false;
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
-            {
-                // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
-                directCall = true;
-                resolvedCallVirt = !targetMethod.IsVirtual || targetMethod.IsFinal || targetMethod.OwningType.IsSealed();
-            }
-            else if (targetMethod.Signature.IsStatic)
+            if (targetMethod.Signature.IsStatic)
             {
                 // Static methods are always direct calls
                 directCall = true;
@@ -2057,8 +2051,6 @@ namespace Internal.JitInterface
 
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
-            pResult._nullInstanceCheck = (uint)(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) ? 1 : 0);
-
             // TODO: Support Generics
             if (targetMethod.HasInstantiation)
             {
@@ -2081,52 +2073,41 @@ namespace Internal.JitInterface
                     targetMethod = targetMethod.GetStringInitializer();
                 }
 
-                
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                ISymbolNode targetNode;
-
-                // Compensate for always treating delegates as direct calls above
-                if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 &&
-                    (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !resolvedCallVirt)
-                {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
-                    targetNode = _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod);
-                }
-                else
-                {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
-                    targetNode = _compilation.NodeFactory.MethodEntrypoint(targetMethod);
-                }
-
-                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(targetNode);
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
-            else if (!targetMethod.OwningType.IsInterface)
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            {
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
+
+                // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
+                // TODO: Optimize this
+                pResult.nullInstanceCheck = true;
+            }
+            else
             {
                 // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
                 // call that should not be inlined.
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
+                var readyToRunHelper = targetMethod.OwningType.IsInterface ? ReadyToRunHelperId.InterfaceDispatch : ReadyToRunHelperId.VirtualCall;
 
-                if ((pResult.methodFlags & (uint)CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE) != 0)
-                {
-                    pResult._nullInstanceCheck = 1;
-                }
-            }
-            else
-            {
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(readyToRunHelper, targetMethod));
+
+                // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
+                // TODO: Optimize this
                 pResult.nullInstanceCheck = true;
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-                pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, targetMethod));
             }
 
             // TODO: Generics
