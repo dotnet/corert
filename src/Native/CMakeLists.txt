@@ -99,6 +99,17 @@ if (CLR_CMAKE_PLATFORM_UNIX)
 
     add_compile_options(-fPIC)
     add_compile_options(-fvisibility=hidden)
+
+    if(CLR_CMAKE_PLATFORM_DARWIN)
+        # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
+        add_compile_options(-fstack-protector)
+    else()
+        add_compile_options(-fstack-protector-strong)
+    endif(CLR_CMAKE_PLATFORM_DARWIN)
+
+    if(CLR_CMAKE_PLATFORM_LINUX)
+        set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Wa,--noexecstack")  
+    endif(CLR_CMAKE_PLATFORM_LINUX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 if(CLR_CMAKE_PLATFORM_UNIX_TARGET_ARM)
