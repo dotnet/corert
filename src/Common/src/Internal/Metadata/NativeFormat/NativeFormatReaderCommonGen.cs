@@ -126,17 +126,18 @@ namespace Internal.Metadata.NativeFormat
         PointerSignature = 0x33,
         Property = 0x34,
         PropertySignature = 0x35,
-        QualifiedMethod = 0x36,
-        ReturnTypeSignature = 0x37,
-        SZArraySignature = 0x38,
-        ScopeDefinition = 0x39,
-        ScopeReference = 0x3a,
-        TypeDefinition = 0x3b,
-        TypeForwarder = 0x3c,
-        TypeInstantiationSignature = 0x3d,
-        TypeReference = 0x3e,
-        TypeSpecification = 0x3f,
-        TypeVariableSignature = 0x40,
+        QualifiedField = 0x36,
+        QualifiedMethod = 0x37,
+        ReturnTypeSignature = 0x38,
+        SZArraySignature = 0x39,
+        ScopeDefinition = 0x3a,
+        ScopeReference = 0x3b,
+        TypeDefinition = 0x3c,
+        TypeForwarder = 0x3d,
+        TypeInstantiationSignature = 0x3e,
+        TypeReference = 0x3f,
+        TypeSpecification = 0x40,
+        TypeVariableSignature = 0x41,
     } // HandleType
 
     /// <summary>
@@ -1821,6 +1822,7 @@ namespace Internal.Metadata.NativeFormat
         TypeSpecificationHandle ToTypeSpecificationHandle(MetadataReader reader);
         ConstantInt32ArrayHandle ToConstantInt32ArrayHandle(MetadataReader reader);
         EventHandle ToEventHandle(MetadataReader reader);
+        QualifiedFieldHandle ToQualifiedFieldHandle(MetadataReader reader);
         ConstantUInt16ValueHandle ToConstantUInt16ValueHandle(MetadataReader reader);
         ConstantBooleanArrayHandle ToConstantBooleanArrayHandle(MetadataReader reader);
         GenericParameterHandle ToGenericParameterHandle(MetadataReader reader);
@@ -1955,6 +1957,7 @@ namespace Internal.Metadata.NativeFormat
         ConstantHandleArray GetConstantHandleArray(ConstantHandleArrayHandle handle);
         Method GetMethod(MethodHandle handle);
         ConstantBooleanArray GetConstantBooleanArray(ConstantBooleanArrayHandle handle);
+        QualifiedField GetQualifiedField(QualifiedFieldHandle handle);
         TypeForwarder GetTypeForwarder(TypeForwarderHandle handle);
         NamespaceDefinition GetNamespaceDefinition(NamespaceDefinitionHandle handle);
         PropertySignature GetPropertySignature(PropertySignatureHandle handle);
@@ -2692,6 +2695,50 @@ namespace Internal.Metadata.NativeFormat
     public partial struct PropertySignatureHandle : IPropertySignatureHandle
     {
     } // PropertySignatureHandle
+
+    /// <summary>
+    /// IQualifiedField
+    /// </summary>
+    internal interface IQualifiedField
+    {
+        FieldHandle Field
+        {
+            get;
+        } // Field
+
+        TypeDefinitionHandle EnclosingType
+        {
+            get;
+        } // EnclosingType
+
+        QualifiedFieldHandle Handle
+        {
+            get;
+        } // Handle
+    } // IQualifiedField
+
+    /// <summary>
+    /// QualifiedField
+    /// </summary>
+    public partial struct QualifiedField : IQualifiedField
+    {
+    } // QualifiedField
+
+    /// <summary>
+    /// IQualifiedFieldHandle
+    /// </summary>
+    internal interface IQualifiedFieldHandle : IEquatable<QualifiedFieldHandle>, IEquatable<Handle>, IEquatable<Object>
+    {
+        Handle ToHandle(MetadataReader reader);
+        int GetHashCode();
+    } // IQualifiedFieldHandle
+
+    /// <summary>
+    /// QualifiedFieldHandle
+    /// </summary>
+    public partial struct QualifiedFieldHandle : IQualifiedFieldHandle
+    {
+    } // QualifiedFieldHandle
 
     /// <summary>
     /// IQualifiedMethod

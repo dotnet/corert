@@ -4565,6 +4565,11 @@ namespace Internal.Metadata.NativeFormat
             return new FieldHandle(this);
         } // ToFieldHandle
 
+        public QualifiedFieldHandle ToQualifiedFieldHandle(MetadataReader reader)
+        {
+            return new QualifiedFieldHandle(this);
+        } // ToQualifiedFieldHandle
+
         public PropertyHandle ToPropertyHandle(MetadataReader reader)
         {
             return new PropertyHandle(this);
@@ -5128,6 +5133,15 @@ namespace Internal.Metadata.NativeFormat
             return record;
         } // GetField
 
+        public QualifiedField GetQualifiedField(QualifiedFieldHandle handle)
+        {
+            var record = new QualifiedField() { _reader = this, _handle = handle };
+            var offset = (uint)handle.Offset;
+            offset = _streamReader.Read(offset, out record._field);
+            offset = _streamReader.Read(offset, out record._enclosingType);
+            return record;
+        } // GetQualifiedField
+
         public Property GetProperty(PropertyHandle handle)
         {
             var record = new Property() { _reader = this, _handle = handle };
@@ -5655,6 +5669,11 @@ namespace Internal.Metadata.NativeFormat
             return new Handle(handle._value);
         } // ToHandle
 
+        internal Handle ToHandle(QualifiedFieldHandle handle)
+        {
+            return new Handle(handle._value);
+        } // ToHandle
+
         internal Handle ToHandle(PropertyHandle handle)
         {
             return new Handle(handle._value);
@@ -5969,6 +5988,11 @@ namespace Internal.Metadata.NativeFormat
         {
             return new FieldHandle(handle._value);
         } // ToFieldHandle
+
+        internal QualifiedFieldHandle ToQualifiedFieldHandle(Handle handle)
+        {
+            return new QualifiedFieldHandle(handle._value);
+        } // ToQualifiedFieldHandle
 
         internal PropertyHandle ToPropertyHandle(Handle handle)
         {
@@ -6286,6 +6310,11 @@ namespace Internal.Metadata.NativeFormat
         } // IsNull
 
         internal bool IsNull(FieldHandle handle)
+        {
+            return (handle._value & 0x00FFFFFF) == 0;
+        } // IsNull
+
+        internal bool IsNull(QualifiedFieldHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull
@@ -8446,6 +8475,127 @@ namespace Internal.Metadata.NativeFormat
             return String.Format("{0:X8}", _value);
         } // ToString
     } // PropertySignatureHandle
+
+    /// <summary>
+    /// QualifiedField
+    /// </summary>
+    public partial struct QualifiedField
+    {
+        internal MetadataReader _reader;
+        internal QualifiedFieldHandle _handle;
+        public QualifiedFieldHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        } // Handle
+
+        public FieldHandle Field
+        {
+            get
+            {
+                return _field;
+            }
+        } // Field
+
+        internal FieldHandle _field;
+        public TypeDefinitionHandle EnclosingType
+        {
+            get
+            {
+                return _enclosingType;
+            }
+        } // EnclosingType
+
+        internal TypeDefinitionHandle _enclosingType;
+    } // QualifiedField
+
+    /// <summary>
+    /// QualifiedFieldHandle
+    /// </summary>
+    public partial struct QualifiedFieldHandle
+    {
+        public override bool Equals(object obj)
+        {
+            if (obj is QualifiedFieldHandle)
+                return _value == ((QualifiedFieldHandle)obj)._value;
+            else if (obj is Handle)
+                return _value == ((Handle)obj)._value;
+            else
+                return false;
+        } // Equals
+
+        public bool Equals(QualifiedFieldHandle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public bool Equals(Handle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public override int GetHashCode()
+        {
+            return (int)_value;
+        } // GetHashCode
+
+        internal int _value;
+        internal QualifiedFieldHandle(Handle handle) : this(handle._value)
+        {
+
+        }
+
+        internal QualifiedFieldHandle(int value)
+        {
+            HandleType hType = (HandleType)(value >> 24);
+            if (!(hType == 0 || hType == HandleType.QualifiedField || hType == HandleType.Null))
+                throw new ArgumentException();
+            _value = (value & 0x00FFFFFF) | (((int)HandleType.QualifiedField) << 24);
+            _Validate();
+        }
+
+        public static implicit operator  Handle(QualifiedFieldHandle handle)
+        {
+            return new Handle(handle._value);
+        } // Handle
+
+        internal int Offset
+        {
+            get
+            {
+                return (this._value & 0x00FFFFFF);
+            }
+        } // Offset
+
+        public QualifiedField GetQualifiedField(MetadataReader reader)
+        {
+            return reader.GetQualifiedField(this);
+        } // GetQualifiedField
+
+        public bool IsNull(MetadataReader reader)
+        {
+            return reader.IsNull(this);
+        } // IsNull
+
+        public Handle ToHandle(MetadataReader reader)
+        {
+            return reader.ToHandle(this);
+        } // ToHandle
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal void _Validate()
+        {
+            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.QualifiedField)
+                throw new ArgumentException();
+        } // _Validate
+
+        public override String ToString()
+        {
+            return String.Format("{0:X8}", _value);
+        } // ToString
+    } // QualifiedFieldHandle
 
     /// <summary>
     /// QualifiedMethod
