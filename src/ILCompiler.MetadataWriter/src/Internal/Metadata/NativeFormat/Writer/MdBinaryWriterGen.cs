@@ -561,6 +561,28 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
+        public static void Write(this NativeWriter writer, QualifiedField record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<QualifiedField> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (QualifiedField value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
         public static void Write(this NativeWriter writer, Property record)
         {
             if (record != null)
