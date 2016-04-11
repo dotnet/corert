@@ -68,8 +68,6 @@ namespace ILCompiler
             _options.MultiFile = false;
         }
 
-        // TODO: Use System.CommandLine for command line parsing
-        // https://github.com/dotnet/corert/issues/568
         private ArgumentSyntax ParseCommandLine(string[] args)
         {
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
