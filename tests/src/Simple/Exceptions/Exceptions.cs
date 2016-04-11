@@ -46,6 +46,22 @@ public class BringUpTest
             Console.WriteLine("Null reference exception caught!");
         }
 
+        bool argumentExceptionCaught = false;
+        try
+        {
+            throw new ArgumentException("TheMessage", "TheParam");
+        }
+        catch (ArgumentException aex)
+        {
+            if (aex.ParamName == "TheParam")
+                Console.WriteLine("ArgumentException caught");
+            else
+                return Fail;
+            argumentExceptionCaught = true;
+        }
+        if (!argumentExceptionCaught)
+            return Fail;
+
         return Pass;
     }
 }
