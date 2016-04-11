@@ -332,6 +332,10 @@ __recordSchema = [
         ('Offset', 'uint', MemberDefFlags(0)),
         ('CustomAttributes', 'CustomAttribute', MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
         ]),
+    ('QualifiedField', None, RecordDefFlags(0), [
+        ('Field', 'Field', MemberDefFlags.RecordRef),
+        ('EnclosingType', 'TypeDefinition', MemberDefFlags.RecordRef),
+    ]),
     ('Property', None, RecordDefFlags(0), [
         ('Flags', 'PropertyAttributes', MemberDefFlags(0)),
         ('Name', 'ConstantStringValue', MemberDefFlags.RecordRef | MemberDefFlags.Child),
