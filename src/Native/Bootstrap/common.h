@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <math.h>
 
 #include <new>
 
@@ -111,6 +112,18 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment)
 #pragma warning(disable:4102) // unreferenced label
 #pragma warning(disable:4244) // possible loss of data
 #pragma warning(disable:4717) // recursive on all control paths
+#endif
+
+#ifdef _MSC_VER
+#define INT64VAL(x) (x##i64)
+#else
+#define INT64VAL(x) (x##LL)
+#endif
+
+#ifdef _MSC_VER
+#define CORERT_UNREACHABLE  __assume(0)
+#else
+#define CORERT_UNREACHABLE  __builtin_unreachable()
 #endif
 
 #endif // __COMMON_H
