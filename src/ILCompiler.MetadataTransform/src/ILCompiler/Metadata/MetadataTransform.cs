@@ -64,8 +64,8 @@ namespace ILCompiler.Metadata
         public abstract MetadataRecord HandleQualifiedMethod(Cts.MethodDesc method);
 
         /// <summary>
-        /// Retrieves an existing <see cref="FieldReference"/> record representing specified field
-        /// in the metadata writer object model, or creates a new one.
+        /// Retrieves an existing <see cref="QualifiedField"> or a <see cref="MemberReference"/> record
+        /// representing specified field in the metadata writer object model, or creates a new one.
         /// </summary>
         public abstract MetadataRecord HandleQualifiedField(Cts.FieldDesc field);
 
