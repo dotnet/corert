@@ -25,7 +25,17 @@ namespace ILCompiler.Metadata
 
         public override MetadataRecord HandleQualifiedField(Cts.FieldDesc field)
         {
-            return HandleFieldReference(field);
+            if (_policy.GeneratesMetadata(field) && field.GetTypicalFieldDefinition() == field)
+            {
+                QualifiedField record = new QualifiedField();
+                record.Field = HandleFieldDefinition(field);
+                record.EnclosingType = (TypeDefinition)HandleType(field.OwningType);
+                return record;
+            }
+            else
+            {
+                return HandleFieldReference(field);
+            }
         }
 
         private Field HandleFieldDefinition(Cts.FieldDesc field)
@@ -68,8 +78,6 @@ namespace ILCompiler.Metadata
 
         private MemberReference HandleFieldReference(Cts.FieldDesc field)
         {
-            Debug.Assert(field.GetTypicalFieldDefinition() == field);
-            Debug.Assert(!_policy.GeneratesMetadata(field));
             return (MemberReference)_fields.GetOrCreate(field, _initFieldRef ?? (_initFieldRef = InitializeFieldReference));
         }
 
@@ -79,7 +87,7 @@ namespace ILCompiler.Metadata
             record.Parent = HandleType(entity.OwningType);
             record.Signature = new FieldSignature
             {
-                Type = HandleType(entity.FieldType),
+                Type = HandleType(entity.GetTypicalFieldDefinition().FieldType),
                 // TODO: CustomModifiers
             };
         }
