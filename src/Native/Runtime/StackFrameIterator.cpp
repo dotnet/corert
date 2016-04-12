@@ -357,18 +357,25 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     // preserved regs
     //
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rbp);
+#ifndef UNIX_AMD64_ABI
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rsi);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rdi);
+#else // !UNIX_AMD64_ABI
+    m_RegDisplay.pRsi = NULL;
+    m_RegDisplay.pRdi = NULL;
+#endif // !UNIX_AMD64_ABI
     m_RegDisplay.pRbx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rbx);
 #ifdef _TARGET_AMD64_
     m_RegDisplay.pR12 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R12);
     m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R13);
     m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R14);
     m_RegDisplay.pR15 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R15);
+#ifndef UNIX_AMD64_ABI
     //
     // preserved xmm regs
     //
     memcpy(m_RegDisplay.Xmm, &pCtx->Xmm6, sizeof(m_RegDisplay.Xmm));
+#endif // !UNIX_AMD64_ABI
 #endif // _TARGET_AMD64_
 
     //
@@ -376,7 +383,11 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     //
     m_RegDisplay.pRax = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rax);
     m_RegDisplay.pRcx = NULL;
+#ifdef UNIX_AMD64_ABI
+    m_RegDisplay.pRdx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rdx);
+#else // UNIX_AMD64_ABI
     m_RegDisplay.pRdx = NULL;
+#endif // UNIX_AMD64_ABI
 #ifdef _TARGET_AMD64_
     m_RegDisplay.pR8  = NULL;
     m_RegDisplay.pR9  = NULL;
@@ -493,8 +504,10 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
 #else
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
+#ifndef UNIX_AMD64_ABI
     m_RegDisplay.pRdi = thisFuncletPtrs.pRdi;
     m_RegDisplay.pRsi = thisFuncletPtrs.pRsi;
+#endif // !UNIX_AMD64_ABI
     m_RegDisplay.pRbx = thisFuncletPtrs.pRbx;
 #ifdef _TARGET_AMD64_
     m_RegDisplay.pR12 = thisFuncletPtrs.pR12;
@@ -908,8 +921,10 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 
 #ifdef _TARGET_AMD64_
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
+#ifndef UNIX_AMD64_ABI
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rsi);
+#endif // !UNIX_AMD64_ABI
     m_RegDisplay.pRbx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbx);
     m_RegDisplay.pR12 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R12);
     m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R13);

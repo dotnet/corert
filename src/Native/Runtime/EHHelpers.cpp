@@ -133,8 +133,12 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;
     pContext->Rbp = pPalContext->Rbp;
+#ifndef UNIX_AMD64_ABI
     pContext->Rdi = pPalContext->Rdi;
     pContext->Rsi = pPalContext->Rsi;
+#else // !UNIX_AMD64_ABI
+    pContext->Rdx = pPalContext->Rdx;
+#endif // !UNIX_AMD64_ABI
     pContext->Rax = pPalContext->Rax;
     pContext->Rbx = pPalContext->Rbx;
     pContext->R12 = pPalContext->R12;

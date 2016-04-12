@@ -157,18 +157,20 @@ private:
         PTR_UIntNative pR9;
         PTR_UIntNative pR10;
         PTR_UIntNative pR11;
-#else
+#else // _TARGET_ARM_
         PTR_UIntNative pRbp;
+#ifndef UNIX_AMD64_ABI
         PTR_UIntNative pRdi;
         PTR_UIntNative pRsi;
+#endif // !UNIX_AMD64_ABI
         PTR_UIntNative pRbx;
 #ifdef _TARGET_AMD64_
         PTR_UIntNative pR12;
         PTR_UIntNative pR13;
         PTR_UIntNative pR14;
         PTR_UIntNative pR15;
-#endif // _AMD64_
-#endif // _ARM_
+#endif // _TARGET_AMD64_
+#endif // _TARGET_ARM_
     };
 
 protected:

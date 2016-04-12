@@ -29,12 +29,12 @@ struct REGDISPLAY
     PTR_PCODE    pIP;
     PCODE        IP;
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
     Fp128          Xmm[16-6]; // preserved xmm6..xmm15 regs for EH stackwalk
                               // these need to be unwound during a stack walk
                               // for EH, but not adjusted, so we only need
                               // their values, not their addresses
-#endif // _TARGET_AMD64_
+#endif // _TARGET_AMD64_ && !UNIX_AMD64_ABI
 
     inline PCODE GetIP() { return IP; }
     inline PTR_PCODE GetAddrOfIP() { return pIP; }

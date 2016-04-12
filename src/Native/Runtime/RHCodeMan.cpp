@@ -661,6 +661,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     PTR_UIntNative RSP = (PTR_UIntNative)rawRSP;
 
 #if defined(_TARGET_AMD64_)
+#ifndef UNIX_AMD64_ABI
     if (pInfoHeader->HasSavedXmmRegs())
     {
         typedef DPTR(Fp128) PTR_Fp128;
@@ -678,6 +679,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
             }
         }
     }
+#endif // !UNIX_AMD64_ABI
 #elif defined(_TARGET_ARM_)
     UInt8 vfpRegPushedCount = pInfoHeader->GetVfpRegPushedCount();
     UInt8 vfpRegFirstPushed = pInfoHeader->GetVfpRegFirstPushed();

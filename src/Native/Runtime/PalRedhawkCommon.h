@@ -72,15 +72,21 @@ struct PAL_LIMITED_CONTEXT
     UIntNative  IP;
     UIntNative  Rsp;
     UIntNative  Rbp;
+#ifndef UNIX_AMD64_ABI
     UIntNative  Rdi;
     UIntNative  Rsi;
+#endif // !UNIX_AMD64_ABI
     UIntNative  Rax;
     UIntNative  Rbx;
 #ifdef _TARGET_AMD64_
+#ifdef UNIX_AMD64_ABI
+    UIntNative  Rdx;
+#endif // UNIX_AMD64_ABI
     UIntNative  R12;
     UIntNative  R13;
     UIntNative  R14;
     UIntNative  R15;
+#ifndef UNIX_AMD64_ABI
     UIntNative  __explicit_padding__;
     Fp128       Xmm6;
     Fp128       Xmm7;
@@ -92,6 +98,7 @@ struct PAL_LIMITED_CONTEXT
     Fp128       Xmm13;
     Fp128       Xmm14;
     Fp128       Xmm15;
+#endif // !UNIX_AMD64_ABI
 #endif // _AMD64_
 
     UIntNative GetIp() const { return IP; }
