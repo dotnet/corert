@@ -623,7 +623,6 @@ namespace Internal.IL
         private void ImportLoadVar(int index, bool argument)
         {
             string name = GetVarName(index, argument);
-            string temp = NewTempName();
 
             TypeDesc type = GetVarType(index, argument);
             StackValueKind kind = GetStackValueKind(type);
