@@ -200,6 +200,13 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2ULngOvf");
                     break;
 
+                case JitHelperId.DblRem:
+                    mangledName = "RhpDblRem";
+                    break;
+                case JitHelperId.FltRem:
+                    mangledName = "RhpFltRem";
+                    break;
+
                 default:
                     throw new NotImplementedException(id.ToString());
             }
