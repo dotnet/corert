@@ -86,9 +86,6 @@ EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpDbl2ULng(double val)
 #ifdef CORERT
 #include <cmath>
 
-#define CLR_NAN_32 0xFFC00000
-#define CLR_NAN_64 0xFFF8000000000000L
-
 EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
 {
     //
@@ -104,20 +101,14 @@ EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divi
 
     if (divisor==0 || !isfinite(dividend))
     {
-        UInt32 NaN = CLR_NAN_32;
-        return *(float *)(&NaN);
+        return -nanf(0);
     }
-    else if (!isfinite(divisor) && !isnan(divisor))
+    else if (!isfinite(divisor) && !std::isnan(divisor))
     {
         return dividend;
     }
     // else...
-#if 0
-    // COMPILER BUG WITH FMODF() + /Oi, USE FMOD() INSTEAD
     return fmodf(dividend,divisor);
-#else
-    return (float)fmod((double)dividend,(double)divisor);
-#endif
 }
 
 EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
@@ -134,10 +125,9 @@ EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double d
     //
     if (divisor==0 || !isfinite(dividend))
     {
-        UInt64 NaN = CLR_NAN_64; 
-        return *(double *)(&NaN);
+        return -nan(0);
     }
-    else if (!isfinite(divisor) && !isnan(divisor))
+    else if (!isfinite(divisor) && !std::isnan(divisor))
     {
         return dividend;
     }
