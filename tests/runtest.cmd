@@ -40,6 +40,8 @@ exit /b 2
 
 :ArgsDone
 
+set CoreRT_RspTemplateDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
+
 setlocal EnableDelayedExpansion
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
