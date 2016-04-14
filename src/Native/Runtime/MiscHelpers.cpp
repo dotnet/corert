@@ -483,6 +483,65 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     return pCodeOrg;
 }
 
+// Given a pointer to code, find out if this points to a jump stub, and if so, return the address that stub jumps to
+COOP_PINVOKE_HELPER(UInt8 *, RhGetJmpStubCodeTarget, (UInt8 * pCodeOrg))
+{
+    // Search for the module containing the code
+    FOREACH_MODULE(pModule)
+    {
+        // If the code pointer doesn't point to a module's stub range,
+        // it can't be pointing to a stub
+        if (!pModule->ContainsStubAddress(pCodeOrg))
+            continue;
+
+#ifdef _TARGET_AMD64_
+        UInt8 * pCode = pCodeOrg;
+
+        // if this is a jmp stub
+        if (pCode[0] == 0xe9)
+        {
+            // relative jump - dist is relative to the point *after* the instruction
+            Int32 distToTarget = *(Int32 *)&pCode[1];
+            UInt8 * target = pCode + 5 + distToTarget;
+            return target;
+        }
+        return pCodeOrg;
+
+#elif _TARGET_X86_
+        UInt8 * pCode = pCodeOrg;
+
+        // if this is a jmp stub
+        if (pCode[0] == 0xe9)
+        {
+            // relative jump - dist is relative to the point *after* the instruction
+            Int32 distToTarget = *(Int32 *)&pCode[1];
+            UInt8 * pTarget = pCode + 5 + distToTarget;
+            return pTarget;
+        }
+        return pCodeOrg;
+
+#elif _TARGET_ARM_
+        const UInt16 THUMB_BIT = 1;
+        UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_BIT);
+        // if this is a jmp stub
+        if ((pCode[0] & 0xf800) == 0xf000 && (pCode[1] & 0xd000) == 0x9000)
+        {
+            Int32 distToTarget = GetThumb2BlRel24(pCode);
+            UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_BIT;
+            return (UInt8 *)pTarget;
+        }
+#elif _TARGET_ARM64_
+        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
+#else
+#error 'Unsupported Architecture'
+#endif
+    }
+    END_FOREACH_MODULE;
+
+    return pCodeOrg;
+}
+
+
 //
 // Return true if the array slice is valid
 //

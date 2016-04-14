@@ -538,6 +538,11 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]
         internal static extern IntPtr RhGetCodeTarget(IntPtr pCode);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetJmpStubCodeTarget")]
+        internal static extern IntPtr RhGetJmpStubCodeTarget(IntPtr pCode);
+
         //
         // EH helpers
         //

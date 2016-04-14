@@ -118,6 +118,7 @@ internal static extern void System.Runtime.RuntimeImports.RhEnableShutdownFinali
 internal static extern bool System.Runtime.RuntimeImports.RhFindBlob(System.IntPtr hOsModule, uint blobId, byte** ppbBlob, uint* pcbBlob)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhFindMethodStartAddress(System.IntPtr codeAddr)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetCodeTarget(System.IntPtr pCode)
+internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetJmpStubCodeTarget(System.IntPtr pCode)
 internal static extern ushort System.Runtime.RuntimeImports.RhGetComponentSize(System.EETypePtr pEEType)
 internal static extern System.Runtime.RuntimeImports.RhCorElementType System.Runtime.RuntimeImports.RhGetCorElementType(System.EETypePtr pEEType)
 internal static extern long System.Runtime.RuntimeImports.RhGetCurrentObjSize()

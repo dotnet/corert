@@ -149,6 +149,22 @@ namespace System.Runtime.InteropServices
             return del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out dummyIsOpenInstanceFunction);
         }
 
+        //
+        // Returns the raw function pointer - if the function has a jump stub 
+        // it returns the jump target. Therefore the function pointer returned
+        // by two delegates may NOT be unique
+        //
+        public static IntPtr GetRawFunctionPointer(this Delegate del)
+        {
+            bool dummyIsOpenInstanceFunction;
+            RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
+
+            IntPtr funcPtr = del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out dummyIsOpenInstanceFunction);
+
+            // if the function pointer points to a jump stub return the target
+            return RuntimeImports.RhGetJmpStubCodeTarget(funcPtr);
+        }
+
         public static IntPtr GetRawValue(this RuntimeTypeHandle handle)
         {
             return handle.RawValue;
