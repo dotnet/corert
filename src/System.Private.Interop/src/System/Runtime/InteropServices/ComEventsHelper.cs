@@ -214,11 +214,11 @@ namespace System.Runtime.InteropServices
 #else
         public static void Combine(object rcw, Guid iid, int dispid, Delegate d)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("Combine");
         }
         public static Delegate Remove(object rcw, Guid iid, int dispid, Delegate d)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("DelegateRemove");
         }
 #endif // FEATURE_COMEVENTSHELPER
     }

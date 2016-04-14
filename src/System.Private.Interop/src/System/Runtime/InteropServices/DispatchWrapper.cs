@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("WrappedObject");
             }
         }
 #endif // FEATURE_DISPATCHWRAPPER
