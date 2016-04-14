@@ -124,5 +124,10 @@ namespace System
                 return new String(buf);
             }
         }
+
+        public static void Exit(int exitCode)
+        {
+            Interop.mincore.ExitProcess(exitCode);
+        }
     }
 }

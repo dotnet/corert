@@ -115,3 +115,8 @@ extern "C" uint64_t CoreLibNative_GetTickCount64()
 #endif // HAVE_CLOCK_MONOTONIC 
     return retval;
 }
+
+extern "C" void CoreLibNative_ExitProcess(int32_t exitCode)
+{
+    exit(exitCode);
+}

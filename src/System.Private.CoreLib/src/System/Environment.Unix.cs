@@ -84,5 +84,10 @@ namespace System
                 return Encoding.UTF8.GetString(hostName, hostNameLength);
             }
         }
+
+        public static void Exit(int exitCode)
+        {
+            Interop.Sys.ExitProcess(exitCode);
+        }
     }
 }

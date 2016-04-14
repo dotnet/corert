@@ -46,5 +46,11 @@ namespace System
                 throw new PlatformNotSupportedException();
             }
         }
+
+        public static void Exit(int exitCode)
+        {
+            // Store apps have their lifetime managed by the PLM
+            throw new PlatformNotSupportedException();
+        }
     }
 }

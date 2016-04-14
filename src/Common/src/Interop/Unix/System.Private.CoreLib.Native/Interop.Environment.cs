@@ -15,5 +15,8 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetMachineName")]
         internal static unsafe extern int GetMachineName(byte *hostNameBuffer, int hostNameBufferSize);
+
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_ExitProcess")]
+        internal static extern void ExitProcess(int exitCode);
     }
 }
