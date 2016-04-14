@@ -99,11 +99,11 @@ EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divi
     // ***"negated for -infinity" has been removed from the spec
     //
 
-    if (divisor==0 || !isfinite(dividend))
+    if (divisor==0 || !std::isfinite(dividend))
     {
         return -nanf(0);
     }
-    else if (!isfinite(divisor) && !std::isnan(divisor))
+    else if (!std::isfinite(divisor) && !std::isnan(divisor))
     {
         return dividend;
     }
@@ -123,11 +123,11 @@ EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double d
     //
     // ***"negated for -infinity" has been removed from the spec
     //
-    if (divisor==0 || !isfinite(dividend))
+    if (divisor==0 || !std::isfinite(dividend))
     {
         return -nan(0);
     }
-    else if (!isfinite(divisor) && !std::isnan(divisor))
+    else if (!std::isfinite(divisor) && !std::isnan(divisor))
     {
         return dividend;
     }
