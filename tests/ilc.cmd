@@ -22,7 +22,7 @@ if not exist %__RSPTemplate% ((call :Fail "RSP template not found (%__RSPTemplat
 set __RSPFile=%__SourceFile%.rsp
 
 rem Copy the relevant lines from the template RSP file
-findstr /V "\repro." %__RSPTemplate% > %__RSPFile%
+findstr /B /C:"-r:" %__RSPTemplate% > %__RSPFile%
 
 echo %__SourceFile% >> %__RSPFile%
 if exist "%__SourceFolder%\*.dll" (
