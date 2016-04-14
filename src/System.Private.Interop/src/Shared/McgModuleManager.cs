@@ -94,13 +94,11 @@ namespace System.Runtime.InteropServices
 
         public static McgTypeInfo IInspectable
         {
+            // Do not move this under ENABLE_WINRT since this is
+            // common code path. 
             get
             {
-#if ENABLE_WINRT
                 return new McgTypeInfo((int)InternalModule.Indexes.IInspectable, s_internalModule);
-#else
-                throw new PlatformNotSupportedException();
-#endif
             }
         }
 
@@ -111,7 +109,7 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
                 return new McgTypeInfo((int)InternalModule.Indexes.HSTRING, s_internalModule);
 #else
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("HSTRING");
 #endif
             }
         }
@@ -123,7 +121,7 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
                 return new McgTypeInfo((int)InternalModule.Indexes.IJupiterObject, s_internalModule);
 #else
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("IJupiterObject");
 #endif
             }
         }
@@ -135,7 +133,7 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
                 return new McgTypeInfo((int)InternalModule.Indexes.IStringable, s_internalModule);
 #else
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("IStringable");
 #endif
             }
         }
@@ -184,9 +182,9 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
                 return new McgTypeInfo((int)InternalModule.Indexes.IWeakReferenceSource, s_internalModule);
 #else
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("IWeakReferenceSource");
 #endif
-    }
+            }
 }
 
         internal static McgTypeInfo IWeakReference
@@ -196,7 +194,7 @@ namespace System.Runtime.InteropServices
 #if ENABLE_WINRT
                 return new McgTypeInfo((int)InternalModule.Indexes.IWeakReference, s_internalModule);
 #else
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException("IWeakReference");
 #endif
             }
         }
