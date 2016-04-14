@@ -626,6 +626,12 @@ namespace System.Runtime.InteropServices
         public IntPtr ReverseStub;
 
         /// <summary>
+        /// The stub called from thunk that does the marshalling when calling managed open static delegate (as a function
+        /// pointer) from native code
+        /// </summary>
+        public IntPtr ReverseOpenStaticDelegateStub;
+
+        /// <summary>
         /// This creates a delegate wrapper class that wraps the native function pointer and allows managed
         /// code to call it
         /// </summary>

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Collections.Generic.Internal
 {
@@ -27,14 +28,38 @@ namespace System.Collections.Generic.Internal
 
         private TKey[] keyArray;
 
-        public HashSet(int capacity)
+        private Lock m_lock;
+
+        public HashSet(int capacity) : this(capacity, false)
+        {
+        }
+
+        public HashSet(int capacity, bool sync)
         {
             if (capacity < MinimalSize)
             {
                 capacity = MinimalSize;
             }
+            if (sync)
+            {
+                m_lock = new Lock();
+            }
 
             Initialize(capacity);
+        }
+
+        public void LockAcquire()
+        {
+            Debug.Assert(m_lock != null);
+
+            m_lock.Acquire();
+        }
+
+        public void LockRelease()
+        {
+            Debug.Assert(m_lock != null);
+
+            m_lock.Release();
         }
 
         public void Clear()
@@ -130,6 +155,16 @@ namespace System.Collections.Generic.Internal
             keyArray = new TKey[size];
         }
 
+        public KeyCollection Keys
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<KeyCollection>() != null);
+
+                return new KeyCollection(this);
+            }
+        }
+
         public bool Add(TKey key, int hashCode)
         {
             hashCode = hashCode & 0x7FFFFFFF;
@@ -222,6 +257,235 @@ namespace System.Collections.Generic.Internal
             }
 
             return false;
+        }
+
+        public sealed class KeyCollection : ICollection<TKey>, ICollection
+        {
+            private HashSet<TKey> m_hashSet;
+
+            public KeyCollection(HashSet<TKey> hashSet)
+            {
+                if (hashSet == null)
+                {
+                    throw new ArgumentNullException("hashSet");
+                }
+
+                this.m_hashSet = hashSet;
+            }
+
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(m_hashSet);
+            }
+
+            public void CopyTo(TKey[] array, int index)
+            {
+                if (array == null)
+                {
+                    throw new ArgumentNullException("array");
+                }
+
+                if (index < 0 || index > array.Length)
+                {
+                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+
+                if (array.Length - index < m_hashSet.Count)
+                {
+                    throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+                }
+
+                int count = m_hashSet.count;
+                TKey[] keys = m_hashSet.keyArray;
+                Entry[] entries = m_hashSet.entries;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (entries[i].hashCode >= 0)
+                    {
+                        array[index++] = keys[i];
+                    }
+                }
+            }
+
+            public int Count
+            {
+                get { return m_hashSet.Count; }
+            }
+
+            bool ICollection<TKey>.IsReadOnly
+            {
+                get { return true; }
+            }
+
+            void ICollection<TKey>.Add(TKey item)
+            {
+                throw new NotSupportedException(SR.NotSupported_KeyCollectionSet);
+            }
+
+            void ICollection<TKey>.Clear()
+            {
+                throw new NotSupportedException(SR.NotSupported_KeyCollectionSet);
+            }
+
+            bool ICollection<TKey>.Contains(TKey item)
+            {
+                throw new NotSupportedException(SR.NotSupported_KeyCollectionSet);
+            }
+
+            bool ICollection<TKey>.Remove(TKey item)
+            {
+                throw new NotSupportedException(SR.NotSupported_KeyCollectionSet);
+            }
+
+            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator()
+            {
+                return new Enumerator(m_hashSet);
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return new Enumerator(m_hashSet);
+            }
+
+            void ICollection.CopyTo(Array array, int index)
+            {
+                if (array == null)
+                {
+                    throw new ArgumentNullException("array");
+                }
+
+                if (array.Rank != 1)
+                {
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
+                }
+
+                if (array.GetLowerBound(0) != 0)
+                {
+                    throw new ArgumentException(SR.Arg_NonZeroLowerBound);
+                }
+
+                if (index < 0 || index > array.Length)
+                {
+                    throw new ArgumentOutOfRangeException("index", SR.ArgumentOutOfRange_NeedNonNegNum);
+                }
+
+                if (array.Length - index < m_hashSet.Count)
+                {
+                    throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+                }
+
+                TKey[] keys = array as TKey[];
+
+                if (keys != null)
+                {
+                    CopyTo(keys, index);
+                }
+                else
+                {
+                    object[] objects = array as object[];
+
+                    if (objects == null)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidArrayType);
+                    }
+
+                    int count = m_hashSet.count;
+                    Entry[] entries = m_hashSet.entries;
+                    TKey[] ks = m_hashSet.keyArray;
+
+                    try
+                    {
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (entries[i].hashCode >= 0)
+                            {
+                                objects[index++] = ks[i];
+                            }
+                        }
+                    }
+                    catch (ArrayTypeMismatchException)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidArrayType);
+                    }
+                }
+            }
+
+            bool ICollection.IsSynchronized
+            {
+                get { return false; }
+            }
+
+            Object ICollection.SyncRoot
+            {
+                get { return ((ICollection)m_hashSet).SyncRoot; }
+            }
+
+            public struct Enumerator : IEnumerator<TKey>, System.Collections.IEnumerator
+            {
+                private HashSet<TKey> hashSet;
+                private int index;
+                private TKey currentKey;
+
+                internal Enumerator(HashSet<TKey> _hashSet)
+                {
+                    this.hashSet = _hashSet;
+                    index = 0;
+                    currentKey = default(TKey);
+                }
+
+                public void Dispose()
+                {
+                }
+
+                public bool MoveNext()
+                {
+                    while ((uint)index < (uint)hashSet.count)
+                    {
+                        if (hashSet.entries[index].hashCode >= 0)
+                        {
+                            currentKey = hashSet.keyArray[index];
+                            index++;
+
+                            return true;
+                        }
+
+                        index++;
+                    }
+
+                    index = hashSet.count + 1;
+                    currentKey = default(TKey);
+
+                    return false;
+                }
+
+                public TKey Current
+                {
+                    get
+                    {
+                        return currentKey;
+                    }
+                }
+
+                Object System.Collections.IEnumerator.Current
+                {
+                    get
+                    {
+                        if (index == 0 || (index == hashSet.count + 1))
+                        {
+                            throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                        }
+
+                        return currentKey;
+                    }
+                }
+
+                void System.Collections.IEnumerator.Reset()
+                {
+                    index = 0;
+                    currentKey = default(TKey);
+                }
+            }
         }
     }
 }

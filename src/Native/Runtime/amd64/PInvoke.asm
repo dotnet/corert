@@ -246,20 +246,8 @@ Retry:
         ;;     2) Performing a managed delegate invoke on a reverse pinvoke delegate.
         ;;
         cmp         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], 0
-        jne         ValidTransition
+        je          CheckBadTransition
 
-        ;; Allow 'bad transitions' in when the TSF_DoNotTriggerGc mode is set.  This allows us to have 
-        ;; [NativeCallable] methods that are called via the "restricted GC callouts" as well as from native,
-        ;; which is necessary because the methods are CCW vtable methods on interfaces passed to native.
-        test        dword ptr [r10 + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
-        jz          BadTransition
-
-        ;; RhpTrapThreads will always be set in this case, so we must skip that check.  We must be sure to 
-        ;; zero-out our 'previous transition frame' state first, however.
-        mov         qword ptr [rbx], 0
-        jmp         AllDone
-
-ValidTransition:
         ; rbx: previous transition frame save slot
         ; r10: thread
 
@@ -287,6 +275,19 @@ AllDone:
         add         rsp, 80h
         pop         rbx                 ; restore preserved reg
         ret
+
+CheckBadTransition:
+        ;; Allow 'bad transitions' in when the TSF_DoNotTriggerGc mode is set.  This allows us to have 
+        ;; [NativeCallable] methods that are called via the "restricted GC callouts" as well as from native,
+        ;; which is necessary because the methods are CCW vtable methods on interfaces passed to native.
+        test        dword ptr [r10 + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
+        jz          BadTransition
+
+        ;; RhpTrapThreads will always be set in this case, so we must skip that check.  We must be sure to 
+        ;; zero-out our 'previous transition frame' state first, however.
+        mov         qword ptr [rbx], 0
+        jmp         AllDone
+
 
 AttachThread:
         ;;
