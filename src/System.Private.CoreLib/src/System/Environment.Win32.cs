@@ -124,5 +124,11 @@ namespace System
                 return new String(buf);
             }
         }
+
+        public static void Exit(int exitCode)
+        {
+            // CORERT-TODO: Shut down the runtime
+            Interop.mincore.ExitProcess(exitCode);
+        }
     }
 }
