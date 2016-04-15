@@ -127,6 +127,7 @@ namespace System
 
         public static void Exit(int exitCode)
         {
+            // CORERT-TODO: Shut down the runtime
             Interop.mincore.ExitProcess(exitCode);
         }
     }
