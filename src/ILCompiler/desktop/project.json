@@ -3,13 +3,11 @@
     "NETStandard.Library": "1.5.0-rc2-23911",
     "System.IO.MemoryMappedFiles": "4.0.0-rc2-23911",
     "System.Reflection.Metadata": "1.3.0-rc2-23911",
-    "Microsoft.DiaSymReader": "1.0.6",
-    "System.CommandLine": "0.1.0-e160323-1",
+    "Microsoft.DiaSymReader": "1.0.8-rc2-60325",
+    "System.CommandLine": "0.1.0-e160323-1"
   },
   "frameworks": {
-    "net46": {
-      "imports": "portable-net452+win8"
-    }
+    "net46": {}
   },
   "runtimes": {
     "win-x64": {}

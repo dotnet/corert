@@ -110,8 +110,8 @@
         <dependency id="System.IO.MemoryMappedFiles" version="4.0.0-rc2-23911" />
         <dependency id="System.Reflection.Metadata" version="1.3.0-rc2-23911" />
         <dependency id="System.Xml.ReaderWriter" version="4.0.0" />
-        <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
-        <dependency id="System.CommandLine" version="0.1.0-e160208-1" />
+        <dependency id="Microsoft.DiaSymReader" version="1.0.8-rc2-60325" />
+        <dependency id="System.CommandLine" version="0.1.0-e160323-1" />
                     ]]></Dependencies>
             </NuSpecFile>
             
