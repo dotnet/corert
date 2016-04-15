@@ -6,7 +6,7 @@
     "Microsoft.DiaSymReader": "1.0.6"
   },
   "frameworks": {
-    "dnxcore50": {
+    "netstandard1.3": {
       "imports": "portable-net452"
     }
   }
