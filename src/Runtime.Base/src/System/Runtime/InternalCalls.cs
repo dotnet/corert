@@ -18,10 +18,23 @@ namespace System.Runtime
         //
 
         // Force a garbage collection.
-        [RuntimeImport(Redhawk.BaseName, "RhCollect")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Always)]
-        internal static extern void RhCollect(int generation, InternalGCCollectionMode mode);
+        [RuntimeExport("RhCollect")]
+        internal static void RhCollect(int generation, InternalGCCollectionMode mode)
+        {
+            RhpCollect(generation, mode);
+        }
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void RhpCollect(int generation, InternalGCCollectionMode mode);
+
+        [RuntimeExport("RhGetGcTotalMemory")]
+        internal static long RhGetGcTotalMemory()
+        {
+            return RhpGetGcTotalMemory();
+        }
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern long RhpGetGcTotalMemory();
 
         //
         // internalcalls for System.Runtime.__Finalizer.

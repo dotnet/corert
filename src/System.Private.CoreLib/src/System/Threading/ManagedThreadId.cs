@@ -251,22 +251,14 @@ namespace System.Threading
                 return;
             }
 
-            try
+            var priorIdDispenser = Volatile.Read(ref s_idDispenser);
+            for (;;)
             {
-                var priorIdDispenser = Volatile.Read(ref s_idDispenser);
-                for (;;)
-                {
-                    var updatedIdDispenser = s_idDispenser.RecycleId(_managedThreadId);
-                    var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
-                    if (Object.ReferenceEquals(priorIdDispenser, interlockedResult))
-                        break;
-                    priorIdDispenser = interlockedResult; // we already have a volatile read that we can reuse for the next loop
-                }
-            }
-            catch (OutOfMemoryException)
-            {
-                // Try to recycle the id next time
-                RuntimeImports.RhReRegisterForFinalize(this);
+                var updatedIdDispenser = s_idDispenser.RecycleId(_managedThreadId);
+                var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
+                if (Object.ReferenceEquals(priorIdDispenser, interlockedResult))
+                    break;
+                priorIdDispenser = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
         }
     }

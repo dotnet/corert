@@ -260,10 +260,6 @@ extern "C" void RhGetCurrentThreadStackTrace()
 {
     throw "RhGetCurrentThreadStackTrace";
 }
-extern "C" void RhCollect()
-{
-    throw "RhCollect";
-}
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
@@ -275,10 +271,6 @@ extern "C" void RhpFailFastForPInvokeExceptionPreemp()
 extern "C" void RhpEtwExceptionThrown()
 {
     throw "RhpEtwExceptionThrown";
-}
-extern "C" void RhReRegisterForFinalize()
-{
-    throw "RhReRegisterForFinalize";
 }
 
 #ifndef CPPCODEGEN

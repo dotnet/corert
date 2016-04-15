@@ -47,9 +47,9 @@ COOP_PINVOKE_HELPER(void, RhSpinWait, (Int32 iterations))
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-COOP_PINVOKE_HELPER(UInt32_BOOL, RhYield, ())
+COOP_PINVOKE_HELPER(Boolean, RhYield, ())
 {
-    return PalSwitchToThread();
+    return PalSwitchToThread() ? Boolean_true : Boolean_false;
 }
 
 // Get the rarely used (optional) flags of an EEType. If they're not present 0 will be returned.

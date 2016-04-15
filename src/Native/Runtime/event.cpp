@@ -90,9 +90,9 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable, bool bAl
 
         if (NULL != pCurThread)
         {
-            if (pCurThread->PreemptiveGCDisabled())
+            if (pCurThread->IsCurrentThreadInCooperativeMode())
             {
-                pCurThread->EnablePreemptiveGC();
+                pCurThread->EnablePreemptiveMode();
                 disablePreemptive = true;
             }
         }
@@ -101,7 +101,7 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable, bool bAl
 
         if (disablePreemptive)
         {
-            pCurThread->DisablePreemptiveGC();
+            pCurThread->DisablePreemptiveMode();
         }
     }
 

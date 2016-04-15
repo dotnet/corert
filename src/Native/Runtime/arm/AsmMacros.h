@@ -147,8 +147,8 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
         COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
 
         ;; We do not need to clear m_pHackPInvokeTunnel here because it is 'on the side' information.
-        ;; The actual transition to/from preemptive mode is done elsewhere (HackEnablePreemptiveMode,
-        ;; HackDisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
+        ;; The actual transition to/from preemptive mode is done elsewhere (EnablePreemptiveMode,
+        ;; DisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
         ;; so as long as we always set it on the way into a "cooperative pinvoke" method, we're fine
         ;; because it is only looked at inside these "cooperative pinvoke" methods.
 
@@ -233,7 +233,6 @@ $Name
 
         SETALIAS PALDEBUGBREAK, ?PalDebugBreak@@YAXXZ
         SETALIAS REDHAWKGCINTERFACE__ALLOC, ?Alloc@RedhawkGCInterface@@SAPAXPAVThread@@IIPAVEEType@@@Z
-        SETALIAS REDHAWKGCINTERFACE__GARBAGECOLLECT, ?GarbageCollect@RedhawkGCInterface@@SAXII@Z
         SETALIAS G_LOWEST_ADDRESS, g_lowest_address
         SETALIAS G_HIGHEST_ADDRESS, g_highest_address
         SETALIAS G_EPHEMERAL_LOW, g_ephemeral_low
@@ -249,7 +248,6 @@ $Name
 ;; IMPORTS
 ;;
         EXTERN $REDHAWKGCINTERFACE__ALLOC
-        EXTERN $REDHAWKGCINTERFACE__GARBAGECOLLECT
         EXTERN $THREADSTORE__ATTACHCURRENTTHREAD
         EXTERN $PALDEBUGBREAK
         EXTERN RhpPInvokeWaitEx

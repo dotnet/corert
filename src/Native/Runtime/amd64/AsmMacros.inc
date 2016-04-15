@@ -308,8 +308,8 @@ endm
 ;;
 POP_COOP_PINVOKE_FRAME macro extraStack
     ;; We do not need to clear m_pHackPInvokeTunnel here because it is 'on the side' information.
-    ;; The actual transition to/from preemptive mode is done elsewhere (HackEnablePreemptiveMode,
-    ;; HackDisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
+    ;; The actual transition to/from preemptive mode is done elsewhere (EnablePreemptiveMode,
+    ;; DisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
     ;; so as long as we always set it on the way into a "cooperative pinvoke" method, we're fine
     ;; because it is only looked at inside these "cooperative pinvoke" methods.
     add         rsp, 20h + ((extraStack+8) AND (10h-1)) + 8
@@ -389,7 +389,6 @@ MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -8
 
 PALDEBUGBREAK                               equ ?PalDebugBreak@@YAXXZ
 REDHAWKGCINTERFACE__ALLOC                   equ ?Alloc@RedhawkGCInterface@@SAPEAXPEAVThread@@_KIPEAVEEType@@@Z
-REDHAWKGCINTERFACE__GARBAGECOLLECT          equ ?GarbageCollect@RedhawkGCInterface@@SAXII@Z
 THREADSTORE__ATTACHCURRENTTHREAD            equ ?AttachCurrentThread@ThreadStore@@SAXXZ
 THREAD__VALIDATEEXINFOPOP                   equ ?ValidateExInfoPop@Thread@@QEAAXPEAUExInfo@@PEAX@Z
 
@@ -403,7 +402,6 @@ endif ;; FEATURE_GC_STRESS
 ;;
 
 EXTERN REDHAWKGCINTERFACE__ALLOC                : PROC
-EXTERN REDHAWKGCINTERFACE__GARBAGECOLLECT       : PROC
 EXTERN THREADSTORE__ATTACHCURRENTTHREAD         : PROC
 EXTERN THREAD__VALIDATEEXINFOPOP                : PROC
 EXTERN PALDEBUGBREAK                            : PROC

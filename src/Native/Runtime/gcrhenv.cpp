@@ -551,13 +551,6 @@ void RedhawkGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, UInt32 cRefs, 
     GcBulkEnumObjects((PTR_OBJECTREF)pRefs, cRefs, (EnumGcRefCallbackFunc *)pfnEnumCallback, (EnumGcRefScanContext *)pvCallbackData);
 }
 
-// static
-void RedhawkGCInterface::GarbageCollect(UInt32 uGeneration, UInt32 uMode)
-{
-    ASSERT(!GetThread()->IsDoNotTriggerGcSet());
-    GCHeap::GetGCHeap()->GarbageCollect(uGeneration, FALSE, uMode);
-}
-
 // static 
 GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt32 SizeSection)
 {
@@ -592,7 +585,7 @@ void RedhawkGCInterface::StressGc()
         return;
     }
 
-    GarbageCollect((UInt32) -1, collection_blocking);
+    GCHeap::GetGCHeap()->GarbageCollect();
 }
 #endif // FEATURE_GC_STRESS
 
@@ -637,8 +630,8 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
     {
         // Wait in pre-emptive mode to avoid stalling another thread that's attempting a collection.
         Thread * pCurThread = GetThread();
-        ASSERT(pCurThread->PreemptiveGCDisabled());
-        pCurThread->EnablePreemptiveGC();
+        ASSERT(pCurThread->IsCurrentThreadInCooperativeMode());
+        pCurThread->EnablePreemptiveMode();
 
         // Give the other thread some time to get the collection going.
         if (PalSwitchToThread() == 0)
@@ -649,7 +642,7 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
         WaitForGCCompletion();
 
         // Come back into co-operative mode.
-        pCurThread->DisablePreemptiveGC();
+        pCurThread->DisablePreemptiveMode();
     }
 
     // We should never end up overwriting someone else's callback context when we won the race to set the
@@ -657,8 +650,8 @@ void RedhawkGCInterface::ScanHeap(GcScanObjectFunction pfnScanCallback, void *pC
     ASSERT(g_pvHeapScanContext == NULL);
     g_pvHeapScanContext = pContext;
 
-    // Initiate a full garbage collection (0xffffffff == all generations).
-    GarbageCollect(0xffffffff, collection_blocking);
+    // Initiate a full garbage collection
+    GCHeap::GetGCHeap()->GarbageCollect();
     WaitForGCCompletion();
 
     // Release our hold on the global scanning pointers.
@@ -769,7 +762,7 @@ bool RedhawkGCInterface::IsScanInProgress()
     // Only allow callers that have no RH thread or are in cooperative mode; i.e., don't
     // call this in preemptive mode, as the result would not be reliable in multi-threaded
     // environments.
-    ASSERT(GetThread() == NULL || GetThread()->PreemptiveGCDisabled());
+    ASSERT(GetThread() == NULL || GetThread()->IsCurrentThreadInCooperativeMode());
     return g_pfnHeapScan != NULL;
 }
 
@@ -1089,17 +1082,25 @@ bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
 
 bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
 {
-    return pThread->PreemptiveGCDisabled();
+    return pThread->IsCurrentThreadInCooperativeMode();
 }
 
 void GCToEEInterface::EnablePreemptiveGC(Thread * pThread)
 {
-    return pThread->EnablePreemptiveGC();
+#ifndef DACCESS_COMPILE
+    pThread->EnablePreemptiveMode();
+#else
+    UNREFERENCED_PARAMETER(pThread);
+#endif
 }
 
 void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 {
-    pThread->DisablePreemptiveGC();
+#ifndef DACCESS_COMPILE
+    pThread->DisablePreemptiveMode();
+#else
+    UNREFERENCED_PARAMETER(pThread);
+#endif
 }
 
 
@@ -1239,7 +1240,7 @@ void FinalizerThread::SignalFinalizationDone(bool /*fFinalizer*/)
 
 bool FinalizerThread::HaveExtraWorkForFinalizer()
 {
-    return g_pFinalizerThread->HaveExtraWorkForFinalizer();
+    return false; // Nothing to do
 }
 
 bool FinalizerThread::IsCurrentThreadFinalizer()
