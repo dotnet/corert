@@ -82,6 +82,60 @@ EXTERN_C REDHAWK_API UInt64 REDHAWK_CALLCONV RhpDbl2ULng(double val)
     return((UInt64)val);
 }
 
+// CORERT Specific - on Project N the arguments to these helpers are inverted
+#ifdef CORERT
+#include <cmath>
+
+EXTERN_C REDHAWK_API float REDHAWK_CALLCONV RhpFltRem(float dividend, float divisor)
+{
+    //
+    // From the ECMA standard:
+    //
+    // If [divisor] is zero or [dividend] is infinity
+    //   the result is NaN.
+    // If [divisor] is infinity,
+    //   the result is [dividend] (negated for -infinity***).
+    //
+    // ***"negated for -infinity" has been removed from the spec
+    //
+
+    if (divisor==0 || !std::isfinite(dividend))
+    {
+        return -nanf(0);
+    }
+    else if (!std::isfinite(divisor) && !std::isnan(divisor))
+    {
+        return dividend;
+    }
+    // else...
+    return fmodf(dividend,divisor);
+}
+
+EXTERN_C REDHAWK_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double divisor)
+{
+    //
+    // From the ECMA standard:
+    //
+    // If [divisor] is zero or [dividend] is infinity
+    //   the result is NaN.
+    // If [divisor] is infinity,
+    //   the result is [dividend] (negated for -infinity***).
+    //
+    // ***"negated for -infinity" has been removed from the spec
+    //
+    if (divisor==0 || !std::isfinite(dividend))
+    {
+        return -nan(0);
+    }
+    else if (!std::isfinite(divisor) && !std::isnan(divisor))
+    {
+        return dividend;
+    }
+    // else...
+    return(fmod(dividend,divisor));
+}
+#endif // CORERT
+
 #ifdef _ARM_
 EXTERN_C REDHAWK_API Int32 REDHAWK_CALLCONV RhpIDiv(Int32 i, Int32 j)
 {

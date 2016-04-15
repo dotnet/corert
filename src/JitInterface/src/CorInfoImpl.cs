@@ -1801,10 +1801,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG: id = JitHelperId.Dbl2ULng; break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_OVF: id = JitHelperId.Dbl2ULngOvf; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_FLTREM: id = JitHelperId.DblRem; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLREM: id = JitHelperId.FltRem; break;
-                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = JitHelperId.DblRound; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.FltRound; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTREM: id = JitHelperId.FltRem; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLREM: id = JitHelperId.DblRem; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = JitHelperId.FltRound; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.DblRound; break;
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
