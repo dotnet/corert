@@ -1109,8 +1109,6 @@ namespace System.Runtime.InteropServices
 
             ~EquatablePInvokeDelegateThunk()
             {
-                 Debug.Assert(Handle.Target == null);
-
                  Handle.Free();
                  Marshal.FreeHGlobal(ContextData);
             }
