@@ -21,8 +21,7 @@
     // once we exit the macro). Note that this is naughty since we're altering the stack pointer outside of
     // the prolog inside a method without a frame. But given that this is only debug code and generally we
     // shouldn't be walking the stack at this point it seems preferable to recoding the all the barrier
-    // variants to set up frames. Unlike RhpBulkWriteBarrier below which is treated as a helper call using the
-    // usual calling convention, the compiler knows exactly which registers are trashed in the simple write
+    // variants to set up frames. The compiler knows exactly which registers are trashed in the simple write
     // barrier case, so we don't have any more scratch registers to play with (and doing so would only make
     // things harder if at a later stage we want to allow multiple barrier versions based on the input
     // registers).

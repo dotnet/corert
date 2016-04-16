@@ -36,6 +36,16 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhSuppressFinalize")]
         internal static extern void RhSuppressFinalize(Object obj);
 
+        internal static void RhReRegisterForFinalize(Object obj)
+        {
+            if (!_RhReRegisterForFinalize(obj))
+                throw new OutOfMemoryException();
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhReRegisterForFinalize")]
+        private static extern bool _RhReRegisterForFinalize(Object obj);
+
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
         private static extern void RhWaitForPendingFinalizers(int allowReentrantWait);
@@ -63,10 +73,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGeneration")]
         internal static extern int RhGetGeneration(Object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhReRegisterForFinalize")]
-        internal static extern void RhReRegisterForFinalize(Object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGcLatencyMode")]
@@ -112,7 +118,7 @@ namespace System.Runtime
         // calls for GCHandle.
         // These methods are needed to implement GCHandle class like functionality (optional)
         //
-#if CORERT
+
         // Allocate handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpHandleAlloc")]
@@ -146,27 +152,11 @@ namespace System.Runtime
 
         internal static IntPtr RhHandleAllocVariable(Object value, uint type)
         {
-            IntPtr h = RhHandleAllocVariable(value, type);
+            IntPtr h = RhpHandleAllocVariable(value, type);
             if (h == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return h;
         }
-#else // CORERT
-        // Allocate handle.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhHandleAlloc")]
-        internal static extern IntPtr RhHandleAlloc(Object value, GCHandleType type);
-
-        // Allocate handle for dependent handle case where a secondary can be set at the same time.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhHandleAllocDependent")]
-        internal static extern IntPtr RhHandleAllocDependent(Object primary, Object secondary);
-
-        // Allocate variable handle with its initial type.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhHandleAllocVariable")]
-        internal static extern IntPtr RhHandleAllocVariable(Object value, uint type);
-#endif // CORERT
 
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -538,6 +528,11 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]
         internal static extern IntPtr RhGetCodeTarget(IntPtr pCode);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetJmpStubCodeTarget")]
+        internal static extern IntPtr RhGetJmpStubCodeTarget(IntPtr pCode);
+
         //
         // EH helpers
         //

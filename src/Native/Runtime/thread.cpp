@@ -142,10 +142,10 @@ void Thread::ResetCachedTransitionFrame()
 // was passed in via the m_pHackPInvokeTunnel field.  It is used to allow us to grandfather-in the set of GC
 // code that runs in cooperative mode without having to rewrite it in managed code.  The result is that the
 // code that calls into this special mode must spill preserved registeres as if it's going to PInvoke, but 
-// record its transition frame pointer in m_pHackPInvokeTunnel and leave the thread in the SS_ManagedRunning
-// state.  Later on, when this function is called, we effect the state transition to 'unmanaged' using the 
-// previously setup transtion frame.
-void Thread::HackEnablePreemptiveMode()
+// record its transition frame pointer in m_pHackPInvokeTunnel and leave the thread in the cooperative
+// mode.  Later on, when this function is called, we effect the state transition to 'unmanaged' using the 
+// previously setup transition frame.
+void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(m_pHackPInvokeTunnel != NULL);
@@ -155,7 +155,7 @@ void Thread::HackEnablePreemptiveMode()
     LeaveRendezVous(m_pHackPInvokeTunnel);
 }
 
-void Thread::HackDisablePreemptiveMode()
+void Thread::DisablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
 
@@ -166,6 +166,14 @@ void Thread::HackDisablePreemptiveMode()
         success = TryReturnRendezVous(m_pHackPInvokeTunnel);
     }
     while (!success);
+}
+
+// This function setups the m_pHackPInvokeTunnel field for GC helpers entered via regular PInvoke.
+void Thread::SetupHackPInvokeTunnel()
+{
+    ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(!Thread::IsCurrentThreadInCooperativeMode());
+    m_pHackPInvokeTunnel = m_pTransitionFrame;
 }
 #endif // !DACCESS_COMPILE
 
@@ -318,39 +326,9 @@ bool Thread::IsInitialized()
     return (m_ThreadStateFlags != TSF_Unknown);
 }
 
-#endif // !DACCESS_COMPILE
-
-
 // -----------------------------------------------------------------------------------------------------------
-// LEGACY APIs: do not use except from GC itself
+// GC support APIs - do not use except from GC itself
 //
-
-bool Thread::PreemptiveGCDisabled()
-{ 
-     return IsCurrentThreadInCooperativeMode();
-}
-
-void Thread::EnablePreemptiveGC()
-{
-#ifndef DACCESS_COMPILE
-    HackEnablePreemptiveMode();
-#endif
-}
-
-void Thread::DisablePreemptiveGC()
-{ 
-#ifndef DACCESS_COMPILE
-    HackDisablePreemptiveMode();
-#endif
-}
-
-#ifndef DACCESS_COMPILE
-void Thread::PulseGCMode()
-{
-    HackEnablePreemptiveMode();
-    HackDisablePreemptiveMode();
-}
-
 void Thread::SetGCSpecial(bool isGCSpecial)
 {
     if (isGCSpecial)
@@ -371,12 +349,6 @@ bool Thread::CatchAtSafePoint()
     ASSERT(IsGCSpecial());
     return true;
 }
-#endif // !DACCESS_COMPILE
-
-// END LEGACY APIs
-// -----------------------------------------------------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
 
 UInt64 Thread::GetPalThreadIdForLogging()
 {

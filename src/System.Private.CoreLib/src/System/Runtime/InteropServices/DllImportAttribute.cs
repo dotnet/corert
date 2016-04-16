@@ -9,9 +9,9 @@ namespace System.Runtime.InteropServices
     {
         private string _dllName;
         public string EntryPoint;
-        public CharSet CharSet;             // Not used in Redhawk - defined for convenience
-        public bool SetLastError;           // Not used in Redhawk - defined for convenience 
-        public bool ExactSpelling;          // Not used in Redhawk - defined for convenience
+        public CharSet CharSet;
+        public bool SetLastError;
+        public bool ExactSpelling;
         public CallingConvention CallingConvention;
         public bool BestFitMapping;
         public bool PreserveSig;

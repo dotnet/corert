@@ -21,6 +21,46 @@
 
 #include "thread.h"
 
+EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
+{
+    // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
+    // called in cooperative mode.
+    ASSERT(!GetThread()->IsCurrentThreadInCooperativeMode());
+
+    FinalizerThread::Wait(INFINITE, allowReentrantWait);
+}
+
+EXTERN_C REDHAWK_API void __cdecl RhpCollect(UInt32 uGeneration, UInt32 uMode)
+{
+    // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
+
+    Thread * pCurThread = GetThread();
+
+    pCurThread->SetupHackPInvokeTunnel();
+    pCurThread->DisablePreemptiveMode();
+
+    ASSERT(!pCurThread->IsDoNotTriggerGcSet());
+    GCHeap::GetGCHeap()->GarbageCollect(uGeneration, FALSE, uMode);
+
+    pCurThread->EnablePreemptiveMode();
+}
+
+EXTERN_C REDHAWK_API Int64 __cdecl RhpGetGcTotalMemory()
+{
+    // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
+
+    Thread * pCurThread = GetThread();
+
+    pCurThread->SetupHackPInvokeTunnel();
+    pCurThread->DisablePreemptiveMode();
+
+    Int64 ret = GCHeap::GetGCHeap()->GetTotalBytesInUse();
+
+    pCurThread->EnablePreemptiveMode();
+
+    return ret;
+}
+
 COOP_PINVOKE_HELPER(void, RhSuppressFinalize, (OBJECTREF refObj))
 {
     if (!refObj->get_EEType()->HasFinalizer())
@@ -28,13 +68,11 @@ COOP_PINVOKE_HELPER(void, RhSuppressFinalize, (OBJECTREF refObj))
     GCHeap::GetGCHeap()->SetFinalizationRun(refObj);
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(BOOL allowReentrantWait)
+COOP_PINVOKE_HELPER(Boolean, RhReRegisterForFinalize, (OBJECTREF refObj))
 {
-    // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
-    // called in cooperative mode.
-    ASSERT(!GetThread()->PreemptiveGCDisabled());
-
-    FinalizerThread::Wait(INFINITE, allowReentrantWait);
+    if (!refObj->get_EEType()->HasFinalizer())
+        return Boolean_true;
+    return GCHeap::GetGCHeap()->RegisterForFinalization(-1, refObj) ? Boolean_true : Boolean_false;
 }
 
 COOP_PINVOKE_HELPER(Int32, RhGetMaxGcGeneration, ())
@@ -52,12 +90,6 @@ COOP_PINVOKE_HELPER(Int32, RhGetGeneration, (OBJECTREF obj))
     return GCHeap::GetGCHeap()->WhichGeneration(obj);
 }
 
-COOP_PINVOKE_HELPER(void, RhReRegisterForFinalizeHelper, (OBJECTREF obj))
-{
-    if (obj->get_EEType()->HasFinalizer())
-        GCHeap::GetGCHeap()->RegisterForFinalization(-1, obj);
-}
-
 COOP_PINVOKE_HELPER(Int32, RhGetGcLatencyMode, ())
 {
     return GCHeap::GetGCHeap()->GetGcLatencyMode();
@@ -71,11 +103,6 @@ COOP_PINVOKE_HELPER(void, RhSetGcLatencyMode, (Int32 newLatencyMode))
 COOP_PINVOKE_HELPER(Boolean, RhIsServerGc, ())
 {
     return GCHeap::IsServerHeap();
-}
-
-COOP_PINVOKE_HELPER(Int64, RhGetGcTotalMemoryHelper, ())
-{
-    return GCHeap::GetGCHeap()->GetTotalBytesInUse();
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhRegisterGcCallout, (GcRestrictedCalloutKind eKind, void * pCallout))

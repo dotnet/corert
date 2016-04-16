@@ -619,7 +619,7 @@ namespace System.Runtime.InteropServices
                 createCOMException: false,
                 hasErrorInfo: false);
 #else
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("GetExceptionForHR");
 #endif // ENABLE_WINRT
         }
 
@@ -1542,49 +1542,49 @@ namespace System.Runtime.InteropServices
         public static byte ReadByte(Object ptr, int ofs)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("ReadByte");
         }
 
         public static short ReadInt16(Object ptr, int ofs)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("ReadInt16");
         }
 
         public static int ReadInt32(Object ptr, int ofs)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("ReadInt32");
         }
 
         public static long ReadInt64(Object ptr, int ofs)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("ReadInt64");
         }
 
         public static void WriteByte(Object ptr, int ofs, byte val)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("WriteByte");
         }
 
         public static void WriteInt16(Object ptr, int ofs, short val)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("WriteInt16");
         }
 
         public static void WriteInt32(Object ptr, int ofs, int val)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("WriteInt32");
         }
 
         public static void WriteInt64(Object ptr, int ofs, long val)
         {
             // Obsolete
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException("WriteInt64");
         }
     }
 }
