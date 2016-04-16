@@ -157,8 +157,6 @@ public:
                                                  void * pfnEnumCallback,
                                                  void * pvCallbackData);
 
-    static void GarbageCollect(UInt32 uGeneration, UInt32 uMode);
-
     static GcSegmentHandle RegisterFrozenSection(void * pSection, UInt32 SizeSection);
     static void UnregisterFrozenSection(GcSegmentHandle segment);
 

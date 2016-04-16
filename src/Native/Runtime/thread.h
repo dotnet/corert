@@ -71,7 +71,7 @@ struct ThreadBuffer
 #else
     PTR_VOID volatile       m_pTransitionFrame;
 #endif
-    PTR_VOID                m_pHackPInvokeTunnel;                   // see Thread::HackEnablePreemptiveMode
+    PTR_VOID                m_pHackPInvokeTunnel;                   // see Thread::EnablePreemptiveMode
     PTR_VOID                m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
@@ -144,17 +144,12 @@ private:
     // SyncState members
     //
     PTR_VOID    GetTransitionFrame();
-    // ---------------------------------------------------------------------------------------------------
+
+    //
     // Synchronous state transitions -- these must occur on the thread whose state is changing
     //
     void        LeaveRendezVous(void * pTransitionFrame);
     bool        TryReturnRendezVous(void * pTransitionFrame);
-
-    // begin { // the set of operations used to support unmanaged code running in cooperative mode
-    void        HackEnablePreemptiveMode();
-    void        HackDisablePreemptiveMode();
-    // } end 
-    // -------------------------------------------------------------------------------------------------------
 
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
@@ -225,28 +220,19 @@ public:
 
     static bool         IsHijackTarget(void * address);
 
-    // -------------------------------------------------------------------------------------------------------
-    // LEGACY APIs: do not use except from GC itself
     //
-    bool PreemptiveGCDisabled();
-    void EnablePreemptiveGC();
-    void DisablePreemptiveGC();
-    void PulseGCMode();
+    // The set of operations used to support unmanaged code running in cooperative mode
+    //
+    void                EnablePreemptiveMode();
+    void                DisablePreemptiveMode();
+    void                SetupHackPInvokeTunnel();
+
+    //
+    // GC support APIs - do not use except from GC itself
+    //
     void SetGCSpecial(bool isGCSpecial);
     bool IsGCSpecial();
     bool CatchAtSafePoint();
-    // END LEGACY APIs
-    // -------------------------------------------------------------------------------------------------------
-
-    // Nothing to do.
-    bool HaveExtraWorkForFinalizer() { return false; }
-
-    // We have chosen not to eagerly commit thread stacks.
-    static bool CommitThreadStack(Thread* pThreadOptional) 
-    { 
-        UNREFERENCED_PARAMETER(pThreadOptional);
-        return true; 
-    }
 
     bool TryFastReversePInvoke(ReversePInvokeFrame * pFrame);
     void ReversePInvoke(ReversePInvokeFrame * pFrame);
