@@ -93,6 +93,10 @@ namespace ILCompiler.DependencyAnalysis
             MetadataType mdType = _type.GetClosestMetadataType();
             foreach (var method in mdType.GetAllVirtualMethods())
             {
+                if (method.HasInstantiation)
+                {
+                    continue;
+                }
                 slots.Add(method);
             }
 
