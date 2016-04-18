@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
     /// [Pointer Size]  | Pointer to the generic type argument of a Nullable&lt;T&gt; (optional)
     /// 
     /// </summary>
-    internal class EETypeNode : ObjectNode, ISymbolNode
+    internal sealed class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
     {
         private TypeDesc _type;
         private bool _constructed;

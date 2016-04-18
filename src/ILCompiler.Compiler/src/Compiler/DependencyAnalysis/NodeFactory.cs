@@ -5,9 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using ILCompiler.DependencyAnalysisFramework;
+
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 using Internal.Runtime;
 using Internal.IL;
 
@@ -89,16 +90,32 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CreateNodeCaches()
         {
-            _typeSymbols = new NodeCache<TypeDesc, EETypeNode>((TypeDesc type) =>
+            _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
                 Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
-                return new EETypeNode(type, false);
+
+                if (_compilationModuleGroup.ContainsType(type))
+                {
+                    return new EETypeNode(type, false);
+                }
+                else
+                {
+                    return new ExternEETypeSymbolNode(type);
+                }
             });
 
-            _constructedTypeSymbols = new NodeCache<TypeDesc, EETypeNode>((TypeDesc type) =>
+            _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
                 Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
-                return new EETypeNode(type, true);
+
+                if (_compilationModuleGroup.ContainsType(type))
+                {
+                    return new EETypeNode(type, true);
+                }
+                else
+                {
+                    return new ExternEETypeSymbolNode(type);
+                }
             });
             
             _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>
@@ -242,32 +259,18 @@ namespace ILCompiler.DependencyAnalysis
             });
         }
 
-        private NodeCache<TypeDesc, EETypeNode> _typeSymbols;
+        private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
 
-        public ISymbolNode NecessaryTypeSymbol(TypeDesc type)
+        public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
-            if (_compilationModuleGroup.ContainsType(type))
-            {
-                return _typeSymbols.GetOrAdd(type);
-            }
-            else
-            {
-                return ExternSymbol("__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type));
-            }
+            return _typeSymbols.GetOrAdd(type);
         }
 
-        private NodeCache<TypeDesc, EETypeNode> _constructedTypeSymbols;
+        private NodeCache<TypeDesc, IEETypeNode> _constructedTypeSymbols;
 
-        public ISymbolNode ConstructedTypeSymbol(TypeDesc type)
+        public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
         {
-            if (_compilationModuleGroup.ContainsType(type))
-            {
-                return _constructedTypeSymbols.GetOrAdd(type);
-            }
-            else
-            {
-                return ExternSymbol("__EEType_" + NodeFactory.NameMangler.GetMangledTypeName(type));
-            }
+            return _constructedTypeSymbols.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, NonGCStaticsNode> _nonGCStatics;
