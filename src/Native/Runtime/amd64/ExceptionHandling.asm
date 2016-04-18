@@ -383,6 +383,11 @@ endif
         movdqa  xmm15,[r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
         mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
+
+ifdef CORERT
+        mov     rdx, rcx                                            ;; RyuJIT expects the exception object in rdx
+endif
+
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
 ALTERNATE_ENTRY RhpCallCatchFunclet2
 
