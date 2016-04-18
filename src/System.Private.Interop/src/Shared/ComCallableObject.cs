@@ -29,18 +29,19 @@ using Internal.NativeFormat;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Cached (CCW, McgTypeInfo) pair
+    /// Cached (CCW, RuntimeTypeHandle, Guid) pair
     /// Used for look up CCW based on type/GUID
     /// </summary>
     internal struct CCWCacheEntry
     {
-        internal McgTypeInfo TypeInfo;
+        internal RuntimeTypeHandle TypeHandle;
         internal IntPtr CCW;
-
-        internal CCWCacheEntry(McgTypeInfo typeInfo, IntPtr pCCW)
+        internal Guid InterfaceGuid;
+        internal CCWCacheEntry(RuntimeTypeHandle typeHandle, IntPtr pCCW, ref Guid guid)
         {
-            TypeInfo = typeInfo;
+            TypeHandle = typeHandle;
             CCW = pCCW;
+            InterfaceGuid = guid;
         }
     }
 
@@ -77,16 +78,17 @@ namespace System.Runtime.InteropServices
         // This structure mirrors the native type __interface_ccw in Interop.Native.lib.
         // Any updates must be made in both places!
         //
-        // Also note that SOS takes a dependency on the layout of __interface_ccw and __native_ccw structures.
-        // Please update SOS whenever these data structures are updated. See GetCCWTargetObject() in strike.cpp
-        //
-
         void* m_pVtable;                // Points to v-table
+
+        /// <summary>
+        /// NOTE: Managed debugger depends on field name:"m_pNativeCCW" and field type:__native_ccw
+        /// Update managed debugger whenever field name/field type is changed.
+        /// See GetCCWTargetObject() in debug\rhsos\strike.cpp
+        /// </summary>
         __native_ccw* m_pNativeCCW;             // Points to a native CCW that manages ref count
         // and all the __interface_ccw belong to this native CCW
         __interface_ccw* m_pNext;                  // Points to the next __interface_ccw
-        // This is needed for cleaning up
-        McgTypeInfo m_McgTypeInfo;             // Refer to McgInterfaceData so that we can share CcwVtable across multiple interfaces
+        RuntimeTypeHandle m_interfaceType;             // Refer to interface RuntimeTypeHandle
         // TODO: Define unqiue vtable for shared CCW instances, store McgInterfaceData pointer at negative offset
 
         /// <summary>
@@ -98,18 +100,18 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Allocates a per-interface CCW based on the type
         /// </summary>
-        internal static __interface_ccw* Allocate(ComCallableObject managedCCW, McgTypeInfo typeInfo)
+        internal static __interface_ccw* Allocate(ComCallableObject managedCCW, RuntimeTypeHandle typeHandle)
         {
             __interface_ccw* pCcw = (__interface_ccw*)McgComHelpers.CachedAlloc(sizeof(__interface_ccw), ref s_cached_interface_ccw);
 
-            IntPtr vt = typeInfo.CcwVtable;
+            IntPtr vt = typeHandle.GetCcwVtable();
 
             if (vt == default(IntPtr))
             {
 #if ENABLE_WINRT
-                Debug.Assert(!typeInfo.IsNull);
+                Debug.Assert(!typeHandle.IsNull());
                 bool isWinRT = false;
-                string typeName = typeInfo.ContainingModule.GetTypeName(typeInfo.ItfType, ref isWinRT);
+                string typeName = McgModuleManager.GetTypeName(typeHandle, out isWinRT);
                 throw new MissingInteropDataException(String.Format(SR.ComTypeMarshalling_MissingInteropData, typeName));
 #else
                 Environment.FailFast("CCW discarded.");
@@ -118,7 +120,7 @@ namespace System.Runtime.InteropServices
 
             pCcw->m_pVtable = vt.ToPointer();
             pCcw->m_pNativeCCW = managedCCW.NativeCCW;
-            pCcw->m_McgTypeInfo = typeInfo;
+            pCcw->m_interfaceType = typeHandle;
 
             managedCCW.NativeCCW->Link(pCcw);
 
@@ -140,14 +142,6 @@ namespace System.Runtime.InteropServices
             set
             {
                 m_pNext = value;
-            }
-        }
-
-        internal McgTypeInfo InterfaceInfo
-        {
-            get
-            {
-                return m_McgTypeInfo;
             }
         }
 
@@ -177,6 +171,14 @@ namespace System.Runtime.InteropServices
             get
             {
                 return m_pNativeCCW;
+            }
+        }
+
+        internal RuntimeTypeHandle InterfaceType
+        {
+            get
+            {
+                return m_interfaceType;
             }
         }
 
@@ -226,6 +228,9 @@ namespace System.Runtime.InteropServices
         /// A ref counted handle can be strong or weak depending on the ref count
         /// It has to pointing to CCW because our RefCount handle callback only work for a specific type of
         /// object
+        /// NOTE: Managed debugger depends on field name:"m_hCCW" and field type:GCHandle
+        /// Update managed debugger whenever field name/field type is changed.
+        /// See GetCCWTargetObject() in debug\rhsos\strike.cpp
         /// </summary>
         GCHandle m_hCCW;
 
@@ -805,8 +810,8 @@ namespace System.Runtime.InteropServices
         /// Returns existing CCW or a new CCW for the target object
         /// The returned CCW has been Addrefed to avoid race condition
         /// </summary>
-        /// <remarks>If typeInfo is not empty, add it to newly created CCW under lock for perf</remarks>
-        internal static ComCallableObject GetOrCreateCCW(object target, McgTypeInfo typeInfo, out IntPtr interfaceCCW)
+        /// <remarks>If typeHandle is not empty, add it to newly created CCW under lock for perf</remarks>
+        internal static ComCallableObject GetOrCreateCCW(object target, RuntimeTypeHandle typeHandle, out IntPtr interfaceCCW)
         {
             interfaceCCW = default(IntPtr);
 
@@ -872,9 +877,10 @@ namespace System.Runtime.InteropServices
                     ret = new ComCallableObject(target, true /* locked */);
 
                     // For newly created CCW, add typeInfo to it as first entry without extra locking for perf
-                    if (!typeInfo.IsNull)
+                    if (!typeHandle.IsNull())
                     {
-                        interfaceCCW = ret.AddFirstTypeInfo_NoAddRef(typeInfo);
+                        Guid itfGuid = typeHandle.GetInterfaceGuid();
+                        interfaceCCW = ret.AddFirstType_NoAddRef(typeHandle, ref itfGuid);
                     }
                 }
 
@@ -1047,18 +1053,18 @@ namespace System.Runtime.InteropServices
         object m_target;
 
         /// <summary>
-        /// Points to the per-type CCWTemplateData which contains per-type information such as what is the
-        /// runtime class name for this CCW, etc
-        /// </summary>
-        CCWTemplateInfo m_ccwTemplateInfo;
-
-        /// <summary>
-        /// Indicates whether it supports ICustomQueryInterface
+        /// Indicates whether it supports ICustomQueryInterface for current class
         /// </summary>
         bool m_supportsICustomQueryInterface;
 
-        #endregion
+        /// <summary>
+        /// Indicates whether CCWTemplate data exists for type
+        /// </summary>
+        bool m_hasCCWTemplateData;
 
+
+        RuntimeTypeHandle m_type;
+        #endregion
 
         #region RefCounted handle support
 
@@ -1087,17 +1093,6 @@ namespace System.Runtime.InteropServices
         }
 
         #endregion
-
-        /// <summary>
-        /// Per-Type CCW information. See CCWTemplateData for more details
-        /// </summary>
-        internal CCWTemplateInfo Template
-        {
-            get
-            {
-                return m_ccwTemplateInfo;
-            }
-        }
 
         /// <summary>
         /// Check whether the COM pointer is a CCW
@@ -1150,33 +1145,6 @@ namespace System.Runtime.InteropServices
             return obj.TargetObject;
         }
 
-        /// <summary>
-        /// Replacement for GetTarget for shared CCW implementation
-        ///   1) Get target object
-        ///   3) Return marshal index
-        ///   4) Return thunk function, stored in CcwVtable field
-        /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static object GetThunk(IntPtr pUnk, out int marshalIndex, out McgModule module,out IntPtr thunk)
-        {
-            McgTypeInfo typeInfo = ((__interface_ccw*)pUnk)->InterfaceInfo;
-
-            marshalIndex = typeInfo.MarshalIndex;
-
-            module = typeInfo.ContainingModule;
-
-            ComCallableObject obj = ((__interface_ccw*)pUnk)->ComCallableObject;
-
-            object target = obj.TargetObject;
-
-            // Casting will be performed when calling methods on interface from thunk function
-            Debug.Assert((typeInfo.Flags & McgInterfaceFlags.useSharedCCW) != 0);
-
-            thunk = typeInfo.InterfaceData.CcwVtable;
-
-            return target;
-        }
-
         internal ComCallableObject(object target)
         {
             Init(target, null, false);
@@ -1208,17 +1176,17 @@ namespace System.Runtime.InteropServices
             m_CCWs = new LightweightList<CCWCacheEntry>.WithInlineStorage();
             m_pNativeCCW = __native_ccw.Allocate(this, target);
             m_target = target;
-
+            m_type = m_target.GetTypeHandle();
 #pragma warning disable 618
-            m_supportsICustomQueryInterface = target is ICustomQueryInterface;
+            m_supportsICustomQueryInterface = InteropExtensions.AreTypesAssignable(m_type, typeof(ICustomQueryInterface).TypeHandle);
 #pragma warning restore 618
 
+            // whether CCWTempalte Data exists for this type
+            m_hasCCWTemplateData = m_type.IsSupportCCWTemplate();
             if (locked)
                 CCWLookupMap.RegisterLocked(m_pNativeCCW);
             else
                 CCWLookupMap.Register(m_pNativeCCW);
-
-            m_ccwTemplateInfo = McgModuleManager.GetCCWTemplateInfo(m_target.GetTypeHandle());
         }
 
         /// <summary>
@@ -1295,12 +1263,12 @@ namespace System.Runtime.InteropServices
 
         internal IntPtr GetComInterfaceForIID(ref Guid iid)
         {
-            return GetComInterfaceForIID(ref iid, McgTypeInfo.Null);
+            return GetComInterfaceForIID(ref iid, default(RuntimeTypeHandle));
         }
 
-        internal IntPtr GetComInterfaceForIID(ref Guid iid, McgTypeInfo typeInfo)
+        internal IntPtr GetComInterfaceForIID(ref Guid iid, RuntimeTypeHandle interfaceType)
         {
-            IntPtr pRet = GetComInterfaceForIIDInternal(ref iid, typeInfo);
+            IntPtr pRet = GetComInterfaceForIIDInternal(ref iid, interfaceType);
 
             // The interface for a specific interface ID is not available. In this case, the returned interface is null.
             // E_NOINTERFACE is fired in the event.
@@ -1310,86 +1278,25 @@ namespace System.Runtime.InteropServices
             return pRet;
         }
 
-        private static bool SupportsWellKnownInterface(McgTypeInfo typeInfo, object targetObject)
+        private IntPtr GetComInterfaceForIIDInternal(ref Guid iid, RuntimeTypeHandle interfaceType)
         {
-            bool isInternalModule = typeInfo.IsInternalModule;
+            // check cache first
+            IntPtr cached = GetComInterfaceForTypeFromCache_NoCheck(interfaceType, ref iid);
+            if (cached != default(IntPtr))
+                return cached;
 
-            if (isInternalModule)
-            {
-                switch ((InternalModule.Indexes)typeInfo.MarshalIndex)
-                {
-                    // interfaces supported by every CCW
-                    case InternalModule.Indexes.IUnknown:
-#if ENABLE_WINRT
-                    case InternalModule.Indexes.IInspectable:
-                    case InternalModule.Indexes.IWeakReferenceSource:
-                    case InternalModule.Indexes.ICustomPropertyProvider:
-                    case InternalModule.Indexes.IStringable:
-                        // Implemented by all managed objects
-                        return true;
-
-                    case InternalModule.Indexes.IWeakReference:
-                        return targetObject is WeakReferenceSource;
-
-                    case InternalModule.Indexes.ICCW:
-#if X86 && RHTESTCL
-                        //
-                        // Make sure we don't tap into ICCW in rhtestcl x86. See ICCW implementation in RCWWalker for
-                        // more details
-                        //
-                        return false;
-#else
-                        return true;
-#endif // X86 && RHTESTCL
-
-                    case InternalModule.Indexes.IJupiterObject:
-                        // No CCW implements IJupiterObject
-                        return false;
-
-                    case InternalModule.Indexes.IRestrictedErrorInfo:
-                        // No CCW implements IRestrictedErrorInfo
-                        return false;
-
-                    case InternalModule.Indexes.IActivationFactoryInternal:
-                        return targetObject is IActivationFactoryInternal;
-
-                    case InternalModule.Indexes.IManagedActivationFactory:
-                        return targetObject is IManagedActivationFactory;
-#endif
-
-                    case InternalModule.Indexes.IMarshal:
-                        // Every CCW implements IMarshal
-                        return true;
-
-                    case InternalModule.Indexes.IDispatch:
-                        // IDispatch is not supported for UWP apps
-                        return false;
-
-                    default:
-                        Debug.Assert(false, "Unrecgonized InternalModule.Index");
-                        break;
-                }
-            }
-
-            return false;
-        }
-
-        private IntPtr GetComInterfaceForIIDInternal(ref Guid iid, McgTypeInfo typeInfo)
-        {
 #pragma warning disable 618
             object targetObject = TargetObject;
 
             if (InteropExtensions.GuidEquals(ref iid, ref Interop.COM.IID_IUnknown))
             {
-                typeInfo = McgModuleManager.IUnknown;
-                return GetComInterfaceForTypeInfo_NoCheck(typeInfo);
+                return GetComInterfaceForType_NoCheck(InternalTypes.IUnknown, ref Interop.COM.IID_IUnknown);
             }
 
             //
             // Simplified implementation of ICustomQueryInterface
             // It is needed internally to customize CCW behavior
             //
-
             if (m_supportsICustomQueryInterface)
             {
                 ICustomQueryInterface customQueryInterfaceImpl = targetObject as ICustomQueryInterface;
@@ -1404,29 +1311,35 @@ namespace System.Runtime.InteropServices
                     Debug.Assert(result == CustomQueryInterfaceResult.NotHandled);
             }
 #pragma warning restore 618
+#if ENABLE_WINRT
+            //
+            // Check Inspectable - all CCWs are Inspectable by default
+            //
+            if (InteropExtensions.GuidEquals(ref iid, ref Interop.COM.IID_IInspectable))
+            {
+                // Return the IUnknown pointer for IAgileObject - IAgileObject has no other methods anyway
+                return GetComInterfaceForType_NoCheck(InternalTypes.IInspectable, ref Interop.COM.IID_IInspectable);
+            }
+#endif
             //
             // Check IAgileObject - all CCWs are agile by default
             //
             if (InteropExtensions.GuidEquals(ref iid, ref Interop.COM.IID_IAgileObject))
             {
                 // Return the IUnknown pointer for IAgileObject - IAgileObject has no other methods anyway
-                return GetComInterfaceForTypeInfo_NoCheck(McgModuleManager.IUnknown);
+                return GetComInterfaceForType_NoCheck(InternalTypes.IUnknown, ref Interop.COM.IID_IAgileObject);
             }
-
-            CCWTemplateInfo ccwTemplateData = this.Template;
 
             //
             // Determine whether this interface is supported by this CCW
             // Variance is supported by the template itself which includes all possible variant interfaces
             //
-            if (!ccwTemplateData.IsNull)
+            if (m_hasCCWTemplateData)
             {
-                InterfaceCheckResult checkResult =
-                    ccwTemplateData.ContainingModule.SupportsInterface(ccwTemplateData.Index, ref iid, ref typeInfo);
-
+                InterfaceCheckResult checkResult = SupportsInterface(m_type, ref iid, ref interfaceType);
                 if (checkResult == InterfaceCheckResult.Supported)
                 {
-                    return GetComInterfaceForTypeInfo_NoCheck(typeInfo);
+                    return GetComInterfaceForType_NoCheck(interfaceType, ref iid);
                 }
                 else if (checkResult == InterfaceCheckResult.Rejected)
                 {
@@ -1439,18 +1352,19 @@ namespace System.Runtime.InteropServices
             }
 
             //
-            // Look it up in internal module (where all the well known interfaces are)
-            // NOTE: This needs to happen after we check the templates because we prefer user implementation
-            // over to our own implementation
+            // Look it up in all the well known interfaces are
             //
-            if (typeInfo.IsNull)
-                typeInfo = McgModuleManager.s_internalModule.GetTypeInfo(ref iid);
+            bool isCCWSupported = false;
+            if (IsWellKnownInterface(ref iid, targetObject, ref interfaceType, out isCCWSupported))
+            {
+                if (isCCWSupported)
+                    return GetComInterfaceForType_NoCheck(interfaceType, ref iid);
 
-            if (!typeInfo.IsNull && SupportsWellKnownInterface(typeInfo, targetObject))
-                return GetComInterfaceForTypeInfo_NoCheck(typeInfo);
+                return default(IntPtr);
+            }
 
             //
-            // If there isn't a McgTypeInfo for the iid and we are aggregating then QI on the inner
+            // If there isn't a RuntimeTypeHandle for the iid and we are aggregating then QI on the inner
             // since it may support the iid even if we haven't seen it before
             //
             //
@@ -1464,15 +1378,15 @@ namespace System.Runtime.InteropServices
             }
 
             //
-            // Do a global McgTypeInfo lookup if everything else failed and we don't have a CCWTemplate
-            // We should never do a global McgTypeInfo lookup if we have a CCWTemplate - that would
+            // Do a global Type lookup if everything else failed and we don't have a CCWTemplate
+            // We should never do a global Type lookup if we have a CCWTemplate - that would
             // defeat the whole purpose of CCWTemplate
             // NOTE: This is not correct in the case of aggregation, because the 'is' cast might
             // should be made on the derived type itself, not the base, but there is no way to do that yet.
             // However, because we would only miss CCWTemplate for MCG generated wrappers and there won't
             // be any aggregation for them.
             //
-            if (ccwTemplateData.IsNull)
+            if (!m_hasCCWTemplateData)
             {
                 //
                 // Fallback to old slow code path for types we don't have template for
@@ -1481,13 +1395,13 @@ namespace System.Runtime.InteropServices
                 // I'm keeping this code path for now because there is no guarantee we'll have CCWTemplate
                 // for everything we need yet (such as IKeyValuePair adapters in MCG)
                 //
-                if (typeInfo.IsNull)
+                if (interfaceType.IsNull())
                 {
                     //
-                    // Enumerate all McgTypeInfo with specified iid and check whether Object support any of these McgTypeInfo
+                    // Enumerate all interface Type with specified iid and check whether Object support any of these McgTypeInfo
                     // The reason for doing this is that the ccwTemplateData is null and thus we dont know which type does this Object support
                     // in future, we should try to fix ccwTemplateData is null case.
-                    foreach (McgTypeInfo info in McgModuleManager.GetTypeInfosFromGuid(ref iid))
+                    foreach (RuntimeTypeHandle typeFromGuid in McgModuleManager.GetTypesFromGuid(ref iid))
                     {
                         //
                         // This happens when there is a user managed object instance that doesn't implement any interop
@@ -1498,11 +1412,11 @@ namespace System.Runtime.InteropServices
                         // to handle this scenario anymore, and we can safely get rid of this slow path and the ugly
                         // 'is this interface reduced' check.
                         //
-                        if (!info.IsNull && info.ItfType.Equals(McgModule.s_DependencyReductionTypeRemovedTypeHandle))
+                        if (typeFromGuid.IsInvalid())
                             continue;
 
-                        if (!info.IsNull && info.IsSupportedBy(targetObject))
-                            return GetComInterfaceForTypeInfo_NoCheck(info);
+                        if (InteropExtensions.IsInstanceOf(targetObject, typeFromGuid))
+                            return GetComInterfaceForType_NoCheck(typeFromGuid, ref iid);
                     }
                 }
                 else
@@ -1516,62 +1430,149 @@ namespace System.Runtime.InteropServices
                     // to handle this scenario anymore, and we can safely get rid of this slow path and the ugly
                     // 'is this interface reduced' check.
                     //
-                    if (!typeInfo.IsNull && typeInfo.ItfType.Equals(McgModule.s_DependencyReductionTypeRemovedTypeHandle))
+                    if (interfaceType.Equals(McgModule.s_DependencyReductionTypeRemovedTypeHandle))
                         return default(IntPtr);
 
-                    if (!typeInfo.IsNull && typeInfo.IsSupportedBy(targetObject))
-                        return GetComInterfaceForTypeInfo_NoCheck(typeInfo);
+                    if (InteropExtensions.IsInstanceOf(targetObject, interfaceType))
+                    {
+                        Guid g = interfaceType.GetInterfaceGuid();
+                        return GetComInterfaceForType_NoCheck(interfaceType, ref g);
+                    }
                 }
             }
 
             //
-            // We are not aggregating and don't have a McgTypeInfo for the iid so we must return null
+            // We are not aggregating and don't have a Type for the iid so we must return null
             //
             return default(IntPtr);
         }
 
-        internal IntPtr GetComInterfaceForTypeInfo_NoCheck_NoAddRef(McgTypeInfo typeInfo)
+        /// <summary>
+        /// Checks whether the CCW supports specified interface
+        /// It could be either a GUID (in the case of a QI) or a RuntimeTypeHandle (when marshaller asks for an
+        /// interface explicitly
+        /// NOTE: This support variances by having MCG injecting variant interfaces into the list of
+        /// supported interfaces
+        /// </summary>
+        /// <param name="ccwTemplateIndex">The index of the CCWTemplateData in the module</param>
+        /// <param name="guid">This value is always present</param>
+        /// <param name="interfaceType">
+        /// Can be null if in QI scenarios and it'll be updated to be the found typeInfo if we've found a
+        /// match (despite whether it is supported or rejected).
+        /// If not null, it'll be used to match against the list of interfaces in the template
+        /// </param>
+        internal unsafe InterfaceCheckResult SupportsInterface(RuntimeTypeHandle ccwType, ref Guid guid, ref RuntimeTypeHandle interfaceType)
+        {
+            //
+            // If this is a CCW template for a WinRT type, this means we've come to a base WinRT type of
+            // a managed class, and we should fail at this point. Otherwise we'll be responding QIs to
+            // interfaces not implemented in managed code
+            //
+            if (ccwType.IsCCWWinRTType())
+                return InterfaceCheckResult.Rejected;
+
+            //
+            // Walk the interface list, looking for a matching interface
+            //
+            foreach(RuntimeTypeHandle implementedInterface in ccwType.GetImplementedInterfaces())
+            {
+                Debug.Assert(!implementedInterface.IsInvalid());
+                bool match = false;
+                if (interfaceType.IsNull())
+                {
+                    Guid intfGuid = implementedInterface.GetInterfaceGuid();
+                    match = InteropExtensions.GuidEquals(ref intfGuid, ref guid);
+                }
+                else
+                    match = (interfaceType.Equals(implementedInterface));
+
+                if (match)
+                {
+                    // we found out a match using Guid / TypeInfo
+                    if (interfaceType.IsNull())
+                        interfaceType = implementedInterface;
+
+                    return InterfaceCheckResult.Supported;
+                }
+            }
+
+            //
+            // Walk the parent too (if it is a WinRT type we'll stop)
+            //
+            RuntimeTypeHandle baseClass = ccwType.GetBaseClass();
+            if (!baseClass.IsNull())
+            {
+                return SupportsInterface(baseClass, ref guid, ref interfaceType);
+            }
+
+            return InterfaceCheckResult.NotFound;
+        }
+
+        internal IntPtr GetComInterfaceForType_NoCheck_NoAddRef(RuntimeTypeHandle typeHandle, ref Guid guid)
+        {
+            //
+            // Look up our existing list of CCWs and see if we can find a match
+            //
+            IntPtr ret = GetComInterfaceForTypeFromCache_NoCheck_NoAddRef(typeHandle, ref guid);
+            if (ret != default(IntPtr))
+                return ret;
+
+            //
+            // Target object supports this interface
+            // Let's create a new CCW for it
+            //
+            IntPtr pNewCCW = new IntPtr(__interface_ccw.Allocate(this, typeHandle));
+
+            m_CCWs.Add(new CCWCacheEntry(typeHandle, pNewCCW, ref guid));
+
+            return pNewCCW;
+        }
+
+        internal IntPtr GetComInterfaceForTypeFromCache_NoCheck_NoAddRef(RuntimeTypeHandle typeHandle, ref Guid guid)
         {
             //
             // Look up our existing list of CCWs and see if we can find a match
             //
             foreach (CCWCacheEntry entry in m_CCWs)
             {
-                if (typeInfo == entry.TypeInfo)
+                Guid entryGuid = entry.InterfaceGuid;
+                if (typeHandle.Equals(entry.TypeHandle) || InteropExtensions.GuidEquals(ref entryGuid, ref guid))
                 {
                     return entry.CCW;
                 }
             }
 
-            //
-            // Target object supports this interface
-            // Let's create a new CCW for it
-            //
-            IntPtr pNewCCW = new IntPtr(__interface_ccw.Allocate(this, typeInfo));
-
-            m_CCWs.Add(new CCWCacheEntry(typeInfo, pNewCCW));
-
-            return pNewCCW;
+            return default(IntPtr);
         }
 
         /// <summary>
         /// Create first CCW to support an interface
         /// </summary>
-        internal IntPtr AddFirstTypeInfo_NoAddRef(McgTypeInfo typeInfo)
+        internal IntPtr AddFirstType_NoAddRef(RuntimeTypeHandle typeHandle, ref Guid guid)
         {
             // Target object supports this interface
             // Let's create a new CCW for it
             //
-            IntPtr pNewCCW = new IntPtr(__interface_ccw.Allocate(this, typeInfo));
+            IntPtr pNewCCW = new IntPtr(__interface_ccw.Allocate(this, typeHandle));
 
-            m_CCWs.AddFirst(new CCWCacheEntry(typeInfo, pNewCCW));
+            m_CCWs.AddFirst(new CCWCacheEntry(typeHandle, pNewCCW, ref guid));
 
             return pNewCCW;
         }
-
-        internal IntPtr GetComInterfaceForTypeInfo_NoCheck(McgTypeInfo typeInfo)
+        internal IntPtr GetComInterfaceForTypeFromCache_NoCheck(RuntimeTypeHandle typeHandle, ref Guid guid)
         {
-            IntPtr result = GetComInterfaceForTypeInfo_NoCheck_NoAddRef(typeInfo);
+            IntPtr result = GetComInterfaceForTypeFromCache_NoCheck_NoAddRef(typeHandle, ref guid);
+            if (result != default(IntPtr))
+            {
+                this.AddRef();
+            }
+
+            return result;
+        }
+
+        internal IntPtr GetComInterfaceForType_NoCheck(RuntimeTypeHandle typeHandle, ref Guid guid)
+        {
+            IntPtr result = GetComInterfaceForType_NoCheck_NoAddRef(typeHandle, ref guid);
 
             if (result != default(IntPtr))
             {
@@ -1591,7 +1592,7 @@ namespace System.Runtime.InteropServices
             return m_pNativeCCW->ReleaseCOMRef();
         }
 
-        #region Aggregation Support
+#region Aggregation Support
 
         internal bool IsAggregatingRCW
         {
@@ -1600,6 +1601,101 @@ namespace System.Runtime.InteropServices
                 return m_innerRCW != null;
             }
         }
-        #endregion
+#endregion
+
+#region "CCW WellKnown Interface"
+        /// <summary>
+        /// Whether a wellknown interface is supported by managed object
+        /// </summary>
+        enum CCWSupport
+        {
+            Supported,       // Implemented by all managed objects
+            NotSupport,     // always not implemented by all managed objects
+            DependsOnCast   // 
+        }
+
+        struct CCWWellKnownType
+        {
+            public Guid guid;
+            public RuntimeTypeHandle type;
+            public CCWSupport ccwSupport;
+            public RuntimeTypeHandle castToType;
+        }
+
+        private static CCWWellKnownType[] CCWWellknownTypes = new CCWWellKnownType[]
+        {
+            // Implemented by all managed objects
+            new CCWWellKnownType() {guid = Interop.COM.IID_IMarshal, type = InternalTypes.IMarshal, ccwSupport = CCWSupport.Supported },
+#if ENABLE_WINRT
+            // Implemented by all managed objects
+            new CCWWellKnownType() {guid = Interop.COM.IID_IInspectable, type = InternalTypes.IInspectable, ccwSupport = CCWSupport.Supported},
+            // Implemented by all managed objects
+            new CCWWellKnownType() {guid = Interop.COM.IID_ICustomPropertyProvider, type = InternalTypes.ICustomPropertyProvider, ccwSupport = CCWSupport.Supported},
+            // Implemented by all managed objects
+            new CCWWellKnownType() {guid = Interop.COM.IID_IWeakReferenceSource, type = InternalTypes.IWeakReferenceSource, ccwSupport = CCWSupport.Supported},
+            // Implemented by all managed objects
+            new CCWWellKnownType() {guid = Interop.COM.IID_IStringable, type = InternalTypes.IStringable,  ccwSupport = CCWSupport.Supported},
+
+            new CCWWellKnownType() {guid = Interop.COM.IID_IWeakReference, type = InternalTypes.IWeakReference, ccwSupport = CCWSupport.DependsOnCast, castToType = typeof(WeakReferenceSource).TypeHandle},
+            new CCWWellKnownType() {guid = Interop.COM.IID_IActivationFactoryInternal, type = InternalTypes.IActivationFactoryInternal, ccwSupport = CCWSupport.DependsOnCast, castToType = InternalTypes.IActivationFactoryInternal},
+            new CCWWellKnownType() {guid = Interop.COM.IID_IManagedActivationFactory, type = InternalTypes.IManagedActivationFactory,  ccwSupport =  CCWSupport.DependsOnCast, castToType = InternalTypes.IManagedActivationFactory},
+#endif
+            new CCWWellKnownType() {
+                guid = Interop.COM.IID_ICCW,
+                type = InternalTypes.ICCW,
+#if X86 && RHTESTCL
+                //
+                // Make sure we don't tap into ICCW in rhtestcl x86. See ICCW implementation in RCWWalker for
+                // more details
+                //
+                ccwSupport = CCWSupport.NotSupport
+#else
+                ccwSupport = CCWSupport.Supported
+#endif // X86 && RHTESTCL
+            },
+#if ENABLE_WINRT
+            // No CCW implements IJupiterObject
+            new CCWWellKnownType() { guid = Interop.COM.IID_IJupiterObject, type = InternalTypes.IJupiterObject,  ccwSupport = CCWSupport.NotSupport},
+            // No CCW implements IRestrictedErrorInfo
+            new CCWWellKnownType() {guid = Interop.COM.IID_IRestrictedErrorInfo, type = InternalTypes.IRestrictedErrorInfo,  ccwSupport = CCWSupport.NotSupport},
+#endif
+            // IDispatch is not supported for UWP apps
+            new CCWWellKnownType() {guid = Interop.COM.IID_IDispatch, type = InternalTypes.IDispatch, ccwSupport = CCWSupport.NotSupport },
+        };
+
+        private static bool IsWellKnownInterface(ref Guid guid, object targetObject,ref RuntimeTypeHandle interfaceType,out bool isCCWSupported)
+        {
+            //var wellknownType in CCWWellknownTypes
+            for (int i = 0; i < CCWWellknownTypes.Length; i++ )
+            {
+                Guid wellknownGuid = CCWWellknownTypes[i].guid;
+                if (InteropExtensions.GuidEquals(ref wellknownGuid, ref guid))
+                {
+                    CCWSupport support = CCWWellknownTypes[i].ccwSupport;
+                    interfaceType = CCWWellknownTypes[i].type;
+                    if (support == CCWSupport.Supported)
+                    {
+                        isCCWSupported = true;
+                        return true;
+                    }
+                    else if (support == CCWSupport.NotSupport)
+                    {
+                        isCCWSupported = false;
+                        return true;
+                    }
+                    else
+                    {
+                        Debug.Assert(support == CCWSupport.DependsOnCast && !CCWWellknownTypes[i].castToType.IsNull());
+                        isCCWSupported =  InteropExtensions.IsInstanceOf(targetObject, CCWWellknownTypes[i].castToType);
+                        return true;
+                    }
+                }
+            }
+
+            // this isn't a well known type
+            isCCWSupported = false;
+            return false;
+        }
+#endregion
     }
 }

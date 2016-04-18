@@ -179,10 +179,10 @@ namespace System.Runtime.InteropServices
         {
             RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            McgStructMarshalData structMarshalData;
-            if (McgModuleManager.TryGetStructMarshalData(typeHandle, out structMarshalData))
+            RuntimeTypeHandle unsafeStructType;
+            if (McgModuleManager.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
             {
-                return structMarshalData.UnsafeStructType.GetValueTypeSize();
+                return unsafeStructType.GetValueTypeSize();
             }
 
             if (!typeHandle.IsBlittable() && !typeHandle.IsValueType())
@@ -1087,7 +1087,7 @@ namespace System.Runtime.InteropServices
             if (d == null)
                 throw new ArgumentNullException("d");
 
-            return McgModuleManager.GetStubForPInvokeDelegate(d);
+            return McgMarshal.GetStubForPInvokeDelegate(d);
         }
 
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d)
@@ -1102,7 +1102,6 @@ namespace System.Runtime.InteropServices
         private static unsafe void PtrToStructureHelper(IntPtr ptr, Object structure)
         {
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
-            McgStructMarshalData structMarshalData;
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
@@ -1122,13 +1121,14 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            if (McgModuleManager.TryGetStructMarshalData(structureTypeHandle, out structMarshalData))
+            IntPtr unmarshalStub;
+            if (McgModuleManager.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
             {
                 InteropExtensions.PinObjectAndCall(structure,
                     unboxedStructPtr =>
                     {
                         CalliIntrinsics.Call<int>(
-                            structMarshalData.UnmarshalStub,
+                            unmarshalStub,
                             (void*)ptr,                                     // unsafe (no need to adjust as it is always struct)
                             ((void*)((IntPtr*)unboxedStructPtr + offset))   // safe (need to adjust offset as it could be class)
                         );
@@ -1206,7 +1206,6 @@ namespace System.Runtime.InteropServices
             }
 
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
-            McgStructMarshalData structMarshalData;
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
@@ -1226,13 +1225,14 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            if (McgModuleManager.TryGetStructMarshalData(structureTypeHandle, out structMarshalData))
+            IntPtr marshalStub;
+            if (McgModuleManager.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
             {
                 InteropExtensions.PinObjectAndCall(structure,
                     unboxedStructPtr =>
                     {
                         CalliIntrinsics.Call<int>(
-                            structMarshalData.MarshalStub,
+                            marshalStub,
                             ((void*)((IntPtr*)unboxedStructPtr + offset)),  // safe (need to adjust offset as it could be class)
                             (void*)ptr                                      // unsafe (no need to adjust as it is always struct)
                         );
@@ -1290,17 +1290,18 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            McgStructMarshalData structMarshalData;
-            if (McgModuleManager.TryGetStructMarshalData(structureTypeHandle, out structMarshalData))
+            IntPtr destroyStructureStub;
+            bool hasInvalidLayout;
+            if (McgModuleManager.TryGetDestroyStructureStub(structureTypeHandle, out destroyStructureStub, out hasInvalidLayout))
             {
-                if (structMarshalData.HasInvalidLayout)
+                if (hasInvalidLayout)
                     throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());
 
                 // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroied
-                if (structMarshalData.DestroyStructureStub != IntPtr.Zero)
+                if (destroyStructureStub != IntPtr.Zero)
                 {
                     CalliIntrinsics.Call<int>(
-                        structMarshalData.DestroyStructureStub,
+                        destroyStructureStub,
                         (void*)ptr                                     // unsafe (no need to adjust as it is always struct)
                     );
                 }

@@ -223,7 +223,7 @@ namespace System
         }
 
         /// <returns>True is added, false if duplication found</returns>
-        private bool AddToAdditionalCache(ContextCookie contextCookie, McgTypeInfo interfaceTypeInfo, IntPtr pComPtr, object adapter, bool checkDup)
+        private bool AddToAdditionalCache(ContextCookie contextCookie, RuntimeTypeHandle interfaceType, IntPtr pComPtr, object adapter, bool checkDup)
         {
             var additionalCache = AcquireAdditionalCacheExclusive();
 
@@ -249,7 +249,7 @@ namespace System
                         }
                         else if (additionalCache[i].context.ContextCookie.Equals(contextCookie))
                         {
-                            return additionalCache[i].Add(interfaceTypeInfo, pComPtr, adapter, checkDup);
+                            return additionalCache[i].Add(interfaceType, pComPtr, adapter, checkDup);
                         }
                     }
                 }
@@ -280,7 +280,7 @@ namespace System
                 }
 
                 var newContext = new AdditionalComInterfaceCacheContext(contextCookie);
-                added = newContext.Add(interfaceTypeInfo, pComPtr, adapter, checkDup);
+                added = newContext.Add(interfaceType, pComPtr, adapter, checkDup);
                 Volatile.Write(ref additionalCache[firstFree], newContext);
             }
             finally
@@ -312,9 +312,9 @@ namespace System
         /// </summary>
         /// <param name="pBaseIUnknown">Base IUnknown*. Could be Zero</param>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal __ComObject(IntPtr pBaseIUnknown, McgClassInfo classInfo)
+        internal __ComObject(IntPtr pBaseIUnknown, RuntimeTypeHandle classType)
         {
-            this.__AttachingCtor(pBaseIUnknown, classInfo);
+            this.__AttachingCtor(pBaseIUnknown, classType);
         }
 
         /// <summary>
@@ -325,9 +325,9 @@ namespace System
         /// <remarks>
         /// 'int' return value type is a dummy here, it's used because of a limitation on our AddrOf/Call support
         /// </remarks>
-        internal static int AttachingCtor(__ComObject comObject, IntPtr pBaseIUnknown, McgClassInfo classInfo)
+        internal static int AttachingCtor(__ComObject comObject, IntPtr pBaseIUnknown, RuntimeTypeHandle classType)
         {
-            comObject.__AttachingCtor(pBaseIUnknown, classInfo);
+            comObject.__AttachingCtor(pBaseIUnknown, classType);
             return 0;
         }
 
@@ -336,12 +336,12 @@ namespace System
         /// default constructor is not ran. Other code should call __Attach/__AttachAndRelease (which assumes
         /// default constructor has ran)
         /// </summary>
-        private void __AttachingCtor(IntPtr pBaseIUnknown, McgClassInfo classInfo)
+        private void __AttachingCtor(IntPtr pBaseIUnknown, RuntimeTypeHandle classType)
         {
             __InitToDefaultState();
 
             if (pBaseIUnknown != default(IntPtr))
-                __Attach(pBaseIUnknown, classInfo);
+                __Attach(pBaseIUnknown, classType);
         }
 
         /// <summary>
@@ -483,10 +483,7 @@ namespace System
         /// <param name="pBaseIUnknown">IUnknown *. Should never be Zero</param>
         private void __Attach(IntPtr pBaseIUnknown)
         {
-            // The cost of doing a look up is nothing compared to the RCW 'new' code path
-            McgClassInfo classInfo = McgModuleManager.GetClassInfoFromTypeHandle(this.GetTypeHandle());
-
-            __Attach(pBaseIUnknown, classInfo);
+            __Attach(pBaseIUnknown, this.GetTypeHandle());
         }
 
         /// <summary>
@@ -495,20 +492,20 @@ namespace System
         /// The '__' prefix is added to avoid name conflict in sub classes
         /// </summary>
         /// <param name="pBaseIUnknown">IUnknown *. Should never be Zero</param>
-        private void __Attach(IntPtr pBaseIUnknown, McgClassInfo classInfo)
+        private void __Attach(IntPtr pBaseIUnknown, RuntimeTypeHandle classType)
         {
             Debug.Assert(pBaseIUnknown != default(IntPtr));
 
             //
-            // Read information from McgClassInfo and apply on the RCW
+            // Read information from classType and apply on the RCW
             //
-            if (!classInfo.IsNull)
+            if (!classType.IsNull())
             {
-                GCPressureRange gcPressureRange = classInfo.GCPressureRange;
+                GCPressureRange gcPressureRange = classType.GetGCPressureRange();
                 if (gcPressureRange != GCPressureRange.None)
                     AddGCMemoryPressure(gcPressureRange);
 
-                UpdateComMarshalingType(classInfo.MarshalingType);
+                UpdateComMarshalingType(classType.GetMarshalingType());
             }
 
             // Save the IUnknown vtbl for debugging in case the object has been incorrectly destroyed
@@ -516,6 +513,7 @@ namespace System
 
             m_baseIUnknown.Initialize(pBaseIUnknown, MarshalingType);
 
+#if ENABLE_WINRT
             IntPtr pJupiterObj =
                 McgMarshal.ComQueryInterfaceNoThrow(pBaseIUnknown, ref Interop.COM.IID_IJupiterObject);
 
@@ -523,7 +521,7 @@ namespace System
             {
                 m_flags |= ComObjectFlags.IsJupiterObject;
 
-                m_cachedInterfaces[0].Assign(McgModuleManager.IJupiterObject, pJupiterObj, default(RuntimeTypeHandle));
+                m_cachedInterfaces[0].Assign(pJupiterObj, InternalTypes.IJupiterObject);
                 RCWWalker.OnJupiterRCWCreated(this);
 
                 //
@@ -536,7 +534,7 @@ namespace System
 
                 pJupiterObj = default(IntPtr);
             }
-
+#endif
             // Insert self into global cache, assuming pBaseIUnknown *is* the identity
             if (!ComObjectCache.Add(pBaseIUnknown, this))
             {
@@ -587,9 +585,9 @@ namespace System
             }
         }
 
-        #endregion
+#endregion
 
-        #region Properties
+#region Properties
 
         /// <summary>
         /// Whether this __ComObject represents a Jupiter UI object that implements IJupiterObject for life
@@ -642,9 +640,9 @@ namespace System
             }
         }
 
-        #endregion
+#endregion
 
-        #region Jupiter Lifetime
+#region Jupiter Lifetime
 
         /// <remarks>
         /// WARNING: This function might be called under a GC callback. Please read the comments in
@@ -654,15 +652,16 @@ namespace System
         internal unsafe __com_IJupiterObject* GetIJupiterObject_NoAddRef()
         {
             Debug.Assert(IsJupiterObject);
-            Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].GetTypeInfo()));
+            RuntimeTypeHandle interfaceType;
+            Debug.Assert(m_cachedInterfaces[0].TryGetType(out interfaceType) && interfaceType.IsIJupiterObject());
 
             // Slot 0 is always IJupiterObject*
             return (__com_IJupiterObject*)m_cachedInterfaces[0].GetPtr().ToPointer();
         }
 
-        #endregion
+#endregion
 
-        #region Lifetime Management
+#region Lifetime Management
 
         /// <summary>
         /// AddRef on the RCW
@@ -758,7 +757,8 @@ namespace System
 
                 if (IsJupiterObject)
                 {
-                    Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].GetTypeInfo()));
+                    RuntimeTypeHandle zeroSlotInterfaceType;
+                    Debug.Assert(m_cachedInterfaces[0].TryGetType(out zeroSlotInterfaceType) && zeroSlotInterfaceType.IsIJupiterObject());
                     startIndex = 1;
                 }
 
@@ -821,7 +821,8 @@ namespace System
             //
             if (IsJupiterObject && !IsAggregated)
             {
-                Debug.Assert(McgModuleManager.IsIJupiterObject(m_cachedInterfaces[0].GetTypeInfo()));
+                RuntimeTypeHandle interfaceType;
+                Debug.Assert(m_cachedInterfaces[0].TryGetType(out interfaceType) && interfaceType.IsIJupiterObject());
 
                 RCWWalker.BeforeRelease(this);
 
@@ -913,9 +914,9 @@ namespace System
             }
         }
 
-        #endregion
+#endregion
 
-        #region Properties
+#region Properties
 
         /// <summary>
         /// Whether the RCW is free-threaded
@@ -965,28 +966,11 @@ namespace System
         /// QueryInterface for the specified IID and returns a Non-AddRefed COM interface pointer for the
         /// the interface you've specified. The returned interface pointer is always callable from current
         /// context
-        /// NOTE: This version uses McgTypeInfo and is much faster than GUID version
+        /// NOTE: This version uses RuntimeTypeHandle and is much faster than GUID version
         /// </summary>
         /// <returns>A non-AddRef-ed interface pointer that is callable under current context</returns>
-        internal IntPtr QueryInterface_NoAddRef_Internal(
-            McgTypeInfo interfaceTypeInfo,
-            bool cacheOnly,
-            bool throwOnQueryInterfaceFailure)
-        {
-            int hr;
-            IntPtr pComPtr;
-
-            hr = QueryInterface_NoAddRef(interfaceTypeInfo, cacheOnly, out pComPtr);
-
-            if(throwOnQueryInterfaceFailure && pComPtr == default(IntPtr))
-            {
-                 throw CreateInvalidCastExceptionForFailedQI(interfaceTypeInfo, hr);
-            }
-
-            return pComPtr;
-        }
         private int QueryInterface_NoAddRef(
-            McgTypeInfo interfaceTypeInfo,
+            RuntimeTypeHandle interfaceType,
             bool cacheOnly,
             out IntPtr pComPtr)
         {
@@ -1029,7 +1013,7 @@ namespace System
                     //
                     // Check whether this is the same COM interface as cached
                     //
-                    if(m_cachedInterfaces[i].TryReadCachedNativeInterface(interfaceTypeInfo, out pComPtr))
+                    if(m_cachedInterfaces[i].TryReadCachedNativeInterface(interfaceType, out pComPtr))
                     {
                         return Interop.COM.S_OK;
                     }
@@ -1040,19 +1024,19 @@ namespace System
             // No match found in the simple interface cache
             // Proceed to the slow path only if we want to do the actual cache look-up.
             //
-            return QueryInterface_NoAddRef_Slow(interfaceTypeInfo, ref currentCookie, cacheOnly, out pComPtr);
+            return QueryInterface_NoAddRef_Slow(interfaceType, ref currentCookie, cacheOnly, out pComPtr);
         }
 
         /// <summary>
         /// QueryInterface for the specified IID and returns a Non-AddRefed COM interface pointer for the
         /// the interface you've specified. The returned interface pointer is always callable from current
         /// context
-        /// NOTE: This version uses RuntimeTypeHandle and is much faster than McgTypeInfo version
+        /// NOTE: This version uses RuntimeTypeHandle and is much faster than GUID version
         /// </summary>
         /// <returns>A non-AddRef-ed interface pointer that is callable under current context</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal IntPtr QueryInterface_NoAddRef_Internal(
-            RuntimeTypeHandle typeHandle,
+            RuntimeTypeHandle interfaceType,
             bool cacheOnly = false,
             bool throwOnQueryInterfaceFailure = true)
         {
@@ -1076,7 +1060,7 @@ namespace System
                 do
                 {
                     IntPtr cachedComPtr;
-                    if (m_cachedInterfaces[i].TryReadCachedNativeInterface(typeHandle, out cachedComPtr))
+                    if (m_cachedInterfaces[i].TryReadCachedNativeInterface(interfaceType, out cachedComPtr))
                     {
                         return cachedComPtr;
                     }
@@ -1087,13 +1071,12 @@ namespace System
             ContextCookie currentCookie = ContextCookie.Current;
             //
             // No match found in the simple interface cache
-            McgTypeInfo typeInfo = McgModuleManager.GetTypeInfoByHandle(typeHandle);
             // Proceed to the slow path only if we want to do the actual cache look-up.
             //
-            int hr = QueryInterface_NoAddRef_Slow(typeInfo, ref currentCookie, cacheOnly, out pComPtr, typeHandle);
+            int hr = QueryInterface_NoAddRef_Slow(interfaceType, ref currentCookie, cacheOnly, out pComPtr);
             if (throwOnQueryInterfaceFailure && pComPtr == default(IntPtr))
             {
-                throw CreateInvalidCastExceptionForFailedQI(typeInfo, hr);
+                throw CreateInvalidCastExceptionForFailedQI(interfaceType, hr);
             }
             return pComPtr;
         }
@@ -1105,10 +1088,9 @@ namespace System
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private int QueryInterface_NoAddRef_SlowNoCacheLookup(
-            McgTypeInfo interfaceTypeInfo,
+            RuntimeTypeHandle interfaceType,
             ContextCookie currentCookie,
-            out IntPtr pComPtr,
-            RuntimeTypeHandle typeHandle = default(RuntimeTypeHandle))
+            out IntPtr pComPtr)
         {
 
 #if ENABLE_WINRT
@@ -1127,10 +1109,9 @@ namespace System
                 //
                 return QueryInterfaceAndInsertToCache_NoAddRef(
                     m_baseIUnknown.ComPointer_UnsafeNoAddRef,
-                    interfaceTypeInfo,
+                    interfaceType,
                     currentCookie,
-                    out pComPtr,
-                    typeHandle);
+                    out pComPtr);
             }
             else
             {
@@ -1145,10 +1126,9 @@ namespace System
 
                     return QueryInterfaceAndInsertToCache_NoAddRef(
                         pIUnknown,
-                        interfaceTypeInfo,
+                        interfaceType,
                         currentCookie,
-                        out pComPtr,
-                        typeHandle);
+                        out pComPtr);
                 }
                 finally
                 {
@@ -1168,17 +1148,16 @@ namespace System
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private int QueryInterface_NoAddRef_Slow(
-            McgTypeInfo interfaceTypeInfo,
+            RuntimeTypeHandle interfaceType,
             ref ContextCookie currentCookie,
             bool cacheOnly,
-            out IntPtr pComPtr,
-            RuntimeTypeHandle typeHandle = default(RuntimeTypeHandle))
+            out IntPtr pComPtr)
         {
             // Make sure cookie is initialized
             if (currentCookie.IsDefault)
                 currentCookie = ContextCookie.Current;
 
-            if (TryGetInterfacePointerFromAdditionalCache_NoAddRef(interfaceTypeInfo, out pComPtr, currentCookie))
+            if (TryGetInterfacePointerFromAdditionalCache_NoAddRef(interfaceType, out pComPtr, currentCookie))
             {
                 //
                 // We've found a match in the additional interface cache
@@ -1188,7 +1167,7 @@ namespace System
 
             if (!cacheOnly)
             {
-                return QueryInterface_NoAddRef_SlowNoCacheLookup(interfaceTypeInfo, currentCookie, out pComPtr, typeHandle);
+                return QueryInterface_NoAddRef_SlowNoCacheLookup(interfaceType, currentCookie, out pComPtr);
             }
 
             pComPtr = default(IntPtr);
@@ -1201,17 +1180,16 @@ namespace System
         /// </summary>
         private int QueryInterfaceAndInsertToCache_NoAddRef(
             IntPtr pIUnknown,
-            McgTypeInfo interfaceTypeInfo,
+            RuntimeTypeHandle interfaceType,
             ContextCookie currentCookie,
-            out IntPtr pComPtr,
-            RuntimeTypeHandle typeHandle)
+            out IntPtr pComPtr)
         {
             int hr = 0;
             //
             // QI the underlying COM object and insert into cache
             // Cache will assume it is already add-refed, so no need to release
             //
-            Guid intfGuid = interfaceTypeInfo.ItfGuid;
+            Guid intfGuid = interfaceType.GetInterfaceGuid();
             pComPtr = McgMarshal.ComQueryInterfaceNoThrow(pIUnknown, ref intfGuid, out hr);
             IntPtr pTempComPtr = pComPtr;
 
@@ -1230,7 +1208,7 @@ namespace System
                 //
                 // Cache the result and zero out pComItf if we want to transfer the ref count
                 //
-                InsertIntoCache(interfaceTypeInfo, currentCookie, ref pTempComPtr, false, typeHandle);
+                InsertIntoCache(interfaceType, currentCookie, ref pTempComPtr, false);
                 return 0;
             }
             finally
@@ -1239,13 +1217,13 @@ namespace System
             }
         }
 
-        private InvalidCastException CreateInvalidCastExceptionForFailedQI(McgTypeInfo interfaceTypeInfo, int hr)
+        private InvalidCastException CreateInvalidCastExceptionForFailedQI(RuntimeTypeHandle interfaceType, int hr)
         {
 #if RHTESTCL
             throw new InvalidCastException();
 #elif ENABLE_WINRT
             string comObjectDisplayName = this.GetType().TypeHandle.GetDisplayName();
-            string interfaceDisplayName = interfaceTypeInfo.ItfType.GetDisplayName();
+            string interfaceDisplayName = interfaceType.GetDisplayName();
 
             if (comObjectDisplayName == null)
             {
@@ -1257,7 +1235,7 @@ namespace System
                 interfaceDisplayName = SR.MissingMetadataType;
             }
 
-            if (hr == Interop.COM.E_NOINTERFACE && interfaceTypeInfo.IsIInspectable)
+            if (hr == Interop.COM.E_NOINTERFACE && interfaceType.IsWinRTInterface())
             {
                 // If this is a WinRT secenario and the failure is E_NOINTERFACE then display the standard
                 // InvalidCastException as most developers are not interested in IID's or HRESULTS
@@ -1280,25 +1258,25 @@ namespace System
                     SR.InvalidCast_Com,
                     comObjectDisplayName,
                     interfaceDisplayName,
-                    interfaceTypeInfo.ItfGuid.ToString("B").ToUpper(),
+                    interfaceType.GetInterfaceGuid().ToString("B").ToUpper(),
                     errorMessage));
             }
 #else // !ENABLE_WINRT
             string errorMessage = String.Format("({0} 0x{1:X})", SR.Excep_FromHResult, hr);
-            string interfaceDisplayName = interfaceTypeInfo.ItfType.GetDisplayName();
+            string interfaceDisplayName = interfaceType.GetDisplayName();
 
             return new InvalidCastException(String.Format(
                    SR.InvalidCast_Com,
                    "__ComObject",
                    interfaceDisplayName,
-                   interfaceTypeInfo.ItfGuid.ToString("B").ToUpper(),
+                   interfaceType.GetInterfaceGuid().ToString("B").ToUpper(),
                    errorMessage));
 
 #endif
         }
 
-        #endregion
-        #region Cache Management
+#endregion
+#region Cache Management
 
         /// <summary>
         /// Insert COM interface pointer into our cache. The cache will NOT do a AddRef and will transfer
@@ -1306,12 +1284,10 @@ namespace System
         /// Note: this function might introduce duplicates in the cache, but we don't really care
         /// </summary>
         internal void InsertIntoCache(
-            McgTypeInfo interfaceTypeInfo,
+            RuntimeTypeHandle interfaceType,
             ContextCookie cookie,
             ref IntPtr pComPtr,
-            bool checkDup,
-            RuntimeTypeHandle typeHandle = default(RuntimeTypeHandle)
-            )
+            bool checkDup)
         {
             Debug.Assert(cookie.IsCurrent);
 
@@ -1322,9 +1298,9 @@ namespace System
             //
             ComInterfaceDynamicAdapter adapter = null;
 
-            if (interfaceTypeInfo.HasDynamicAdapterClass)
+            if (interfaceType.HasDynamicAdapterClass())
             {
-                adapter = (ComInterfaceDynamicAdapter)InteropExtensions.RuntimeNewObject(interfaceTypeInfo.DynamicAdapterClassType);
+                adapter = (ComInterfaceDynamicAdapter)InteropExtensions.RuntimeNewObject(interfaceType.GetDynamicAdapterClassType());
                 adapter.Initialize(this);
             }
             else if (m_baseIUnknown.IsFreeThreaded || cookie.Equals(m_baseIUnknown.ContextCookie))
@@ -1334,14 +1310,14 @@ namespace System
                 //
                 for (int i = 0; i < FIXED_CACHE_SIZE; ++i)
                 {
-                    if (m_cachedInterfaces[i].Assign(interfaceTypeInfo, pComPtr, typeHandle))
+                    if (m_cachedInterfaces[i].Assign(pComPtr, interfaceType))
                     {
                         cachedInSimpleCache = true;
                         break;
                     }
                     else if (checkDup)
                     {
-                        if (m_cachedInterfaces[i].IsMatchingEntry(pComPtr, interfaceTypeInfo)) // found exact match, no need to store
+                        if (m_cachedInterfaces[i].IsMatchingEntry(pComPtr, interfaceType)) // found exact match, no need to store
                         {
                             return; // If duplicate found, skipping clear pComPtr and RCWWalker.AfterAddRef
                         }
@@ -1351,7 +1327,7 @@ namespace System
 
             if (!cachedInSimpleCache)
             {
-                if (!AddToAdditionalCache(cookie, interfaceTypeInfo, pComPtr, adapter, checkDup))
+                if (!AddToAdditionalCache(cookie, interfaceType, pComPtr, adapter, checkDup))
                 {
                     return; // If duplicate found, skipping clear pComPtr and RCWWalker.AfterAddRef
                 }
@@ -1384,7 +1360,7 @@ namespace System
         /// <summary>
         /// Look up additional interface cache that are context-aware, growing cache which requires locking
         /// </summary>
-        private bool TryGetInterfacePointerFromAdditionalCache_NoAddRef(McgTypeInfo interfaceTypeInfo, out IntPtr pComPtr, ContextCookie currentCookie)
+        private bool TryGetInterfacePointerFromAdditionalCache_NoAddRef(RuntimeTypeHandle interfaceType, out IntPtr pComPtr, ContextCookie currentCookie)
         {
             //
             // Search for additional growable interface cache
@@ -1401,10 +1377,9 @@ namespace System
                     {
                         foreach (var item in cache.items)
                         {
-                            if (item.typeInfo == interfaceTypeInfo)
+                            if (item.typeHandle.Equals(interfaceType))
                             {
                                 pComPtr = item.ptr;
-
                                 return true;
                             }
                         }
@@ -1413,13 +1388,12 @@ namespace System
             }
 
             pComPtr = default(IntPtr);
-
             return false;
         }
 
-        #endregion
+#endregion
 
-        #region ICastable implementation for weakly typed RCWs
+#region ICastable implementation for weakly typed RCWs
 
         /// <summary>
         /// ================================================================================================
@@ -1465,16 +1439,9 @@ namespace System
             IntPtr pComPtr;
             try
             {
-
-                //
-                // Check cache first if it is not disposed
-                //
-                if (!m_baseIUnknown.IsDisposed)
-                {
-                    pComPtr = QueryInterface_NoAddRef_Internal(interfaceType, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
-                    if (pComPtr != default(IntPtr))
-                        return true;
-                }
+                pComPtr = QueryInterface_NoAddRef_Internal(interfaceType, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
+                if (pComPtr != default(IntPtr))
+                    return true;
 
                 //
                 // This is typeHandle for ICollection<KeyValuePair<>> which could be
@@ -1487,33 +1454,30 @@ namespace System
                     if (!firstTypeHandle.IsNull() || !secondTypeHandle.IsNull())
                     {
                         RuntimeTypeHandle resolvedTypeHandle;
-                        return TryGetMcgTypeDataForICollection(firstTypeHandle, secondTypeHandle, out resolvedTypeHandle);
+                        return TryQITypeForICollection(firstTypeHandle, secondTypeHandle, out resolvedTypeHandle);
                     }
                 }
 
+                //
+                // any data for interfaceType
+                //
+                if (!interfaceType.HasInterfaceData())
+                    return false;
 
                 //
                 // QI for that interfce
                 //
-                McgTypeInfo mcgTypeInfo = McgModuleManager.GetTypeInfoByHandle(interfaceType);
-
-                if (mcgTypeInfo.IsNull)
-                {
-                    return false;
-                }
-
-                int hr = QueryInterface_NoAddRef(mcgTypeInfo, /* cacheOnly= */ false, out pComPtr);
-
+                int hr = QueryInterface_NoAddRef(interfaceType, /* cacheOnly= */ false, out pComPtr);
                 if (pComPtr != default(IntPtr))
                     return true;
 
                 //
                 // Is there a dynamic adapter for the interface?
                 //
-                if (mcgTypeInfo.HasDynamicAdapterClass && GetDynamicAdapterInternal(mcgTypeInfo, McgTypeInfo.Null) != null)
+                if (interfaceType.HasDynamicAdapterClass() && GetDynamicAdapterInternal(interfaceType, default(RuntimeTypeHandle)) != null)
                     return true;
 
-                castError = CreateInvalidCastExceptionForFailedQI(mcgTypeInfo, hr);
+                castError = CreateInvalidCastExceptionForFailedQI(interfaceType, hr);
                 return false;
             }
             catch (Exception ex)
@@ -1521,75 +1485,6 @@ namespace System
                 // We are not allowed to leak exception out from here
                 // Instead, set castError to the exception being thrown
                 castError = ex;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// This method resolves the Type for ICollection<KeyValuePair<>> which can't be 
-        /// determined statically. 
-        /// </summary>
-        /// <param name="firstTypeHandle">Type for the Dictionary\ReadOnlyDictionary.</param>
-        /// <param name="secondaryTypeHandle">Type for the List or ReadOnlyList.</param>
-        /// <param name="resolvedTypeHandle">Type for ICollection<KeyValuePair<>> determined at runtime.</param>
-        /// <returns>Success or failure of resolution.</returns>
-        private bool TryGetMcgTypeDataForICollection(RuntimeTypeHandle firstTypeHandle, RuntimeTypeHandle secondaryTypeHandle, out RuntimeTypeHandle resolvedTypeHandle)
-        {
-            IntPtr interfacePtr;
-
-            // In case __ComObject can be type casted to both IDictionary and IList<KeyValuePair<>>
-            // we give IDictionary the preference. first Type point to the RuntimeTypeHandle for IDictionary.
-
-            // We first check in the cache for both.
-            // We then check for IDictionary first and IList later.
-
-            // In case none of them succeeds we return false with resolvedTypeHandle set to null.
-            resolvedTypeHandle = default(RuntimeTypeHandle);
-
-            // We first check the cache for the two interfaces if this does not succeed we then actually
-            // go to the query interface check.
-            if (!firstTypeHandle.IsNull())
-            {
-                interfacePtr = QueryInterface_NoAddRef_Internal(firstTypeHandle, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
-                if (interfacePtr != default(IntPtr))
-                {
-                    resolvedTypeHandle = firstTypeHandle;
-                    return true;
-                }
-            }
-
-            if (!secondaryTypeHandle.IsNull())
-            {
-                interfacePtr = QueryInterface_NoAddRef_Internal(secondaryTypeHandle, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
-                if (interfacePtr != default(IntPtr))
-                {
-                    resolvedTypeHandle = secondaryTypeHandle;
-                    return true;
-                }
-            }
-
-            ContextCookie currentCookie = ContextCookie.Current;
-            if (!firstTypeHandle.IsNull())
-            {
-                McgTypeInfo firstTypeInfo = McgModuleManager.GetTypeInfoByHandle(firstTypeHandle);
-                QueryInterface_NoAddRef_SlowNoCacheLookup(firstTypeInfo, currentCookie, out interfacePtr);
-                if (interfacePtr != default(IntPtr))
-                {
-                    resolvedTypeHandle = firstTypeHandle;
-                    return true;
-                }
-            }
-
-            if (!secondaryTypeHandle.IsNull())
-            {
-                McgTypeInfo secondTypeInfo = McgModuleManager.GetTypeInfoByHandle(secondaryTypeHandle);
-                QueryInterface_NoAddRef_SlowNoCacheLookup(secondTypeInfo, currentCookie, out interfacePtr);
-                if (interfacePtr != default(IntPtr))
-                {
-                    resolvedTypeHandle = secondaryTypeHandle;
-                    return true;
-                }
             }
 
             return false;
@@ -1642,111 +1537,51 @@ namespace System
         /// <returns>The stub class where RH dispatch interface calls to</returns>
         RuntimeTypeHandle ICastable.GetImplType(RuntimeTypeHandle interfaceType)
         {
-            McgTypeInfo secondTypeInfo;
-            McgTypeInfo mcgTypeInfo = McgModuleManager.GetTypeInfoFromTypeHandle(interfaceType, out secondTypeInfo);
-            if (mcgTypeInfo.IsNull)
-            {
-#if !RHTESTCL
-                Environment.FailFast(McgTypeHelpers.GetDiagnosticMessageForMissingType(interfaceType));
-#else
-                 Environment.FailFast("McgTypeInfo is null in __ComObject.GetImplType!");
-#endif
-            }
+            RuntimeTypeHandle dispatchClassType = interfaceType.GetDispatchClassType();
+            if (!dispatchClassType.IsInvalid())
+                return dispatchClassType;
 
-            if (!secondTypeInfo.IsNull)
+            // ICollection<T>/IReadOnlyCollection<T> case
+            RuntimeTypeHandle firstICollectionType;
+            RuntimeTypeHandle secondICollectionType;
+            if (McgModuleManager.TryGetTypeHandleForICollecton(interfaceType, out firstICollectionType, out secondICollectionType))
             {
-                McgTypeInfo defaultTypeInfo = mcgTypeInfo;
-                if (!TryGetMcgTypeInfoForICollection(mcgTypeInfo, secondTypeInfo, out mcgTypeInfo))
+                RuntimeTypeHandle resolvedICollectionType;
+                if (!secondICollectionType.IsNull())
                 {
-                    // if _ComObject doesn't support QI for defaultTypeInfo and secondTypeInfo,
-                    // return defaultTypeInfo, so later,we will have invalidcast exception
-                    mcgTypeInfo = defaultTypeInfo;
+                    // if _ComObject doesn't support QI for first ICollectionType and second ICollectionType,
+                    // return interfaceType, so later,we will have invalidcast exception
+                    if (!TryQITypeForICollection(firstICollectionType, secondICollectionType, out resolvedICollectionType))
+                        return interfaceType;
                 }
+                else
+                {
+                    resolvedICollectionType = firstICollectionType;
+                }
+
+                dispatchClassType = resolvedICollectionType.GetDispatchClassType();
+                if (!dispatchClassType.IsInvalid())
+                    return dispatchClassType;
             }
 
-            if (mcgTypeInfo.DispatchClassType.IsNull() ||
-                mcgTypeInfo.DispatchClassType.Equals(McgModule.s_DependencyReductionTypeRemovedTypeHandle))
-            {
 #if !RHTESTCL
-                // RCW is discarded for this mcgTypeInfo
-                Environment.FailFast(McgTypeHelpers.GetDiagnosticMessageForMissingType(mcgTypeInfo.InterfaceType));
+            // RCW is discarded for this interface type
+            Environment.FailFast(McgTypeHelpers.GetDiagnosticMessageForMissingType(interfaceType));
 #else
-                Environment.FailFast("RCW is discarded.");
+            Environment.FailFast("RCW is discarded.");
 #endif
-            }
-            return mcgTypeInfo.DispatchClassType;
+            // Never hit
+            return default(RuntimeTypeHandle);
         }
 
-        #endregion
-
-        /// <summary>
-        /// This method resolves the typeInfo for ICollection<KeyValuePair<>> which can't be
-        /// determined statically.
-        /// </summary>
-        /// <param name="firstTypeInfo">McgTypeInfo for the Dictionary\ReadOnlyDictionary.</param>
-        /// <param name="secondTypeInfo">McgTypeInfo for the List or ReadOnlyList.</param>
-        /// <param name="resolvedTypeInfo">McgTypeInfo for ICollection<KeyValuePair<>> determined at runtime.</param>
-        /// <returns>Success or failure of resolution.</returns>
-        private bool TryGetMcgTypeInfoForICollection(McgTypeInfo firstTypeInfo, McgTypeInfo secondaryTypeInfo, out McgTypeInfo resolvedTypeInfo)
-        {
-            IntPtr interfacePtr;
-
-            // In case __ComObject can be type casted to both IDictionary and IList<KeyValuePair<>>
-            // we give IDictionary the preference. firstTypeInfo point to the McgTypeInfo for IDictionary.
-
-            // We first check in the cache for both.
-            // We then check for IDictionary first and IList later.
-
-            // In case none of them succeeds we return false with resolvedTypeInfo set to null.
-            resolvedTypeInfo = McgTypeInfo.Null;
-
-            // We first check the cache for the two interfaces if this does not succeed we then actually
-            // go to the query interface check.
-            interfacePtr = QueryInterface_NoAddRef_Internal(firstTypeInfo, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
-
-            if (interfacePtr != default(IntPtr))
-            {
-                resolvedTypeInfo = firstTypeInfo;
-                return true;
-            }
-
-            interfacePtr = QueryInterface_NoAddRef_Internal(secondaryTypeInfo, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
-
-            if (interfacePtr != default(IntPtr))
-            {
-                resolvedTypeInfo = secondaryTypeInfo;
-                return true;
-            }
-
-            ContextCookie currentCookie = ContextCookie.Current;
-            QueryInterface_NoAddRef_SlowNoCacheLookup(firstTypeInfo, currentCookie, out interfacePtr);
-
-            if (interfacePtr != default(IntPtr))
-            {
-                resolvedTypeInfo = firstTypeInfo;
-                return true;
-            }
-
-            if (secondaryTypeInfo.IsNull)
-                return false;
-
-            QueryInterface_NoAddRef_SlowNoCacheLookup(secondaryTypeInfo, currentCookie, out interfacePtr);
-
-            if (interfacePtr != default(IntPtr))
-            {
-                resolvedTypeInfo = secondaryTypeInfo;
-                return true;
-            }
-
-            return false;
-        }
+#endregion
 
         //
         // Get the dynamic adapter object associated with this COM object for the given interface.
         // If the first typeInfo fails, try the second one. If both fails to get a dynamic adapter
         // this function throws an InvalidCastException
         //
-        internal unsafe object GetDynamicAdapter(McgTypeInfo requestedType, McgTypeInfo targetType)
+        internal unsafe object GetDynamicAdapter(RuntimeTypeHandle requestedType, RuntimeTypeHandle targetType)
         {
             object result = GetDynamicAdapterInternal(requestedType, targetType);
             if (result == null)
@@ -1760,7 +1595,74 @@ namespace System
             return result;
         }
 
-        private unsafe object GetDynamicAdapterUsingQICache(McgTypeInfo requestedType, AdditionalComInterfaceCacheContext[] cacheContext)
+        /// <summary>
+        /// This method resolves the Type for ICollection<KeyValuePair<>> which can't be 
+        /// determined statically. 
+        /// </summary>
+        /// <param name="firstTypeHandle">Type for the Dictionary\ReadOnlyDictionary.</param>
+        /// <param name="secondaryTypeHandle">Type for the List or ReadOnlyList.</param>
+        /// <param name="resolvedTypeHandle">Type for ICollection<KeyValuePair<>> determined at runtime.</param>
+        /// <returns>Success or failure of resolution.</returns>
+        private bool TryQITypeForICollection(RuntimeTypeHandle firstTypeHandle, RuntimeTypeHandle secondaryTypeHandle, out RuntimeTypeHandle resolvedTypeHandle)
+        {
+            IntPtr interfacePtr;
+
+            // In case __ComObject can be type casted to both IDictionary and IList<KeyValuePair<>>
+            // we give IDictionary the preference. first Type point to the RuntimeTypeHandle for IDictionary.
+
+            // We first check in the cache for both.
+            // We then check for IDictionary first and IList later.
+
+            // In case none of them succeeds we return false with resolvedTypeHandle set to null.
+            resolvedTypeHandle = default(RuntimeTypeHandle);
+
+            // We first check the cache for the two interfaces if this does not succeed we then actually
+            // go to the query interface check.
+            if (!firstTypeHandle.IsNull())
+            {
+                interfacePtr = QueryInterface_NoAddRef_Internal(firstTypeHandle, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = firstTypeHandle;
+                    return true;
+                }
+            }
+
+            if (!secondaryTypeHandle.IsNull())
+            {
+                interfacePtr = QueryInterface_NoAddRef_Internal(secondaryTypeHandle, /* cacheOnly= */ true, /* throwOnQueryInterfaceFailure= */ false);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = secondaryTypeHandle;
+                    return true;
+                }
+            }
+
+            ContextCookie currentCookie = ContextCookie.Current;
+            if (!firstTypeHandle.IsNull())
+            {
+                QueryInterface_NoAddRef_SlowNoCacheLookup(firstTypeHandle, currentCookie, out interfacePtr);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = firstTypeHandle;
+                    return true;
+                }
+            }
+
+            if (!secondaryTypeHandle.IsNull())
+            {
+                QueryInterface_NoAddRef_SlowNoCacheLookup(secondaryTypeHandle, currentCookie, out interfacePtr);
+                if (interfacePtr != default(IntPtr))
+                {
+                    resolvedTypeHandle = secondaryTypeHandle;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private unsafe object GetDynamicAdapterUsingQICache(RuntimeTypeHandle requestedType, AdditionalComInterfaceCacheContext[] cacheContext)
         {
             //
             // Fast path: make a first pass through the cache to find an exact match we've already QI'd for.
@@ -1774,7 +1676,7 @@ namespace System
 
                     foreach (AdditionalComInterfaceCacheItem existingType in cache.items)
                     {
-                        if (existingType.typeInfo == requestedType)
+                        if (existingType.typeHandle.Equals(requestedType))
                             return existingType.dynamicAdapter;
                     }
                 }
@@ -1785,12 +1687,12 @@ namespace System
             // the requested interface.  If we find it, call ourselves again so our fast path will pick it up.
             //
             if (QueryInterface_NoAddRef_Internal(requestedType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr))
-                return GetDynamicAdapterInternal(requestedType, McgTypeInfo.Null);
+                return GetDynamicAdapterInternal(requestedType, default(RuntimeTypeHandle));
 
             return null;
         }
 
-        private unsafe object GetDynamicAdapterUsingVariance(McgTypeInfo requestedType, AdditionalComInterfaceCacheContext[] cacheContext)
+        private unsafe object GetDynamicAdapterUsingVariance(RuntimeTypeHandle requestedType, AdditionalComInterfaceCacheContext[] cacheContext)
         {
             //
             // We may have already QI'd for an interface of a *compatible* type.  For example, we may be asking for
@@ -1807,7 +1709,7 @@ namespace System
 
                     foreach (AdditionalComInterfaceCacheItem existingType in cache.items)
                     {
-                        if (existingType.dynamicAdapter != null && InteropExtensions.IsInstanceOfInterface(existingType.dynamicAdapter, requestedType.InterfaceType))
+                        if (existingType.dynamicAdapter != null && InteropExtensions.IsInstanceOfInterface(existingType.dynamicAdapter, requestedType))
                             return existingType.dynamicAdapter;
                     }
                 }
@@ -1821,10 +1723,10 @@ namespace System
             //
             for (int i = 0; i < m_cachedInterfaces.Length; ++i)
             {
-                McgTypeInfo cachedMcgTypeInfo;
-                if (m_cachedInterfaces[i].TryGetTypeInfo(out cachedMcgTypeInfo))
+                RuntimeTypeHandle cachedType;
+                if (m_cachedInterfaces[i].TryGetType(out cachedType))
                 {
-                    object adapter = FindDynamicAdapterForInterface(requestedType.InterfaceType, cachedMcgTypeInfo.ItfType);
+                    object adapter = FindDynamicAdapterForInterface(requestedType, cachedType);
 
                     if (adapter != null)
                         return adapter;
@@ -1841,10 +1743,10 @@ namespace System
                     foreach (AdditionalComInterfaceCacheItem existingType in cache.items)
                     {
                         // in a race, it's possible someone else already set up an adapter.
-                        if (existingType.dynamicAdapter != null && InteropExtensions.IsInstanceOfInterface(existingType.dynamicAdapter, requestedType.InterfaceType))
+                        if (existingType.dynamicAdapter != null && InteropExtensions.IsInstanceOfInterface(existingType.dynamicAdapter, requestedType))
                             return existingType.dynamicAdapter;
 
-                        object adapter = FindDynamicAdapterForInterface(requestedType.InterfaceType, existingType.typeInfo.InterfaceType);
+                        object adapter = FindDynamicAdapterForInterface(requestedType, existingType.typeHandle);
 
                         if (adapter != null)
                             return adapter;
@@ -1867,11 +1769,11 @@ namespace System
         /// 2. Search exact match for targetType in cache and QI
         /// 3. Search cache using variant rules for requestedType
         /// </summary>
-        private unsafe object GetDynamicAdapterInternal(McgTypeInfo requestedType, McgTypeInfo targetType)
+        private unsafe object GetDynamicAdapterInternal(RuntimeTypeHandle requestedType, RuntimeTypeHandle targetType)
         {
-            Debug.Assert(requestedType.HasDynamicAdapterClass);
+            Debug.Assert(requestedType.HasDynamicAdapterClass());
 
-            Debug.Assert(targetType.IsNull || targetType.HasDynamicAdapterClass);
+            Debug.Assert(targetType.IsNull() || targetType.HasDynamicAdapterClass());
 
             AdditionalComInterfaceCacheContext[] cacheContext = AcquireAdditionalCacheForRead();
 
@@ -1887,9 +1789,8 @@ namespace System
             // If targetType is null or targetType and requestedType are same we don't need 
             // process targetType because that will not provide us the required dynamic adapter
             //
-            if (!targetType.IsNull && requestedType != targetType)
+            if (!targetType.IsNull() && !requestedType.Equals(targetType))
             {
-
                 dynamicAdapter = GetDynamicAdapterUsingQICache(targetType, cacheContext);
 
                 if (dynamicAdapter != null)
@@ -1914,14 +1815,13 @@ namespace System
                 // We can't directly construct a RuntimeTypeHandle for IEnumerable<T> without reflection, so we have to
                 // go search McgModuleManager for a suitable type.
                 //
-                McgTypeInfo intermediateType = McgModuleManager.FindTypeInfo(
-                    type => type.HasDynamicAdapterClass &&
-                            InteropExtensions.AreTypesAssignable(existingType, type.InterfaceType) &&
-                            InteropExtensions.AreTypesAssignable(type.InterfaceType, requestedType) &&
+                RuntimeTypeHandle intermediateType = McgModuleManager.FindTypeSupportDynamic(
+                    type => InteropExtensions.AreTypesAssignable(existingType, type) &&
+                            InteropExtensions.AreTypesAssignable(type, requestedType) &&
                             QueryInterface_NoAddRef_Internal(type, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false) != default(IntPtr));
 
-                if (!intermediateType.IsNull)
-                    return GetDynamicAdapterInternal(intermediateType, McgTypeInfo.Null);
+                if (!intermediateType.IsNull())
+                    return GetDynamicAdapterInternal(intermediateType, default(RuntimeTypeHandle));
             }
 
             return null;
@@ -1939,10 +1839,10 @@ namespace System
             // first check Simple ComInterface Cache
             for (int i = 0; i < m_cachedInterfaces.Length; i++)
             {
-                McgTypeInfo cachedTypeInfo;
-                if (m_cachedInterfaces[i].TryGetTypeInfo(out cachedTypeInfo))
+                RuntimeTypeHandle cachedType;
+                if (m_cachedInterfaces[i].TryGetType(out cachedType))
                 {
-                    Type interfaceType = InteropExtensions.GetTypeFromHandle(cachedTypeInfo.ItfType);
+                    Type interfaceType = InteropExtensions.GetTypeFromHandle(cachedType);
                     foreach (PropertyInfo propertyInfo in interfaceType.GetRuntimeProperties())
                     {
                         if (matchingDelegate(propertyInfo))
@@ -2887,12 +2787,6 @@ namespace System.Runtime.InteropServices
     internal unsafe struct SimpleComInterfaceCacheItem
     {
         /// <summary>
-        /// NOTE: Managed debugger depends on field name: "typeInfo" and field type: McgTypeInfo
-        /// Update managed debugger whenever field name/field type is changed.
-        /// See CordbObjectValue::GetInterfaceData in debug\dbi\values.cpp
-        /// </summary>
-        private McgTypeInfo typeInfo;   // The table entry for the cached com interface
-        /// <summary>
         /// NOTE: Managed debugger depends on field name:"ptr" and field type:IntPtr
         /// Update managed debugger whenever field name/field type is changed.
         /// See CordbObjectValue::GetInterfaceData in debug\dbi\values.cpp
@@ -2900,9 +2794,7 @@ namespace System.Runtime.InteropServices
         private IntPtr ptr;    // Interface pointer under this context
 
         /// <summary>
-        /// RuntimeTypeHandle is added to the cache to make faster cache lookups. Instead
-        /// of getting the McgTypeInfo from RuntimeTypeHandle, which is very expensive, we
-        /// use the RuntimeTypeHandle to directly lookup the cache
+        /// RuntimeTypeHandle is added to the cache to make faster cache lookups.
         /// </summary>
         private RuntimeTypeHandle typeHandle;
 
@@ -2920,10 +2812,10 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Assign McgTypeInfo/ComPointer/RuntimeTypeHandle
+        /// Assign ComPointer/RuntimeTypeHandle
         /// </summary>
         /// <returns>Return true if winning race. False otherwise</returns>
-        internal bool Assign(McgTypeInfo interfaceTypeInfo, IntPtr pComPtr, RuntimeTypeHandle handle)
+        internal bool Assign(IntPtr pComPtr, RuntimeTypeHandle handle)
         {
             // disable warning for ref volatile
 #pragma warning disable 0420
@@ -2931,19 +2823,11 @@ namespace System.Runtime.InteropServices
             {
                 Debug.Assert(!HasValue, "Entry should be empty");
                 // We win the race
-                // Note: We use either typeInfo or typeHandle as key to lookup the ptr from the cache
                 // The aforementioned  compareExchange ensures that if the key is there the value will be there
                 // too. It doesn't guarantee the correct value of the other key. So we should be careful about retrieving
                 // cache item using one key and trying to access the other key of the cache as it might lead to interesting
                 // problems
-                typeInfo = interfaceTypeInfo;
-
-                // If the RuntimeTypeHandle has default value get the correct one from McgTypeInfo
-                if (handle.Equals(default(RuntimeTypeHandle)))
-                    typeHandle = interfaceTypeInfo.ItfType;
-                else
-                    typeHandle = handle;
-
+                typeHandle = handle;
                 Volatile.Write(ref hasValue, true);
 
                 return true;
@@ -2953,36 +2837,6 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 #pragma warning restore 0420
-        }
-
-        /// <summary>
-        /// Get typeInfo value
-        /// Currently majority interop code replies on McgTypeInfo to work 
-        /// </summary>
-        /// <returns></returns>
-        public bool TryGetTypeInfo(out McgTypeInfo retTypeInfo)
-        {
-            if (HasValue)
-            {
-                retTypeInfo = typeInfo;
-                return true;
-            }
-            else
-            {
-                retTypeInfo = default(McgTypeInfo);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// NOTE: This Func doesn't check whether the item "hasValue" or not
-        /// Please make sure 'this' has value, then call this GetTypeInfo(); 
-        /// </summary>
-        /// <returns></returns>
-        internal McgTypeInfo GetTypeInfo()
-        {
-            Debug.Assert(HasValue, "Please make sure item contains valid data or you can use TryGetTypeInfo instead.");
-            return typeInfo;
         }
 
         /// <summary>
@@ -3003,6 +2857,20 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        internal bool TryGetType(out RuntimeTypeHandle retInterface)
+        {
+            if (HasValue)
+            {
+                retInterface = typeHandle;
+                return true;
+            }
+            else
+            {
+                retInterface = default(RuntimeTypeHandle);
+                return false;
+            }
+        }
+
         /// <summary>
         /// NOTE: This Func doesn't check whether the item "hasValue" or not
         /// Please make sure 'this' has value, then call this GetPtr(); 
@@ -3014,46 +2882,30 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
+
+
         /// <summary>
         /// Check whether current entry matching the passed fields value
         /// </summary>
-        internal bool IsMatchingEntry(IntPtr pComPtr, McgTypeInfo interfaceTypeInfo)
+        internal bool IsMatchingEntry(IntPtr pComPtr, RuntimeTypeHandle interfaceType)
         {
             if (HasValue)
             {
-                if (ptr == pComPtr && typeInfo.Equals(interfaceTypeInfo))
+                if (ptr == pComPtr && typeHandle.Equals(interfaceType))
                     return true;
             }
 
-            return false;
-        }
-
-        /// <summary>
-        /// If current entry's McgTypeInfo equals to the passed McgTypeInfo, then return true and its interface pointer
-        /// </summary>
-        internal bool TryReadCachedNativeInterface(McgTypeInfo interfaceTypeInfo, out IntPtr pComPtr)
-        {
-            if (HasValue)
-            {
-                if (typeInfo.Equals(interfaceTypeInfo))
-                {
-                    pComPtr = ptr;
-                    return true;
-                }
-            }
-
-            pComPtr = default(IntPtr);
             return false;
         }
 
         /// <summary>
         /// If current entry's RuntimeTypeHandle equals to the passed RuntimeTypeHandle, then return true and its interface pointer
         /// </summary>
-        internal bool TryReadCachedNativeInterface(RuntimeTypeHandle interfaceTypeHandle, out IntPtr pComPtr)
+        internal bool TryReadCachedNativeInterface(RuntimeTypeHandle interfaceType, out IntPtr pComPtr)
         {
             if (HasValue)
             {
-                if (typeHandle.Equals(interfaceTypeHandle))
+                if (typeHandle.Equals(interfaceType))
                 {
                     pComPtr = ptr;
                     return true;
@@ -3075,17 +2927,17 @@ namespace System.Runtime.InteropServices
         /// Assumes the interface pointer has already been AddRef-ed
         /// Will transfer the ref count to this data structure
         /// </summary>
-        internal AdditionalComInterfaceCacheItem(McgTypeInfo interfaceTypeInfo, IntPtr pComPtr, object adapter)
+        internal AdditionalComInterfaceCacheItem(RuntimeTypeHandle interfaceType, IntPtr pComPtr, object adapter)
         {
-            typeInfo = interfaceTypeInfo;
+            typeHandle = interfaceType;
             ptr = pComPtr;
             dynamicAdapter = adapter;
         }
         /// <summary>
-        /// NOTE: Managed debugger depends on field name: "typeInfo" and field type: McgTypeInfo
+        /// NOTE: Managed debugger depends on field name: "typeHandle" and field type: RuntimeTypeHandle
         /// See CordbObjectValue::WalkAdditionalCacheItem in debug\dbi\values.cpp
         /// </summary>
-        internal readonly McgTypeInfo typeInfo;        // Table entry of this cached COM interface
+        internal readonly RuntimeTypeHandle typeHandle;        // Table entry of this cached COM interface
         /// <summary>
         /// NOTE: Managed debugger depends on field name: "ptr" and field type: IntPtr
         /// See CordbObjectValue::WalkAdditionalCacheItem in debug\dbi\values.cpp
@@ -3102,20 +2954,20 @@ namespace System.Runtime.InteropServices
         }
 
         /// <returns>false if duplicate found</returns>
-        internal unsafe bool Add(McgTypeInfo interfaceTypeInfo, IntPtr pComPtr, object adapter, bool checkDup)
+        internal unsafe bool Add(RuntimeTypeHandle interfaceType, IntPtr pComPtr, object adapter, bool checkDup)
         {
             if (checkDup) // checkDup
             {
                 foreach (AdditionalComInterfaceCacheItem existingType in items)
                 {
-                    if (existingType.typeInfo.Equals(interfaceTypeInfo))
+                    if (existingType.typeHandle.Equals(interfaceType))
                     {
                         return false;
                     }
                 }
             }
 
-            items.Add(new AdditionalComInterfaceCacheItem(interfaceTypeInfo, pComPtr, adapter));
+            items.Add(new AdditionalComInterfaceCacheItem(interfaceType, pComPtr, adapter));
 
             return true;
         }
@@ -3209,7 +3061,7 @@ namespace System.Runtime.InteropServices
             {
                 // Check whether the object implements IStringable
                 // If so, use IStringable.ToString() behavior
-                IntPtr pIStringableItf = comObject.QueryInterface_NoAddRef_Internal(McgModuleManager.IStringable, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false);
+                IntPtr pIStringableItf = comObject.QueryInterface_NoAddRef_Internal(InternalTypes.IStringable, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false);
 
                 if (pIStringableItf != default(IntPtr))
                 {
@@ -3570,19 +3422,19 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static unsafe __ComObject GetActivationFactoryInternal(
             string typeName,
-            McgTypeInfo typeInfo,
+            RuntimeTypeHandle factoryItf,
             ContextEntry currentContext)
         {
             IntPtr pFactory = default(IntPtr);
             try
             {
-                Guid itfGuid = typeInfo.ItfGuid;
+                Guid itfGuid = factoryItf.GetInterfaceGuid();
                 ExternalInterop.RoGetActivationFactory(typeName, ref itfGuid, out pFactory);
 
                 return (__ComObject)McgComHelpers.ComInterfaceToComObject(
                     pFactory,
-                    typeInfo,
-                    McgClassInfo.Null,
+                    factoryItf,
+                    default(RuntimeTypeHandle),
                     currentContext.ContextCookie,           // Only want factory RCW from matching context
                     McgComHelpers.CreateComObjectFlags.SkipTypeResolutionAndUnboxing
                     );
@@ -3598,7 +3450,7 @@ namespace System.Runtime.InteropServices
         /// Retrieves the class factory RCW for the specified class name + IID under the right context
         /// The context part is really important
         /// </summary>
-        internal __ComObject GetActivationFactory(string className, McgTypeInfo factoryIntf, bool skipCache = false)
+        internal __ComObject GetActivationFactory(string className, RuntimeTypeHandle factoryIntf, bool skipCache = false)
         {
             ContextEntry currentContext = ContextEntry.GetCurrentContext(ContextCookie.Current);
 

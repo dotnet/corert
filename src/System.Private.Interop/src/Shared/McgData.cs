@@ -104,20 +104,12 @@ namespace System.Runtime.InteropServices
             {
                 return FixupDispatchClassType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupDispatchClassType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public RuntimeTypeHandle DynamicAdapterClassType
         {
             get
             {
                 return FixupDynamicAdapterClassType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupDynamicAdapterClassType = new FixupRuntimeTypeHandle(value);
             }
         }
         // Fixed fields
@@ -129,6 +121,25 @@ namespace System.Runtime.InteropServices
         /// See CordbObjectValue::WalkPtrAndTypeData in debug\dbi\values.cpp
         /// </summary>
         public McgInterfaceFlags Flags;                     //  1 byte
+
+        /// <summary>
+        /// Whether this type is a IInspectable type
+        /// </summary>
+        internal bool IsIInspectable
+        {
+            get
+            {
+                return (Flags & McgInterfaceFlags.isIInspectable) != McgInterfaceFlags.None;
+            }
+        }
+
+        internal bool IsIInspectableOrDelegate
+        {
+            get
+            {
+                return (Flags & (McgInterfaceFlags.isIInspectable | McgInterfaceFlags.isDelegate)) != McgInterfaceFlags.None;
+            }
+        }
 
         public short MarshalIndex;              //  2 bytes: Index into InterfaceMarshalData array for shared CCW, also used for internal module sequential type index
         //  Optional fields(CcwVtable)
@@ -157,10 +168,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupAsyncOperationType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupAsyncOperationType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public RuntimeTypeHandle ElementClassType
         {
@@ -168,20 +175,12 @@ namespace System.Runtime.InteropServices
             {
                 return FixupElementClassType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupElementClassType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public RuntimeTypeHandle ElementInterfaceType
         {
             get
             {
                 return FixupElementInterfaceType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupElementInterfaceType = new FixupRuntimeTypeHandle(value);
             }
         }
 
@@ -191,10 +190,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupIteratorType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupIteratorType = new FixupRuntimeTypeHandle(value);
-            }
         }
 
         public RuntimeTypeHandle VectorViewType
@@ -202,10 +197,6 @@ namespace System.Runtime.InteropServices
             get
             {
                 return FixupVectorViewType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupVectorViewType = new FixupRuntimeTypeHandle(value);
             }
         }
     }
@@ -226,12 +217,53 @@ namespace System.Runtime.InteropServices
             {
                 return FixupClassType.RuntimeTypeHandle;
             }
-            set
+        }
+
+        public McgClassFlags Flags;      // Flags (whether it is a ComObject, whether it can be boxed, etc)
+        internal GCPressureRange GCPressureRange
+        {
+            get
             {
-                FixupClassType = new FixupRuntimeTypeHandle(value);
+                switch (Flags & McgClassFlags.GCPressureRange_Mask)
+                {
+                    case McgClassFlags.GCPressureRange_WinRT_Default:
+                        return GCPressureRange.WinRT_Default;
+
+                    case McgClassFlags.GCPressureRange_WinRT_Low:
+                        return GCPressureRange.WinRT_Low;
+
+                    case McgClassFlags.GCPressureRange_WinRT_Medium:
+                        return GCPressureRange.WinRT_Medium;
+
+                    case McgClassFlags.GCPressureRange_WinRT_High:
+                        return GCPressureRange.WinRT_High;
+
+                    default:
+                        return GCPressureRange.None;
+                }
             }
         }
-        public McgClassFlags Flags;      // Flags (whether it is a ComObject, whether it can be boxed, etc)
+
+        internal ComMarshalingType MarshalingType
+        {
+            get
+            {
+                switch (Flags & McgClassFlags.MarshalingBehavior_Mask)
+                {
+                    case McgClassFlags.MarshalingBehavior_Inhibit:
+                        return ComMarshalingType.Inhibit;
+
+                    case McgClassFlags.MarshalingBehavior_Free:
+                        return ComMarshalingType.Free;
+
+                    case McgClassFlags.MarshalingBehavior_Standard:
+                        return ComMarshalingType.Standard;
+
+                    default:
+                        return ComMarshalingType.Unknown;
+                }
+            }
+        }
 
         /// <summary>
         /// The type handle for its base class
@@ -252,10 +284,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupBaseClassType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupBaseClassType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public short BaseClassIndex;    // Index to the base class; 
         
@@ -270,10 +298,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupDefaultInterfaceType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupDefaultInterfaceType = new FixupRuntimeTypeHandle(value);
-            }
         }        
         public short DefaultInterfaceIndex;  // Index to the default interface
     }
@@ -287,10 +311,6 @@ namespace System.Runtime.InteropServices
             get
             {
                 return FixupTypeHandle.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupTypeHandle = new FixupRuntimeTypeHandle(value);
             }
         }
         public uint HashCode;
@@ -338,20 +358,12 @@ namespace System.Runtime.InteropServices
             {
                 return FixupManagedClassType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupManagedClassType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public RuntimeTypeHandle CLRBoxingWrapperType
         {
             get
             {
                 return FixupCLRBoxingWrapperType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupCLRBoxingWrapperType = new FixupRuntimeTypeHandle(value);
             }
         }
         /// <summary>
@@ -394,10 +406,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupClassType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupClassType = new FixupRuntimeTypeHandle(value);
-            }
         }
     }
 
@@ -422,20 +430,12 @@ namespace System.Runtime.InteropServices
             {
                 return FixupSafeStructType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupSafeStructType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public RuntimeTypeHandle UnsafeStructType
         {
             get
             {
                 return FixupUnsafeStructType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupUnsafeStructType = new FixupRuntimeTypeHandle(value);
             }
         }
         public IntPtr MarshalStub;
@@ -546,10 +546,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupClassType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupClassType = new FixupRuntimeTypeHandle(value);
-            }
         }
     }
 
@@ -567,10 +563,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupCollectionType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupCollectionType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public FixupRuntimeTypeHandle FixupFirstType;
         public RuntimeTypeHandle FirstType
@@ -579,10 +571,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupFirstType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupFirstType = new FixupRuntimeTypeHandle(value);
-            }
         }
         public FixupRuntimeTypeHandle FixupSecondType;
         public RuntimeTypeHandle SecondType
@@ -590,10 +578,6 @@ namespace System.Runtime.InteropServices
             get
             {
                 return FixupSecondType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupSecondType = new FixupRuntimeTypeHandle(value);
             }
         }
     }
@@ -613,10 +597,6 @@ namespace System.Runtime.InteropServices
             get
             {
                 return FixupDelegate.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupDelegate = new FixupRuntimeTypeHandle(value);
             }
         }
         /// <summary>
@@ -669,118 +649,6 @@ namespace System.Runtime.InteropServices
             {
                 return FixupFactoryType.RuntimeTypeHandle;
             }
-            set
-            {
-                FixupFactoryType = new FixupRuntimeTypeHandle(value);
-            }
-        }
-    }
-
-    /// <summary>
-    /// A wrapper for CCWTemplateData
-    /// </summary>
-    [CLSCompliant(false)]
-    public struct CCWTemplateInfo
-    {
-        int m_ModuleIndex;
-        int m_Index; // offset in m_CCWTemplateData[]
-
-        static CCWTemplateInfo s_CCWTemplateInfoNull = new CCWTemplateInfo(-1, -1);
-#if DEBUG
-        CCWTemplateData m_CCWTemplateData_DebugOnly;
-#endif
-        public CCWTemplateInfo(McgModule mcgModule, int ccwTemplateDataIndex)
-        {
-            m_ModuleIndex = McgModuleManager.GetModuleIndex(mcgModule);
-            m_Index = ccwTemplateDataIndex;
-#if DEBUG
-            m_CCWTemplateData_DebugOnly = mcgModule.CCWTemplateData[m_Index];
-#endif
-        }
-
-        private CCWTemplateInfo(int moduleIndex, int ccwTemplateDataIndex)
-        {
-            m_ModuleIndex = moduleIndex;
-            m_Index = ccwTemplateDataIndex;
-#if DEBUG
-            m_CCWTemplateData_DebugOnly = default(CCWTemplateData);
-#endif
-        }
-
-        public McgModule ContainingModule
-        {
-            get
-            {
-                return McgModuleManager.GetModule(m_ModuleIndex);
-            }
-        }
-
-        public int Index
-        {
-            get
-            {
-                return m_Index;
-            }
-        }
-
-        private CCWTemplateData CCWTemplateData
-        {
-            get
-            {
-                Debug.Assert(m_Index >= 0 && m_Index < ContainingModule.CCWTemplateData.Length);
-                return ContainingModule.CCWTemplateData[m_Index];
-            }
-        }
-
-        public RuntimeTypeHandle BaseType
-        {
-            get
-            {
-                int parentIndex = CCWTemplateData.ParentCCWTemplateIndex;
-                if (parentIndex >=0)
-                {
-                    return ContainingModule.CCWTemplateData[parentIndex].ClassType;
-                }
-                else if(!CCWTemplateData.BaseType.Equals(default(RuntimeTypeHandle)))
-                {
-                    return CCWTemplateData.BaseType;
-                }
-                return default(RuntimeTypeHandle);
-            }
-        }
-
-        /// <summary>
-        /// Whether this is NULL
-        /// </summary>
-        public bool IsNull
-        {
-            get
-            {
-                return m_ModuleIndex == Null.m_ModuleIndex && m_Index == Null.m_Index;
-            }
-        }
-
-        public static CCWTemplateInfo Null
-        {
-            get
-            {
-                return s_CCWTemplateInfoNull;
-            }
-        }
-
-        public bool Equals(CCWTemplateInfo classInfo)
-        {
-            if (IsNull && classInfo.IsNull)
-                return true;
-            if (IsNull || classInfo.IsNull)
-                return false;
-
-            return m_ModuleIndex == classInfo.m_ModuleIndex && m_Index == classInfo.m_Index;
-        }
-
-        public override int GetHashCode()
-        {
-            return CCWTemplateData.GetHashCode();
         }
     }
 
@@ -799,10 +667,6 @@ namespace System.Runtime.InteropServices
             get
             {
                 return FixupClassType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupClassType = new FixupRuntimeTypeHandle(value);
             }
         }
 
@@ -824,10 +688,6 @@ namespace System.Runtime.InteropServices
             get
             {
                 return FixupBaseType.RuntimeTypeHandle;
-            }
-            set
-            {
-                FixupBaseType = new FixupRuntimeTypeHandle(value);
             }
         }
 
@@ -860,116 +720,28 @@ namespace System.Runtime.InteropServices
 
     /// <summary>
     /// Extra type/marshalling information for a given type used in MCG.  You can think this as a more 
-    /// complete version of System.Type.  This struct is merely a container for a pointer to (unmovable) McgInterfaceData.
+    /// complete version of System.Type.
     /// </summary>
-    [CLSCompliant(false)]
-    public unsafe struct McgTypeInfo
+    internal unsafe class McgInterfaceInfo
     {
-        /// <summary>
-        /// NOTE: Managed debugger depends on field name: "m_TypeIndex" and field type: int
-        /// Update managed debugger whenever field name/field type is changed.
-        /// See CordbObjectValue::WalkTypeInfo in debug\dbi\values.cpp
-        /// </summary>
         int m_TypeIndex;
-
-        /// <summary>
-        /// NOTE: Managed debugger depends on field name: "m_ModuleIndex" and field type: int
-        /// Update managed debugger whenever field name/field type is changed.
-        /// See CordbObjectValue::WalkTypeInfo in debug\dbi\values.cpp
-        /// </summary>
         int m_ModuleIndex;
-
-        // default value(or null value) for McgTypeInfo
-        static McgTypeInfo s_McgTypeInfoNull = new McgTypeInfo(-1, -1);
-
-#if DEBUG
-        McgInterfaceData m_InterfaceData_DebugOnly;
-#endif
 
         internal McgInterfaceData InterfaceData
         {
             get
             {
-                return ContainingModule.GetInterfaceDataByIndex(m_TypeIndex);
+                return McgModuleManager.GetInterfaceDataByIndex(m_ModuleIndex, m_TypeIndex);
             }
         }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public McgTypeInfo(int index, McgModule mcgModule)
-        {
-            m_TypeIndex = index;
-            m_ModuleIndex = McgModuleManager.GetModuleIndex(mcgModule);
-#if DEBUG
-            m_InterfaceData_DebugOnly = mcgModule.GetInterfaceDataByIndex(m_TypeIndex);
-#endif
-        }
-
-        private McgTypeInfo(int typeIndex, int moduleIndex)
+        public McgInterfaceInfo(int moduleIndex, int typeIndex)
         {
             m_TypeIndex = typeIndex;
             m_ModuleIndex = moduleIndex;
-#if DEBUG
-            m_InterfaceData_DebugOnly = default(McgInterfaceData);
-#endif
-        }
-
-        public McgModule ContainingModule
-        {
-            get
-            {
-                return McgModuleManager.GetModule(m_ModuleIndex);
-            }
-        }
-
-        /// <summary>
-        /// Whether this is NULL
-        /// </summary>
-        public bool IsNull
-        {
-            get
-            {
-                return m_ModuleIndex == Null.m_ModuleIndex && m_TypeIndex == Null.m_TypeIndex;
-            }
-        }
-
-        public static McgTypeInfo Null
-        {
-            get
-            {
-                return s_McgTypeInfoNull;
-            }
-        }
-
-        /// <summary>
-        /// Whether this type is a IInspectable type
-        /// </summary>
-        public bool IsIInspectable
-        {
-            get
-            {
-                return (InterfaceData.Flags & McgInterfaceFlags.isIInspectable) != McgInterfaceFlags.None;
-            }
-        }
-
-        /// <summary>
-        /// WinRT interface or WinRT delegate
-        /// </summary>
-        internal bool IsIInspectableOrDelegate
-        {
-            get
-            {
-                return (InterfaceData.Flags & (McgInterfaceFlags.isIInspectable | McgInterfaceFlags.isDelegate)) != McgInterfaceFlags.None;
-            }
-        }
-
-        internal bool IsInternalModule
-        {
-            get
-            {
-                return (InterfaceData.Flags & McgInterfaceFlags.isInternal) != McgInterfaceFlags.None;
-            }
         }
 
         /// <summary>
@@ -1043,10 +815,6 @@ namespace System.Runtime.InteropServices
 
                 return CalliIntrinsics.Call__GetCcwVtable(InterfaceData.CcwVtable);
             }
-            set
-            {
-                ContainingModule.SetCCW(m_TypeIndex, value);
-            }
         }
 
         /// <summary>
@@ -1083,110 +851,27 @@ namespace System.Runtime.InteropServices
         {
             get { return !DynamicAdapterClassType.IsNull(); }
         }
-
-        internal bool IsSupportedBy(object target)
-        {
-            if ((InterfaceData.Flags & McgInterfaceFlags.isDelegate) != McgInterfaceFlags.None)
-            {
-                // winRT delegates store the managed delegate type in the type table's ItfType field.
-                return InteropExtensions.IsInstanceOfClass(target, InterfaceData.ItfType);
-            }
-            else
-            {
-                // WARNING: We cannot pass any RuntimeTypeHandles here that are NOT interface types.
-                return InteropExtensions.IsInstanceOfInterface(target, InterfaceData.ItfType);
-            }
-        }
-
-        public static bool operator ==(McgTypeInfo left, McgTypeInfo right)
-        {
-            return left.m_TypeIndex == right.m_TypeIndex && left.m_ModuleIndex == right.m_ModuleIndex;
-        }
-
-        public static bool operator !=(McgTypeInfo left, McgTypeInfo right)
-        {
-            return left.m_TypeIndex != right.m_TypeIndex || left.m_ModuleIndex != right.m_ModuleIndex;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if ((obj == null) && this.IsNull)
-                return true;
-
-            if (!(obj is McgTypeInfo))
-                return false;
-
-            return (this == ((McgTypeInfo)obj));
-        }
-
-        public override int GetHashCode()
-        {
-            return InterfaceData.GetHashCode();
-        }
     }
 
     /// <summary>
     /// Extra information for all the class types encoded by MCG
     /// </summary>
-    [CLSCompliant(false)]
-    public unsafe struct McgClassInfo
+    internal unsafe class McgClassInfo
     {
         int m_ClassDataIndex;
         int m_ModuleIndex;
 
-#if DEBUG
-        McgClassData m_ClassData_DebugOnly;
-#endif
-        static McgClassInfo s_McgClassInfoNull = new McgClassInfo(-1, -1);
-
-        public McgClassInfo(int classDataIndex, McgModule mcgModule)
-        {
-            m_ClassDataIndex = classDataIndex;
-            m_ModuleIndex = McgModuleManager.GetModuleIndex(mcgModule);
-#if DEBUG
-            m_ClassData_DebugOnly = mcgModule.GetClassDataByIndex(m_ClassDataIndex);
-#endif
-        }
-
-        private McgClassInfo(int classDataIndex, int moduleIndex)
+        public McgClassInfo(int moduleIndex, int classDataIndex)
         {
             m_ClassDataIndex = classDataIndex;
             m_ModuleIndex = moduleIndex;
-#if DEBUG
-            m_ClassData_DebugOnly = default(McgClassData);
-#endif
-        }
-
-        McgModule ContainingModule
-        {
-            get
-            {
-                return McgModuleManager.GetModule(m_ModuleIndex);
-            }
         }
 
         private McgClassData ClassData
         {
             get
             {
-                return ContainingModule.GetClassDataByIndex(m_ClassDataIndex);
-            }
-        }
-
-        // Check whether the McgClassInfo is Null
-        public bool IsNull
-        {
-            get
-            {
-                return m_ModuleIndex == Null.m_ModuleIndex && m_ClassDataIndex == Null.m_ClassDataIndex;
-            }
-        }
-
-        public static McgClassInfo Null
-        {
-            get
-            {
-                return s_McgClassInfoNull;
+                return McgModuleManager.GetClassDataByIndex(m_ModuleIndex, m_ClassDataIndex);
             }
         }
 
@@ -1205,7 +890,7 @@ namespace System.Runtime.InteropServices
                 int baseClassIndex = ClassData.BaseClassIndex;
                 if (baseClassIndex >= 0)
                 {
-                    return ContainingModule.GetClassDataByIndex(baseClassIndex).ClassType;
+                    return McgModuleManager.GetClassDataByIndex(m_ModuleIndex, baseClassIndex).ClassType;
                 }
                 else if (!ClassData.BaseClassType.Equals(default(RuntimeTypeHandle)))
                 {
@@ -1223,7 +908,7 @@ namespace System.Runtime.InteropServices
                 int defaultInterfaceIndex = ClassData.DefaultInterfaceIndex;
                 if (defaultInterfaceIndex >= 0)
                 {
-                    return ContainingModule.GetInterfaceDataByIndex(defaultInterfaceIndex).ItfType;
+                    return McgModuleManager.GetInterfaceDataByIndex(m_ModuleIndex, defaultInterfaceIndex).ItfType;
                 }
                 else
                 {
@@ -1234,10 +919,7 @@ namespace System.Runtime.InteropServices
 
         internal bool Equals(McgClassInfo classInfo)
         {
-            if (IsNull && classInfo.IsNull)
-                return true;
-
-            if (IsNull || classInfo.IsNull)
+            if (classInfo == null)
                 return false;
 
             return m_ClassDataIndex == classInfo.m_ClassDataIndex && m_ModuleIndex == classInfo.m_ModuleIndex;
@@ -1263,20 +945,7 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                switch (ClassData.Flags & McgClassFlags.MarshalingBehavior_Mask)
-                {
-                    case McgClassFlags.MarshalingBehavior_Inhibit:
-                        return ComMarshalingType.Inhibit;
-
-                    case McgClassFlags.MarshalingBehavior_Free:
-                        return ComMarshalingType.Free;
-
-                    case McgClassFlags.MarshalingBehavior_Standard:
-                        return ComMarshalingType.Standard;
-
-                    default:
-                        return ComMarshalingType.Unknown;
-                }
+                return ClassData.MarshalingType;
             }
         }
 
@@ -1284,23 +953,64 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                switch (ClassData.Flags & McgClassFlags.GCPressureRange_Mask)
+                return ClassData.GCPressureRange;
+            }
+        }
+    }
+
+    internal unsafe class CCWTemplateInfo
+    {
+        int m_TypeIndex;
+        int m_ModuleIndex;
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public CCWTemplateInfo(int moduleIndex, int typeIndex)
+        {
+            m_ModuleIndex = moduleIndex;
+            m_TypeIndex = typeIndex;
+        }
+
+        private CCWTemplateData CCWTemplate
+        {
+            get
+            {
+                return McgModuleManager.GetCCWTemplateDataByIndex(m_ModuleIndex, m_TypeIndex);
+            }
+        }
+
+        public bool IsWinRTType
+        {
+            get
+            {
+                return CCWTemplate.IsWinRTType;
+            }
+        }
+
+        public IEnumerable<RuntimeTypeHandle> ImplementedInterfaces
+        {
+            get
+            {
+                return McgModuleManager.GetImplementedInterfacesByIndex(m_ModuleIndex, m_TypeIndex);
+            }
+        }
+
+        public RuntimeTypeHandle BaseClass
+        {
+            get
+            {
+                int parentCCWTemplateIndex = CCWTemplate.ParentCCWTemplateIndex;
+                if (parentCCWTemplateIndex >= 0)
                 {
-                    case McgClassFlags.GCPressureRange_WinRT_Default:
-                        return GCPressureRange.WinRT_Default;
-
-                    case McgClassFlags.GCPressureRange_WinRT_Low:
-                        return GCPressureRange.WinRT_Low;
-
-                    case McgClassFlags.GCPressureRange_WinRT_Medium:
-                        return GCPressureRange.WinRT_Medium;
-
-                    case McgClassFlags.GCPressureRange_WinRT_High:
-                        return GCPressureRange.WinRT_High;
-
-                    default:
-                        return GCPressureRange.None;
+                    return McgModuleManager.GetCCWTemplateDataByIndex(m_ModuleIndex, parentCCWTemplateIndex).ClassType;
                 }
+                else if (!CCWTemplate.BaseType.Equals(default(RuntimeTypeHandle)))
+                {
+                    return CCWTemplate.BaseType;
+                }
+                // doesn't have base class
+                return default(RuntimeTypeHandle);
             }
         }
     }

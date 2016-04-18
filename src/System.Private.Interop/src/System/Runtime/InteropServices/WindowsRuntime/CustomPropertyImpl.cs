@@ -341,7 +341,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (target is __ComObject)
             {
-                object winrtUnboxed = McgModuleManager.UnboxIfBoxed(target);
+                object winrtUnboxed = McgMarshal.UnboxIfBoxed(target);
                 if (winrtUnboxed != null)
                     return winrtUnboxed;
             }
