@@ -1,5 +1,8 @@
 syntax: glob
 
+# Build tools related files
+/[Tt]ools/
+
 ### VisualStudio ###
 
 # User-specific files

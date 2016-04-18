@@ -19,6 +19,10 @@
   <PropertyGroup>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
   </PropertyGroup>
+  <PropertyGroup>
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
+    <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -690,20 +694,4 @@
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <!-- 
-  	Workarounds https://github.com/dotnet/buildtools/pull/380 can be consumed.
-
-  	Once this that buildtools version is updated with that PR then these workarounds can be 
-  	turned into the following properties at the top of this project file.
-
-  <PropertyGroup>
-	<ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
-	<ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
-  </PropertyGroup>
-  -->
-  <PropertyGroup>
-    <!-- Exclude AssemblyInfoPartialFile -->
-    <AssemblyInfoPartialFile></AssemblyInfoPartialFile>
-  </PropertyGroup>
-  <Target Name="AddDesignTimeFacadeReferences" />
 </Project>

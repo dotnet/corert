@@ -52,87 +52,6 @@ check_managed_prereqs()
     fi
 }
 
-download_file()
-{
-    which curl wget > /dev/null 2> /dev/null
-    if [ $? -ne 0 -a $? -ne 1 ]; then
-        echo "cURL or wget is required to build corert."
-        exit 1
-    fi
-    echo "Downloading... $2"
-
-    # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-    which curl > /dev/null 2> /dev/null
-    if [ $? -ne 0 ]; then
-       wget -q -O $1 $2
-    else
-       curl -sSL --create-dirs -o $1 $2
-    fi
-    if [ $? -ne 0 ]; then
-        echo "Failed to download into $1 from $2."
-        exit 1
-    fi
-}
-
-install_dotnet_cli()
-{
-    echo "Installing the dotnet/cli..."
-    local __tools_dir=${__scriptpath}/bin/tools
-    local __cli_dir=${__tools_dir}/cli
-    if [ ${__CleanBuild} == 1 ]; then
-        if [ -d "${__cli_dir}" ]; then
-            rm -rf "${__cli_dir}"
-        fi
-        if [ -d "${__cli_dir}" ]; then
-            echo "Exiting... could not clean ${__cli_dir}"
-            exit 1
-        fi
-    fi
-    if [ ! -d "${__cli_dir}" ]; then
-        mkdir -p "${__cli_dir}"
-    fi
-    if [ ! -f "${__cli_dir}/dotnet" ]; then
-        local __build_os_lowercase=$(echo "${__BuildOS}" | tr '[:upper:]' '[:lower:]')
-
-        # For Linux, we currently only support Ubuntu.
-        if [ "${__build_os_lowercase}" == "linux" ]; then
-            __build_os_lowercase="ubuntu"
-        fi
-        
-        local __build_arch_lowercase=$(echo "${__BuildArch}" | tr '[:upper:]' '[:lower:]')
-        local __cli_tarball=dotnet-dev-${__build_os_lowercase}-${__build_arch_lowercase}.1.0.0-beta-002228.tar.gz
-        local __cli_tarball_path=${__tools_dir}/${__cli_tarball}
-        download_file ${__cli_tarball_path} "https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/1.0.0-beta-002228/${__cli_tarball}"
-        tar -xzf ${__cli_tarball_path} -C ${__cli_dir}
-        export DOTNET_HOME=${__cli_dir}
-        #
-        # Workaround: Setting "HOME" for now to a dir in repo, as "dotnet restore"
-        # depends on "HOME" to be set for its .dnx cache.
-        #
-        # See https://github.com/dotnet/cli/blob/5f5e3ad74c0c1de7071ba1309dca2ea289691163/scripts/ci_build.sh#L24
-        #     https://github.com/dotnet/cli/issues/354
-        #
-        if [ -n ${HOME:+1} ]; then
-            export HOME=${__tools_dir}
-        fi
-    fi
-    
-    if [ ! -z "${__dotnetclipath}" ]; then
-        __cli_dir=${__dotnetclipath}
-        export DOTNET_HOME=${__cli_dir}
-    else
-        __dotnetclipath=${__cli_dir}
-    fi
-
-    if [ ! -f "${__cli_dir}/dotnet" ]; then
-        echo "CLI could not be installed or not present."
-        exit 1
-    fi
-
-    echo "Using CLI tools version:"
-    ls "${__cli_dir}/sdk"
-}
-
 check_native_prereqs()
 {
     echo "Checking pre-requisites..."
@@ -148,24 +67,11 @@ check_native_prereqs()
 
 prepare_managed_build()
 {
-    # Pull NuGet.exe down if we don't have it already
-    if [ ! -e "$__nugetpath" ]; then
-        mkdir -p $__packageroot
-        download_file $__nugetpath https://api.nuget.org/downloads/nuget.exe
-    fi
+    # Run Init-Tools to restore BuildTools and ToolRuntime
+    $__scriptpath/init-tools.sh
 
-    # Grab the MSBuild package if we don't have it already
-    if [ ! -e "$__msbuildpath" ]; then
-        echo "Restoring MSBuild..."
-        mono "$__nugetpath" install $__msbuildpackageid -Version $__msbuildpackageversion -source "https://dotnet.myget.org/F/dotnet-buildtools/" -OutputDirectory "$__packageroot"
-        if [ $? -ne 0 ]; then
-            echo "Failed to restore MSBuild."
-            exit 1
-        fi
-    fi
-
-    # Obtain dotnet CLI to perform restore
-    install_dotnet_cli
+    echo "Using CLI tools version:"
+    ls "$__dotnetclipath/sdk"
 }
 
 prepare_native_build()
@@ -189,7 +95,7 @@ build_managed_corert()
         ToolchainMilestone=testing
     fi
 
-    MONO29679=1 ReferenceAssemblyRoot=$__referenceassemblyroot mono $__msbuildpath "$__buildproj" /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:UseRoslynCompiler=true /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs
+    $__scriptpath/Tools/corerun $__scriptpath/Tools/MSBuild.exe "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:RelativeProductBinDir=$__RelativeProductBinDir /p:CleanedTheBuild=$__CleanBuild /p:SkipTests=true /p:TestNugetRuntimeId=$__TestNugetRuntimeId /p:ToolNugetRuntimeId=$__ToolNugetRuntimeId /p:OSEnvironment=Unix /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__BuildArch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) /p:ToolchainMilestone=${ToolchainMilestone} $__UnprocessedBuildArgs
     BUILDERRORLEVEL=$?
 
     echo
@@ -248,18 +154,10 @@ __sourceroot=$__scriptpath/src
 __nugetpath=$__packageroot/NuGet.exe
 __nugetconfig=$__sourceroot/NuGet.Config
 __rootbinpath="$__scriptpath/bin"
-__msbuildpackageid="Microsoft.Build.Mono.Debug"
-__msbuildpackageversion="14.1.0.0-prerelease"
-__msbuildpath=$__packageroot/$__msbuildpackageid.$__msbuildpackageversion/lib/MSBuild.exe
-__ToolNugetRuntimeId=ubuntu.14.04-x64
 __TestNugetRuntimeId=ubuntu.14.04-x64
-__buildmanaged=true
-__buildnative=true
-__dotnetclipath=
-
-# Workaround to enable nuget package restoration work successully on Mono
-export TZ=UTC 
-export MONO_THREADS_PER_CPU=2000
+__buildmanaged=false
+__buildnative=false
+__dotnetclipath=$__scriptpath/Tools/dotnetcli
 
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
@@ -327,19 +225,6 @@ case $OSName in
 esac
 __BuildType=Debug
 
-case $__BuildOS in
-    FreeBSD)
-        __monoroot=/usr/local
-        ;;
-    OSX)
-        __monoroot=/Library/Frameworks/Mono.framework/Versions/Current
-        ;;
-    *)
-        __monoroot=/usr
-        ;;
-esac
-
-__referenceassemblyroot=$__monoroot/lib/mono/xbuild-frameworks
 BUILDERRORLEVEL=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
@@ -412,10 +297,10 @@ while [ "$1" != "" ]; do
     shift
 done
 
-# If neither managed nor native are passed as arguments, default to building native only
+# If neither managed nor native are passed as arguments, default to building both
 
 if [ "$__buildmanaged" = false -a "$__buildnative" = false ]; then
-    __buildmanaged=false
+    __buildmanaged=true
     __buildnative=true
 fi
 
@@ -424,7 +309,15 @@ __IntermediatesDir="$__rootbinpath/obj/Native/$__BuildOS.$__BuildArch.$__BuildTy
 __ProductBinDir="$__rootbinpath/Product/$__BuildOS.$__BuildArch.$__BuildType"
 __RelativeProductBinDir="bin/Product/$__BuildOS.$__BuildArch.$__BuildType"
 
-# Make the directories necessary for build if they don't exist
+# CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
+# This is needed by CLI to function.
+if [ -z "$HOME" ]; then
+    if [ ! -d "$__ProjectRoot/temp_home" ]; then
+        mkdir "$__ProjectRoot/temp_home"
+    fi
+    export HOME=$__ProjectRoot/temp_home
+    echo "HOME not defined; setting it to $HOME"
+fi
 
 # Configure environment if we are doing a clean build.
 if [ $__CleanBuild == 1 ]; then

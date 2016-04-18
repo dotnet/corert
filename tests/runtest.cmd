@@ -48,7 +48,7 @@ set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
 
 set __PackageRestoreCmd=restore.cmd
-call %__PackageRestoreCmd% /nugetexedir %CoreRT_TestRoot%..\packages /nugetopt %CoreRT_NuGetOptions%
+call %__PackageRestoreCmd% /nugetexedir %CoreRT_TestRoot%..\Tools\NuProj /nugetopt %CoreRT_NuGetOptions%
 if not "%ErrorLevel%"=="100" (((call :Fail "Preptests failed... cannot continue")) & exit /b -1)
 
 REM ** Validate the paths needed to run tests

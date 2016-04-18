@@ -67,7 +67,7 @@ run_test_dir()
 }
 
 CoreRT_TestRoot=$(cd "$(dirname "$0")"; pwd -P)
-CoreRT_CliBinDir=${CoreRT_TestRoot}/../bin/tools/cli
+CoreRT_CliBinDir=${CoreRT_TestRoot}/../Tools/dotnetcli
 CoreRT_BuildArch=x64
 CoreRT_BuildType=Debug
 CoreRT_TestRun=true
@@ -160,7 +160,7 @@ if [ ${__build_os_lowcase} != "osx" ]; then
 else
     __BuildRid=osx.10.10-{CoreRT_BuildArch}
 fi
-source ${__PackageRestoreCmd} -nugetexedir ${CoreRT_TestRoot}/../packages -nugetopt ${CoreRT_NuGetOptions}
+source ${__PackageRestoreCmd} -nugetexedir ${CoreRT_TestRoot}/../Tools/NuProj -nugetopt ${CoreRT_NuGetOptions}
 
 if [ ! -d ${CoreRT_AppDepSdkDir} ]; then
     echo "AppDep SDK not installed at ${CoreRT_AppDepSdkDir}"

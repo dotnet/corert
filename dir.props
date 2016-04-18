@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="CheckRoslyn;OverrideBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props') And '$(RepoLocalBuild)'!='true'" Project="..\dir.props" />
 
   <!--
@@ -10,19 +10,17 @@
 
   <!-- Build Tools Versions -->
   <PropertyGroup>
-    <BuildToolsVersion>1.0.25-prerelease-00111</BuildToolsVersion>
     <RoslynVersion>1.0.0-rc3-20150510-01</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <AssemblyMetadata Include=".NETFrameworkAssembly">
-      <Value></Value>
-    </AssemblyMetadata>
-    <AssemblyMetadata Include="Serviceable">
-      <Value>True</Value>
-    </AssemblyMetadata>
-  </ItemGroup>
+  <!--
+    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer.
+    Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
+  -->
+  <PropertyGroup>
+    <BuildToolsTargets45>true</BuildToolsTargets45>
+  </PropertyGroup>
 
   <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
   <PropertyGroup>
@@ -93,7 +91,10 @@
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(PackagesDir)Microsoft.DotNet.BuildTools.$(BuildToolsVersion)/lib/</ToolsDir>
+    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
   </PropertyGroup>
 
   <!-- Set up the default output and intermediate paths -->
@@ -116,36 +117,18 @@
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
 
-  <!-- list of nuget package sources passed to nuget.exe -->
-  <ItemGroup>
-    <NuGetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools" />
-    <NuGetSourceList Include="https:%2F%2Fwww.nuget.org/api/v2" />
-  </ItemGroup>
-
   <!-- Common nuget properties -->
   <PropertyGroup>
-    <NuGetToolPath Condition="'$(NuGetToolPath)'==''">$(PackagesDir)NuGet.exe</NuGetToolPath>
-    <NuGetPackageSource>@(NuGetSourceList -> '-source %(Identity)', ' ')</NuGetPackageSource>
-    <NuGetConfigCommandLine>$(NuGetPackageSource)</NuGetConfigCommandLine>
-
-    <NugetRestoreCommand>"$(NuGetToolPath)"</NugetRestoreCommand>
-    <NugetRestoreCommand>$(NugetRestoreCommand) install</NugetRestoreCommand>
-    <!-- NuGet.exe doesn't like trailing slashes in the output directory argument -->
-    <NugetRestoreCommand>$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</NugetRestoreCommand>
-    <NugetRestoreCommand>$(NugetRestoreCommand) $(NuGetConfigCommandLine)</NugetRestoreCommand>
-    <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
-    <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Unix'">mono $(NuGetRestoreCommand)</NugetRestoreCommand>
+    <NuGetToolPath>$(ToolsDir)NuProj/NuGet.exe</NuGetToolPath>
   </PropertyGroup>
 
   <!-- list of nuget package sources passed to dnu -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxtestdata/" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corert/" />
-    <DnuSourceList Include="https:%2F%2Fwww.nuget.org/api/v2/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corert/api/v3/index.json" />
+    <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
   </ItemGroup>
 
     <!-- list of directories to perform batch restore -->
@@ -154,15 +137,15 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DnuToolPath Condition="'$(DnuToolPath)'==''">$(BinDir)/tools/cli/dotnet</DnuToolPath>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
+    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
+    <DnuToolPath>$(DotnetToolCommand)</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-    <DnuRestoreDirs>@(DnuRestoreDir -> '%(Identity)', ' ')</DnuRestoreDirs>
 
     <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <!-- Parallel restore is not stable on Unix. Enable it on Windows only for now -->  
-    <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true' and '$(OsEnvironment)'=='Windows_NT'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>  
+    <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>  
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
   </PropertyGroup>
@@ -179,32 +162,32 @@
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName).$(RoslynVersion)/</RoslynPackageDir>
     <RoslynPropsFile>$(RoslynPackageDir)build/Microsoft.Net.ToolsetCompilers.props</RoslynPropsFile>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix' and '$(UseRoslynCompiler)'=='true'">
+
+  <!-- Use Roslyn Compilers to build -->
+  <PropertyGroup>
+    <UseSharedCompilation>true</UseSharedCompilation>
+  </PropertyGroup>
+      
+  <!--
+    On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
+  -->
+  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
-      PDB support isn't implemented yet. https://github.com/dotnet/roslyn/issues/2449
-      Note that both DebugSymbols and DebugType need set or project references will assume they need to copy pdbs and fail.
+      Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
     -->
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
+    <DebugType>Portable</DebugType>
+
     <!--
       Delay signing with the ECMA key currently doesn't work.
       https://github.com/dotnet/roslyn/issues/2444
     -->
     <UseECMAKey>false</UseECMAKey>
-  </PropertyGroup>
 
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
-      Mono currently doesn't include VB targets for portable, notably /lib/mono/xbuild/Microsoft/Portable/v4.5/Microsoft.Portable.VisualBasic.targets.
-      Fixed in https://github.com/mono/mono/pull/1726.
+      Full signing with Open key doesn't work with Portable Csc.
+      https://github.com/dotnet/roslyn/issues/8210
     -->
-    <IncludeVbProjects>false</IncludeVbProjects>
-    <!--
-      Building packages fails for two reasons.
-      First, nuget doesn't like the paths in the nuspec having backslashes as directory separators.
-      Second, we aren't yet building pdbs, which the nuspecs specify.
-    -->
-    <SkipBuildPackages>true</SkipBuildPackages>
+    <UseOpenKey>false</UseOpenKey>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -267,45 +250,14 @@
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true')">true</SkipTests>
   </PropertyGroup>
 
+  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />
+
   <PropertyGroup>
-    <!-- Work around known Dev14 bug - see
-         https://connect.microsoft.com/VisualStudio/feedback/details/1000796/connect-file-uap-props-not-found-cant-build-a-portable-lib-on-vs14
+    <!--
+        These overrides are for $(PackagesDir)\Microsoft.DotNet.BuildTools\...\lib\tool-runtime\project.json and test-runtime\project.json
+        This is similar to how CoreFX handles these files.
     -->
-    <_WindowsKitBinPath>$(MSBuildProgramFiles32)\Windows Kits\8.1\bin\x86</_WindowsKitBinPath>
-    <_WindowsPhoneKitBinPath>$(MSBuildProgramFiles32)\Windows Phone Kits\8.1\bin</_WindowsPhoneKitBinPath>
-    <MakePriExeFullPath>$(_WindowsKitBinPath)\makepri.exe</MakePriExeFullPath>
-    <MakeAppxExeFullPath>$(_WindowsKitBinPath)\makeappx.exe</MakeAppxExeFullPath>
-    <SignAppxPackageExeFullPath>$(_WindowsKitBinPath)\signtool.exe</SignAppxPackageExeFullPath>
-    <MakePriExtensionPath>$(_WindowsPhoneKitBinPath)\x86\MrmEnvironmentExtDl.dll</MakePriExtensionPath>
-    <MakePriExtensionPath_x64>$(_WindowsPhoneKitBinPath)\x64\MrmEnvironmentExtDl.dll</MakePriExtensionPath_x64>
+    <TestRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.json</TestRuntimeProjectJson>
+    <TestRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
   </PropertyGroup>
-  
-  <!-- Perf test setup - Required until v5.0 is mandatory across CoreFX-->
-  <PropertyGroup>
-    <RunPerfTestsForProject Condition="'$(Performance)' == 'true' and '$(OS)' == 'Windows_NT' and Exists('$(MSBuildProgramFiles32)\MSBuild\Microsoft\Portable\v5.0\Microsoft.Portable.CSharp.targets')" >true</RunPerfTestsForProject>
-  </PropertyGroup>
-
-  <Import Project="$(RoslynPropsFile)"
-          Condition="'$(UseRoslynCompiler)'=='true' and Exists('$(RoslynPropsFile)')" />
-
-  <!-- Building the build.proj should restore successfully, so ignore in that case -->
-  <Target Name="CheckRoslyn" Condition="'$(UseRoslynCompiler)'=='true' and '$(MSBuildProjectFile)'!='build.proj'">
-    <Warning Condition="!Exists('$(RoslynPropsFile)')"
-             Text="The Roslyn targets do not exist- Roslyn will not be used for this build, but the package should be restored if you build again." />
-  </Target>
-
-
-  <Target Name="OverrideBuildTools">
-    <Error Condition="'$(BuildToolsVersion)'!='1.0.25-prerelease-00111'" Text="Confirm below project.json overrides are still compatibile with this version."></Error>
-    <PropertyGroup>
-      <!--
-          These overrides are for $(PackagesDir)\Microsoft.DotNet.BuildTools.1.0.25-prerelease-00111\lib\tool-runtime\project.json and test-runtime\project.json
-          This is similar to how CoreFX handles these files.
-      -->
-      <TestRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.json</TestRuntimeProjectJson>
-      <TestRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/test-runtime/project.lock.json</TestRuntimeProjectLockJson>
-      <ToolRuntimeProjectJson>$(ProjectDir)src/packaging/buildtools/tool-runtime/project.json</ToolRuntimeProjectJson>
-      <ToolRuntimeProjectLockJson>$(ProjectDir)src/packaging/buildtools/tool-runtime/project.lock.json</ToolRuntimeProjectLockJson>
-    </PropertyGroup>
-  </Target>
 </Project>
