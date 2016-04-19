@@ -46,7 +46,7 @@ namespace System
             if (b == null)
                 throw new ArgumentNullException("b");
             if (b.Length != 16)
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"));
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), "b");
             Contract.EndContractBlock();
 
             _a = ((int)b[3] << 24) | ((int)b[2] << 16) | ((int)b[1] << 8) | b[0];
@@ -87,7 +87,7 @@ namespace System
                 throw new ArgumentNullException("d");
             // Check that array is not too big
             if (d.Length != 8)
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"));
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), "d");
             Contract.EndContractBlock();
 
             _a = a;
@@ -1120,7 +1120,7 @@ namespace System
             }
             if (!(value is Guid))
             {
-                throw new ArgumentException(SR.Arg_MustBeGuid);
+                throw new ArgumentException(SR.Arg_MustBeGuid, "value");
             }
             Guid g = (Guid)value;
 
