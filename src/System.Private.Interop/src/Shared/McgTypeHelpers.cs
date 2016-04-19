@@ -1046,13 +1046,18 @@ namespace System.Runtime.InteropServices
         /// Return the list of IIDs
         /// Used by IInspectable.GetIIDs implementation for every CCW
         /// </summary>
-        internal static System.Collections.Generic.Internal.List<Guid> GetIIDs(this RuntimeTypeHandle typeHandle)
+        internal static System.Collections.Generic.Internal.List<Guid> GetIIDs(this RuntimeTypeHandle ccwType)
         {
             System.Collections.Generic.Internal.List<Guid> iids = new System.Collections.Generic.Internal.List<Guid>();
+
             // Every CCW implements ICPP
             iids.Add(Interop.COM.IID_ICustomPropertyProvider);
 
-            GetIIDsImpl(typeHandle, iids);
+            // if there isn't any data about this type, just return empty list
+            if (!ccwType.IsSupportCCWTemplate())
+                return iids;
+
+            GetIIDsImpl(ccwType, iids);
             return iids;
         }
         #endregion
