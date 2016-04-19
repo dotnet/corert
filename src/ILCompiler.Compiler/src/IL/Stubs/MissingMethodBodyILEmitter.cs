@@ -15,8 +15,8 @@ namespace Internal.IL.Stubs
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
-            MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadException");
-            codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
+            MethodDesc typeLoadExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowTypeLoadException");
+            codeStream.EmitCallThrowHelper(emit, typeLoadExceptionHelper);
             return emit.Link();
         }
     }

@@ -50,9 +50,21 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Gets a value specifying whether the implementation of this method
-        /// is provided by the runtime.
+        /// is provided by the runtime (i.e., through generated IL).
         /// </summary>
         public virtual bool IsRuntimeImplemented
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether the implementation of this method is
+        /// provided externally by calling out into the runtime.
+        /// </summary>
+        public virtual bool IsInternalCall
         {
             get
             {
@@ -95,6 +107,14 @@ namespace Internal.TypeSystem
                 return _methodDef.IsRuntimeImplemented;
             }
         }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                return _methodDef.IsInternalCall;
+            }
+        }
     }
 
     // Additional members of MethodForInstantiatedType related to code generation.
@@ -129,6 +149,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsRuntimeImplemented;
+            }
+        }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                return _typicalMethodDef.IsInternalCall;
             }
         }
     }

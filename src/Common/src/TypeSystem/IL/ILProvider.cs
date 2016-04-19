@@ -117,8 +117,7 @@ namespace Internal.IL
                 if (methodIL != null)
                     return methodIL;
                 
-                if (!((EcmaMethod)method).ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.InternalCall) && 
-                    !method.IsRuntimeImplemented)
+                if (!method.IsInternalCall && !method.IsRuntimeImplemented)
                 {
                     return MissingMethodBodyILEmitter.EmitIL(method);
                 }
