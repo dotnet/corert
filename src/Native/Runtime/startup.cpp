@@ -324,11 +324,8 @@ HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance)
 // @TODO: Eventually we'll probably have a hosting API and explicit shutdown request. When that happens we'll
 // something more sophisticated here since we won't be able to rely on the OS cleaning up after us.
 //
-COOP_PINVOKE_HELPER(void, RhpShutdownHelper, (UInt32 /*uExitCode*/))
+COOP_PINVOKE_HELPER(void, RhpShutdown, ())
 {
-    // If the classlib has requested it perform a last pass of the finalizer thread.
-    RedhawkGCInterface::ShutdownFinalization();
-
 #ifdef FEATURE_PROFILING
     GetRuntimeInstance()->WriteProfileInfo();
 #endif // FEATURE_PROFILING

@@ -227,26 +227,6 @@ public:
 
 #endif // VERIFY_HEAP
 
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Support for shutdown finalization, which is off by default but can be enabled by the class library.
-//
-
-// If true runtime shutdown will attempt to finalize all finalizable objects (even those still rooted).
-extern bool g_fPerformShutdownFinalization;
-
-// Time to wait (in milliseconds) for the above finalization to complete before giving up and proceeding with
-// shutdown. Can specify INFINITE for no timeout. 
-extern UInt32 g_uiShutdownFinalizationTimeout;
-
-// Flag set to true once we've begun shutdown (and before shutdown finalization begins). This is exported to
-// the class library so that managed code can tell when it is safe to access other objects from finalizers.
-extern bool g_fShutdownHasStarted;
-
-
-
-
 EXTERN_C UInt32 _tls_index;
 inline UInt16 GetClrInstanceId()
 {

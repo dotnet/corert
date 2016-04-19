@@ -81,7 +81,8 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhHasShutdownStarted();
+                // .NET Core does not have shutdown finalization
+                return false;
             }
         }
 
@@ -115,17 +116,6 @@ namespace System
         public static string[] GetCommandLineArgs()
         {
             return (string[])s_commandLineArgs.Clone();
-        }
-#endif
-
-#if CORERT
-        // .NET Core abandoned shutdown finalization.
-        // See discussion in https://github.com/dotnet/corefx/issues/5205
-        // We should get rid of this in Project N too.
-#else
-        static Environment()
-        {
-            RuntimeImports.RhEnableShutdownFinalization(0xffffffffu);
         }
 #endif
 

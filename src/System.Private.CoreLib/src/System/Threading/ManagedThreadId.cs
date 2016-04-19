@@ -241,11 +241,6 @@ namespace System.Threading
 
         ~ManagedThreadId()
         {
-            if (RuntimeImports.RhHasShutdownStarted())
-            {
-                return;
-            }
-
             if (_managedThreadId == ManagedThreadIdNone)
             {
                 return;
