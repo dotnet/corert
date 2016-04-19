@@ -388,22 +388,29 @@ namespace Internal.IL
 
         public override void Append(CppGenerationBuffer _builder)
         {
-            // TODO: Handle infinity, NaN, etc.
+            long val = BitConverter.DoubleToInt64Bits(Value);
+            _builder.Append("__uint64_to_double(0x");
+            _builder.Append(val.ToStringInvariant("x8"));
+            _builder.Append(')');
+            // Let's print the actual value as comment.
+            _builder.Append("/* ");
             if (Double.IsNaN(Value))
             {
-                _builder.Append("nan(0)");
-                throw new NotImplementedException();
+                _builder.Append("NaN");
             }
-            else if (Double.IsInfinity(Value) || Double.IsPositiveInfinity(Value) || Double.IsNegativeInfinity(Value))
+            else if (Double.IsPositiveInfinity(Value))
             {
-                // Negative Infinity can be encoded as 0xFFF0000000000000
-                // Positive Infinity can be encoded as 0x7FF0000000000000
-                throw new NotImplementedException();
+                _builder.Append("+Inf");
+            }
+            else if (Double.IsNegativeInfinity(Value))
+            {
+                _builder.Append("-Inf");
             }
             else
             {
                 _builder.Append(Value.ToStringInvariant());
             }
+            _builder.Append(" */");
         }
 
         public override StackEntry Duplicate()

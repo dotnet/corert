@@ -1128,6 +1128,7 @@ namespace ILCompiler.CppCodeGen
             ExpandTypes();
 
             Out.WriteLine("#include \"common.h\"");
+            Out.WriteLine("#include \"CppCodeGen.h\"");
             Out.WriteLine();
 
             Out.Write("/* Forward type definitions */");
