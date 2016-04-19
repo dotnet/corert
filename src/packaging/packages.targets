@@ -51,6 +51,7 @@
 
             <!-- ILCompiler.SDK Cpp Codegen support files -->
             <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/common.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/CppCodeGen.h" />
 
             <ILCompilerSdkFilesManaged Include="System.Private.CoreLib" />
             <ILCompilerSdkFilesManaged Include="System.Private.DeveloperExperience.Console" />
