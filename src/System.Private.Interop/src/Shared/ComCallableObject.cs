@@ -1619,7 +1619,9 @@ namespace System.Runtime.InteropServices
             public Guid guid;
             public RuntimeTypeHandle type;
             public CCWSupport ccwSupport;
+#pragma warning disable 649
             public RuntimeTypeHandle castToType;
+#pragma warning restore 649
         }
 
         private static CCWWellKnownType[] CCWWellknownTypes = new CCWWellKnownType[]
