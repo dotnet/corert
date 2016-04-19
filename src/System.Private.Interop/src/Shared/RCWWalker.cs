@@ -434,8 +434,8 @@ namespace System.Runtime.InteropServices
             //
              comObj = McgComHelpers.ComInterfaceToComObject(
                 __IntPtr__pUnknown,
-                McgModuleManager.IUnknown,
-                McgClassInfo.Null,
+                InternalTypes.IUnknown,
+                default(RuntimeTypeHandle),
                 ContextCookie.Default,                                  // No restriction on context
                 McgComHelpers.CreateComObjectFlags.IsWinRTObject
             );
@@ -472,14 +472,13 @@ namespace System.Runtime.InteropServices
             // but we don't have it in rhtestcl X86 because StdCallCOOP is not available in RHTESTCL
             *ppNewReference = (__com_ICCW*)McgMarshal.ManagedObjectToComInterface(
                 customPropertyProviderProxy,
-                McgModuleManager.IInspectable
+                InternalTypes.IInspectable
             );
 #else // X86 && RHTESTCL
             // The contract is we must hand out ICCW (even though Jupiter probably doesn't care)
             *ppNewReference = (__com_ICCW*)McgMarshal.ManagedObjectToComInterface(
                 customPropertyProviderProxy,
-                McgModuleManager.ICCW
-
+                InternalTypes.ICCW
             );
 #endif //
 

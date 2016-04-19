@@ -249,18 +249,17 @@ namespace System.Runtime.InteropServices
         {
             //
             // If the target is boxed by managed code:
-            // 1. ReferenceImpl/ReferenceArrayImpl
-            // 2. KeyValuePairImpl
-            // 3. CustomPropertyProviderProxy
+            // 1. BoxedValue
+            // 2. BoxedKeyValuePair
+            // 3. StandardCustomPropertyProviderProxy/EnumerableCustomPropertyProviderProxy/ListCustomPropertyProviderProxy
             // 
             // we should use its value for data binding
             //
-            IManagedWrapper boxTarget = target as IManagedWrapper;
-
-            if (boxTarget != null)
-                target = boxTarget.GetTarget();
-
-            Debug.Assert(!(target is IManagedWrapper));
+            if (InteropExtensions.AreTypesAssignable(target.GetTypeHandle(), typeof(IManagedWrapper).TypeHandle))
+            {
+                target = ((IManagedWrapper)target).GetTarget();
+                Debug.Assert(!(target is IManagedWrapper));
+            }
 
             return target;
         }
@@ -291,8 +290,8 @@ namespace System.Runtime.InteropServices
         /// </param>
         internal static object ComInterfaceToComObject(
             IntPtr pComItf,
-            McgTypeInfo interfaceTypeInfo,
-            McgClassInfo classInfoInSigature,
+            RuntimeTypeHandle interfaceType,
+            RuntimeTypeHandle classTypeInSigature,
             ContextCookie expectedContext,
             CreateComObjectFlags flags
             )
@@ -312,8 +311,8 @@ namespace System.Runtime.InteropServices
                 object obj = ComInterfaceToComObjectInternal(
                     pComItf,
                     pComIdentityIUnknown,
-                    interfaceTypeInfo,
-                    classInfoInSigature,
+                    interfaceType,
+                    classTypeInSigature,
                     expectedContext,
                     flags
                     );
@@ -340,8 +339,8 @@ namespace System.Runtime.InteropServices
         internal static object ComInterfaceToComObjectInternal(
             IntPtr pComItf,
             IntPtr pComIdentityIUnknown,
-            McgTypeInfo interfaceTypeInfo,
-            McgClassInfo classInfoInSignature,
+            RuntimeTypeHandle interfaceType,
+            RuntimeTypeHandle classTypeInSignature,
             ContextCookie expectedContext,
             CreateComObjectFlags flags
             )
@@ -350,8 +349,8 @@ namespace System.Runtime.InteropServices
             object obj = ComInterfaceToComObjectInternal_NoCache(
                 pComItf,
                 pComIdentityIUnknown,
-                interfaceTypeInfo,
-                classInfoInSignature,
+                interfaceType,
+                classTypeInSignature,
                 expectedContext,
                 flags,
                 out className
@@ -364,13 +363,12 @@ namespace System.Runtime.InteropServices
             bool doUnboxingCheck = 
                 (flags & CreateComObjectFlags.SkipTypeResolutionAndUnboxing) == 0 &&
                 obj != null &&
-                classInfoInSignature.IsNull && 
-                (interfaceTypeInfo == McgModuleManager.IUnknown ||
-                 interfaceTypeInfo == McgModuleManager.IInspectable);
+                classTypeInSignature.IsNull() && 
+                (interfaceType.Equals(InternalTypes.IUnknown) ||
+                 interfaceType.IsIInspectable());
 
             if (doUnboxingCheck)
             {
-                
                 //
                 // Try unboxing
                 // Even though this might just be a IUnknown * from the signature, we still attempt to unbox
@@ -387,7 +385,7 @@ namespace System.Runtime.InteropServices
                 // cache management cost, and it is difficult to say which way is better without proper
                 // measuring
                 //
-                object unboxedObj = McgModuleManager.UnboxIfBoxed(obj, className);
+                object unboxedObj = McgMarshal.UnboxIfBoxed(obj, className);
                 if (unboxedObj != null)
                     return unboxedObj;
             }
@@ -409,7 +407,7 @@ namespace System.Runtime.InteropServices
 
                 try
                 {
-                    comObject.InsertIntoCache(interfaceTypeInfo, ContextCookie.Current, ref pComItf, true);
+                    comObject.InsertIntoCache(interfaceType, ContextCookie.Current, ref pComItf, true);
                 }
                 finally
                 {
@@ -438,8 +436,8 @@ namespace System.Runtime.InteropServices
         private static object ComInterfaceToComObjectInternal_NoCache(
             IntPtr pComItf,
             IntPtr pComIdentityIUnknown,
-            McgTypeInfo interfaceTypeInfo,
-            McgClassInfo classInfoInSignature,
+            RuntimeTypeHandle interfaceType,
+            RuntimeTypeHandle classTypeInSignature,
             ContextCookie expectedContext,
             CreateComObjectFlags flags,
             out string className
@@ -499,9 +497,9 @@ namespace System.Runtime.InteropServices
 
             bool isSealed = false;
 
-            if (!classInfoInSignature.IsNull)
+            if (!classTypeInSignature.IsNull())
             {
-                isSealed = classInfoInSignature.IsSealed;
+                isSealed = classTypeInSignature.IsSealed();
             }
 
             //
@@ -515,7 +513,7 @@ namespace System.Runtime.InteropServices
 
                 bool needRelease = false;
 
-                if (interfaceTypeInfo.IsIInspectable)
+                if (interfaceType.IsWinRTInterface())
                 {
                     //
                     // Use the interface pointer as IInspectable as we know it is indeed a WinRT interface that
@@ -560,42 +558,42 @@ namespace System.Runtime.InteropServices
             // 2. Otherwise use the class (if there) in the signature
             // 3. Out of options - create __ComObject
             //
-            McgClassInfo classInfoToCreateRCW = McgClassInfo.Null;
-            McgTypeInfo interfaceInfo = McgTypeInfo.Null;
+            RuntimeTypeHandle classTypeToCreateRCW = default(RuntimeTypeHandle);
+            RuntimeTypeHandle interfaceTypeFromName = default(RuntimeTypeHandle);
 
             if (!String.IsNullOrEmpty(className))
             {
-                if (!McgModuleManager.TryGetClassInfoFromName(className, out classInfoToCreateRCW))
+                if (!McgModuleManager.TryGetClassTypeFromName(className, out classTypeToCreateRCW))
                 {
                     //
                     // If we can't find the class name in our map, try interface as well
                     // Such as IVector<Int32>
                     // This apparently won't work if we haven't seen the interface type in MCG
                     //
-                    McgModuleManager.TryGetInterfaceTypeInfoFromName(className, out interfaceInfo);
+                    McgModuleManager.TryGetInterfaceTypeFromName(className, out interfaceTypeFromName);
                 }
             }
 
-            if (classInfoToCreateRCW.IsNull)
-                classInfoToCreateRCW = classInfoInSignature;
+            if (classTypeToCreateRCW.IsNull())
+                classTypeToCreateRCW = classTypeInSignature;
 
             // Use identity IUnknown to create the new RCW
             // @TODO: Transfer the ownership of ref count to the RCW
-            if (classInfoToCreateRCW.IsNull)
+            if (classTypeToCreateRCW.IsNull())
             {
                 //
                 // Create a weakly typed RCW because we have no information about this particular RCW
                 // @TODO - what if this RCW is not seen by MCG but actually exists in WinMD and therefore we
                 // are missing GCPressure and ComMarshallingType information for this object?
                 //
-                comObject = new __ComObject(pComIdentityIUnknown, McgClassInfo.Null);
+                comObject = new __ComObject(pComIdentityIUnknown, default(RuntimeTypeHandle));
             }
             else
             {
                 //
-                // Create a strongly typed RCW based on McgClassInfo
+                // Create a strongly typed RCW based on RuntimeTypeHandle
                 //
-                comObject = CreateComObjectInternal(classInfoToCreateRCW, pComIdentityIUnknown);            // Use identity IUnknown to create the new RCW
+                comObject = CreateComObjectInternal(classTypeToCreateRCW, pComIdentityIUnknown);            // Use identity IUnknown to create the new RCW
             }
 
 #if DEBUG
@@ -610,23 +608,23 @@ namespace System.Runtime.InteropServices
             //
             // Make sure we QI for that interface
             //
-            if (!interfaceInfo.IsNull)
+            if (!interfaceType.IsNull())
             {
-                comObject.QueryInterface_NoAddRef_Internal(interfaceInfo, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false);
+                comObject.QueryInterface_NoAddRef_Internal(interfaceType, /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false);
             }
 
             return comObject;
         }
 
-        private static __ComObject CreateComObjectInternal(McgClassInfo classInfo, IntPtr pComItf)
+        private static __ComObject CreateComObjectInternal(RuntimeTypeHandle classType, IntPtr pComItf)
         {
-            Debug.Assert(!classInfo.IsNull);
+            Debug.Assert(!classType.IsNull());
 
-            if (classInfo.ClassType.Equals(McgModule.s_DependencyReductionTypeRemovedTypeHandle))
+            if (classType.Equals(McgModule.s_DependencyReductionTypeRemovedTypeHandle))
             {
                 // We should filter out the strongly typed RCW in TryGetClassInfoFromName step
 #if !RHTESTCL
-                Environment.FailFast(McgTypeHelpers.GetDiagnosticMessageForMissingType(classInfo.ClassType));
+                Environment.FailFast(McgTypeHelpers.GetDiagnosticMessageForMissingType(classType));
 #else
                 Environment.FailFast("We should never see strongly typed RCW discarded here");
 #endif
@@ -635,14 +633,14 @@ namespace System.Runtime.InteropServices
             //Note that this doesn't run the constructor in RH but probably do in your reflection based implementation. 
             //If this were a real RCW, you would actually 'new' the RCW which is wrong. Fortunately in CoreCLR we don't have
             //this scenario so we are OK, but we should figure out a way to fix this by having a runtime API.
-            object newClass = InteropExtensions.RuntimeNewObject(classInfo.ClassType);
+            object newClass = InteropExtensions.RuntimeNewObject(classType);
 
             Debug.Assert(newClass is __ComObject);
 
             __ComObject newObj = InteropExtensions.UncheckedCast<__ComObject>(newClass);
 
             IntPtr pfnCtor = AddrOfIntrinsics.AddrOf<AddrOfIntrinsics.AddrOfAttachingCtor>(__ComObject.AttachingCtor);
-            CalliIntrinsics.Call<int>(pfnCtor, newObj, pComItf, classInfo);
+            CalliIntrinsics.Call<int>(pfnCtor, newObj, pComItf, classType);
 
             return newObj;
         }
@@ -654,13 +652,13 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static object ComInterfaceToObjectInternal(
             IntPtr pComItf,
-            McgTypeInfo interfaceTypeInfo,
-            McgClassInfo classInfoInSignature,
+            RuntimeTypeHandle interfaceType,
+            RuntimeTypeHandle classTypeInSignature,
             CreateComObjectFlags flags)
         {
             bool needUnboxing = (flags & CreateComObjectFlags.SkipTypeResolutionAndUnboxing) == 0;
 
-            object ret = ComInterfaceToObjectInternal_NoManagedUnboxing(pComItf, interfaceTypeInfo, classInfoInSignature, flags);
+            object ret = ComInterfaceToObjectInternal_NoManagedUnboxing(pComItf, interfaceType, classTypeInSignature, flags);
             if (ret != null && needUnboxing)
             {
                 return UnboxManagedWrapperIfBoxed(ret);
@@ -671,8 +669,8 @@ namespace System.Runtime.InteropServices
 
         static object ComInterfaceToObjectInternal_NoManagedUnboxing(
             IntPtr pComItf,
-            McgTypeInfo interfaceTypeInfo,
-            McgClassInfo classInfoInSignature,
+            RuntimeTypeHandle interfaceType,
+            RuntimeTypeHandle classTypeInSignature,
             CreateComObjectFlags flags)
         {
             if (pComItf == default(IntPtr))
@@ -714,8 +712,8 @@ namespace System.Runtime.InteropServices
                 return ComInterfaceToComObjectInternal(
                     pComItf,
                     pComIdentityIUnknown,
-                    interfaceTypeInfo,
-                    classInfoInSignature,
+                    interfaceType,
+                    classTypeInSignature,
                     ContextCookie.Default,
                     flags
                     );
@@ -727,17 +725,18 @@ namespace System.Runtime.InteropServices
         }
 
 
-        internal unsafe static IntPtr ObjectToComInterfaceInternal(Object obj, McgTypeInfo typeInfo)
+        internal unsafe static IntPtr ObjectToComInterfaceInternal(Object obj, RuntimeTypeHandle typeHnd)
         {
             if (obj == null)
                 return default(IntPtr);
+
 #if ENABLE_WINRT
             //
             // Try boxing if this is a WinRT object
             //
-            if (typeInfo == McgModuleManager.IInspectable)
+            if (typeHnd.Equals(InternalTypes.IInspectable))
             {
-                object unboxed = McgModuleManager.BoxIfBoxable(obj);
+                object unboxed = McgMarshal.BoxIfBoxable(obj);
 
                 //
                 // Marshal ReferenceImpl<T> to WinRT as IInspectable
@@ -754,7 +753,7 @@ namespace System.Runtime.InteropServices
                     object[] objArray = obj as object[];
                     if (objArray != null)
                     {
-                        unboxed = McgModuleManager.BoxIfBoxable(obj, typeof(object[]).TypeHandle);
+                        unboxed = McgMarshal.BoxIfBoxable(obj, typeof(object[]).TypeHandle);
                         if (unboxed != null)
                             obj = unboxed;
                     }
@@ -770,7 +769,7 @@ namespace System.Runtime.InteropServices
             
             if (comObject != null && !comObject.ExtendsComObject)
             {
-                IntPtr pComPtr = comObject.QueryInterface_NoAddRef_Internal(typeInfo,  /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false);
+                IntPtr pComPtr = comObject.QueryInterface_NoAddRef_Internal(typeHnd,  /* cacheOnly= */ false, /* throwOnQueryInterfaceFailure= */ false);
                 if (pComPtr == default(IntPtr))
                     return default(IntPtr);
 
@@ -783,28 +782,22 @@ namespace System.Runtime.InteropServices
             //
             // Otherwise, go down the CCW code path
             //
-            Guid itfGuid = typeInfo.ItfGuid;
-            return ManagedObjectToComInterfaceInternal(obj, ref itfGuid, typeInfo);
+            return ManagedObjectToComInterface(obj, typeHnd);
         }
 
-        internal static unsafe IntPtr ManagedObjectToComInterface(Object obj, McgTypeInfo itfTypeInfo)
+        internal static unsafe IntPtr ManagedObjectToComInterface(Object obj, RuntimeTypeHandle interfaceType)
         {
-            Guid itfGuid = itfTypeInfo.ItfGuid;
-            return ManagedObjectToComInterfaceInternal(obj, ref itfGuid, itfTypeInfo);
+            Guid iid = interfaceType.GetInterfaceGuid();
+            return ManagedObjectToComInterfaceInternal(obj, ref iid, interfaceType);
         }
 
-        internal static unsafe IntPtr ManagedObjectToComInterface(Object obj, RuntimeTypeHandle typeHandle)
-        {
-            McgTypeInfo secondTypeInfo;
-            return ManagedObjectToComInterface(obj, McgModuleManager.GetTypeInfoFromTypeHandle(typeHandle, out secondTypeInfo));
-        }
 
         internal static unsafe IntPtr ManagedObjectToComInterface(Object obj, ref Guid iid)
         {
-            return ManagedObjectToComInterfaceInternal(obj, ref iid, McgTypeInfo.Null);
+            return ManagedObjectToComInterfaceInternal(obj, ref iid, default(RuntimeTypeHandle));
         }
 
-        private static unsafe IntPtr ManagedObjectToComInterfaceInternal(Object obj, ref Guid iid, McgTypeInfo itfTypeInfo)
+        private static unsafe IntPtr ManagedObjectToComInterfaceInternal(Object obj, ref Guid iid, RuntimeTypeHandle interfaceType)
         {
             if (obj == null)
             {
@@ -825,10 +818,10 @@ namespace System.Runtime.InteropServices
                 //
                 IntPtr dummy;
 
-                ccw = CCWLookupMap.GetOrCreateCCW(obj, McgTypeInfo.Null, out dummy);
+                ccw = CCWLookupMap.GetOrCreateCCW(obj, interfaceType, out dummy);
                 Debug.Assert(ccw != null);
 
-                return ccw.GetComInterfaceForIID(ref iid, itfTypeInfo);
+                return ccw.GetComInterfaceForIID(ref iid, interfaceType);
             }
             finally
             {

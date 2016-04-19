@@ -382,17 +382,17 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object item = null;
-
                 CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.GetItem, (int)index, ref item);
 
-                *((IntPtr*)pItem) = module.ObjectToComInterface(item, marshalIndex);
+                *((IntPtr*)pItem) = McgMarshal.ObjectToComInterface(item, interfaceType.GetElementInterfaceType());
             }
             catch (System.Exception hrExcep)
             {
@@ -413,11 +413,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object dummy = null;
 
@@ -438,17 +439,18 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
 
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object view = null;
 
                 CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.ToReadOnly, 0, ref view);
 
-                *((IntPtr*)pView) = module.MarshalToVectorView(view, marshalIndex);
+                *((IntPtr*)pView) = McgMarshal.ObjectToComInterface(view, interfaceType.GetVectorViewType());
             }
             catch (System.Exception hrExcep)
             {
@@ -466,13 +468,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
 
-                object value = module.MarshalToObject(_value, marshalIndex);
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
+
+                object value = McgMarshal.ComInterfaceToObject(_value, interfaceType.GetElementInterfaceType(), interfaceType.GetElementClassType());
 
                 int index = CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.IndexOf, 0, ref value);
 
@@ -504,11 +507,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object value = null;
 
@@ -516,7 +520,7 @@ namespace System.Runtime.InteropServices
 
                 if (Toolbox.EnsureIndexInt32(index, listCount, ref hr))
                 {
-                    value = module.MarshalToObject(_value, marshalIndex);
+                    value = McgMarshal.ComInterfaceToObject(_value, interfaceType.GetElementInterfaceType(), interfaceType.GetElementClassType());
 
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.SetItem, (int)index, ref value);
                 }
@@ -541,11 +545,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object value = null;
 
@@ -555,7 +560,7 @@ namespace System.Runtime.InteropServices
                 // so we need to ensure that we're within (0, count + 1).
                 if (Toolbox.EnsureIndexInt32(index, listCount + 1, ref hr))
                 {
-                    value = module.MarshalToObject(_value, marshalIndex);
+                    value = McgMarshal.ComInterfaceToObject(_value, interfaceType.GetElementInterfaceType(), interfaceType.GetElementClassType());
 
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Insert, (int)index, ref value);
                 }
@@ -579,13 +584,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object dummy = null;
-
                 uint listCount = (uint)CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.GetCount, 0, ref dummy);
 
                 if (Toolbox.EnsureIndexInt32(index, listCount, ref hr))
@@ -614,13 +620,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
 
-                object value = module.MarshalToObject(_value, marshalIndex);
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
+
+                object value = McgMarshal.ComInterfaceToObject(_value, interfaceType.GetElementInterfaceType(), interfaceType.GetElementClassType());
 
                 CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Add, 0, ref value);
             }
@@ -640,10 +647,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object dummy = null;
 
@@ -678,10 +687,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module ,out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object dummy = null;
 
@@ -703,10 +714,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object value = null;
 
@@ -727,7 +740,7 @@ namespace System.Runtime.InteropServices
                     {
                         CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.GetItem, (int)(i + startIndex), ref value);
 
-                        dst[i] = module.ObjectToComInterface(value, marshalIndex);
+                        dst[i] = McgMarshal.ObjectToComInterface(value, interfaceType.GetElementInterfaceType());
 
                         i++;
                     }
@@ -756,11 +769,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get Target Object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 System.IntPtr* src = (System.IntPtr*)pItems;
 
@@ -770,7 +784,7 @@ namespace System.Runtime.InteropServices
 
                 for (uint i = 0; i < length; i++)
                 {
-                    value = module.MarshalToObject(src[i], marshalIndex);
+                    value = McgMarshal.ComInterfaceToObject(src[i],  interfaceType.GetElementInterfaceType(), interfaceType.GetElementClassType());
 
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Add, 0, ref value);
                 }
@@ -845,11 +859,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int index = (int)_index;
 
@@ -874,14 +889,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int size = 0;
-
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.GetCount, ref size, default(IntPtr));
 
                 *((uint*)pSize) = (uint)size;
@@ -901,16 +916,17 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get IList object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int dummy = 0;
-
                 object view = CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.ToReadOnly, ref dummy, default(IntPtr));
 
-                *((IntPtr*)pView) = module.MarshalToVectorView(view, marshalIndex);
+                *((IntPtr*)pView) = McgMarshal.ObjectToComInterface(view, interfaceType.GetVectorViewType());
             }
             catch (System.Exception hrExcep)
             {
@@ -928,14 +944,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int index = 0;
-
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.IndexOf, ref index, (IntPtr)(&_value));
 
                 if (index >= 0)
@@ -966,14 +982,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int index = (int)_index;
-
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.SetItem, ref index, (IntPtr)(&_value));
             }
             catch (System.Exception hrExcep)
@@ -996,11 +1012,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int index = (int)_index;
 
@@ -1025,10 +1042,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module,out thunk);
+                // Get IList object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int index = (int)_index;
 
@@ -1054,11 +1073,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module,out thunk);
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int dummy = 0;
 
@@ -1080,10 +1100,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get IList object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int index = 0;
 
@@ -1120,10 +1142,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get IList object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int dummy = 0;
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Clear, ref dummy, default(IntPtr));
@@ -1144,10 +1168,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module ,out thunk);
+                // Get IList object
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int listCount = 0;
 
@@ -1162,7 +1188,7 @@ namespace System.Runtime.InteropServices
                     // Convert to COM interfaces, without allocating array
                     uint i = 0;
 
-                    int byteSize = module.GetByteSize(marshalIndex);
+                    int byteSize = interfaceType.GetByteSize();
 
                     while (i < itemCount)
                     {
@@ -1193,17 +1219,18 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get IList object
-                object list = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                object list = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int dummy = 0;
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Clear, ref dummy, default(IntPtr));
 
-                int byteSize = module.GetByteSize(marshalIndex);
+                int byteSize = interfaceType.GetByteSize();
 
                 for (uint i = 0; i < length; i++)
                 {
@@ -1348,17 +1375,19 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
                 // Get enumerable
-                object enumerable = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                object enumerable = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                Debug.Assert((interfaceType.GetInterfaceFlags() & McgInterfaceFlags.useSharedCCW) != 0);
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 // Create enumerator using thunk function
                 object enumerator = CalliIntrinsics.Call<object>(thunk, enumerable);
 
                 // Marshal to native iterator
-                *((IntPtr*)pResult) = module.MarshalToIterator(enumerator, marshalIndex);
+                 *((IntPtr*)pResult) =  McgMarshal.ObjectToComInterface(enumerator, interfaceType.GetIteratorType());
             }
             catch (System.Exception hrExcep)
             {
@@ -1425,16 +1454,18 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object item = null;
 
                 CalliIntrinsics.Call<int>(thunk, iterator, Toolbox.IIterator_Oper.get_Current, ref item, 0);
 
-                *((IntPtr*)pValue) = module.ObjectToComInterface(item, marshalIndex);
+                *((IntPtr*)pValue) = McgMarshal.ObjectToComInterface(item, interfaceType.GetElementInterfaceType());
             }
             catch (System.Exception hrExcep)
             {
@@ -1451,13 +1482,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object item = null;
-
                 *((byte*)pValue) = (byte)CalliIntrinsics.Call<int>(thunk, iterator, Toolbox.IIterator_Oper.get_HasCurrent, ref item, 0);
             }
             catch (System.Exception hrExcep)
@@ -1475,13 +1507,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object item = null;
-
                 *((byte*)pValue) = (byte)CalliIntrinsics.Call<int>(thunk, iterator, Toolbox.IIterator_Oper.MoveNext, ref item, 0);
             }
             catch (System.Exception hrExcep)
@@ -1499,10 +1532,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 object data = null;
 
@@ -1514,7 +1549,7 @@ namespace System.Runtime.InteropServices
 
                 for (uint i = 0; i < len; i++)
                 {
-                    dst[i] = module.ObjectToComInterface(src[i], marshalIndex);
+                    dst[i] = McgMarshal.ObjectToComInterface(src[i], interfaceType.GetElementInterfaceType());
                 }
             }
             catch (System.Exception hrExcep)
@@ -1575,13 +1610,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int dummy = 0;
-
                 CalliIntrinsics.Call<Array>(thunk, iterator, Toolbox.IIterator_Oper.get_Current, pValue, ref dummy);
             }
             catch (System.Exception hrExcep)
@@ -1599,13 +1635,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int has = 0;
-
                 CalliIntrinsics.Call<Array>(thunk, iterator, Toolbox.IIterator_Oper.get_HasCurrent, default(IntPtr), ref has);
 
                 *((byte*)pValue) = (byte)has;
@@ -1625,10 +1662,12 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module,out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int has = 0;
                 CalliIntrinsics.Call<Array>(thunk, iterator, Toolbox.IIterator_Oper.MoveNext, default(IntPtr), ref has);
@@ -1650,13 +1689,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object iterator = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module, out thunk);
+                // Get iterator
+                object iterator = ComCallableObject.GetTarget(pComThis);
+
+                // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
 
                 int count = (int)len;
-
                 Array data = CalliIntrinsics.Call<Array>(thunk, iterator, Toolbox.IIterator_Oper.GetMany, default(IntPtr), ref count);
 
                 *((uint*)pCount) = (uint)count;
@@ -1702,12 +1742,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                int marshalIndex;
-                IntPtr thunk;
-                McgModule module;
-                object handler = ComCallableObject.GetThunk(pComThis, out marshalIndex, out module,out thunk);
+                // Get enumerable
+                object handler = ComCallableObject.GetTarget(pComThis);
 
-                object asyncInfo = module.MarshalToAsyncOperation(_asyncInfo, marshalIndex);
+               // Get thunk
+                RuntimeTypeHandle interfaceType = ((__interface_ccw*)pComThis)->InterfaceType;
+                IntPtr thunk = interfaceType.GetCcwVtableThunk();
+
+                object asyncInfo =  McgMarshal.ComInterfaceToObject(_asyncInfo, interfaceType.GetAsyncOperationType());
 
                 // Call handler.Invoke(asyncInfo, asyncStatus)
                 CalliIntrinsics.Call<int>(thunk, handler, asyncInfo, asyncStatus);

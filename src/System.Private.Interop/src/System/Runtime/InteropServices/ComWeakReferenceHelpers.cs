@@ -14,6 +14,7 @@ using System.Diagnostics.Contracts;
 
 namespace System.Runtime.InteropServices
 {
+#if ENABLE_WINRT
     /// <summary>
     /// This class stores the weak references to the native COM Objects to ensure a way to map the weak 
     /// reference to the native ComObject target and keep the mapping alive until the native object is alive
@@ -61,7 +62,7 @@ namespace System.Runtime.InteropServices
                 {
                     try
                     {
-                        return McgMarshal.ComInterfaceToObject(pInspectable, McgModuleManager.IInspectable);
+                        return McgMarshal.IInspectableToObject(pInspectable);
                     }
                     finally
                     {
@@ -128,7 +129,7 @@ namespace System.Runtime.InteropServices
             if (comObject != null && !comObject.ExtendsComObject)
             {
                 // Get the IWeakReferenceSource for the given object
-                IntPtr pWeakRefSource = McgMarshal.ObjectToComInterface(comObject, McgModuleManager.IWeakReferenceSource);
+                IntPtr pWeakRefSource = McgMarshal.ObjectToComInterface(comObject, InternalTypes.IWeakReferenceSource);
 
                 if (pWeakRefSource != IntPtr.Zero)
                 {
@@ -178,4 +179,5 @@ namespace System.Runtime.InteropServices
             return null;
         }
     }
+#endif
 }
