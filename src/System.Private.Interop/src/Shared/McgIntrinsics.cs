@@ -429,7 +429,7 @@ namespace System.Runtime.InteropServices
             System.IntPtr pfn,
             __ComObject arg0,
             System.IntPtr arg1,
-            McgClassInfo arg2)
+            RuntimeTypeHandle arg2)
         {
             return default(T);
         }
@@ -513,7 +513,7 @@ namespace System.Runtime.InteropServices
                                                         int mshlflags,
                                                         IntPtr pclsid);
 
-        internal delegate int AddrOfAttachingCtor(__ComObject comObject, IntPtr pBaseIUnknown, McgClassInfo classInfo);
+        internal delegate int AddrOfAttachingCtor(__ComObject comObject, IntPtr pBaseIUnknown, RuntimeTypeHandle classType);
         internal delegate int AddrOfGetSetInsertReplaceAll(IntPtr pComThis, uint index, IntPtr pItem);
         internal delegate int AddrOfRemoveAt(System.IntPtr pComThis, uint index);
         internal delegate int AddrOfGetMany1(IntPtr pComThis, uint startIndex, uint len, IntPtr pDest, IntPtr pCount);

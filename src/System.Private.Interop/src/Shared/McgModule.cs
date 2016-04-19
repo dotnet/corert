@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         McgInterfaceData[] m_interfaceData;
         CCWTemplateData[] m_ccwTemplateData;          // All CCWTemplateData is saved here
-        RuntimeTypeHandle [] m_supportedInterfaceList;   // List of supported interfaces type handle
+        RuntimeTypeHandle[] m_supportedInterfaceList;   // List of supported interfaces type handle
         // CCWTemplateData
         McgClassData[] m_classData;                 // Used for TypeName marshalling and for CreateComObject.
         // Contains entries for WinRT classes and for interfaces
@@ -93,7 +93,7 @@ namespace System.Runtime.InteropServices
                                                                      Func<int> getTableSize)
         {
             int tableSize = getTableSize();
-            Dictionary<RuntimeTypeHandle, int> hashtable = new Dictionary<RuntimeTypeHandle, int>();
+            Dictionary<RuntimeTypeHandle, int> hashtable = new Dictionary<RuntimeTypeHandle, int>(tableSize);
             for (int tableIndex = 0; tableIndex < tableSize; tableIndex++)
             {
                 RuntimeTypeHandle handle = getEntryTypeHandle(tableIndex);
@@ -180,6 +180,13 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         internal int InterfaceDataLookup(RuntimeTypeHandle typeHandle)
         {
+#if CORECLR
+            return LookupTypeHandleInHashtable(
+                typeHandle,
+                ref m_interfaceTypeInfo_Hashtable,
+                m_interfaceDataLookup_GetEntryTypeHandleCallback,
+                m_interfaceDataLookup_GetTableSizeCallback);
+#else
             if (m_interfaceTypeInfo_Hashtable != null)
             {
                 return LookupTypeHandleInHashtable(
@@ -198,7 +205,8 @@ namespace System.Runtime.InteropServices
                         return i;
                 }
                 return -1;
-            }            
+            }
+#endif
         }
 
         private Func<int, RuntimeTypeHandle> m_interfaceDataLookup_GetEntryTypeHandleCallback;
@@ -579,17 +587,20 @@ namespace System.Runtime.InteropServices
             m_unsafeStructFieldNameMap = new StringMap32(m_stringPool, nameIndices);
         }
 
-        internal CCWTemplateData[] CCWTemplateData
+        internal unsafe bool TryGetCCWRuntimeClassName(RuntimeTypeHandle ccwTypeHandle, out string ccwRuntimeClassName)
         {
-            get
-            {
-                return m_ccwTemplateData;
-            }
-        }
+            ccwRuntimeClassName = null;
+            if (m_ccwTemplateDataNameMap == null)
+                return false;
 
-        internal unsafe string GetRuntimeClassName(int ccwTemplateIndex)
-        {
-            return m_ccwTemplateDataNameMap.GetString(ccwTemplateIndex);
+            int slot = CCWTemplateDataLookup(ccwTypeHandle);
+            if (slot >= 0)
+            {
+                ccwRuntimeClassName = m_ccwTemplateDataNameMap.GetString(slot);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -622,303 +633,68 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        /// <summary>
-        /// Return the list of IIDs
-        /// Used by IInspectable.GetIIDs implementation for every CCW
-        /// </summary>
-        internal unsafe System.Collections.Generic.Internal.List<Guid> GetIIDs(int ccwTemplateDataIndex)
-        {
-            System.Collections.Generic.Internal.List<Guid> iids = new System.Collections.Generic.Internal.List<Guid>();
-
-            // Every CCW implements ICPP
-            iids.Add(Interop.COM.IID_ICustomPropertyProvider);
-
-            GetIIDsImpl(ccwTemplateDataIndex, iids);
-
-            return iids;
-        }
-
-        private void GetIIDsImpl(int index, System.Collections.Generic.Internal.List<Guid> iids)
-        {
-            //
-            // Go through the parent template first - this is important to match desktop CLR behavior
-            //
-            int parentIndex = m_ccwTemplateData[index].ParentCCWTemplateIndex;
-            RuntimeTypeHandle baseClassTypeHandle = m_ccwTemplateData[index].BaseType;
-
-            if (parentIndex >=0)
-            {
-                GetIIDsImpl(parentIndex, iids);
-            }
-            else if (!baseClassTypeHandle.Equals(default(RuntimeTypeHandle)))
-            {
-                Debug.Assert(!baseClassTypeHandle.Equals(s_DependencyReductionTypeRemovedTypeHandle));
-                CCWTemplateInfo template = McgModuleManager.GetCCWTemplateInfo(baseClassTypeHandle);
-                Debug.Assert(!template.IsNull);
-                template.ContainingModule.GetIIDsImpl(template.Index, iids);
-            }
-
-            //
-            // After we've collected IIDs from base templates, insert IIDs implemented by this class only
-            //
-            int start = m_ccwTemplateData[index].SupportedInterfaceListBeginIndex;
-            int end = start + m_ccwTemplateData[index].NumberOfSupportedInterface;
-            for (int i = start; i < end; i++)
-            {
-                //
-                // Retrieve the GUID and add it to the list
-                // Skip ICustomPropertyProvider - we've already added it as the first item
-                //
-                RuntimeTypeHandle typeHandle = m_supportedInterfaceList[i];
-
-                // TODO: if customer depends on the result of GetIIDs,
-                // then fix this by keeping these handle alive
-                if (IsInvalidTypeHandle(typeHandle))
-                    continue;
-
-                McgTypeInfo typeInfo = McgModuleManager.GetTypeInfoByHandle(typeHandle);
-                Guid guid = typeInfo.ItfGuid;
-
-                if (!InteropExtensions.GuidEquals(ref guid, ref Interop.COM.IID_ICustomPropertyProvider))
-                {
-                    //
-                    // Avoid duplicated ones
-                    //
-                    // The duplicates comes from duplicated interface declarations in the metadata across
-                    // parent/child classes, as well as the "injected" override interfaces for protected
-                    // virtual methods (for example, if a derived class implements a IShapeInternal protected
-                    // method, it only implements a protected method and doesn't implement IShapeInternal
-                    // directly, and we have to "inject" it in MCG
-                    //
-                    // Doing a linear lookup is slow, but people typically never call GetIIDs perhaps except
-                    // for debugging purposes (because the GUIDs returned back aren't exactly useful and you
-                    // can't map it back to type), so I don't care about perf here that much
-                    //
-                    if (!iids.Contains(guid))
-                        iids.Add(guid);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Get McgInterfaceData entry as an McgTypeInfo
-        /// </summary>
-        /// <param name="index"></param>
-#if !RHTESTCL
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-#endif
-        internal unsafe McgTypeInfo GetTypeInfoByIndex_Inline(int index)
-        {
-            Debug.Assert((index >= 0) && (index < m_interfaceData.Length));
-
-            return new McgTypeInfo(index, this);
-        }
-
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal unsafe McgTypeInfo GetTypeInfoByHandle(RuntimeTypeHandle typeHnd)
+        internal unsafe bool TryLookupInterfaceType(RuntimeTypeHandle typeHnd, out int interfaceIndex)
         {
             int tableIndex = InterfaceDataLookup(typeHnd);
             if (tableIndex >= 0)
             {
-                return GetTypeInfoByIndex_Inline(tableIndex);
+                interfaceIndex = tableIndex;
+                return true;
             }
 
-            return McgTypeInfo.Null;
+            interfaceIndex = -1;
+            return false;
         }
 
-        internal unsafe McgClassInfo GetClassInfoByHandle(RuntimeTypeHandle typeHnd)
+        internal unsafe bool TryLookupClassType(RuntimeTypeHandle typeHnd, out int classIndex)
         {
             int tableIndex = ClassDataLookup(typeHnd);
             if (tableIndex >= 0)
             {
-                return GetClassInfoByIndex(tableIndex);
+                classIndex = tableIndex;
+                return true;
             }
 
-            return McgClassInfo.Null;
+            classIndex = -1;
+            return false;
         }
 
-        /// <summary>
-        /// Shared CCW marshalling T to native
-        /// </summary>
-        internal IntPtr ObjectToComInterface(object data, int marshalIndex)
+        internal bool TryLookupCCWTemplateType(RuntimeTypeHandle typeHnd, out int ccwTemplateIndex)
         {
-            RuntimeTypeHandle typeHandle = m_genericArgumentMarshalInfo[marshalIndex].ElementInterfaceType;
-#if  ENABLE_WINRT
-            if (typeHandle.Equals(typeof(object).TypeHandle))
+            int tableIndex = CCWTemplateDataLookup(typeHnd);
+            if (tableIndex >=0)
             {
-                return McgMarshal.ObjectToIInspectable(data);
+                ccwTemplateIndex = tableIndex;
+                return true;
             }
 
-            if (typeHandle.Equals(typeof(string).TypeHandle))
-            {
-                return McgMarshal.StringToHString((string)data).handle;
-            }
-#endif
-            return McgMarshal.ObjectToComInterface(data, McgModuleManager.GetTypeInfoByHandle(typeHandle));
+            ccwTemplateIndex = -1;
+            return false;
         }
 
-        /// <summary>
-        /// Shared CCW marhsalling IVector<T> to IVectorView<T>
-        /// </summary>
-        internal IntPtr MarshalToVectorView(object data, int marshalIndex)
+        internal unsafe bool TryLookupGenericArgumentType(RuntimeTypeHandle typeHnd, out int genericArgumentIndex)
         {
-            RuntimeTypeHandle typeHandle = m_genericArgumentMarshalInfo[marshalIndex].VectorViewType;
-            if(IsInvalidTypeHandle(typeHandle))
+            int slot = InterfaceDataLookup(typeHnd);
+
+            if (slot >= 0)
             {
-#if !RHTESTCL
-                Environment.FailFast(String.Format("VectorView typehandle for CCW Thunk Index {0} discarded", marshalIndex));
-#else
-                Environment.FailFast("VectorView typehandle discarded");
-#endif
-            }
-            return McgMarshal.ObjectToComInterface(data, McgModuleManager.GetTypeInfoByHandle(typeHandle));
-        }
-
-        /// <summary>
-        /// Shared CCW marhsalling IEnumerable<T>> to IIterator<T>
-        /// </summary>
-        internal IntPtr MarshalToIterator(object data, int marshalIndex)
-        {
-            RuntimeTypeHandle typeHandle = m_genericArgumentMarshalInfo[marshalIndex].IteratorType;
-            if (IsInvalidTypeHandle(typeHandle))
-            {
-#if !RHTESTCL
-                Environment.FailFast(String.Format("Iterator typehandle for CCW Thunk Index {0} discarded", marshalIndex));
-#else
-                Environment.FailFast("Iterator typehandle discarded");
-#endif
-            }
-            return McgMarshal.ObjectToComInterface(data, McgModuleManager.GetTypeInfoByHandle(m_genericArgumentMarshalInfo[marshalIndex].IteratorType));
-        }
-
-        /// <summary>
-        /// Shared CCW marhsalling native to IAsyncOperation<T>
-        /// </summary>
-        internal object MarshalToAsyncOperation(IntPtr data, int marshalIndex)
-        {
-            RuntimeTypeHandle typeHandle = m_genericArgumentMarshalInfo[marshalIndex].AsyncOperationType;
-            if (IsInvalidTypeHandle(typeHandle))
-            {
-#if !RHTESTCL
-                Environment.FailFast(String.Format("AsyncOperation typehandle for CCW Thunk Index {0} discarded", marshalIndex));
-#else
-                Environment.FailFast("AsyncOperation typehandle discarded");
-#endif
-            }
-            return ComInterfaceToObject(data, m_genericArgumentMarshalInfo[marshalIndex].AsyncOperationType);
-        }
-
-        internal object ComInterfaceToObject(System.IntPtr pComItf, RuntimeTypeHandle interfaceType)
-        {
-            return ComInterfaceToObject(pComItf, interfaceType, /* classIndexInSignature */ default(RuntimeTypeHandle));
-        }
-
-        internal object ComInterfaceToObject(System.IntPtr pComItf, McgTypeInfo interfaceTypeInfo)
-        {
-            return ComInterfaceToObject(pComItf, interfaceTypeInfo, McgClassInfo.Null);
-        }
-
-        internal object ComInterfaceToObject(System.IntPtr pComItf, RuntimeTypeHandle interfaceType,
-                                           RuntimeTypeHandle classTypeInSignature)
-        {
-#if  ENABLE_WINRT
-            if (interfaceType.Equals(typeof(string).TypeHandle))
-            {
-                return McgMarshal.HStringToString(pComItf);
-            }
-#endif
-
-            // Current Shared CCW scenario is only for generic WinRT Interface
-            // in WinRT, "typeof(object)" is IInspectable
-            McgTypeInfo typeInfo;
-            if (interfaceType.Equals(typeof(object).TypeHandle))
-            {
-                typeInfo = McgModuleManager.IInspectable;
-            }
-            else
-            {
-                typeInfo = GetTypeInfoByHandle(interfaceType);
-            }
-
-            return McgMarshal.ComInterfaceToObject(
-                pComItf,
-                typeInfo,
-                (classTypeInSignature.Equals(default(RuntimeTypeHandle)))
-                    ? McgClassInfo.Null
-                    : GetClassInfoByHandle(classTypeInSignature)
-            );
-        }
-
-        /// <summary>
-        /// Lookup existing CCW/RCW, or create a new RCW for a type in this module
-        /// </summary>
-        /// <param name="pComItf">GetRuntimeClassName on the interface is used to find class name</param>
-        /// <param name="interfaceTypeInfo">
-        /// The type Info of the native interface. If we are marshalling a class (as specified in the
-        /// functino signature), this would be the default interface of the class
-        /// </param>
-        /// <param name="classInfoInSignature">
-        /// The class Info of the class type as specified in the signature
-        /// </param>
-        private object ComInterfaceToObject(System.IntPtr pComItf, McgTypeInfo interfaceTypeInfo, McgClassInfo classInfoInSignature)
-        {
-#if  ENABLE_WINRT
-            if (interfaceTypeInfo == McgModuleManager.HSTRING)
-            {
-                return McgMarshal.HStringToString(pComItf);
-            }
-#endif
-
-            return McgMarshal.ComInterfaceToObject(
-                pComItf,
-                interfaceTypeInfo,
-                classInfoInSignature
-            );
-        }
-
-        /// <summary>
-        /// Shared CCW marshalling to managed, use class form for sealed winrt class
-        /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal object MarshalToObject(IntPtr data, int marshalIndex)
-        {
-            RuntimeTypeHandle classTypeHandle = m_genericArgumentMarshalInfo[marshalIndex].ElementClassType;
-            if (!classTypeHandle.Equals(default(RuntimeTypeHandle))) // for sealed winrt class
-            {
-                if (classTypeHandle.Equals(s_DependencyReductionTypeRemovedTypeHandle))
+                if (m_genericArgumentMarshalInfo != null)
                 {
-#if !RHTESTCL
-                    Environment.FailFast(String.Format("ElementClassType typehandle for CCW Thunk Index {0} discarded", marshalIndex));
-#else
-                    Environment.FailFast("ElementClassType typehandle discarded");
-#endif
+                    genericArgumentIndex = m_interfaceData[slot].MarshalIndex;
+                    return true;
                 }
+            }
 
-                return ComInterfaceToObject(
-                    data,
-                    m_genericArgumentMarshalInfo[marshalIndex].ElementInterfaceType,
-                    classTypeHandle);
-            }
-            else
-            {
-                return ComInterfaceToObject(data, m_genericArgumentMarshalInfo[marshalIndex].ElementInterfaceType);
-            }
+            genericArgumentIndex = -1;
+            return false;
         }
 
         /// <summary>
-        /// Return sizeof(T) where T is blittable struct
+        /// Given a GUID, retrieve the corresponding RuntimeTypeHandle
+        /// @TODO: we should switch everything to RuntimeTypeHandle instead of relying on Guid
         /// </summary>
-        internal int GetByteSize(int marshalIndex)
-        {
-            Debug.Assert(m_genericArgumentMarshalInfo[marshalIndex].ElementSize > 0);
-            return (int)m_genericArgumentMarshalInfo[marshalIndex].ElementSize;
-        }
-
-        /// <summary>
-        /// Given a GUID, retrieve the corresponding type info
-        /// @TODO: we should switch everything to McgTypeInfo instead of relying on Guid
-        /// </summary>
-        unsafe internal McgTypeInfo GetTypeInfo(ref Guid guid)
+        unsafe internal RuntimeTypeHandle GetTypeFromGuid(ref Guid guid)
         {
             if (m_interfaceData != null)
             {
@@ -943,73 +719,12 @@ namespace System.Runtime.InteropServices
                 {
                     if (InteropExtensions.GuidEquals(ref guid, ref m_interfaceData[slot].ItfGuid))
                     {
-                        return GetTypeInfoByIndex_Inline(slot);
+                        return m_interfaceData[slot].ItfType;
                     }
                 }
             }
 
-            return McgTypeInfo.Null;
-        }
-
-        /// <summary>
-        /// Given a RuntimeTypeHandle, return the corresonding McgTypeInfo in InterfaceData
-        /// NOTE: This method only search InterfaceData.
-        /// NOTE: Don't call this method directory--call McgModuleManager.GetTypeInfoFromTypeHandle instead
-        /// </summary>
-        internal unsafe McgTypeInfo GetTypeInfoFromTypeHandleInInterfaceData(RuntimeTypeHandle typeHandle)
-        {
-            int slot = InterfaceDataLookup(typeHandle);
-
-            if (slot >= 0)
-            {
-                return GetTypeInfoByIndex_Inline(slot);
-            }
-
-            return McgTypeInfo.Null;
-        }
-
-        /// <summary>
-        /// Given a RuntimeTypeHandle, return the corresonding McgTypeInfo in CollectionData
-        /// This method can also return secondaryTypeInfo in case the returned mcgTypeInfo query fails at runtime.
-        /// This is done for ICollection<KeyValuePair<>> or IReadOnlyCollection<KeyValuePair<>>,
-        /// where the returned and secondaryTypeInfo's are IDictionary and IList<keyValuePair<>> or
-        /// IReadOnlyDictionary and IReadOnlyList<KeyValuePair<>> respectively in cases where we can't determine the
-        /// mcgTypeInfo statically.
-        /// </summary>
-        /// <param name="typeHandle"></param>
-        /// <param name="secondaryTypeInfo"></param>
-        /// <returns></returns>
-        internal McgTypeInfo GetTypeInfoFromTypeHandleInCollectionData(RuntimeTypeHandle typeHandle, out McgTypeInfo secondaryTypeInfo)
-        {
-            secondaryTypeInfo = McgTypeInfo.Null;
-
-            // Loop over our I[ReadOnly]Collection<T1,T2> instantiations to find the type infos for
-            // I[ReadOnly]List<KeyValuePair<T1,T2>> and I[ReadOnly]Dictionary<T1,T2>
-            //
-            // Note that only one of IList/IDictionary may be present.
-            if (m_collectionData != null)
-            {
-                int slot = CollectionDataLookup(typeHandle);
-
-                if (slot >= 0)
-                {
-                    RuntimeTypeHandle secondTypeHandle = m_collectionData[slot].SecondType;
-                    if (!IsInvalidTypeHandle(secondTypeHandle))
-                        secondaryTypeInfo = McgModuleManager.GetTypeInfoByHandle(secondTypeHandle);
-
-                    return McgModuleManager.GetTypeInfoByHandle(m_collectionData[slot].FirstType);
-                }
-            }
-
-            return McgTypeInfo.Null;
-        }
-
-        /// <summary>
-        /// Can the target object be casted to the type?
-        /// </summary>
-        internal bool SupportsInterface(object obj, McgTypeInfo typeInfo)
-        {
-            return InteropExtensions.IsInstanceOfInterface(obj, typeInfo.InterfaceType);
+            return default(RuntimeTypeHandle);
         }
 
         /// <summary>
@@ -1025,7 +740,7 @@ namespace System.Runtime.InteropServices
                 //
                 // WinRT interface or WinRT delegate
                 //
-                isWinRT = GetTypeInfoByIndex_Inline(slot).IsIInspectableOrDelegate;
+                isWinRT = m_interfaceData[slot].IsIInspectableOrDelegate;
 
                 return m_interfaceNameMap.GetString(slot);
             }
@@ -1057,9 +772,9 @@ namespace System.Runtime.InteropServices
 
                 if (i >= 0)
                 {
-                    isWinRT = GetTypeInfoByIndex_Inline(i).IsIInspectableOrDelegate;
+                    isWinRT = m_interfaceData[i].IsIInspectableOrDelegate;
 
-                    return InteropExtensions.GetTypeFromHandle(GetTypeInfoByIndex_Inline(i).ItfType);
+                    return InteropExtensions.GetTypeFromHandle(m_interfaceData[i].ItfType);
                 }
             }
 
@@ -1079,102 +794,12 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Checks whether the CCW supports specified interface
-        /// It could be either a GUID (in the case of a QI) or a TypeInfo (when marshaller asks for an
-        /// interface explicitly
-        /// NOTE: This support variances by having MCG injecting variant interfaces into the list of
-        /// supported interfaces
-        /// </summary>
-        /// <param name="ccwTemplateIndex">The index of the CCWTemplateData in the module</param>
-        /// <param name="guid">This value is always present</param>
-        /// <param name="typeInfo">
-        /// Can be null if in QI scenarios and it'll be updated to be the found typeInfo if we've found a
-        /// match (despite whether it is supported or rejected).
-        /// If not null, it'll be used to match against the list of interfaces in the template
-        /// </param>
-        internal unsafe InterfaceCheckResult SupportsInterface(int ccwTemplateIndex, ref Guid guid, ref McgTypeInfo typeInfo)
-        {
-            //
-            // If this is a CCW template for a WinRT type, this means we've come to a base WinRT type of
-            // a managed class, and we should fail at this point. Otherwise we'll be responding QIs to
-            // interfaces not implemented in managed code
-            //
-            if (m_ccwTemplateData[ccwTemplateIndex].IsWinRTType)
-                return InterfaceCheckResult.Rejected;
-
-            //
-            // Walk the interface list, looking for a matching interface
-            //
-            int begin = m_ccwTemplateData[ccwTemplateIndex].SupportedInterfaceListBeginIndex;
-            int end = begin + m_ccwTemplateData[ccwTemplateIndex].NumberOfSupportedInterface;
-            for (int index = begin; index < end; index++)
-            {
-                RuntimeTypeHandle currentInterfaceTypeHandle = m_supportedInterfaceList[index];
-                Debug.Assert(!IsInvalidTypeHandle(currentInterfaceTypeHandle));
-                McgTypeInfo currentInterfaceInfo = McgModuleManager.GetTypeInfoByHandle(currentInterfaceTypeHandle);
-
-                bool match = false;
-                if (typeInfo.IsNull)
-                {
-                    Guid intfGuid = currentInterfaceInfo.ItfGuid;
-                    match = InteropExtensions.GuidEquals(ref intfGuid, ref guid);
-                }
-                else
-                    match = (typeInfo.InterfaceType.Equals(currentInterfaceTypeHandle));
-
-                if (match)
-                {
-                    // we found out a match using Guid / TypeInfo
-                    if (typeInfo.IsNull)
-                        typeInfo = currentInterfaceInfo;
-
-                    return InterfaceCheckResult.Supported;
-                }
-            }
-
-            //
-            // Walk the parent too (if it is a WinRT type we'll stop)
-            // Field ParentCCWTemplateIndex >=0 means that its baseclass is in the same module
-            // Field BaseType != default(RuntimeTypeHandle) means that its baseclass isn't in the same module
-            int parentIndex = m_ccwTemplateData[ccwTemplateIndex].ParentCCWTemplateIndex;
-            RuntimeTypeHandle baseTypeHandle = m_ccwTemplateData[ccwTemplateIndex].BaseType;
-
-            if (parentIndex >= 0)
-            {
-                return SupportsInterface(parentIndex, ref guid, ref typeInfo);
-            }
-            else if (!baseTypeHandle.Equals(default(RuntimeTypeHandle)))
-            {
-                // DR will keep all base types if one of its derived type is used(rooted)
-                if (baseTypeHandle.Equals(s_DependencyReductionTypeRemovedTypeHandle))
-                {
-#if !RHTESTCL
-                    Environment.FailFast(String.Format("Base Type of {0} discarded.", m_ccwTemplateData[ccwTemplateIndex].ClassType.GetDisplayName()));
-#else
-                    Environment.FailFast("Base Type discarded.");
-#endif
-                }
-
-                CCWTemplateInfo baseCCWTemplateData = McgModuleManager.GetCCWTemplateInfo(baseTypeHandle);
-                Debug.Assert(!baseCCWTemplateData.IsNull);
-                return baseCCWTemplateData.ContainingModule.SupportsInterface(baseCCWTemplateData.Index, ref guid, ref typeInfo);
-
-            }
-
-            typeInfo = McgTypeInfo.Null;
-
-            return InterfaceCheckResult.NotFound;
-        }
-
-        /// <summary>
         /// Search this module's m_classData table for information on the requested type.
-        /// This function returns true if and only if it is able to locate a non-null McgClassInfo
+        /// This function returns true if and only if it is able to locate a non-null RuntimeTypeHandle
         /// record for the requested type.
         /// </summary>
-        internal bool TryGetClassInfoFromClassDataTable(string name, out McgClassInfo classInfo)
+        internal bool TryGetClassFromNameInClassData(string name, out RuntimeTypeHandle classType)
         {
-            classInfo = McgClassInfo.Null;
-
             if (m_classNameMap != null)
             {
                 //
@@ -1186,24 +811,25 @@ namespace System.Runtime.InteropServices
                 {
                     //
                     // This module contains an m_classData row which matches the requested type. This row can
-                    // be immediately used to compute the McgClassInfo that best describes the type.
+                    // be immediately used to compute the RuntimeTypeHandle that best describes the type.
                     //
-                    classInfo = ComputeClassInfoForClassDataTableRow(i);
+                    classType = ComputeClosestClassForClassIndex(i);
+                    if (!classType.Equals(default(RuntimeTypeHandle)))
+                        return true;
                 }
             }
 
-            return !classInfo.IsNull;
+            classType = default(RuntimeTypeHandle);
+            return false;
         }
 
         /// <summary>
         /// Search this module's m_additionalClassData table for information on the requested type.
-        /// This function returns true if and only if it is able to locate a non-null McgClassInfo
+        /// This function returns true if and only if it is able to locate a non-null RuntimeTypeHandle
         /// record for the requested type.
         /// </summary>
-        internal bool TryGetClassInfoFromAdditionalClassDataTable(string name, out McgClassInfo classInfo)
+        internal bool TryGetClassFromNameInAdditionalClassData(string name, out RuntimeTypeHandle classType)
         {
-            classInfo = McgClassInfo.Null;
-
             if (m_additionalClassNameMap != null)
             {
                 //
@@ -1228,42 +854,46 @@ namespace System.Runtime.InteropServices
                         //
                         // This module's m_additionalClassData table points to a m_classData row which describes
                         // the nearest available base class of the requested type. This row can be immediately used
-                        // to compute the McgClassInfo that best describes the type.
+                        // to compute the RuntimeTypeHandle that best describes the type.
                         //
-                        classInfo = ComputeClassInfoForClassDataTableRow(classDataIndex);
+                        classType = ComputeClosestClassForClassIndex(classDataIndex);
+                        if (!classType.Equals(default(RuntimeTypeHandle)))
+                            return true;
                     }
                     else
                     {
                         //
                         // This module's m_additionalClassData table lists a RuntimeTypeHandle which describes
                         // the nearest available base class of the requested type. If this nearest base class was
-                        // not reduced away, then use it to locate McgClassInfo describing this "next best" type.
+                        // not reduced away, then use it to locate RuntimeTypeHandle describing this "next best" type.
                         //
                         if (!typeHandle.Equals(s_DependencyReductionTypeRemovedTypeHandle))
                         {
-                            classInfo = McgModuleManager.GetClassInfoFromTypeHandle(typeHandle);
-                            Debug.Assert(!classInfo.IsNull);
+                            classType = typeHandle;
+                            if (!classType.Equals(default(RuntimeTypeHandle)))
+                                return true;
                         }
                     }
                 }
             }
 
-            return !classInfo.IsNull;
+            classType = default(RuntimeTypeHandle);
+            return false;
         }
 
         /// <summary>
-        /// This function computes an McgClassInfo instance that represents the best possible
+        /// This function computes an RuntimeTypeHandle instance that represents the best possible
         /// description of the type associated with the requested row in the m_classData table.
         ///
-        /// McgClassInfo can generally be attached directly to the requested row. That said, in the
+        /// RuntimeTypeHandle can generally be attached directly to the requested row. That said, in the
         /// case where the associated type was removed by the dependency reducer, it is necessary to
         /// walk the base class chain to find the nearest base type that is actually present at
         /// runtime.
         ///
-        /// Note: This function can return McgClassInfo.Null if it determines that all information
+        /// Note: This function can return default(RuntimeTypeHandle) if it determines that all information
         /// associated with the supplied row has been reduced away.
         /// </summary>
-        private McgClassInfo ComputeClassInfoForClassDataTableRow(int index)
+        private RuntimeTypeHandle ComputeClosestClassForClassIndex(int index)
         {
             Debug.Assert((index >= 0) && (index < m_classData.Length));
 
@@ -1273,7 +903,7 @@ namespace System.Runtime.InteropServices
                 // The current row lists either an non-reduced exact type or the nearest non-reduced base
                 // type and is therefore the best possible description of the requested row.
                 //
-                return new McgClassInfo(index, this);
+                return m_classData[index].ClassType;
             }
             else
             {
@@ -1286,9 +916,9 @@ namespace System.Runtime.InteropServices
                 {
                     //
                     // The base class is described elsewhere in this m_classData table. Make a recursive call
-                    // to compute its associated McgClassInfo.
+                    // to compute its associated RuntimeTypeHandle.
                     //
-                    return ComputeClassInfoForClassDataTableRow(baseClassIndex);
+                    return ComputeClosestClassForClassIndex(baseClassIndex);
                 }
                 else
                 {
@@ -1301,63 +931,47 @@ namespace System.Runtime.InteropServices
                         // The reduced type either does not have a base class or refers to a base class that the
                         // dependency reducer found to be unnecessary.
                         //
-                        return McgClassInfo.Null;
+                        return default(RuntimeTypeHandle);
                     }
                     else
                     {
-                        //
-                        // The base class is described by type handle (probably because it is associated with a
-                        // different McgModule and therefore isn't listed in the current m_classData table). Use
-                        // the type handle to compute an McgClassInfo which describes the base class.
-                        //
-                        McgClassInfo classInfo = McgModuleManager.GetClassInfoFromTypeHandle(baseClassTypeHandle);
-                        Debug.Assert(!classInfo.IsNull);
-                        return classInfo;
+                        return baseClassTypeHandle;
                     }
                 }
             }
         }
 
-        internal bool TryGetInterfaceTypeInfoFromName(string name, out McgTypeInfo typeInfo)
+        internal bool TryGetInterfaceTypeFromName(string name, out RuntimeTypeHandle interfaceType)
         {
             if (m_interfaceData != null && m_interfaceNameMap != null)
             {
                 int index = m_interfaceNameMap.FindString(name);
                 if (index >= 0)
                 {
-                    typeInfo = GetTypeInfoByIndex_Inline(index);
+                    interfaceType = m_interfaceData[index].ItfType;
                     return true;
                 }
             }
 
-            typeInfo = McgTypeInfo.Null;
+            interfaceType = default(RuntimeTypeHandle);
             return false;
         }
-
-        private unsafe McgClassInfo GetClassInfoByIndex(int index)
+        internal McgInterfaceData GetInterfaceDataByIndex(int index)
         {
-            Debug.Assert(index >= 0 && index < m_classData.Length);
-
-            return new McgClassInfo(index, this);
+            Debug.Assert(index >= 0 && index < m_interfaceData.Length);
+            return m_interfaceData[index];
         }
 
         internal McgClassData GetClassDataByIndex(int index)
         {
             Debug.Assert(index >= 0 && index < m_classData.Length);
-
             return m_classData[index];
         }
 
-        internal McgInterfaceData GetInterfaceDataByIndex(int index)
+        internal CCWTemplateData GetCCWTemplateDataByIndex(int index)
         {
-            Debug.Assert(index >= 0 && index < m_interfaceData.Length);
-
-            return m_interfaceData[index];
-        }
-
-        internal void SetCCW(int index, IntPtr value)
-        {
-            m_interfaceData[index].CcwVtable = value;
+            Debug.Assert(index >= 0 && index < m_ccwTemplateData.Length);
+            return m_ccwTemplateData[index];
         }
 
         int m_boxingDataTypeSlot = -1; // Slot for System.Type in boxing data table
@@ -1369,11 +983,16 @@ namespace System.Runtime.InteropServices
         /// You might want to specify how to box this. For example, any object[] derived array could
         /// potentially boxed as object[] if everything else fails
         /// </param>
-        internal object BoxIfBoxable(object target, RuntimeTypeHandle typeHandleOverride)
+        internal bool TryGetBoxingWrapperType(RuntimeTypeHandle typeHandle, bool IsSystemType,
+            out RuntimeTypeHandle boxingWrapperType, out int boxingPropertyType, out IntPtr boxingStub)
         {
+            boxingWrapperType = default(RuntimeTypeHandle);
+            boxingPropertyType = default(int);
+            boxingStub = default(IntPtr);
+
             if ((m_boxingData == null) || (m_boxingData.Length == 0))
             {
-                return null;
+                return false;
             }
 
             if (m_boxingDataTypeSlot == -1)
@@ -1381,124 +1000,54 @@ namespace System.Runtime.InteropServices
                 m_boxingDataTypeSlot = BoxingDataLookup(typeof(System.Type).TypeHandle);
             }
 
-            RuntimeTypeHandle expectedTypeHandle = typeHandleOverride;
-            if (expectedTypeHandle.Equals(default(RuntimeTypeHandle)))
-                expectedTypeHandle = target.GetTypeHandle();
-
             //
             // Is this the exact type that we want? (Don't use 'is' check - it won't work well for
             // arrays)
-            int slot = BoxingDataLookup(expectedTypeHandle);
+            int slot = BoxingDataLookup(typeHandle);
 
             // NOTE: For System.Type marshalling, use 'is' check instead, as the actual type would be
             // some random internal type from reflection
             //
-            if ((slot < 0) && (target is Type))
+            if ((slot < 0) && IsSystemType)
             {
                 slot = m_boxingDataTypeSlot;
             }
 
             if (slot >= 0)
             {
-                return Box(target, slot);
+                boxingWrapperType = m_boxingData[slot].CLRBoxingWrapperType;
+                boxingPropertyType = m_boxingData[slot].PropertyType;
+                boxingStub = m_boxingData[slot].BoxingStub;
+                return true;
             }
 
-            return null;
+            return false;
         }
-
-        internal object Box(object target, int boxingIndex)
-        {
-            if (!IsInvalidTypeHandle(m_boxingData[boxingIndex].CLRBoxingWrapperType))
-            {
-                //
-                // IReference<T> / IReferenceArray<T> / IKeyValuePair<K, V>
-                // All these scenarios require a managed wrapper
-                //
-
-                // Allocate the object
-                object refImplType = InteropExtensions.RuntimeNewObject(m_boxingData[boxingIndex].CLRBoxingWrapperType);
-
-                int type = m_boxingData[boxingIndex].PropertyType;
-
-                if (type >= 0)
-                {
-                    Debug.Assert(refImplType is BoxedValue);
-
-                    BoxedValue boxed = InteropExtensions.UncheckedCast<BoxedValue>(refImplType);
-
-                    // Call ReferenceImpl<T>.Initialize(obj, type);
-                    boxed.Initialize(target, type);
-                }
-                else
-                {
-                    Debug.Assert(refImplType is BoxedKeyValuePair);
-
-                    BoxedKeyValuePair boxed = InteropExtensions.UncheckedCast<BoxedKeyValuePair>(refImplType);
-
-                    // IKeyValuePair<,>,   call CLRIKeyValuePairImpl<K,V>.Initialize(object obj);
-                    // IKeyValuePair<,>[], call CLRIKeyValuePairArrayImpl<K,V>.Initialize(object obj);
-                    refImplType = boxed.Initialize(target);
-                }
-
-                return refImplType;
-            }
-            else
-            {
-                //
-                // General boxing for projected types, such as System.Uri
-                //
-                return CalliIntrinsics.Call<object>(m_boxingData[boxingIndex].BoxingStub, target);
-            }
-        }
-
-        private const int PropertyType_ArrayOffset = 1024;
 
         /// <summary>
         /// Unbox the WinRT boxed IReference<T>/IReferenceArray<T> and box it into Object so that managed
         /// code can unbox it later into the real T
         /// </summary>
-        internal object UnboxIfBoxed(object target, string className)
+        internal bool TryGetUnboxingStub(string className, out IntPtr unboxingStub)
         {
+            unboxingStub = default(IntPtr);
             if (m_boxingData == null)
             {
-                return null;
+                return false;
             }
-
             Debug.Assert(!String.IsNullOrEmpty(className));
             //
             // Avoid searching for null/empty name. BoxingData has null name entries
             //
-            int i = m_boxingDataNameMap.FindString(className);
+            int slot = m_boxingDataNameMap.FindString(className);
 
-            if (i >= 0)
+            if (slot >= 0)
             {
-                //
-                // Otherwise - call to our unboxing stub
-                //
-                return CallUnboxingStub(target, i);
+                unboxingStub = m_boxingData[slot].UnboxingStub;
+                return true;
             }
 
-            return null;
-        }
-
-        private object CallUnboxingStub(object obj, int boxingIndex)
-        {
-            return CalliIntrinsics.Call<object>(m_boxingData[boxingIndex].UnboxingStub, obj);
-        }
-
-        internal object Unbox(object obj, int boxingIndex)
-        {
-            //
-            // If it is our managed wrapper, unbox it
-            //
-            object unboxedObj = McgComHelpers.UnboxManagedWrapperIfBoxed(obj);
-            if (unboxedObj != obj)
-                return unboxedObj;
-
-            //
-            // Otherwise - call to our unboxing stub directly
-            //
-            return CallUnboxingStub(obj, boxingIndex);
+            return false;
         }
 
         /// <summary>
@@ -1553,34 +1102,136 @@ namespace System.Runtime.InteropServices
             return false;
         }
 
-        internal unsafe McgTypeInfo FindTypeInfo(Func<McgTypeInfo, bool> predecate)
+        internal unsafe RuntimeTypeHandle FindTypeSupportDynamic(Func<RuntimeTypeHandle, bool> predicate)
         {
             for (int i = 0; i < m_interfaceData.Length; i++)
             {
-                McgTypeInfo info = GetTypeInfoByIndex_Inline(i);
+                McgInterfaceData data = m_interfaceData[i];
 
-                if (predecate(info))
-                    return info;
+                if (!data.DynamicAdapterClassType.IsNull() && predicate(data.ItfType))
+                    return data.ItfType;
             }
 
-            return McgTypeInfo.Null;
+            return default(RuntimeTypeHandle);
         }
 
-#if RHTESTCL
-
-        public object ComInterfaceToObjectType(System.IntPtr pComItf, RuntimeTypeHandle interfaceType)
+        internal unsafe bool TryGetBaseType(RuntimeTypeHandle ccwType, out RuntimeTypeHandle baseType)
         {
-            return ComInterfaceToObject(pComItf, interfaceType, /* classTypeInSignature */ default(RuntimeTypeHandle));
-        }
-
-        public object ComInterfaceToObjectClass(System.IntPtr pComItf, RuntimeTypeHandle classTypeInSignature)
-        {
-            return ComInterfaceToObject(pComItf, default(RuntimeTypeHandle), classTypeInSignature);
-        }
-
+            int ccwTemplateIndex = CCWTemplateDataLookup(ccwType);
+            if (ccwTemplateIndex >= 0)
+            {
+                // Field ParentCCWTemplateIndex >=0 means that its baseclass is in the same module
+                // Field BaseType != default(RuntimeTypeHandle) means that its baseclass isn't in the same module
+                int parentIndex = m_ccwTemplateData[ccwTemplateIndex].ParentCCWTemplateIndex;
+                RuntimeTypeHandle baseTypeHandle = m_ccwTemplateData[ccwTemplateIndex].BaseType;
+                if (parentIndex >= 0)
+                {
+                    baseType = m_ccwTemplateData[parentIndex].ClassType;
+                    return true;
+                }
+                else if (!baseTypeHandle.Equals(default(RuntimeTypeHandle)))
+                {
+                    // DR will keep all base types if one of its derived type is used(rooted)
+                    if (baseTypeHandle.Equals(s_DependencyReductionTypeRemovedTypeHandle))
+                    {
+#if !RHTESTCL
+                        Environment.FailFast(String.Format("Base Type of {0} discarded.", m_ccwTemplateData[ccwTemplateIndex].ClassType.GetDisplayName()));
+#else
+                        Environment.FailFast("Base Type discarded.");
 #endif
+                    }
 
-#if  ENABLE_WINRT
+                    baseType = baseTypeHandle;
+                    return true;
+                }
+            }
+
+            baseType = default(RuntimeTypeHandle);
+            return false;
+        }
+
+        internal bool TryGetImplementedInterfaces(int ccwTemplateIndex, out IEnumerable<RuntimeTypeHandle> interfaces)
+        {
+            if (ccwTemplateIndex >= 0)
+            {
+                interfaces = new Collections.Generic.List<RuntimeTypeHandle>();
+
+                //
+                // Walk the interface list
+                //
+                interfaces = new ArraySegment<RuntimeTypeHandle>(
+                    m_supportedInterfaceList,
+                    m_ccwTemplateData[ccwTemplateIndex].SupportedInterfaceListBeginIndex,
+                    m_ccwTemplateData[ccwTemplateIndex].NumberOfSupportedInterface
+                 );
+
+                return true;
+            }
+
+            interfaces = null;
+            return false;
+        }
+
+        internal bool TryGetImplementedInterfaces(RuntimeTypeHandle ccwType, out IEnumerable<RuntimeTypeHandle> interfaces)
+        {
+            int ccwTemplateIndex = CCWTemplateDataLookup(ccwType);
+            return TryGetImplementedInterfaces(ccwTemplateIndex, out interfaces);
+        }
+
+        internal bool TryGetIsWinRTType(RuntimeTypeHandle ccwType, out bool isWinRTType)
+        {
+            int ccwTemplateIndex = CCWTemplateDataLookup(ccwType);
+            if (ccwTemplateIndex >= 0)
+            {
+                isWinRTType = m_ccwTemplateData[ccwTemplateIndex].IsWinRTType;
+                return true;
+            }
+
+            isWinRTType = default(bool);
+            return false;
+        }
+
+        internal bool TryGetTypeHandleForICollecton(RuntimeTypeHandle interfaceTypeHandle, out RuntimeTypeHandle firstTypeHandle, out RuntimeTypeHandle secondTypeHandle)
+        {
+            // Loop over our I[ReadOnly]Collection<T1,T2> instantiations to find the type infos for 
+            // I[ReadOnly]List<KeyValuePair<T1,T2>> and I[ReadOnly]Dictionary<T1,T2>
+            //
+            // Note that only one of IList/IDictionary may be present.  
+            if (m_collectionData != null)
+            {
+                int slot = CollectionDataLookup(interfaceTypeHandle);
+
+                if (slot >= 0)
+                {
+                    firstTypeHandle = m_collectionData[slot].FirstType;
+                    secondTypeHandle = m_collectionData[slot].SecondType;
+                    return true;
+                }
+            }
+
+            firstTypeHandle = default(RuntimeTypeHandle);
+            secondTypeHandle = default(RuntimeTypeHandle);
+            return false;
+        }
+
+        internal bool TryGetGenericArgumentMarshalInfo(RuntimeTypeHandle typeHandle, out McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo)
+        {
+            int slot = InterfaceDataLookup(typeHandle);
+
+            if (slot >= 0)
+            {
+                if (m_genericArgumentMarshalInfo != null)
+                {
+                    int marshalIndex = m_interfaceData[slot].MarshalIndex;
+                    mcgGenericArgumentMarshalInfo = m_genericArgumentMarshalInfo[marshalIndex];
+                    return true;
+                }
+            }
+
+            mcgGenericArgumentMarshalInfo = default(McgGenericArgumentMarshalInfo);
+            return false;
+        }
+#if ENABLE_WINRT
         static Guid s_IID_IActivationFactory = new Guid(0x00000035, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
         /// <summary>
@@ -1614,7 +1265,7 @@ namespace System.Runtime.InteropServices
 
                 object factory = InteropExtensions.RuntimeNewObject(factoryTypeHandle);
 
-                *factoryOut = McgModuleManager.ObjectToComInterface(
+                *factoryOut = McgMarshal.ObjectToComInterface(
                                      factory,
                                      itfType);
             }
@@ -1627,17 +1278,6 @@ namespace System.Runtime.InteropServices
             return Interop.COM.S_OK;
         }
 #endif
-
-        bool IsInvalidTypeHandle(RuntimeTypeHandle typeHandle)
-        {
-            if (typeHandle.Equals(typeof(DependencyReductionTypeRemoved).TypeHandle))
-                return true;
-
-            if (typeHandle.IsNull())
-                return true;
-
-            return false;
-        }
 
 #if DEBUG
         bool VerifyHashCodes()
@@ -1668,31 +1308,6 @@ namespace System.Runtime.InteropServices
             return success;
         }
 #endif // DEBUG
-
-
-        internal bool TryGetTypeHandleForICollecton(RuntimeTypeHandle interfaceTypeHandle, out RuntimeTypeHandle firstTypeHandle, out RuntimeTypeHandle secondTypeHandle)
-        {
-            // Loop over our I[ReadOnly]Collection<T1,T2> instantiations to find the type infos for 
-            // I[ReadOnly]List<KeyValuePair<T1,T2>> and I[ReadOnly]Dictionary<T1,T2>
-            //
-            // Note that only one of IList/IDictionary may be present.  
-            if (m_collectionData != null)
-            {
-                int slot = CollectionDataLookup(interfaceTypeHandle);
-
-                if (slot >= 0)
-                {
-                    firstTypeHandle = m_collectionData[slot].FirstType;
-                    secondTypeHandle = m_collectionData[slot].SecondType;
-                    return true;
-                }
-            }
-
-            firstTypeHandle = default(RuntimeTypeHandle);
-            secondTypeHandle = default(RuntimeTypeHandle);
-            return false;
-        }
-    }
 
 #if DEBUG
     // VerifyHashCodes must not call String.Format or any of the integer formatting routines in System.Private.CoreLib because
@@ -1782,4 +1397,5 @@ namespace System.Runtime.InteropServices
          }
      }
 #endif // DEBUG
+    }
 }

@@ -4,33 +4,11 @@
 
 include AsmMacros.inc
 
-EXTERN RhpShutdownHelper            : PROC
 EXTERN GetClasslibCCtorCheck        : PROC
 EXTERN memcpy                       : PROC
 EXTERN memcpyGCRefs                 : PROC
 EXTERN memcpyGCRefsWithWriteBarrier : PROC
 EXTERN memcpyAnyWithWriteBarrier    : PROC
-
-;;
-;; Currently called only from a managed executable once Main returns, this routine does whatever is needed to
-;; cleanup managed state before exiting.
-;;
-;;  Input:
-;;      rcx : Process exit code
-;;
-NESTED_ENTRY RhpShutdown, _TEXT
-
-        INLINE_GETTHREAD        rax, r10                ; rax <- Thread pointer, r10 <- trashed
-        PUSH_COOP_PINVOKE_FRAME rax, r10, no_extraStack ; rax <- in: Thread, out: trashed, r10 <- trashed
-        END_PROLOGUE
-
-        ;; Call the bulk of the helper implemented in C++. Takes the exit code already in rcx.
-        call    RhpShutdownHelper
-
-        POP_COOP_PINVOKE_FRAME  no_extraStack
-        ret
-
-NESTED_END RhpShutdown, _TEXT
 
 ;;
 ;; Checks whether the static class constructor for the type indicated by the context structure has been

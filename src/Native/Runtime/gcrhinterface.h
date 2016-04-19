@@ -179,11 +179,6 @@ public:
     static GcScanObjectFunction GetCurrentScanCallbackFunction();
     static void* GetCurrentScanContext();
 
-    // If the class library has requested it, call this method on clean shutdown (i.e. return from Main) to
-    // perform a final pass of finalization where all finalizable objects are processed regardless of whether
-    // they are still rooted.
-    static void ShutdownFinalization();
-
     // Returns size GCDesc. Used by type cloning.
     static UInt32 GetGCDescSize(void * pType);
 

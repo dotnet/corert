@@ -13,7 +13,7 @@ namespace System.Runtime
 {
     internal static class RuntimeExports
     {
-#if !CORERT
+#if !CORERT // @TODO: Remove on next breaking change sweep
         //
         // internalcalls for System.Runtime.InteropServices.GCHandle.
         //

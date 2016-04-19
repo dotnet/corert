@@ -103,7 +103,7 @@ namespace System.Runtime.InteropServices
             HSTRING errorMsg = default(HSTRING);
             try
             {
-                pUnk = McgMarshal.ObjectToComInterface(ex, McgModuleManager.IUnknown);
+                pUnk = McgMarshal.ObjectToComInterface(ex, InternalTypes.IUnknown);
                 if (pUnk != IntPtr.Zero)
                 {
                     RuntimeAugments.GenerateExceptionInformationForDump(ex, pUnk);
@@ -203,7 +203,7 @@ namespace System.Runtime.InteropServices
                     if (InteropExtensions.TryGetRestrictedErrorObject(ex, out restrictedErrorInfo) && restrictedErrorInfo != null)
                     {
                         // We have the restricted errorInfo associated with this object and hence this exception was created by an hr entering managed through native.
-                        pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, McgModuleManager.IRestrictedErrorInfo);
+                        pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
                         if (pRestrictedErrorInfo != IntPtr.Zero)
                         {
                             // We simply call SetRestrictedErrorInfo since we do not want to originate the exception again.
@@ -828,7 +828,7 @@ namespace System.Runtime.InteropServices
                         // We are in windows blue or above and hence the exceptionMsg is errMsg + "\r\n" + resErrMsg
                         message = String.IsNullOrEmpty(resErrMsg) ? errMsg : errMsg + "\r\n" + resErrMsg;
                         RestrictedErrorInfoHelper.GetReference(pRestrictedErrorInfo, out errorInfoReference);
-                        restrictedErrorInfo = McgMarshal.ComInterfaceToObject(pRestrictedErrorInfo, McgModuleManager.IRestrictedErrorInfo);
+                        restrictedErrorInfo = McgMarshal.ComInterfaceToObject(pRestrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
 
                         hasErrorInfo = true;
                     }
@@ -937,7 +937,7 @@ namespace System.Runtime.InteropServices
                             // for the IAsyncInfo case.
                             string errorReference;
                             RestrictedErrorInfoHelper.GetReference(pRestrictedErrorInfo, out errorReference);
-                            object restrictedErrorInfo = McgMarshal.ComInterfaceToObject(pRestrictedErrorInfo, McgModuleManager.IRestrictedErrorInfo);
+                            object restrictedErrorInfo = McgMarshal.ComInterfaceToObject(pRestrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
                             InteropExtensions.AddExceptionDataForRestrictedErrorInfo(
                                                                                  e,
                                                                                  restrictedDescription,

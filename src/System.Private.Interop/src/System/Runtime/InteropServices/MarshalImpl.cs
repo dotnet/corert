@@ -11,17 +11,17 @@ namespace System.Runtime.InteropServices
     {
         public static IntPtr /* IUnknown* */ GetIUnknownForObject(Object o)
         {
-            return McgMarshal.ObjectToComInterface(o, McgModuleManager.IUnknown);
+            return McgMarshal.ObjectToComInterface(o, InternalTypes.IUnknown);
         }
 
         public static Object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk)
         {
-            return McgMarshal.ComInterfaceToObject(pUnk, McgModuleManager.IUnknown);
+            return McgMarshal.ComInterfaceToObject(pUnk, InternalTypes.IUnknown);
         }
 
         public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t)
         {
-            return McgModuleManager.GetPInvokeDelegateForStub(ptr, t.TypeHandle);
+            return McgMarshal.GetPInvokeDelegateForStub(ptr, t.TypeHandle);
         }
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(Object o, Type t)
         {
@@ -31,18 +31,7 @@ namespace System.Runtime.InteropServices
             if (t == null)
                 throw new ArgumentNullException("type");
 
-            RuntimeTypeHandle interfaceTypeHandle = t.TypeHandle;
-            McgTypeInfo secondTypeInfo;
-            McgTypeInfo mcgTypeInfo = McgModuleManager.GetTypeInfoFromTypeHandle(interfaceTypeHandle, out secondTypeInfo);
-            if (mcgTypeInfo.IsNull)
-            {
-#if CORECLR
-                return default(IntPtr);
-#else
-                throw new MissingInteropDataException(SR.ComTypeMarshalling_MissingInteropData, t);
-#endif
-            }
-            return McgMarshal.ObjectToComInterface(o, mcgTypeInfo);
+            return McgMarshal.ObjectToComInterface(o, t.TypeHandle);
         }
         
         public static bool IsComObject(object o)

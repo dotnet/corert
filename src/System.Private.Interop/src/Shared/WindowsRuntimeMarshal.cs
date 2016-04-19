@@ -1237,7 +1237,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             __ComObject factory = FactoryCache.Get().GetActivationFactory(
                 type.FullName,
-                McgModuleManager.IUnknown,
+                InternalTypes.IUnknown,
                 skipCache: true);
             return (IActivationFactory) factory;
         }

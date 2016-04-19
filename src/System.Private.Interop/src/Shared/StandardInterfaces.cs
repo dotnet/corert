@@ -280,35 +280,33 @@ namespace System.Runtime.InteropServices
                 *iidCount = 0;
                 *iids = null;
 
-                CCWTemplateInfo template = pComThis->ComCallableObject.Template;
+                Object target = pComThis->ComCallableObject.TargetObject;
 
-                if (!template.IsNull)
+                System.Collections.Generic.Internal.List<Guid> guidList = target.GetTypeHandle().GetIIDs();
+
+                int totalGuids = guidList.Count;
+
+                if (totalGuids > 0)
                 {
-                    System.Collections.Generic.Internal.List<Guid> guidList = template.ContainingModule.GetIIDs(template.Index);
+                    int guidArraySize = totalGuids * sizeof(Guid);
+                    if (guidArraySize < 0)
+                        return Interop.COM.E_OUTOFMEMORY;
 
-                    int totalGuids = guidList.Count;
+                    *iids = (Guid*)ExternalInterop.CoTaskMemAlloc(new IntPtr(guidArraySize));
 
-                    if (totalGuids > 0)
+                    if (*iids == null)
                     {
-                        int guidArraySize = totalGuids * sizeof(Guid);
-                        if (guidArraySize < 0)
-                            return Interop.COM.E_OUTOFMEMORY;
-
-                        *iids = (Guid*)ExternalInterop.CoTaskMemAlloc(new IntPtr(guidArraySize));
-
-                        if (*iids == null)
-                        {
-                            return Interop.COM.E_OUTOFMEMORY;
-                        }
-
-                        for (int i = 0; i < totalGuids; ++i)
-                            (*iids)[i] = guidList[i];
-
-                        *iidCount = totalGuids;
-
-                        return Interop.COM.S_OK;
+                        return Interop.COM.E_OUTOFMEMORY;
                     }
+
+                    for (int i = 0; i < totalGuids; ++i)
+                        (*iids)[i] = guidList[i];
+
+                    *iidCount = totalGuids;
+
+                    return Interop.COM.S_OK;
                 }
+
 
                 return Interop.COM.S_OK;
             }
@@ -332,12 +330,12 @@ namespace System.Runtime.InteropServices
                 return Interop.COM.E_POINTER;
             }
 
-            CCWTemplateInfo template = pComThis->ComCallableObject.Template;
+            Object target = pComThis->ComCallableObject.TargetObject;
 
-            if (!template.IsNull)
+            string runtimeClassName = target.GetTypeHandle().GetCCWRuntimeClassName();
+
+            if (!string.IsNullOrEmpty(runtimeClassName))
             {
-                string runtimeClassName = template.ContainingModule.GetRuntimeClassName(template.Index);
-
                 if (InteropEventProvider.IsEnabled())
                     InteropEventProvider.Log.TaskCCWQueryRuntimeClassName((long)pComThis->NativeCCW, runtimeClassName);
                 return McgMarshal.StringToHStringNoNullCheck(runtimeClassName, pClassName);
@@ -928,6 +926,7 @@ namespace System.Runtime.InteropServices
         }
     }
 
+#if  ENABLE_WINRT
     /// <summary>
     /// IWeakReferenceSource implementation
     /// Because it doesn't actually implement IWeakReferenceSource, we'll ask MCG to import this as a
@@ -1026,7 +1025,7 @@ namespace System.Runtime.InteropServices
 
             var cco = pComThis->ComCallableObject;
             WeakReferenceSource source = new WeakReferenceSource(cco.TargetObject);
-            (*ppWeakReference) = (__com_IWeakReference*)McgMarshal.ManagedObjectToComInterface(source, McgModuleManager.IWeakReference);
+            (*ppWeakReference) = (__com_IWeakReference*)McgMarshal.ManagedObjectToComInterface(source, InternalTypes.IWeakReference);
 
             return Interop.COM.S_OK;
         }
@@ -1118,7 +1117,7 @@ namespace System.Runtime.InteropServices
         }
     }
 
-#if  ENABLE_WINRT
+
     unsafe struct __com_IStringable
     {
 #pragma warning disable 649 // Field 'blah' is never assigned to, and will always have its default value null

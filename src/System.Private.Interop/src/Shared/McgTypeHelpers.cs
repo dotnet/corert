@@ -701,6 +701,372 @@ namespace System.Runtime.InteropServices
             return false;
 #endif
         }
+
+        internal static bool IsIJupiterObject(this RuntimeTypeHandle interfaceType)
+        {
+#if ENABLE_WINRT
+            return interfaceType.Equals(InternalTypes.IJupiterObject);
+#else
+            return false;
+#endif
+        }
+
+        internal static bool IsIInspectable(this RuntimeTypeHandle interfaceType)
+        {
+#if ENABLE_WINRT
+            return interfaceType.Equals(InternalTypes.IInspectable);
+#else
+            return false;
+#endif
+        }
+
+        #region "Interface Data"
+        internal static bool HasInterfaceData(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if (interfaceInfo != null)
+                return true;
+            return false;
+        }
+
+        internal static bool IsWinRTInterface(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if (interfaceInfo != null)
+                return interfaceInfo.InterfaceData.IsIInspectable;
+
+#if ENABLE_WINRT
+           throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
+#else
+           return false;
+#endif
+        }
+
+        internal static bool HasDynamicAdapterClass(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if (interfaceInfo != null)
+            {
+                return interfaceInfo.HasDynamicAdapterClass;
+            }
+
+#if ENABLE_WINRT
+           throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
+#else
+            Environment.FailFast("HasDynamicAdapterClass.");
+            return false;
+#endif
+        }
+
+        internal static RuntimeTypeHandle GetDynamicAdapterClassType(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if(interfaceInfo != null)
+            {
+                return interfaceInfo.DynamicAdapterClassType;
+            }
+
+            return default(RuntimeTypeHandle);
+        }
+
+        internal static Guid GetInterfaceGuid(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if(interfaceInfo != null)
+            {
+                return interfaceInfo.ItfGuid;
+            }
+
+            return default(Guid);
+        }
+
+        internal static IntPtr GetCcwVtableThunk(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if (interfaceInfo != null)
+            {
+                return interfaceInfo.InterfaceData.CcwVtable;
+            }
+
+            return default(IntPtr);
+        }
+
+        internal static IntPtr GetCcwVtable(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if (interfaceInfo != null)
+            {
+                return interfaceInfo.CcwVtable;
+            }
+
+            return default(IntPtr);
+        }
+
+        internal static int GetMarshalIndex(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if (interfaceInfo != null)
+                return interfaceInfo.MarshalIndex;
+
+            return -1;
+        }
+
+        internal static McgInterfaceFlags GetInterfaceFlags(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if(interfaceInfo != null)
+                return interfaceInfo.Flags;
+
+            return default(McgInterfaceFlags);
+        }
+
+        internal static RuntimeTypeHandle GetDispatchClassType(this RuntimeTypeHandle interfaceType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(interfaceType);
+            if (interfaceInfo != null)
+               return interfaceInfo.DispatchClassType;
+
+            return default(RuntimeTypeHandle);
+        }
+        #endregion
+
+        #region "Class Data"
+        internal static GCPressureRange GetGCPressureRange(this RuntimeTypeHandle classType)
+        {
+            McgClassInfo classInfo = McgModuleManager.GetClassInfoFromTypeHandle(classType);
+            if (classInfo != null)
+                return classInfo.GCPressureRange;
+
+            return GCPressureRange.None;
+        }
+
+        internal static bool IsSealed(this RuntimeTypeHandle classType)
+        {
+            McgClassInfo classInfo = McgModuleManager.GetClassInfoFromTypeHandle(classType);
+            if (classInfo != null)
+                return classInfo.IsSealed;
+
+#if ENABLE_WINRT
+           throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(classType));
+#else
+            Environment.FailFast("IsSealed");
+            return false;
+#endif
+        }
+
+        internal static ComMarshalingType GetMarshalingType(this RuntimeTypeHandle classType)
+        {
+            McgClassInfo classInfo = McgModuleManager.GetClassInfoFromTypeHandle(classType);
+            if (classInfo != null)
+                return classInfo.MarshalingType;
+
+            return ComMarshalingType.Unknown;
+        }
+
+        internal static RuntimeTypeHandle GetDefaultInterface(this RuntimeTypeHandle classType)
+        {
+            McgClassInfo classInfo = McgModuleManager.GetClassInfoFromTypeHandle(classType);
+            if (classInfo != null)
+                return classInfo.DefaultInterface;
+
+            return default(RuntimeTypeHandle);
+        }
+        #endregion
+
+        #region "Generic Argument Data"
+        internal static RuntimeTypeHandle GetIteratorType(this RuntimeTypeHandle interfaceType)
+        {
+            McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo;
+            if (McgModuleManager.TryGetGenericArgumentMarshalInfo(interfaceType, out mcgGenericArgumentMarshalInfo))
+            {
+                return mcgGenericArgumentMarshalInfo.IteratorType;
+            }
+
+            return default(RuntimeTypeHandle);
+        }
+
+        internal static RuntimeTypeHandle GetElementClassType(this RuntimeTypeHandle interfaceType)
+        {
+            McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo;
+            if (McgModuleManager.TryGetGenericArgumentMarshalInfo(interfaceType, out mcgGenericArgumentMarshalInfo))
+            {
+                return mcgGenericArgumentMarshalInfo.ElementClassType;
+            }
+
+            return default(RuntimeTypeHandle);
+        }
+
+        internal static RuntimeTypeHandle GetElementInterfaceType(this RuntimeTypeHandle interfaceType)
+        {
+            McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo;
+            if (McgModuleManager.TryGetGenericArgumentMarshalInfo(interfaceType, out mcgGenericArgumentMarshalInfo))
+            {
+                return mcgGenericArgumentMarshalInfo.ElementInterfaceType;
+            }
+
+            return default(RuntimeTypeHandle);
+        }
+
+        internal static RuntimeTypeHandle GetVectorViewType(this RuntimeTypeHandle interfaceType)
+        {
+            McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo;
+            if (McgModuleManager.TryGetGenericArgumentMarshalInfo(interfaceType, out mcgGenericArgumentMarshalInfo))
+            {
+                return mcgGenericArgumentMarshalInfo.VectorViewType;
+            }
+
+            return default(RuntimeTypeHandle);
+        }
+
+        internal static RuntimeTypeHandle GetAsyncOperationType(this RuntimeTypeHandle interfaceType)
+        {
+            McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo;
+            if (McgModuleManager.TryGetGenericArgumentMarshalInfo(interfaceType, out mcgGenericArgumentMarshalInfo))
+            {
+                return mcgGenericArgumentMarshalInfo.AsyncOperationType;
+            }
+
+            return default(RuntimeTypeHandle);
+        }
+
+        internal static int GetByteSize(this RuntimeTypeHandle interfaceType)
+        {
+            McgGenericArgumentMarshalInfo mcgGenericArgumentMarshalInfo;
+            if (McgModuleManager.TryGetGenericArgumentMarshalInfo(interfaceType, out mcgGenericArgumentMarshalInfo))
+            {
+                return (int)mcgGenericArgumentMarshalInfo.ElementSize;
+            }
+
+            return -1;
+        }
+        #endregion
+
+        #region "CCWTemplate Data"
+        internal static string GetCCWRuntimeClassName(this RuntimeTypeHandle ccwType)
+        {
+            string ccwRuntimeClassName;
+            if (McgModuleManager.TryGetCCWRuntimeClassName(ccwType, out ccwRuntimeClassName))
+                return ccwRuntimeClassName;
+            return default(string);
+        }
+
+        internal static bool IsSupportCCWTemplate(this RuntimeTypeHandle ccwType)
+        {
+            CCWTemplateInfo ccwTemplateInfo = McgModuleManager.GetCCWTemplateDataInfoFromTypeHandle(ccwType);
+            if (ccwTemplateInfo != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static bool IsCCWWinRTType(this RuntimeTypeHandle ccwType)
+        {
+            CCWTemplateInfo ccwTemplateInfo = McgModuleManager.GetCCWTemplateDataInfoFromTypeHandle(ccwType);
+            if (ccwTemplateInfo != null)
+                return ccwTemplateInfo.IsWinRTType;
+
+#if ENABLE_WINRT
+           throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(ccwType));
+#else
+            Environment.FailFast("IsCCWWinRTType");
+            return false;
+#endif
+        }
+
+        internal static IEnumerable<RuntimeTypeHandle> GetImplementedInterfaces(this RuntimeTypeHandle ccwType)
+        {
+            CCWTemplateInfo ccwTemplateInfo = McgModuleManager.GetCCWTemplateDataInfoFromTypeHandle(ccwType);
+            if (ccwTemplateInfo != null)
+                return ccwTemplateInfo.ImplementedInterfaces;
+
+#if ENABLE_WINRT
+           throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(ccwType));
+#else
+            Environment.FailFast("GetImplementedInterfaces");
+            return null;
+#endif
+        }
+
+        internal static RuntimeTypeHandle GetBaseClass(this RuntimeTypeHandle ccwType)
+        {
+            CCWTemplateInfo ccwTemplateInfo = McgModuleManager.GetCCWTemplateDataInfoFromTypeHandle(ccwType);
+            if (ccwTemplateInfo != null)
+                return ccwTemplateInfo.BaseClass;
+
+#if ENABLE_WINRT
+           throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(ccwType));
+#else
+            Environment.FailFast("GetBaseClass");
+            return default(RuntimeTypeHandle);
+#endif
+        }
+
+        private static void GetIIDsImpl(RuntimeTypeHandle typeHandle, System.Collections.Generic.Internal.List<Guid> iids)
+        {
+            RuntimeTypeHandle baseClass = typeHandle.GetBaseClass();
+            if (!baseClass.IsNull())
+            {
+                GetIIDsImpl(baseClass, iids);
+            } 
+
+            foreach(RuntimeTypeHandle t in typeHandle.GetImplementedInterfaces())
+            {
+                if (t.IsInvalid())
+                    continue;
+
+                Guid guid = t.GetInterfaceGuid();
+                //
+                // Retrieve the GUID and add it to the list
+                // Skip ICustomPropertyProvider - we've already added it as the first item
+                //
+                if (!InteropExtensions.GuidEquals(ref guid, ref Interop.COM.IID_ICustomPropertyProvider))
+                {
+                    //
+                    // Avoid duplicated ones
+                    //
+                    // The duplicates comes from duplicated interface declarations in the metadata across
+                    // parent/child classes, as well as the "injected" override interfaces for protected
+                    // virtual methods (for example, if a derived class implements a IShapeInternal protected
+                    // method, it only implements a protected method and doesn't implement IShapeInternal
+                    // directly, and we have to "inject" it in MCG
+                    //
+                    // Doing a linear lookup is slow, but people typically never call GetIIDs perhaps except
+                    // for debugging purposes (because the GUIDs returned back aren't exactly useful and you
+                    // can't map it back to type), so I don't care about perf here that much
+                    //
+                    if (!iids.Contains(guid))
+                        iids.Add(guid);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Return the list of IIDs
+        /// Used by IInspectable.GetIIDs implementation for every CCW
+        /// </summary>
+        internal static System.Collections.Generic.Internal.List<Guid> GetIIDs(this RuntimeTypeHandle typeHandle)
+        {
+            System.Collections.Generic.Internal.List<Guid> iids = new System.Collections.Generic.Internal.List<Guid>();
+            // Every CCW implements ICPP
+            iids.Add(Interop.COM.IID_ICustomPropertyProvider);
+
+            GetIIDsImpl(typeHandle, iids);
+            return iids;
+        }
+        #endregion
+
+        internal static bool IsInvalid(this RuntimeTypeHandle typeHandle)
+        {
+            if (typeHandle.IsNull())
+                return true;
+
+            if (typeHandle.Equals(typeof(DependencyReductionTypeRemoved).TypeHandle))
+                return true;
+
+            return false;
+        }
     }
     public static class TypeOfHelper
     {

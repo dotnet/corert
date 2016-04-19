@@ -827,7 +827,7 @@ namespace System.Runtime.InteropServices
         /// Returns the cached WinRT factory RCW under the current context
         /// </summary>
         [CLSCompliant(false)]
-        public static unsafe __ComObject GetActivationFactory(string className, McgTypeInfo factoryIntf)
+        public static unsafe __ComObject GetActivationFactory(string className, RuntimeTypeHandle factoryIntf)
         {
 #if  ENABLE_WINRT
             return FactoryCache.Get().GetActivationFactory(className, factoryIntf);
@@ -846,36 +846,79 @@ namespace System.Runtime.InteropServices
         }
 
         [CLSCompliant(false)]
-        public static object ComInterfaceToObject(
-            IntPtr pComItf,
-            McgTypeInfo interfaceTypeInfo)
-        {
-            return ComInterfaceToObject(pComItf, interfaceTypeInfo, McgClassInfo.Null);
-        }
-
-        [CLSCompliant(false)]
         public static object ComInterfaceToObject_NoUnboxing(
             IntPtr pComItf,
-            McgTypeInfo interfaceTypeInfo)
+            RuntimeTypeHandle interfaceType)
         {
-            return McgComHelpers.ComInterfaceToObjectInternal(pComItf, interfaceTypeInfo, McgClassInfo.Null, McgComHelpers.CreateComObjectFlags.SkipTypeResolutionAndUnboxing);
+            return McgComHelpers.ComInterfaceToObjectInternal(
+                pComItf, 
+                interfaceType, 
+                default(RuntimeTypeHandle), 
+                McgComHelpers.CreateComObjectFlags.SkipTypeResolutionAndUnboxing
+            );
+        }
+
+        /// <summary>
+        /// Shared CCW Interface To Object
+        /// </summary>
+        /// <param name="pComItf"></param>
+        /// <param name="interfaceType"></param>
+        /// <param name="classTypeInSignature"></param>
+        /// <returns></returns>
+        [CLSCompliant(false)]
+        public static object ComInterfaceToObject(
+            System.IntPtr pComItf,
+            RuntimeTypeHandle interfaceType,
+            RuntimeTypeHandle classTypeInSignature)
+        {
+#if ENABLE_WINRT
+            if (interfaceType.Equals(typeof(object).TypeHandle))
+            {
+                return McgMarshal.IInspectableToObject(pComItf);
+            }
+
+            if (interfaceType.Equals(typeof(System.String).TypeHandle))
+            {
+                return McgMarshal.HStringToString(pComItf);
+            }
+
+            if (interfaceType.IsClass())
+            {
+                RuntimeTypeHandle defaultInterface = interfaceType.GetDefaultInterface();
+                Debug.Assert(!defaultInterface.IsNull());
+                return ComInterfaceToObjectInternal(pComItf, defaultInterface, interfaceType);
+            }
+#endif
+            return ComInterfaceToObjectInternal(
+                pComItf,
+                interfaceType,
+                classTypeInSignature
+            );
         }
 
         [CLSCompliant(false)]
         public static object ComInterfaceToObject(
             IntPtr pComItf,
-            McgTypeInfo interfaceTypeInfo,
-            McgClassInfo classInfoInSignature)
+            RuntimeTypeHandle interfaceType)
         {
-            object result = McgComHelpers.ComInterfaceToObjectInternal(pComItf, interfaceTypeInfo, classInfoInSignature, McgComHelpers.CreateComObjectFlags.None);
+            return ComInterfaceToObject(pComItf, interfaceType, default(RuntimeTypeHandle));
+        }
+
+
+        private static object ComInterfaceToObjectInternal(
+            IntPtr pComItf,
+            RuntimeTypeHandle interfaceType,
+            RuntimeTypeHandle classTypeInSignature)
+        {
+            object result = McgComHelpers.ComInterfaceToObjectInternal(pComItf, interfaceType, classTypeInSignature, McgComHelpers.CreateComObjectFlags.None);
 
             //
             // Make sure the type we returned is actually of the right type
             // NOTE: Don't pass null to IsInstanceOfClass as it'll return false
             //
-            if (!classInfoInSignature.IsNull && result != null)
+            if (!classTypeInSignature.IsNull() && result != null)
             {
-                if (!InteropExtensions.IsInstanceOfClass(result, classInfoInSignature.ClassType))
+                if (!InteropExtensions.IsInstanceOfClass(result, classTypeInSignature))
                     throw new InvalidCastException();
             }
 
@@ -959,22 +1002,143 @@ namespace System.Runtime.InteropServices
             return pNativeVtbl;
         }
 
-
-
-
         [CLSCompliant(false)]
-        public static IntPtr ObjectToComInterface(Object obj, McgTypeInfo typeInfo)
+        public static IntPtr ObjectToComInterface(
+            object obj,
+            RuntimeTypeHandle typeHnd)
         {
-            return McgComHelpers.ObjectToComInterfaceInternal(obj, typeInfo);
+#if ENABLE_WINRT
+            if (typeHnd.Equals(typeof(object).TypeHandle))
+            {
+                return McgMarshal.ObjectToIInspectable(obj);
+            }
+
+            if (typeHnd.Equals(typeof(System.String).TypeHandle))
+            {
+                return McgMarshal.StringToHString((string)obj).handle;
+            }
+
+            if (typeHnd.IsClass())
+            {
+                Debug.Assert(obj == null || obj is __ComObject);
+                ///
+                /// This code path should be executed only for WinRT classes
+                ///
+                typeHnd = typeHnd.GetDefaultInterface();
+                Debug.Assert(!typeHnd.IsNull());
+            }
+#endif
+            return McgComHelpers.ObjectToComInterfaceInternal(
+                obj,
+                typeHnd
+            );
         }
 
         public static IntPtr ObjectToIInspectable(Object obj)
         {
 #if ENABLE_WINRT
-            return ObjectToComInterface(obj, McgModuleManager.IInspectable);
+            return ObjectToComInterface(obj, InternalTypes.IInspectable);
 #else
             throw new PlatformNotSupportedException("ObjectToIInspectable");
 #endif
+        }
+
+        // This is not a safe function to use for any funtion pointers that do not point
+        // at a static function. This is due to the behavior of shared generics,
+        // where instance function entry points may share the exact same address
+        // but static functions are always represented in delegates with customized
+        // stubs.
+        private static bool DelegateTargetMethodEquals(Delegate del, IntPtr pfn)
+        {
+            RuntimeTypeHandle thDummy;
+            return del.GetFunctionPointer(out thDummy) == pfn;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static IntPtr DelegateToComInterface(Delegate del, RuntimeTypeHandle typeHnd, IntPtr stubFunctionAddr)
+        {
+            if (del == null)
+                return default(IntPtr);
+
+            object targetObj;
+
+            //
+            // If the delegate points to the forward stub for the native delegate,
+            // then we want the RCW associated with the native interface.  Otherwise,
+            // this is a managed delegate, and we want the CCW associated with it.
+            //
+            if (DelegateTargetMethodEquals(del, stubFunctionAddr))
+                targetObj = del.Target;
+            else
+                targetObj = del;
+
+            return McgMarshal.ObjectToComInterface(targetObj, typeHnd);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Delegate ComInterfaceToDelegate(IntPtr pComItf, RuntimeTypeHandle typeHnd, IntPtr stubFunctionAddr)
+        {
+            if (pComItf == default(IntPtr))
+                return null;
+
+            object obj = ComInterfaceToObject(pComItf, typeHnd, /* classIndexInSignature */ default(RuntimeTypeHandle));
+
+            //
+            // If the object we got back was a managed delegate, then we're good.  Otherwise,
+            // the object is an RCW for a native delegate, so we need to wrap it with a managed
+            // delegate that invokes the correct stub.
+            //
+            Delegate del = obj as Delegate;
+            if (del == null)
+            {
+                Debug.Assert(obj is __ComObject);
+                del = InteropExtensions.CreateDelegate(
+                    typeHnd,
+                    stubFunctionAddr,
+                    obj,
+                    /*isStatic:*/ true,
+                    /*isVirtual:*/ false,
+                    /*isOpen:*/ false);
+            }
+
+            return del;
+        }
+
+        /// <summary>
+        /// Marshal array of objects
+        /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        unsafe public static void ObjectArrayToComInterfaceArray(uint len, System.IntPtr* dst, object[] src, RuntimeTypeHandle typeHnd)
+        {
+            for (uint i = 0; i < len; i++)
+            {
+                dst[i] = McgMarshal.ObjectToComInterface(src[i], typeHnd);
+            }
+        }
+
+        /// <summary>
+        /// Allocate native memory, and then marshal array of objects
+        /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        unsafe public static System.IntPtr* ObjectArrayToComInterfaceArrayAlloc(object[] src, RuntimeTypeHandle typeHnd, out uint len)
+        {
+            System.IntPtr* dst = null;
+
+            len = 0;
+
+            if (src != null)
+            {
+                len = (uint)src.Length;
+
+                dst = (System.IntPtr*)ExternalInterop.CoTaskMemAlloc((System.IntPtr)(len * (sizeof(System.IntPtr))));
+
+                for (uint i = 0; i < len; i++)
+                {
+                    dst[i] = McgMarshal.ObjectToComInterface(src[i], typeHnd);
+                }
+            }
+
+            return dst;
         }
 
 #if ENABLE_WINRT
@@ -1008,7 +1172,7 @@ namespace System.Runtime.InteropServices
                 // Retrieve the outer IInspectable
                 // Pass skipInterfaceCheck = true to avoid redundant checks
                 //
-                return ccw.GetComInterfaceForTypeInfo_NoCheck(McgModuleManager.IInspectable);
+                return ccw.GetComInterfaceForType_NoCheck(InternalTypes.IInspectable, ref Interop.COM.IID_IInspectable);
             }
             finally
             {
@@ -1022,14 +1186,18 @@ namespace System.Runtime.InteropServices
 #endif
 
         [CLSCompliant(false)]
-        public static unsafe IntPtr ManagedObjectToComInterface(Object obj, McgTypeInfo itfTypeInfo)
+        public static unsafe IntPtr ManagedObjectToComInterface(Object obj, RuntimeTypeHandle interfaceType)
         {
-            return McgComHelpers.ManagedObjectToComInterface(obj, itfTypeInfo);
+            return McgComHelpers.ManagedObjectToComInterface(obj, interfaceType);
         }
 
         public static unsafe object IInspectableToObject(IntPtr pComItf)
         {
-            return ComInterfaceToObject(pComItf, McgModuleManager.IInspectable, McgClassInfo.Null);
+#if ENABLE_WINRT
+            return ComInterfaceToObject(pComItf, InternalTypes.IInspectable);
+#else
+            throw new PlatformNotSupportedException("IInspectableToObject");
+#endif
         }
 
         public static unsafe IntPtr CreateInstanceFromApp(Guid clsid)
@@ -1060,9 +1228,9 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-#endregion
+        #endregion
 
-#region Testing
+        #region Testing
 
         /// <summary>
         /// Internal-only method to allow testing of apartment teardown code
@@ -1101,7 +1269,7 @@ namespace System.Runtime.InteropServices
             return list;
         }
 
-#endregion
+        #endregion
 
         /// <summary>
         /// This method returns HR for the exception being thrown.
@@ -1141,11 +1309,13 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowFailed(int hr, System.RuntimeTypeHandle typeHnd)
         {
+            bool isWinRTScenario
 #if ENABLE_WINRT
-            throw McgMarshal.GetExceptionForHR(hr, McgModuleManager.GetTypeInfoByHandle(typeHnd).IsIInspectable);
+            = typeHnd.IsWinRTInterface();
 #else
-            throw McgMarshal.GetExceptionForHR(hr, false/*isWinRTScenario*/);
+            = false;
 #endif
+            throw McgMarshal.GetExceptionForHR(hr, isWinRTScenario);
         }
 
         /// <summary>
@@ -1177,5 +1347,554 @@ namespace System.Runtime.InteropServices
         }
 #endif
         #endregion
+
+#if ENABLE_WINRT
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static unsafe IntPtr ActivateInstance(string typeName)
+        {
+            __ComObject target = McgMarshal.GetActivationFactory(
+                typeName,
+                InternalTypes.IActivationFactoryInternal
+            );
+
+            IntPtr pIActivationFactoryInternalItf = target.QueryInterface_NoAddRef_Internal(
+                InternalTypes.IActivationFactoryInternal,
+                /* cacheOnly= */ false,
+                /* throwOnQueryInterfaceFailure= */ true
+            );
+
+            __com_IActivationFactoryInternal* pIActivationFactoryInternal = (__com_IActivationFactoryInternal*)pIActivationFactoryInternalItf;
+
+            IntPtr pResult = default(IntPtr);
+
+            int hr = CalliIntrinsics.StdCall<int>(
+                pIActivationFactoryInternal->pVtable->pfnActivateInstance,
+                pIActivationFactoryInternal,
+                &pResult
+            );
+
+            GC.KeepAlive(target);
+
+            if (hr < 0)
+            {
+                throw McgMarshal.GetExceptionForHR(hr, /* isWinRTScenario = */ true);
+            }
+
+            return pResult;
+        }
+#endif
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static IntPtr GetInterface(
+            __ComObject obj,
+            RuntimeTypeHandle typeHnd)
+        {
+            return obj.QueryInterface_NoAddRef_Internal(
+                typeHnd);
+        }
+
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType, RuntimeTypeHandle existingType = default(RuntimeTypeHandle))
+        {
+            return obj.GetDynamicAdapter(requestedType, existingType);
+        }
+
+        #region "PInvoke Delegate"
+
+#if !CORECLR
+        private static class AsmCode
+        {
+            private const MethodImplOptions InternalCall = (MethodImplOptions)0x1000;
+
+            [MethodImplAttribute(InternalCall)]
+            [RuntimeImport("*", "InteropNative_GetCurrentThunkContext")]
+            public static extern IntPtr GetCurrentInteropThunkContext();
+
+            [MethodImplAttribute(InternalCall)]
+
+            [RuntimeImport("*", "InteropNative_GetCommonStubAddress")]
+
+            public static extern IntPtr GetInteropCommonStubAddress();
+        }
+#endif
+
+        public static IntPtr GetStubForPInvokeDelegate(RuntimeTypeHandle delegateType, Delegate dele)
+        {
+            return GetStubForPInvokeDelegate(dele);
+        }
+
+        /// <summary>
+        /// Return the stub to the pinvoke marshalling stub
+        /// </summary>
+        /// <param name="del">The delegate</param>
+        static internal IntPtr GetStubForPInvokeDelegate(Delegate del)
+        {
+            if (del == null)
+                return IntPtr.Zero;
+
+            NativeFunctionPointerWrapper fpWrapper = del.Target as NativeFunctionPointerWrapper;
+            if (fpWrapper != null)
+            {
+                //
+                // Marshalling a delegate created from native function pointer back into function pointer
+                // This is easy - just return the 'wrapped' native function pointer
+                //
+                return fpWrapper.NativeFunctionPointer;
+            }
+            else
+            {
+                //
+                // Marshalling a managed delegate created from managed code into a native function pointer
+                //
+                return GetOrAllocateThunk(del);
+            }
+        }
+        /// <summary>
+        /// Used to lookup whether a delegate already has an entry
+        /// </summary>
+        private static System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> s_pInvokeDelegateThunkHashSet;
+
+        static Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> GetDelegateThunkHashSet()
+        {
+            //
+            // Create the hashset on-demand to avoid the dependency in the McgModule.ctor
+            // Otherwise NUTC will complain that McgModule being eager ctor depends on a deferred
+            // ctor type
+            //
+            if (s_pInvokeDelegateThunkHashSet == null)
+            {
+                const int DefaultSize = 101; // small prime number to avoid resizing in start up code
+
+                Interlocked.CompareExchange(
+                    ref s_pInvokeDelegateThunkHashSet,
+                    new System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk>(DefaultSize, true),
+                    null
+                );
+            }
+
+            return s_pInvokeDelegateThunkHashSet;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        internal unsafe struct ThunkContextData
+        {
+            public GCHandle Handle;        //  A weak GCHandle to the delegate
+            public IntPtr FunctionPtr;     // Function pointer for open static delegates
+        };
+
+        internal class EquatablePInvokeDelegateThunk : IEquatable<EquatablePInvokeDelegateThunk>
+        {
+            internal IntPtr Thunk;       //  Thunk pointer
+            internal GCHandle Handle;    //  A weak GCHandle to the delegate
+            internal IntPtr ContextData;     //   ThunkContextData pointer which will be stored in the context slot of the thunk
+            internal int HashCode;
+            internal EquatablePInvokeDelegateThunk(Delegate del, IntPtr pThunk)
+            {
+                IntPtr functionPtr = IntPtr.Zero;
+                // if it is an open static delegate get the function pointer
+                if (del.Target == null)
+                    functionPtr = del.GetRawFunctionPointer();
+
+                //
+                // Allocate a weak GC handle pointing to the delegate
+                // Whenever the delegate dies, we'll know next time when we recycle thunks
+                //
+                Handle = GCHandle.Alloc(del, GCHandleType.Weak);
+                Thunk = pThunk;
+                HashCode = GetHashCodeOfDelegate(del);
+
+                ThunkContextData context;
+                context.Handle = Handle;
+                context.FunctionPtr = functionPtr;
+
+                //
+                // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
+                // We will store this pointer on the context slot of thunk data
+                //
+                ContextData = Marshal.AllocHGlobal(2*IntPtr.Size);
+                unsafe
+                {
+                    ThunkContextData* thunkData = (ThunkContextData*)ContextData;
+
+                    (*thunkData).Handle = context.Handle;
+                    (*thunkData).FunctionPtr = context.FunctionPtr;
+                }
+            }
+
+            ~EquatablePInvokeDelegateThunk()
+            {
+                Handle.Free();
+                Marshal.FreeHGlobal(ContextData);
+            }
+
+            public static int GetHashCodeOfDelegate(Delegate del)
+            {
+                return RuntimeHelpers.GetHashCode(del);
+            }
+
+            public bool Equals(EquatablePInvokeDelegateThunk other)
+            {
+                return Thunk == other.Thunk;
+            }
+
+            public bool Equals(Delegate del)
+            {
+                return (Object.ReferenceEquals(del, Handle.Target));
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode;
+            }
+
+            public override bool Equals(Object obj)
+            {
+                // If parameter is null return false.
+                if (obj == null)
+                {
+                    return false;
+                }
+
+                // If parameter cannot be cast to EquatablePInvokeDelegateThunk return false.
+                EquatablePInvokeDelegateThunk other = obj as EquatablePInvokeDelegateThunk;
+                if ((Object)other == null)
+                {
+                    return false;
+                }
+
+                // Return true if the thunks match
+                return Thunk == other.Thunk;
+            }
+
+        }
+
+        const int THUNK_RECYCLING_FREQUENCY = 200;                                                  // Every 200 thunks that we allocate, do a round of cleanup
+
+#if ENABLE_WINRT
+        private static int s_numInteropThunksAllocatedSinceLastCleanup = 0;
+#endif
+
+        static private IntPtr GetOrAllocateThunk(Delegate del)
+        {
+#if ENABLE_WINRT
+            System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> delegateHashSet = GetDelegateThunkHashSet();
+            try
+            {
+                delegateHashSet.LockAcquire();
+
+                EquatablePInvokeDelegateThunk key = null;
+                int hashCode = EquatablePInvokeDelegateThunk.GetHashCodeOfDelegate(del);
+                for (int entry = delegateHashSet.FindFirstKey(ref key, hashCode); entry >= 0; entry = delegateHashSet.FindNextKey(ref key, entry))
+                {
+                    if (key.Equals(del))
+                        return key.Thunk;
+                }
+                
+                IntPtr commonStubAddress = AsmCode.GetInteropCommonStubAddress();
+                //
+                // Keep allocating thunks until we reach the recycling frequency - we have a virtually unlimited
+                // number of thunks that we can allocate (until we run out of virtual address space), but we
+                // still need to cleanup thunks that are no longer being used, to avoid leaking memory.
+                // This is helpful to detect bugs where user are calling into thunks whose delegate are already
+                // collected. In desktop CLR, they'll simple AV, while in .NET Native, there is a good chance we'll
+                // detect the delegate instance is NULL (by looking at the GCHandle in the map) and throw out a
+                // good exception
+                //
+                if (s_numInteropThunksAllocatedSinceLastCleanup == THUNK_RECYCLING_FREQUENCY)
+                {
+                    //
+                    // Cleanup the thunks that were previously allocated and are no longer in use to avoid memory leaks
+                    //
+
+                    GC.Collect();
+
+                    foreach (EquatablePInvokeDelegateThunk delegateThunk in delegateHashSet.Keys)
+                    {
+                        // if the delegate has already been collected free the thunk and remove the entry from the hashset
+                        if (delegateThunk.Handle.Target == null)
+                        {
+                            ThunkPool.FreeThunk(commonStubAddress, delegateThunk.Thunk);
+                            bool removed = delegateHashSet.Remove(delegateThunk, delegateThunk.HashCode);
+                            if (!removed)
+                                Environment.FailFast("Inconsistency in delegate map");
+                        }
+                    }
+                    s_numInteropThunksAllocatedSinceLastCleanup = 0;
+                }
+
+
+                IntPtr pThunk = ThunkPool.AllocateThunk(commonStubAddress);
+
+                if (pThunk == IntPtr.Zero)
+                {
+                    // We've either run out of memory, or failed to allocate a new thunk due to some other bug. Now we should fail fast
+                    Environment.FailFast("Insufficient number of thunks.");
+                    return IntPtr.Zero;
+                }
+                else
+                {
+                    McgPInvokeDelegateData pinvokeDelegateData;
+                    McgModuleManager.GetPInvokeDelegateData(del.GetTypeHandle(), out pinvokeDelegateData);
+
+                    s_numInteropThunksAllocatedSinceLastCleanup++;
+
+                    
+                    EquatablePInvokeDelegateThunk delegateThunk = new EquatablePInvokeDelegateThunk(del, pThunk);
+                    
+                    delegateHashSet.Add(delegateThunk , delegateThunk.HashCode);
+                    
+                    //
+                    //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
+                    //
+                    IntPtr pTarget =  del.Target != null  ?  pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
+                    
+                    ThunkPool.SetThunkData(pThunk, delegateThunk.ContextData, pTarget);
+
+                    return pThunk;
+                }
+            }
+            finally
+            {
+                delegateHashSet.LockRelease();
+            }
+#else
+            throw new PlatformNotSupportedException("GetOrAllocateThunk");
+#endif
+        }
+
+        /// <summary>
+        /// Retrieve the corresponding P/invoke instance from the stub
+        /// </summary>
+        static public Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
+        {
+            if (pStub == IntPtr.Zero)
+                return null;
+#if ENABLE_WINRT
+            //
+            // First try to see if this is one of the thunks we've allocated when we marshal a managed
+            // delegate to native code
+            //
+            IntPtr pContext;
+            IntPtr pTarget;
+            if (ThunkPool.TryGetThunkData(AsmCode.GetInteropCommonStubAddress(), pStub, out pContext, out pTarget))
+            {
+                GCHandle handle;
+                unsafe
+                {
+                    // Pull out Handle from context
+                    handle = (*((ThunkContextData*)pContext)).Handle;
+                }
+                Delegate target = InteropExtensions.UncheckedCast<Delegate>(handle.Target);
+
+                //
+                // The delegate might already been garbage collected
+                // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
+                // until they are done with the native function pointer
+                //
+                if (target == null)
+                {
+                    Environment.FailFast(
+                        "The corresponding delegate has been garbage collected. " +
+                        "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
+                    );
+                }
+
+                return target;
+            }
+#endif
+            //
+            // Otherwise, the stub must be a pure native function pointer
+            // We need to create the delegate that points to the invoke method of a
+            // NativeFunctionPointerWrapper derived class
+            //
+            McgPInvokeDelegateData pInvokeDelegateData;
+            if (!McgModuleManager.GetPInvokeDelegateData(delegateType, out pInvokeDelegateData))
+            {
+                return null;
+            }
+
+            return CalliIntrinsics.Call__Delegate(
+                pInvokeDelegateData.ForwardDelegateCreationStub,
+                pStub
+            );
+        }
+
+        /// <summary>
+        /// Retrieves the function pointer for the current open static delegate that is being called
+        /// </summary>
+        static public IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
+        {
+#if RHTESTCL || CORECLR
+            throw new NotSupportedException();
+#else
+            //
+            // RH keeps track of the current thunk that is being called through a secret argument / thread
+            // statics. No matter how that's implemented, we get the current thunk which we can use for
+            // look up later
+            //
+            IntPtr pContext = AsmCode.GetCurrentInteropThunkContext();
+            Debug.Assert(pContext != null);
+
+            IntPtr fnPtr;
+            unsafe
+            {
+                // Pull out function pointer for open static delegate
+                fnPtr = (*((ThunkContextData*)pContext)).FunctionPtr;
+            }
+            Debug.Assert(fnPtr != null);
+
+            return fnPtr;
+#endif
+        }
+
+        /// <summary>
+        /// Retrieves the current delegate that is being called
+        /// </summary>
+        static public T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
+        {
+#if RHTESTCL || CORECLR
+            throw new NotSupportedException();
+#else
+            //
+            // RH keeps track of the current thunk that is being called through a secret argument / thread
+            // statics. No matter how that's implemented, we get the current thunk which we can use for
+            // look up later
+            //
+            IntPtr pContext = AsmCode.GetCurrentInteropThunkContext();
+
+            Debug.Assert(pContext != null);
+
+            GCHandle handle;
+            unsafe
+            {
+                // Pull out Handle from context
+                handle = (*((ThunkContextData*)pContext)).Handle;
+
+            }
+
+            T target = InteropExtensions.UncheckedCast<T>(handle.Target);
+
+            //
+            // The delegate might already been garbage collected
+            // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
+            // until they are done with the native function pointer
+            //
+            if (target == null)
+            {
+                Environment.FailFast(
+                    "The corresponding delegate has been garbage collected. " +
+                    "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
+                );
+            }
+            return target;
+
+#endif
+        }
+#endregion
+    }
+
+    /// <summary>
+    /// McgMarshal helpers exposed to be used by MCG
+    /// </summary>
+    public static partial class McgMarshal
+    {
+        public static object UnboxIfBoxed(object target)
+        {
+            return UnboxIfBoxed(target, null);
+        }
+
+        public static object UnboxIfBoxed(object target, string className)
+        {
+            //
+            // If it is a managed wrapper, unbox it
+            //
+            object unboxedObj = McgComHelpers.UnboxManagedWrapperIfBoxed(target);
+            if (unboxedObj != target)
+                return unboxedObj;
+
+            if (className == null)
+                className = System.Runtime.InteropServices.McgComHelpers.GetRuntimeClassName(target);
+
+            if (!String.IsNullOrEmpty(className))
+            {
+                IntPtr unboxingStub;
+                if (McgModuleManager.TryGetUnboxingStub(className, out unboxingStub))
+                {
+                    object ret = CalliIntrinsics.Call<object>(unboxingStub, target);
+
+                    if (ret != null)
+                        return ret;
+                }
+            }
+            return null;
+        }
+
+        internal static object BoxIfBoxable(object target)
+        {
+            return BoxIfBoxable(target, default(RuntimeTypeHandle));
+        }
+
+        /// <summary>
+        /// Given a boxed value type, return a wrapper supports the IReference interface
+        /// </summary>
+        /// <param name="typeHandleOverride">
+        /// You might want to specify how to box this. For example, any object[] derived array could
+        /// potentially boxed as object[] if everything else fails
+        /// </param>
+        internal static object BoxIfBoxable(object target, RuntimeTypeHandle typeHandleOverride)
+        {
+            RuntimeTypeHandle expectedTypeHandle = typeHandleOverride;
+            if (expectedTypeHandle.Equals(default(RuntimeTypeHandle)))
+                expectedTypeHandle = target.GetTypeHandle();
+
+            RuntimeTypeHandle boxingWrapperType;
+            IntPtr boxingStub;
+            int boxingPropertyType;
+            if (McgModuleManager.TryGetBoxingWrapperType(expectedTypeHandle, target is Type, out boxingWrapperType, out boxingPropertyType,out boxingStub))
+            {
+                if(!boxingWrapperType.IsInvalid())
+                {
+                    //
+                    // IReference<T> / IReferenceArray<T> / IKeyValuePair<K, V>
+                    // All these scenarios require a managed wrapper
+                    //
+
+                    // Allocate the object
+                    object refImplType = InteropExtensions.RuntimeNewObject(boxingWrapperType);
+
+                    if (boxingPropertyType >= 0)
+                    {
+                        Debug.Assert(refImplType is BoxedValue);
+
+                        BoxedValue boxed = InteropExtensions.UncheckedCast<BoxedValue>(refImplType);
+
+                        // Call ReferenceImpl<T>.Initialize(obj, type);
+                        boxed.Initialize(target, boxingPropertyType);
+                    }
+                    else
+                    {
+                        Debug.Assert(refImplType is BoxedKeyValuePair);
+
+                        BoxedKeyValuePair boxed = InteropExtensions.UncheckedCast<BoxedKeyValuePair>(refImplType);
+
+                        // IKeyValuePair<,>,   call CLRIKeyValuePairImpl<K,V>.Initialize(object obj);
+                        // IKeyValuePair<,>[], call CLRIKeyValuePairArrayImpl<K,V>.Initialize(object obj);
+                        refImplType = boxed.Initialize(target);
+                    }
+
+                    return refImplType;
+                }
+                else
+                {
+                    //
+                    // General boxing for projected types, such as System.Uri
+                    //
+                    return CalliIntrinsics.Call<object>(boxingStub, target);
+                }
+            }
+
+            return null;
+        }
     }
 }

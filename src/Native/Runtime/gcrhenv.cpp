@@ -925,38 +925,9 @@ COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnbox
     }
 }
 
-#endif // !DACCESS_COMPILE
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Support for shutdown finalization, which is off by default but can be enabled by the class library.
-//
-
-// If true runtime shutdown will attempt to finalize all finalizable objects (even those still rooted).
-bool g_fPerformShutdownFinalization = false;
-
-// Time to wait (in milliseconds) for the above finalization to complete before giving up and proceeding with
-// shutdown. Can specify INFINITE for no timeout. 
-UInt32 g_uiShutdownFinalizationTimeout = 0;
-
-// Flag set to true once we've begun shutdown (and before shutdown finalization begins). This is exported to
-// the class library so that managed code can tell when it is safe to access other objects from finalizers.
-bool g_fShutdownHasStarted = false;
-
-#ifndef DACCESS_COMPILE
 Thread * GetThread()
 {
     return ThreadStore::GetCurrentThread();
-}
-
-// If the class library has requested it, call this method on clean shutdown (i.e. return from Main) to
-// perform a final pass of finalization where all finalizable objects are processed regardless of whether
-// they are still rooted.
-// static
-void RedhawkGCInterface::ShutdownFinalization()
-{
-    FinalizerThread::WatchDog();
 }
 
 // Thread static representing the last allocation.
@@ -1251,69 +1222,6 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
 HANDLE FinalizerThread::GetFinalizerEvent()
 {
     return hEventFinalizer->GetOSEvent();
-}
-
-// This is called during runtime shutdown to perform a final finalization run with all pontentially
-// finalizable objects being finalized (as if their roots had all been cleared). The default behaviour is to
-// skip this step, the classlib has to make an explicit request for this functionality and also specifies the
-// maximum amount of time it will let the finalization take before we will give up and just let the shutdown
-// proceed.
-bool FinalizerThread::WatchDog()
-{
-    // Set the flag indicating that shutdown has started. This is only of interest to managed code running
-    // finalizers as it lets them know when it is no longer safe to access other objects (which from this
-    // point on can be finalized even if you hold a reference to them).
-    g_fShutdownHasStarted = true;
-
-    if (g_fPerformShutdownFinalization)
-    {
-#ifdef BACKGROUND_GC
-        // Switch off concurrent GC if necessary.
-        gc_heap::gc_can_use_concurrent = FALSE;
-
-        if (pGenGCHeap->settings.concurrent)
-            pGenGCHeap->background_gc_wait();
-#endif //BACKGROUND_GC
-
-        DWORD dwTimeout = g_uiShutdownFinalizationTimeout;
-
-        // Wait for any outstanding finalization run to complete. Time this initial operation so that it forms
-        // part of the overall timeout budget.
-        DWORD dwStartTime = PalGetTickCount();
-        Wait(dwTimeout);
-        DWORD dwEndTime = PalGetTickCount();
-
-        // In the exceedingly rare case that the tick count wrapped then we'll just reset the timeout to its
-        // initial value. Otherwise we'll subtract the time we waited from the timeout budget (being mindful
-        // of the fact that we might have waited slightly longer than the timeout specified).
-        if (dwTimeout != INFINITE)
-        {
-            if (dwEndTime < dwStartTime)
-                dwTimeout = g_uiShutdownFinalizationTimeout;
-            else
-                dwTimeout -= min(dwTimeout, dwEndTime - dwStartTime);
-
-            if (dwTimeout == 0)
-                return false;
-        }
-
-        // Inform the GC that all finalizable objects should now be placed in the queue for finalization. FALSE
-        // here means we don't hold the finalizer lock (so the routine will take it for us).
-        GCHeap::GetGCHeap()->SetFinalizeQueueForShutdown(FALSE);
-
-        // Wait for the finalizer to process all of these objects.
-        Wait(dwTimeout);
-
-        if (dwTimeout == INFINITE)
-            return true;
-
-        // Do a zero timeout wait of the finalizer done event to determine if we timed out above (we don't
-        // want to modify the signature of GCHeap::FinalizerThreadWait to return this data since that bleeds
-        // into a CLR visible change to gc.h which is not really worth it for this minor case).
-        return hEventFinalizerDone->Wait(0, FALSE) == WAIT_OBJECT_0;
-    }
-
-    return true;
 }
 
 void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
