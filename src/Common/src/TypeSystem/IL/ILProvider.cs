@@ -113,7 +113,17 @@ namespace Internal.IL
                         return result;
                 }
 
-                return EcmaMethodIL.Create((EcmaMethod)method);
+                MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)method);
+                if (methodIL != null)
+                    return methodIL;
+                
+                if (!((EcmaMethod)method).ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.InternalCall) && 
+                    !method.IsRuntimeImplemented)
+                {
+                    return MissingMethodBodyILEmitter.EmitIL(method);
+                }
+
+                return null;
             }
             else
             if (method is MethodForInstantiatedType)
