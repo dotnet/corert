@@ -448,16 +448,8 @@ namespace System.Runtime
         internal static unsafe extern IntPtr RhGetDispatchMapForType(EETypePtr pEEType);
 
         //
-        // calls to runtime for process status
+        // Support for GC and HandleTable callouts.
         //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhEnableShutdownFinalization")]
-        internal static extern void RhEnableShutdownFinalization(uint timeout);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhHasShutdownStarted")]
-        internal static extern bool RhHasShutdownStarted();
-
 
         internal enum GcRestrictedCalloutKind
         {
@@ -467,9 +459,6 @@ namespace System.Runtime
                                 // no handles have been cleared
         }
 
-        //
-        // Support for GC and HandleTable callouts.
-        //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterGcCallout")]
         internal static extern bool RhRegisterGcCallout(GcRestrictedCalloutKind eKind, IntPtr pCalloutMethod);

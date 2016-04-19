@@ -9,44 +9,11 @@
 
 include AsmMacros.inc
 
-EXTERN @RhpShutdownHelper@4     : PROC
 EXTERN @GetClasslibCCtorCheck@4 : PROC
 EXTERN _memcpy                  : PROC
 EXTERN _memcpyGCRefs            : PROC
 EXTERN _memcpyGCRefsWithWriteBarrier  : PROC
 EXTERN _memcpyAnyWithWriteBarrier     : PROC
-
-;;
-;; Currently called only from a managed executable once Main returns, this routine does whatever is needed to
-;; cleanup managed state before exiting. This routine never returns.
-;;
-;;  Input:
-;;      ecx : Process exit code
-;;
-FASTCALL_FUNC RhpShutdown, 4
-
-        ;; Build an EBP frame, mostly so we get a good stack trace during debugging.
-        push        ebp
-        mov         ebp, esp
-
-        ;; edx = GetThread(), TRASHES eax
-        INLINE_GETTHREAD edx, eax
-
-        ;; Save managed state in a frame and update the thread so it can find this frame once we transition to
-        ;; pre-emptive mode in the garbage collection.
-        PUSH_COOP_PINVOKE_FRAME edx
-
-        ;; Call the bulk of the helper implemented in C++. Takes the exit code already in ecx.
-        call    @RhpShutdownHelper@4
-
-        ;; Restore register state.
-        POP_COOP_PINVOKE_FRAME
-
-        ;; Epilog, tear down EBP frame and return.
-        pop         ebp
-        ret
-
-FASTCALL_ENDFUNC
 
 ;;
 ;; Checks whether the static class constructor for the type indicated by the context structure has been

@@ -4,7 +4,6 @@
 
 #include "AsmMacros.h"
 
-    EXTERN RhpShutdownHelper
     EXTERN GetClasslibCCtorCheck
     EXTERN memcpy
     EXTERN memcpyGCRefs
@@ -12,24 +11,6 @@
     EXTERN memcpyAnyWithWriteBarrier
 
     TEXTAREA
-
-;;
-;; Currently called only from a managed executable once Main returns, this routine does whatever is needed to
-;; cleanup managed state before exiting.
-;;
-;;  Input:
-;;      r0 : Process exit code
-;;
-    NESTED_ENTRY RhpShutdown
-
-        COOP_PINVOKE_FRAME_PROLOG
-
-        ;; Call the bulk of the helper implemented in C++. Takes the exit code already in r0.
-        bl      RhpShutdownHelper
-
-        COOP_PINVOKE_FRAME_EPILOG
-
-    NESTED_END RhpShutdown
 
 ;;
 ;; Checks whether the static class constructor for the type indicated by the context structure has been

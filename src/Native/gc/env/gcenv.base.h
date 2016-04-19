@@ -452,7 +452,6 @@ public:
 
     static bool IsCurrentThreadFinalizer();
     static void Wait(DWORD timeout, bool allowReentrantWait = false);
-    static bool WatchDog();
     static void SignalFinalizationDone(bool fFinalizer);
     static void SetFinalizerThread(Thread * pThread);
     static HANDLE GetFinalizerEvent();
