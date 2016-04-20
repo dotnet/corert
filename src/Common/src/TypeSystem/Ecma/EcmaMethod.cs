@@ -27,7 +27,8 @@ namespace Internal.TypeSystem.Ecma
             public const int RuntimeImplemented     = 0x0080;
 
             public const int AttributeMetadataCache = 0x0100;
-            public const int Intrinsic            = 0x0200;
+            public const int Intrinsic              = 0x0200;
+            public const int InternalCall           = 0x0400;
         };
 
         private EcmaType _type;
@@ -149,6 +150,9 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodImplAttributes & MethodImplAttributes.Runtime) != 0)
                     flags |= MethodFlags.RuntimeImplemented;
 
+                if ((methodImplAttributes & MethodImplAttributes.InternalCall) != 0)
+                    flags |= MethodFlags.InternalCall;
+
                 flags |= MethodFlags.BasicMetadataCache;
             }
 
@@ -253,6 +257,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.Intrinsic) & MethodFlags.Intrinsic) != 0;
+            }
+        }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.InternalCall) & MethodFlags.InternalCall) != 0;
             }
         }
 
