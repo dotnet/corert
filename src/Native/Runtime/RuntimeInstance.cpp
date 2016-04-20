@@ -796,10 +796,20 @@ COOP_PINVOKE_HELPER(EEType *, RhGetGenericInstantiation, (EEType *              
                                                           EEType ***             ppInstantiation,
                                                           GenericVarianceType ** ppVarianceInfo))
 {
+#if CORERT
+    *pArity = pEEType->get_GenericArity();
+    *ppInstantiation = pEEType->get_GenericArguments();
+    if (pEEType->HasGenericVariance())
+        *ppVarianceInfo = pEEType->get_GenericVariance();
+    else
+        *ppVarianceInfo = NULL;
+    return pEEType->get_GenericDefinition();
+#else
     return GetRuntimeInstance()->GetGenericInstantiation(pEEType,
                                                          pArity,
                                                          ppInstantiation,
                                                          ppVarianceInfo);
+#endif
 }
 
 COOP_PINVOKE_HELPER(bool, RhSetGenericInstantiation, (EEType *               pEEType,

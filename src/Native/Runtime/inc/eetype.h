@@ -13,7 +13,7 @@ class MdilModule;
 class EEType;
 class OptionalFields;
 class ModuleManager;
-
+enum GenericVarianceType : UInt8;
 
 //-------------------------------------------------------------------------------------------------
 // Array of these represents the interfaces implemented by a type
@@ -164,6 +164,8 @@ enum EETypeField
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_DynamicDispatchMap,
+    ETF_GenericDefinition,
+    ETF_GenericComposition,
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -532,6 +534,18 @@ public:
     // Determine whether a *dynamic* type has a dynamically allocated DispatchMap
     bool HasDynamicallyAllocatedDispatchMap()
         { return (get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0; }
+
+    // Retrieve the generic type definition EEType for this generic instance
+    EEType * get_GenericDefinition();
+
+    // Retrieve the number of generic arguments for this generic type instance
+    UInt32 get_GenericArity();
+
+    // Retrieve the generic arguments to this type
+    EEType** get_GenericArguments();
+
+    // Retrieve the generic variance associated with this type
+    GenericVarianceType* get_GenericVariance();
 
     // Retrieve template used to create the dynamic type
     EEType * get_DynamicTemplateType();
