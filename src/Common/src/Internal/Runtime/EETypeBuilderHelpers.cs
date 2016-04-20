@@ -97,6 +97,11 @@ namespace Internal.Runtime
             if (type.HasInstantiation)
             {
                 flags |= (UInt16)EETypeFlags.IsGenericFlag;
+
+                if (type.GetTypeDefinition().HasGenericVariance())
+                {
+                    flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+                }
             }
 
             int corElementType = 0;

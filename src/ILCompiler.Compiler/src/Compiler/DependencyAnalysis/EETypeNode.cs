@@ -45,13 +45,17 @@ namespace ILCompiler.DependencyAnalysis
     /// [Pointer Size]  | Pointer to optional fields (optional)
     ///                 |
     /// [Pointer Size]  | Pointer to the generic type argument of a Nullable&lt;T&gt; (optional)
-    /// 
+    ///                 |
+    /// [Pointer Size]  | Pointer to the generic type definition EEType (optional)
+    ///                 |
+    /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
     internal sealed class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
     {
         private TypeDesc _type;
         private bool _constructed;
-        EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        private EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
+        private ArrayBuilder<TypeDesc> _variantInterfacesImplemented;
 
         public EETypeNode(TypeDesc type, bool constructed)
         {
@@ -184,6 +188,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputNullableTypeParameter(factory, ref objData);
+            OutputGenericInstantiationDetails(factory, ref objData);
 
             return objData.ToObjectData();
         }
@@ -303,8 +308,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             UInt16 flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
+            if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+            {
+                // Generic array enumerators use special variance rules recognized by the runtime
+                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+            }
+
             // Todo: RelatedTypeViaIATFlag when we support cross-module EETypes
-            // Todo: GenericVarianceFlag when we support variance
             // Todo: Generic Type Definition EETypes
 
             if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
@@ -476,6 +486,25 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private void OutputGenericInstantiationDetails(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (_type.HasInstantiation && !_type.IsTypeDefinition)
+            {
+                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
+
+                GenericCompositionDetails details;
+                if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+                {
+                    // Generic array enumerators use special variance rules recognized by the runtime
+                    details = new GenericCompositionDetails(_type.Instantiation, new[] { (GenericVariance)0x20 });
+                }
+                else
+                    details = new GenericCompositionDetails(_type);
+
+                objData.EmitPointerReloc(factory.GenericComposition(details));
+            }
+        }
+
         /// <summary>
         /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
@@ -600,7 +629,18 @@ namespace ILCompiler.DependencyAnalysis
                 // This node's EETypeOptionalFields node may change if this EEType implements interfaces
                 // that are used since the dispatch map table index is computed once we know the interface
                 // layout later on in compilation.
-                return _type.RuntimeInterfaces.Length > 0 && _constructed;
+
+                // Also, if any of the implemented interfaces have variance, variant dispatch might result in
+                // slots being necessary.
+                foreach (var intfType in _type.GetClosestMetadataType().RuntimeInterfaces)
+                {
+                    if (intfType.GetTypeDefinition().HasGenericVariance())
+                    {
+                        _variantInterfacesImplemented.Add(intfType);
+                    }
+                }
+
+                return _type.GetClosestMetadataType().RuntimeInterfaces.Length > 0 && _constructed;
             }
         }
 
@@ -608,6 +648,48 @@ namespace ILCompiler.DependencyAnalysis
         {
             List<CombinedDependencyListEntry> dynamicNodes = new List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
             dynamicNodes.Add(new CombinedDependencyListEntry(factory.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
+
+            // If the type implements any variant interfaces, we need to look for uses of interface methods that are compatible
+            // with the interface implemented by this type.
+            // We can avoid this work if we're not using a demand built VTable (producing a full type)
+            if (_variantInterfacesImplemented.Count > 0 && !factory.CompilationModuleGroup.ShouldProduceFullType(_type))
+            {
+                Debug.Assert(_constructed);
+
+                for (int i = firstNode; i < markedNodes.Count; i++)
+                {
+                    var node = markedNodes[i] as ReadyToRunHelperNode;
+                    if (node != null
+                        && (node.Id == ReadyToRunHelperId.InterfaceDispatch || node.Id == ReadyToRunHelperId.ResolveVirtualFunction))
+                    {
+                        MethodDesc targetMethod = (MethodDesc)node.Target;
+                        if (targetMethod.OwningType.IsInterface)
+                        {
+                            TypeDesc targetInterface = targetMethod.OwningType;
+                            // TODO: we might need to cache the result of "is this interface compatible with this type?"
+                            for (int j = 0; j < _variantInterfacesImplemented.Count; j++)
+                            {
+                                // TODO: this should really use CanCastTo/IsAssignable
+                                if (targetInterface.GetTypeDefinition() == _variantInterfacesImplemented[j].GetTypeDefinition())
+                                {
+                                    // Find the interface method on the interface type that is actually implemented
+                                    MethodDesc matchingMethod = _variantInterfacesImplemented[j].FindMethodOnTypeWithMatchingTypicalMethod(targetMethod);
+
+                                    // Find the implementation of the interface method
+                                    MethodDesc implMethod = _type.GetClosestMetadataType().ResolveInterfaceMethodToVirtualMethodOnType(matchingMethod);
+
+                                    if (implMethod != null)
+                                    {
+                                        dynamicNodes.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(matchingMethod), null, "Variant interface dispatch"));
+                                        dynamicNodes.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), null, "Variant interface dispatch"));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             return dynamicNodes;
         }
     }

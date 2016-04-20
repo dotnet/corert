@@ -238,6 +238,11 @@ namespace ILCompiler.DependencyAnalysis
                 });
             });
 
+            _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
+            {
+                return new GenericCompositionNode(details);
+            });
+
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
             {
                 Debug.Assert(method.IsStaticConstructor);
@@ -407,6 +412,13 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
         }
 
+        private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
+
+        public ISymbolNode GenericComposition(GenericCompositionDetails details)
+        {
+            return _genericCompositions.GetOrAdd(details);
+        }
+
         private NodeCache<string, ExternSymbolNode> _externSymbols;
 
         public ISymbolNode ExternSymbol(string name)
@@ -481,8 +493,8 @@ namespace ILCompiler.DependencyAnalysis
             return symbol;
         }
 
-        private TypeDesc _systemArrayOfTClass;
-        public TypeDesc ArrayOfTClass
+        private MetadataType _systemArrayOfTClass;
+        public MetadataType ArrayOfTClass
         {
             get
             {
@@ -491,6 +503,19 @@ namespace ILCompiler.DependencyAnalysis
                     _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
                 }
                 return _systemArrayOfTClass;
+            }
+        }
+
+        private TypeDesc _systemArrayOfTEnumeratorType;
+        public TypeDesc ArrayOfTEnumeratorType
+        {
+            get
+            {
+                if (_systemArrayOfTEnumeratorType == null)
+                {
+                    _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
+                }
+                return _systemArrayOfTEnumeratorType;
             }
         }
 
