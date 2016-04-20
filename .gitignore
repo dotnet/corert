@@ -78,10 +78,11 @@ _Chutzpah*
 ipch/
 *.aps
 *.ncb
+*.opendb
 *.opensdf
 *.sdf
 *.cachefile
-*.opendb
+*.VC.db
 
 # Visual Studio profiler
 *.psess
