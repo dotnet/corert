@@ -144,7 +144,7 @@ namespace ILCompiler
                 if (method.IsIntrinsic || method.IsAbstract || method.ContainsGenericVariables)
                     continue;
                 
-                if (method.GetMethodDefinition() is EcmaMethod && ((EcmaMethod)method.GetMethodDefinition()).ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.InternalCall))
+                if (method.IsInternalCall)
                     continue;
 
                 _rootProvider.AddCompilationRoot(method, reason);
