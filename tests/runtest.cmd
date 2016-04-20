@@ -1,7 +1,7 @@
 @echo off
 
 set CoreRT_TestRoot=%~dp0
-set CoreRT_CliDir=%CoreRT_TestRoot%..\bin\tools\cli\bin
+set CoreRT_CliDir=%CoreRT_TestRoot%../Tools/dotnetcli
 set CoreRT_BuildArch=x64
 set CoreRT_BuildType=Debug
 set CoreRT_BuildOS=Windows_NT
