@@ -13,7 +13,6 @@ namespace System.Runtime.InteropServices
     {
         public Type MissingType { get; private set; }
 
-        public MissingInteropDataException(string message) : base(message) { }
 #if ENABLE_WINRT
         public MissingInteropDataException(string resourceFormat, Type pertainantType)
            : base(SR.Format(resourceFormat,
@@ -22,7 +21,8 @@ namespace System.Runtime.InteropServices
             MissingType = pertainantType;
         }
 #else
-        public MissingInteropDataException(string resourceFormat, Type pertainantType)
+        public MissingInteropDataException(string resourceFormat, Type pertainantType): 
+            base(SR.Format(resourceFormat, pertainantType.Name))
         {
             MissingType = pertainantType;
         }
