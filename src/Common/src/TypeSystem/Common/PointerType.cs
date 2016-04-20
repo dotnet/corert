@@ -8,6 +8,14 @@ namespace Internal.TypeSystem
 {
     public sealed partial class PointerType : ParameterizedType
     {
+        public sealed override TypeKind Variety
+        {
+            get
+            {
+                return TypeKind.Pointer;
+            }
+        }
+
         internal PointerType(TypeDesc parameterType)
             : base(parameterType)
         {

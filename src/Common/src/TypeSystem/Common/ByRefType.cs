@@ -8,6 +8,14 @@ namespace Internal.TypeSystem
 {
     public sealed partial class ByRefType : ParameterizedType
     {
+        public sealed override TypeKind Variety
+        {
+            get
+            {
+                return TypeKind.ByRef;
+            }
+        }
+
         internal ByRefType(TypeDesc parameter)
             : base(parameter)
         {

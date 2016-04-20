@@ -336,6 +336,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsGenericParameter
+        {
+            get
+            {
+                return Variety == TypeKind.GenericParameter;
+            }
+        }
+
+        public bool IsDefType
+        {
+            get
+            {
+                return Variety == TypeKind.DefType;
+            }
+        }
+
         public bool ContainsGenericVariables
         {
             get
@@ -464,6 +480,42 @@ namespace Internal.TypeSystem
         public virtual MethodDesc GetFinalizer()
         {
             return null;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type has generic variance (the definition of the type
+        /// has a generic parameter that is co- or contravariant).
+        /// </summary>
+        public bool HasVariance
+        {
+            get
+            {
+                if ((_typeFlags & TypeFlags.HasGenericVarianceComputed) == 0)
+                {
+                    var flagsToAdd = TypeFlags.HasGenericVarianceComputed;
+
+                    foreach (GenericParameterDesc genericParam in GetTypeDefinition().Instantiation)
+                    {
+                        if (genericParam.Variance != GenericVariance.None)
+                        {
+                            flagsToAdd |= TypeFlags.HasGenericVariance;
+                            break;
+                        }
+                    }
+
+                    _typeFlags |= flagsToAdd;
+                }
+
+                return (_typeFlags & TypeFlags.HasGenericVariance) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets the kind of this type.
+        /// </summary>
+        public abstract TypeKind Variety
+        {
+            get;
         }
     }
 }

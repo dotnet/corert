@@ -46,5 +46,8 @@ namespace Internal.TypeSystem
 
         ContainsGenericVariables         = 0x100,
         ContainsGenericVariablesComputed = 0x200,
+
+        HasGenericVariance         = 0x400,
+        HasGenericVarianceComputed = 0x800,
     }
 }

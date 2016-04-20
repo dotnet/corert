@@ -25,6 +25,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\CastingHelper.cs">
+      <Link>TypeSystem\Common\CastingHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>IAssemblyDesc.cs</Link>
     </Compile>
@@ -33,6 +36,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>ModuleDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeKind.cs">
+      <Link>TypeSystem\Common\TypeKind.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>

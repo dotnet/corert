@@ -12,5 +12,12 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class DefType : TypeDesc
     {
+        public sealed override TypeKind Variety
+        {
+            get
+            {
+                return TypeKind.DefType;
+            }
+        }
     }
 }

@@ -54,6 +54,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public sealed override TypeKind Variety
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public override int GetHashCode()
         {
             return TypeHashingAlgorithms.ComputeSignatureVariableHashCode(Index, false);
@@ -86,6 +94,14 @@ namespace Internal.TypeSystem
             get
             {
                 return true;
+            }
+        }
+
+        public sealed override TypeKind Variety
+        {
+            get
+            {
+                throw new NotImplementedException();
             }
         }
 
