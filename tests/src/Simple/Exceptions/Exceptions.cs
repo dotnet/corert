@@ -21,29 +21,67 @@ public class BringUpTest
 
     public static int Main()
     {
+        int counter = 0;
+
         try
         {
             try
             {
-                throw new Exception();
+                throw new Exception("My exception");
             }
             catch (OutOfMemoryException)
             {
+                Console.WriteLine("Unexpected exception caught");
                 return Fail;
             }
         }
-        catch
+        catch (Exception e)
         {
             Console.WriteLine("Exception caught!");
+            if (e.Message != "My exception")
+            {
+                 Console.WriteLine("Unexpected exception message!");
+                 return Fail;
+            }
+            counter++;
         }
 
         try
         {
-             g.myField++;
+             try
+             {
+                 g.myField++;
+             }
+             finally
+             {
+                 counter++;
+             }
         }
         catch (NullReferenceException)
         {
             Console.WriteLine("Null reference exception caught!");
+            counter++;
+        }
+
+        try
+        {
+            throw new Exception("Testing filter");
+        }
+        catch (Exception e) when (e.Message == "Testing filter" && counter++ > 0)
+        {
+            Console.WriteLine("Exception caught via filter!");
+            if (e.Message != "Testing filter")
+            {
+                 Console.WriteLine("Unexpected exception message!");
+                 return Fail;
+            }
+            counter++;
+        }
+
+        if (counter != 5)
+        {
+            Console.WriteLine("Unexpected counter value");
+            return Fail;
         }
 
         return Pass;

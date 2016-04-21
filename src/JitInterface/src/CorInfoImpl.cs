@@ -214,6 +214,7 @@ namespace Internal.JitInterface
                         builder.EmitCompressedUInt(clause.HandlerOffset);
                         break;
                     case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
+                        builder.EmitCompressedUInt(clause.HandlerOffset);
                         builder.EmitCompressedUInt(clause.ClassTokenOrOffset);
                         break;
                 }
