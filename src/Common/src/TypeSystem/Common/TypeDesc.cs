@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     {
         private TypeDesc[] _genericParameters;
 
-        public Instantiation(TypeDesc[] genericParameters)
+        public Instantiation(params TypeDesc[] genericParameters)
         {
             _genericParameters = genericParameters;
         }

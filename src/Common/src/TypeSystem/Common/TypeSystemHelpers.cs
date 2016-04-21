@@ -15,9 +15,20 @@ namespace Internal.TypeSystem
             return typeDef.Context.GetInstantiatedType(typeDef, instantiation);
         }
 
+        static public InstantiatedType MakeInstantiatedType(this MetadataType typeDef, params TypeDesc[] genericParameters)
+        {
+            return typeDef.Context.GetInstantiatedType(typeDef, new Instantiation(genericParameters));
+        }
+
+
         static public InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, Instantiation instantiation)
         {
             return methodDef.Context.GetInstantiatedMethod(methodDef, instantiation);
+        }
+
+        static public InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, params TypeDesc[] genericParameters)
+        {
+            return methodDef.Context.GetInstantiatedMethod(methodDef, new Instantiation(genericParameters));
         }
 
         static public ArrayType MakeArrayType(this TypeDesc type)
