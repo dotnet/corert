@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
-using System.Linq;
 
 using Internal.TypeSystem;
 

@@ -67,7 +67,7 @@
     <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\packaging\publish1\objwriter.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\packaging\publish1\ryujit.dll">
+    <Content Include="..\..\..\bin\Product\Windows_NT.$(Platform).$(Configuration)\packaging\publish1\clrjit.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
