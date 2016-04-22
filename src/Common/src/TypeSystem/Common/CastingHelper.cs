@@ -103,28 +103,25 @@ namespace Internal.TypeSystem
                 return true;
             }
 
-            return ParametrizedTypeCastHelper(thisType.ParameterType, paramType, protect);
-        }
+            TypeDesc curTypesParm = thisType.ParameterType;
 
-        private static bool ParametrizedTypeCastHelper(TypeDesc curTypesParm, TypeDesc otherTypesParam, StackOverflowProtect protect)
-        {
             // Object parameters don't need an exact match but only inheritance, check for that
             TypeDesc fromParamUnderlyingType = curTypesParm.UnderlyingType;
-            if (fromParamUnderlyingType.IsReferenceType)
+            if (fromParamUnderlyingType.IsObjRef)
             {
-                return curTypesParm.CanCastToInternal(otherTypesParam, protect);
+                return curTypesParm.CanCastToInternal(paramType, protect);
             }
             else if (curTypesParm.IsGenericParameter)
             {
                 var genericVariableFromParam = (GenericParameterDesc)curTypesParm;
                 if (genericVariableFromParam.HasReferenceTypeConstraint)
                 {
-                    return genericVariableFromParam.CanCastToInternal(otherTypesParam, protect);
+                    return genericVariableFromParam.CanCastToInternal(paramType, protect);
                 }
             }
             else if (fromParamUnderlyingType.IsPrimitive)
             {
-                TypeDesc toParamUnderlyingType = otherTypesParam.UnderlyingType;
+                TypeDesc toParamUnderlyingType = paramType.UnderlyingType;
                 if (toParamUnderlyingType.IsPrimitive)
                 {
                     if (toParamUnderlyingType == fromParamUnderlyingType)
@@ -186,7 +183,7 @@ namespace Internal.TypeSystem
                     return 8;
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
-                    return IntPtr.Size;
+                    return type.Context.Target.PointerSize;
                 default:
                     return 0;
             }
@@ -357,7 +354,7 @@ namespace Internal.TypeSystem
         {
             TypeDesc fromUnderlyingType = thisType.UnderlyingType;
 
-            if (fromUnderlyingType.IsReferenceType)
+            if (fromUnderlyingType.IsObjRef)
             {
                 return thisType.CanCastToInternal(otherType, protect);
             }

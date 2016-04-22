@@ -290,7 +290,7 @@ namespace Internal.TypeSystem
 
                 int computedOffset = checked(fieldAndOffset.Offset + cumulativeInstanceFieldPos);
 
-                if (fieldAndOffset.Field.FieldType.IsReferenceType)
+                if (fieldAndOffset.Field.FieldType.IsObjRef)
                 {
                     int offsetModulo = computedOffset % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)

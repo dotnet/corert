@@ -121,9 +121,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ThreadSafeFlags.cs">
       <Link>TypeSystem\Common\ThreadSafeFlags.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeCast.cs">
-      <Link>TypeSystem\Common\TypeCast.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeFlags.cs">
       <Link>TypeSystem\Common\TypeFlags.cs</Link>
     </Compile>
