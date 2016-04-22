@@ -164,8 +164,10 @@ enum EETypeField
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_DynamicDispatchMap,
+#if CORERT
     ETF_GenericDefinition,
     ETF_GenericComposition,
+#endif
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -535,6 +537,7 @@ public:
     bool HasDynamicallyAllocatedDispatchMap()
         { return (get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0; }
 
+#if CORERT
     // Retrieve the generic type definition EEType for this generic instance
     EEType * get_GenericDefinition();
 
@@ -546,6 +549,7 @@ public:
 
     // Retrieve the generic variance associated with this type
     GenericVarianceType* get_GenericVariance();
+#endif
 
     // Retrieve template used to create the dynamic type
     EEType * get_DynamicTemplateType();

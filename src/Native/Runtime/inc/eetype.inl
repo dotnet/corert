@@ -469,6 +469,7 @@ inline UInt8 EEType::GetNullableValueOffset()
     return pOptFields->GetNullableValueOffset(0) + 1;
 }
 
+#if CORERT
 inline EEType * EEType::get_GenericDefinition()
 {
     ASSERT(IsGeneric());
@@ -503,6 +504,7 @@ inline GenericVarianceType* EEType::get_GenericVariance()
     // Variance info follows immediatelly after the generic arguments
     return (GenericVarianceType*)(get_GenericArguments() + get_GenericArity());
 }
+#endif
 
 inline EEType * EEType::get_DynamicTemplateType()
 {
@@ -704,6 +706,7 @@ inline EEType * EEType::GetArrayBaseType()
     if ((get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0)
         cbOffset += sizeof(UIntTarget);
 
+#if CORERT
     if (eField == ETF_GenericDefinition)
     {
         ASSERT(IsGeneric());
@@ -719,6 +722,7 @@ inline EEType * EEType::GetArrayBaseType()
     }
     if (IsGeneric())
         cbOffset += sizeof(UIntTarget);
+#endif
 
     if (eField == ETF_DynamicTemplateType)
     {
