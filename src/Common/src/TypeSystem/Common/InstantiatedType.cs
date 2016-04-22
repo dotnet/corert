@@ -102,6 +102,14 @@ namespace Internal.TypeSystem
                 flags |= _typeDef.Category;
             }
 
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= TypeFlags.HasGenericVarianceComputed;
+
+                if (_typeDef.HasVariance)
+                    flags |= TypeFlags.HasGenericVariance;
+            }
+
             return flags;
         }
 

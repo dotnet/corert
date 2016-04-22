@@ -490,23 +490,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if ((_typeFlags & TypeFlags.HasGenericVarianceComputed) == 0)
-                {
-                    var flagsToAdd = TypeFlags.HasGenericVarianceComputed;
-
-                    foreach (GenericParameterDesc genericParam in GetTypeDefinition().Instantiation)
-                    {
-                        if (genericParam.Variance != GenericVariance.None)
-                        {
-                            flagsToAdd |= TypeFlags.HasGenericVariance;
-                            break;
-                        }
-                    }
-
-                    _typeFlags |= flagsToAdd;
-                }
-
-                return (_typeFlags & TypeFlags.HasGenericVariance) != 0;
+                return (GetTypeFlags(TypeFlags.GenericVarianceMask) & TypeFlags.HasGenericVariance) != 0;
             }
         }
 

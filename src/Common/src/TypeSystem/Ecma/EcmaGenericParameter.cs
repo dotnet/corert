@@ -71,6 +71,8 @@ namespace Internal.TypeSystem.Ecma
 
             flags |= TypeFlags.GenericParameter;
 
+            flags |= TypeFlags.HasGenericVarianceComputed;
+
             Debug.Assert((flags & mask) != 0);
             return flags;
         }

@@ -138,6 +138,8 @@ namespace Internal.TypeSystem
                     flags |= TypeFlags.ContainsGenericVariables;
             }
 
+            flags |= TypeFlags.HasGenericVarianceComputed;
+
             return flags;
         }
 
