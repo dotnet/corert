@@ -110,9 +110,7 @@ namespace System.Runtime.InteropServices
             {
 #if ENABLE_WINRT
                 Debug.Assert(!typeHandle.IsNull());
-                bool isWinRT = false;
-                string typeName = McgModuleManager.GetTypeName(typeHandle, out isWinRT);
-                throw new MissingInteropDataException(String.Format(SR.ComTypeMarshalling_MissingInteropData, typeName));
+                throw new MissingInteropDataException(SR.ComTypeMarshalling_MissingInteropData, Type.GetTypeFromHandle(typeHandle));
 #else
                 Environment.FailFast("CCW discarded.");
 #endif

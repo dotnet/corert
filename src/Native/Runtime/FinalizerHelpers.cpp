@@ -77,23 +77,6 @@ EXTERN_C REDHAWK_API void __cdecl RhpSignalFinalizationComplete()
     FinalizerThread::SignalFinalizationDone(TRUE);
 }
 
-#ifndef CORERT // @TODO: Remove on next breaking change sweep
-#ifdef FEATURE_PREMORTEM_FINALIZATION
-// Enable a last pass of the finalizer during (clean) runtime shutdown. Specify the number of milliseconds
-// we'll wait before giving up a proceeding with the shutdown (INFINITE is an allowable value).
-COOP_PINVOKE_HELPER(void, RhEnableShutdownFinalization, (UInt32 uiTimeout))
-{
-    UNREFERENCED_PARAMETER(uiTimeout);
-}
-
-// Returns true when shutdown has started and it is no longer safe to access other objects from finalizers.
-COOP_PINVOKE_HELPER(UInt8, RhHasShutdownStarted, ())
-{
-    return 0;
-}
-#endif // FEATURE_PREMORTEM_FINALIZATION
-#endif
-
 //
 // The following helpers are special in that they interact with internal GC state or directly manipulate
 // managed references so they're called with a special co-operative p/invoke.
