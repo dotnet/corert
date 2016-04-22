@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.TypeSystem", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreTestAssembly", "tests\CoreTestAssembly\CoreTestAssembly.csproj", "{5813B7DC-6588-4553-B04D-387EC9630AC8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILTestAssembly", "tests\ILTestAssembly\ILTestAssembly.ilproj", "{ED3BECBB-EABE-4717-875D-C91E15FC260E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{5813B7DC-6588-4553-B04D-387EC9630AC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5813B7DC-6588-4553-B04D-387EC9630AC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5813B7DC-6588-4553-B04D-387EC9630AC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED3BECBB-EABE-4717-875D-C91E15FC260E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED3BECBB-EABE-4717-875D-C91E15FC260E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED3BECBB-EABE-4717-875D-C91E15FC260E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED3BECBB-EABE-4717-875D-C91E15FC260E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
