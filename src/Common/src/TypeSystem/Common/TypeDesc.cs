@@ -490,7 +490,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return (GetTypeFlags(TypeFlags.GenericVarianceMask) & TypeFlags.HasGenericVariance) != 0;
+                return (GetTypeFlags(TypeFlags.HasGenericVariance | TypeFlags.HasGenericVarianceComputed) & TypeFlags.HasGenericVariance) != 0;
             }
         }
 

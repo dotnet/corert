@@ -49,6 +49,5 @@ namespace Internal.TypeSystem
 
         HasGenericVariance         = 0x400,
         HasGenericVarianceComputed = 0x800,
-        GenericVarianceMask        = 0xC00,
     }
 }
