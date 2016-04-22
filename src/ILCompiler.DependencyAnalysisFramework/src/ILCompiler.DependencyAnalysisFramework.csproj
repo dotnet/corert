@@ -11,6 +11,7 @@
     <AssemblyName>ILCompiler.DependencyAnalysisFramework</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
