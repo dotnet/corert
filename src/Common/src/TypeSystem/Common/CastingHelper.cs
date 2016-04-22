@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -24,67 +26,70 @@ namespace Internal.TypeSystem
             {
                 return true;
             }
-            else if (thisType.IsGenericParameter)
+
+            switch (thisType.Category)
             {
-                // A boxed variable type can be cast to any of its constraints, or object, if none are specified
-                if (otherType.IsObject)
-                {
-                    return true;
-                }
+                case TypeFlags.GenericParameter:
+                    return ((GenericParameterDesc)thisType).CanCastGenericParameterTo(otherType, protect);
 
-                var genericParamTypeThis = (GenericParameterDesc)thisType;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    return ((ArrayType)thisType).CanCastArrayTo(otherType, protect);
 
-                if (genericParamTypeThis.HasNotNullableValueTypeConstraint &&
-                    thisType.Context.IsWellKnownType(otherType, WellKnownType.ValueType))
-                {
-                    return true;
-                }
-
-                foreach (var typeConstraint in genericParamTypeThis.TypeConstraints)
-                {
-                    if (typeConstraint.CanCastToInternal(otherType, protect))
-                    {
-                        return true;
-                    }
-                }
-            }
-            else if (thisType.Variety() != otherType.Variety())
-            {
-                if (thisType.IsArray && otherType.IsDefType)
-                {
+                default:
+                    Debug.Assert(thisType.IsDefType);
                     return thisType.CanCastToClassOrInterface(otherType, protect);
-                }
+            }            
+        }
 
-                return false;
-            }
-            else
+        private static bool CanCastGenericParameterTo(this GenericParameterDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            // A boxed variable type can be cast to any of its constraints, or object, if none are specified
+            if (otherType.IsObject)
             {
-                switch (thisType.Variety())
+                return true;
+            }
+
+            if (thisType.HasNotNullableValueTypeConstraint &&
+                thisType.Context.IsWellKnownType(otherType, WellKnownType.ValueType))
+            {
+                return true;
+            }
+
+            foreach (var typeConstraint in thisType.TypeConstraints)
+            {
+                if (typeConstraint.CanCastToInternal(otherType, protect))
                 {
-                    case TypeKind.Pointer:
-                    case TypeKind.ByRef:
-                        // Feel free to remove the assert if you ever hit this and after some thought find out it's okay.
-                        // This code was ported from the Project N compiler, but it doesn't feel right.
-                        Debug.Assert(false, "Did we box a pointer/byref?");
-                        goto case TypeKind.SzArray;
-
-                    case TypeKind.SzArray:
-                        var thisParameterizedType = (ParameterizedType)thisType;
-                        var otherParameterizedType = (ParameterizedType)otherType;
-                        return thisParameterizedType.CanCastParamTo(otherParameterizedType.ParameterType, protect);
-
-                    case TypeKind.Array:
-                        var thisArrayType = (ArrayType)thisType;
-                        var otherArrayType = (ArrayType)otherType;
-                        return thisArrayType.Rank == otherArrayType.Rank
-                            && thisArrayType.CanCastParamTo(otherArrayType.ParameterType, protect);
-
-                    case TypeKind.DefType:
-                        return thisType.CanCastToClassOrInterface(otherType, protect);
+                    return true;
                 }
             }
 
             return false;
+        }
+
+        private static bool CanCastArrayTo(this ArrayType thisType, TypeDesc otherType, StackOverflowProtect protect)
+        {
+            // Casting the array to one of the base types or interfaces?
+            if (otherType.IsDefType)
+            {
+                return thisType.CanCastToClassOrInterface(otherType, protect);
+            }
+
+            // Casting array to something else (between SzArray and Array, for example)?
+            if (thisType.Category != otherType.Category)
+            {
+                return false;
+            }
+
+            ArrayType otherArrayType = (ArrayType)otherType;
+
+            // Check ranks if we're casting multidim arrays
+            if (!thisType.IsSzArray && thisType.Rank != otherArrayType.Rank)
+            {
+                return false;
+            }
+
+            return thisType.CanCastParamTo(otherArrayType.ParameterType, protect);
         }
 
         private static bool CanCastParamTo(this ParameterizedType thisType, TypeDesc paramType, StackOverflowProtect protect)
@@ -101,17 +106,11 @@ namespace Internal.TypeSystem
             return ParametrizedTypeCastHelper(thisType.ParameterType, paramType, protect);
         }
 
-        private static bool IsObjRef(this TypeDesc type)
-        {
-            TypeFlags category = type.Category;
-            return category == TypeFlags.Class || category == TypeFlags.Array;
-        }
-        
         private static bool ParametrizedTypeCastHelper(TypeDesc curTypesParm, TypeDesc otherTypesParam, StackOverflowProtect protect)
         {
             // Object parameters don't need an exact match but only inheritance, check for that
             TypeDesc fromParamUnderlyingType = curTypesParm.UnderlyingType;
-            if (fromParamUnderlyingType.IsObjRef())
+            if (fromParamUnderlyingType.IsReferenceType)
             {
                 return curTypesParm.CanCastToInternal(otherTypesParam, protect);
             }
@@ -133,32 +132,64 @@ namespace Internal.TypeSystem
                         return true;
                     }
 
-                    // Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-                    // Enums with interchangeable underlying types are interchangable
-                    // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-                    // Float and dobule are not interchangable here.
-                    TypeFlags fromParamCategory = fromParamUnderlyingType.Category;
-                    TypeFlags toParamCategory = toParamUnderlyingType.Category;
-
-                    if (fromParamCategory != TypeFlags.Boolean &&
-                        toParamCategory != TypeFlags.Boolean &&
-                        fromParamCategory != TypeFlags.Char &&
-                        toParamCategory != TypeFlags.Char &&
-                        fromParamCategory != TypeFlags.Single &&
-                        toParamCategory != TypeFlags.Single &&
-                        fromParamCategory != TypeFlags.Double &&
-                        toParamCategory != TypeFlags.Double)
+                    if (ArePrimitveTypesEquivalentSize(fromParamUnderlyingType, toParamUnderlyingType))
                     {
-                        if (((DefType)curTypesParm).InstanceFieldSize == ((DefType)otherTypesParam).InstanceFieldSize)
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
             }
 
             // Anything else is not a match
             return false;
+        }
+
+        // Returns true of the two types are equivalent primitive types. Used by array casts.
+        static private bool ArePrimitveTypesEquivalentSize(TypeDesc type1, TypeDesc type2)
+        {
+            Debug.Assert(type1.IsPrimitive && type2.IsPrimitive);
+
+            // Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+            // Float and double are not interchangable here.
+
+            int sourcePrimitiveTypeEquivalenceSize = type1.GetIntegralTypeMatchSize();
+
+            // Quick check to see if the first type can be matched.
+            if (sourcePrimitiveTypeEquivalenceSize == 0)
+            {
+                return false;
+            }
+
+            int targetPrimitiveTypeEquivalenceSize = type2.GetIntegralTypeMatchSize();
+
+            return sourcePrimitiveTypeEquivalenceSize == targetPrimitiveTypeEquivalenceSize;
+        }
+
+        private static int GetIntegralTypeMatchSize(this TypeDesc type)
+        {
+            Debug.Assert(type.IsPrimitive);
+
+            switch (type.Category)
+            {
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                    return 1;
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    return 2;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    return 4;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    return 8;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    return IntPtr.Size;
+                default:
+                    return 0;
+            }
         }
 
         private static bool CanCastToClassOrInterface(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
@@ -326,7 +357,7 @@ namespace Internal.TypeSystem
         {
             TypeDesc fromUnderlyingType = thisType.UnderlyingType;
 
-            if (fromUnderlyingType.IsObjRef())
+            if (fromUnderlyingType.IsReferenceType)
             {
                 return thisType.CanCastToInternal(otherType, protect);
             }
@@ -340,34 +371,6 @@ namespace Internal.TypeSystem
             }
 
             return false;
-        }
-
-        private static TypeKind Variety(this TypeDesc type)
-        {
-            switch (type.Category)
-            {
-                case TypeFlags.Array:
-                    return type.IsSzArray ? TypeKind.SzArray : TypeKind.Array;
-                case TypeFlags.GenericParameter:
-                    return TypeKind.GenericParameter;
-                case TypeFlags.ByRef:
-                    return TypeKind.ByRef;
-                case TypeFlags.Pointer:
-                    return TypeKind.Pointer;
-                default:
-                    Debug.Assert(type is DefType);
-                    return TypeKind.DefType;
-            }
-        }
-
-        private enum TypeKind
-        {
-            DefType,
-            ByRef,
-            Pointer,
-            SzArray,
-            Array,
-            GenericParameter,
         }
 
         private class StackOverflowProtect

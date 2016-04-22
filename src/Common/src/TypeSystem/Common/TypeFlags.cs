@@ -41,6 +41,7 @@ namespace Internal.TypeSystem
         Array           = 0x17,
         ByRef           = 0x18,
         Pointer         = 0x19,
+        SzArray         = 0x1A,
 
         GenericParameter = 0x1C,
 

@@ -353,6 +353,15 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsReferenceType
+        {
+            get
+            {
+                TypeFlags category = GetTypeFlags(TypeFlags.CategoryMask);
+                return category == TypeFlags.Class || category == TypeFlags.Array || category == TypeFlags.SzArray;
+            }
+        }
+
         public bool ContainsGenericVariables
         {
             get
