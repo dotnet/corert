@@ -150,12 +150,16 @@ namespace System.Runtime.InteropServices
         }
 
         //
-        // Returns the raw function pointer - if the function has a jump stub 
+        // Returns the raw function pointer for a open static delegate - if the function has a jump stub 
         // it returns the jump target. Therefore the function pointer returned
         // by two delegates may NOT be unique
         //
-        public static IntPtr GetRawFunctionPointer(this Delegate del)
+        public static IntPtr GetRawFunctionPointerForOpenStaticDelegate(this Delegate del)
         {
+            //If it is not open static then return IntPtr.Zero
+            if (!del.IsOpenStatic)
+                return IntPtr.Zero;
+
             bool dummyIsOpenInstanceFunction;
             RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
 

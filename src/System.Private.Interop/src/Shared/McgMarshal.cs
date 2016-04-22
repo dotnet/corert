@@ -1491,10 +1491,8 @@ namespace System.Runtime.InteropServices
             internal int HashCode;
             internal EquatablePInvokeDelegateThunk(Delegate del, IntPtr pThunk)
             {
-                IntPtr functionPtr = IntPtr.Zero;
                 // if it is an open static delegate get the function pointer
-                if (del.Target == null)
-                    functionPtr = del.GetRawFunctionPointer();
+                IntPtr functionPtr  = del.GetRawFunctionPointerForOpenStaticDelegate();
 
                 //
                 // Allocate a weak GC handle pointing to the delegate
@@ -1647,7 +1645,7 @@ namespace System.Runtime.InteropServices
                     //
                     //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
                     //
-                    IntPtr pTarget =  del.Target != null  ?  pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
+                    IntPtr pTarget =  del.GetRawFunctionPointerForOpenStaticDelegate()  == IntPtr.Zero  ?  pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
                     
                     ThunkPool.SetThunkData(pThunk, delegateThunk.ContextData, pTarget);
 
