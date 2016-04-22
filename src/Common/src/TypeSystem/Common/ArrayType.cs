@@ -14,14 +14,6 @@ namespace Internal.TypeSystem
     {
         private int _rank; // -1 for regular single dimensional arrays, > 0 for multidimensional arrays
 
-        public sealed override TypeKind Variety
-        {
-            get
-            {
-                return _rank == -1 ? TypeKind.SzArray : TypeKind.Array;
-            }
-        }
-
         internal ArrayType(TypeDesc elementType, int rank)
             : base(elementType)
         {

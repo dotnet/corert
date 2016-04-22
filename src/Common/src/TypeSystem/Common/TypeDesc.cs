@@ -340,7 +340,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return Variety == TypeKind.GenericParameter;
+                return GetTypeFlags(TypeFlags.CategoryMask) == TypeFlags.GenericParameter;
             }
         }
 
@@ -348,7 +348,8 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return Variety == TypeKind.DefType;
+                Debug.Assert(GetTypeFlags(TypeFlags.CategoryMask) <= TypeFlags.Interface == this is DefType);
+                return GetTypeFlags(TypeFlags.CategoryMask) <= TypeFlags.Interface;
             }
         }
 
@@ -492,14 +493,6 @@ namespace Internal.TypeSystem
             {
                 return (GetTypeFlags(TypeFlags.HasGenericVariance | TypeFlags.HasGenericVarianceComputed) & TypeFlags.HasGenericVariance) != 0;
             }
-        }
-
-        /// <summary>
-        /// Gets the kind of this type.
-        /// </summary>
-        public abstract TypeKind Variety
-        {
-            get;
         }
     }
 }

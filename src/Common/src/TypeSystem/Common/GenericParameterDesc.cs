@@ -87,14 +87,6 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract IEnumerable<TypeDesc> TypeConstraints { get; }
 
-        public sealed override TypeKind Variety
-        {
-            get
-            {
-                return TypeKind.GenericParameter;
-            }
-        }
-
         public bool HasNotNullableValueTypeConstraint
         {
             get

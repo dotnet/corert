@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -50,7 +48,7 @@ namespace Internal.TypeSystem
                     }
                 }
             }
-            else if (thisType.Variety != otherType.Variety)
+            else if (thisType.Variety() != otherType.Variety())
             {
                 if (thisType.IsArray && otherType.IsDefType)
                 {
@@ -61,7 +59,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                switch (thisType.Variety)
+                switch (thisType.Variety())
                 {
                     case TypeKind.Pointer:
                     case TypeKind.ByRef:
@@ -103,16 +101,17 @@ namespace Internal.TypeSystem
             return ParametrizedTypeCastHelper(thisType.ParameterType, paramType, protect);
         }
 
-        private static bool IsObjRef(this TypeFlags flags)
+        private static bool IsObjRef(this TypeDesc type)
         {
-            return flags == TypeFlags.Class || flags == TypeFlags.Array;
+            TypeFlags category = type.Category;
+            return category == TypeFlags.Class || category == TypeFlags.Array;
         }
         
         private static bool ParametrizedTypeCastHelper(TypeDesc curTypesParm, TypeDesc otherTypesParam, StackOverflowProtect protect)
         {
             // Object parameters don't need an exact match but only inheritance, check for that
             TypeDesc fromParamUnderlyingType = curTypesParm.UnderlyingType;
-            if (fromParamUnderlyingType.Category.IsObjRef())
+            if (fromParamUnderlyingType.IsObjRef())
             {
                 return curTypesParm.CanCastToInternal(otherTypesParam, protect);
             }
@@ -249,20 +248,22 @@ namespace Internal.TypeSystem
                 {
                     GenericParameterDesc openArgType = (GenericParameterDesc)instantiationOpen[i];
 
-                    if (openArgType.IsCovariant)
+                    switch (openArgType.Variance)
                     {
-                        if (!arg.IsBoxedAndCanCastTo(targetArg, protect))
+                        case GenericVariance.Covariant:
+                            if (!arg.IsBoxedAndCanCastTo(targetArg, protect))
+                                return false;
+                            break;
+
+                        case GenericVariance.Contravariant:
+                            if (!targetArg.IsBoxedAndCanCastTo(arg, protect))
+                                return false;
+                            break;
+
+                        default:
+                            // non-variant
+                            Debug.Assert(openArgType.Variance == GenericVariance.None);
                             return false;
-                    }
-                    else if (openArgType.IsContravariant)
-                    {
-                        if (!targetArg.IsBoxedAndCanCastTo(arg, protect))
-                            return false;
-                    }
-                    else
-                    {
-                        // non-variant
-                        return false;
                     }
                 }
             }
@@ -325,7 +326,7 @@ namespace Internal.TypeSystem
         {
             TypeDesc fromUnderlyingType = thisType.UnderlyingType;
 
-            if (IsObjRef(fromUnderlyingType.Category))
+            if (fromUnderlyingType.IsObjRef())
             {
                 return thisType.CanCastToInternal(otherType, protect);
             }
@@ -339,6 +340,34 @@ namespace Internal.TypeSystem
             }
 
             return false;
+        }
+
+        private static TypeKind Variety(this TypeDesc type)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Array:
+                    return type.IsSzArray ? TypeKind.SzArray : TypeKind.Array;
+                case TypeFlags.GenericParameter:
+                    return TypeKind.GenericParameter;
+                case TypeFlags.ByRef:
+                    return TypeKind.ByRef;
+                case TypeFlags.Pointer:
+                    return TypeKind.Pointer;
+                default:
+                    Debug.Assert(type is DefType);
+                    return TypeKind.DefType;
+            }
+        }
+
+        private enum TypeKind
+        {
+            DefType,
+            ByRef,
+            Pointer,
+            SzArray,
+            Array,
+            GenericParameter,
         }
 
         private class StackOverflowProtect
@@ -361,7 +390,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private struct CastingPair : IEquatable<CastingPair>
+        private struct CastingPair
         {
             public readonly TypeDesc FromType;
             public readonly TypeDesc ToType;
@@ -373,8 +402,6 @@ namespace Internal.TypeSystem
             }
 
             public bool Equals(CastingPair other) => FromType == other.FromType && ToType == other.ToType;
-            public override bool Equals(object obj) => obj is CastingPair && Equals((CastingPair)obj);
-            public override int GetHashCode() => FromType.GetHashCode() ^ ToType.GetHashCode();
         }
     }
 }
