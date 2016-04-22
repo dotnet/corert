@@ -469,6 +469,43 @@ inline UInt8 EEType::GetNullableValueOffset()
     return pOptFields->GetNullableValueOffset(0) + 1;
 }
 
+#if CORERT
+inline EEType * EEType::get_GenericDefinition()
+{
+    ASSERT(IsGeneric());
+
+    UInt32 cbOffset = GetFieldOffset(ETF_GenericDefinition);
+
+    return *(EEType**)((UInt8*)this + cbOffset);
+}
+
+inline UInt32 EEType::get_GenericArity()
+{
+    ASSERT(IsGeneric());
+
+    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
+
+    return **(UInt32**)((UInt8*)this + cbOffset);
+}
+
+inline EEType** EEType::get_GenericArguments()
+{
+    ASSERT(IsGeneric());
+
+    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
+
+    return ((*(EEType***)((UInt8*)this + cbOffset)) + 1);
+}
+
+inline GenericVarianceType* EEType::get_GenericVariance()
+{
+    ASSERT(HasGenericVariance());
+
+    // Variance info follows immediatelly after the generic arguments
+    return (GenericVarianceType*)(get_GenericArguments() + get_GenericArity());
+}
+#endif
+
 inline EEType * EEType::get_DynamicTemplateType()
 {
     ASSERT(IsDynamicType());
@@ -668,6 +705,24 @@ inline EEType * EEType::GetArrayBaseType()
     }
     if ((get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0)
         cbOffset += sizeof(UIntTarget);
+
+#if CORERT
+    if (eField == ETF_GenericDefinition)
+    {
+        ASSERT(IsGeneric());
+        return cbOffset;
+    }
+    if (IsGeneric())
+        cbOffset += sizeof(UIntTarget);
+
+    if (eField == ETF_GenericComposition)
+    {
+        ASSERT(IsGeneric());
+        return cbOffset;
+    }
+    if (IsGeneric())
+        cbOffset += sizeof(UIntTarget);
+#endif
 
     if (eField == ETF_DynamicTemplateType)
     {
