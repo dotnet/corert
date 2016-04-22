@@ -675,6 +675,14 @@ namespace System
             }
         }
 
+        internal bool IsOpenStatic
+        {
+            get
+            {
+                return GetThunk(OpenStaticThunk) == m_functionPointer;
+            }
+        }
+
         internal static bool InternalEqualTypes(object a, object b)
         {
             return a.EETypePtr == b.EETypePtr;
