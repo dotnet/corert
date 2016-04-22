@@ -37,9 +37,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
       <Link>ModuleDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeKind.cs">
-      <Link>TypeSystem\Common\TypeKind.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
