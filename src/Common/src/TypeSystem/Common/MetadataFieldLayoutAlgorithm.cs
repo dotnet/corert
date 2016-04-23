@@ -290,28 +290,23 @@ namespace Internal.TypeSystem
 
                 int computedOffset = checked(fieldAndOffset.Offset + cumulativeInstanceFieldPos);
 
-                switch (fieldAndOffset.Field.FieldType.Category)
+                if (fieldAndOffset.Field.FieldType.IsObjRef)
                 {
-                    case TypeFlags.Array:
-                    case TypeFlags.Class:
+                    int offsetModulo = computedOffset % type.Context.Target.PointerSize;
+                    if (offsetModulo != 0)
+                    {
+                        // GC pointers MUST be aligned.
+                        if (offsetModulo == 4)
                         {
-                            int offsetModulo = computedOffset % type.Context.Target.PointerSize;
-                            if (offsetModulo != 0)
-                            {
-                                // GC pointers MUST be aligned.
-                                if (offsetModulo == 4)
-                                {
-                                    // We must be attempting to compile a 32bit app targeting a 64 bit platform.
-                                    throw new TypeLoadException();
-                                }
-                                else
-                                {
-                                    // Its just wrong
-                                    throw new TypeLoadException();
-                                }
-                            }
-                            break;
+                            // We must be attempting to compile a 32bit app targeting a 64 bit platform.
+                            throw new TypeLoadException();
                         }
+                        else
+                        {
+                            // Its just wrong
+                            throw new TypeLoadException();
+                        }
+                    }
                 }
 
                 offsets[fieldOrdinal] = new FieldAndOffset(fieldAndOffset.Field, computedOffset);

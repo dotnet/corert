@@ -26,6 +26,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\CastingHelper.cs">
+      <Link>TypeSystem\Common\CastingHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>IAssemblyDesc.cs</Link>
     </Compile>
@@ -118,9 +121,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ThreadSafeFlags.cs">
       <Link>TypeSystem\Common\ThreadSafeFlags.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeCast.cs">
-      <Link>TypeSystem\Common\TypeCast.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\TypeFlags.cs">
       <Link>TypeSystem\Common\TypeFlags.cs</Link>

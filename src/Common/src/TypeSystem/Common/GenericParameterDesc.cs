@@ -86,5 +86,45 @@ namespace Internal.TypeSystem
         /// Gets type constraints imposed on substitutions.
         /// </summary>
         public abstract IEnumerable<TypeDesc> TypeConstraints { get; }
+
+        public bool HasNotNullableValueTypeConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0;
+            }
+        }
+
+        public bool HasReferenceTypeConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.ReferenceTypeConstraint) != 0;
+            }
+        }
+
+        public bool HasDefaultConstructorConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.DefaultConstructorConstraint) != 0;
+            }
+        }
+
+        public bool IsCovariant
+        {
+            get
+            {
+                return (Variance & GenericVariance.Covariant) != 0;
+            }
+        }
+
+        public bool IsContravariant
+        {
+            get
+            {
+                return (Variance & GenericVariance.Contravariant) != 0;
+            }
+        }
     }
 }

@@ -212,6 +212,7 @@ namespace Internal.IL
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
+                case TypeFlags.SzArray:
                     return StackValueKind.ObjRef;
                 case TypeFlags.ByRef:
                     return StackValueKind.ByRef;
