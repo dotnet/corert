@@ -69,6 +69,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
+        {
+            return true;
+        }
+
         public override bool StaticDependenciesAreComputed
         {
             get
@@ -134,8 +139,7 @@ namespace ILCompiler.DependencyAnalysis
             int i = 0;
             foreach (GenericParameterDesc param in genericTypeInstance.GetTypeDefinition().Instantiation)
             {
-                Variance[i] = param.Variance;
-                i++;
+                Variance[i++] = param.Variance;
             }
         }
 
