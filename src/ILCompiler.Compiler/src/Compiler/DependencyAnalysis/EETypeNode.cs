@@ -54,8 +54,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private TypeDesc _type;
         private bool _constructed;
-        private EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
-        private ArrayBuilder<TypeDesc> _variantInterfacesImplemented;
+        EETypeOptionalFieldsBuilder _optionalFieldsBuilder = new EETypeOptionalFieldsBuilder();
 
         public EETypeNode(TypeDesc type, bool constructed)
         {
@@ -201,6 +200,27 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.RuntimeInterfaces.Length > 0)
                 {
                     dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+
+                    // If any of the implemented interfaces have variance, calls against compatible interface methods
+                    // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
+                    // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
+                    // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
+                    MetadataType mdType = _type.GetClosestMetadataType();
+                    foreach (var implementedInterface in mdType.RuntimeInterfaces)
+                    {
+                        if (implementedInterface.HasVariance)
+                        {
+                            foreach (var interfaceMethod in implementedInterface.GetAllVirtualMethods())
+                            {
+                                MethodDesc implMethod = mdType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                                if (implMethod != null)
+                                {
+                                    dependencyList.Add(factory.VirtualMethodUse(interfaceMethod), "Variant interface method");
+                                    dependencyList.Add(factory.VirtualMethodUse(implMethod), "Variant interface method");
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (_type.IsArray)
@@ -629,18 +649,7 @@ namespace ILCompiler.DependencyAnalysis
                 // This node's EETypeOptionalFields node may change if this EEType implements interfaces
                 // that are used since the dispatch map table index is computed once we know the interface
                 // layout later on in compilation.
-
-                // Also, if any of the implemented interfaces have variance, variant dispatch might result in
-                // slots being necessary.
-                foreach (var intfType in _type.GetClosestMetadataType().RuntimeInterfaces)
-                {
-                    if (intfType.GetTypeDefinition().HasGenericVariance())
-                    {
-                        _variantInterfacesImplemented.Add(intfType);
-                    }
-                }
-
-                return _type.GetClosestMetadataType().RuntimeInterfaces.Length > 0 && _constructed;
+                return _type.RuntimeInterfaces.Length > 0 && _constructed;
             }
         }
 
@@ -648,48 +657,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             List<CombinedDependencyListEntry> dynamicNodes = new List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
             dynamicNodes.Add(new CombinedDependencyListEntry(factory.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
-
-            // If the type implements any variant interfaces, we need to look for uses of interface methods that are compatible
-            // with the interface implemented by this type.
-            // We can avoid this work if we're not using a demand built VTable (producing a full type)
-            if (_variantInterfacesImplemented.Count > 0 && !factory.CompilationModuleGroup.ShouldProduceFullType(_type))
-            {
-                Debug.Assert(_constructed);
-
-                for (int i = firstNode; i < markedNodes.Count; i++)
-                {
-                    var node = markedNodes[i] as ReadyToRunHelperNode;
-                    if (node != null
-                        && (node.Id == ReadyToRunHelperId.InterfaceDispatch || node.Id == ReadyToRunHelperId.ResolveVirtualFunction))
-                    {
-                        MethodDesc targetMethod = (MethodDesc)node.Target;
-                        if (targetMethod.OwningType.IsInterface)
-                        {
-                            TypeDesc targetInterface = targetMethod.OwningType;
-                            // TODO: we might need to cache the result of "is this interface compatible with this type?"
-                            for (int j = 0; j < _variantInterfacesImplemented.Count; j++)
-                            {
-                                // TODO: this should really use CanCastTo/IsAssignable
-                                if (targetInterface.GetTypeDefinition() == _variantInterfacesImplemented[j].GetTypeDefinition())
-                                {
-                                    // Find the interface method on the interface type that is actually implemented
-                                    MethodDesc matchingMethod = _variantInterfacesImplemented[j].FindMethodOnTypeWithMatchingTypicalMethod(targetMethod);
-
-                                    // Find the implementation of the interface method
-                                    MethodDesc implMethod = _type.GetClosestMetadataType().ResolveInterfaceMethodToVirtualMethodOnType(matchingMethod);
-
-                                    if (implMethod != null)
-                                    {
-                                        dynamicNodes.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(matchingMethod), null, "Variant interface dispatch"));
-                                        dynamicNodes.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), null, "Variant interface dispatch"));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             return dynamicNodes;
         }
     }

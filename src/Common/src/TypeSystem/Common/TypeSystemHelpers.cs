@@ -67,21 +67,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        static public bool HasGenericVariance(this TypeDesc type)
-        {
-            Debug.Assert(type.IsTypeDefinition);
-
-            foreach (var typeParam in type.Instantiation)
-            {
-                if (((GenericParameterDesc)typeParam).Variance != GenericVariance.None)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         static public MethodDesc GetDefaultConstructor(this TypeDesc type)
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?

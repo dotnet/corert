@@ -98,7 +98,7 @@ namespace Internal.Runtime
             {
                 flags |= (UInt16)EETypeFlags.IsGenericFlag;
 
-                if (type.GetTypeDefinition().HasGenericVariance())
+                if (type.GetTypeDefinition().HasVariance)
                 {
                     flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
                 }

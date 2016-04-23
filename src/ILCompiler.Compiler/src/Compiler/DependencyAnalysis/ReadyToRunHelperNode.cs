@@ -132,18 +132,5 @@ namespace ILCompiler.DependencyAnalysis
                 return null;
             }
         }
-
-        public override bool InterestingForDynamicDependencyAnalysis
-        {
-            get
-            {
-                if (_id == ReadyToRunHelperId.ResolveVirtualFunction || _id == ReadyToRunHelperId.InterfaceDispatch)
-                {
-                    return ((MethodDesc)_target).OwningType.GetTypeDefinition().HasGenericVariance();
-                }
-
-                return false;
-            }
-        }
     }
 }
