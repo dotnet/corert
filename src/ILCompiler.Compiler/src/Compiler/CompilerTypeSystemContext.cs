@@ -380,6 +380,11 @@ namespace ILCompiler
             foreach (var parameterHandle in parameters)
             {
                 Parameter p = ecmaMethod.MetadataReader.GetParameter(parameterHandle);
+
+                // Parameter with sequence number 0 refers to the return parameter
+                if (p.SequenceNumber == 0)
+                    continue;
+
                 yield return ecmaMethod.MetadataReader.GetString(p.Name);
             }
         }
