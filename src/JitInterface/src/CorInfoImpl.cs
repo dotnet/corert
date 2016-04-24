@@ -23,10 +23,10 @@ namespace Internal.JitInterface
     {
         private IntPtr _comp;
 
-        [DllImport("ryujit")]
+        [DllImport("clrjit")]
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport("ryujit")]
+        [DllImport("clrjit")]
         private extern static IntPtr getJit();
 
         [DllImport("jitinterface")]
