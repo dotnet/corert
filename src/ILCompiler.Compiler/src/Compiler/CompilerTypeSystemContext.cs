@@ -377,6 +377,7 @@ namespace ILCompiler
                 yield return "_this";
             }
 
+            // TODO: The Params table is allowed to have holes in it. This expect all parameters to be present.
             foreach (var parameterHandle in parameters)
             {
                 Parameter p = ecmaMethod.MetadataReader.GetParameter(parameterHandle);
