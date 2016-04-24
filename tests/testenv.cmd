@@ -13,6 +13,15 @@ if /i "%1" == "rel"     (set CoreRT_BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "release" (set CoreRT_BuildType=Release&shift&goto Arg_Loop)
 
 :ArgsDone
+
+set CoreRT_BuildOS=Windows_NT
+
+set CoreRT_AppDepSdkPkg=toolchain.win7-%CoreRT_BuildArch%.Microsoft.DotNet.AppDep
+set CoreRT_AppDepSdkVer=1.0.6-prerelease-00004
+
+set CoreRT_ToolchainDir=%~dp0\..\bin\Product\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\packaging\publish1
+set CoreRT_AppDepSdkDir=%~dp0\..\packages\%CoreRT_AppDepSdkPkg%\%CoreRT_AppDepSdkVer%
+
 exit /b 0
 
 :Usage

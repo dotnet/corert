@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "Microsoft.DotNet.AppDep": "1.0.6-prerelease-00004"
+  },
+  "frameworks": {
+    "dnxcore50": { }
+  },
+  "runtimes": {
+    "win7-x64": { },
+    "osx.10.10-x64": { },
+    "ubuntu.14.04-x64": { }
+  }
+}
