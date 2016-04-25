@@ -56,7 +56,7 @@
       <PreprocessorDefinitions>CPPCODEGEN;WIN32;_DEBUG;_CONSOLE;_LIB;_AMD64_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env;..\..\Native\Bootstrap</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4477</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
