@@ -92,8 +92,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
-                Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
-
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     return new EETypeNode(type, false);
@@ -106,8 +104,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
-                Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
-
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     return new EETypeNode(type, true);
@@ -236,6 +232,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     dispatchMap.SetDispatchMapIndex(this, DispatchMapTable.IndexOfEmbeddedObject(indirectionNode));
                 });
+            });
+
+            _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
+            {
+                return new GenericCompositionNode(details);
             });
 
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
@@ -407,6 +408,13 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
         }
 
+        private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
+
+        public ISymbolNode GenericComposition(GenericCompositionDetails details)
+        {
+            return _genericCompositions.GetOrAdd(details);
+        }
+
         private NodeCache<string, ExternSymbolNode> _externSymbols;
 
         public ISymbolNode ExternSymbol(string name)
@@ -481,8 +489,8 @@ namespace ILCompiler.DependencyAnalysis
             return symbol;
         }
 
-        private TypeDesc _systemArrayOfTClass;
-        public TypeDesc ArrayOfTClass
+        private MetadataType _systemArrayOfTClass;
+        public MetadataType ArrayOfTClass
         {
             get
             {
@@ -491,6 +499,19 @@ namespace ILCompiler.DependencyAnalysis
                     _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
                 }
                 return _systemArrayOfTClass;
+            }
+        }
+
+        private TypeDesc _systemArrayOfTEnumeratorType;
+        public TypeDesc ArrayOfTEnumeratorType
+        {
+            get
+            {
+                if (_systemArrayOfTEnumeratorType == null)
+                {
+                    _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
+                }
+                return _systemArrayOfTEnumeratorType;
             }
         }
 
