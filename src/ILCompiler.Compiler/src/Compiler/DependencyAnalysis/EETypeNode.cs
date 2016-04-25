@@ -659,5 +659,10 @@ namespace ILCompiler.DependencyAnalysis
             dynamicNodes.Add(new CombinedDependencyListEntry(factory.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
             return dynamicNodes;
         }
+
+        protected override void OnMarked(NodeFactory context)
+        {
+            Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
+        }
     }
 }

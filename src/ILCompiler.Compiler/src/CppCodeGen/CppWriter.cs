@@ -1114,9 +1114,16 @@ namespace ILCompiler.CppCodeGen
                     methodList.Add(method);
                 }
                 else
-                if (node is EETypeNode)
+                if (node is IEETypeNode)
                 {
-                    GetCppSignatureTypeName(((EETypeNode)node).Type);
+                    IEETypeNode eeTypeNode = (IEETypeNode)node;
+
+                    if (eeTypeNode.Type.HasInstantiation && eeTypeNode.Type.IsTypeDefinition)
+                    {
+                        // TODO: CppWriter can't handle generic type definition EETypes
+                    }
+                    else
+                        GetCppSignatureTypeName(eeTypeNode.Type);
                 }
             }
         }

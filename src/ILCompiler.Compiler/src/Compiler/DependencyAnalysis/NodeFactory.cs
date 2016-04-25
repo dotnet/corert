@@ -92,8 +92,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
-                Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
-
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     return new EETypeNode(type, false);
@@ -106,8 +104,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
-                Debug.Assert(type.IsTypeDefinition || !type.HasSameTypeDefinition(ArrayOfTClass), "Asking for Array<T> EEType");
-
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     return new EETypeNode(type, true);
