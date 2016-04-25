@@ -66,6 +66,19 @@ namespace Internal.Runtime.CompilerHelpers
             Environment.SetCommandLineArgs(args);
         }
 
+        private static string[] GetMainMethodArguments()
+        {
+            // GetCommandLineArgs includes the executable name, Main() arguments do not.
+            string[] args = Environment.GetCommandLineArgs();
+
+            Debug.Assert(args.Length > 0);
+
+            string[] mainArgs = new string[args.Length - 1];
+            Array.Copy(args, 1, mainArgs, 0, mainArgs.Length);
+
+            return mainArgs;
+        }
+
         private static unsafe IntPtr[] CreateModuleManagers(IntPtr moduleHeaders, int count)
         {
             // Count the number of modules so we can allocate an array to hold the ModuleManager objects.

@@ -359,9 +359,7 @@ int main(int argc, char* argv[])
     int retval;
     try
     {
-        // Managed apps don't see the first args argument (full path of executable) so skip it
-        assert(argc > 0);
-        retval = __managed__Main(argc - 1, argv + 1);
+        retval = __managed__Main(argc, argv);
     }
     catch (const char* &e)
     {
