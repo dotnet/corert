@@ -21,6 +21,9 @@ public class ReflectionTest
         if (TestTypeOf() == Fail)
             return Fail;
 
+        if (TestGenericComposition() == Fail)
+            return Fail;
+
         return Pass;
     }
 
@@ -85,5 +88,18 @@ public class ReflectionTest
         }
 
         return Pass;
+    }
+
+    private static int TestGenericComposition()
+    {
+        Console.WriteLine("Testing generic composition");
+
+        Type nullableOfIntType = typeof(int?);
+
+        string fullName = nullableOfIntType.FullName;
+        if (fullName.Contains("System.Nullable`1") && fullName.Contains("System.Int32"))
+            return Pass;
+
+        return Fail;
     }
 }

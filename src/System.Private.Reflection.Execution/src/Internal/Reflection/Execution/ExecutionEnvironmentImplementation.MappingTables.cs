@@ -589,7 +589,8 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
         {
-            throw new NotImplementedException();
+            genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(runtimeTypeHandle, out genericTypeArgumentHandles);
+            return true;
         }
 
         //

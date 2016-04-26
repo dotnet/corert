@@ -563,6 +563,24 @@ namespace Internal.Runtime.Augments
             }
         }
 
+        public unsafe static RuntimeTypeHandle GetGenericInstantiation(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
+        {
+            Debug.Assert(IsGenericType(typeHandle));
+
+            int arity;
+            EETypePtr* pInstantiation;
+            byte* pVarianceInfo;
+            EETypePtr eeTypeDefinition = RuntimeImports.RhGetGenericInstantiation(typeHandle.ToEETypePtr(), out arity, out pInstantiation, out pVarianceInfo);
+
+            genericTypeArgumentHandles = new RuntimeTypeHandle[arity];
+            for (int i = 0; i < arity; i++)
+            {
+                genericTypeArgumentHandles[i] = new RuntimeTypeHandle(pInstantiation[i]);
+            }
+
+            return new RuntimeTypeHandle(eeTypeDefinition);
+        }
+
         public static bool IsGenericType(RuntimeTypeHandle typeHandle)
         {
             return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.Generic;
