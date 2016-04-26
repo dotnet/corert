@@ -60,14 +60,27 @@ namespace Internal.Runtime
         {
             UInt16 flags = (UInt16)EETypeKind.CanonicalEEType;
 
-            if (type.IsArray || type.IsPointer)
+            if (type.IsInterface)
             {
-                flags = (UInt16)EETypeKind.ParameterizedEEType;
+                flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
             }
 
             if (type.IsValueType)
             {
                 flags |= (UInt16)EETypeFlags.ValueTypeFlag;
+            }
+
+            if (type.IsGenericDefinition)
+            {
+                flags |= (UInt16)EETypeKind.GenericTypeDefEEType;
+
+                // Generic type definition EETypes don't set the other flags.
+                return flags;
+            }
+
+            if (type.IsArray || type.IsPointer)
+            {
+                flags = (UInt16)EETypeKind.ParameterizedEEType;
             }
 
             if (type.HasFinalizer)
@@ -87,11 +100,6 @@ namespace Internal.Runtime
                 {
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;
                 }
-            }
-
-            if (type.IsInterface)
-            {
-                flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
             }
 
             if (type.HasInstantiation)

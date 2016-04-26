@@ -506,5 +506,13 @@ namespace Internal.TypeSystem
                 return (GetTypeFlags(TypeFlags.HasGenericVariance | TypeFlags.HasGenericVarianceComputed) & TypeFlags.HasGenericVariance) != 0;
             }
         }
+
+        public bool IsGenericDefinition
+        {
+            get
+            {
+                return HasInstantiation && IsTypeDefinition;
+            }
+        }
     }
 }
