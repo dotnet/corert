@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 dir=$1
 file=$2
-cmp=`$dir/$file | tr '\r' ';'`
+cmp=`$dir/$file world | tr '\r' ';'`
 if [[ $cmp = "Hello world;" ]]; then
     echo pass
     exit 0

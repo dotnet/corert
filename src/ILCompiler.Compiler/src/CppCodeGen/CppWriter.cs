@@ -1236,7 +1236,7 @@ namespace ILCompiler.CppCodeGen
                 sb.AppendLine();
                 sb.Append("int ret = ");
                 sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
-                sb.Append("(argc-1, (intptr_t)(argv+1));");
+                sb.Append("(argc, (intptr_t)argv);");
 
                 sb.AppendEmptyLine();
                 sb.AppendLine();
