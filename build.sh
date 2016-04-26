@@ -36,22 +36,6 @@ clean()
 
 # Check the system to ensure the right pre-reqs are in place
 
-check_managed_prereqs()
-{
-    __monoversion=$(mono --version | grep "version 4.[1-9]")
-
-    if [ $? -ne 0 ]; then
-        # if built from tarball, mono only identifies itself as 4.0.1
-        __monoversion=$(mono --version | egrep "version 4.0.[1-9]+(.[0-9]+)?")
-        if [ $? -ne 0 ]; then
-            echo "Mono 4.0.1.44 or later is required to build corert."
-            exit 1
-        else
-            echo "WARNING: Mono 4.0.1.44 or later is required to build corert. Unable to assess if current version is supported."
-        fi
-    fi
-}
-
 check_native_prereqs()
 {
     echo "Checking pre-requisites..."
@@ -69,6 +53,10 @@ prepare_managed_build()
 {
     # Run Init-Tools to restore BuildTools and ToolRuntime
     $__scriptpath/init-tools.sh
+
+    # Tell nuget to always use repo-local nuget package cache. The "dotnet restore" invocations use the --packages
+    # argument, but there are a few commands in publish and tests that do not.
+    export NUGET_PACKAGES=$__packageroot
 
     echo "Using CLI tools version:"
     ls "$__dotnetclipath/sdk"
@@ -103,6 +91,12 @@ build_managed_corert()
     # Pull the build summary from the log file
     tail -n 4 "$__buildlog"
     echo Build Exit Code = $BUILDERRORLEVEL
+
+    # Workaround for --appdepsdkpath command line switch being ignored. 
+    # Copy the restored appdepsdk package to its default location.
+    source "${__ProjectRoot}/tests/testenv.sh" $__BuildType $__BuildArch
+    __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
+    cp -r "${CoreRT_AppDepSdkDir}" "${__dotnetclipath}/sdk/${__DOTNET_TOOLS_VERSION}/appdepsdk"
 }
 
 build_native_corert()
@@ -151,8 +145,6 @@ __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __ProjectRoot=$__scriptpath
 __packageroot=$__scriptpath/packages
 __sourceroot=$__scriptpath/src
-__nugetpath=$__packageroot/NuGet.exe
-__nugetconfig=$__sourceroot/NuGet.Config
 __rootbinpath="$__scriptpath/bin"
 __TestNugetRuntimeId=ubuntu.14.04-x64
 __buildmanaged=false
@@ -357,10 +349,6 @@ if [ $BUILDERRORLEVEL != 0 ]; then
 fi
 
 if $__buildmanaged; then
-
-    # Check prereqs.
-
-    check_managed_prereqs
 
     # Prepare the system
 

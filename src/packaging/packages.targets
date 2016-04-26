@@ -209,12 +209,7 @@
             <Stage1NuSpecs Include="%(NuSpecCollection.RedirFile)" Condition="'%(NuSpecCollection.Stage)'=='1'" />
         </ItemGroup>
 
-        <PropertyGroup>
-            <NuGetToolRunner Condition="'$(OsEnvironment)'!='Unix'"></NuGetToolRunner>
-            <NuGetToolRunner Condition="'$(OsEnvironment)'=='Unix'">mono</NuGetToolRunner>
-        </PropertyGroup>
-
-        <Exec Command="$(NuGetToolRunner) &quot;$(NuGetToolPath)&quot; pack &quot;%(Stage1NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -BasePath &quot;$(RepoPath)&quot; -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+        <NugetPack Nuspecs="%(Stage1NuSpecs.Identity)" OutputDirectory="$(ProductPackageDir)" BaseDirectory="$(RepoPath)" />
 
         <PropertyGroup>
             <Stage1ProjectDir>$(ProductPackageDir)stage1/</Stage1ProjectDir>

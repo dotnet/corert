@@ -179,6 +179,10 @@ set Platform=
 :: Restore the Tools directory
 call %~dp0init-tools.cmd
 
+rem Tell nuget to always use repo-local nuget package cache. The "dotnet restore" invocations use the --packages
+rem argument, but there are a few commands in publish and tests that do not.
+set "NUGET_PACKAGES=%__PackagesDir%"
+
 echo Using CLI tools version:
 dir /b "%__DotNetCliPath%\sdk"
 
@@ -198,6 +202,15 @@ exit /b 1
 
 
 :AfterILCompilerBuild
+setlocal
+rem Workaround for --appdepsdkpath command line switch being ignored.
+rem Copy the restored appdepsdk package to its default location.
+pushd "%__ProjectDir%\tests"
+call testenv.cmd %__BuildType% %__BuildArch%
+popd
+set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
+xcopy /S /Y "%CoreRT_AppDepSdkDir%" "%__DotNetCliPath%\sdk\%DOTNET_VERSION%\appdepsdk%\"
+endlocal
 
 :VsDevGenerateRespFiles
 if defined __SkipVsDev goto :AfterVsDevGenerateRespFiles
@@ -205,9 +218,13 @@ set __GenRespFiles=0
 if not exist "%__ObjDir%\ryujit.rsp" set __GenRespFiles=1
 if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
-    "%__DotNetCliPath%\dotnet.exe" restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "%__ReproProjectDir%"
+    setlocal
+    pushd "%__ProjectDir%\tests"
+    call testenv.cmd %__BuildType% %__BuildArch%
+    popd
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
-    "%__DotNetCliPath%\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType%
+
+    "%__DotNetCliPath%\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType%
     call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
     rem Workaround for https://github.com/dotnet/cli/issues/1956
@@ -218,8 +235,9 @@ if "%__GenRespFiles%"=="1" (
     if /i "%__BuildType%"=="debug" (
         set __AdditionalCompilerFlags=--cppcompilerflags /MTd
     )
-    "%__DotNetCliPath%\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
+    "%__DotNetCliPath%\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
     call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
+    endlocal
 )
 :AfterVsDevGenerateRespFiles
 
