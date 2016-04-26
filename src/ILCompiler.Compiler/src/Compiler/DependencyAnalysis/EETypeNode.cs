@@ -355,6 +355,9 @@ namespace ILCompiler.DependencyAnalysis
             {
                 objectSize = pointerSize +
                     ((MetadataType)_type).InstanceByteCount; // +pointerSize for SyncBlock
+
+                if (_type.IsValueType)
+                    objectSize += pointerSize; // + EETypePtr field inherited from System.Object
             }
             else if (_type is ArrayType)
             {
