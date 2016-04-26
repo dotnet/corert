@@ -36,7 +36,7 @@ namespace ILCompiler.CppCodeGen
         {
             _compilation = compilation;
 
-            _out = new StreamWriter(File.Create(compilation.Options.OutputFilePath));
+            _out = new StreamWriter(new FileStream(compilation.Options.OutputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, false));
 
             SetWellKnownTypeSignatureName(WellKnownType.Void, "void");
             SetWellKnownTypeSignatureName(WellKnownType.Boolean, "uint8_t");
