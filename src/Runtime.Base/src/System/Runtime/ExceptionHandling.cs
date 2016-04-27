@@ -86,12 +86,7 @@ namespace System.Runtime
         }
     }
 
-#if CORERT
     internal unsafe static class EH
-#else
-    // NUTC respects NativeCallable exports in public types only
-    public unsafe static class EH
-#endif
     {
         internal static UIntPtr MaxSP
         {
