@@ -15,12 +15,7 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime
 {
     // We choose this name to avoid clashing with any future public class with the name Finalizer. 
-#if CORERT
     internal static class __Finalizer
-#else
-    // NUTC respects NativeCallable exports in public types only
-    public static class __Finalizer
-#endif
     {
         private static bool s_fHaveNewClasslibs /* = false */;
 

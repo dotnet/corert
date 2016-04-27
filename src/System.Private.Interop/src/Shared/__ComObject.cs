@@ -50,7 +50,7 @@ namespace System
 
         ~RCWFinalizer()
         {
-            m_comObject.Cleanup();
+            m_comObject.Cleanup(disposing: false);
         }
     }
 
@@ -690,7 +690,7 @@ namespace System
 
             if (newRefCount == 0)
             {
-                Cleanup();
+                Cleanup(disposing: true);
             }
 
             return newRefCount;
@@ -705,7 +705,7 @@ namespace System
 
             if (prevCount > 0)
             {
-                Cleanup();
+                Cleanup(disposing: true);
             }
         }
 
@@ -717,11 +717,8 @@ namespace System
             return m_refCount;
         }
 
-        internal void Cleanup()
+        internal void Cleanup(bool disposing)
         {
-            if (InteropEventProvider.IsEnabled())
-                InteropEventProvider.Log.TaskRCWFinalization((long)InteropExtensions.GetObjectID(this), this.m_refCount);
-
             //
             // If the RCW hasn't been initialized yet or has already cleaned by ReleaseComObject - skip
             //
@@ -729,6 +726,28 @@ namespace System
             {
                 return;
             }
+
+            RCWFinalizer rcwFinalizer = Interlocked.Exchange(ref m_finalizer, null);
+
+            //
+            // Another thread is attempting to clean up this __ComObject instance and we lost the race
+            //
+            if (rcwFinalizer == null)
+            {
+                return;
+            }
+
+            //
+            // If the cleanup is not being performed by RCWFinalizer on the finalizer thread then suppress the 
+            // finalization of RCWFinalizer since we don't need it
+            //
+            if (disposing)
+            {
+                GC.SuppressFinalize(rcwFinalizer);
+            }
+
+            if (InteropEventProvider.IsEnabled())
+                InteropEventProvider.Log.TaskRCWFinalization((long)InteropExtensions.GetObjectID(this), this.m_refCount);
 
             //
             // Remove self from cache if this RCW is not a duplicate RCW
