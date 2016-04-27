@@ -92,8 +92,8 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             public bool Equals(CombinedDependencyListEntry other)
             {
-                return Object.Equals(Node, other.Node)
-                    && Object.Equals(OtherReasonNode, other.OtherReasonNode)
+                return Object.ReferenceEquals(Node, other.Node)
+                    && Object.ReferenceEquals(OtherReasonNode, other.OtherReasonNode)
                     && Object.Equals(Reason, other.Reason);
             }
         }
