@@ -149,15 +149,8 @@ namespace ILCompiler.DependencyAnalysis
             objData.Alignment = 16;
             objData.DefinedSymbols.Add(this);
 
-            // Todo: Generic Type Definition EETypes
-            //       Early-out just to prevent crashing at compile time...
-            if (_type.HasInstantiation && _type.IsTypeDefinition)
-            {
-                objData.EmitZeroPointer();
-                return objData.ToObjectData();
-            }
-
-            ComputeOptionalEETypeFields(factory);
+            if (!_type.IsGenericDefinition)
+                ComputeOptionalEETypeFields(factory);
             
             OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
@@ -175,6 +168,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_constructed)
             {
+                Debug.Assert(!_type.IsGenericDefinition);
+
                 // Avoid consulting VTable slots until they're guaranteed complete during final data emission
                 if (!relocsOnly)
                 {
@@ -184,10 +179,13 @@ namespace ILCompiler.DependencyAnalysis
                 OutputInterfaceMap(factory, ref objData);
             }
 
-            OutputFinalizerMethod(factory, ref objData);
-            OutputOptionalFields(factory, ref objData);
-            OutputNullableTypeParameter(factory, ref objData);
-            OutputGenericInstantiationDetails(factory, ref objData);
+            if (!_type.IsGenericDefinition)
+            {
+                OutputFinalizerMethod(factory, ref objData);
+                OutputOptionalFields(factory, ref objData);
+                OutputNullableTypeParameter(factory, ref objData);
+                OutputGenericInstantiationDetails(factory, ref objData);
+            }
 
             return objData.ToObjectData();
         }
@@ -347,6 +345,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputBaseSize(ref ObjectDataBuilder objData)
         {
+            if (_type.IsGenericDefinition)
+            {
+                objData.EmitInt(0);
+                return;
+            }
+
             int pointerSize = _type.Context.Target.PointerSize;
             int minimumObjectSize = pointerSize * 3;
             int objectSize;
@@ -399,6 +403,10 @@ namespace ILCompiler.DependencyAnalysis
                 var parameterType = ((ParameterizedType)_type).ParameterType;
                 relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
             }
+            else if (_type.IsGenericDefinition)
+            {
+                // Related type is not set for generic definitions
+            }
             else
             {
                 TypeDesc baseType = _type.BaseType;
@@ -433,6 +441,8 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitShort(0);
                 return;
             }
+
+            Debug.Assert(!_type.IsGenericDefinition);
 
             int virtualSlotCount = 0;
             TypeDesc currentTypeSlice = _type.GetClosestMetadataType();
