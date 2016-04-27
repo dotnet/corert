@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        public struct CombinedDependencyListEntry
+        public struct CombinedDependencyListEntry : IEquatable<CombinedDependencyListEntry>
         {
             public CombinedDependencyListEntry(DependencyNodeCore<DependencyContextType> node,
                                                DependencyNodeCore<DependencyContextType> otherReasonNode,
@@ -67,9 +67,35 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
 
             // Used by HashSet, so must have good Equals/GetHashCode
-            public DependencyNodeCore<DependencyContextType> Node;
-            public DependencyNodeCore<DependencyContextType> OtherReasonNode;
-            public string Reason;
+            public readonly DependencyNodeCore<DependencyContextType> Node;
+            public readonly DependencyNodeCore<DependencyContextType> OtherReasonNode;
+            public readonly string Reason;
+
+            public override bool Equals(object obj)
+            {
+                return obj is CombinedDependencyListEntry && Equals((CombinedDependencyListEntry)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = 23;
+                hash = hash * 31 + Node.GetHashCode();
+
+                if (OtherReasonNode != null)
+                    hash = hash * 31 + OtherReasonNode.GetHashCode();
+
+                if (Reason != null)
+                    hash = hash * 31 + Reason.GetHashCode();
+
+                return hash;
+            }
+
+            public bool Equals(CombinedDependencyListEntry other)
+            {
+                return Object.ReferenceEquals(Node, other.Node)
+                    && Object.ReferenceEquals(OtherReasonNode, other.OtherReasonNode)
+                    && Object.Equals(Reason, other.Reason);
+            }
         }
 
         public abstract bool InterestingForDynamicDependencyAnalysis
