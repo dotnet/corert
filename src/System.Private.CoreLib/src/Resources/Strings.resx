@@ -856,7 +856,7 @@
     <value>Source array type cannot be assigned to destination array type.</value>
   </data>
   <data name="BadImageFormatException_CouldNotLoadFileOrAssembly" xml:space="preserve">
-    <value>Could not load file or assembly '{0}' or one of its dependencies. An attempt was made to load a program with an incorrect format.</value>
+    <value>Could not load file or assembly '{0}'. An attempt was made to load a program with an incorrect format.</value>
   </data>
   <data name="CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
@@ -1018,7 +1018,7 @@
     <value>Unable to find the specified file.</value>
   </data>
   <data name="IO_FileNotFound_FileName" xml:space="preserve">
-    <value>Could not load file or assembly '{0}' or one of its dependencies. The system cannot find the file specified.</value>
+    <value>Could not load file or assembly '{0}'. The system cannot find the file specified.</value>
   </data>
   <data name="IO_FileLoad" xml:space="preserve">
     <value>Could not load the specified file.</value>
