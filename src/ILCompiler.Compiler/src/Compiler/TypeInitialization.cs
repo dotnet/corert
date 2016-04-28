@@ -58,34 +58,11 @@ namespace ILCompiler
             // For the other case (EagerStaticClassConstructionAttribute), order is defined
             // implicitly.
 
-            type = (MetadataType)type.GetTypeDefinition();
+            var decoded = ((EcmaType)type.GetTypeDefinition()).GetDecodedCustomAttribute(
+                "System.Runtime.CompilerServices", "EagerOrderedStaticConstructorAttribute");
 
-            EcmaType ecmaType = (EcmaType)type;
-            MetadataReader metadataReader = ecmaType.MetadataReader;
-
-            foreach (var attributeHandle in metadataReader.GetTypeDefinition(ecmaType.Handle).GetCustomAttributes())
-            {
-                EntityHandle attributeType, attributeCtor;
-                if (!metadataReader.GetAttributeTypeAndConstructor(attributeHandle,
-                    out attributeType, out attributeCtor))
-                {
-                    continue;
-                }
-
-                StringHandle namespaceHandle, nameHandle;
-                if (!metadataReader.GetAttributeTypeNamespaceAndName(attributeType,
-                   out namespaceHandle, out nameHandle))
-                {
-                    continue;
-                }
-
-                if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices")
-                    && metadataReader.StringComparer.Equals(nameHandle, "EagerOrderedStaticConstructorAttribute"))
-                {
-                    var attributeBlob = metadataReader.GetCustomAttributeBlobReader(attributeHandle);
-                    return attributeBlob.ReadInt32();
-                }
-            }
+            if (decoded != null)
+                return (int)decoded.Value.FixedArguments[0].Value;
 
             Debug.Assert(type.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute"));
             // RhBind on .NET Native for UWP will sort these based on static dependencies of the .cctors.

@@ -306,12 +306,6 @@ COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarg
 }
 #endif
 
-// finalizer.cs
-COOP_PINVOKE_HELPER(void, ProcessFinalizers, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
 // 
 // Return address hijacking
 //

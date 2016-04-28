@@ -5,12 +5,55 @@
 using System;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Decoding;
 
 namespace Internal.TypeSystem.Ecma
 {
     public static class MetadataExtensions
     {
-        public static bool HasCustomAttribute(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
+        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EcmaType This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+
+            var attributeHandle = metadataReader.GetCustomAttributeHandle(metadataReader.GetTypeDefinition(This.Handle).GetCustomAttributes(),
+                attributeNamespace, attributeName);
+
+            if (attributeHandle.IsNil)
+                return null;
+
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
+        }
+
+        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EcmaMethod This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+
+            var attributeHandle = metadataReader.GetCustomAttributeHandle(metadataReader.GetMethodDefinition(This.Handle).GetCustomAttributes(),
+                attributeNamespace, attributeName);
+
+            if (attributeHandle.IsNil)
+                return null;
+
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+        }
+
+        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EcmaField This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+
+            var attributeHandle = metadataReader.GetCustomAttributeHandle(metadataReader.GetFieldDefinition(This.Handle).GetCustomAttributes(),
+                attributeNamespace, attributeName);
+
+            if (attributeHandle.IsNil)
+                return null;
+
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+        }
+
+        public static CustomAttributeHandle GetCustomAttributeHandle(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
             string attributeNamespace, string attributeName)
         {
             foreach (var attributeHandle in customAttributes)
@@ -22,11 +65,11 @@ namespace Internal.TypeSystem.Ecma
                 if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
                     && metadataReader.StringComparer.Equals(nameHandle, attributeName))
                 {
-                    return true;
+                    return attributeHandle;
                 }
             }
 
-            return false;
+            return default(CustomAttributeHandle);
         }
 
         public static bool GetAttributeNamespaceAndName(this MetadataReader metadataReader, CustomAttributeHandle attributeHandle,
@@ -102,14 +145,6 @@ namespace Internal.TypeSystem.Ecma
                 // unsupported metadata
                 return false;
             }
-        }
-
-        public static BlobReader GetCustomAttributeBlobReader(this MetadataReader reader, CustomAttributeHandle handle)
-        {
-            BlobReader result = reader.GetBlobReader(reader.GetCustomAttribute(handle).Value);
-            if (result.ReadInt16() != 1)
-                throw new BadImageFormatException();
-            return result;
         }
 
         // This mask is the fastest way to check if a type is nested from its flags,

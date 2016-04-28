@@ -85,11 +85,15 @@ namespace ILCompiler
             {
                 foreach (var method in type.GetMethods())
                 {
-                    if (method.HasCustomAttribute("System.Runtime", "RuntimeExportAttribute"))
-                    {
-                        string exportName = ((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeExportAttribute");
-                        _rootProvider.AddCompilationRoot(method, "Runtime export", exportName);
-                    }
+                    EcmaMethod ecmaMethod = (EcmaMethod)method;
+
+                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
+                    if (runtimeExportName != null)
+                        _rootProvider.AddCompilationRoot(method, "Runtime export", runtimeExportName);
+
+                    string nativeCallableExportName = ecmaMethod.GetNativeCallableExportName();
+                    if (nativeCallableExportName != null)
+                        _rootProvider.AddCompilationRoot(method, "Native callable", nativeCallableExportName);
                 }
             }
         }

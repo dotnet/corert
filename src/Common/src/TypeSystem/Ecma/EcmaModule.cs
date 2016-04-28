@@ -514,8 +514,8 @@ namespace Internal.TypeSystem.Ecma
 
         public bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return _metadataReader.HasCustomAttribute(_assemblyDefinition.GetCustomAttributes(),
-                attributeNamespace, attributeName);
+            return _metadataReader.GetCustomAttributeHandle(_assemblyDefinition.GetCustomAttributes(),
+                attributeNamespace, attributeName).IsNil;
         }
 
         public override string ToString()

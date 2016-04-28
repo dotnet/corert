@@ -300,10 +300,6 @@ extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
 }
-extern "C" void RhpFailFastForPInvokeExceptionPreemp()
-{
-    throw "RhpFailFastForPInvokeExceptionPreemp";
-}
 extern "C" void RhpEtwExceptionThrown()
 {
     throw "RhpEtwExceptionThrown";
