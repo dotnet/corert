@@ -356,6 +356,7 @@
     <Compile Include="System\Runtime\InteropServices\ComVisibleAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.cs" />
@@ -673,6 +674,9 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs" >
       <Link>Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs" >
+      <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs" >
       <Link>Runtime.Base\src\RhBaseName.cs</Link>
