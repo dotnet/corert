@@ -119,12 +119,6 @@ inline HANDLE PalGetProcessHeap()
 }
 
 
-extern "C" UInt64 __stdcall GetTickCount64();
-inline UInt64 PalGetTickCount64()
-{
-    return GetTickCount64();
-}
-
 extern "C" void* __stdcall HeapAlloc(HANDLE, UInt32, UIntNative);
 inline void* PalHeapAlloc(HANDLE arg1, UInt32 arg2, UIntNative arg3)
 {

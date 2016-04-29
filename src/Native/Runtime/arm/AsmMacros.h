@@ -44,7 +44,7 @@ PTFF_R0_IS_BYREF        equ 0x00008000  ;; iff PTFF_SAVE_R0: set -> r0 is ByRef,
 ;;
 ;; This constant, unfortunately, cannot be validated at build time.
 ;;
-OFFSETOF__TLS__tls_CurrentThread                    equ  0x10
+OFFSETOF__TLS__tls_CurrentThread                    equ  0x8
 #endif
 
 ;;

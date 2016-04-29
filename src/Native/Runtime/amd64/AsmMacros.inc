@@ -346,7 +346,7 @@ ifndef CORERT ; Hardcoded TLS offsets are not compatible with static linking
 ;;
 ;; This constant, unfortunately, cannot be validated at build time.
 ;;
-OFFSETOF__TLS__tls_CurrentThread                    equ 20h
+OFFSETOF__TLS__tls_CurrentThread                    equ 10h
 endif
 
 ;;

@@ -43,6 +43,8 @@ extern RhConfig * g_pRhConfig;
 
 EXTERN_C bool g_fHasFastFxsave = false;
 
+CrstStatic g_CastCacheLock;
+
 bool InitDLL(HANDLE hPalInstance)
 {
     CheckForPalFallback();
@@ -100,6 +102,9 @@ bool InitDLL(HANDLE hPalInstance)
 #endif // STRESS_LOG
 
     DetectCPUFeatures();
+
+    if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
+        return false;
 
     return true;
 }
