@@ -40,9 +40,11 @@ public:
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
     static void             DetachCurrentThread();
-#ifdef DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
+    static void             SaveCurrentThreadOffsetForDAC();
+#else
     static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
-#endif // DACCESS_COMPILE
+#endif
     Boolean                 GetExceptionsForCurrentThread(Array* pOutputArray, Int32* pWrittenCountOut);
 
     void        Destroy();

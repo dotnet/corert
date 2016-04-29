@@ -43,11 +43,12 @@ __tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
 INLINE_GETTHREAD macro destReg, trashReg
     ASSUME fs : NOTHING
     EXTERN __tls_index : DWORD
+    EXTERN _tls_CurrentThread : DWORD
 
     mov         destReg, [__tls_index]
     mov         trashReg, fs:[__tls_array]
     mov         destReg, [trashReg + destReg * 4]
-    add         destReg, OFFSETOF__TLS__tls_CurrentThread
+    add         destReg, SECTIONREL _tls_CurrentThread
 endm
 
 
@@ -149,13 +150,6 @@ PTFF_RAX_IS_BYREF       equ 00020000h   ;; iff PTFF_SAVE_RAX: set -> eax is ByRe
 ;; store a pointer to a transition frame.
 ;;
 MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -4
-
-ifndef CORERT ; Hardcoded TLS offsets are not compatible with static linking
-;;
-;; This constant, unfortunately, cannot be validated at build time.
-;;
-OFFSETOF__TLS__tls_CurrentThread                    equ  8h
-endif
 
 ;;
 ;; Rename fields of nested structs

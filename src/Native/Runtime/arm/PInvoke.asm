@@ -189,6 +189,8 @@ BadTransition
 
         NESTED_END RhpReversePInvoke
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

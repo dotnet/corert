@@ -138,6 +138,8 @@ GetHijackedReturnAddress
 
     NESTED_END RhGetCurrentThreadStackTrace
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* RhpCopyMultibyteNoGCRefs(void*, void*, size_t)
