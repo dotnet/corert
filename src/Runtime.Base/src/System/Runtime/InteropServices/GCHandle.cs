@@ -3,16 +3,66 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
 {
-    // These are the types of handles used by the EE.  
-    // IMPORTANT: These must match the definitions in ObjectHandle.h in the EE. 
     public enum GCHandleType
     {
         Weak = 0,
         WeakTrackResurrection = 1,
         Normal = 2,
-        Pinned = 3
+        Pinned = 3  // NOTE: not implemented here
+    }
+
+    /// <summary>
+    /// Limited implementation of GCHandle.  Only implements as much as is currently used.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct UnsafeGCHandle
+    {
+        // The actual integer handle value that the EE uses internally.
+        private IntPtr _handle;
+
+        // Allocate a handle storing the object and the type.
+        private UnsafeGCHandle(Object value, GCHandleType type)
+        {
+            Debug.Assert((uint)type <= (uint)GCHandleType.Normal, "unexpected handle type");
+
+            _handle = InternalCalls.RhpHandleAlloc(value, type);
+            if (_handle == IntPtr.Zero)
+                throw new OutOfMemoryException();
+        }
+
+        public static UnsafeGCHandle Alloc(Object value, GCHandleType type)
+        {
+            return new UnsafeGCHandle(value, type);
+        }
+
+        // Target property - allows getting / updating of the handle's referent.
+        public Object Target
+        {
+            get
+            {
+                Debug.Assert(IsAllocated, "handle isn't initialized");
+                return InternalCalls.RhHandleGet(_handle);
+            }
+
+            set
+            {
+                Debug.Assert(IsAllocated, "handle isn't initialized");
+                InternalCalls.RhHandleSet(_handle, value);
+            }
+        }
+
+        // Determine whether this handle has been allocated or not.
+        public bool IsAllocated
+        {
+            get
+            {
+                return _handle != default(IntPtr);
+            }
+        }
     }
 }

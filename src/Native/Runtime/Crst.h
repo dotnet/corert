@@ -21,6 +21,7 @@ enum CrstType
     CrstRestrictedCallouts,
     CrstGcStressControl,
     CrstSuspendEE,
+    CrstCastCache,
 };
 
 enum CrstFlags

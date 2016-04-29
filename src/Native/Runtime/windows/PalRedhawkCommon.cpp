@@ -400,3 +400,7 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
     return 0;
 }
 
+REDHAWK_PALEXPORT UInt64 __cdecl PalGetTickCount64()
+{
+    return GetTickCount64();
+}
