@@ -645,7 +645,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
 // to return monotonically increasing counts and avoid being affected by changes
 // to the system clock (either due to drift or due to explicit changes to system
 // time).
-REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
+REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI PalGetTickCount64()
 {
     UInt64 retval = 0;
 
@@ -708,9 +708,9 @@ REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
     return retval;
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetTickCount()
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetTickCount()
 {
-    return (uint32_t)GetTickCount64();
+    return (UInt32)PalGetTickCount64();
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
