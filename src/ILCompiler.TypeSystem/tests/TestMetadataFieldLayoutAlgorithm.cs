@@ -15,6 +15,7 @@ namespace TypeSystemTests
         {
             // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
             layout.GcStatics.Size = context.Target.PointerSize;
+            layout.ThreadStatics.Size = context.Target.PointerSize;
         }
 
         protected override void FinalizeRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
@@ -24,6 +25,10 @@ namespace TypeSystemTests
             if (layout.GcStatics.Size == context.Target.PointerSize)
             {
                 layout.GcStatics.Size = 0;
+            }
+            if (layout.ThreadStatics.Size == context.Target.PointerSize)
+            {
+                layout.ThreadStatics.Size = 0;
             }
         }
     }
