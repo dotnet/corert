@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
+
+#pragma warning disable 169 // Field 'blah' is never used
 
 namespace GCPointerMap
 {
@@ -16,8 +19,10 @@ namespace GCPointerMap
     [StructLayout(LayoutKind.Sequential)]
     class ClassWithStringField
     {
+        static string dummy;
         int i;
         string s;
+        bool z;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -57,5 +62,36 @@ namespace GCPointerMap
 
         [FieldOffset(56 * 8)]
         MixedStruct W;
+    }
+
+    class MixedStaticClass
+    {
+        object dummy1;
+        static object o;
+        static int dummy2;
+        const string dummy3 = "Hello";
+        static StructWithSameGCLayoutAsMixedStruct m1;
+        static MixedStruct m2;
+    }
+
+    class MixedThreadStaticClass
+    {
+        object dummy1;
+        static object dummy2;
+
+        [ThreadStatic]
+        static int i;
+
+        [ThreadStatic]
+        static StructWithSameGCLayoutAsMixedStruct m1;
+
+        [ThreadStatic]
+        static MixedStruct m2;
+
+        [ThreadStatic]
+        static object o;
+
+        [ThreadStatic]
+        static short s;
     }
 }

@@ -60,6 +60,8 @@ namespace System
 
     public class Attribute { }
 
+    public class ThreadStaticAttribute : Attribute { }
+
     public class Array<T> : Array, System.Collections.Generic.IList<T> { }
 
     public class Exception { }

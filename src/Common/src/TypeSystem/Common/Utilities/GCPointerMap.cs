@@ -44,7 +44,7 @@ namespace Internal.TypeSystem
 
         public GCPointerMap(int[] gcFlags, int numCells)
         {
-            Debug.Assert(numCells < gcFlags.Length << 5);
+            Debug.Assert(numCells <= gcFlags.Length << 5);
             _gcFlags = gcFlags;
             _numCells = numCells;
         }

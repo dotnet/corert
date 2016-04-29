@@ -40,8 +40,8 @@ namespace TypeSystemTests
 
             {
                 var map = GCPointerMap.FromInstanceLayout(classWithStringField);
-                Assert.Equal(map.Size, 3);
-                Assert.Equal("001", map.ToString());
+                Assert.Equal(map.Size, 4);
+                Assert.Equal("0010", map.ToString());
             }
 
             {
@@ -69,5 +69,26 @@ namespace TypeSystemTests
                 Assert.Equal("100000000000000000000000000000000000000000000000000000000000000010000000000000001000000000000000000000000000000001001", map.ToString());
             }
         }
+
+        [Fact]
+        public void TestStaticMap()
+        {
+            MetadataType mixedStaticClass = _testModule.GetType("GCPointerMap", "MixedStaticClass");
+            var map = GCPointerMap.FromStaticLayout(mixedStaticClass);
+            Assert.Equal(map.Size, 12);
+            Assert.Equal("010100101001", map.ToString());
+        }
+
+#if false
+        // TODO: enable when IsStatic stops lying
+        [Fact]
+        public void TestThreadStaticMap()
+        {
+            MetadataType mixedThreadStaticClass = _testModule.GetType("GCPointerMap", "MixedThreadStaticClass");
+            var map = GCPointerMap.FromThreadStaticLayout(mixedThreadStaticClass);
+            Assert.Equal(map.Size, 14);
+            Assert.Equal("00010010100110", map.ToString());
+        }
+#endif
     }
 }
