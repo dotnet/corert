@@ -46,8 +46,8 @@ namespace TypeSystemTests
 
             {
                 var map = GCPointerMap.FromInstanceLayout(mixedStruct);
-                Assert.Equal(map.Size, 6);
-                Assert.Equal("001001", map.ToString());
+                Assert.Equal(map.Size, 5);
+                Assert.Equal("01001", map.ToString());
             }
 
             {
@@ -59,14 +59,14 @@ namespace TypeSystemTests
 
             {
                 var map = GCPointerMap.FromInstanceLayout(doubleMixedStructLayout);
-                Assert.Equal(map.Size, 11);
-                Assert.Equal("00100101001", map.ToString());
+                Assert.Equal(map.Size, 10);
+                Assert.Equal("0100101001", map.ToString());
             }
 
             {
                 var map = GCPointerMap.FromInstanceLayout(explicitlyFarPointer);
-                Assert.Equal(map.Size, 118);
-                Assert.Equal("0100000000000000000000000000000000000000000000000000000000000000010000000000000001000000000000000000000000000000001001", map.ToString());
+                Assert.Equal(map.Size, 117);
+                Assert.Equal("100000000000000000000000000000000000000000000000000000000000000010000000000000001000000000000000000000000000000001001", map.ToString());
             }
         }
     }

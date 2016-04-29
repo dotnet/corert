@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     /// Represents a bitmap of GC pointers within a memory region divided into
     /// pointer-sized cells.
     /// </summary>
-    public struct GCPointerMap : IEquatable<GCPointerMap>
+    public partial struct GCPointerMap : IEquatable<GCPointerMap>
     {
         // Each bit in this array represents a pointer-sized cell.
         private int[] _gcFlags;
@@ -47,59 +47,6 @@ namespace Internal.TypeSystem
             Debug.Assert(numCells < gcFlags.Length << 5);
             _gcFlags = gcFlags;
             _numCells = numCells;
-        }
-
-        public static GCPointerMap FromInstanceLayout(DefType type)
-        {
-            Debug.Assert(type.ContainsPointers);
-
-            GCPointerMapBuilder builder;
-            if (type.IsValueType)
-            {
-                // Instance layout of a value type is the layout of the boxed instance.
-                // We need to include the size of the field inherited from System.Object.
-                DefType systemObject = type.Context.GetWellKnownType(WellKnownType.Object);
-                int objectByteCount = systemObject.InstanceByteCount;
-                Debug.Assert(objectByteCount == systemObject.InstanceByteCountUnaligned);
-                Debug.Assert(!systemObject.ContainsPointers);
-
-                builder = new GCPointerMapBuilder(objectByteCount + type.InstanceByteCount, type.Context.Target.PointerSize);
-                GCPointerMapBuilder innerBuilder = builder.GetInnerBuilder(objectByteCount, type.InstanceByteCount);
-                FromInstanceLayoutHelper(ref innerBuilder, type);
-            }
-            else
-            {
-                builder = new GCPointerMapBuilder(type.InstanceByteCount, type.Context.Target.PointerSize);
-                FromInstanceLayoutHelper(ref builder, type);
-            }
-
-            return builder.ToGCMap();
-        }
-
-        private static void FromInstanceLayoutHelper(ref GCPointerMapBuilder builder, DefType type)
-        {
-            foreach (FieldDesc field in type.GetFields())
-            {
-                if (field.IsStatic)
-                    continue;
-
-                TypeDesc fieldType = field.FieldType;
-                if (fieldType.IsObjRef)
-                {
-                    builder.MarkGCPointer(field.Offset);
-                }
-                else if (fieldType.IsValueType)
-                {
-                    var fieldDefType = (DefType)fieldType;
-                    if (fieldDefType.ContainsPointers)
-                    {
-                        GCPointerMapBuilder innerBuilder =
-                            builder.GetInnerBuilder(field.Offset, fieldDefType.InstanceByteCount);
-                        FromInstanceLayoutHelper(ref innerBuilder, fieldDefType);
-                    }
-                }
-
-            }
         }
 
         public BitEnumerator GetEnumerator()
