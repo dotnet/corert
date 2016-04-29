@@ -8,14 +8,6 @@ using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
 {
-    public enum GCHandleType
-    {
-        Weak = 0,
-        WeakTrackResurrection = 1,
-        Normal = 2,
-        Pinned = 3  // NOTE: not implemented here
-    }
-
     /// <summary>
     /// Limited implementation of GCHandle.  Only implements as much as is currently used.
     /// </summary>

@@ -1064,6 +1064,9 @@ namespace System.Runtime
         }
 
         // source type + target type + assignment variation -> true/false
+#if INPLACE_RUNTIME
+        [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
+#endif
         private static class CastCache
         {
             //

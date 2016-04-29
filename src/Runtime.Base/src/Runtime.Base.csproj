@@ -128,12 +128,13 @@
     <Compile Include="System\Runtime\InteropServices\CharSet.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\LayoutKind.cs" />
     <Compile Include="System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\OutAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="RhBaseName.cs" />
   </ItemGroup>
   <ItemGroup>

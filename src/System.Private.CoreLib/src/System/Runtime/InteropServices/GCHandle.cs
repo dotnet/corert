@@ -8,18 +8,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
-    // These are the types of handles used by the EE.  
-    // IMPORTANT: These must match the definitions in ObjectHandle.h in the EE. 
-    // IMPORTANT: If new values are added to the enum the GCHandle::MaxHandleType
-    //            constant must be updated.
-    public enum GCHandleType
-    {
-        Weak = 0,
-        WeakTrackResurrection = 1,
-        Normal = 2,
-        Pinned = 3
-    }
-
     // This class allows you to create an opaque, GC handle to any 
     // COM+ object. A GC handle is used when an object reference must be
     // reachable from unmanaged memory.  There are 3 kinds of roots:
