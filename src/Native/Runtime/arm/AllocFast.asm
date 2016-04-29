@@ -53,6 +53,9 @@ AllocFailed
 
         LEAF_END RhpNewFast
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate non-array object with finalizer.
 ;;  r0 == EEType
         LEAF_ENTRY RhpNewFinalizable
@@ -198,6 +201,9 @@ ArrayOutOfMemoryFinal
 
         LEAF_END    RhpNewArray
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 ;;  r0 == EEType
 ;;  r1 == element count
@@ -339,6 +345,9 @@ Alloc8Failed
 
         LEAF_END RhpNewFastAlign8
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
 ;;  r0 == EEType
         LEAF_ENTRY RhpNewFinalizableAlign8
@@ -430,6 +439,9 @@ BoxAlloc8Failed
 
         LEAF_END RhpNewFastMisalign
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate an array on an 8 byte boundary.
 ;;  r0 == EEType
 ;;  r1 == element count
@@ -507,5 +519,7 @@ Array8OutOfMemory
         EPILOG_BRANCH   RhExceptionHandling_FailedAllocation
 
         NESTED_END RhpNewArrayAlign8
+
+        INLINE_GETTHREAD_CONSTANT_POOL
 
         END

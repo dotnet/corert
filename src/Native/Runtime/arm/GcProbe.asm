@@ -710,4 +710,6 @@ DoneWaitingForGc
 
     LEAF_END RhpLoopHijack
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
         end

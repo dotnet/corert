@@ -499,6 +499,8 @@ SetSuccess
 
     NESTED_END RhpCallFinallyFunclet
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -28,4 +28,6 @@
         LEAF_END
 FASTCALL_ENDFUNC
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
         end
