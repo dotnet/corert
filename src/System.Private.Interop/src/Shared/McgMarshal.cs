@@ -1327,6 +1327,8 @@ namespace System.Runtime.InteropServices
         {
 #if ENABLE_WINRT
             return ExceptionHelpers.GetExceptionForHRInternalNoThrow(hr, isWinRTScenario, !isWinRTScenario);
+#elif CORECLR
+            return Marshal.GetExceptionForHR(hr);
 #else
             return new COMException(hr.ToString(),hr);
 #endif
