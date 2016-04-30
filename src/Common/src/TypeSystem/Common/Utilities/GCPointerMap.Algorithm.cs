@@ -88,6 +88,13 @@ namespace Internal.TypeSystem
 
         private static void FromInstanceLayoutHelper(ref GCPointerMapBuilder builder, DefType type)
         {
+            if (!type.IsValueType && type.HasBaseType)
+            {
+                DefType baseType = type.BaseType;
+                GCPointerMapBuilder baseLayoutBuilder = builder.GetInnerBuilder(0, baseType.InstanceByteCount);
+                FromInstanceLayoutHelper(ref baseLayoutBuilder, baseType);
+            }
+
             foreach (FieldDesc field in type.GetFields())
             {
                 if (field.IsStatic)
