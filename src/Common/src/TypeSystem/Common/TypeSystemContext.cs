@@ -645,11 +645,11 @@ namespace Internal.TypeSystem
         /// </summary>
         public RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForType(TypeDesc type)
         {
-            if (type is DefType)
+            if (type.IsDefType)
             {
                 return GetRuntimeInterfacesAlgorithmForDefType((DefType)type);
             }
-            else if (type is ArrayType)
+            else if (type.IsArray)
             {
                 ArrayType arrType = (ArrayType)type;
                 if (arrType.IsSzArray && !arrType.ElementType.IsPointer)

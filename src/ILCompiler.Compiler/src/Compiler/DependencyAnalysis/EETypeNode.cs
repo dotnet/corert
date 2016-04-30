@@ -355,22 +355,22 @@ namespace ILCompiler.DependencyAnalysis
             int minimumObjectSize = pointerSize * 3;
             int objectSize;
 
-            if (_type is MetadataType)
+            if (_type.IsDefType)
             {
                 objectSize = pointerSize +
-                    ((MetadataType)_type).InstanceByteCount; // +pointerSize for SyncBlock
+                    ((DefType)_type).InstanceByteCount; // +pointerSize for SyncBlock
 
                 if (_type.IsValueType)
                     objectSize += pointerSize; // + EETypePtr field inherited from System.Object
             }
-            else if (_type is ArrayType)
+            else if (_type.IsArray)
             {
                 objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
                 if (!_type.IsSzArray)
                     objectSize +=
                         2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
             }
-            else if (_type is PointerType)
+            else if (_type.IsPointer)
             {
                 // Object size 0 is a sentinel value in the runtime for parameterized types that means "Pointer Type"
                 objData.EmitInt(0);
@@ -568,7 +568,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }
 
-            if (_type is DefType && ((DefType)_type).IsHFA())
+            if (_type.IsDefType && ((DefType)_type).IsHFA())
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }

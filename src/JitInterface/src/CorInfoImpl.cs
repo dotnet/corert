@@ -902,12 +902,12 @@ namespace Internal.JitInterface
                 var fieldType = field.FieldType;
                 if (fieldType.IsValueType)
                 {
-                    if (!((MetadataType)fieldType).ContainsPointers)
+                    if (!((DefType)fieldType).ContainsPointers)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
                 }
-                else if ((fieldType is DefType) || (fieldType is ArrayType))
+                else if (fieldType.IsObjRef)
                 {
                     gcType = CorInfoGCType.TYPE_GC_REF;
                 }
@@ -950,7 +950,7 @@ namespace Internal.JitInterface
         {
             uint result = 0;
 
-            MetadataType type = (MetadataType)HandleToObject(cls);
+            DefType type = (DefType)HandleToObject(cls);
 
             Debug.Assert(type.IsValueType);
 
@@ -1050,7 +1050,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(type is DefType);
+                        Debug.Assert(type.IsDefType);
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
