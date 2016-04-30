@@ -21,13 +21,13 @@ namespace Internal.TypeSystem
         private int _numCells;
 
         /// <summary>
-        /// Gets a value indicating whether this map is uninitialized.
+        /// Gets a value indicating whether this map is initialized.
         /// </summary>
-        public bool IsUninitialized
+        public bool IsInitialized
         {
             get
             {
-                return _gcFlags == null;
+                return _gcFlags != null;
             }
         }
 
@@ -39,6 +39,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _numCells;
+            }
+        }
+
+        public bool this[int index]
+        {
+            get
+            {
+                return (_gcFlags[index >> 5] & (1 << (index & 0x1F))) != 0;
             }
         }
 

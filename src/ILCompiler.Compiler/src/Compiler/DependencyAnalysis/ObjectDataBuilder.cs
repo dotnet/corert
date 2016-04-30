@@ -34,6 +34,14 @@ namespace ILCompiler.DependencyAnalysis
         private int _numReservations;
 #endif
 
+        public bool Initialized
+        {
+            get
+            {
+                return _target != null;
+            }
+        }
+
         public int CountBytes
         {
             get
@@ -81,6 +89,32 @@ namespace ILCompiler.DependencyAnalysis
             EmitByte((byte)((emit >> 40) & 0xFF));
             EmitByte((byte)((emit >> 48) & 0xFF));
             EmitByte((byte)((emit >> 56) & 0xFF));
+        }
+
+        public void EmitNaturalInt(int emit)
+        {
+            if (_target.PointerSize == 8)
+            {
+                EmitLong(emit);
+            }
+            else
+            {
+                Debug.Assert(_target.PointerSize == 4);
+                EmitInt(emit);
+            }
+        }
+
+        public void EmitHalfNaturalInt(short emit)
+        {
+            if (_target.PointerSize == 8)
+            {
+                EmitInt(emit);
+            }
+            else
+            {
+                Debug.Assert(_target.PointerSize == 4);
+                EmitShort(emit);
+            }
         }
 
         public void EmitCompressedUInt(uint emit)
