@@ -902,12 +902,12 @@ namespace Internal.JitInterface
                 var fieldType = field.FieldType;
                 if (fieldType.IsValueType)
                 {
-                    if (!((MetadataType)fieldType).ContainsPointers)
+                    if (!((DefType)fieldType).ContainsPointers)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
                 }
-                else if ((fieldType.IsDefType) || (fieldType.IsArray))
+                else if (fieldType.IsObjRef)
                 {
                     gcType = CorInfoGCType.TYPE_GC_REF;
                 }
@@ -950,7 +950,7 @@ namespace Internal.JitInterface
         {
             uint result = 0;
 
-            MetadataType type = (MetadataType)HandleToObject(cls);
+            DefType type = (DefType)HandleToObject(cls);
 
             Debug.Assert(type.IsValueType);
 

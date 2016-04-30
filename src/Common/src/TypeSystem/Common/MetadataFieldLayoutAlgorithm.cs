@@ -232,13 +232,13 @@ namespace Internal.TypeSystem
                     if (fieldType.IsPrimitive)
                         continue;
 
-                    if (((MetadataType)fieldType).ContainsPointers)
+                    if (((DefType)fieldType).ContainsPointers)
                     {
                         someFieldContainsPointers = true;
                         break;
                     }
                 }
-                else if (fieldType.IsDefType || fieldType.IsArray || fieldType.IsByRef)
+                else if (fieldType.IsObjRef || fieldType.IsByRef)
                 {
                     someFieldContainsPointers = true;
                     break;
