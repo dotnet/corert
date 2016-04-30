@@ -40,13 +40,6 @@ PTFF_R0_IS_GCREF        equ 0x00004000  ;; iff PTFF_SAVE_R0: set -> r0 is Object
 PTFF_R0_IS_BYREF        equ 0x00008000  ;; iff PTFF_SAVE_R0: set -> r0 is ByRef, clear -> r0 is Object or scalar
 
 
-#ifndef CORERT  // Hardcoded TLS offsets are not compatible with static linking
-;;
-;; This constant, unfortunately, cannot be validated at build time.
-;;
-OFFSETOF__TLS__tls_CurrentThread                    equ  0x10
-#endif
-
 ;;
 ;; Rename fields of nested structs
 ;;
@@ -67,6 +60,9 @@ MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -4
 ;; MACROS
 ;;
 
+        GBLS __SECTIONREL_tls_CurrentThread
+__SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
+
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
         EXTERN _tls_index
@@ -74,9 +70,25 @@ MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -4
         ldr         $destReg, =_tls_index
         ldr         $destReg, [$destReg]
         mrc         p15, 0, $trashReg, c13, c0, 2
-        ldr         $trashReg,[$trashReg, #__tls_array]
+        ldr         $trashReg, [$trashReg, #__tls_array]
         ldr         $destReg, [$trashReg, $destReg, lsl #2]
-        add         $destReg, #OFFSETOF__TLS__tls_CurrentThread
+        ldr         $trashReg, $__SECTIONREL_tls_CurrentThread
+        add         $destReg, $trashReg
+    MEND
+
+        ;; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
+        ;; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
+        ;; to improve density, or to reduce distance betweeen the constant pool and its use.
+    MACRO
+        INLINE_GETTHREAD_CONSTANT_POOL
+        EXTERN tls_CurrentThread
+
+$__SECTIONREL_tls_CurrentThread
+        DCD tls_CurrentThread
+        RELOC 15 ;; SECREL
+
+__SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
+
     MEND
 
     MACRO

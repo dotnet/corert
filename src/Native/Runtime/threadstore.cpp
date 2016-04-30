@@ -62,6 +62,7 @@ ThreadStore::ThreadStore() :
     m_ThreadList(),
     m_Lock()
 {
+    SaveCurrentThreadOffsetForDAC();
 }
 
 ThreadStore::~ThreadStore()
@@ -105,9 +106,6 @@ PTR_Thread ThreadStore::GetSuspendingThread()
 #ifndef DACCESS_COMPILE
 
 GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
-
-extern UInt32 _fls_index;
-
 
 // static 
 void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
@@ -173,7 +171,7 @@ void ThreadStore::DetachCurrentThread()
     {
         return;
     }
-        
+
 #ifdef STRESS_LOG
     ThreadStressLog * ptsl = reinterpret_cast<ThreadStressLog *>(
         pDetachingThread->GetThreadStressLog());
@@ -306,7 +304,7 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
 EXTERN_C Thread * FASTCALL RhpGetThread();
 
-DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
+EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 { 
     { 0 },                              // m_rgbAllocContextBuffer
     Thread::TSF_Unknown,                // m_ThreadStateFlags
@@ -369,36 +367,37 @@ Thread * ThreadStore::GetCurrentThreadIfAvailable()
 }
 #endif // !DACCESS_COMPILE
 
-#ifdef _MSC_VER
+
+#ifdef _WIN32
+
+#ifndef DACCESS_COMPILE
+
 // Keep a global variable in the target process which contains
 // the address of _tls_index.  This is the breadcrumb needed
 // by DAC to read _tls_index since we don't control the 
 // declaration of _tls_index directly.
+
+// volatile to prevent the compiler from removing the unused global variable
+volatile UInt32 * p_tls_index;
+volatile UInt32 SECTIONREL__tls_CurrentThread;
+
 EXTERN_C UInt32 _tls_index;
-GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
-#endif // _MSC_VER
 
-#ifndef DACCESS_COMPILE
+void ThreadStore::SaveCurrentThreadOffsetForDAC()
+{
+    p_tls_index = &_tls_index;
 
-// We must prevent the linker from removing the unused global variable 
-// that DAC will be looking at to find _tls_index.
-#ifdef _MSC_VER
-#ifdef _WIN64
-#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PEAIEA")
-#else
-#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PAIA")
-#endif
-#endif // _MSC_VER
+    UInt8 * pTls = *(UInt8 **)(PalNtCurrentTeb() + OFFSETOF__TEB__ThreadLocalStoragePointer);
+
+    UInt8 * pOurTls = *(UInt8 **)(pTls + (_tls_index * sizeof(void*)));
+
+    SECTIONREL__tls_CurrentThread = (UInt32)((UInt8 *)&tls_CurrentThread - pOurTls);
+}
 
 #else // DACCESS_COMPILE
 
-#if defined(BIT64)
-#define OFFSETOF__TLS__tls_CurrentThread            0x20
-#elif defined(_ARM_)
-#define OFFSETOF__TLS__tls_CurrentThread            0x10
-#else
-#define OFFSETOF__TLS__tls_CurrentThread            0x08
-#endif
+GPTR_IMPL(UInt32, p_tls_index);
+GVAL_IMPL(UInt32, SECTIONREL__tls_CurrentThread);
 
 //
 // This routine supports the !Thread debugger extension routine
@@ -419,10 +418,19 @@ PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
     if (pOurTls == NULL)
         return NULL;
 
-    return (PTR_Thread)(pOurTls + OFFSETOF__TLS__tls_CurrentThread);
+    return (PTR_Thread)(pOurTls + SECTIONREL__tls_CurrentThread);
 }
 
 #endif // DACCESS_COMPILE
+
+#else // _WIN32
+
+void ThreadStore::SaveCurrentThreadOffsetForDAC()
+{
+}
+
+#endif // _WIN32
+
 
 #ifndef DACCESS_COMPILE
 

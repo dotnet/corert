@@ -23,14 +23,6 @@ GC_ALLOC_ALIGN8                 equ 8
 ;; Note: these must match the defs in PInvokeTransitionFrameFlags defined in rhbinder.h
 ;; FIXME:ARM64
 
-ifndef CORERT; Hardcoded TLS offsets are not compatible with static linking
-;;
-;; This constant, unfortunately, cannot be validated at build time.
-;; FIXME:ARM64
-;;
-OFFSETOF__TLS__tls_CurrentThread                    equ  0x10
-endif
-
 ;;
 ;; Rename fields of nested structs
 ;;

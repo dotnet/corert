@@ -4,8 +4,6 @@
 
 include asmmacros.inc
 
-EXTERN RhpGetThread : PROC
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpThrowHwEx
@@ -80,9 +78,7 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT
 
         END_PROLOGUE
 
-        mov     rbx, rcx                                            ;; save fault exception code
-        call    RhpGetThread                                        ;; rax <- thread
-        mov     rcx, rbx                                            ;; restore fault exception code
+        INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
 
         lea     rdx, [rsp + rsp_offsetof_ExInfo]                    ;; rdx <- ExInfo*
 
@@ -165,9 +161,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         END_PROLOGUE
 
-        mov                     rbx, rcx            ;; save exception object
-        call                    RhpGetThread        ;; rax <- thread
-        mov                     rcx, rbx            ;; restore exception object
+        INLINE_GETTHREAD        rax, rbx            ;; rax <- Thread*, rbx is trashed
 
         lea                     rbx, [rsp + rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 8h]    ;; rbx <- addr of return address
 
@@ -260,7 +254,7 @@ NESTED_ENTRY RhpRethrow, _TEXT
 
         END_PROLOGUE
 
-        call    RhpGetThread                                        ;; rax <- thread
+        INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
 
         lea     rdx, [rsp + rsp_offsetof_ExInfo]                    ;; rdx <- ExInfo*
 
@@ -324,13 +318,11 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
         mov     [rsp + rsp_offsetof_arguments + 10h], r8
         mov     [rsp + rsp_offsetof_arguments + 18h], r9
 
-        call    RhpGetThread                                        ;; rax <- Thread*
+        INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
         mov     [rsp + 20h], rax                                    ;; save Thread* for later
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
-
-        mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
 
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
         mov     rbx, [rax]
@@ -495,7 +487,7 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
         mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
         mov     [rsp + rsp_offsetof_arguments + 8h], rdx
 
-        call    RhpGetThread                                        ;; rax <- Thread*
+        INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
         mov     [rsp + 20h], rax                                    ;; save Thread* for later
 
         ;;
@@ -506,8 +498,6 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
         ;; So we clear the state before and set it after invocation of the handler.
         ;;
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
-
-        mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
 
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
         mov     rbx, [rax]

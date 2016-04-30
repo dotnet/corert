@@ -68,6 +68,16 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal static extern IntPtr RhpHandleAllocVariable(Object value, uint type);
 
+        [RuntimeImport(Redhawk.BaseName, "RhHandleGet")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal static extern Object RhHandleGet(IntPtr handle);
+
+        [RuntimeImport(Redhawk.BaseName, "RhHandleSet")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Never)]
+        internal static extern IntPtr RhHandleSet(IntPtr handle, Object value);
+
         //
         // internal calls for allocation
         //
@@ -314,6 +324,15 @@ namespace System.Runtime
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void RhpSignalFinalizationComplete();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpAcquireCastCacheLock();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void RhpReleaseCastCacheLock();
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        internal extern static long PalGetTickCount64();
     }
 
     // Keep this synchronized with GenericVarianceType in rhbinder.h.

@@ -326,6 +326,31 @@ namespace System
         }
 
         [Intrinsic]
+        public unsafe IntPtr(int value)
+        {
+            _value = (void*)value;
+        }
+
+        [Intrinsic]
+        public unsafe IntPtr(long value)
+        {
+            _value = (void*)value;
+        }
+
+
+        [Intrinsic]
+        public static unsafe explicit operator IntPtr(int value)
+        {
+            return new IntPtr(value);
+        }
+
+        [Intrinsic]
+        public static unsafe explicit operator IntPtr(long value)
+        {
+            return new IntPtr(value);
+        }
+
+        [Intrinsic]
         public static unsafe explicit operator IntPtr(void* value)
         {
             return new IntPtr(value);
@@ -335,6 +360,18 @@ namespace System
         public static unsafe explicit operator void* (IntPtr value)
         {
             return value._value;
+        }
+
+        [Intrinsic]
+        public static unsafe explicit operator int(IntPtr value)
+        {
+            return unchecked((int)value._value);
+        }
+
+        [Intrinsic]
+        public static unsafe explicit operator long(IntPtr value)
+        {
+            return unchecked((long)value._value);
         }
 
         [Intrinsic]

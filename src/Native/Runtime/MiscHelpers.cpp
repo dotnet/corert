@@ -644,6 +644,18 @@ COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
     return (void*)RhpUniversalTransition;
 }
 
+extern CrstStatic g_CastCacheLock;
+
+EXTERN_C REDHAWK_API void __cdecl RhpAcquireCastCacheLock()
+{
+    g_CastCacheLock.Enter();
+}
+
+EXTERN_C REDHAWK_API void __cdecl RhpReleaseCastCacheLock()
+{
+    g_CastCacheLock.Leave();
+}
+
 #ifdef CORERT
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (ModuleManager* pModule, Int32 headerId, Int32* length))
 {

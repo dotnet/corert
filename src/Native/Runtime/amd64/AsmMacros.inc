@@ -221,8 +221,8 @@ _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 ;; __declspec(thread) version
 ;;
 INLINE_GETTHREAD macro destReg, trashReg
-    ;; ASSUME fs : NOTHING
     EXTERN _tls_index : DWORD
+    EXTERN tls_CurrentThread:DWORD
 
 ;;
 ;; construct 'eax' from 'rax' so that the register size and data size match
@@ -237,8 +237,9 @@ endif
 
     mov         destRegDWORD, [_tls_index]
     mov         trashReg, gs:[_tls_array]
-    mov         destReg, [trashReg + destReg * 8]
-    add         destReg, OFFSETOF__TLS__tls_CurrentThread
+    mov         trashReg, [trashReg + destReg * 8]
+    mov         destRegDWORD, SECTIONREL tls_CurrentThread
+    add         destReg, trashReg
 
 endm
 
@@ -341,13 +342,6 @@ TAILJMP_RAX TEXTEQU <DB 048h, 0FFh, 0E0h>
 TSF_Attached                    equ 01h
 TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
-
-ifndef CORERT ; Hardcoded TLS offsets are not compatible with static linking
-;;
-;; This constant, unfortunately, cannot be validated at build time.
-;;
-OFFSETOF__TLS__tls_CurrentThread                    equ 20h
-endif
 
 ;;
 ;; Rename fields of nested structs
