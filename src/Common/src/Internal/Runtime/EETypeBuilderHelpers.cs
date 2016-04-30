@@ -88,7 +88,7 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (type is MetadataType && ((MetadataType)type).ContainsPointers)
+            if (type.IsDefType && ((DefType)type).ContainsPointers)
             {
                 flags |= (UInt16)EETypeFlags.HasPointersFlag;
             }
@@ -153,7 +153,7 @@ namespace Internal.Runtime
                     return true;
                 }
             }
-            else if (type is DefType && ((DefType)type).InstanceByteAlignment > 4)
+            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment > 4)
             {
                 return true;
             }

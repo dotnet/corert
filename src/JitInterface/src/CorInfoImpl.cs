@@ -907,7 +907,7 @@ namespace Internal.JitInterface
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
                 }
-                else if ((fieldType is DefType) || (fieldType is ArrayType))
+                else if ((fieldType.IsDefType) || (fieldType.IsArray))
                 {
                     gcType = CorInfoGCType.TYPE_GC_REF;
                 }
@@ -1050,7 +1050,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(type is DefType);
+                        Debug.Assert(type.IsDefType);
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
