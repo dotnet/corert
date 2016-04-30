@@ -80,7 +80,7 @@ namespace TypeSystemTests
         }
 
 #if false
-        // TODO: enable when IsStatic stops lying
+        // TODO: enable when IsThreadStatic stops lying
         [Fact]
         public void TestThreadStaticMap()
         {
