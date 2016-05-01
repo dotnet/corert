@@ -464,7 +464,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void BuildSymbolDefinitionMap(ISymbolNode[] definedSymbols)
+        public void BuildSymbolDefinitionMap(ObjectNode node, ISymbolNode[] definedSymbols)
         {
             _offsetToDefName.Clear();
             foreach (ISymbolNode n in definedSymbols)
@@ -485,10 +485,16 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // First entry is the node (entry point) name.
-            _currentNodeName = _offsetToDefName[0][0];
-            // Publish it first.
-            EmitSymbolDef(_currentNodeName);
+            var symbolNode = node as ISymbolNode;
+            if (symbolNode != null)
+            {
+                _currentNodeName = GetSymbolToEmitForTargetPlatform(symbolNode.MangledName);
+                Debug.Assert(_offsetToDefName[symbolNode.Offset].Contains(_currentNodeName));
+            }
+            else
+            {
+                _currentNodeName = null;
+            }
         }
 
         private string GetSymbolToEmitForTargetPlatform(string symbol)
@@ -554,10 +560,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var name in nodes)
                 {
-                    if (name != _currentNodeName)
-                    {
-                        EmitSymbolDef(name);
-                    }
+                    EmitSymbolDef(name);
                 }
             }
         }
@@ -652,7 +655,7 @@ namespace ILCompiler.DependencyAnalysis
                     objectWriter.EmitAlignment(nodeContents.Alignment);
 
                     // Build symbol definition map.
-                    objectWriter.BuildSymbolDefinitionMap(nodeContents.DefinedSymbols);
+                    objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
 
                     // Build CFI map (Unix) or publish unwind blob (Windows).
                     objectWriter.BuildCFIMap(factory, node);
