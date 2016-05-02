@@ -335,6 +335,12 @@ namespace Internal.TypeSystem.Ecma
             if (decl != null)
             {
                 MethodDesc impl = this.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                if (impl == null)
+                {
+                    // TODO: invalid input: the type doesn't derive from our System.Object
+                    throw new TypeLoadException(this.GetFullName());
+                }
+
                 if (impl.OwningType != objectType)
                 {
                     return impl;
