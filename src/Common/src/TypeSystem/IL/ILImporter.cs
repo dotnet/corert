@@ -14,22 +14,26 @@ namespace Internal.IL
     //
     internal enum StackValueKind
     {
+        /// <summary>An unknow type.</summary>
         Unknown,
+        /// <summary>Any signed or unsigned integer values that can be represented as a 32-bit entity.</summary>
         Int32,
+        /// <summary>Any signed or unsigned integer values that can be represented as a 64-bit entity.</summary>
         Int64,
+        /// <summary>Underlying platform pointer type represented as an integer of the appropriate size.</summary>
         NativeInt,
+        /// <summary>Any float value.</summary>
         Float,
+        /// <summary>A managed pointer.</summary>
         ByRef,
+        /// <summary>An object reference.</summary>
         ObjRef,
+        /// <summary>A value type which is not any of the primitive one.</summary>
         ValueType
     }
 
     internal partial class ILImporter
     {
-        private static readonly StackValue[] s_emptyStack = new StackValue[0];
-        private StackValue[] _stack = s_emptyStack;
-        private int _stackTop = 0;
-
         private BasicBlock[] _basicBlocks; // Maps IL offset to basic block
 
         private BasicBlock _currentBasicBlock;
@@ -304,15 +308,6 @@ namespace Internal.IL
 
         private void ImportBasicBlock(BasicBlock basicBlock)
         {
-            _stackTop = 0;
-
-            StackValue[] entryStack = basicBlock.EntryStack;
-            if (entryStack != null)
-            {
-                for (int i = 0; i < entryStack.Length; i++)
-                    Push(entryStack[i]);
-            }
-
             _currentBasicBlock = basicBlock;
             _currentOffset = basicBlock.StartOffset;
 

@@ -3,11 +3,9 @@
     "NETStandard.Library": "1.5.0-rc2-23911",
     "System.IO.MemoryMappedFiles": "4.0.0-rc2-23911",
     "System.Reflection.Metadata": "1.3.0-rc2-23911",
-    "Microsoft.DiaSymReader": "1.0.6"
+    "Microsoft.DiaSymReader": "1.0.8-rc2-60325"
   },
   "frameworks": {
-    "dnxcore50": {
-      "imports": "portable-net452"
-    }
+    "netstandard1.3": {}
   }
 }

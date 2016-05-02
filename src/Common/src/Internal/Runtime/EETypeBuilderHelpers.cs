@@ -60,9 +60,9 @@ namespace Internal.Runtime
         {
             UInt16 flags = (UInt16)EETypeKind.CanonicalEEType;
 
-            if (type.IsArray || type.IsPointer)
+            if (type.IsInterface)
             {
-                flags = (UInt16)EETypeKind.ParameterizedEEType;
+                flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
             }
 
             if (type.IsValueType)
@@ -70,12 +70,25 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.ValueTypeFlag;
             }
 
+            if (type.IsGenericDefinition)
+            {
+                flags |= (UInt16)EETypeKind.GenericTypeDefEEType;
+
+                // Generic type definition EETypes don't set the other flags.
+                return flags;
+            }
+
+            if (type.IsArray || type.IsPointer)
+            {
+                flags = (UInt16)EETypeKind.ParameterizedEEType;
+            }
+
             if (type.HasFinalizer)
             {
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (type is MetadataType && ((MetadataType)type).ContainsPointers)
+            if (type.IsDefType && ((DefType)type).ContainsPointers)
             {
                 flags |= (UInt16)EETypeFlags.HasPointersFlag;
             }
@@ -89,14 +102,14 @@ namespace Internal.Runtime
                 }
             }
 
-            if (type.IsInterface)
-            {
-                flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
-            }
-
             if (type.HasInstantiation)
             {
                 flags |= (UInt16)EETypeFlags.IsGenericFlag;
+
+                if (type.GetTypeDefinition().HasVariance)
+                {
+                    flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+                }
             }
 
             int corElementType = 0;
@@ -140,7 +153,7 @@ namespace Internal.Runtime
                     return true;
                 }
             }
-            else if (type is DefType && ((DefType)type).InstanceByteAlignment > 4)
+            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment > 4)
             {
                 return true;
             }

@@ -73,6 +73,7 @@ COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame* pFrame)
     pFrame->m_savedThread->ReversePInvokeReturn(pFrame);
 }
 
+#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
 // Allocations
 //
@@ -195,6 +196,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
 
     return pObject;
 }
+#endif // USE_PORTABLE_HELPERS || !_WIN32
 
 COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank, ...))
 {
@@ -305,12 +307,6 @@ COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarg
     return (*target)(argument1, argument2);
 }
 #endif
-
-// finalizer.cs
-COOP_PINVOKE_HELPER(void, ProcessFinalizers, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
 
 // 
 // Return address hijacking

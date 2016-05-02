@@ -1,6 +1,5 @@
 <Project ToolsVersion="12.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
-  <Import Project="BuildValues.props" />
 
   <ItemGroup>
     <!-- This project requires ILASM and we have access to that only on Windows -->
@@ -28,14 +27,6 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
-  </PropertyGroup>
-  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
-  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets')" />
-
-  <!-- When doing a traversal build restore the tools runtime before the traversal starts to avoid races --> 
-  <Import Project="$(ToolsDir)toolruntime.targets" Condition="Exists('$(ToolsDir)toolruntime.targets')" />
   <PropertyGroup Condition="Exists('$(ToolsDir)toolruntime.targets')">
     <TraversalBuildDependsOn>
       EnsureBuildToolsRuntime;

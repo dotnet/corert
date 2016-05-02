@@ -17,7 +17,7 @@ Experience
 
 - The native compiler generates a *SINGLE FILE*, including the app, managed dependencies and CoreRT.
 - Native compiled apps startup faster since they execute already compiled code. They don't need to generate machine code at runtime nor load a JIT compiler.
-- Native compiled apps can use an optimizing compiler, resulting in faster throughput from higher quality code (C++ compiler optimizations). Both the LLILLC and IL to CPP compilers rely on optimizing compiers.
+- Native compiled apps can use an optimizing compiler, resulting in faster throughput from higher quality code (C++ compiler optimizations). Both the LLILLC and IL to CPP compilers rely on optimizing compilers.
 
 These benefits open up some new scenarios for .NET developers
 

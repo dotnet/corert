@@ -23,10 +23,10 @@ namespace Internal.JitInterface
     {
         private IntPtr _comp;
 
-        [DllImport("ryujit")]
+        [DllImport("clrjit")]
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport("ryujit")]
+        [DllImport("clrjit")]
         private extern static IntPtr getJit();
 
         [DllImport("jitinterface")]
@@ -214,6 +214,7 @@ namespace Internal.JitInterface
                         builder.EmitCompressedUInt(clause.HandlerOffset);
                         break;
                     case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
+                        builder.EmitCompressedUInt(clause.HandlerOffset);
                         builder.EmitCompressedUInt(clause.ClassTokenOrOffset);
                         break;
                 }
@@ -901,12 +902,12 @@ namespace Internal.JitInterface
                 var fieldType = field.FieldType;
                 if (fieldType.IsValueType)
                 {
-                    if (!((MetadataType)fieldType).ContainsPointers)
+                    if (!((DefType)fieldType).ContainsPointers)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
                 }
-                else if ((fieldType is DefType) || (fieldType is ArrayType))
+                else if (fieldType.IsObjRef)
                 {
                     gcType = CorInfoGCType.TYPE_GC_REF;
                 }
@@ -949,7 +950,7 @@ namespace Internal.JitInterface
         {
             uint result = 0;
 
-            MetadataType type = (MetadataType)HandleToObject(cls);
+            DefType type = (DefType)HandleToObject(cls);
 
             Debug.Assert(type.IsValueType);
 
@@ -1049,7 +1050,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEW:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        Debug.Assert(type is DefType);
+                        Debug.Assert(type.IsDefType);
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
@@ -1801,10 +1802,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG: id = JitHelperId.Dbl2ULng; break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_OVF: id = JitHelperId.Dbl2ULngOvf; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_FLTREM: id = JitHelperId.DblRem; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLREM: id = JitHelperId.FltRem; break;
-                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = JitHelperId.DblRound; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.FltRound; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTREM: id = JitHelperId.FltRem; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLREM: id = JitHelperId.DblRem; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = JitHelperId.FltRound; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.DblRound; break;
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
@@ -2007,12 +2008,7 @@ namespace Internal.JitInterface
             bool directCall = false;
             bool resolvedCallVirt = false;
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
-            {
-                // Delegate targets are always treated as direct calls here. (It would be nice to clean it up...).
-                directCall = true;
-            }
-            else if (targetMethod.Signature.IsStatic)
+            if (targetMethod.Signature.IsStatic)
             {
                 // Static methods are always direct calls
                 directCall = true;
@@ -2056,8 +2052,6 @@ namespace Internal.JitInterface
 
             pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
-            pResult._nullInstanceCheck = (uint)(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0) ? 1 : 0);
-
             // TODO: Support Generics
             if (targetMethod.HasInstantiation)
             {
@@ -2080,52 +2074,41 @@ namespace Internal.JitInterface
                     targetMethod = targetMethod.GetStringInitializer();
                 }
 
-                
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                ISymbolNode targetNode;
-
-                // Compensate for always treating delegates as direct calls above
-                if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0 &&
-                    (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !resolvedCallVirt)
-                {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
-                    targetNode = _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod);
-                }
-                else
-                {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
-                    targetNode = _compilation.NodeFactory.MethodEntrypoint(targetMethod);
-                }
-
-                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(targetNode);
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
-            else if (!targetMethod.OwningType.IsInterface)
+            else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            {
+                pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
+
+                // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
+                // TODO: Optimize this
+                pResult.nullInstanceCheck = true;
+            }
+            else
             {
                 // CORINFO_CALL_CODE_POINTER tells the JIT that this is indirect
                 // call that should not be inlined.
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.VirtualCall, targetMethod));
+                var readyToRunHelper = targetMethod.OwningType.IsInterface ? ReadyToRunHelperId.InterfaceDispatch : ReadyToRunHelperId.VirtualCall;
 
-                if ((pResult.methodFlags & (uint)CorInfoFlag.CORINFO_FLG_DELEGATE_INVOKE) != 0)
-                {
-                    pResult._nullInstanceCheck = 1;
-                }
-            }
-            else
-            {
+                pResult.codePointerOrStubLookup.constLookup.addr =
+                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(readyToRunHelper, targetMethod));
+
+                // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
+                // TODO: Optimize this
                 pResult.nullInstanceCheck = true;
-                pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
-                pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-                pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, targetMethod));
             }
 
             // TODO: Generics

@@ -1,5 +1,8 @@
 syntax: glob
 
+# Build tools related files
+/[Tt]ools/
+
 ### VisualStudio ###
 
 # User-specific files
@@ -75,10 +78,11 @@ _Chutzpah*
 ipch/
 *.aps
 *.ncb
+*.opendb
 *.opensdf
 *.sdf
 *.cachefile
-*.opendb
+*.VC.db
 
 # Visual Studio profiler
 *.psess

@@ -162,11 +162,8 @@ namespace ILCompiler.DependencyAnalysisFramework
                             _conditional_dependency_store.Add(dependency.OtherReasonNode, storedDependencySet);
                         }
                         // Swap out other reason node as we're storing that as the dictionary key
-                        DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry conditionalDependencyStoreEntry = new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry();
-                        conditionalDependencyStoreEntry.Node = dependency.Node;
-                        conditionalDependencyStoreEntry.Reason = dependency.Reason;
-                        conditionalDependencyStoreEntry.OtherReasonNode = node;
-
+                        DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry conditionalDependencyStoreEntry =
+                            new DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry(dependency.Node, node, dependency.Reason);
                         storedDependencySet.Add(conditionalDependencyStoreEntry);
                     }
                 }

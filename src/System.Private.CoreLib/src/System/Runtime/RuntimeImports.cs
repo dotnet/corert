@@ -342,6 +342,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetNullableType")]
         internal static extern EETypePtr RhGetNullableType(EETypePtr pEEType);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetGenericInstantiation")]
+        internal static extern unsafe EETypePtr RhGetGenericInstantiation(EETypePtr pEEType, out int arity, out EETypePtr* ppInstantiation, out byte* varianceInfo);
+
         //
         // EEType Array Dissectors
         //

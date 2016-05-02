@@ -45,9 +45,12 @@ namespace ILCompiler.DependencyAnalysis
     /// [Pointer Size]  | Pointer to optional fields (optional)
     ///                 |
     /// [Pointer Size]  | Pointer to the generic type argument of a Nullable&lt;T&gt; (optional)
-    /// 
+    ///                 |
+    /// [Pointer Size]  | Pointer to the generic type definition EEType (optional)
+    ///                 |
+    /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    internal class EETypeNode : ObjectNode, ISymbolNode
+    internal sealed class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
     {
         private TypeDesc _type;
         private bool _constructed;
@@ -146,15 +149,8 @@ namespace ILCompiler.DependencyAnalysis
             objData.Alignment = 16;
             objData.DefinedSymbols.Add(this);
 
-            // Todo: Generic Type Definition EETypes
-            //       Early-out just to prevent crashing at compile time...
-            if (_type.HasInstantiation && _type.IsTypeDefinition)
-            {
-                objData.EmitZeroPointer();
-                return objData.ToObjectData();
-            }
-
-            ComputeOptionalEETypeFields(factory);
+            if (!_type.IsGenericDefinition)
+                ComputeOptionalEETypeFields(factory);
             
             OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
@@ -172,6 +168,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_constructed)
             {
+                Debug.Assert(!_type.IsGenericDefinition);
+
                 // Avoid consulting VTable slots until they're guaranteed complete during final data emission
                 if (!relocsOnly)
                 {
@@ -181,9 +179,13 @@ namespace ILCompiler.DependencyAnalysis
                 OutputInterfaceMap(factory, ref objData);
             }
 
-            OutputFinalizerMethod(factory, ref objData);
-            OutputOptionalFields(factory, ref objData);
-            OutputNullableTypeParameter(factory, ref objData);
+            if (!_type.IsGenericDefinition)
+            {
+                OutputFinalizerMethod(factory, ref objData);
+                OutputOptionalFields(factory, ref objData);
+                OutputNullableTypeParameter(factory, ref objData);
+                OutputGenericInstantiationDetails(factory, ref objData);
+            }
 
             return objData.ToObjectData();
         }
@@ -196,6 +198,27 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.RuntimeInterfaces.Length > 0)
                 {
                     dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+
+                    // If any of the implemented interfaces have variance, calls against compatible interface methods
+                    // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
+                    // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
+                    // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
+                    MetadataType mdType = _type.GetClosestMetadataType();
+                    foreach (var implementedInterface in mdType.RuntimeInterfaces)
+                    {
+                        if (implementedInterface.HasVariance)
+                        {
+                            foreach (var interfaceMethod in implementedInterface.GetAllVirtualMethods())
+                            {
+                                MethodDesc implMethod = mdType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                                if (implMethod != null)
+                                {
+                                    dependencyList.Add(factory.VirtualMethodUse(interfaceMethod), "Variant interface method");
+                                    dependencyList.Add(factory.VirtualMethodUse(implMethod), "Variant interface method");
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (_type.IsArray)
@@ -303,8 +326,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             UInt16 flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
+            if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+            {
+                // Generic array enumerators use special variance rules recognized by the runtime
+                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+            }
+
             // Todo: RelatedTypeViaIATFlag when we support cross-module EETypes
-            // Todo: GenericVarianceFlag when we support variance
             // Todo: Generic Type Definition EETypes
 
             if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
@@ -317,23 +345,32 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputBaseSize(ref ObjectDataBuilder objData)
         {
+            if (_type.IsGenericDefinition)
+            {
+                objData.EmitInt(0);
+                return;
+            }
+
             int pointerSize = _type.Context.Target.PointerSize;
             int minimumObjectSize = pointerSize * 3;
             int objectSize;
 
-            if (_type is MetadataType)
+            if (_type.IsDefType)
             {
                 objectSize = pointerSize +
-                    ((MetadataType)_type).InstanceByteCount; // +pointerSize for SyncBlock
+                    ((DefType)_type).InstanceByteCount; // +pointerSize for SyncBlock
+
+                if (_type.IsValueType)
+                    objectSize += pointerSize; // + EETypePtr field inherited from System.Object
             }
-            else if (_type is ArrayType)
+            else if (_type.IsArray)
             {
                 objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
                 if (!_type.IsSzArray)
                     objectSize +=
                         2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
             }
-            else if (_type is PointerType)
+            else if (_type.IsPointer)
             {
                 // Object size 0 is a sentinel value in the runtime for parameterized types that means "Pointer Type"
                 objData.EmitInt(0);
@@ -365,6 +402,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var parameterType = ((ParameterizedType)_type).ParameterType;
                 relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
+            }
+            else if (_type.IsGenericDefinition)
+            {
+                // Related type is not set for generic definitions
             }
             else
             {
@@ -400,6 +441,8 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitShort(0);
                 return;
             }
+
+            Debug.Assert(!_type.IsGenericDefinition);
 
             int virtualSlotCount = 0;
             TypeDesc currentTypeSlice = _type.GetClosestMetadataType();
@@ -476,6 +519,25 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private void OutputGenericInstantiationDetails(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (_type.HasInstantiation && !_type.IsTypeDefinition)
+            {
+                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type.GetTypeDefinition()));
+
+                GenericCompositionDetails details;
+                if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+                {
+                    // Generic array enumerators use special variance rules recognized by the runtime
+                    details = new GenericCompositionDetails(_type.Instantiation, new[] { (GenericVariance)0x20 });
+                }
+                else
+                    details = new GenericCompositionDetails(_type);
+
+                objData.EmitPointerReloc(factory.GenericComposition(details));
+            }
+        }
+
         /// <summary>
         /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
@@ -506,7 +568,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }
 
-            if (_type is DefType && ((DefType)_type).IsHFA())
+            if (_type.IsDefType && ((DefType)_type).IsHFA())
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
@@ -609,6 +671,11 @@ namespace ILCompiler.DependencyAnalysis
             List<CombinedDependencyListEntry> dynamicNodes = new List<DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry>();
             dynamicNodes.Add(new CombinedDependencyListEntry(factory.EETypeOptionalFields(_optionalFieldsBuilder), null, "EEType optional fields"));
             return dynamicNodes;
+        }
+
+        protected override void OnMarked(NodeFactory context)
+        {
+            Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
         }
     }
 }

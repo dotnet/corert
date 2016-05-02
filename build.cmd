@@ -1,4 +1,4 @@
-@echo off
+@if "%_echo%" neq "on" echo off
 setlocal EnableDelayedExpansion
 
 set __ThisScriptShort=%0
@@ -23,7 +23,7 @@ set "__LogsDir=%__RootBinDir%\Logs"
 set __MSBCleanBuildArgs=
 set __SkipTestBuild=
 set __ToolchainMilestone=testing
-set __DotNetCliPath=
+set "__DotNetCliPath=%__ProjectDir%\Tools\dotnetcli"
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -155,16 +155,15 @@ call "%__SourceDir%\Native\gen-buildsys-win.bat" "%__ProjectDir%\src\Native" %__
 popd
 
 :BuildComponents
-if exist "%__IntermediatesDir%\install.vcxproj" goto BuildCoreRT
+if exist "%__IntermediatesDir%\install.vcxproj" goto BuildNative
 echo Failed to generate native component build project!
 exit /b 1
 
-REM Build CoreRT
-:BuildCoreRT
-set "__CoreRTBuildLog=%__LogsDir%\CoreRT_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__CoreRTBuildLog%"
+:BuildNative
+set "__NativeBuildLog=%__LogsDir%\Native_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+%_msbuildexe% "%__IntermediatesDir%\install.vcxproj" %__MSBCleanBuildArgs% /nologo /maxcpucount /nodeReuse:false /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% /fileloggerparameters:Verbosity=normal;LogFile="%__NativeBuildLog%"
 IF NOT ERRORLEVEL 1 goto ManagedBuild
-echo Native component build failed. Refer !__CoreRTBuildLog! for details.
+echo Native component build failed. Refer !__NativeBuildLog! for details.
 exit /b 1
 
 :ManagedBuild
@@ -177,33 +176,12 @@ setlocal
 rem Explicitly set Platform causes conflicts in managed project files. Clear it to allow building from VS x64 Native Tools Command Prompt
 set Platform=
 
-:: Obtain dotnet CLI tools to perform restore packages/test runs
-:GetDotNetCli
+:: Restore the Tools directory
+call %~dp0init-tools.cmd
 
-if NOT "%__DotNetCliPath%" == "" goto SetupManagedBuild
-
-set "__DotNetCliPath=%__RootBinDir%\tools\cli"
-if "%__CleanBuild%"=="1" (
-    if exist "%__DotNetCliPath%" (rmdir /s /q "%__DotNetCliPath%")
-    if exist "%__DotNetCliPath%" (
-        echo "Exiting... could not clean %__DotNetCliPath%"
-        exit /b 1
-    )
-)
-
-if not exist "%__DotNetCliPath%" (
-    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy RemoteSigned "& "%__SourceDir%\scripts\install-cli.ps1" -installdir "%__RootBinDir%\tools""') do (
-        echo "" > nul
-    )
-)
-if not exist "%__DotNetCliPath%" (
-    echo DotNet CLI could not be downloaded or installed.
-
-    rem The script calls Invoke-WebRequest which is only available in PowerShell 3.
-    echo If you are running Windows 7, make sure you have PowerShell version 3.
-
-    exit /b 1
-)
+rem Tell nuget to always use repo-local nuget package cache. The "dotnet restore" invocations use the --packages
+rem argument, but there are a few commands in publish and tests that do not.
+set "NUGET_PACKAGES=%__PackagesDir%"
 
 echo Using CLI tools version:
 dir /b "%__DotNetCliPath%\sdk"
@@ -213,17 +191,26 @@ dir /b "%__DotNetCliPath%\sdk"
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-set "__ILCompilerBuildLog=%__LogsDir%\ILCompiler_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-%_msbuildexe% "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__ILCompilerBuildLog%"
+set "__BuildLog=%__LogsDir%\msbuild_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+%_msbuildexe% "%__ProjectDir%\build.proj" %__MSBCleanBuildArgs% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:RelativeProductBinDir="%__RelativeProductBinDir%" /p:ToolchainMilestone=%__ToolchainMilestone% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
 IF NOT ERRORLEVEL 1 (
-  findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__ILCompilerBuildLog%"
+  findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__BuildLog%"
   goto AfterILCompilerBuild
 )
-echo ILCompiler build failed. Refer !__ILCompilerBuildLog! for details.
+echo ILCompiler build failed. Refer !__BuildLog! for details.
 exit /b 1
 
 
 :AfterILCompilerBuild
+setlocal
+rem Workaround for --appdepsdkpath command line switch being ignored.
+rem Copy the restored appdepsdk package to its default location.
+pushd "%__ProjectDir%\tests"
+call testenv.cmd %__BuildType% %__BuildArch%
+popd
+set /p DOTNET_VERSION=< "%~dp0DotnetCLIVersion.txt"
+xcopy /S /Y "%CoreRT_AppDepSdkDir%" "%__DotNetCliPath%\sdk\%DOTNET_VERSION%\appdepsdk%\"
+endlocal
 
 :VsDevGenerateRespFiles
 if defined __SkipVsDev goto :AfterVsDevGenerateRespFiles
@@ -231,9 +218,13 @@ set __GenRespFiles=0
 if not exist "%__ObjDir%\ryujit.rsp" set __GenRespFiles=1
 if not exist "%__ObjDir%\cpp.rsp" set __GenRespFiles=1
 if "%__GenRespFiles%"=="1" (
-    "%__DotNetCliPath%\dotnet.exe" restore --quiet --source "https://dotnet.myget.org/F/dotnet-core" "%__ReproProjectDir%"
+    setlocal
+    pushd "%__ProjectDir%\tests"
+    call testenv.cmd %__BuildType% %__BuildArch%
+    popd
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
-    "%__DotNetCliPath%\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType%
+
+    "%__DotNetCliPath%\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType%
     call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
     rem Workaround for https://github.com/dotnet/cli/issues/1956
@@ -244,8 +235,9 @@ if "%__GenRespFiles%"=="1" (
     if /i "%__BuildType%"=="debug" (
         set __AdditionalCompilerFlags=--cppcompilerflags /MTd
     )
-    "%__DotNetCliPath%\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
+    "%__DotNetCliPath%\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
     call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
+    endlocal
 )
 :AfterVsDevGenerateRespFiles
 

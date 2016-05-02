@@ -39,12 +39,16 @@ namespace Internal.TypeSystem
         // Unused         0x16
 
         Array           = 0x17,
-        ByRef           = 0x18,
-        Pointer         = 0x19,
+        SzArray         = 0x18,
+        ByRef           = 0x19,
+        Pointer         = 0x1A,
 
         GenericParameter = 0x1C,
 
         ContainsGenericVariables         = 0x100,
         ContainsGenericVariablesComputed = 0x200,
+
+        HasGenericVariance         = 0x400,
+        HasGenericVarianceComputed = 0x800,
     }
 }

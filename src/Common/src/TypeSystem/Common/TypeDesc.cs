@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     {
         private TypeDesc[] _genericParameters;
 
-        public Instantiation(TypeDesc[] genericParameters)
+        public Instantiation(params TypeDesc[] genericParameters)
         {
             _genericParameters = genericParameters;
         }
@@ -336,6 +336,38 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsGenericParameter
+        {
+            get
+            {
+                return GetTypeFlags(TypeFlags.CategoryMask) == TypeFlags.GenericParameter;
+            }
+        }
+
+        public bool IsDefType
+        {
+            get
+            {
+                Debug.Assert(GetTypeFlags(TypeFlags.CategoryMask) <= TypeFlags.Interface == this is DefType);
+                return GetTypeFlags(TypeFlags.CategoryMask) <= TypeFlags.Interface;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether locations of this type refer to the GC heap.
+        /// </summary>
+        public bool IsObjRef
+        {
+            get
+            {
+                TypeFlags category = GetTypeFlags(TypeFlags.CategoryMask);
+                return category == TypeFlags.Class
+                    || category == TypeFlags.Array
+                    || category == TypeFlags.SzArray
+                    || category == TypeFlags.Interface;
+            }
+        }
+
         public bool ContainsGenericVariables
         {
             get
@@ -464,6 +496,26 @@ namespace Internal.TypeSystem
         public virtual MethodDesc GetFinalizer()
         {
             return null;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this type has generic variance (the definition of the type
+        /// has a generic parameter that is co- or contravariant).
+        /// </summary>
+        public bool HasVariance
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.HasGenericVariance | TypeFlags.HasGenericVarianceComputed) & TypeFlags.HasGenericVariance) != 0;
+            }
+        }
+
+        public bool IsGenericDefinition
+        {
+            get
+            {
+                return HasInstantiation && IsTypeDefinition;
+            }
         }
     }
 }

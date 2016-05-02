@@ -36,7 +36,7 @@ namespace ILCompiler.CppCodeGen
         {
             _compilation = compilation;
 
-            _out = new StreamWriter(File.Create(compilation.Options.OutputFilePath));
+            _out = new StreamWriter(new FileStream(compilation.Options.OutputFilePath, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, false));
 
             SetWellKnownTypeSignatureName(WellKnownType.Void, "void");
             SetWellKnownTypeSignatureName(WellKnownType.Boolean, "uint8_t");
@@ -307,7 +307,7 @@ namespace ILCompiler.CppCodeGen
                         EcmaMethod ecmaMethod = method as EcmaMethod;
 
                         string importName = kind == SpecialMethodKind.PInvoke ?
-                            method.GetPInvokeMethodMetadata().Name : ecmaMethod.GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute");
+                            method.GetPInvokeMethodMetadata().Name : ecmaMethod.GetRuntimeImportName();
 
                         if (importName == null)
                             importName = method.Name;
@@ -1114,9 +1114,16 @@ namespace ILCompiler.CppCodeGen
                     methodList.Add(method);
                 }
                 else
-                if (node is EETypeNode)
+                if (node is IEETypeNode)
                 {
-                    GetCppSignatureTypeName(((EETypeNode)node).Type);
+                    IEETypeNode eeTypeNode = (IEETypeNode)node;
+
+                    if (eeTypeNode.Type.HasInstantiation && eeTypeNode.Type.IsTypeDefinition)
+                    {
+                        // TODO: CppWriter can't handle generic type definition EETypes
+                    }
+                    else
+                        GetCppSignatureTypeName(eeTypeNode.Type);
                 }
             }
         }
@@ -1128,6 +1135,7 @@ namespace ILCompiler.CppCodeGen
             ExpandTypes();
 
             Out.WriteLine("#include \"common.h\"");
+            Out.WriteLine("#include \"CppCodeGen.h\"");
             Out.WriteLine();
 
             Out.Write("/* Forward type definitions */");
@@ -1228,7 +1236,7 @@ namespace ILCompiler.CppCodeGen
                 sb.AppendLine();
                 sb.Append("int ret = ");
                 sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
-                sb.Append("(argc-1, (intptr_t)(argv+1));");
+                sb.Append("(argc, (intptr_t)argv);");
 
                 sb.AppendEmptyLine();
                 sb.AppendLine();

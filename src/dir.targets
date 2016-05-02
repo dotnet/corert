@@ -22,8 +22,4 @@
   </PropertyGroup>
   
   <Import Project="$(ToolsDir)\IL.targets" Condition="'$(ProjectLanguage)' == 'IL'" />
-
-  <Import Project="$(ToolsDir)Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets')" />
-  <Import Project="..\override.targets" Condition="Exists('..\override.targets')"/>
-
 </Project>

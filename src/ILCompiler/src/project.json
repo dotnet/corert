@@ -1,15 +1,20 @@
 {
   "dependencies": {
     "NETStandard.Library": "1.5.0-rc2-23911",
-    "System.IO.MemoryMappedFiles": "4.0.0-rc2-23911",
-    "System.Reflection.Metadata": "1.3.0-rc2-23911",
     "System.CommandLine": "0.1.0-e160323-1",
-    "Microsoft.DotNet.RyuJit": "1.0.7-prerelease-00001",
-    "Microsoft.DotNet.ObjectWriter": "1.0.9-prerelease-00001"
+    "Microsoft.DotNet.ClrJit": "1.0.8-prerelease-00001",
+    "Microsoft.DotNet.ObjectWriter": "1.0.11-prerelease-00001"
   },
   "frameworks": {
-    "dnxcore50": {
-      "imports": "portable-net451+win8"
-    }
+    "netstandard1.3": {}
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {},
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {},
+    "centos.7-x64": {},
+    "rhel.7-x64": {},
+    "debian.8.2-x64": {}
   }
 }

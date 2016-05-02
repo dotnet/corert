@@ -123,7 +123,7 @@ namespace Internal.TypeSystem
 
             // Verify that no ByRef types present in this type's fields
             foreach (var field in type.GetFields())
-                if (field.FieldType is ByRefType)
+                if (field.FieldType.IsByRef)
                     throw new TypeLoadException();
 
             // If the type has layout, read its packing and size info
@@ -232,13 +232,13 @@ namespace Internal.TypeSystem
                     if (fieldType.IsPrimitive)
                         continue;
 
-                    if (((MetadataType)fieldType).ContainsPointers)
+                    if (((DefType)fieldType).ContainsPointers)
                     {
                         someFieldContainsPointers = true;
                         break;
                     }
                 }
-                else if (fieldType is DefType || fieldType is ArrayType || fieldType.IsByRef)
+                else if (fieldType.IsObjRef || fieldType.IsByRef)
                 {
                     someFieldContainsPointers = true;
                     break;
@@ -290,28 +290,23 @@ namespace Internal.TypeSystem
 
                 int computedOffset = checked(fieldAndOffset.Offset + cumulativeInstanceFieldPos);
 
-                switch (fieldAndOffset.Field.FieldType.Category)
+                if (fieldAndOffset.Field.FieldType.IsObjRef)
                 {
-                    case TypeFlags.Array:
-                    case TypeFlags.Class:
+                    int offsetModulo = computedOffset % type.Context.Target.PointerSize;
+                    if (offsetModulo != 0)
+                    {
+                        // GC pointers MUST be aligned.
+                        if (offsetModulo == 4)
                         {
-                            int offsetModulo = computedOffset % type.Context.Target.PointerSize;
-                            if (offsetModulo != 0)
-                            {
-                                // GC pointers MUST be aligned.
-                                if (offsetModulo == 4)
-                                {
-                                    // We must be attempting to compile a 32bit app targeting a 64 bit platform.
-                                    throw new TypeLoadException();
-                                }
-                                else
-                                {
-                                    // Its just wrong
-                                    throw new TypeLoadException();
-                                }
-                            }
-                            break;
+                            // We must be attempting to compile a 32bit app targeting a 64 bit platform.
+                            throw new TypeLoadException();
                         }
+                        else
+                        {
+                            // Its just wrong
+                            throw new TypeLoadException();
+                        }
+                    }
                 }
 
                 offsets[fieldOrdinal] = new FieldAndOffset(fieldAndOffset.Field, computedOffset);
@@ -406,11 +401,11 @@ namespace Internal.TypeSystem
         {
             SizeAndAlignment result;
 
-            if (fieldType is MetadataType)
+            if (fieldType.IsDefType)
             {
                 if (fieldType.IsValueType)
                 {
-                    MetadataType metadataType = (MetadataType)fieldType;
+                    DefType metadataType = (DefType)fieldType;
                     result.Size = metadataType.InstanceFieldSize;
                     result.Alignment = metadataType.InstanceFieldAlignment;
                 }
@@ -420,7 +415,7 @@ namespace Internal.TypeSystem
                     result.Alignment = fieldType.Context.Target.PointerSize;
                 }
             }
-            else if (fieldType is ByRefType || fieldType is ArrayType)
+            else if (fieldType.IsByRef || fieldType.IsArray)
             {
                 // This could use InstanceFieldSize/Alignment (and those results should match what's here)
                 // but, its more efficient to just assume pointer size instead of fulling processing
@@ -428,7 +423,7 @@ namespace Internal.TypeSystem
                 result.Size = fieldType.Context.Target.PointerSize;
                 result.Alignment = fieldType.Context.Target.PointerSize;
             }
-            else if (fieldType is PointerType)
+            else if (fieldType.IsPointer)
             {
                 result.Size = fieldType.Context.Target.PointerSize;
                 result.Alignment = fieldType.Context.Target.PointerSize;

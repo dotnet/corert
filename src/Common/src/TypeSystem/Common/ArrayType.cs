@@ -121,7 +121,7 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            TypeFlags flags = TypeFlags.Array;
+            TypeFlags flags = _rank == -1 ? TypeFlags.SzArray : TypeFlags.Array;
 
             if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
             {
@@ -129,6 +129,8 @@ namespace Internal.TypeSystem
                 if (this.ParameterType.ContainsGenericVariables)
                     flags |= TypeFlags.ContainsGenericVariables;
             }
+
+            flags |= TypeFlags.HasGenericVarianceComputed;
 
             return flags;
         }

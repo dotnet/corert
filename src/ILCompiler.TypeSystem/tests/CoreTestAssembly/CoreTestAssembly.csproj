@@ -26,8 +26,10 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Casting.cs" />
     <Compile Include="Hashcode.cs" />
     <Compile Include="InterfaceArrangements.cs" />
+    <Compile Include="GenericTypes.cs" />
     <Compile Include="Platform.cs" />
     <Compile Include="InstanceFieldLayout.cs" />
     <Compile Include="StaticFieldLayout.cs" />

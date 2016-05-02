@@ -15,9 +15,20 @@ namespace Internal.TypeSystem
             return typeDef.Context.GetInstantiatedType(typeDef, instantiation);
         }
 
+        static public InstantiatedType MakeInstantiatedType(this MetadataType typeDef, params TypeDesc[] genericParameters)
+        {
+            return typeDef.Context.GetInstantiatedType(typeDef, new Instantiation(genericParameters));
+        }
+
+
         static public InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, Instantiation instantiation)
         {
             return methodDef.Context.GetInstantiatedMethod(methodDef, instantiation);
+        }
+
+        static public InstantiatedMethod MakeInstantiatedMethod(this MethodDesc methodDef, params TypeDesc[] genericParameters)
+        {
+            return methodDef.Context.GetInstantiatedMethod(methodDef, new Instantiation(genericParameters));
         }
 
         static public ArrayType MakeArrayType(this TypeDesc type)
@@ -87,7 +98,7 @@ namespace Internal.TypeSystem
         /// if method is Bar&lt;string&gt;.M(), then this returns Bar&lt;T&gt;.M()
         /// but if Foo : Bar&lt;string&gt;, then this returns Bar&lt;string&gt;.M()
         /// </summary>
-        /// <param name="typeExamine">A potentially derived type</param>
+        /// <param name="targetType">A potentially derived type</param>
         /// <param name="method">A base class's virtual method</param>
         static public MethodDesc FindMethodOnTypeWithMatchingTypicalMethod(this TypeDesc targetType, MethodDesc method)
         {
@@ -145,8 +156,6 @@ namespace Internal.TypeSystem
             {
                 return null;
             }
-
-            TypeDesc canonMT = constrainedType;
 
             MethodDesc method;
 

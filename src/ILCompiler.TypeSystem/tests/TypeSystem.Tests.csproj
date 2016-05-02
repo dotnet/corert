@@ -35,6 +35,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
+    <Compile Include="GenericTypeAndMethodTests.cs" />
+    <Compile Include="CastingTests.cs" />
     <Compile Include="HashcodeTests.cs" />
     <Compile Include="InterfacesTests.cs" />
     <Compile Include="SyntheticVirtualOverrideTests.cs" />

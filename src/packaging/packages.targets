@@ -1,34 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <UsingTask TaskName="GetBuildUid" TaskFactory="CodeTaskFactory" AssemblyName="Microsoft.Build.Tasks.v12.0">
-        <ParameterGroup>
-            <BuildUid ParameterType="System.String" Output="true" />
-        </ParameterGroup>
-        <Task>
-            <Code>
-                BuildUid = System.Guid.NewGuid().ToString().Replace("-", "").Substring(0, 8);
-            </Code>
-        </Task>
-    </UsingTask>
     <Target Name="BuildNuGetPackages" AfterTargets="Build">
-        <!-- This is to fool the machine local DNX cache so each build is treated as unique. %USERPROFILE%\.dnx -->
-        <GetBuildUid>
-            <Output PropertyName="BuildUid" TaskParameter="BuildUid" />
-        </GetBuildUid>
-
         <!-- Property needed for creating nupkgs -->
         <PropertyGroup>
             <ToolchainMilestone Condition="'$(ToolchainMilestone)'==''">prerelease</ToolchainMilestone>
             <ToolchainVersion>1.0.6-$(ToolchainMilestone)-00003</ToolchainVersion>
             <RuntimeSdkVersion>$(ToolchainVersion)</RuntimeSdkVersion>
             <NuPkgRid>$(NuPkgRuntimeOS)-$(NuPkgRuntimePlatform)</NuPkgRid>
-            
+
             <ToolchainPackageName>Microsoft.DotNet.ILCompiler</ToolchainPackageName>
-            
+
             <RuntimeSdkPackageNameSuffix Condition="'$(Configuration)'=='Debug'">.Debug</RuntimeSdkPackageNameSuffix>
             <RuntimeSdkPackageName>Microsoft.DotNet.ILCompiler.SDK$(RuntimeSdkPackageNameSuffix)</RuntimeSdkPackageName>
 
             <!-- Uniqify package name per machine-local DNX cache for development purposes -->
+            <BuildUid>$([System.Guid]::NewGuid().ToString().Replace('-', '').Substring(0, 8))</BuildUid>
+
             <ToolchainPackageName Condition="'$(ToolchainMilestone)'=='testing'">$(ToolchainPackageName).$(BuildUid)</ToolchainPackageName>
             <RuntimeSdkPackageName Condition="'$(ToolchainMilestone)'=='testing'">$(RuntimeSdkPackageName).$(BuildUid)</RuntimeSdkPackageName>
 
@@ -64,6 +51,7 @@
 
             <!-- ILCompiler.SDK Cpp Codegen support files -->
             <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/common.h" />
+            <ILCompilerSdkCppCodegenFiles Include="Native/Bootstrap/CppCodeGen.h" />
 
             <ILCompilerSdkFilesManaged Include="System.Private.CoreLib" />
             <ILCompilerSdkFilesManaged Include="System.Private.DeveloperExperience.Console" />
@@ -74,6 +62,8 @@
             <ILCompilerSdkFilesManaged Include="System.Private.Reflection.Metadata" />
             <ILCompilerSdkFilesManaged Include="System.Private.StackTraceGenerator" />
             <ILCompilerSdkFilesManaged Include="System.Private.Threading" />
+
+            <ILCompilerSdkContentFiles Include="scripts/linkerscript" />
 
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkFiles)">
                 <Text><![CDATA[        <file src="$(RelativeProductBinDir)/lib/$(LibPrefix)%(Identity).$(StaticLibExt)" target="runtimes/$(NuPkgRid)/native/sdk/$(LibPrefix)%(Identity).$(StaticLibExt)" /> ]]></Text>
@@ -88,7 +78,10 @@
             <ILCompilerSdkBinPlace Include="@(ILCompilerSdkCppCodegenFiles)">
                 <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/inc/%(Filename)%(Extension)" /> ]]></Text>
             </ILCompilerSdkBinPlace>
-            
+            <ILCompilerSdkBinPlace Include="@(ILCompilerSdkContentFiles)">
+                <Text><![CDATA[        <file src="src/%(Identity)" target="runtimes/$(NuPkgRid)/native/sdk/%(Filename)%(Extension)" /> ]]></Text>
+            </ILCompilerSdkBinPlace>
+
             <!-- ILCompiler nuspec file -->
             <NuSpecFile Include="$(ToolchainPackageName)">
                 <Stage>1</Stage>
@@ -98,15 +91,15 @@
                 <Files>@(ILCompilerBinPlace -> '%(Text)', '')</Files>
                 <!-- TODO: Obtain this from project.lock.json -->
                 <Dependencies><![CDATA[
-        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.9-prerelease-00001" />
-        <dependency id="Microsoft.DotNet.RyuJit" version="1.0.7-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.ObjectWriter" version="1.0.11-prerelease-00001" />
+        <dependency id="Microsoft.DotNet.ClrJit" version="1.0.8-prerelease-00001" />
         <dependency id="NETStandard.Library" version="1.5.0-rc2-23911" />
         <dependency id="System.Collections.Immutable" version="1.2.0-rc2-23911" />
         <dependency id="System.IO.MemoryMappedFiles" version="4.0.0-rc2-23911" />
         <dependency id="System.Reflection.Metadata" version="1.3.0-rc2-23911" />
         <dependency id="System.Xml.ReaderWriter" version="4.0.0" />
-        <dependency id="Microsoft.DiaSymReader" version="1.0.6" />
-        <dependency id="System.CommandLine" version="0.1.0-e160208-1" />
+        <dependency id="Microsoft.DiaSymReader" version="1.0.8-rc2-60325" />
+        <dependency id="System.CommandLine" version="0.1.0-e160323-1" />
                     ]]></Dependencies>
             </NuSpecFile>
             
@@ -216,7 +209,7 @@
             <Stage1NuSpecs Include="%(NuSpecCollection.RedirFile)" Condition="'%(NuSpecCollection.Stage)'=='1'" />
         </ItemGroup>
 
-        <Exec Command="&quot;$(NuGetToolPath)&quot; pack &quot;%(Stage1NuSpecs.Identity)&quot; -NoPackageAnalysis -NoDefaultExcludes -BasePath &quot;$(RepoPath)&quot; -OutputDirectory &quot;$(ProductPackageDir)&quot;" />
+        <NugetPack Nuspecs="%(Stage1NuSpecs.Identity)" OutputDirectory="$(ProductPackageDir)" BaseDirectory="$(RepoPath)" />
 
         <PropertyGroup>
             <Stage1ProjectDir>$(ProductPackageDir)stage1/</Stage1ProjectDir>

@@ -12,7 +12,13 @@ namespace Hello
     {
         private static void Main(string[] args)
         {
-            Console.WriteLine("Hello world");
+            if (args.Length == 0)
+            {
+                Console.WriteLine("Usage: hello name");
+                return;
+            }
+
+            Console.WriteLine("Hello " + args[0]);
         }
     }
 }

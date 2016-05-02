@@ -441,11 +441,19 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
     {
         if (frameIterator.IsValid())
         {
-            PTR_RtuObjectRef pLowerBound = dac_cast<PTR_RtuObjectRef>(frameIterator.GetRegisterSet()->GetSP());
-            PTR_RtuObjectRef pUpperBound = dac_cast<PTR_RtuObjectRef>(m_pStackHigh);
+            PTR_VOID pLowerBound = dac_cast<PTR_VOID>(frameIterator.GetRegisterSet()->GetSP());
+
+            // Transition frame may contain callee saved registers that need to be reported as well
+            PTR_VOID pTransitionFrame = GetTransitionFrame();
+            ASSERT(pTransitionFrame != NULL);
+            if (pTransitionFrame < pLowerBound)
+                pLowerBound = pTransitionFrame;
+
+            PTR_VOID pUpperBound = m_pStackHigh;
+
             RedhawkGCInterface::EnumGcRefsInRegionConservatively(
-                pLowerBound,
-                pUpperBound,
+                dac_cast<PTR_RtuObjectRef>(pLowerBound),
+                dac_cast<PTR_RtuObjectRef>(pUpperBound),
                 pfnEnumCallback,
                 pvCallbackData);
         }

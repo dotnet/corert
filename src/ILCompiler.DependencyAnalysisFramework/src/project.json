@@ -4,6 +4,6 @@
     "System.Collections.Immutable": "1.2.0-rc2-23911"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "netstandard1.3": {}
   }
 }

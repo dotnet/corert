@@ -13,6 +13,7 @@
     <CLSCompliant>false</CLSCompliant>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
@@ -55,8 +56,13 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericCompositionNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SingleArgumentJumpThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeImportMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64SingleArgumentJumpThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
@@ -118,8 +124,10 @@
     <Compile Include="Compiler\TypeInitialization.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VirtualMethodEnumeration.cs" />
+    <Compile Include="CppCodeGen\EvaluationStack.cs" />
     <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
+    <Compile Include="IL\Stubs\MissingMethodBodyILEmitter.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
   </ItemGroup>
   <ItemGroup>

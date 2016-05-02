@@ -14,6 +14,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
     <DefineConstants>$(DefineConstants);FXCORE</DefineConstants>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <CopyNugetImplementations>false</CopyNugetImplementations>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>

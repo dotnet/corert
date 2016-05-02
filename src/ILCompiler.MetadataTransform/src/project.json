@@ -4,6 +4,6 @@
     "System.Reflection.Metadata": "1.3.0-rc2-23911"
   },
   "frameworks": {
-    "dnxcore50": {}
+    "netstandard1.3": {}
   }
 }

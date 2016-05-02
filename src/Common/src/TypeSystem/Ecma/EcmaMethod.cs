@@ -27,7 +27,8 @@ namespace Internal.TypeSystem.Ecma
             public const int RuntimeImplemented     = 0x0080;
 
             public const int AttributeMetadataCache = 0x0100;
-            public const int Intrinsic            = 0x0200;
+            public const int Intrinsic              = 0x0200;
+            public const int InternalCall           = 0x0400;
         };
 
         private EcmaType _type;
@@ -149,6 +150,9 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodImplAttributes & MethodImplAttributes.Runtime) != 0)
                     flags |= MethodFlags.RuntimeImplemented;
 
+                if ((methodImplAttributes & MethodImplAttributes.InternalCall) != 0)
+                    flags |= MethodFlags.InternalCall;
+
                 flags |= MethodFlags.BasicMetadataCache;
             }
 
@@ -256,6 +260,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsInternalCall
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.InternalCall) & MethodFlags.InternalCall) != 0;
+            }
+        }
+
         public MethodAttributes Attributes
         {
             get
@@ -321,8 +333,8 @@ namespace Internal.TypeSystem.Ecma
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return MetadataReader.HasCustomAttribute(MetadataReader.GetMethodDefinition(_handle).GetCustomAttributes(),
-                attributeNamespace, attributeName);
+            return !MetadataReader.GetCustomAttributeHandle(MetadataReader.GetMethodDefinition(_handle).GetCustomAttributes(),
+                attributeNamespace, attributeName).IsNil;
         }
 
         public override string ToString()

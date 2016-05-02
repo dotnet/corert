@@ -46,5 +46,15 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             return GetName();
         }
+
+        public sealed override bool Equals(object obj)
+        {
+            return Object.ReferenceEquals(this, obj);
+        }
+
+        public sealed override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
     }
 }

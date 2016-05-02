@@ -1,7 +1,7 @@
 @echo off
 
 set CoreRT_TestRoot=%~dp0
-set CoreRT_CliDir=%CoreRT_TestRoot%..\bin\tools\cli\bin
+set CoreRT_CliDir=%CoreRT_TestRoot%../Tools/dotnetcli
 set CoreRT_BuildArch=x64
 set CoreRT_BuildType=Debug
 set CoreRT_BuildOS=Windows_NT
@@ -23,7 +23,6 @@ if /i "%1" == "/extrepo"  (set CoreRT_TestExtRepo=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/buildextrepo" (set CoreRT_BuildExtRepo=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/mode" (set CoreRT_TestCompileMode=%2&shift&shift&goto ArgLoop)
 if /i "%1" == "/runtest" (set CoreRT_TestRun=%2&shift&shift&goto ArgLoop)
-if /i "%1" == "/nocache" (set CoreRT_NuGetOptions=-nocache&shift&goto ArgLoop)
 if /i "%1" == "/dotnetclipath" (set CoreRT_CliDir=%2&shift&shift&goto ArgLoop)
 
 echo Invalid command line argument: %1
@@ -35,19 +34,18 @@ echo     /mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /extrepo      : Path to external repo, currently supports: GitHub: dotnet/coreclr. Specify full path. If unspecified, runs corert tests
 echo     /buildextrepo : Should build at root level of external repo? Specify: true/false. Default: true
-echo     /nocache      : When restoring toolchain packages, obtain them from the feed not the cache.
 exit /b 2
 
 :ArgsDone
+
+call testenv.cmd
+
+set CoreRT_RspTemplateDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 
 setlocal EnableDelayedExpansion
 set __BuildStr=%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%
 set __CoreRTTestBinDir=%CoreRT_TestRoot%..\bin\tests
 set __LogDir=%CoreRT_TestRoot%\..\bin\Logs\%__BuildStr%\tests
-
-set __PackageRestoreCmd=restore.cmd
-call %__PackageRestoreCmd% /nugetexedir %CoreRT_TestRoot%..\packages /nugetopt %CoreRT_NuGetOptions%
-if not "%ErrorLevel%"=="100" (((call :Fail "Preptests failed... cannot continue")) & exit /b -1)
 
 REM ** Validate the paths needed to run tests
 if not exist "%CoreRT_AppDepSdkDir%" ((call :Fail "AppDep SDK not installed at %CoreRT_AppDepSdkDir%") & exit /b -1)
@@ -142,9 +140,8 @@ goto :eof
     if /i "%CoreRT_BuildType%" == "debug" (
         if /i "%__Mode%" == "cpp" set additionalCompilerFlags=--cppcompilerflags /MTd
     )
-    REM TODO: Add AppDepSDK argument after CLI build picks up: PR dotnet/cli #336
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %CoreRT_BuildArch%
-    "%CoreRT_CliDir%\dotnet" build --native --runtime "win7-x64" --ilcpath "%CoreRT_ToolchainDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType% %additionalCompilerFlags%
+    "%CoreRT_CliDir%\dotnet" build --native --runtime "win7-x64" --ilcpath "%CoreRT_ToolchainDir%" --appdepsdkpath "%CoreRT_AppDepSdkDir%" !__ExtraCompileArgs! !__SourceFolder! -c %CoreRT_BuildType% %additionalCompilerFlags%
     endlocal
 
     set __SavedErrorLevel=%ErrorLevel%

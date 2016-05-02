@@ -249,8 +249,8 @@ namespace Internal.TypeSystem.Ecma
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return MetadataReader.HasCustomAttribute(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(),
-                attributeNamespace, attributeName);
+            return !MetadataReader.GetCustomAttributeHandle(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(),
+                attributeNamespace, attributeName).IsNil;
         }
 
         public override string ToString()

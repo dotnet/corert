@@ -64,8 +64,7 @@ namespace Internal.IL.Stubs.StartupCode
             // Call program Main
             if (_mainMethod.Signature.Length > 0)
             {
-                TypeDesc environ = Context.SystemModule.GetKnownType("System", "Environment");
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(environ.GetKnownMethod("GetCommandLineArgs", null)));
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(startup.GetKnownMethod("GetMainMethodArguments", null)));
             }
             codeStream.Emit(ILOpcode.call, emitter.NewToken(_mainMethod));
             if (_mainMethod.Signature.ReturnType.IsVoid)

@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
         private MethodDesc _method;
 
         public RuntimeImportMethodNode(MethodDesc method)
-            : base(((EcmaMethod)method).GetAttributeStringValue("System.Runtime", "RuntimeImportAttribute"))
+            : base(((EcmaMethod)method).GetRuntimeImportName())
         {
             _method = method;
         }

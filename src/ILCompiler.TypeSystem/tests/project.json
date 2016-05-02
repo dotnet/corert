@@ -2,11 +2,22 @@
   "dependencies": {
     "NETStandard.Library": "1.5.0-rc2-23911",
     "System.Reflection.Metadata": "1.3.0-rc2-23911",
-    "xunit": "2.1.0"
-  },
-  "frameworks": {
-    "dnxcore50": { 
-       "imports": "portable-net451+win8"
+    "xunit": "2.1.0",
+    "xunit.netcore.extensions": "1.0.0-prerelease-00231-07",
+    "test-runtime": {
+      "target": "project",
+      "exclude": "compile"
     }
   },
+  "frameworks": {
+    "dnxcore50": {
+      "imports": "portable-net451+win8"
+    }
+  },
+  "runtimes": {
+    "win7-x64": {},
+    "win7-x86": {},
+    "ubuntu.14.04-x64": {},
+    "osx.10.10-x64": {}
+  }
 }

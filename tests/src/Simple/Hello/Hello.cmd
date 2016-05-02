@@ -1,7 +1,7 @@
 @echo off
 setlocal
 set ErrorCode=100
-for /f "usebackq delims=;" %%F in (`"%1\%2"`) do (
+for /f "usebackq delims=;" %%F in (`"%1\%2" world`) do (
     if "%%F"=="Hello world" set ErrorCode=0
 )
 IF "%ErrorCode%"=="0" (

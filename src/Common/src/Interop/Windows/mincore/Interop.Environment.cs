@@ -19,5 +19,8 @@ internal static partial class Interop
 
         [DllImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW")]
         internal static unsafe extern int GetComputerName(char* nameBuffer, ref int bufferSize);
+
+        [DllImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]
+        internal static extern void ExitProcess(int exitCode);
     }
 }

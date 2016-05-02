@@ -224,6 +224,20 @@ namespace Internal.TypeSystem.Ecma
                 // All other cases are handled during TypeSystemContext intitialization
             }
 
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= TypeFlags.HasGenericVarianceComputed;
+
+                foreach (GenericParameterDesc genericParam in Instantiation)
+                {
+                    if (genericParam.Variance != GenericVariance.None)
+                    {
+                        flags |= TypeFlags.HasGenericVariance;
+                        break;
+                    }
+                }
+            }
+
             Debug.Assert((flags & mask) != 0);
             return flags;
         }
@@ -403,8 +417,8 @@ namespace Internal.TypeSystem.Ecma
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return MetadataReader.HasCustomAttribute(_typeDefinition.GetCustomAttributes(),
-                attributeNamespace, attributeName);
+            return !MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                attributeNamespace, attributeName).IsNil;
         }
 
         public override string ToString()

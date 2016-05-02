@@ -80,7 +80,14 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 var node = factory.ConstructedTypeSymbol(mappingEntry.Entity) as EETypeNode;
-                
+                if (!node.Marked)
+                {
+                    // Generic type definition EETypes are never constructed, but need to be
+                    // present in the mapping table.
+                    if (mappingEntry.Entity.IsTypeDefinition && mappingEntry.Entity.HasInstantiation)
+                        node = factory.NecessaryTypeSymbol(mappingEntry.Entity) as EETypeNode;
+                }
+
                 if (node.Marked)
                 {
                     // TODO: this format got very inefficient due to not being able to use RVAs

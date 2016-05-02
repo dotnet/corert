@@ -168,6 +168,7 @@ namespace ILCompiler
             switch (type.Category)
             {
                 case TypeFlags.Array:
+                case TypeFlags.SzArray:
                     // mangledName = "Array<" + GetSignatureCPPTypeName(((ArrayType)type).ElementType) + ">";
                     mangledName = GetMangledTypeName(((ArrayType)type).ElementType) + "__Array";
                     if (!type.IsSzArray)
