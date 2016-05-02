@@ -19,46 +19,19 @@ namespace ILCompiler.DependencyAnalysis
                 if (!_constructed || _type.IsGenericDefinition)
                     return 0;
 
-                GCPointerMap map = GetGCPointerMap();
-                if (!map.IsInitialized)
-                    return 0;
-
-                int numSeries = 0;
-                for (int i = 0; i < map.Size; i++)
+                if (_type.IsArray)
                 {
-                    if (map[i])
+                    TypeDesc elementType = ((ArrayType)_type).ElementType;
+                    if (elementType.IsObjRef)
                     {
-                        numSeries++;
-                        while (++i < map.Size && map[i]) ;
+                        // For efficiency this is special cased and encoded as one serie.
+                        return 3 * _type.Context.Target.PointerSize;
                     }
-                }
-
-                if (_type.IsArray || _type.IsSzArray)
-                {
-                    return numSeries > 0 ? (numSeries + 2) * _type.Context.Target.PointerSize : 0;
-                }
-                else
-                {
-                    return numSeries > 0 ? (numSeries * 2 + 1) * _type.Context.Target.PointerSize : 0;
-                }
-            }
-        }
-
-        private GCPointerMap GetGCPointerMap()
-        {
-            switch (_type.Category)
-            {
-                case TypeFlags.SzArray:
-                case TypeFlags.Array:
+                    else
                     {
-                        var elementType = ((ArrayType)_type).ElementType;
-                        if (elementType.IsObjRef)
+                        if (elementType.IsPointer)
                         {
-                            return new GCPointerMap(new int[] { 0x1 }, 1);
-                        }
-                        else if (elementType.IsPointer)
-                        {
-                            return default(GCPointerMap);
+                            return 0;
                         }
                         else if (elementType.IsByRef)
                         {
@@ -66,24 +39,28 @@ namespace ILCompiler.DependencyAnalysis
                         }
                         else
                         {
-                            Debug.Assert(elementType.IsValueType);
-                            var elementDefType = (DefType)elementType;
-                            if (!elementDefType.ContainsPointers)
-                                return default(GCPointerMap);
-
-                            return GCPointerMap.FromInstanceLayout(elementDefType);
+                            var defType = (DefType)elementType;
+                            if (defType.ContainsPointers)
+                            {
+                                int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
+                                Debug.Assert(numSeries > 0);
+                                return (numSeries + 2) * _type.Context.Target.PointerSize;
+                            }
+                            return 0;
                         }
                     }
-
-                default:
+                }
+                else
+                {
+                    var defType = (DefType)_type;
+                    if (defType.ContainsPointers)
                     {
-                        Debug.Assert(_type.IsDefType);
-                        var defType = (DefType)_type;
-                        if (!defType.ContainsPointers)
-                            return default(GCPointerMap);
-
-                        return GCPointerMap.FromInstanceLayout(defType);
+                        int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
+                        Debug.Assert(numSeries > 0);
+                        return (numSeries * 2 + 1) * _type.Context.Target.PointerSize;
                     }
+                    return 0;
+                }
             }
         }
 
@@ -95,34 +72,50 @@ namespace ILCompiler.DependencyAnalysis
                 return;
             }
 
-            GCPointerMap map = GetGCPointerMap();
-            if (!map.IsInitialized)
-            {
-                Debug.Assert(GCDescSize == 0);
-                return;
-            }
-
             int initialBuilderPosition = builder.CountBytes;
 
-            switch (_type.Category)
+            if (_type.IsArray)
             {
-                case TypeFlags.Array:
-                case TypeFlags.SzArray:
-                    OutputArrayGCDesc(ref builder, map);
-                    break;
-
-                default:
-                    Debug.Assert(_type.IsDefType);
-                    var defType = (DefType)_type;
-
+                TypeDesc elementType = ((ArrayType)_type).ElementType;
+                if (elementType.IsObjRef)
+                {
+                    OutputStandardGCDesc(ref builder,
+                        new GCPointerMap(new[] { 1 << 2 }, 3),
+                        4 * _type.Context.Target.PointerSize, 0);
+                }
+                else
+                {
+                    if (elementType.IsPointer)
+                    {
+                        // Nothing to output here. Unmanaged pointers don't point to the GC heap.
+                    }
+                    else if (elementType.IsByRef)
+                    {
+                        throw new BadImageFormatException();
+                    }
+                    else
+                    {
+                        var elementDefType = (DefType)elementType;
+                        if (elementDefType.ContainsPointers)
+                        {
+                            OutputArrayGCDesc(ref builder, GCPointerMap.FromInstanceLayout(elementDefType));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                var defType = (DefType)_type;
+                if (defType.ContainsPointers)
+                {
                     // Computing the layout for the boxed version if this is a value type.
                     int offs = defType.IsValueType ? _type.Context.Target.PointerSize : 0;
 
                     // Include syncblock
                     int allocationSize = defType.InstanceByteCount + offs + _type.Context.Target.PointerSize;
 
-                    OutputStandardGCDesc(ref builder, map, allocationSize, offs);
-                    break;
+                    OutputStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), allocationSize, offs);
+                }
             }
 
             Debug.Assert(initialBuilderPosition + GCDescSize == builder.CountBytes);
@@ -182,8 +175,9 @@ namespace ILCompiler.DependencyAnalysis
                     numSeries++;
 
                     short pointerCount = 1;
-                    while (cellIndex > 0 && map[--cellIndex])
+                    while (cellIndex > leadingNonPointerCount && map[cellIndex - 1])
                     {
+                        cellIndex--;
                         checked { pointerCount++; }
                     }
 

@@ -42,6 +42,26 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the number of continuous runs of GC pointers within the map.
+        /// </summary>
+        public int NumSeries
+        {
+            get
+            {
+                int numSeries = 0;
+                for (int i = 0; i < _numCells; i++)
+                {
+                    if (this[i])
+                    {
+                        numSeries++;
+                        while (++i < _numCells && this[i]) ;
+                    }
+                }
+                return numSeries;
+            }
+        }
+
         public bool this[int index]
         {
             get
