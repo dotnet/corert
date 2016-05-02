@@ -1118,7 +1118,7 @@ namespace ILCompiler.CppCodeGen
                 {
                     IEETypeNode eeTypeNode = (IEETypeNode)node;
 
-                    if (eeTypeNode.Type.HasInstantiation && eeTypeNode.Type.IsTypeDefinition)
+                    if (eeTypeNode.Type.IsGenericDefinition)
                     {
                         // TODO: CppWriter can't handle generic type definition EETypes
                     }
