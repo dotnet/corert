@@ -12,23 +12,6 @@ namespace ILCompiler.DependencyAnalysis
 {
     partial class EETypeNode
     {
-        private ISymbolNode _gcdesc;
-
-        private ISymbolNode GCDesc
-        {
-            get
-            {
-                if (GCDescSize == 0)
-                    return null;
-                if (_gcdesc == null)
-                {
-                    System.Threading.Interlocked.CompareExchange(ref _gcdesc,
-                        new ObjectAndOffsetSymbolNode(this, 0, "__GCDesc_" + NodeFactory.NameMangler.GetMangledTypeName(_type)), null);
-                }
-                return _gcdesc;
-            }
-        }
-
         private int GCDescSize
         {
             get
@@ -118,8 +101,6 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(GCDescSize == 0);
                 return;
             }
-
-            builder.DefinedSymbols.Add(GCDesc);
 
             int initialBuilderPosition = builder.CountBytes;
 
