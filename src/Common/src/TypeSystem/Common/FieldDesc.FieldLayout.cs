@@ -43,7 +43,7 @@ namespace Internal.TypeSystem
             get
             {
                 if (!FieldType.IsValueType)
-                    return true;
+                    return !FieldType.IsPointer;
 
                 DefType fieldType = FieldType as DefType;
                 return fieldType != null && fieldType.ContainsPointers;
