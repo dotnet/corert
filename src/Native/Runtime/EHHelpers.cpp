@@ -129,16 +129,23 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo,
     UNREFERENCED_PARAMETER(cbOSContext);
     ASSERT(cbOSContext >= sizeof(CONTEXT));
     CONTEXT* pContext = (CONTEXT *)pOSContext;
-#ifdef _AMD64_
+#if defined(UNIX_AMD64_ABI)
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;
     pContext->Rbp = pPalContext->Rbp;
-#ifndef UNIX_AMD64_ABI
+    pContext->Rdx = pPalContext->Rdx;
+    pContext->Rax = pPalContext->Rax;
+    pContext->Rbx = pPalContext->Rbx;
+    pContext->R12 = pPalContext->R12;
+    pContext->R13 = pPalContext->R13;
+    pContext->R14 = pPalContext->R14;
+    pContext->R15 = pPalContext->R15;
+#elif defined(_AMD64_)
+    pContext->Rip = pPalContext->IP;
+    pContext->Rsp = pPalContext->Rsp;
+    pContext->Rbp = pPalContext->Rbp;
     pContext->Rdi = pPalContext->Rdi;
     pContext->Rsi = pPalContext->Rsi;
-#else // !UNIX_AMD64_ABI
-    pContext->Rdx = pPalContext->Rdx;
-#endif // !UNIX_AMD64_ABI
     pContext->Rax = pPalContext->Rax;
     pContext->Rbx = pPalContext->Rbx;
     pContext->R12 = pPalContext->R12;
