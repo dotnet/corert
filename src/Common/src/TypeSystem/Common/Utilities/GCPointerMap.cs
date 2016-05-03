@@ -145,7 +145,7 @@ namespace Internal.TypeSystem
             else
             {
                 // Not big enough to fit even a single pointer.
-                _gcFlags = new int[0]; // TODO array.emtpy
+                _gcFlags = Array.Empty<int>();
             }
 
             _pointerSize = pointerSize;
