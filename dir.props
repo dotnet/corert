@@ -121,9 +121,9 @@
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corert/api/v3/index.json" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/" />
+    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corert/" />
     <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
   </ItemGroup>
 
@@ -135,7 +135,7 @@
   <PropertyGroup>
     <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
     <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
-    <DnuToolPath>$(DotnetToolCommand)</DnuToolPath>
+    <DnuToolPath Condition="'$(DnuToolPath)'==''">$(DotnetToolCommand)</DnuToolPath>
 
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
 
