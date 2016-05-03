@@ -38,6 +38,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
             bool[] gcDesc = new bool[_type.GCStaticFieldSize / factory.Target.PointerSize + 1];
+
+            GCPointerMap map = GCPointerMap.FromStaticLayout(_type);
+            for (int i = 0; i < map.Size; i++)
+            {
+                gcDesc[i] = map[i];
+            }
+
             return factory.GCStaticEEType(gcDesc);
         }
 

@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    internal sealed class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
+    internal sealed partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
     {
         private TypeDesc _type;
         private bool _constructed;
@@ -131,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return 0;
+                return GCDescSize;
             }
         }
 
@@ -151,7 +151,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_type.IsGenericDefinition)
                 ComputeOptionalEETypeFields(factory);
-            
+
+            OutputGCDesc(ref objData);
             OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
             OutputBaseSize(ref objData);
