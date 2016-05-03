@@ -27,26 +27,14 @@ namespace ILCompiler.DependencyAnalysis
                         // For efficiency this is special cased and encoded as one serie.
                         return 3 * _type.Context.Target.PointerSize;
                     }
-                    else
+                    else if (elementType.IsDefType)
                     {
-                        if (elementType.IsPointer)
+                        var defType = (DefType)elementType;
+                        if (defType.ContainsPointers)
                         {
-                            return 0;
-                        }
-                        else if (elementType.IsByRef)
-                        {
-                            throw new BadImageFormatException();
-                        }
-                        else
-                        {
-                            var defType = (DefType)elementType;
-                            if (defType.ContainsPointers)
-                            {
-                                int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
-                                Debug.Assert(numSeries > 0);
-                                return (numSeries + 2) * _type.Context.Target.PointerSize;
-                            }
-                            return 0;
+                            int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
+                            Debug.Assert(numSeries > 0);
+                            return (numSeries + 2) * _type.Context.Target.PointerSize;
                         }
                     }
                 }
@@ -59,8 +47,9 @@ namespace ILCompiler.DependencyAnalysis
                         Debug.Assert(numSeries > 0);
                         return (numSeries * 2 + 1) * _type.Context.Target.PointerSize;
                     }
-                    return 0;
                 }
+
+                return 0;
             }
         }
 
@@ -77,29 +66,31 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsArray)
             {
                 TypeDesc elementType = ((ArrayType)_type).ElementType;
+
+                // 2 means m_pEEType and _numComponents. Syncblock is sort of appended at the end of the object layout in this case.
+                int baseSize = 2 * _type.Context.Target.PointerSize;
+
+                if (!_type.IsSzArray)
+                {
+                    // Multi-dim arrays include upper and lower bounds for each rank
+                    baseSize += 2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
+                }
+
                 if (elementType.IsObjRef)
                 {
+                    // TODO: this optimization can be also applied to all element types that have all '1' GCPointerMap
+                    //       get_GCDescSize needs to be updated appropriately when this optimization is enabled
                     OutputStandardGCDesc(ref builder,
-                        new GCPointerMap(new[] { 1 << 2 }, 3),
-                        4 * _type.Context.Target.PointerSize, 0);
+                        new GCPointerMap(new[] { 1 }, 1),
+                        4 * _type.Context.Target.PointerSize,
+                        baseSize);
                 }
-                else
+                else if (elementType.IsDefType)
                 {
-                    if (elementType.IsPointer)
+                    var elementDefType = (DefType)elementType;
+                    if (elementDefType.ContainsPointers)
                     {
-                        // Nothing to output here. Unmanaged pointers don't point to the GC heap.
-                    }
-                    else if (elementType.IsByRef)
-                    {
-                        throw new BadImageFormatException();
-                    }
-                    else
-                    {
-                        var elementDefType = (DefType)elementType;
-                        if (elementDefType.ContainsPointers)
-                        {
-                            OutputArrayGCDesc(ref builder, GCPointerMap.FromInstanceLayout(elementDefType));
-                        }
+                        OutputArrayGCDesc(ref builder, GCPointerMap.FromInstanceLayout(elementDefType), baseSize);
                     }
                 }
             }
@@ -112,9 +103,9 @@ namespace ILCompiler.DependencyAnalysis
                     int offs = defType.IsValueType ? _type.Context.Target.PointerSize : 0;
 
                     // Include syncblock
-                    int allocationSize = defType.InstanceByteCount + offs + _type.Context.Target.PointerSize;
+                    int objectSize = defType.InstanceByteCount + offs + _type.Context.Target.PointerSize;
 
-                    OutputStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), allocationSize, offs);
+                    OutputStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
                 }
             }
 
@@ -152,17 +143,15 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitNaturalInt(numSeries);
         }
 
-        private void OutputArrayGCDesc(ref ObjectDataBuilder builder, GCPointerMap map)
+        private void OutputArrayGCDesc(ref ObjectDataBuilder builder, GCPointerMap map, int size)
         {
             int numSeries = 0;
             int leadingNonPointerCount = 0;
 
             int pointerSize = _type.Context.Target.PointerSize;
 
-            for (int cellIndex = 0; cellIndex < map.Size; cellIndex++)
+            for (int cellIndex = 0; cellIndex < map.Size && !map[cellIndex]; cellIndex++)
             {
-                if (map[cellIndex])
-                    break;
                 leadingNonPointerCount++;
             }
 
@@ -192,9 +181,8 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             Debug.Assert(numSeries > 0);
-            builder.EmitNaturalInt((2 + leadingNonPointerCount) * pointerSize);
+            builder.EmitNaturalInt(size + leadingNonPointerCount * pointerSize);
             builder.EmitNaturalInt(-numSeries);
         }
-        
     }
 }

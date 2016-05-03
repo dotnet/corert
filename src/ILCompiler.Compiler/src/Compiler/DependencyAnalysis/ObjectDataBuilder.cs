@@ -34,14 +34,6 @@ namespace ILCompiler.DependencyAnalysis
         private int _numReservations;
 #endif
 
-        public bool Initialized
-        {
-            get
-            {
-                return _target != null;
-            }
-        }
-
         public int CountBytes
         {
             get
