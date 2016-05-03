@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Generic type definition EETypes are never constructed, but need to be
                     // present in the mapping table.
-                    if (mappingEntry.Entity.IsTypeDefinition && mappingEntry.Entity.HasInstantiation)
+                    if (mappingEntry.Entity.IsGenericDefinition)
                         node = factory.NecessaryTypeSymbol(mappingEntry.Entity) as EETypeNode;
                 }
 
