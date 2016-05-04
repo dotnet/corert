@@ -32,7 +32,6 @@ namespace Internal.IL.Stubs
         private PInvokeMarshallingILEmitter(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
-            Debug.Assert(RequiresMarshalling(targetMethod));
 
             _targetMethod = targetMethod;
             _context = _targetMethod.Context;
@@ -523,9 +522,6 @@ namespace Internal.IL.Stubs
 
         public static MethodIL EmitIL(MethodDesc method)
         {
-            if (!RequiresMarshalling(method))
-                return null;
-
             try
             {
                 return new PInvokeMarshallingILEmitter(method).EmitIL();
@@ -568,6 +564,12 @@ namespace Internal.IL.Stubs
 
         public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata)
         {
+#if DEBUG
+            Debug.Assert(signature.ReturnType.IsBlittable());
+            for (int i = 0; i < signature.Length; i++)
+                Debug.Assert(signature[i].IsBlittable());
+#endif
+
             _owningType = owningType;
             _signature = signature;
             _methodMetadata = methodMetadata;

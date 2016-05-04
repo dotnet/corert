@@ -77,13 +77,11 @@ namespace ILCompiler
         {
             if (method.IsPInvoke)
             {
-                // Marshalling is never required for pregenerated interop code
-                if (Internal.IL.McgInteropSupport.IsPregeneratedInterop(method))
-                {
-                    return SpecialMethodKind.PInvoke;
-                }
-
-                if (!Internal.IL.Stubs.PInvokeMarshallingILEmitter.RequiresMarshalling(method))
+                // Only treat the synthetic target methods as real PInvoke.
+                // PInvoke methods (as defined in the metadata) are treated as regular methods with
+                // IL that we compile. The generated IL method body for those will either have a call
+                // to a PInvokeTargetNativeMethod, or will perform a dynamic lookup for the entrypoint.
+                if (method.GetType() == typeof(Internal.IL.Stubs.PInvokeTargetNativeMethod))
                 {
                     return SpecialMethodKind.PInvoke;
                 }
