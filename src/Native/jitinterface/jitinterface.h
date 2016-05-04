@@ -8,1728 +8,1574 @@
 
 struct CORINFO_LOOKUP_KIND;
 
-class IJitInterface
+struct JitInterfaceCallbacks
 {
-public:
-    virtual unsigned int getMethodAttribs(CorInfoException** ppException, void* ftn) = 0;
-    virtual void setMethodAttribs(CorInfoException** ppException, void* ftn, int attribs) = 0;
-    virtual void getMethodSig(CorInfoException** ppException, void* ftn, void* sig, void* memberParent) = 0;
-    virtual bool getMethodInfo(CorInfoException** ppException, void* ftn, void* info) = 0;
-    virtual int canInline(CorInfoException** ppException, void* callerHnd, void* calleeHnd, unsigned int* pRestrictions) = 0;
-    virtual void reportInliningDecision(CorInfoException** ppException, void* inlinerHnd, void* inlineeHnd, int inlineResult, const char* reason) = 0;
-    virtual bool canTailCall(CorInfoException** ppException, void* callerHnd, void* declaredCalleeHnd, void* exactCalleeHnd, bool fIsTailPrefix) = 0;
-    virtual void reportTailCallDecision(CorInfoException** ppException, void* callerHnd, void* calleeHnd, bool fIsTailPrefix, int tailCallResult, const char* reason) = 0;
-    virtual void getEHinfo(CorInfoException** ppException, void* ftn, unsigned EHnumber, void* clause) = 0;
-    virtual void* getMethodClass(CorInfoException** ppException, void* method) = 0;
-    virtual void* getMethodModule(CorInfoException** ppException, void* method) = 0;
-    virtual void getMethodVTableOffset(CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection) = 0;
-    virtual int getIntrinsicID(CorInfoException** ppException, void* method, bool* pMustExpand) = 0;
-    virtual bool isInSIMDModule(CorInfoException** ppException, void* classHnd) = 0;
-    virtual int getUnmanagedCallConv(CorInfoException** ppException, void* method) = 0;
-    virtual bool pInvokeMarshalingRequired(CorInfoException** ppException, void* method, void* callSiteSig) = 0;
-    virtual bool satisfiesMethodConstraints(CorInfoException** ppException, void* parent, void* method) = 0;
-    virtual bool isCompatibleDelegate(CorInfoException** ppException, void* objCls, void* methodParentCls, void* method, void* delegateCls, int* pfIsOpenDelegate) = 0;
-    virtual bool isDelegateCreationAllowed(CorInfoException** ppException, void* delegateHnd, void* calleeHnd) = 0;
-    virtual int isInstantiationOfVerifiedGeneric(CorInfoException** ppException, void* method) = 0;
-    virtual void initConstraintsForVerification(CorInfoException** ppException, void* method, int* pfHasCircularClassConstraints, int* pfHasCircularMethodConstraint) = 0;
-    virtual int canSkipMethodVerification(CorInfoException** ppException, void* ftnHandle) = 0;
-    virtual void methodMustBeLoadedBeforeCodeIsRun(CorInfoException** ppException, void* method) = 0;
-    virtual void* mapMethodDeclToMethodImpl(CorInfoException** ppException, void* method) = 0;
-    virtual void getGSCookie(CorInfoException** ppException, void* pCookieVal, void** ppCookieVal) = 0;
-    virtual void resolveToken(CorInfoException** ppException, void* pResolvedToken) = 0;
-    virtual void findSig(CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig) = 0;
-    virtual void findCallSiteSig(CorInfoException** ppException, void* module, unsigned methTOK, void* context, void* sig) = 0;
-    virtual void* getTokenTypeAsHandle(CorInfoException** ppException, void* pResolvedToken) = 0;
-    virtual int canSkipVerification(CorInfoException** ppException, void* module) = 0;
-    virtual bool isValidToken(CorInfoException** ppException, void* module, unsigned metaTOK) = 0;
-    virtual bool isValidStringRef(CorInfoException** ppException, void* module, unsigned metaTOK) = 0;
-    virtual bool shouldEnforceCallvirtRestriction(CorInfoException** ppException, void* scope) = 0;
-    virtual int asCorInfoType(CorInfoException** ppException, void* cls) = 0;
-    virtual const char* getClassName(CorInfoException** ppException, void* cls) = 0;
-    virtual int appendClassName(CorInfoException** ppException, wchar_t** ppBuf, int* pnBufLen, void* cls, bool fNamespace, bool fFullInst, bool fAssembly) = 0;
-    virtual bool isValueClass(CorInfoException** ppException, void* cls) = 0;
-    virtual bool canInlineTypeCheckWithObjectVTable(CorInfoException** ppException, void* cls) = 0;
-    virtual unsigned int getClassAttribs(CorInfoException** ppException, void* cls) = 0;
-    virtual bool isStructRequiringStackAllocRetBuf(CorInfoException** ppException, void* cls) = 0;
-    virtual void* getClassModule(CorInfoException** ppException, void* cls) = 0;
-    virtual void* getModuleAssembly(CorInfoException** ppException, void* mod) = 0;
-    virtual const char* getAssemblyName(CorInfoException** ppException, void* assem) = 0;
-    virtual void* LongLifetimeMalloc(CorInfoException** ppException, size_t sz) = 0;
-    virtual void LongLifetimeFree(CorInfoException** ppException, void* obj) = 0;
-    virtual size_t getClassModuleIdForStatics(CorInfoException** ppException, void* cls, void* pModule, void** ppIndirection) = 0;
-    virtual unsigned getClassSize(CorInfoException** ppException, void* cls) = 0;
-    virtual unsigned getClassAlignmentRequirement(CorInfoException** ppException, void* cls, bool fDoubleAlignHint) = 0;
-    virtual unsigned getClassGClayout(CorInfoException** ppException, void* cls, unsigned char* gcPtrs) = 0;
-    virtual unsigned getClassNumInstanceFields(CorInfoException** ppException, void* cls) = 0;
-    virtual void* getFieldInClass(CorInfoException** ppException, void* clsHnd, int num) = 0;
-    virtual bool checkMethodModifier(CorInfoException** ppException, void* hMethod, const char* modifier, bool fOptional) = 0;
-    virtual int getNewHelper(CorInfoException** ppException, void* pResolvedToken, void* callerHandle) = 0;
-    virtual int getNewArrHelper(CorInfoException** ppException, void* arrayCls) = 0;
-    virtual int getCastingHelper(CorInfoException** ppException, void* pResolvedToken, bool fThrowing) = 0;
-    virtual int getSharedCCtorHelper(CorInfoException** ppException, void* clsHnd) = 0;
-    virtual int getSecurityPrologHelper(CorInfoException** ppException, void* ftn) = 0;
-    virtual void* getTypeForBox(CorInfoException** ppException, void* cls) = 0;
-    virtual int getBoxHelper(CorInfoException** ppException, void* cls) = 0;
-    virtual int getUnBoxHelper(CorInfoException** ppException, void* cls) = 0;
-    virtual void getReadyToRunHelper(CorInfoException** ppException, void* pResolvedToken, int id, void* pLookup) = 0;
-    virtual void getReadyToRunDelegateCtorHelper(CorInfoException** ppException, void* pTargetMethod, void* delegateType, void* pLookup) = 0;
-    virtual const char* getHelperName(CorInfoException** ppException, int helpFunc) = 0;
-    virtual int initClass(CorInfoException** ppException, void* field, void* method, void* context, bool speculative) = 0;
-    virtual void classMustBeLoadedBeforeCodeIsRun(CorInfoException** ppException, void* cls) = 0;
-    virtual void* getBuiltinClass(CorInfoException** ppException, int classId) = 0;
-    virtual int getTypeForPrimitiveValueClass(CorInfoException** ppException, void* cls) = 0;
-    virtual bool canCast(CorInfoException** ppException, void* child, void* parent) = 0;
-    virtual bool areTypesEquivalent(CorInfoException** ppException, void* cls1, void* cls2) = 0;
-    virtual void* mergeClasses(CorInfoException** ppException, void* cls1, void* cls2) = 0;
-    virtual void* getParentType(CorInfoException** ppException, void* cls) = 0;
-    virtual int getChildType(CorInfoException** ppException, void* clsHnd, void* clsRet) = 0;
-    virtual bool satisfiesClassConstraints(CorInfoException** ppException, void* cls) = 0;
-    virtual bool isSDArray(CorInfoException** ppException, void* cls) = 0;
-    virtual unsigned getArrayRank(CorInfoException** ppException, void* cls) = 0;
-    virtual void* getArrayInitializationData(CorInfoException** ppException, void* field, unsigned int size) = 0;
-    virtual int canAccessClass(CorInfoException** ppException, void* pResolvedToken, void* callerHandle, void* pAccessHelper) = 0;
-    virtual const char* getFieldName(CorInfoException** ppException, void* ftn, const char** moduleName) = 0;
-    virtual void* getFieldClass(CorInfoException** ppException, void* field) = 0;
-    virtual int getFieldType(CorInfoException** ppException, void* field, void* structType, void* memberParent) = 0;
-    virtual unsigned getFieldOffset(CorInfoException** ppException, void* field) = 0;
-    virtual bool isWriteBarrierHelperRequired(CorInfoException** ppException, void* field) = 0;
-    virtual void getFieldInfo(CorInfoException** ppException, void* pResolvedToken, void* callerHandle, int flags, void* pResult) = 0;
-    virtual bool isFieldStatic(CorInfoException** ppException, void* fldHnd) = 0;
-    virtual void getBoundaries(CorInfoException** ppException, void* ftn, unsigned int* cILOffsets, unsigned int** pILOffsets, void* implictBoundaries) = 0;
-    virtual void setBoundaries(CorInfoException** ppException, void* ftn, unsigned int cMap, void* pMap) = 0;
-    virtual void getVars(CorInfoException** ppException, void* ftn, unsigned int* cVars, void* vars, bool* extendOthers) = 0;
-    virtual void setVars(CorInfoException** ppException, void* ftn, unsigned int cVars, void* vars) = 0;
-    virtual void* allocateArray(CorInfoException** ppException, unsigned int cBytes) = 0;
-    virtual void freeArray(CorInfoException** ppException, void* array) = 0;
-    virtual void* getArgNext(CorInfoException** ppException, void* args) = 0;
-    virtual int getArgType(CorInfoException** ppException, void* sig, void* args, void* vcTypeRet) = 0;
-    virtual void* getArgClass(CorInfoException** ppException, void* sig, void* args) = 0;
-    virtual int getHFAType(CorInfoException** ppException, void* hClass) = 0;
-    virtual int GetErrorHRESULT(CorInfoException** ppException, void* pExceptionPointers) = 0;
-    virtual unsigned int GetErrorMessage(CorInfoException** ppException, wchar_t* buffer, unsigned int bufferLength) = 0;
-    virtual int FilterException(CorInfoException** ppException, void* pExceptionPointers) = 0;
-    virtual void HandleException(CorInfoException** ppException, void* pExceptionPointers) = 0;
-    virtual void ThrowExceptionForJitResult(CorInfoException** ppException, int result) = 0;
-    virtual void ThrowExceptionForHelper(CorInfoException** ppException, const void* throwHelper) = 0;
-    virtual void getEEInfo(CorInfoException** ppException, void* pEEInfoOut) = 0;
-    virtual const wchar_t* getJitTimeLogFilename(CorInfoException** ppException) = 0;
-    virtual unsigned int getMethodDefFromMethod(CorInfoException** ppException, void* hMethod) = 0;
-    virtual const char* getMethodName(CorInfoException** ppException, void* ftn, const char** moduleName) = 0;
-    virtual unsigned getMethodHash(CorInfoException** ppException, void* ftn) = 0;
-    virtual size_t findNameOfToken(CorInfoException** ppException, void* moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity) = 0;
-    virtual bool getSystemVAmd64PassStructInRegisterDescriptor(CorInfoException** ppException, void* structHnd, void* structPassInRegDescPtr) = 0;
-    virtual unsigned int getThreadTLSIndex(CorInfoException** ppException, void** ppIndirection) = 0;
-    virtual const void* getInlinedCallFrameVptr(CorInfoException** ppException, void** ppIndirection) = 0;
-    virtual long* getAddrOfCaptureThreadGlobal(CorInfoException** ppException, void** ppIndirection) = 0;
-    virtual size_t* getAddrModuleDomainID(CorInfoException** ppException, void* module) = 0;
-    virtual void* getHelperFtn(CorInfoException** ppException, int ftnNum, void** ppIndirection) = 0;
-    virtual void getFunctionEntryPoint(CorInfoException** ppException, void* ftn, void* pResult, int accessFlags) = 0;
-    virtual void getFunctionFixedEntryPoint(CorInfoException** ppException, void* ftn, void* pResult) = 0;
-    virtual void* getMethodSync(CorInfoException** ppException, void* ftn, void** ppIndirection) = 0;
-    virtual int getLazyStringLiteralHelper(CorInfoException** ppException, void* handle) = 0;
-    virtual void* embedModuleHandle(CorInfoException** ppException, void* handle, void** ppIndirection) = 0;
-    virtual void* embedClassHandle(CorInfoException** ppException, void* handle, void** ppIndirection) = 0;
-    virtual void* embedMethodHandle(CorInfoException** ppException, void* handle, void** ppIndirection) = 0;
-    virtual void* embedFieldHandle(CorInfoException** ppException, void* handle, void** ppIndirection) = 0;
-    virtual void embedGenericHandle(CorInfoException** ppException, void* pResolvedToken, bool fEmbedParent, void* pResult) = 0;
-    virtual void getLocationOfThisType(CorInfoException** ppException, CORINFO_LOOKUP_KIND* _return, void* context) = 0;
-    virtual void* getPInvokeUnmanagedTarget(CorInfoException** ppException, void* method, void** ppIndirection) = 0;
-    virtual void* getAddressOfPInvokeFixup(CorInfoException** ppException, void* method, void** ppIndirection) = 0;
-    virtual void getAddressOfPInvokeTarget(CorInfoException** ppException, void* method, void* pLookup) = 0;
-    virtual void* GetCookieForPInvokeCalliSig(CorInfoException** ppException, void* szMetaSig, void** ppIndirection) = 0;
-    virtual bool canGetCookieForPInvokeCalliSig(CorInfoException** ppException, void* szMetaSig) = 0;
-    virtual void* getJustMyCodeHandle(CorInfoException** ppException, void* method, void** ppIndirection) = 0;
-    virtual void GetProfilingHandle(CorInfoException** ppException, int* pbHookFunction, void** pProfilerHandle, int* pbIndirectedHandles) = 0;
-    virtual void getCallInfo(CorInfoException** ppException, void* pResolvedToken, void* pConstrainedResolvedToken, void* callerHandle, int flags, void* pResult) = 0;
-    virtual bool canAccessFamily(CorInfoException** ppException, void* hCaller, void* hInstanceType) = 0;
-    virtual bool isRIDClassDomainID(CorInfoException** ppException, void* cls) = 0;
-    virtual unsigned getClassDomainID(CorInfoException** ppException, void* cls, void** ppIndirection) = 0;
-    virtual void* getFieldAddress(CorInfoException** ppException, void* field, void** ppIndirection) = 0;
-    virtual void* getVarArgsHandle(CorInfoException** ppException, void* pSig, void** ppIndirection) = 0;
-    virtual bool canGetVarArgsHandle(CorInfoException** ppException, void* pSig) = 0;
-    virtual int constructStringLiteral(CorInfoException** ppException, void* module, unsigned int metaTok, void** ppValue) = 0;
-    virtual int emptyStringLiteral(CorInfoException** ppException, void** ppValue) = 0;
-    virtual unsigned int getFieldThreadLocalStoreID(CorInfoException** ppException, void* field, void** ppIndirection) = 0;
-    virtual void setOverride(CorInfoException** ppException, void* pOverride, void* currentMethod) = 0;
-    virtual void addActiveDependency(CorInfoException** ppException, void* moduleFrom, void* moduleTo) = 0;
-    virtual void* GetDelegateCtor(CorInfoException** ppException, void* methHnd, void* clsHnd, void* targetMethodHnd, void* pCtorData) = 0;
-    virtual void MethodCompileComplete(CorInfoException** ppException, void* methHnd) = 0;
-    virtual void* getTailCallCopyArgsThunk(CorInfoException** ppException, void* pSig, int flags) = 0;
-    virtual void* getMemoryManager(CorInfoException** ppException) = 0;
-    virtual void allocMem(CorInfoException** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock) = 0;
-    virtual void reserveUnwindInfo(CorInfoException** ppException, bool isFunclet, bool isColdCode, unsigned int unwindSize) = 0;
-    virtual void allocUnwindInfo(CorInfoException** ppException, unsigned char* pHotCode, unsigned char* pColdCode, unsigned int startOffset, unsigned int endOffset, unsigned int unwindSize, unsigned char* pUnwindBlock, int funcKind) = 0;
-    virtual void* allocGCInfo(CorInfoException** ppException, size_t size) = 0;
-    virtual void yieldExecution(CorInfoException** ppException) = 0;
-    virtual void setEHcount(CorInfoException** ppException, unsigned cEH) = 0;
-    virtual void setEHinfo(CorInfoException** ppException, unsigned EHnumber, void* clause) = 0;
-    virtual bool logMsg(CorInfoException** ppException, unsigned level, const char* fmt, va_list args) = 0;
-    virtual int doAssert(CorInfoException** ppException, const char* szFile, int iLine, const char* szExpr) = 0;
-    virtual void reportFatalError(CorInfoException** ppException, int result) = 0;
-    virtual int allocBBProfileBuffer(CorInfoException** ppException, unsigned int count, void** profileBuffer) = 0;
-    virtual int getBBProfileData(CorInfoException** ppException, void* ftnHnd, unsigned long* count, void** profileBuffer, unsigned long* numRuns) = 0;
-    virtual void recordCallSite(CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle) = 0;
-    virtual void recordRelocation(CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta) = 0;
-    virtual unsigned short getRelocTypeHint(CorInfoException** ppException, void* target) = 0;
-    virtual void getModuleNativeEntryPointRange(CorInfoException** ppException, void** pStart, void** pEnd) = 0;
-    virtual unsigned int getExpectedTargetArchitecture(CorInfoException** ppException) = 0;
-    virtual unsigned int getJitFlags(CorInfoException** ppException, void* flags, unsigned int sizeInBytes) = 0;
+    unsigned int (__stdcall * getMethodAttribs)(void * thisHandle, CorInfoException** ppException, void* ftn);
+    void (__stdcall * setMethodAttribs)(void * thisHandle, CorInfoException** ppException, void* ftn, int attribs);
+    void (__stdcall * getMethodSig)(void * thisHandle, CorInfoException** ppException, void* ftn, void* sig, void* memberParent);
+    bool (__stdcall * getMethodInfo)(void * thisHandle, CorInfoException** ppException, void* ftn, void* info);
+    int (__stdcall * canInline)(void * thisHandle, CorInfoException** ppException, void* callerHnd, void* calleeHnd, unsigned int* pRestrictions);
+    void (__stdcall * reportInliningDecision)(void * thisHandle, CorInfoException** ppException, void* inlinerHnd, void* inlineeHnd, int inlineResult, const char* reason);
+    bool (__stdcall * canTailCall)(void * thisHandle, CorInfoException** ppException, void* callerHnd, void* declaredCalleeHnd, void* exactCalleeHnd, bool fIsTailPrefix);
+    void (__stdcall * reportTailCallDecision)(void * thisHandle, CorInfoException** ppException, void* callerHnd, void* calleeHnd, bool fIsTailPrefix, int tailCallResult, const char* reason);
+    void (__stdcall * getEHinfo)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned EHnumber, void* clause);
+    void* (__stdcall * getMethodClass)(void * thisHandle, CorInfoException** ppException, void* method);
+    void* (__stdcall * getMethodModule)(void * thisHandle, CorInfoException** ppException, void* method);
+    void (__stdcall * getMethodVTableOffset)(void * thisHandle, CorInfoException** ppException, void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection);
+    int (__stdcall * getIntrinsicID)(void * thisHandle, CorInfoException** ppException, void* method, bool* pMustExpand);
+    bool (__stdcall * isInSIMDModule)(void * thisHandle, CorInfoException** ppException, void* classHnd);
+    int (__stdcall * getUnmanagedCallConv)(void * thisHandle, CorInfoException** ppException, void* method);
+    bool (__stdcall * pInvokeMarshalingRequired)(void * thisHandle, CorInfoException** ppException, void* method, void* callSiteSig);
+    bool (__stdcall * satisfiesMethodConstraints)(void * thisHandle, CorInfoException** ppException, void* parent, void* method);
+    bool (__stdcall * isCompatibleDelegate)(void * thisHandle, CorInfoException** ppException, void* objCls, void* methodParentCls, void* method, void* delegateCls, int* pfIsOpenDelegate);
+    bool (__stdcall * isDelegateCreationAllowed)(void * thisHandle, CorInfoException** ppException, void* delegateHnd, void* calleeHnd);
+    int (__stdcall * isInstantiationOfVerifiedGeneric)(void * thisHandle, CorInfoException** ppException, void* method);
+    void (__stdcall * initConstraintsForVerification)(void * thisHandle, CorInfoException** ppException, void* method, int* pfHasCircularClassConstraints, int* pfHasCircularMethodConstraint);
+    int (__stdcall * canSkipMethodVerification)(void * thisHandle, CorInfoException** ppException, void* ftnHandle);
+    void (__stdcall * methodMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoException** ppException, void* method);
+    void* (__stdcall * mapMethodDeclToMethodImpl)(void * thisHandle, CorInfoException** ppException, void* method);
+    void (__stdcall * getGSCookie)(void * thisHandle, CorInfoException** ppException, void* pCookieVal, void** ppCookieVal);
+    void (__stdcall * resolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
+    void (__stdcall * findSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig);
+    void (__stdcall * findCallSiteSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned methTOK, void* context, void* sig);
+    void* (__stdcall * getTokenTypeAsHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
+    int (__stdcall * canSkipVerification)(void * thisHandle, CorInfoException** ppException, void* module);
+    bool (__stdcall * isValidToken)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
+    bool (__stdcall * isValidStringRef)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
+    bool (__stdcall * shouldEnforceCallvirtRestriction)(void * thisHandle, CorInfoException** ppException, void* scope);
+    int (__stdcall * asCorInfoType)(void * thisHandle, CorInfoException** ppException, void* cls);
+    const char* (__stdcall * getClassName)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (__stdcall * appendClassName)(void * thisHandle, CorInfoException** ppException, wchar_t** ppBuf, int* pnBufLen, void* cls, bool fNamespace, bool fFullInst, bool fAssembly);
+    bool (__stdcall * isValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
+    bool (__stdcall * canInlineTypeCheckWithObjectVTable)(void * thisHandle, CorInfoException** ppException, void* cls);
+    unsigned int (__stdcall * getClassAttribs)(void * thisHandle, CorInfoException** ppException, void* cls);
+    bool (__stdcall * isStructRequiringStackAllocRetBuf)(void * thisHandle, CorInfoException** ppException, void* cls);
+    void* (__stdcall * getClassModule)(void * thisHandle, CorInfoException** ppException, void* cls);
+    void* (__stdcall * getModuleAssembly)(void * thisHandle, CorInfoException** ppException, void* mod);
+    const char* (__stdcall * getAssemblyName)(void * thisHandle, CorInfoException** ppException, void* assem);
+    void* (__stdcall * LongLifetimeMalloc)(void * thisHandle, CorInfoException** ppException, size_t sz);
+    void (__stdcall * LongLifetimeFree)(void * thisHandle, CorInfoException** ppException, void* obj);
+    size_t (__stdcall * getClassModuleIdForStatics)(void * thisHandle, CorInfoException** ppException, void* cls, void* pModule, void** ppIndirection);
+    unsigned (__stdcall * getClassSize)(void * thisHandle, CorInfoException** ppException, void* cls);
+    unsigned (__stdcall * getClassAlignmentRequirement)(void * thisHandle, CorInfoException** ppException, void* cls, bool fDoubleAlignHint);
+    unsigned (__stdcall * getClassGClayout)(void * thisHandle, CorInfoException** ppException, void* cls, unsigned char* gcPtrs);
+    unsigned (__stdcall * getClassNumInstanceFields)(void * thisHandle, CorInfoException** ppException, void* cls);
+    void* (__stdcall * getFieldInClass)(void * thisHandle, CorInfoException** ppException, void* clsHnd, int num);
+    bool (__stdcall * checkMethodModifier)(void * thisHandle, CorInfoException** ppException, void* hMethod, const char* modifier, bool fOptional);
+    int (__stdcall * getNewHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* callerHandle);
+    int (__stdcall * getNewArrHelper)(void * thisHandle, CorInfoException** ppException, void* arrayCls);
+    int (__stdcall * getCastingHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool fThrowing);
+    int (__stdcall * getSharedCCtorHelper)(void * thisHandle, CorInfoException** ppException, void* clsHnd);
+    int (__stdcall * getSecurityPrologHelper)(void * thisHandle, CorInfoException** ppException, void* ftn);
+    void* (__stdcall * getTypeForBox)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (__stdcall * getBoxHelper)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (__stdcall * getUnBoxHelper)(void * thisHandle, CorInfoException** ppException, void* cls);
+    void (__stdcall * getReadyToRunHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, int id, void* pLookup);
+    void (__stdcall * getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoException** ppException, void* pTargetMethod, void* delegateType, void* pLookup);
+    const char* (__stdcall * getHelperName)(void * thisHandle, CorInfoException** ppException, int helpFunc);
+    int (__stdcall * initClass)(void * thisHandle, CorInfoException** ppException, void* field, void* method, void* context, bool speculative);
+    void (__stdcall * classMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoException** ppException, void* cls);
+    void* (__stdcall * getBuiltinClass)(void * thisHandle, CorInfoException** ppException, int classId);
+    int (__stdcall * getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoException** ppException, void* cls);
+    bool (__stdcall * canCast)(void * thisHandle, CorInfoException** ppException, void* child, void* parent);
+    bool (__stdcall * areTypesEquivalent)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
+    void* (__stdcall * mergeClasses)(void * thisHandle, CorInfoException** ppException, void* cls1, void* cls2);
+    void* (__stdcall * getParentType)(void * thisHandle, CorInfoException** ppException, void* cls);
+    int (__stdcall * getChildType)(void * thisHandle, CorInfoException** ppException, void* clsHnd, void* clsRet);
+    bool (__stdcall * satisfiesClassConstraints)(void * thisHandle, CorInfoException** ppException, void* cls);
+    bool (__stdcall * isSDArray)(void * thisHandle, CorInfoException** ppException, void* cls);
+    unsigned (__stdcall * getArrayRank)(void * thisHandle, CorInfoException** ppException, void* cls);
+    void* (__stdcall * getArrayInitializationData)(void * thisHandle, CorInfoException** ppException, void* field, unsigned int size);
+    int (__stdcall * canAccessClass)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* callerHandle, void* pAccessHelper);
+    const char* (__stdcall * getFieldName)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** moduleName);
+    void* (__stdcall * getFieldClass)(void * thisHandle, CorInfoException** ppException, void* field);
+    int (__stdcall * getFieldType)(void * thisHandle, CorInfoException** ppException, void* field, void* structType, void* memberParent);
+    unsigned (__stdcall * getFieldOffset)(void * thisHandle, CorInfoException** ppException, void* field);
+    bool (__stdcall * isWriteBarrierHelperRequired)(void * thisHandle, CorInfoException** ppException, void* field);
+    void (__stdcall * getFieldInfo)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* callerHandle, int flags, void* pResult);
+    bool (__stdcall * isFieldStatic)(void * thisHandle, CorInfoException** ppException, void* fldHnd);
+    void (__stdcall * getBoundaries)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int* cILOffsets, unsigned int** pILOffsets, void* implictBoundaries);
+    void (__stdcall * setBoundaries)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cMap, void* pMap);
+    void (__stdcall * getVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int* cVars, void* vars, bool* extendOthers);
+    void (__stdcall * setVars)(void * thisHandle, CorInfoException** ppException, void* ftn, unsigned int cVars, void* vars);
+    void* (__stdcall * allocateArray)(void * thisHandle, CorInfoException** ppException, unsigned int cBytes);
+    void (__stdcall * freeArray)(void * thisHandle, CorInfoException** ppException, void* array);
+    void* (__stdcall * getArgNext)(void * thisHandle, CorInfoException** ppException, void* args);
+    int (__stdcall * getArgType)(void * thisHandle, CorInfoException** ppException, void* sig, void* args, void* vcTypeRet);
+    void* (__stdcall * getArgClass)(void * thisHandle, CorInfoException** ppException, void* sig, void* args);
+    int (__stdcall * getHFAType)(void * thisHandle, CorInfoException** ppException, void* hClass);
+    int (__stdcall * GetErrorHRESULT)(void * thisHandle, CorInfoException** ppException, void* pExceptionPointers);
+    unsigned int (__stdcall * GetErrorMessage)(void * thisHandle, CorInfoException** ppException, wchar_t* buffer, unsigned int bufferLength);
+    int (__stdcall * FilterException)(void * thisHandle, CorInfoException** ppException, void* pExceptionPointers);
+    void (__stdcall * HandleException)(void * thisHandle, CorInfoException** ppException, void* pExceptionPointers);
+    void (__stdcall * ThrowExceptionForJitResult)(void * thisHandle, CorInfoException** ppException, int result);
+    void (__stdcall * ThrowExceptionForHelper)(void * thisHandle, CorInfoException** ppException, const void* throwHelper);
+    void (__stdcall * getEEInfo)(void * thisHandle, CorInfoException** ppException, void* pEEInfoOut);
+    const wchar_t* (__stdcall * getJitTimeLogFilename)(void * thisHandle, CorInfoException** ppException);
+    unsigned int (__stdcall * getMethodDefFromMethod)(void * thisHandle, CorInfoException** ppException, void* hMethod);
+    const char* (__stdcall * getMethodName)(void * thisHandle, CorInfoException** ppException, void* ftn, const char** moduleName);
+    unsigned (__stdcall * getMethodHash)(void * thisHandle, CorInfoException** ppException, void* ftn);
+    size_t (__stdcall * findNameOfToken)(void * thisHandle, CorInfoException** ppException, void* moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
+    bool (__stdcall * getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoException** ppException, void* structHnd, void* structPassInRegDescPtr);
+    unsigned int (__stdcall * getThreadTLSIndex)(void * thisHandle, CorInfoException** ppException, void** ppIndirection);
+    const void* (__stdcall * getInlinedCallFrameVptr)(void * thisHandle, CorInfoException** ppException, void** ppIndirection);
+    long* (__stdcall * getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoException** ppException, void** ppIndirection);
+    size_t* (__stdcall * getAddrModuleDomainID)(void * thisHandle, CorInfoException** ppException, void* module);
+    void* (__stdcall * getHelperFtn)(void * thisHandle, CorInfoException** ppException, int ftnNum, void** ppIndirection);
+    void (__stdcall * getFunctionEntryPoint)(void * thisHandle, CorInfoException** ppException, void* ftn, void* pResult, int accessFlags);
+    void (__stdcall * getFunctionFixedEntryPoint)(void * thisHandle, CorInfoException** ppException, void* ftn, void* pResult);
+    void* (__stdcall * getMethodSync)(void * thisHandle, CorInfoException** ppException, void* ftn, void** ppIndirection);
+    int (__stdcall * getLazyStringLiteralHelper)(void * thisHandle, CorInfoException** ppException, void* handle);
+    void* (__stdcall * embedModuleHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
+    void* (__stdcall * embedClassHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
+    void* (__stdcall * embedMethodHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
+    void* (__stdcall * embedFieldHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
+    void (__stdcall * embedGenericHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, bool fEmbedParent, void* pResult);
+    void (__stdcall * getLocationOfThisType)(void * thisHandle, CorInfoException** ppException, CORINFO_LOOKUP_KIND* _return, void* context);
+    void* (__stdcall * getPInvokeUnmanagedTarget)(void * thisHandle, CorInfoException** ppException, void* method, void** ppIndirection);
+    void* (__stdcall * getAddressOfPInvokeFixup)(void * thisHandle, CorInfoException** ppException, void* method, void** ppIndirection);
+    void (__stdcall * getAddressOfPInvokeTarget)(void * thisHandle, CorInfoException** ppException, void* method, void* pLookup);
+    void* (__stdcall * GetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoException** ppException, void* szMetaSig, void** ppIndirection);
+    bool (__stdcall * canGetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoException** ppException, void* szMetaSig);
+    void* (__stdcall * getJustMyCodeHandle)(void * thisHandle, CorInfoException** ppException, void* method, void** ppIndirection);
+    void (__stdcall * GetProfilingHandle)(void * thisHandle, CorInfoException** ppException, int* pbHookFunction, void** pProfilerHandle, int* pbIndirectedHandles);
+    void (__stdcall * getCallInfo)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pConstrainedResolvedToken, void* callerHandle, int flags, void* pResult);
+    bool (__stdcall * canAccessFamily)(void * thisHandle, CorInfoException** ppException, void* hCaller, void* hInstanceType);
+    bool (__stdcall * isRIDClassDomainID)(void * thisHandle, CorInfoException** ppException, void* cls);
+    unsigned (__stdcall * getClassDomainID)(void * thisHandle, CorInfoException** ppException, void* cls, void** ppIndirection);
+    void* (__stdcall * getFieldAddress)(void * thisHandle, CorInfoException** ppException, void* field, void** ppIndirection);
+    void* (__stdcall * getVarArgsHandle)(void * thisHandle, CorInfoException** ppException, void* pSig, void** ppIndirection);
+    bool (__stdcall * canGetVarArgsHandle)(void * thisHandle, CorInfoException** ppException, void* pSig);
+    int (__stdcall * constructStringLiteral)(void * thisHandle, CorInfoException** ppException, void* module, unsigned int metaTok, void** ppValue);
+    int (__stdcall * emptyStringLiteral)(void * thisHandle, CorInfoException** ppException, void** ppValue);
+    unsigned int (__stdcall * getFieldThreadLocalStoreID)(void * thisHandle, CorInfoException** ppException, void* field, void** ppIndirection);
+    void (__stdcall * setOverride)(void * thisHandle, CorInfoException** ppException, void* pOverride, void* currentMethod);
+    void (__stdcall * addActiveDependency)(void * thisHandle, CorInfoException** ppException, void* moduleFrom, void* moduleTo);
+    void* (__stdcall * GetDelegateCtor)(void * thisHandle, CorInfoException** ppException, void* methHnd, void* clsHnd, void* targetMethodHnd, void* pCtorData);
+    void (__stdcall * MethodCompileComplete)(void * thisHandle, CorInfoException** ppException, void* methHnd);
+    void* (__stdcall * getTailCallCopyArgsThunk)(void * thisHandle, CorInfoException** ppException, void* pSig, int flags);
+    void* (__stdcall * getMemoryManager)(void * thisHandle, CorInfoException** ppException);
+    void (__stdcall * allocMem)(void * thisHandle, CorInfoException** ppException, unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock);
+    void (__stdcall * reserveUnwindInfo)(void * thisHandle, CorInfoException** ppException, bool isFunclet, bool isColdCode, unsigned int unwindSize);
+    void (__stdcall * allocUnwindInfo)(void * thisHandle, CorInfoException** ppException, unsigned char* pHotCode, unsigned char* pColdCode, unsigned int startOffset, unsigned int endOffset, unsigned int unwindSize, unsigned char* pUnwindBlock, int funcKind);
+    void* (__stdcall * allocGCInfo)(void * thisHandle, CorInfoException** ppException, size_t size);
+    void (__stdcall * yieldExecution)(void * thisHandle, CorInfoException** ppException);
+    void (__stdcall * setEHcount)(void * thisHandle, CorInfoException** ppException, unsigned cEH);
+    void (__stdcall * setEHinfo)(void * thisHandle, CorInfoException** ppException, unsigned EHnumber, void* clause);
+    bool (__stdcall * logMsg)(void * thisHandle, CorInfoException** ppException, unsigned level, const char* fmt, va_list args);
+    int (__stdcall * doAssert)(void * thisHandle, CorInfoException** ppException, const char* szFile, int iLine, const char* szExpr);
+    void (__stdcall * reportFatalError)(void * thisHandle, CorInfoException** ppException, int result);
+    int (__stdcall * allocBBProfileBuffer)(void * thisHandle, CorInfoException** ppException, unsigned int count, void** profileBuffer);
+    int (__stdcall * getBBProfileData)(void * thisHandle, CorInfoException** ppException, void* ftnHnd, unsigned long* count, void** profileBuffer, unsigned long* numRuns);
+    void (__stdcall * recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
+    void (__stdcall * recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
+    unsigned short (__stdcall * getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
+    void (__stdcall * getModuleNativeEntryPointRange)(void * thisHandle, CorInfoException** ppException, void** pStart, void** pEnd);
+    unsigned int (__stdcall * getExpectedTargetArchitecture)(void * thisHandle, CorInfoException** ppException);
+    unsigned int (__stdcall * getJitFlags)(void * thisHandle, CorInfoException** ppException, void* flags, unsigned int sizeInBytes);
 
 };
 
 class JitInterfaceWrapper
 {
+    void * _thisHandle;
+    JitInterfaceCallbacks * _callbacks;
+
 public:
+    JitInterfaceWrapper(void * thisHandle, void ** callbacks)
+        : _thisHandle(thisHandle), _callbacks((JitInterfaceCallbacks *)callbacks)
+    {
+    }
+
     virtual unsigned int getMethodAttribs(void* ftn)
     {
         CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->getMethodAttribs(&pException, ftn);
+        unsigned int _ret = _callbacks->getMethodAttribs(_thisHandle, &pException, ftn);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void setMethodAttribs(void* ftn, int attribs)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->setMethodAttribs(&pException, ftn, attribs);
+        _callbacks->setMethodAttribs(_thisHandle, &pException, ftn, attribs);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void getMethodSig(void* ftn, void* sig, void* memberParent)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getMethodSig(&pException, ftn, sig, memberParent);
+        _callbacks->getMethodSig(_thisHandle, &pException, ftn, sig, memberParent);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual bool getMethodInfo(void* ftn, void* info)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->getMethodInfo(&pException, ftn, info);
+        bool _ret = _callbacks->getMethodInfo(_thisHandle, &pException, ftn, info);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int canInline(void* callerHnd, void* calleeHnd, unsigned int* pRestrictions)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->canInline(&pException, callerHnd, calleeHnd, pRestrictions);
+        int _ret = _callbacks->canInline(_thisHandle, &pException, callerHnd, calleeHnd, pRestrictions);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void reportInliningDecision(void* inlinerHnd, void* inlineeHnd, int inlineResult, const char* reason)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->reportInliningDecision(&pException, inlinerHnd, inlineeHnd, inlineResult, reason);
+        _callbacks->reportInliningDecision(_thisHandle, &pException, inlinerHnd, inlineeHnd, inlineResult, reason);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual bool canTailCall(void* callerHnd, void* declaredCalleeHnd, void* exactCalleeHnd, bool fIsTailPrefix)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->canTailCall(&pException, callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix);
+        bool _ret = _callbacks->canTailCall(_thisHandle, &pException, callerHnd, declaredCalleeHnd, exactCalleeHnd, fIsTailPrefix);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void reportTailCallDecision(void* callerHnd, void* calleeHnd, bool fIsTailPrefix, int tailCallResult, const char* reason)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->reportTailCallDecision(&pException, callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
+        _callbacks->reportTailCallDecision(_thisHandle, &pException, callerHnd, calleeHnd, fIsTailPrefix, tailCallResult, reason);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void getEHinfo(void* ftn, unsigned EHnumber, void* clause)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getEHinfo(&pException, ftn, EHnumber, clause);
+        _callbacks->getEHinfo(_thisHandle, &pException, ftn, EHnumber, clause);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* getMethodClass(void* method)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getMethodClass(&pException, method);
+        void* _ret = _callbacks->getMethodClass(_thisHandle, &pException, method);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getMethodModule(void* method)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getMethodModule(&pException, method);
+        void* _ret = _callbacks->getMethodModule(_thisHandle, &pException, method);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void getMethodVTableOffset(void* method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getMethodVTableOffset(&pException, method, offsetOfIndirection, offsetAfterIndirection);
+        _callbacks->getMethodVTableOffset(_thisHandle, &pException, method, offsetOfIndirection, offsetAfterIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual int getIntrinsicID(void* method, bool* pMustExpand)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getIntrinsicID(&pException, method, pMustExpand);
+        int _ret = _callbacks->getIntrinsicID(_thisHandle, &pException, method, pMustExpand);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isInSIMDModule(void* classHnd)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isInSIMDModule(&pException, classHnd);
+        bool _ret = _callbacks->isInSIMDModule(_thisHandle, &pException, classHnd);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getUnmanagedCallConv(void* method)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getUnmanagedCallConv(&pException, method);
+        int _ret = _callbacks->getUnmanagedCallConv(_thisHandle, &pException, method);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool pInvokeMarshalingRequired(void* method, void* callSiteSig)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->pInvokeMarshalingRequired(&pException, method, callSiteSig);
+        bool _ret = _callbacks->pInvokeMarshalingRequired(_thisHandle, &pException, method, callSiteSig);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool satisfiesMethodConstraints(void* parent, void* method)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->satisfiesMethodConstraints(&pException, parent, method);
+        bool _ret = _callbacks->satisfiesMethodConstraints(_thisHandle, &pException, parent, method);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isCompatibleDelegate(void* objCls, void* methodParentCls, void* method, void* delegateCls, int* pfIsOpenDelegate)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isCompatibleDelegate(&pException, objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
+        bool _ret = _callbacks->isCompatibleDelegate(_thisHandle, &pException, objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isDelegateCreationAllowed(void* delegateHnd, void* calleeHnd)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isDelegateCreationAllowed(&pException, delegateHnd, calleeHnd);
+        bool _ret = _callbacks->isDelegateCreationAllowed(_thisHandle, &pException, delegateHnd, calleeHnd);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int isInstantiationOfVerifiedGeneric(void* method)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->isInstantiationOfVerifiedGeneric(&pException, method);
+        int _ret = _callbacks->isInstantiationOfVerifiedGeneric(_thisHandle, &pException, method);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void initConstraintsForVerification(void* method, int* pfHasCircularClassConstraints, int* pfHasCircularMethodConstraint)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->initConstraintsForVerification(&pException, method, pfHasCircularClassConstraints, pfHasCircularMethodConstraint);
+        _callbacks->initConstraintsForVerification(_thisHandle, &pException, method, pfHasCircularClassConstraints, pfHasCircularMethodConstraint);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual int canSkipMethodVerification(void* ftnHandle)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->canSkipMethodVerification(&pException, ftnHandle);
+        int _ret = _callbacks->canSkipMethodVerification(_thisHandle, &pException, ftnHandle);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void methodMustBeLoadedBeforeCodeIsRun(void* method)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->methodMustBeLoadedBeforeCodeIsRun(&pException, method);
+        _callbacks->methodMustBeLoadedBeforeCodeIsRun(_thisHandle, &pException, method);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* mapMethodDeclToMethodImpl(void* method)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->mapMethodDeclToMethodImpl(&pException, method);
+        void* _ret = _callbacks->mapMethodDeclToMethodImpl(_thisHandle, &pException, method);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void getGSCookie(void* pCookieVal, void** ppCookieVal)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getGSCookie(&pException, pCookieVal, ppCookieVal);
+        _callbacks->getGSCookie(_thisHandle, &pException, pCookieVal, ppCookieVal);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void resolveToken(void* pResolvedToken)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->resolveToken(&pException, pResolvedToken);
+        _callbacks->resolveToken(_thisHandle, &pException, pResolvedToken);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void findSig(void* module, unsigned sigTOK, void* context, void* sig)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->findSig(&pException, module, sigTOK, context, sig);
+        _callbacks->findSig(_thisHandle, &pException, module, sigTOK, context, sig);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void findCallSiteSig(void* module, unsigned methTOK, void* context, void* sig)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->findCallSiteSig(&pException, module, methTOK, context, sig);
+        _callbacks->findCallSiteSig(_thisHandle, &pException, module, methTOK, context, sig);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* getTokenTypeAsHandle(void* pResolvedToken)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getTokenTypeAsHandle(&pException, pResolvedToken);
+        void* _ret = _callbacks->getTokenTypeAsHandle(_thisHandle, &pException, pResolvedToken);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int canSkipVerification(void* module)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->canSkipVerification(&pException, module);
+        int _ret = _callbacks->canSkipVerification(_thisHandle, &pException, module);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isValidToken(void* module, unsigned metaTOK)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isValidToken(&pException, module, metaTOK);
+        bool _ret = _callbacks->isValidToken(_thisHandle, &pException, module, metaTOK);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isValidStringRef(void* module, unsigned metaTOK)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isValidStringRef(&pException, module, metaTOK);
+        bool _ret = _callbacks->isValidStringRef(_thisHandle, &pException, module, metaTOK);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool shouldEnforceCallvirtRestriction(void* scope)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->shouldEnforceCallvirtRestriction(&pException, scope);
+        bool _ret = _callbacks->shouldEnforceCallvirtRestriction(_thisHandle, &pException, scope);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int asCorInfoType(void* cls)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->asCorInfoType(&pException, cls);
+        int _ret = _callbacks->asCorInfoType(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual const char* getClassName(void* cls)
     {
         CorInfoException* pException = nullptr;
-        const char* _ret = _pCorInfo->getClassName(&pException, cls);
+        const char* _ret = _callbacks->getClassName(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int appendClassName(wchar_t** ppBuf, int* pnBufLen, void* cls, bool fNamespace, bool fFullInst, bool fAssembly)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->appendClassName(&pException, ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+        int _ret = _callbacks->appendClassName(_thisHandle, &pException, ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isValueClass(void* cls)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isValueClass(&pException, cls);
+        bool _ret = _callbacks->isValueClass(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool canInlineTypeCheckWithObjectVTable(void* cls)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->canInlineTypeCheckWithObjectVTable(&pException, cls);
+        bool _ret = _callbacks->canInlineTypeCheckWithObjectVTable(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned int getClassAttribs(void* cls)
     {
         CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->getClassAttribs(&pException, cls);
+        unsigned int _ret = _callbacks->getClassAttribs(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isStructRequiringStackAllocRetBuf(void* cls)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isStructRequiringStackAllocRetBuf(&pException, cls);
+        bool _ret = _callbacks->isStructRequiringStackAllocRetBuf(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getClassModule(void* cls)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getClassModule(&pException, cls);
+        void* _ret = _callbacks->getClassModule(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getModuleAssembly(void* mod)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getModuleAssembly(&pException, mod);
+        void* _ret = _callbacks->getModuleAssembly(_thisHandle, &pException, mod);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual const char* getAssemblyName(void* assem)
     {
         CorInfoException* pException = nullptr;
-        const char* _ret = _pCorInfo->getAssemblyName(&pException, assem);
+        const char* _ret = _callbacks->getAssemblyName(_thisHandle, &pException, assem);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* LongLifetimeMalloc(size_t sz)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->LongLifetimeMalloc(&pException, sz);
+        void* _ret = _callbacks->LongLifetimeMalloc(_thisHandle, &pException, sz);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void LongLifetimeFree(void* obj)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->LongLifetimeFree(&pException, obj);
+        _callbacks->LongLifetimeFree(_thisHandle, &pException, obj);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual size_t getClassModuleIdForStatics(void* cls, void* pModule, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        size_t _ret = _pCorInfo->getClassModuleIdForStatics(&pException, cls, pModule, ppIndirection);
+        size_t _ret = _callbacks->getClassModuleIdForStatics(_thisHandle, &pException, cls, pModule, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getClassSize(void* cls)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getClassSize(&pException, cls);
+        unsigned _ret = _callbacks->getClassSize(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getClassAlignmentRequirement(void* cls, bool fDoubleAlignHint)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getClassAlignmentRequirement(&pException, cls, fDoubleAlignHint);
+        unsigned _ret = _callbacks->getClassAlignmentRequirement(_thisHandle, &pException, cls, fDoubleAlignHint);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getClassGClayout(void* cls, unsigned char* gcPtrs)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getClassGClayout(&pException, cls, gcPtrs);
+        unsigned _ret = _callbacks->getClassGClayout(_thisHandle, &pException, cls, gcPtrs);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getClassNumInstanceFields(void* cls)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getClassNumInstanceFields(&pException, cls);
+        unsigned _ret = _callbacks->getClassNumInstanceFields(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getFieldInClass(void* clsHnd, int num)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getFieldInClass(&pException, clsHnd, num);
+        void* _ret = _callbacks->getFieldInClass(_thisHandle, &pException, clsHnd, num);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool checkMethodModifier(void* hMethod, const char* modifier, bool fOptional)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->checkMethodModifier(&pException, hMethod, modifier, fOptional);
+        bool _ret = _callbacks->checkMethodModifier(_thisHandle, &pException, hMethod, modifier, fOptional);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getNewHelper(void* pResolvedToken, void* callerHandle)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getNewHelper(&pException, pResolvedToken, callerHandle);
+        int _ret = _callbacks->getNewHelper(_thisHandle, &pException, pResolvedToken, callerHandle);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getNewArrHelper(void* arrayCls)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getNewArrHelper(&pException, arrayCls);
+        int _ret = _callbacks->getNewArrHelper(_thisHandle, &pException, arrayCls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getCastingHelper(void* pResolvedToken, bool fThrowing)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getCastingHelper(&pException, pResolvedToken, fThrowing);
+        int _ret = _callbacks->getCastingHelper(_thisHandle, &pException, pResolvedToken, fThrowing);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getSharedCCtorHelper(void* clsHnd)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getSharedCCtorHelper(&pException, clsHnd);
+        int _ret = _callbacks->getSharedCCtorHelper(_thisHandle, &pException, clsHnd);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getSecurityPrologHelper(void* ftn)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getSecurityPrologHelper(&pException, ftn);
+        int _ret = _callbacks->getSecurityPrologHelper(_thisHandle, &pException, ftn);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getTypeForBox(void* cls)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getTypeForBox(&pException, cls);
+        void* _ret = _callbacks->getTypeForBox(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getBoxHelper(void* cls)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getBoxHelper(&pException, cls);
+        int _ret = _callbacks->getBoxHelper(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getUnBoxHelper(void* cls)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getUnBoxHelper(&pException, cls);
+        int _ret = _callbacks->getUnBoxHelper(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void getReadyToRunHelper(void* pResolvedToken, int id, void* pLookup)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getReadyToRunHelper(&pException, pResolvedToken, id, pLookup);
+        _callbacks->getReadyToRunHelper(_thisHandle, &pException, pResolvedToken, id, pLookup);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void getReadyToRunDelegateCtorHelper(void* pTargetMethod, void* delegateType, void* pLookup)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getReadyToRunDelegateCtorHelper(&pException, pTargetMethod, delegateType, pLookup);
+        _callbacks->getReadyToRunDelegateCtorHelper(_thisHandle, &pException, pTargetMethod, delegateType, pLookup);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual const char* getHelperName(int helpFunc)
     {
         CorInfoException* pException = nullptr;
-        const char* _ret = _pCorInfo->getHelperName(&pException, helpFunc);
+        const char* _ret = _callbacks->getHelperName(_thisHandle, &pException, helpFunc);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int initClass(void* field, void* method, void* context, bool speculative)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->initClass(&pException, field, method, context, speculative);
+        int _ret = _callbacks->initClass(_thisHandle, &pException, field, method, context, speculative);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void classMustBeLoadedBeforeCodeIsRun(void* cls)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->classMustBeLoadedBeforeCodeIsRun(&pException, cls);
+        _callbacks->classMustBeLoadedBeforeCodeIsRun(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* getBuiltinClass(int classId)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getBuiltinClass(&pException, classId);
+        void* _ret = _callbacks->getBuiltinClass(_thisHandle, &pException, classId);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getTypeForPrimitiveValueClass(void* cls)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getTypeForPrimitiveValueClass(&pException, cls);
+        int _ret = _callbacks->getTypeForPrimitiveValueClass(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool canCast(void* child, void* parent)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->canCast(&pException, child, parent);
+        bool _ret = _callbacks->canCast(_thisHandle, &pException, child, parent);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool areTypesEquivalent(void* cls1, void* cls2)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->areTypesEquivalent(&pException, cls1, cls2);
+        bool _ret = _callbacks->areTypesEquivalent(_thisHandle, &pException, cls1, cls2);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* mergeClasses(void* cls1, void* cls2)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->mergeClasses(&pException, cls1, cls2);
+        void* _ret = _callbacks->mergeClasses(_thisHandle, &pException, cls1, cls2);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getParentType(void* cls)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getParentType(&pException, cls);
+        void* _ret = _callbacks->getParentType(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getChildType(void* clsHnd, void* clsRet)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getChildType(&pException, clsHnd, clsRet);
+        int _ret = _callbacks->getChildType(_thisHandle, &pException, clsHnd, clsRet);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool satisfiesClassConstraints(void* cls)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->satisfiesClassConstraints(&pException, cls);
+        bool _ret = _callbacks->satisfiesClassConstraints(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isSDArray(void* cls)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isSDArray(&pException, cls);
+        bool _ret = _callbacks->isSDArray(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getArrayRank(void* cls)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getArrayRank(&pException, cls);
+        unsigned _ret = _callbacks->getArrayRank(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getArrayInitializationData(void* field, unsigned int size)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getArrayInitializationData(&pException, field, size);
+        void* _ret = _callbacks->getArrayInitializationData(_thisHandle, &pException, field, size);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int canAccessClass(void* pResolvedToken, void* callerHandle, void* pAccessHelper)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->canAccessClass(&pException, pResolvedToken, callerHandle, pAccessHelper);
+        int _ret = _callbacks->canAccessClass(_thisHandle, &pException, pResolvedToken, callerHandle, pAccessHelper);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual const char* getFieldName(void* ftn, const char** moduleName)
     {
         CorInfoException* pException = nullptr;
-        const char* _ret = _pCorInfo->getFieldName(&pException, ftn, moduleName);
+        const char* _ret = _callbacks->getFieldName(_thisHandle, &pException, ftn, moduleName);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getFieldClass(void* field)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getFieldClass(&pException, field);
+        void* _ret = _callbacks->getFieldClass(_thisHandle, &pException, field);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getFieldType(void* field, void* structType, void* memberParent)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getFieldType(&pException, field, structType, memberParent);
+        int _ret = _callbacks->getFieldType(_thisHandle, &pException, field, structType, memberParent);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getFieldOffset(void* field)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getFieldOffset(&pException, field);
+        unsigned _ret = _callbacks->getFieldOffset(_thisHandle, &pException, field);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isWriteBarrierHelperRequired(void* field)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isWriteBarrierHelperRequired(&pException, field);
+        bool _ret = _callbacks->isWriteBarrierHelperRequired(_thisHandle, &pException, field);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void getFieldInfo(void* pResolvedToken, void* callerHandle, int flags, void* pResult)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getFieldInfo(&pException, pResolvedToken, callerHandle, flags, pResult);
+        _callbacks->getFieldInfo(_thisHandle, &pException, pResolvedToken, callerHandle, flags, pResult);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual bool isFieldStatic(void* fldHnd)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isFieldStatic(&pException, fldHnd);
+        bool _ret = _callbacks->isFieldStatic(_thisHandle, &pException, fldHnd);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void getBoundaries(void* ftn, unsigned int* cILOffsets, unsigned int** pILOffsets, void* implictBoundaries)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getBoundaries(&pException, ftn, cILOffsets, pILOffsets, implictBoundaries);
+        _callbacks->getBoundaries(_thisHandle, &pException, ftn, cILOffsets, pILOffsets, implictBoundaries);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void setBoundaries(void* ftn, unsigned int cMap, void* pMap)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->setBoundaries(&pException, ftn, cMap, pMap);
+        _callbacks->setBoundaries(_thisHandle, &pException, ftn, cMap, pMap);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void getVars(void* ftn, unsigned int* cVars, void* vars, bool* extendOthers)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getVars(&pException, ftn, cVars, vars, extendOthers);
+        _callbacks->getVars(_thisHandle, &pException, ftn, cVars, vars, extendOthers);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void setVars(void* ftn, unsigned int cVars, void* vars)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->setVars(&pException, ftn, cVars, vars);
+        _callbacks->setVars(_thisHandle, &pException, ftn, cVars, vars);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* allocateArray(unsigned int cBytes)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->allocateArray(&pException, cBytes);
+        void* _ret = _callbacks->allocateArray(_thisHandle, &pException, cBytes);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void freeArray(void* array)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->freeArray(&pException, array);
+        _callbacks->freeArray(_thisHandle, &pException, array);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* getArgNext(void* args)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getArgNext(&pException, args);
+        void* _ret = _callbacks->getArgNext(_thisHandle, &pException, args);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getArgType(void* sig, void* args, void* vcTypeRet)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getArgType(&pException, sig, args, vcTypeRet);
+        int _ret = _callbacks->getArgType(_thisHandle, &pException, sig, args, vcTypeRet);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getArgClass(void* sig, void* args)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getArgClass(&pException, sig, args);
+        void* _ret = _callbacks->getArgClass(_thisHandle, &pException, sig, args);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getHFAType(void* hClass)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getHFAType(&pException, hClass);
+        int _ret = _callbacks->getHFAType(_thisHandle, &pException, hClass);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int GetErrorHRESULT(void* pExceptionPointers)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->GetErrorHRESULT(&pException, pExceptionPointers);
+        int _ret = _callbacks->GetErrorHRESULT(_thisHandle, &pException, pExceptionPointers);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned int GetErrorMessage(wchar_t* buffer, unsigned int bufferLength)
     {
         CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->GetErrorMessage(&pException, buffer, bufferLength);
+        unsigned int _ret = _callbacks->GetErrorMessage(_thisHandle, &pException, buffer, bufferLength);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int FilterException(void* pExceptionPointers);
     virtual void HandleException(void* pExceptionPointers);
     virtual void ThrowExceptionForJitResult(int result)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->ThrowExceptionForJitResult(&pException, result);
+        _callbacks->ThrowExceptionForJitResult(_thisHandle, &pException, result);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void ThrowExceptionForHelper(const void* throwHelper)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->ThrowExceptionForHelper(&pException, throwHelper);
+        _callbacks->ThrowExceptionForHelper(_thisHandle, &pException, throwHelper);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void getEEInfo(void* pEEInfoOut)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getEEInfo(&pException, pEEInfoOut);
+        _callbacks->getEEInfo(_thisHandle, &pException, pEEInfoOut);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual const wchar_t* getJitTimeLogFilename()
     {
         CorInfoException* pException = nullptr;
-        const wchar_t* _ret = _pCorInfo->getJitTimeLogFilename(&pException);
+        const wchar_t* _ret = _callbacks->getJitTimeLogFilename(_thisHandle, &pException);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned int getMethodDefFromMethod(void* hMethod)
     {
         CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->getMethodDefFromMethod(&pException, hMethod);
+        unsigned int _ret = _callbacks->getMethodDefFromMethod(_thisHandle, &pException, hMethod);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual const char* getMethodName(void* ftn, const char** moduleName)
     {
         CorInfoException* pException = nullptr;
-        const char* _ret = _pCorInfo->getMethodName(&pException, ftn, moduleName);
+        const char* _ret = _callbacks->getMethodName(_thisHandle, &pException, ftn, moduleName);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getMethodHash(void* ftn)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getMethodHash(&pException, ftn);
+        unsigned _ret = _callbacks->getMethodHash(_thisHandle, &pException, ftn);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual size_t findNameOfToken(void* moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity)
     {
         CorInfoException* pException = nullptr;
-        size_t _ret = _pCorInfo->findNameOfToken(&pException, moduleHandle, token, szFQName, FQNameCapacity);
+        size_t _ret = _callbacks->findNameOfToken(_thisHandle, &pException, moduleHandle, token, szFQName, FQNameCapacity);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(void* structHnd, void* structPassInRegDescPtr)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->getSystemVAmd64PassStructInRegisterDescriptor(&pException, structHnd, structPassInRegDescPtr);
+        bool _ret = _callbacks->getSystemVAmd64PassStructInRegisterDescriptor(_thisHandle, &pException, structHnd, structPassInRegDescPtr);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned int getThreadTLSIndex(void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->getThreadTLSIndex(&pException, ppIndirection);
+        unsigned int _ret = _callbacks->getThreadTLSIndex(_thisHandle, &pException, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual const void* getInlinedCallFrameVptr(void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        const void* _ret = _pCorInfo->getInlinedCallFrameVptr(&pException, ppIndirection);
+        const void* _ret = _callbacks->getInlinedCallFrameVptr(_thisHandle, &pException, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual long* getAddrOfCaptureThreadGlobal(void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        long* _ret = _pCorInfo->getAddrOfCaptureThreadGlobal(&pException, ppIndirection);
+        long* _ret = _callbacks->getAddrOfCaptureThreadGlobal(_thisHandle, &pException, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual size_t* getAddrModuleDomainID(void* module)
     {
         CorInfoException* pException = nullptr;
-        size_t* _ret = _pCorInfo->getAddrModuleDomainID(&pException, module);
+        size_t* _ret = _callbacks->getAddrModuleDomainID(_thisHandle, &pException, module);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getHelperFtn(int ftnNum, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getHelperFtn(&pException, ftnNum, ppIndirection);
+        void* _ret = _callbacks->getHelperFtn(_thisHandle, &pException, ftnNum, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void getFunctionEntryPoint(void* ftn, void* pResult, int accessFlags)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getFunctionEntryPoint(&pException, ftn, pResult, accessFlags);
+        _callbacks->getFunctionEntryPoint(_thisHandle, &pException, ftn, pResult, accessFlags);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void getFunctionFixedEntryPoint(void* ftn, void* pResult)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getFunctionFixedEntryPoint(&pException, ftn, pResult);
+        _callbacks->getFunctionFixedEntryPoint(_thisHandle, &pException, ftn, pResult);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* getMethodSync(void* ftn, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getMethodSync(&pException, ftn, ppIndirection);
+        void* _ret = _callbacks->getMethodSync(_thisHandle, &pException, ftn, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int getLazyStringLiteralHelper(void* handle)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getLazyStringLiteralHelper(&pException, handle);
+        int _ret = _callbacks->getLazyStringLiteralHelper(_thisHandle, &pException, handle);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* embedModuleHandle(void* handle, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->embedModuleHandle(&pException, handle, ppIndirection);
+        void* _ret = _callbacks->embedModuleHandle(_thisHandle, &pException, handle, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* embedClassHandle(void* handle, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->embedClassHandle(&pException, handle, ppIndirection);
+        void* _ret = _callbacks->embedClassHandle(_thisHandle, &pException, handle, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* embedMethodHandle(void* handle, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->embedMethodHandle(&pException, handle, ppIndirection);
+        void* _ret = _callbacks->embedMethodHandle(_thisHandle, &pException, handle, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* embedFieldHandle(void* handle, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->embedFieldHandle(&pException, handle, ppIndirection);
+        void* _ret = _callbacks->embedFieldHandle(_thisHandle, &pException, handle, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void embedGenericHandle(void* pResolvedToken, bool fEmbedParent, void* pResult)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->embedGenericHandle(&pException, pResolvedToken, fEmbedParent, pResult);
+        _callbacks->embedGenericHandle(_thisHandle, &pException, pResolvedToken, fEmbedParent, pResult);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual CORINFO_LOOKUP_KIND getLocationOfThisType(void* context);
     virtual void* getPInvokeUnmanagedTarget(void* method, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getPInvokeUnmanagedTarget(&pException, method, ppIndirection);
+        void* _ret = _callbacks->getPInvokeUnmanagedTarget(_thisHandle, &pException, method, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getAddressOfPInvokeFixup(void* method, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getAddressOfPInvokeFixup(&pException, method, ppIndirection);
+        void* _ret = _callbacks->getAddressOfPInvokeFixup(_thisHandle, &pException, method, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void getAddressOfPInvokeTarget(void* method, void* pLookup)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getAddressOfPInvokeTarget(&pException, method, pLookup);
+        _callbacks->getAddressOfPInvokeTarget(_thisHandle, &pException, method, pLookup);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* GetCookieForPInvokeCalliSig(void* szMetaSig, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->GetCookieForPInvokeCalliSig(&pException, szMetaSig, ppIndirection);
+        void* _ret = _callbacks->GetCookieForPInvokeCalliSig(_thisHandle, &pException, szMetaSig, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool canGetCookieForPInvokeCalliSig(void* szMetaSig)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->canGetCookieForPInvokeCalliSig(&pException, szMetaSig);
+        bool _ret = _callbacks->canGetCookieForPInvokeCalliSig(_thisHandle, &pException, szMetaSig);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getJustMyCodeHandle(void* method, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getJustMyCodeHandle(&pException, method, ppIndirection);
+        void* _ret = _callbacks->getJustMyCodeHandle(_thisHandle, &pException, method, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void GetProfilingHandle(int* pbHookFunction, void** pProfilerHandle, int* pbIndirectedHandles)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->GetProfilingHandle(&pException, pbHookFunction, pProfilerHandle, pbIndirectedHandles);
+        _callbacks->GetProfilingHandle(_thisHandle, &pException, pbHookFunction, pProfilerHandle, pbIndirectedHandles);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void getCallInfo(void* pResolvedToken, void* pConstrainedResolvedToken, void* callerHandle, int flags, void* pResult)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->getCallInfo(&pException, pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
+        _callbacks->getCallInfo(_thisHandle, &pException, pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual bool canAccessFamily(void* hCaller, void* hInstanceType)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->canAccessFamily(&pException, hCaller, hInstanceType);
+        bool _ret = _callbacks->canAccessFamily(_thisHandle, &pException, hCaller, hInstanceType);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool isRIDClassDomainID(void* cls)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->isRIDClassDomainID(&pException, cls);
+        bool _ret = _callbacks->isRIDClassDomainID(_thisHandle, &pException, cls);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned getClassDomainID(void* cls, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        unsigned _ret = _pCorInfo->getClassDomainID(&pException, cls, ppIndirection);
+        unsigned _ret = _callbacks->getClassDomainID(_thisHandle, &pException, cls, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getFieldAddress(void* field, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getFieldAddress(&pException, field, ppIndirection);
+        void* _ret = _callbacks->getFieldAddress(_thisHandle, &pException, field, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getVarArgsHandle(void* pSig, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getVarArgsHandle(&pException, pSig, ppIndirection);
+        void* _ret = _callbacks->getVarArgsHandle(_thisHandle, &pException, pSig, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual bool canGetVarArgsHandle(void* pSig)
     {
         CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->canGetVarArgsHandle(&pException, pSig);
+        bool _ret = _callbacks->canGetVarArgsHandle(_thisHandle, &pException, pSig);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int constructStringLiteral(void* module, unsigned int metaTok, void** ppValue)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->constructStringLiteral(&pException, module, metaTok, ppValue);
+        int _ret = _callbacks->constructStringLiteral(_thisHandle, &pException, module, metaTok, ppValue);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual int emptyStringLiteral(void** ppValue)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->emptyStringLiteral(&pException, ppValue);
+        int _ret = _callbacks->emptyStringLiteral(_thisHandle, &pException, ppValue);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual unsigned int getFieldThreadLocalStoreID(void* field, void** ppIndirection)
     {
         CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->getFieldThreadLocalStoreID(&pException, field, ppIndirection);
+        unsigned int _ret = _callbacks->getFieldThreadLocalStoreID(_thisHandle, &pException, field, ppIndirection);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void setOverride(void* pOverride, void* currentMethod)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->setOverride(&pException, pOverride, currentMethod);
+        _callbacks->setOverride(_thisHandle, &pException, pOverride, currentMethod);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void addActiveDependency(void* moduleFrom, void* moduleTo)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->addActiveDependency(&pException, moduleFrom, moduleTo);
+        _callbacks->addActiveDependency(_thisHandle, &pException, moduleFrom, moduleTo);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* GetDelegateCtor(void* methHnd, void* clsHnd, void* targetMethodHnd, void* pCtorData)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->GetDelegateCtor(&pException, methHnd, clsHnd, targetMethodHnd, pCtorData);
+        void* _ret = _callbacks->GetDelegateCtor(_thisHandle, &pException, methHnd, clsHnd, targetMethodHnd, pCtorData);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void MethodCompileComplete(void* methHnd)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->MethodCompileComplete(&pException, methHnd);
+        _callbacks->MethodCompileComplete(_thisHandle, &pException, methHnd);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* getTailCallCopyArgsThunk(void* pSig, int flags)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->getTailCallCopyArgsThunk(&pException, pSig, flags);
+        void* _ret = _callbacks->getTailCallCopyArgsThunk(_thisHandle, &pException, pSig, flags);
         if (pException != nullptr)
-        {
             throw pException;
-        }
         return _ret;
     }
+
     virtual void* getMemoryManager();
     virtual void allocMem(unsigned int hotCodeSize, unsigned int coldCodeSize, unsigned int roDataSize, unsigned int xcptnsCount, int flag, void** hotCodeBlock, void** coldCodeBlock, void** roDataBlock)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->allocMem(&pException, hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
+        _callbacks->allocMem(_thisHandle, &pException, hotCodeSize, coldCodeSize, roDataSize, xcptnsCount, flag, hotCodeBlock, coldCodeBlock, roDataBlock);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void reserveUnwindInfo(bool isFunclet, bool isColdCode, unsigned int unwindSize)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->reserveUnwindInfo(&pException, isFunclet, isColdCode, unwindSize);
+        _callbacks->reserveUnwindInfo(_thisHandle, &pException, isFunclet, isColdCode, unwindSize);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void allocUnwindInfo(unsigned char* pHotCode, unsigned char* pColdCode, unsigned int startOffset, unsigned int endOffset, unsigned int unwindSize, unsigned char* pUnwindBlock, int funcKind)
     {
         CorInfoException* pException = nullptr;
-        _pCorInfo->allocUnwindInfo(&pException, pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
+        _callbacks->allocUnwindInfo(_thisHandle, &pException, pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
         if (pException != nullptr)
-        {
             throw pException;
-        }
     }
+
     virtual void* allocGCInfo(size_t size)
     {
         CorInfoException* pException = nullptr;
-        void* _ret = _pCorInfo->allocGCInfo(&pException, size);
+        void* _ret = _callbacks->allocGCInfo(_thisHandle, &pException, size);
         if (pException != nullptr)
-        {
             throw pException;
-        }
-        return _ret;
-    }
-    virtual void yieldExecution()
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->yieldExecution(&pException);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
-    virtual void setEHcount(unsigned cEH)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->setEHcount(&pException, cEH);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
-    virtual void setEHinfo(unsigned EHnumber, void* clause)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->setEHinfo(&pException, EHnumber, clause);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
-    virtual bool logMsg(unsigned level, const char* fmt, va_list args)
-    {
-        CorInfoException* pException = nullptr;
-        bool _ret = _pCorInfo->logMsg(&pException, level, fmt, args);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual int doAssert(const char* szFile, int iLine, const char* szExpr)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->doAssert(&pException, szFile, iLine, szExpr);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual void reportFatalError(int result)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->reportFatalError(&pException, result);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
-    virtual int allocBBProfileBuffer(unsigned int count, void** profileBuffer)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->allocBBProfileBuffer(&pException, count, profileBuffer);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual int getBBProfileData(void* ftnHnd, unsigned long* count, void** profileBuffer, unsigned long* numRuns)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _pCorInfo->getBBProfileData(&pException, ftnHnd, count, profileBuffer, numRuns);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual void recordCallSite(unsigned int instrOffset, void* callSig, void* methodHandle)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->recordCallSite(&pException, instrOffset, callSig, methodHandle);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
-    virtual void recordRelocation(void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->recordRelocation(&pException, location, target, fRelocType, slotNum, addlDelta);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
-    virtual unsigned short getRelocTypeHint(void* target)
-    {
-        CorInfoException* pException = nullptr;
-        unsigned short _ret = _pCorInfo->getRelocTypeHint(&pException, target);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual void getModuleNativeEntryPointRange(void** pStart, void** pEnd)
-    {
-        CorInfoException* pException = nullptr;
-        _pCorInfo->getModuleNativeEntryPointRange(&pException, pStart, pEnd);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-    }
-    virtual unsigned int getExpectedTargetArchitecture()
-    {
-        CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->getExpectedTargetArchitecture(&pException);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
-        return _ret;
-    }
-    virtual unsigned int getJitFlags(void* flags, unsigned int sizeInBytes)
-    {
-        CorInfoException* pException = nullptr;
-        unsigned int _ret = _pCorInfo->getJitFlags(&pException, flags, sizeInBytes);
-        if (pException != nullptr)
-        {
-            throw pException;
-        }
         return _ret;
     }
 
-    IJitInterface *_pCorInfo;
+    virtual void yieldExecution()
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->yieldExecution(_thisHandle, &pException);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void setEHcount(unsigned cEH)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->setEHcount(_thisHandle, &pException, cEH);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void setEHinfo(unsigned EHnumber, void* clause)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->setEHinfo(_thisHandle, &pException, EHnumber, clause);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual bool logMsg(unsigned level, const char* fmt, va_list args)
+    {
+        CorInfoException* pException = nullptr;
+        bool _ret = _callbacks->logMsg(_thisHandle, &pException, level, fmt, args);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int doAssert(const char* szFile, int iLine, const char* szExpr)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->doAssert(_thisHandle, &pException, szFile, iLine, szExpr);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void reportFatalError(int result)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->reportFatalError(_thisHandle, &pException, result);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual int allocBBProfileBuffer(unsigned int count, void** profileBuffer)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->allocBBProfileBuffer(_thisHandle, &pException, count, profileBuffer);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual int getBBProfileData(void* ftnHnd, unsigned long* count, void** profileBuffer, unsigned long* numRuns)
+    {
+        CorInfoException* pException = nullptr;
+        int _ret = _callbacks->getBBProfileData(_thisHandle, &pException, ftnHnd, count, profileBuffer, numRuns);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void recordCallSite(unsigned int instrOffset, void* callSig, void* methodHandle)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->recordCallSite(_thisHandle, &pException, instrOffset, callSig, methodHandle);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void recordRelocation(void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->recordRelocation(_thisHandle, &pException, location, target, fRelocType, slotNum, addlDelta);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual unsigned short getRelocTypeHint(void* target)
+    {
+        CorInfoException* pException = nullptr;
+        unsigned short _ret = _callbacks->getRelocTypeHint(_thisHandle, &pException, target);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual void getModuleNativeEntryPointRange(void** pStart, void** pEnd)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->getModuleNativeEntryPointRange(_thisHandle, &pException, pStart, pEnd);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual unsigned int getExpectedTargetArchitecture()
+    {
+        CorInfoException* pException = nullptr;
+        unsigned int _ret = _callbacks->getExpectedTargetArchitecture(_thisHandle, &pException);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual unsigned int getJitFlags(void* flags, unsigned int sizeInBytes)
+    {
+        CorInfoException* pException = nullptr;
+        unsigned int _ret = _callbacks->getJitFlags(_thisHandle, &pException, flags, sizeInBytes);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
 };

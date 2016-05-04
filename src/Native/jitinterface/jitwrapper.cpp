@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "corinfoexception.h"
+#include <stdarg.h>
+#include <stdlib.h>
+#include <stdint.h>
+
 #include "dllexport.h"
+#include "jitinterface.h"
 
 typedef struct _GUID {
     unsigned int Data1;
@@ -40,10 +44,11 @@ public:
     virtual void getVersionIdentifier(GUID* versionIdentifier) = 0;
 };
 
-DLL_EXPORT int JitWrapper(
+DLL_EXPORT int JitCompileMethod(
     CorInfoException **ppException,
-    Jit* pJit,
-    void* compHnd,
+    Jit * pJit, 
+    void * thisHandle, 
+    void ** callbacks,
     void* methodInfo,
     unsigned flags,
     void* entryAddress,
@@ -58,7 +63,8 @@ DLL_EXPORT int JitWrapper(
 
     try
     {
-        return pJit->compileMethod(compHnd, methodInfo, flags, entryAddress, nativeSizeOfCode);
+        JitInterfaceWrapper jitInterfaceWrapper(thisHandle, callbacks);
+        return pJit->compileMethod(&jitInterfaceWrapper, methodInfo, flags, entryAddress, nativeSizeOfCode);
     }
     catch (CorInfoException *pException)
     {

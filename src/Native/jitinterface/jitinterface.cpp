@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "jitinterface.h"
 #include "dllexport.h"
+#include "jitinterface.h"
 
 enum CORINFO_RUNTIME_LOOKUP_KIND { };
 struct CORINFO_LOOKUP_KIND
@@ -29,7 +29,7 @@ CORINFO_LOOKUP_KIND JitInterfaceWrapper::getLocationOfThisType(void* context)
 {
     CorInfoException* pException = nullptr;
     CORINFO_LOOKUP_KIND _ret;
-    _pCorInfo->getLocationOfThisType(&pException, &_ret, context);
+    _callbacks->getLocationOfThisType(_thisHandle, &pException, &_ret, context);
     if (pException != nullptr)
     {
         throw pException;
@@ -82,12 +82,4 @@ static EEMemoryManager eeMemoryManager;
 void* JitInterfaceWrapper::getMemoryManager()
 {
     return &eeMemoryManager;
-}
-
-static JitInterfaceWrapper instance;
-
-DLL_EXPORT void* __stdcall GetJitInterfaceWrapper(IJitInterface *pCorInfo)
-{
-    instance._pCorInfo = pCorInfo;
-    return &instance;
 }

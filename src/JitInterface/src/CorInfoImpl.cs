@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 using Internal.TypeSystem;
 
@@ -19,9 +20,15 @@ using ILCompiler.DependencyAnalysis;
 
 namespace Internal.JitInterface
 {
-    internal unsafe partial class CorInfoImpl
+    internal unsafe sealed partial class CorInfoImpl
     {
-        private IntPtr _comp;
+        //
+        // Global initialization and state
+        //
+        private IntPtr _jit;
+
+        private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
+        private Object _keepAlive; // Keeps delegates for the callbacks alive
 
         [DllImport("clrjit")]
         private extern static IntPtr jitStartup(IntPtr host);
@@ -32,14 +39,20 @@ namespace Internal.JitInterface
         [DllImport("jitinterface")]
         private extern static IntPtr GetJitHost();
 
-        [DllImport("jitinterface")]
-        private extern static IntPtr GetJitInterfaceWrapper(IntPtr unwrapped);
+        //
+        // Per-method initialization and state
+        //
+        private static CorInfoImpl GetThis(IntPtr thisHandle)
+        {
+            CorInfoImpl _this = Unsafe.Read<CorInfoImpl>((void*)thisHandle);
+            Debug.Assert(_this is CorInfoImpl);
+            return _this;
+        }
 
-        private IntPtr _jit;
-
         [DllImport("jitinterface")]
-        private extern static CorJitResult JitWrapper(out IntPtr exception, IntPtr _this, IntPtr comp, ref CORINFO_METHOD_INFO info, uint flags,
-            out IntPtr nativeEntry, out uint codeSize);
+        private extern static CorJitResult JitCompileMethod(out IntPtr exception, 
+            IntPtr jit, IntPtr thisHandle, IntPtr callbacks,
+            ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport("jitinterface")]
         private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
@@ -66,13 +79,20 @@ namespace Internal.JitInterface
 
         public CorInfoImpl(Compilation compilation)
         {
+            //
+            // Global initialization
+            //
             _compilation = compilation;
 
             jitStartup(GetJitHost());
 
-            _comp = GetJitInterfaceWrapper(CreateUnmanagedInstance());
-
             _jit = getJit();
+            if (_jit == IntPtr.Zero)
+            {
+                throw new IOException("Failed to initialize JIT");
+            }
+
+            _unmanagedCallbacks = GetUnmanagedCallbacks(out _keepAlive);
         }
 
         public TextWriter Log
@@ -135,10 +155,14 @@ namespace Internal.JitInterface
                     _compilation.Log.WriteLine(e.Message + " (" + methodCodeNodeNeedingCode.GetName() + ")");
                 }
 
+                CorInfoImpl _this = this;
+
                 IntPtr exception;
                 IntPtr nativeEntry;
                 uint codeSize;
-                JitWrapper(out exception, _jit, _comp, ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
+                JitCompileMethod(out exception, 
+                        _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
+                        ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
                 if (exception != IntPtr.Zero)
                 {
                     char* szMessage = GetExceptionMessage(exception);
