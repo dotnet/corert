@@ -72,7 +72,7 @@ namespace Internal.TypeSystem
             {
                 if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedContainsPointers))
                 {
-                    ComputeTypeContainsPointers();
+                    ComputeTypeContainsGCPointers();
                 }
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsGCPointers);
             }
@@ -307,7 +307,7 @@ namespace Internal.TypeSystem
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedStaticRegionLayout);
         }
 
-        private void ComputeTypeContainsPointers()
+        private void ComputeTypeContainsGCPointers()
         {
             int flagsToAdd = FieldLayoutFlags.ComputedContainsPointers;
 
