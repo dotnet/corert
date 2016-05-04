@@ -4,7 +4,6 @@
 
 using System;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Decoding;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -96,19 +95,19 @@ namespace Internal.TypeSystem.Ecma
             return elementType.MakeArrayType();
         }
 
-        public TypeDesc GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, SignatureTypeHandleCode code)
+        public TypeDesc GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
             Debug.Assert(reader == _module.MetadataReader);
             return _module.GetType(handle);
         }
 
-        public TypeDesc GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, SignatureTypeHandleCode code)
+        public TypeDesc GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
             Debug.Assert(reader == _module.MetadataReader);
             return _module.GetType(handle);
         }
 
-        public TypeDesc GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, SignatureTypeHandleCode code)
+        public TypeDesc GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, byte rawTypeKind)
         {
             Debug.Assert(reader == _module.MetadataReader);
             return _module.GetType(handle);
