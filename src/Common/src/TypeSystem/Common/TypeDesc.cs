@@ -354,9 +354,9 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether locations of this type refer to the GC heap.
+        /// Gets a value indicating whether locations of this type refer to an object on the GC heap.
         /// </summary>
-        public bool IsObjRef
+        public bool IsGCPointer
         {
             get
             {

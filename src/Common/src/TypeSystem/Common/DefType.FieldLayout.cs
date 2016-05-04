@@ -23,7 +23,7 @@ namespace Internal.TypeSystem
             /// <summary>
             /// True if the type contains GC pointers
             /// </summary>
-            public const int ContainsPointers = 2;
+            public const int ContainsGCPointers = 2;
 
             /// <summary>
             /// True if the instance type only layout is computed
@@ -66,15 +66,15 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Does a type transitively have any fields which are GC object pointers
         /// </summary>
-        public bool ContainsPointers
+        public bool ContainsGCPointers
         {
             get
             {
                 if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedContainsPointers))
                 {
-                    ComputeTypeContainsPointers();
+                    ComputeTypeContainsGCPointers();
                 }
-                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsPointers);
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsGCPointers);
             }
         }
 
@@ -307,19 +307,19 @@ namespace Internal.TypeSystem
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedStaticRegionLayout);
         }
 
-        private void ComputeTypeContainsPointers()
+        private void ComputeTypeContainsGCPointers()
         {
             int flagsToAdd = FieldLayoutFlags.ComputedContainsPointers;
 
-            if (!IsValueType && HasBaseType && BaseType.ContainsPointers)
+            if (!IsValueType && HasBaseType && BaseType.ContainsGCPointers)
             {
-                _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
+                _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsGCPointers);
                 return;
             }
 
             if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsPointers(this))
             {
-                flagsToAdd |= FieldLayoutFlags.ContainsPointers;
+                flagsToAdd |= FieldLayoutFlags.ContainsGCPointers;
             }
 
             _fieldLayoutFlags.AddFlags(flagsToAdd);

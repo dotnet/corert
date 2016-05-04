@@ -232,13 +232,13 @@ namespace Internal.TypeSystem
                     if (fieldType.IsPrimitive)
                         continue;
 
-                    if (((DefType)fieldType).ContainsPointers)
+                    if (((DefType)fieldType).ContainsGCPointers)
                     {
                         someFieldContainsPointers = true;
                         break;
                     }
                 }
-                else if (fieldType.IsObjRef || fieldType.IsByRef)
+                else if (fieldType.IsGCPointer || fieldType.IsByRef)
                 {
                     someFieldContainsPointers = true;
                     break;
@@ -290,7 +290,7 @@ namespace Internal.TypeSystem
 
                 int computedOffset = checked(fieldAndOffset.Offset + cumulativeInstanceFieldPos);
 
-                if (fieldAndOffset.Field.FieldType.IsObjRef)
+                if (fieldAndOffset.Field.FieldType.IsGCPointer)
                 {
                     int offsetModulo = computedOffset % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
@@ -441,7 +441,7 @@ namespace Internal.TypeSystem
             var layoutMetadata = type.GetClassLayout();
 
             // If a type contains pointers then the metadata specified packing size is ignored (On desktop this is disqualification from ManagedSequential)
-            if (layoutMetadata.PackingSize == 0 || type.ContainsPointers)
+            if (layoutMetadata.PackingSize == 0 || type.ContainsGCPointers)
                 return type.Context.Target.DefaultPackingSize;
             else
                 return layoutMetadata.PackingSize;
