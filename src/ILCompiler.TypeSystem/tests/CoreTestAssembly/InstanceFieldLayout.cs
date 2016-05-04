@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 #pragma warning disable 169
 
-namespace ContainsPointers
+namespace ContainsGCPointers
 {
     struct NoPointers
     {
