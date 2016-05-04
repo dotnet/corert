@@ -23,7 +23,7 @@ namespace Internal.TypeSystem
             /// <summary>
             /// True if the type contains GC pointers
             /// </summary>
-            public const int ContainsPointers = 2;
+            public const int ContainsGCPointers = 2;
 
             /// <summary>
             /// True if the instance type only layout is computed
@@ -74,7 +74,7 @@ namespace Internal.TypeSystem
                 {
                     ComputeTypeContainsPointers();
                 }
-                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsPointers);
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.ContainsGCPointers);
             }
         }
 
@@ -313,13 +313,13 @@ namespace Internal.TypeSystem
 
             if (!IsValueType && HasBaseType && BaseType.ContainsGCPointers)
             {
-                _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
+                _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsGCPointers);
                 return;
             }
 
             if (this.Context.GetLayoutAlgorithmForType(this).ComputeContainsPointers(this))
             {
-                flagsToAdd |= FieldLayoutFlags.ContainsPointers;
+                flagsToAdd |= FieldLayoutFlags.ContainsGCPointers;
             }
 
             _fieldLayoutFlags.AddFlags(flagsToAdd);
