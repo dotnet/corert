@@ -286,7 +286,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets an object representing the static data for RVA mapped fields from the PE image.
         /// </summary>
-        public object GetFieldRvaData(FieldDesc field)
+        public ObjectNode GetFieldRvaData(FieldDesc field)
         {
             return _nodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
                 ((EcmaField)field).GetFieldRvaData(), _typeSystemContext.Target.PointerSize);

@@ -738,7 +738,9 @@ namespace Internal.IL
                         var arraySlot = _stack.Pop();
 
                         var fieldDesc = fieldSlot.LdToken;
-                        var memBlock = TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData((TypeSystem.Ecma.EcmaField)fieldDesc);
+                        var dataBlob = _compilation.GetFieldRvaData(fieldDesc).GetData(_compilation.NodeFactory, false);
+                        Debug.Assert(dataBlob.Relocs.Length == 0);
+                        var memBlock = dataBlob.Data;
 
                         // TODO: Need to do more for arches with different endianness?
                         var preinitDataHolder = NewTempName();
