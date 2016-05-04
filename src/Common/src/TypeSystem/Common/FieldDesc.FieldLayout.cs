@@ -46,9 +46,9 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = FieldType;
                 if (fieldType.IsValueType)
-                    return ((DefType)fieldType).ContainsPointers;
+                    return ((DefType)fieldType).ContainsGCPointers;
                 else
-                    return fieldType.IsObjRef;
+                    return fieldType.IsGCPointer;
             }
         }
 

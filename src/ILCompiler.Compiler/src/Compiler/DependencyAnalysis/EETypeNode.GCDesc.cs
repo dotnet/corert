@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.IsArray)
                 {
                     TypeDesc elementType = ((ArrayType)_type).ElementType;
-                    if (elementType.IsObjRef)
+                    if (elementType.IsGCPointer)
                     {
                         // For efficiency this is special cased and encoded as one serie.
                         return 3 * _type.Context.Target.PointerSize;
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
                     else if (elementType.IsDefType)
                     {
                         var defType = (DefType)elementType;
-                        if (defType.ContainsPointers)
+                        if (defType.ContainsGCPointers)
                         {
                             int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
                             Debug.Assert(numSeries > 0);
@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     var defType = (DefType)_type;
-                    if (defType.ContainsPointers)
+                    if (defType.ContainsGCPointers)
                     {
                         int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
                         Debug.Assert(numSeries > 0);
@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                     baseSize += 2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
                 }
 
-                if (elementType.IsObjRef)
+                if (elementType.IsGCPointer)
                 {
                     // TODO: this optimization can be also applied to all element types that have all '1' GCPointerMap
                     //       get_GCDescSize needs to be updated appropriately when this optimization is enabled
@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
                 else if (elementType.IsDefType)
                 {
                     var elementDefType = (DefType)elementType;
-                    if (elementDefType.ContainsPointers)
+                    if (elementDefType.ContainsGCPointers)
                     {
                         OutputArrayGCDesc(ref builder, GCPointerMap.FromInstanceLayout(elementDefType), baseSize);
                     }
@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 var defType = (DefType)_type;
-                if (defType.ContainsPointers)
+                if (defType.ContainsGCPointers)
                 {
                     // Computing the layout for the boxed version if this is a value type.
                     int offs = defType.IsValueType ? _type.Context.Target.PointerSize : 0;

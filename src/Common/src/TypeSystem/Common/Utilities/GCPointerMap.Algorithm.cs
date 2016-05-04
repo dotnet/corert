@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public static GCPointerMap FromInstanceLayout(DefType type)
         {
-            Debug.Assert(type.ContainsPointers);
+            Debug.Assert(type.ContainsGCPointers);
 
             GCPointerMapBuilder builder = new GCPointerMapBuilder(type.InstanceByteCount, type.Context.Target.PointerSize);
             FromInstanceLayoutHelper(ref builder, type);
@@ -35,7 +35,7 @@ namespace Internal.TypeSystem
                     continue;
 
                 TypeDesc fieldType = field.FieldType;
-                if (fieldType.IsObjRef)
+                if (fieldType.IsGCPointer)
                 {
                     builder.MarkGCPointer(field.Offset);
                 }
@@ -43,7 +43,7 @@ namespace Internal.TypeSystem
                 {
                     Debug.Assert(fieldType.IsValueType);
                     var fieldDefType = (DefType)fieldType;
-                    Debug.Assert(fieldDefType.ContainsPointers);
+                    Debug.Assert(fieldDefType.ContainsGCPointers);
 
                     GCPointerMapBuilder innerBuilder =
                         builder.GetInnerBuilder(field.Offset, fieldDefType.InstanceByteCount);
@@ -67,14 +67,14 @@ namespace Internal.TypeSystem
                     continue;
 
                 TypeDesc fieldType = field.FieldType;
-                if (fieldType.IsObjRef)
+                if (fieldType.IsGCPointer)
                 {
                     builder.MarkGCPointer(field.Offset);
                 }
                 else if (fieldType.IsValueType)
                 {
                     var fieldDefType = (DefType)fieldType;
-                    if (fieldDefType.ContainsPointers)
+                    if (fieldDefType.ContainsGCPointers)
                     {
                         GCPointerMapBuilder innerBuilder =
                             builder.GetInnerBuilder(field.Offset, fieldDefType.InstanceByteCount);
@@ -101,14 +101,14 @@ namespace Internal.TypeSystem
                     continue;
 
                 TypeDesc fieldType = field.FieldType;
-                if (fieldType.IsObjRef)
+                if (fieldType.IsGCPointer)
                 {
                     builder.MarkGCPointer(field.Offset);
                 }
                 else if (fieldType.IsValueType)
                 {
                     var fieldDefType = (DefType)fieldType;
-                    if (fieldDefType.ContainsPointers)
+                    if (fieldDefType.ContainsGCPointers)
                     {
                         GCPointerMapBuilder innerBuilder =
                             builder.GetInnerBuilder(field.Offset, fieldDefType.InstanceByteCount);

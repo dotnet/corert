@@ -88,14 +88,14 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (type.IsDefType && ((DefType)type).ContainsPointers)
+            if (type.IsDefType && ((DefType)type).ContainsGCPointers)
             {
                 flags |= (UInt16)EETypeFlags.HasPointersFlag;
             }
             else if (type.IsArray)
             {
                 ArrayType arrayType = type as ArrayType;
-                if ((arrayType.ElementType.IsValueType && ((DefType)arrayType.ElementType).ContainsPointers) ||
+                if ((arrayType.ElementType.IsValueType && ((DefType)arrayType.ElementType).ContainsGCPointers) ||
                     !arrayType.ElementType.IsValueType)
                 {
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;

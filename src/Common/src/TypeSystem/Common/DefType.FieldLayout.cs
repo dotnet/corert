@@ -66,7 +66,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Does a type transitively have any fields which are GC object pointers
         /// </summary>
-        public bool ContainsPointers
+        public bool ContainsGCPointers
         {
             get
             {
@@ -311,7 +311,7 @@ namespace Internal.TypeSystem
         {
             int flagsToAdd = FieldLayoutFlags.ComputedContainsPointers;
 
-            if (!IsValueType && HasBaseType && BaseType.ContainsPointers)
+            if (!IsValueType && HasBaseType && BaseType.ContainsGCPointers)
             {
                 _fieldLayoutFlags.AddFlags(flagsToAdd | FieldLayoutFlags.ContainsPointers);
                 return;

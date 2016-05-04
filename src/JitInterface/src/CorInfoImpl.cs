@@ -837,7 +837,7 @@ namespace Internal.JitInterface
             var metadataType = type as MetadataType;
             if (metadataType != null)
             {
-                if (metadataType.ContainsPointers)
+                if (metadataType.ContainsGCPointers)
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
 
                 if (metadataType.IsBeforeFieldInit)
@@ -902,12 +902,12 @@ namespace Internal.JitInterface
                 var fieldType = field.FieldType;
                 if (fieldType.IsValueType)
                 {
-                    if (!((DefType)fieldType).ContainsPointers)
+                    if (!((DefType)fieldType).ContainsGCPointers)
                         continue;
 
                     gcType = CorInfoGCType.TYPE_GC_OTHER;
                 }
-                else if (fieldType.IsObjRef)
+                else if (fieldType.IsGCPointer)
                 {
                     gcType = CorInfoGCType.TYPE_GC_REF;
                 }
@@ -962,7 +962,7 @@ namespace Internal.JitInterface
             for (int i = 0; i < ptrsCount; i++)
                 gcPtrs[i] = (byte)CorInfoGCType.TYPE_GC_NONE;
 
-            if (type.ContainsPointers)
+            if (type.ContainsGCPointers)
             {
                 result = (uint)GatherClassGCLayout(type, gcPtrs);
             }
