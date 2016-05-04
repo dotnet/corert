@@ -61,14 +61,30 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return SP; }
     UIntNative GetFp() const { return R7; }
-#elif defined(_ARM64_)
+#elif defined(_TARGET_ARM64_)
     // @TODO: Add ARM64 registers
     UIntNative IP;
     UIntNative GetIp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
     UIntNative GetSp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
     UIntNative GetFp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
 
-#else // _ARM_
+#elif defined(UNIX_AMD64_ABI)
+    // Param regs: rdi, rsi, rdx, rcx, r8, r9, scratch: rax, rdx (both return val), preserved: rbp, rbx, r12-r15
+    UIntNative  IP;
+    UIntNative  Rsp;
+    UIntNative  Rbp;
+    UIntNative  Rax;
+    UIntNative  Rbx;
+    UIntNative  Rdx;
+    UIntNative  R12;
+    UIntNative  R13;
+    UIntNative  R14;
+    UIntNative  R15;
+
+    UIntNative GetIp() const { return IP; }
+    UIntNative GetSp() const { return Rsp; }
+    UIntNative GetFp() const { return Rbp; }
+#else // _TARGET_ARM_
     UIntNative  IP;
     UIntNative  Rsp;
     UIntNative  Rbp;
@@ -92,12 +108,12 @@ struct PAL_LIMITED_CONTEXT
     Fp128       Xmm13;
     Fp128       Xmm14;
     Fp128       Xmm15;
-#endif // _AMD64_
+#endif // _TARGET_AMD64_
 
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return Rsp; }
     UIntNative GetFp() const { return Rbp; }
-#endif // _ARM_
+#endif // _TARGET_ARM_
 };
 
 void __stdcall RuntimeThreadShutdown(void* thread);

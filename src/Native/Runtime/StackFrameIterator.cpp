@@ -352,6 +352,29 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
 #elif defined(_TARGET_ARM64_)
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
+#elif defined(UNIX_AMD64_ABI)
+    //
+    // preserved regs
+    //
+    m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rbp);
+    m_RegDisplay.pRbx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rbx);
+    m_RegDisplay.pR12 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R12);
+    m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R13);
+    m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R14);
+    m_RegDisplay.pR15 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R15);
+
+    //
+    // scratch regs
+    //
+    m_RegDisplay.pRax = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rax);
+    m_RegDisplay.pRcx = NULL;
+    m_RegDisplay.pRdx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rdx);
+    m_RegDisplay.pRsi = NULL;
+    m_RegDisplay.pRdi = NULL;
+    m_RegDisplay.pR8  = NULL;
+    m_RegDisplay.pR9  = NULL;
+    m_RegDisplay.pR10 = NULL;
+    m_RegDisplay.pR11 = NULL;
 #else // _TARGET_ARM_
     //
     // preserved regs
@@ -490,6 +513,14 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
 #elif defined(_TARGET_ARM64_)
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 
+#elif defined(UNIX_AMD64_ABI)
+    // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
+    m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
+    m_RegDisplay.pRbx = thisFuncletPtrs.pRbx;
+    m_RegDisplay.pR12 = thisFuncletPtrs.pR12;
+    m_RegDisplay.pR13 = thisFuncletPtrs.pR13;
+    m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
+    m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 #else
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
@@ -906,7 +937,14 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     PTR_PAL_LIMITED_CONTEXT pContext = (PTR_PAL_LIMITED_CONTEXT)
                                         (m_RegDisplay.SP + SIZEOF_OutgoingScratch + STACKSIZEOF_ExInfo);
 
-#ifdef _TARGET_AMD64_
+#if defined(UNIX_AMD64_ABI)
+    m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
+    m_RegDisplay.pRbx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbx);
+    m_RegDisplay.pR12 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R12);
+    m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R13);
+    m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R14);
+    m_RegDisplay.pR15 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R15);
+#elif defined(_TARGET_AMD64_)
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rsi);

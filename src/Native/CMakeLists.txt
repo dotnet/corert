@@ -89,6 +89,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     if (CLR_CMAKE_PLATFORM_UNIX_TARGET_AMD64)
         # Allow 16 byte compare-exchange
         add_compile_options(-mcx16)
+        add_definitions(-DUNIX_AMD64_ABI)
     endif()
 
     # Disable strict warning on unused functions.
