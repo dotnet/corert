@@ -217,7 +217,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        public override bool ComputeContainsPointers(DefType type)
+        public override bool ComputeContainsGCPointers(DefType type)
         {
             bool someFieldContainsPointers = false;
 

@@ -34,7 +34,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Compute if the fields of the specified type contain a GC pointer
         /// </summary>
-        public abstract bool ComputeContainsPointers(DefType type);
+        public abstract bool ComputeContainsGCPointers(DefType type);
     }
 
     public struct ComputedInstanceFieldLayout
