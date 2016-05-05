@@ -269,7 +269,7 @@ extern "C" void * __EEType_System_Private_CoreLib_System_Array;
 extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = &__EEType_System_Private_CoreLib_System_Array;
 #endif
 
-#if !defined(_WIN32) || defined(CPPCODEGEN)
+#if defined(CPPCODEGEN)
 extern "C" void RhpThrowEx(void * pEx)
 {
     throw "RhpThrowEx";
@@ -290,7 +290,7 @@ extern "C" void RhpCallFinallyFunclet()
 {
     throw "RhpCallFinallyFunclet";
 }
-#endif //. !_WIN32 || CPPCODEGEN
+#endif // CPPCODEGEN
 
 extern "C" void RhGetCurrentThreadStackTrace()
 {

@@ -215,6 +215,10 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+#define TSF_Attached                    0x01
+#define TSF_SuppressGcStress            0x08
+#define TSF_DoNotTriggerGc              0x10
+
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 #define PTFF_SAVE_RBX            00000001h
 #define PTFF_SAVE_R12            00000010h
@@ -228,3 +232,26 @@ C_FUNC(\Name\()_End):
 #define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 #define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
 
+#define MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET 8
+
+#define THREAD__VALIDATEEXINFOPOP C_FUNC(_ZN6Thread17ValidateExInfoPopEP6ExInfoPv)
+
+.macro INLINE_GETTHREAD
+        call    C_FUNC(RhpGetThread)
+.endm
+
+.macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
+        //
+        // Thread::Unhijack()
+        //
+        mov         \trashReg1, [\threadReg + OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        cmp         \trashReg1, 0
+        je          1f
+
+        mov         \trashReg2, [\threadReg + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+        mov         [\trashReg2], \trashReg1
+        mov         qword ptr [\threadReg + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], 0
+        mov         qword ptr [\threadReg + OFFSETOF__Thread__m_pvHijackedReturnAddress], 0
+
+1:
+.endm
