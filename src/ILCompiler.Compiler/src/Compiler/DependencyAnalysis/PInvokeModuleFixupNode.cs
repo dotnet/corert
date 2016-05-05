@@ -72,9 +72,11 @@ namespace ILCompiler.DependencyAnalysis
 
             builder.EmitZeroPointer();
 
-            int moduleNameBytesCount = Encoding.Unicode.GetByteCount(_moduleName);
+            Encoding encoding = factory.Target.IsWindows ? Encoding.Unicode : Encoding.UTF8;
+
+            int moduleNameBytesCount = encoding.GetByteCount(_moduleName);
             byte[] moduleNameBytes = new byte[moduleNameBytesCount + 2];
-            Encoding.Unicode.GetBytes(_moduleName, 0, _moduleName.Length, moduleNameBytes, 0);
+            encoding.GetBytes(_moduleName, 0, _moduleName.Length, moduleNameBytes, 0);
             builder.EmitPointerReloc(factory.ReadOnlyDataBlob("__modulename_" + _moduleName, moduleNameBytes, 2));
 
             return builder.ToObjectData();

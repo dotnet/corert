@@ -524,6 +524,9 @@ namespace Internal.IL.Stubs
             else
                 useLazyResolution = !importModule.StartsWith("System.Private.");
 
+            // TODO: Test and make this work on non-Windows
+            useLazyResolution &= _targetMethod.Context.Target.IsWindows;
+
             if (useLazyResolution)
             {
                 MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");

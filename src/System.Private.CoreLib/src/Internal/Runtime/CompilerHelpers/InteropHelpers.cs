@@ -73,7 +73,10 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal unsafe static void FixupModuleCell(ModuleFixupCell *pCell)
         {
-            IntPtr hModule = Interop.mincore.LoadLibraryEx((char*)pCell->ModuleName, IntPtr.Zero, 0);
+#if !PLATFORM_UNIX
+            char* moduleName = (char*)pCell->ModuleName;
+
+            IntPtr hModule = Interop.mincore.LoadLibraryEx(moduleName, IntPtr.Zero, 0);
             if (hModule != IntPtr.Zero)
             {
                 var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
@@ -86,15 +89,39 @@ namespace Internal.Runtime.CompilerHelpers
             else
             {
                 // TODO: should be DllNotFoundException, but layering...
-                throw new TypeLoadException(new string((char*)pCell->ModuleName));
+                throw new TypeLoadException(new string(moduleName));
             }
+#else
+            byte* moduleName = (byte*)pCell->ModuleName;
+
+            IntPtr hModule = Interop.Sys.LoadLibrary(moduleName);
+            if (hModule != IntPtr.Zero)
+            {
+                var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
+                if (oldValue != IntPtr.Zero)
+                {
+                    // Some other thread won the race to fix it up.
+                    Interop.Sys.FreeLibrary(hModule);
+                }
+            }
+            else
+            {
+                // TODO: should be DllNotFoundException, but layering...
+                throw new TypeLoadException(Encoding.UTF8.GetString(moduleName, strlen(moduleName)));
+            }
+#endif
         }
 
         internal unsafe static void FixupMethodCell(IntPtr hModule, MethodFixupCell *pCell)
         {
+
             byte* methodName = (byte*)pCell->MethodName;
 
+#if !PLATFORM_UNIX
             pCell->Target = Interop.mincore.GetProcAddress(hModule, methodName);
+#else
+            pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
+#endif
             if (pCell->Target == IntPtr.Zero)
             {
                 // TODO: Shoud be EntryPointNotFoundException, but layering...
