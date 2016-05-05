@@ -307,9 +307,20 @@ namespace System.Runtime.CompilerServices
         {
             internal Container()
             {
-                _buckets = new int[0];
-                _entries = new Entry[0];
-                _firstFreeEntry = 0;
+                int size = HashHelpers.GetPrime(_initialCapacity + 1);
+                _buckets = new int[size];
+                for (int i = 0; i < size; i++)
+                {
+                    _buckets[i] = -1;
+                }
+                _entries = new Entry[size];
+            }
+            
+            private Container(int[] buckets, Entry[] entries, int firstFreeEntry)
+            {
+                _buckets = buckets;
+                _entries = entries;
+                _firstFreeEntry = firstFreeEntry;
             }
 
             internal bool HasCapacity
@@ -450,8 +461,12 @@ namespace System.Runtime.CompilerServices
                 {
                     newSize = System.Collections.HashHelpers.GetPrime(_buckets.Length == 0 ? _initialCapacity + 1 : _buckets.Length * 2);
                 }
-
-
+                
+                return Resize(newSize);
+            }
+            
+            internal Container Resize(int newSize)
+            {
                 // Reallocate both buckets and entries and rebuild the bucket and entries from scratch.
                 // This serves both to scrub entries with expired keys and to put the new entries in the proper bucket.
                 int[] newBuckets = new int[newSize];
@@ -480,15 +495,9 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-
                 GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 
-                return new Container()
-                {
-                    _buckets = newBuckets,
-                    _entries = newEntries,
-                    _firstFreeEntry = newEntriesIndex
-                };
+                return new Container(newBuckets, newEntries, newEntriesIndex);
             }
 
             internal ICollection<TKey> Keys

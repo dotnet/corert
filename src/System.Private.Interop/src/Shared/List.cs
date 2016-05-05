@@ -19,7 +19,7 @@ namespace System.Collections.Generic.Internal
 
         public List()
         {
-            _items = new T[0];
+            _items = Array.Empty<T>();
         }
 
         // Constructs a List with a given initial capacity. The list is
@@ -52,7 +52,7 @@ namespace System.Collections.Generic.Internal
 
                 if (count == 0)
                 {
-                    _items = new T[0];
+                    _items = Array.Empty<T>();
                 }
                 else
                 {
@@ -64,7 +64,7 @@ namespace System.Collections.Generic.Internal
             else
             {
                 _size = 0;
-                _items = new T[0];
+                _items = Array.Empty<T>();
                 // This enumerable could be empty.  Let Add allocate a new array, if needed.
                 // Note it will also go to _defaultCapacity first, not 1, then 2, etc.
 
@@ -108,7 +108,7 @@ namespace System.Collections.Generic.Internal
                     }
                     else
                     {
-                        _items = new T[0];
+                        _items = Array.Empty<T>();
                     }
                 }
             }
