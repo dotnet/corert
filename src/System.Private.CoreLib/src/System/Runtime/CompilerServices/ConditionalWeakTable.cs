@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
         #region Constructors
         public ConditionalWeakTable()
         {
-            _container = new Container().Resize();
+            _container = new Container();
             _lock = new Lock();
         }
         #endregion
@@ -230,7 +230,7 @@ namespace System.Runtime.CompilerServices
         {
             lock (_lock)
             {
-                _container = new Container().Resize();
+                _container = new Container();
             }
         }
 
