@@ -288,8 +288,17 @@ namespace ILCompiler
         /// </summary>
         public ObjectNode GetFieldRvaData(FieldDesc field)
         {
-            return _nodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
-                ((EcmaField)field).GetFieldRvaData(), _typeSystemContext.Target.PointerSize);
+            if (field.GetType() == typeof(Internal.IL.Stubs.PInvokeLazyFixupField))
+            {
+                var pInvokeFixup = (Internal.IL.Stubs.PInvokeLazyFixupField)field;
+                PInvokeMetadata metadata = pInvokeFixup.PInvokeMetadata;
+                return _nodeFactory.PInvokeMethodFixup(metadata.Module, metadata.Name);
+            }
+            else
+            {
+                return _nodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
+                    ((EcmaField)field).GetFieldRvaData(), _typeSystemContext.Target.PointerSize);
+            }
         }
 
         public bool HasLazyStaticConstructor(TypeDesc type)

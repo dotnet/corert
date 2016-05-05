@@ -151,6 +151,16 @@ namespace ILCompiler.DependencyAnalysis
                 return new ExternSymbolNode(name);
             });
 
+            _pInvokeModuleFixups = new NodeCache<string, PInvokeModuleFixupNode>((string name) =>
+            {
+                return new PInvokeModuleFixupNode(name);
+            });
+
+            _pInvokeMethodFixups = new NodeCache<Tuple<string, string>, PInvokeMethodFixupNode>((Tuple<string, string> key) =>
+            {
+                return new PInvokeMethodFixupNode(key.Item1, key.Item2);
+            });
+
             _internalSymbols = new NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode>(
                 (Tuple<ObjectNode, int, string> key) =>
                 {
@@ -420,6 +430,20 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ExternSymbol(string name)
         {
             return _externSymbols.GetOrAdd(name);
+        }
+
+        private NodeCache<string, PInvokeModuleFixupNode> _pInvokeModuleFixups;
+
+        public ISymbolNode PInvokeModuleFixup(string moduleName)
+        {
+            return _pInvokeModuleFixups.GetOrAdd(moduleName);
+        }
+
+        private NodeCache<Tuple<string, string>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
+
+        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName)
+        {
+            return _pInvokeMethodFixups.GetOrAdd(new Tuple<string, string>(moduleName, entryPointName));
         }
 
         private NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode> _internalSymbols;

@@ -75,16 +75,9 @@ namespace ILCompiler
 
         public static SpecialMethodKind DetectSpecialMethodKind(this MethodDesc method)
         {
-            if (method.IsPInvoke)
+            if (method.IsRawPInvoke())
             {
-                // Only treat the synthetic target methods as real PInvoke.
-                // PInvoke methods (as defined in the metadata) are treated as regular methods with
-                // IL that we compile. The generated IL method body for those will either have a call
-                // to a PInvokeTargetNativeMethod, or will perform a dynamic lookup for the entrypoint.
-                if (method.GetType() == typeof(Internal.IL.Stubs.PInvokeTargetNativeMethod))
-                {
-                    return SpecialMethodKind.PInvoke;
-                }
+                return SpecialMethodKind.PInvoke;
             }
 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
@@ -94,5 +87,17 @@ namespace ILCompiler
 
             return SpecialMethodKind.Unknown;
         }
+
+        /// <summary>
+        /// Returns true if <paramref name="method"/> is an actual native entrypoint.
+        /// There's a distinction between when a method reports it's a PInvoke in the metadata
+        /// versus how it's treated in the compiler. For many PInvoke methods the compiler will generate
+        /// an IL body. The methods with an IL method body shouldn't be treated as PInvoke within the compiler.
+        /// </summary>
+        public static bool IsRawPInvoke(this MethodDesc method)
+        {
+            return method.IsPInvoke && ((method is Internal.IL.Stubs.PInvokeTargetNativeMethod) || Internal.IL.McgInteropSupport.IsPregeneratedInterop(method));
+        }
+
     }
 }

@@ -518,6 +518,10 @@
       <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" >
         <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
       </Compile>
+
+      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs" >
+        <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
+      </Compile>
       
   </ItemGroup>
   <ItemGroup>
