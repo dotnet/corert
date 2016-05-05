@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
@@ -459,7 +460,7 @@ namespace System.Runtime.CompilerServices
 
                 if (!hasExpiredEntries)
                 {
-                    newSize = System.Collections.HashHelpers.GetPrime(_buckets.Length == 0 ? _initialCapacity + 1 : _buckets.Length * 2);
+                    newSize = HashHelpers.GetPrime(_buckets.Length == 0 ? _initialCapacity + 1 : _buckets.Length * 2);
                 }
                 
                 return Resize(newSize);
