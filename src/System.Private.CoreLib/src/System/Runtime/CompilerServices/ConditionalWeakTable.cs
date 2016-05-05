@@ -440,8 +440,7 @@ namespace System.Runtime.CompilerServices
 
                 // If any expired or removed keys exist, we won't resize.
                 bool hasExpiredEntries = false;
-                int entriesIndex;
-                for (entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
+                for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
                 {
                     if (_entries[entriesIndex].hashCode == -1)
                     {
@@ -460,7 +459,7 @@ namespace System.Runtime.CompilerServices
 
                 if (!hasExpiredEntries)
                 {
-                    newSize = HashHelpers.GetPrime(_buckets.Length == 0 ? _initialCapacity + 1 : _buckets.Length * 2);
+                    newSize = HashHelpers.GetPrime(_buckets.Length * 2);
                 }
                 
                 return Resize(newSize);
@@ -479,7 +478,7 @@ namespace System.Runtime.CompilerServices
                 int newEntriesIndex = 0;
 
                 // Migrate existing entries to the new table.
-                for (entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
+                for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
                 {
                     DependentHandle depHnd = _entries[entriesIndex].depHnd;
                     if (_entries[entriesIndex].hashCode != -1 && depHnd.IsAllocated && depHnd.GetPrimary() != null)
