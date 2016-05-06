@@ -68,7 +68,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return ((_gcMap.NumSeries * 2) + 1) * _target.PointerSize;
+                int numSeries = _gcMap.NumSeries;
+                return numSeries > 0 ? ((numSeries * 2) + 1) * _target.PointerSize : 0;
             }
         }
 
@@ -85,13 +86,25 @@ namespace ILCompiler.DependencyAnalysis
 
             int totalSize = _gcMap.Size * _target.PointerSize;
 
-            GCDescEncoder.EncodeStandardGCDesc(ref dataBuilder, _gcMap, totalSize, 0);
+            // We only need to check for containsPointers because ThreadStatics are always allocated
+            // on the GC heap (no matter what "HasGCStaticBase" says).
+            // If that ever changes, we can assume "true" and switch this to an assert.
+
+            bool containsPointers = _gcMap.NumSeries > 0;
+            if (containsPointers)
+            {
+                GCDescEncoder.EncodeStandardGCDesc(ref dataBuilder, _gcMap, totalSize, 0);
+            }
 
             Debug.Assert(dataBuilder.CountBytes == ((ISymbolNode)this).Offset);
 
             dataBuilder.EmitShort(0); // ComponentSize is always 0
 
-            dataBuilder.EmitShort((short)EETypeFlags.HasPointersFlag);
+            short flags = 0;
+            if (containsPointers)
+                flags |= (short)EETypeFlags.HasPointersFlag;
+
+            dataBuilder.EmitShort(flags);
 
             totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC eetype size is 3 pointers
             dataBuilder.EmitInt(totalSize);

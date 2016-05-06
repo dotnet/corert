@@ -39,10 +39,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\GCDescEncoder.cs">
-      <Link>Common\GCDescBuilder.cs</Link>
+      <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\ITargetBinaryWriter.cs">
-      <Link>Common\IBinaryWriter.cs</Link>
+      <Link>Common\ITargetBinaryWriter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>Common\MetadataBlob.cs</Link>
