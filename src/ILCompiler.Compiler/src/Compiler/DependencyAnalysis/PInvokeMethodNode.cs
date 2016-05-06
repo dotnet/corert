@@ -11,22 +11,15 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a raw PInvoke method entry point.
     /// </summary>
-    public partial class PInvokeMethodNode : AssemblyStubNode, IMethodNode
+    public sealed class PInvokeMethodNode : ExternSymbolNode, IMethodNode
     {
         private MethodDesc _target;
 
         public PInvokeMethodNode(MethodDesc target)
+            : base(target.GetPInvokeMethodMetadata().Name)
         {
             Debug.Assert(target.DetectSpecialMethodKind() == SpecialMethodKind.PInvoke);
             _target = target;
-        }
-
-        public override string MangledName
-        {
-            get
-            {
-                return "pinvoke_" + NodeFactory.NameMangler.GetMangledMethodName(_target);
-            }
         }
 
         public MethodDesc Method
@@ -35,11 +28,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _target;
             }
-        }
-
-        public override string GetName()
-        {
-            return MangledName;
         }
     }
 }
