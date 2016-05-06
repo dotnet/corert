@@ -7,34 +7,21 @@ using System.Collections.Generic;
 using System.Text;
 
 using Internal.TypeSystem;
+using Internal.Runtime;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
     internal class GCStaticEETypeNode : ObjectNode, ISymbolNode
     {
-        private int[] _runLengths; // First is offset to first gc field, second is length of gc static run, third is length of non-gc data, etc
+        private bool[] _gcDesc;
         private int _targetPointerSize;
         private TargetDetails _target;
 
         public GCStaticEETypeNode(bool[] gcDesc, NodeFactory factory)
         {
-            List<int> runLengths = new List<int>();
-            bool encodingGCPointers = false;
-            int currentPointerCount = 0;
-            foreach (bool pointerIsGC in gcDesc)
-            {
-                if (encodingGCPointers == pointerIsGC)
-                {
-                    currentPointerCount++;
-                }
-                else
-                {
-                    runLengths.Add(currentPointerCount * factory.Target.PointerSize);
-                    encodingGCPointers = pointerIsGC;
-                }
-            }
-            runLengths.Add(currentPointerCount);
-            _runLengths = runLengths.ToArray();
+            _gcDesc = gcDesc;
             _targetPointerSize = factory.Target.PointerSize;
             _target = factory.Target;
         }
@@ -70,14 +57,14 @@ namespace ILCompiler.DependencyAnalysis
                 StringBuilder nameBuilder = new StringBuilder();
                 nameBuilder.Append(NodeFactory.NameMangler.CompilationUnitPrefix + "__GCStaticEEType_");
                 int totalSize = 0;
-                foreach (int run in _runLengths)
+                foreach (bool run in _gcDesc)
                 {
-                    nameBuilder.Append(run.ToStringInvariant());
-                    nameBuilder.Append("_");
-                    totalSize += run;
+                    nameBuilder.Append(run ? '1' : '0');
+                    totalSize++;
                 }
-                nameBuilder.Append(totalSize.ToStringInvariant());
                 nameBuilder.Append("_");
+                nameBuilder.Append(totalSize.ToStringInvariant());
+
 
                 return nameBuilder.ToString();
             }
@@ -102,7 +89,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return (_runLengths.Length - 1) / 2;
+                int numSeries = 0;
+                for (int i = 0; i < _gcDesc.Length; i++)
+                {
+                    if (_gcDesc[i])
+                    {
+                        numSeries++;
+                        while (++i < _gcDesc.Length && _gcDesc[i]) ;
+                    }
+                }
+                return numSeries;
             }
         }
 
@@ -112,44 +108,39 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.Alignment = 16;
             dataBuilder.DefinedSymbols.Add(this);
 
-            bool hasPointers = NumSeries > 0;
-            if (hasPointers)
+            int pointerSize = factory.Target.PointerSize;
+
+            int numSeries = 0;
+
+            for (int cellIndex = _gcDesc.Length - 1; cellIndex >= 0; cellIndex--)
             {
-                for (int i = ((_runLengths.Length / 2) * 2) - 1; i >= 0; i--)
+                if (_gcDesc[cellIndex])
                 {
-                    if (_targetPointerSize == 4)
+                    numSeries++;
+
+                    int seriesSize = pointerSize;
+
+                    while (cellIndex > 0 && _gcDesc[cellIndex - 1])
                     {
-                        dataBuilder.EmitInt(_runLengths[i]);
+                        seriesSize += pointerSize;
+                        cellIndex--;
                     }
-                    else
-                    {
-                        dataBuilder.EmitLong(_runLengths[i]);
-                    }
-                }
-                if (_targetPointerSize == 4)
-                {
-                    dataBuilder.EmitInt(NumSeries);
-                }
-                else
-                {
-                    dataBuilder.EmitLong(NumSeries);
+
+                    dataBuilder.EmitNaturalInt(seriesSize - _gcDesc.Length * pointerSize);
+                    dataBuilder.EmitNaturalInt(cellIndex * pointerSize);
                 }
             }
 
-            int totalSize = 0;
-            foreach (int run in _runLengths)
-            {
-                totalSize += run * _targetPointerSize;
-            }
+            Debug.Assert(numSeries > 0);
+            dataBuilder.EmitNaturalInt(numSeries);
+
+            Debug.Assert(((ISymbolNode)this).Offset == dataBuilder.CountBytes);
 
             dataBuilder.EmitShort(0); // ComponentSize is always 0
 
-            if (hasPointers)
-                dataBuilder.EmitShort(0x20); // TypeFlags.HasPointers
-            else
-                dataBuilder.EmitShort(0x00);
+            dataBuilder.EmitShort((short)(EETypeFlags.HasPointersFlag | EETypeFlags.IsInterfaceFlag));
 
-            totalSize = Math.Max(totalSize, _targetPointerSize * 3); // minimum GC eetype size is 3 pointers
+            int totalSize = Math.Max(_gcDesc.Length * pointerSize, _targetPointerSize * 3); // minimum GC eetype size is 3 pointers
             dataBuilder.EmitInt(totalSize);
 
             return dataBuilder.ToObjectData();
