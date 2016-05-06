@@ -307,6 +307,28 @@ namespace ILCompiler.DependencyAnalysis
             return 16 + 2 * pointerSize;
         }
 
+        private int GCDescSize
+        {
+            get
+            {
+                if (!_constructed || _type.IsGenericDefinition)
+                    return 0;
+
+                return GCDescEncoder.GetGCDescSize(_type);
+            }
+        }
+
+        private void OutputGCDesc(ref ObjectDataBuilder builder)
+        {
+            if (!_constructed || _type.IsGenericDefinition)
+            {
+                Debug.Assert(GCDescSize == 0);
+                return;
+            }
+
+            GCDescEncoder.EncodeGCDesc(ref builder, _type);
+        }
+
         private void OutputComponentSize(ref ObjectDataBuilder objData)
         {
             if (_type.IsArray)

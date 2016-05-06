@@ -1,79 +1,73 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-using System;
 
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 
-namespace ILCompiler.DependencyAnalysis
+namespace Internal.Runtime
 {
-    partial class EETypeNode
+    /// <summary>
+    /// Utility class for encoding GCDescs. GCDesc is a runtime structure used by the
+    /// garbage collector that describes the GC layout of a memory region.
+    /// </summary>
+    public struct GCDescEncoder
     {
-        private int GCDescSize
+        /// <summary>
+        /// Retrieves size of the GCDesc that describes the instance GC layout for the given type.
+        /// </summary>
+        public static int GetGCDescSize(TypeDesc type)
         {
-            get
+            if (type.IsArray)
             {
-                if (!_constructed || _type.IsGenericDefinition)
-                    return 0;
-
-                if (_type.IsArray)
+                TypeDesc elementType = ((ArrayType)type).ElementType;
+                if (elementType.IsGCPointer)
                 {
-                    TypeDesc elementType = ((ArrayType)_type).ElementType;
-                    if (elementType.IsGCPointer)
-                    {
-                        // For efficiency this is special cased and encoded as one serie.
-                        return 3 * _type.Context.Target.PointerSize;
-                    }
-                    else if (elementType.IsDefType)
-                    {
-                        var defType = (DefType)elementType;
-                        if (defType.ContainsGCPointers)
-                        {
-                            int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
-                            Debug.Assert(numSeries > 0);
-                            return (numSeries + 2) * _type.Context.Target.PointerSize;
-                        }
-                    }
+                    // For efficiency this is special cased and encoded as one serie.
+                    return 3 * type.Context.Target.PointerSize;
                 }
-                else
+                else if (elementType.IsDefType)
                 {
-                    var defType = (DefType)_type;
+                    var defType = (DefType)elementType;
                     if (defType.ContainsGCPointers)
                     {
                         int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
                         Debug.Assert(numSeries > 0);
-                        return (numSeries * 2 + 1) * _type.Context.Target.PointerSize;
+                        return (numSeries + 2) * type.Context.Target.PointerSize;
                     }
                 }
-
-                return 0;
             }
+            else
+            {
+                var defType = (DefType)type;
+                if (defType.ContainsGCPointers)
+                {
+                    int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
+                    Debug.Assert(numSeries > 0);
+                    return (numSeries * 2 + 1) * type.Context.Target.PointerSize;
+                }
+            }
+
+            return 0;
         }
 
-        private void OutputGCDesc(ref ObjectDataBuilder builder)
+        public static void EncodeGCDesc<T>(ref T builder, TypeDesc type)
+            where T: struct, ITargetBinaryWriter
         {
-            if (!_constructed || _type.IsGenericDefinition)
-            {
-                Debug.Assert(GCDescSize == 0);
-                return;
-            }
-
             int initialBuilderPosition = builder.CountBytes;
 
-            if (_type.IsArray)
+            if (type.IsArray)
             {
-                TypeDesc elementType = ((ArrayType)_type).ElementType;
+                TypeDesc elementType = ((ArrayType)type).ElementType;
 
                 // 2 means m_pEEType and _numComponents. Syncblock is sort of appended at the end of the object layout in this case.
-                int baseSize = 2 * _type.Context.Target.PointerSize;
+                int baseSize = 2 * builder.TargetPointerSize;
 
-                if (!_type.IsSzArray)
+                if (!type.IsSzArray)
                 {
                     // Multi-dim arrays include upper and lower bounds for each rank
-                    baseSize += 2 * _type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)_type).Rank;
+                    baseSize += 2 * type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)type).Rank;
                 }
 
                 if (elementType.IsGCPointer)
@@ -82,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                     //       get_GCDescSize needs to be updated appropriately when this optimization is enabled
                     OutputStandardGCDesc(ref builder,
                         new GCPointerMap(new[] { 1 }, 1),
-                        4 * _type.Context.Target.PointerSize,
+                        4 * builder.TargetPointerSize,
                         baseSize);
                 }
                 else if (elementType.IsDefType)
@@ -96,27 +90,28 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                var defType = (DefType)_type;
+                var defType = (DefType)type;
                 if (defType.ContainsGCPointers)
                 {
                     // Computing the layout for the boxed version if this is a value type.
-                    int offs = defType.IsValueType ? _type.Context.Target.PointerSize : 0;
+                    int offs = defType.IsValueType ? builder.TargetPointerSize : 0;
 
                     // Include syncblock
-                    int objectSize = defType.InstanceByteCount + offs + _type.Context.Target.PointerSize;
+                    int objectSize = defType.InstanceByteCount + offs + builder.TargetPointerSize;
 
                     OutputStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
                 }
             }
 
-            Debug.Assert(initialBuilderPosition + GCDescSize == builder.CountBytes);
+            Debug.Assert(initialBuilderPosition + GetGCDescSize(type) == builder.CountBytes);
         }
 
-        private void OutputStandardGCDesc(ref ObjectDataBuilder builder, GCPointerMap map, int size, int delta)
+        public static void OutputStandardGCDesc<T>(ref T builder, GCPointerMap map, int size, int delta)
+            where T: struct, ITargetBinaryWriter
         {
             Debug.Assert(size >= map.Size);
 
-            int pointerSize = _type.Context.Target.PointerSize;
+            int pointerSize = builder.TargetPointerSize;
 
             int numSeries = 0;
 
@@ -143,12 +138,13 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitNaturalInt(numSeries);
         }
 
-        private void OutputArrayGCDesc(ref ObjectDataBuilder builder, GCPointerMap map, int size)
+        private static void OutputArrayGCDesc<T>(ref T builder, GCPointerMap map, int size)
+            where T : struct, ITargetBinaryWriter
         {
             int numSeries = 0;
             int leadingNonPointerCount = 0;
 
-            int pointerSize = _type.Context.Target.PointerSize;
+            int pointerSize = builder.TargetPointerSize;
 
             for (int cellIndex = 0; cellIndex < map.Size && !map[cellIndex]; cellIndex++)
             {

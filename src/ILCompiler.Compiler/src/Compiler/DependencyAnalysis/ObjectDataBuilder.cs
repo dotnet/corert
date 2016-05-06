@@ -10,7 +10,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public struct ObjectDataBuilder
+    public struct ObjectDataBuilder : Internal.Runtime.ITargetBinaryWriter
     {
         public ObjectDataBuilder(NodeFactory factory)
         {
@@ -39,6 +39,14 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 return _data.Count;
+            }
+        }
+
+        public int TargetPointerSize
+        {
+            get
+            {
+                return _target.PointerSize;
             }
         }
 
