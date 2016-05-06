@@ -40,17 +40,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
-            // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
-            // TODO This logic should be shared with GCStaticsNode.
-            bool[] gcDesc = new bool[_type.ThreadStaticFieldSize / factory.Target.PointerSize + 1];
-
             GCPointerMap map = GCPointerMap.FromThreadStaticLayout(_type);
-            for (int i = 0; i < map.Size; i++)
-            {
-                gcDesc[i] = map[i];
-            }
-
-            return factory.GCStaticEEType(gcDesc);
+            return factory.GCStaticEEType(map);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
