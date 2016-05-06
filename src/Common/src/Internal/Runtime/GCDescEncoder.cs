@@ -74,7 +74,7 @@ namespace Internal.Runtime
                 {
                     // TODO: this optimization can be also applied to all element types that have all '1' GCPointerMap
                     //       get_GCDescSize needs to be updated appropriately when this optimization is enabled
-                    OutputStandardGCDesc(ref builder,
+                    EncodeStandardGCDesc(ref builder,
                         new GCPointerMap(new[] { 1 }, 1),
                         4 * builder.TargetPointerSize,
                         baseSize);
@@ -84,7 +84,7 @@ namespace Internal.Runtime
                     var elementDefType = (DefType)elementType;
                     if (elementDefType.ContainsGCPointers)
                     {
-                        OutputArrayGCDesc(ref builder, GCPointerMap.FromInstanceLayout(elementDefType), baseSize);
+                        EncodeArrayGCDesc(ref builder, GCPointerMap.FromInstanceLayout(elementDefType), baseSize);
                     }
                 }
             }
@@ -99,14 +99,14 @@ namespace Internal.Runtime
                     // Include syncblock
                     int objectSize = defType.InstanceByteCount + offs + builder.TargetPointerSize;
 
-                    OutputStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
+                    EncodeStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
                 }
             }
 
             Debug.Assert(initialBuilderPosition + GetGCDescSize(type) == builder.CountBytes);
         }
 
-        public static void OutputStandardGCDesc<T>(ref T builder, GCPointerMap map, int size, int delta)
+        public static void EncodeStandardGCDesc<T>(ref T builder, GCPointerMap map, int size, int delta)
             where T: struct, ITargetBinaryWriter
         {
             Debug.Assert(size >= map.Size);
@@ -138,7 +138,7 @@ namespace Internal.Runtime
             builder.EmitNaturalInt(numSeries);
         }
 
-        private static void OutputArrayGCDesc<T>(ref T builder, GCPointerMap map, int size)
+        private static void EncodeArrayGCDesc<T>(ref T builder, GCPointerMap map, int size)
             where T : struct, ITargetBinaryWriter
         {
             int numSeries = 0;
