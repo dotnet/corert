@@ -793,6 +793,12 @@ namespace Internal.JitInterface
             pResolvedToken.cbMethodSpec = 0;
         }
 
+        private bool tryResolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
+        {
+            resolveToken(ref pResolvedToken);
+            return true;
+        }
+
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
@@ -1109,7 +1115,7 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private void getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
+        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
             pLookup.accessType = InfoAccessType.IAT_VALUE;
 
@@ -1155,6 +1161,7 @@ namespace Internal.JitInterface
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
+            return true;
         }
 
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
@@ -1707,6 +1714,14 @@ namespace Internal.JitInterface
             // and should never reach the managed implementation.
             Debug.Assert(false, "CorInfoImpl.HandleException should not be called");
             throw new NotSupportedException("HandleException");
+        }
+
+        private bool runWithErrorTrap(void* function, void* parameter)
+        {
+            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
+            // and should never reach the managed implementation.
+            Debug.Assert(false, "CorInfoImpl.runWithErrorTrap should not be called");
+            throw new NotSupportedException("runWithErrorTrap");
         }
 
         private void ThrowExceptionForJitResult(HRESULT result)

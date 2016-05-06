@@ -55,7 +55,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEWFAST,
         CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
         CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
-        CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds)
+        CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
+        CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -256,6 +257,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_CHKCAST,
         CORINFO_HELP_READYTORUN_STATIC_BASE,
         CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
+        CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
 
         CORINFO_HELP_EE_PRESTUB,            // Not real JIT helper. Used in native images.
@@ -301,6 +303,9 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
+
+        CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
+        CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
 
         CORINFO_HELP_COUNT,
     }

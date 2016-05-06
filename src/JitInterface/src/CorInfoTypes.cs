@@ -245,6 +245,9 @@ namespace Internal.JitInterface
         private byte _needsRuntimeLookup;
         public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
         public CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
+        // The 'runtimeLookupFlags' field is just for internal VM / ZAP communication, 
+        // not to be used by the JIT.
+        public ushort runtimeLookupFlags;
     }
 
     // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
@@ -288,7 +291,7 @@ namespace Internal.JitInterface
         public CORINFO_LOOKUP_KIND lookupKind;
 
         // If kind.needsRuntimeLookup then this indicates how to do the lookup
-        [FieldOffset(8)]
+        [FieldOffset(16)]
         public CORINFO_RUNTIME_LOOKUP runtimeLookup;
 
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
@@ -296,7 +299,7 @@ namespace Internal.JitInterface
         //     IAT_VALUE --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE --> "addr" stores a pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
-        [FieldOffset(8)]
+        [FieldOffset(16)]
         public CORINFO_CONST_LOOKUP constLookup;
     }
 
@@ -881,6 +884,9 @@ namespace Internal.JitInterface
         // Array offsets
         public uint offsetOfObjArrayData;
 
+        // Reverse PInvoke offsets
+        public uint sizeOfReversePInvokeFrame;
+
         public CORINFO_OS osType;
         public uint osMajor;
         public uint osMinor;
@@ -1410,6 +1416,7 @@ namespace Internal.JitInterface
     {
         CORJIT_FLG2_SAMPLING_JIT_BACKGROUND = 0x00000001, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLG2_USE_PINVOKE_HELPERS     = 0x00000002, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
+        CORJIT_FLG2_REVERSE_PINVOKE         = 0x00000004, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
     };
 
     struct CORJIT_FLAGS
