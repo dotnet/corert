@@ -141,6 +141,10 @@ namespace Internal.Runtime
         private static void EncodeArrayGCDesc<T>(ref T builder, GCPointerMap map, int size)
             where T : struct, ITargetBinaryWriter
         {
+            // NOTE: This format cannot properly represent element types with sizes >= 64k bytes.
+            //       We guard it with an assert, but it is the responsibility of the code using this
+            //       to cap array component sizes. EEType only has a UInt16 field for component sizes too.
+
             int numSeries = 0;
             int leadingNonPointerCount = 0;
 
@@ -159,15 +163,19 @@ namespace Internal.Runtime
                 {
                     numSeries++;
 
-                    short pointerCount = 1;
+                    int pointerCount = 1;
                     while (cellIndex > leadingNonPointerCount && map[cellIndex - 1])
                     {
                         cellIndex--;
-                        checked { pointerCount++; }
+                        pointerCount++;
                     }
 
-                    builder.EmitHalfNaturalInt(pointerCount);
-                    builder.EmitHalfNaturalInt(checked((short)(nonPointerCount * pointerSize)));
+                    Debug.Assert(pointerCount < 64 * 1024);
+                    builder.EmitHalfNaturalInt((short)pointerCount);
+
+                    Debug.Assert(nonPointerCount * pointerSize < 64 * 1024);
+                    builder.EmitHalfNaturalInt((short)(nonPointerCount * pointerSize));
+
                     nonPointerCount = 0;
                 }
                 else

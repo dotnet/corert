@@ -335,7 +335,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_type.IsArray)
             {
-                objData.EmitShort((short)((ArrayType)_type).ElementType.GetElementSize());
+                int elementSize = ((ArrayType)_type).ElementType.GetElementSize();
+                if (elementSize >= 64 * 1024)
+                {
+                    // TODO: Array of type 'X' cannot be created because base value type is too large.
+                    throw new TypeLoadException();
+                }
+
+                objData.EmitShort((short)elementSize);
             }
             else if (_type.IsString)
             {
