@@ -26,6 +26,8 @@ namespace ILCompiler.DependencyAnalysis
     ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum CorElementType to
     ///                 | record whether it's back by an Int32, Int16 etc
     ///                 |
+    /// Uint32          | Base size.
+    ///                 |
     /// [Pointer Size]  | Related type. Base type for regular types. Element type for arrays / pointer types.
     ///                 |
     /// UInt16          | Number of VTable slots (X)
