@@ -38,6 +38,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Runtime\GCDescEncoder.cs">
+      <Link>Common\GCDescEncoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\ITargetBinaryWriter.cs">
+      <Link>Common\ITargetBinaryWriter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
       <Link>Common\MetadataBlob.cs</Link>
     </Compile>
@@ -56,7 +62,6 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="Compiler\DelegateCreationInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\EETypeNode.GCDesc.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericCompositionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />

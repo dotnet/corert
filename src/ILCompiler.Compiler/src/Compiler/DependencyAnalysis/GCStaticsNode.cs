@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Internal.TypeSystem;
-using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -36,16 +30,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
-            // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
-            bool[] gcDesc = new bool[_type.GCStaticFieldSize / factory.Target.PointerSize + 1];
-
             GCPointerMap map = GCPointerMap.FromStaticLayout(_type);
-            for (int i = 0; i < map.Size; i++)
-            {
-                gcDesc[i] = map[i];
-            }
-
-            return factory.GCStaticEEType(gcDesc);
+            return factory.GCStaticEEType(map);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)

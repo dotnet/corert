@@ -26,6 +26,8 @@ namespace ILCompiler.DependencyAnalysis
     ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum CorElementType to
     ///                 | record whether it's back by an Int32, Int16 etc
     ///                 |
+    /// Uint32          | Base size.
+    ///                 |
     /// [Pointer Size]  | Related type. Base type for regular types. Element type for arrays / pointer types.
     ///                 |
     /// UInt16          | Number of VTable slots (X)
@@ -305,6 +307,28 @@ namespace ILCompiler.DependencyAnalysis
         public static int GetVTableOffset(int pointerSize)
         {
             return 16 + 2 * pointerSize;
+        }
+
+        private int GCDescSize
+        {
+            get
+            {
+                if (!_constructed || _type.IsGenericDefinition)
+                    return 0;
+
+                return GCDescEncoder.GetGCDescSize(_type);
+            }
+        }
+
+        private void OutputGCDesc(ref ObjectDataBuilder builder)
+        {
+            if (!_constructed || _type.IsGenericDefinition)
+            {
+                Debug.Assert(GCDescSize == 0);
+                return;
+            }
+
+            GCDescEncoder.EncodeGCDesc(ref builder, _type);
         }
 
         private void OutputComponentSize(ref ObjectDataBuilder objData)

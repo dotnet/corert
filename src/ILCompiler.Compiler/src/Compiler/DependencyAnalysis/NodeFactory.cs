@@ -136,10 +136,10 @@ namespace ILCompiler.DependencyAnalysis
                 return new ThreadStaticsNode(type, this);
             });
 
-            _GCStaticEETypes = new NodeCache<bool[], GCStaticEETypeNode>((bool[] gcdesc) =>
+            _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
             {
-                return new GCStaticEETypeNode(gcdesc, this);
-            }, new BoolArrayEqualityComparer());
+                return new GCStaticEETypeNode(Target, gcMap);
+            });
 
             _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
             {
@@ -340,36 +340,6 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchCells.GetOrAdd(method);
         }
 
-        private class BoolArrayEqualityComparer : IEqualityComparer<bool[]>
-        {
-            bool IEqualityComparer<bool[]>.Equals(bool[] x, bool[] y)
-            {
-                if (x.Length != y.Length)
-                    return false;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    if (x[i] != y[i])
-                        return false;
-                }
-
-                return true;
-            }
-
-            int IEqualityComparer<bool[]>.GetHashCode(bool[] obj)
-            {
-                // TODO get better combining function for bools
-                int hash = 0x5d83481;
-                foreach (bool b in obj)
-                {
-                    int bAsInt = b ? 1 : 0;
-                    hash = (hash << 4) ^ hash ^ bAsInt;
-                }
-
-                return hash;
-            }
-        }
-
         private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<string, byte[], int>>
         {
             bool IEqualityComparer<Tuple<string, byte[], int>>.Equals(Tuple<string, byte[], int> x, Tuple<string, byte[], int> y)
@@ -383,11 +353,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<bool[], GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
 
-        public ISymbolNode GCStaticEEType(bool[] gcdesc)
+        public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
         {
-            return _GCStaticEETypes.GetOrAdd(gcdesc);
+            return _GCStaticEETypes.GetOrAdd(gcMap);
         }
 
         private NodeCache<Tuple<string, byte[], int>, BlobNode> _readOnlyDataBlobs;
