@@ -128,7 +128,7 @@ namespace System
                 // Initial array length is deliberately chosen to be 0 so that we reallocate to exactly the right size
                 // for StackFrameHelper.FormatStackTrace call. If we want to do this optimistically with one call change
                 // FormatStackTrace to accept an explicit length.
-                IntPtr[] frameIPs = new IntPtr[0];
+                IntPtr[] frameIPs = Array.Empty<IntPtr>();
                 int cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
                 if (cFrames < 0)
                 {

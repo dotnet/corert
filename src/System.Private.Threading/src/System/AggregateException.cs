@@ -40,7 +40,7 @@ namespace System
         public AggregateException()
             : base(SR.AggregateException_ctor_DefaultMessage)
         {
-            m_innerExceptions = new ReadOnlyCollection<Exception>(new Exception[0]);
+            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace System
         public AggregateException(string message)
             : base(message)
         {
-            m_innerExceptions = new ReadOnlyCollection<Exception>(new Exception[0]);
+            m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
         }
 
         /// <summary>

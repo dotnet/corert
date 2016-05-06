@@ -1955,7 +1955,7 @@ namespace System.Threading.Tasks
             Contract.Assert(exceptionsAvailable, "Must only be used when the task has faulted with exceptions.");
             return exceptionsAvailable ?
                 m_contingentProperties.m_exceptionsHolder.GetExceptionDispatchInfos() :
-                new ReadOnlyCollection<ExceptionDispatchInfo>(new ExceptionDispatchInfo[0]);
+                new ReadOnlyCollection<ExceptionDispatchInfo>(Array.Empty<ExceptionDispatchInfo>());
         }
 
         /// <summary>Gets the ExceptionDispatchInfo containing the OperationCanceledException for this task.</summary>
@@ -5703,7 +5703,7 @@ namespace System.Threading.Tasks
         {
             Contract.Requires(tasks != null, "Expected a non-null tasks array");
             return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
-                new Task<TResult[]>(false, new TResult[0], TaskCreationOptions.None, default(CancellationToken)) :
+                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default(CancellationToken)) :
                 new WhenAllPromise<TResult>(tasks);
         }
 
