@@ -15,12 +15,23 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
+  <PropertyGroup>
+    <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
+    <MetadataCommonPath>..\..\Common\src\Internal\Metadata\NativeFormat</MetadataCommonPath>
+  </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Private.Reflection.Metadata.csproj">
-      <Project>{45A617DF-FEC7-59C8-FD0D-BD27938DC940}</Project>
-      <Name>System.Private.Reflection.Metadata</Name>
-      <Aliases>reader</Aliases>
-    </ProjectReference>
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
       <Project>{D66338D4-F9E4-4051-B302-232C6BFB6EF6}</Project>
       <Name>ILCompiler.MetadataWriter</Name>
@@ -28,11 +39,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-
-    <!-- Disable the test for now. We can't build it because System.Private.Reflection.Metadata builds against
-         CoreLib and has a different System.Object, et al -->
-    <!--Compile Include="RoundTripTests.cs" /-->
-
+    <Compile Include="RoundTripTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
