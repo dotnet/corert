@@ -221,11 +221,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int delta = 0)
         {
-            Relocation symbolReloc = new Relocation();
-            symbolReloc.Target = symbol;
-            symbolReloc.RelocType = relocType;
-            symbolReloc.Offset = offset;
-            symbolReloc.Delta = delta;
+            Relocation symbolReloc = new Relocation(relocType, offset, symbol, delta);
             _relocs.Add(symbolReloc);
         }
 
