@@ -102,7 +102,7 @@ namespace Internal.IL
                 {
                     var pregenerated = McgInteropSupport.TryGetPregeneratedPInvoke(method);
                     if (pregenerated == null)
-                        return PInvokeMarshallingILEmitter.EmitIL(method);
+                        return PInvokeILEmitter.EmitIL(method);
                     method = pregenerated;
                 }
 

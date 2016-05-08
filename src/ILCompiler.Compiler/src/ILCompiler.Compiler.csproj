@@ -209,8 +209,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\ILEmitter.cs">
       <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeMarshallingILEmitter.cs">
-      <Link>IL\Stubs\PInvokeMarshallingThunk.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
+      <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
