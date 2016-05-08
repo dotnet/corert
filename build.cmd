@@ -225,7 +225,7 @@ if "%__GenRespFiles%"=="1" (
     call "!VS140COMNTOOLS!\..\..\VC\vcvarsall.bat" %__BuildArch%
 
     "%__DotNetCliPath%\dotnet.exe" build --native --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType%
-    call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
+    call :CopyResponseFile "%__ReproProjectObjDir%\%__BuildType%\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\ryujit.rsp"
 
     rem Workaround for https://github.com/dotnet/cli/issues/1956
     rmdir /s /q "%__ReproProjectBinDir%"
@@ -236,7 +236,7 @@ if "%__GenRespFiles%"=="1" (
         set __AdditionalCompilerFlags=--cppcompilerflags /MTd
     )
     "%__DotNetCliPath%\dotnet.exe" build --native --cpp --ilcpath "%__BinDir%\packaging\publish1" --appdepsdkpath "%CoreRT_AppDepSdkDir%" "%__ReproProjectDir%" -c %__BuildType% !__AdditionalCompilerFlags!
-    call :CopyResponseFile "%__ReproProjectObjDir%\Debug\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
+    call :CopyResponseFile "%__ReproProjectObjDir%\%__BuildType%\dnxcore50\native\dotnet-compile-native-ilc.rsp" "%__ObjDir%\cpp.rsp"
     endlocal
 )
 :AfterVsDevGenerateRespFiles
