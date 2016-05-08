@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-using Internal.NativeFormat;
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
-using System.Text;
 using System;
 using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
-using Debug = System.Diagnostics.Debug;
+using Internal.NativeFormat;
+
+using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -121,7 +121,7 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr stringSection = GetModuleSection(moduleManager, ReadyToRunSectionType.StringTable, out length);
             if (stringSection != IntPtr.Zero)
             {
-                Contract.Assert(length % IntPtr.Size == 0);
+                Debug.Assert(length % IntPtr.Size == 0);
                 InitializeStringTable(stringSection, length);
             }
 
@@ -129,7 +129,7 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr staticsSection = GetModuleSection(moduleManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
-                Contract.Assert(length % IntPtr.Size == 0);
+                Debug.Assert(length % IntPtr.Size == 0);
                 InitializeStatics(staticsSection, length);
             }
         }
@@ -142,7 +142,7 @@ namespace Internal.Runtime.CompilerHelpers
             IntPtr eagerClassConstructorSection = GetModuleSection(moduleManager, ReadyToRunSectionType.EagerCctor, out length);
             if (eagerClassConstructorSection != IntPtr.Zero)
             {
-                Contract.Assert(length % IntPtr.Size == 0);
+                Debug.Assert(length % IntPtr.Size == 0);
                 RunEagerClassConstructors(eagerClassConstructorSection, length);
             }
         }
@@ -155,13 +155,13 @@ namespace Internal.Runtime.CompilerHelpers
                 byte* bytes = (byte*)*tab;
                 int len = (int)NativePrimitiveDecoder.DecodeUnsigned(ref bytes);
                 int count = LowLevelUTF8Encoding.GetCharCount(bytes, len);
-                Contract.Assert(count >= 0);
+                Debug.Assert(count >= 0);
 
                 string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.EETypePtrOf<string>(), count);
                 fixed (char* dest = newStr)
                 {
                     int newCount = LowLevelUTF8Encoding.GetChars(bytes, len, dest, count);
-                    Contract.Assert(newCount == count);
+                    Debug.Assert(newCount == count);
                 }
                 GCHandle handle = GCHandle.Alloc(newStr);
                 *tab = (IntPtr)handle;
