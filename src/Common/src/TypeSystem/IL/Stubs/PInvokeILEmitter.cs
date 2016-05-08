@@ -11,14 +11,14 @@ using Debug = System.Diagnostics.Debug;
 namespace Internal.IL.Stubs
 {
     /// <summary>
-    /// Provides method bodies for PInvoke methods that require marshalling.
+    /// Provides method bodies for PInvoke methods
     /// 
     /// This by no means intends to provide full PInvoke support. The intended use of this is to
     /// a) prevent calls getting generated to targets that require a full marshaller
     /// (this compiler doesn't provide that), and b) offer a hand in some very simple marshalling
     /// situations (but support for this part might go away as the product matures).
     /// </summary>
-    public struct PInvokeMarshallingILEmitter
+    public struct PInvokeILEmitter
     {
         private MethodDesc _targetMethod;
         private TypeSystemContext _context;
@@ -29,7 +29,7 @@ namespace Internal.IL.Stubs
         private ILCodeStream _returnValueMarshallingCodeStream;
         private ILCodeStream _unmarshallingCodestream;
 
-        private PInvokeMarshallingILEmitter(MethodDesc targetMethod)
+        private PInvokeILEmitter(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
 
@@ -556,7 +556,7 @@ namespace Internal.IL.Stubs
         {
             try
             {
-                return new PInvokeMarshallingILEmitter(method).EmitIL();
+                return new PInvokeILEmitter(method).EmitIL();
             }
             catch (NotSupportedException)
             {
