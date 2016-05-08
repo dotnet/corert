@@ -24,13 +24,13 @@ namespace Internal.IL
 
     public struct ILExceptionRegion
     {
-        private readonly ILExceptionRegionKind _kind;
-        private readonly int _tryOffset;
-        private readonly int _tryLength;
-        private readonly int _handlerOffset;
-        private readonly int _handlerLength;
-        private readonly int _classToken;
-        private readonly int _filterOffset;
+        public readonly ILExceptionRegionKind Kind;
+        public readonly int TryOffset;
+        public readonly int TryLength;
+        public readonly int HandlerOffset;
+        public readonly int HandlerLength;
+        public readonly int ClassToken;
+        public readonly int FilterOffset;
 
         public ILExceptionRegion(
             ILExceptionRegionKind kind,
@@ -41,48 +41,13 @@ namespace Internal.IL
             int classToken,
             int filterOffset)
         {
-            _kind = kind;
-            _tryOffset = tryOffset;
-            _tryLength = tryLength;
-            _handlerOffset = handlerOffset;
-            _handlerLength = handlerLength;
-            _classToken = classToken;
-            _filterOffset = filterOffset;
-        }
-
-        public ILExceptionRegionKind Kind
-        {
-            get { return _kind; }
-        }
-
-        public int TryOffset
-        {
-            get { return _tryOffset; }
-        }
-
-        public int TryLength
-        {
-            get { return _tryLength; }
-        }
-
-        public int HandlerOffset
-        {
-            get { return _handlerOffset; }
-        }
-
-        public int HandlerLength
-        {
-            get { return _handlerLength; }
-        }
-
-        public int ClassToken
-        {
-            get { return _classToken; }
-        }
-
-        public int FilterOffset
-        {
-            get { return _filterOffset; }
+            Kind = kind;
+            TryOffset = tryOffset;
+            TryLength = tryLength;
+            HandlerOffset = handlerOffset;
+            HandlerLength = handlerLength;
+            ClassToken = classToken;
+            FilterOffset = filterOffset;
         }
     }
 
