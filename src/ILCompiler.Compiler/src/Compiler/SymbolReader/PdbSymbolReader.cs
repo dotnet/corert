@@ -30,9 +30,16 @@ namespace ILCompiler.SymbolReader
     /// </summary>
     public struct ILLocalVariable
     {
-        public int Slot;
-        public string Name;
-        public bool CompilerGenerated;
+        public readonly int Slot;
+        public readonly string Name;
+        public readonly bool CompilerGenerated;
+
+        public ILLocalVariable(int slot, string name, bool compilerGenerated)
+        {
+            Slot = slot;
+            Name = name;
+            CompilerGenerated = compilerGenerated;
+        }
     }
 
     /// <summary>
