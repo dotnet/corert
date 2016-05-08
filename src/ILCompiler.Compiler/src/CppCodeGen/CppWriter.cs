@@ -404,12 +404,12 @@ namespace ILCompiler.CppCodeGen
 
                 if (!_compilation.Options.NoLineNumbers)
                 {
-                    IEnumerable<ILSequencePoint> sequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
+                    IEnumerable<ILSequencePoint> sequencePoints = typeSystemContext.GetSequencePointsForMethod(method, methodIL);
                     if (sequencePoints != null)
                         ilImporter.SetSequencePoints(sequencePoints);
                 }
 
-                IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method);
+                IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method, methodIL);
                 if (localVariables != null)
                     ilImporter.SetLocalVariables(localVariables);
 

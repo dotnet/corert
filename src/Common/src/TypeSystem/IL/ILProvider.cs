@@ -125,20 +125,12 @@ namespace Internal.IL
                 return null;
             }
             else
-            if (method is MethodForInstantiatedType)
+            if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
                 var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
                 if (methodDefinitionIL == null)
                     return null;
-                return new InstantiatedMethodIL(methodDefinitionIL, method.OwningType.Instantiation, new Instantiation());
-            }
-            else
-            if (method is InstantiatedMethod)
-            {
-                var methodDefinitionIL = GetMethodIL(method.GetMethodDefinition());
-                if (methodDefinitionIL == null)
-                    return null;
-                return new InstantiatedMethodIL(methodDefinitionIL, new Instantiation(), method.Instantiation);
+                return new InstantiatedMethodIL(methodDefinitionIL, method.OwningType.Instantiation, method.Instantiation);
             }
             else
             if (method is ILStubMethod)

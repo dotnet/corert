@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Immutable;
 
 using Internal.TypeSystem;
 
@@ -54,6 +53,11 @@ namespace Internal.IL
     [System.Diagnostics.DebuggerTypeProxy(typeof(MethodILDebugView))]
     public abstract class MethodIL
     {
+        public virtual MethodIL GetMethodILDefinition()
+        {
+            return this;
+        }
+
         public abstract byte[] GetILBytes();
         public abstract int GetMaxStack();
         public abstract bool GetInitLocals();

@@ -130,14 +130,16 @@ namespace Internal.JitInterface
 
                     if (!_compilation.Options.NoLineNumbers)
                     {
-                        IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
+                        IEnumerable<ILSequencePoint> ilSequencePoints =
+                            typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled, _compilation.GetMethodIL(MethodBeingCompiled));
                         if (ilSequencePoints != null)
                         {
                             SetSequencePoints(ilSequencePoints);
                         }
                     }
 
-                    IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(MethodBeingCompiled);
+                    IEnumerable<ILLocalVariable> localVariables =
+                        typeSystemContext.GetLocalVariableNamesForMethod(MethodBeingCompiled, _compilation.GetMethodIL(MethodBeingCompiled));
                     if (localVariables != null)
                     {
                         SetLocalVariables(localVariables);

@@ -6,6 +6,8 @@ using System;
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.IL
 {
     public sealed class InstantiatedMethodIL : MethodIL
@@ -16,12 +18,18 @@ namespace Internal.IL
 
         public InstantiatedMethodIL(MethodIL methodIL, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
+            Debug.Assert(!(methodIL is InstantiatedMethodIL));
             _methodIL = methodIL;
 
             _typeInstantiation = typeInstantiation;
             _methodInstantiation = methodInstantiation;
         }
 
+        public override MethodIL GetMethodILDefinition()
+        {
+            return _methodIL;
+        }
+        
         public override byte[] GetILBytes()
         {
             return _methodIL.GetILBytes();
