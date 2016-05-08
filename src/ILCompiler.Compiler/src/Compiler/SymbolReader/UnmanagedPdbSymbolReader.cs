@@ -238,7 +238,7 @@ namespace ILCompiler.SymbolReader
                 int attributes;
                 ThrowExceptionForHR(local.GetAttributes(out attributes));
 
-                variables.Add(new ILLocalVariable() { Slot = slot, Name = new String(nameBuffer, 0, nameLength - 1), CompilerGenerated = (attributes & 0x1) != 0 });
+                variables.Add(new ILLocalVariable(slot, new String(nameBuffer, 0, nameLength - 1), (attributes & 0x1) != 0));
             }
 
             int childrenCount;

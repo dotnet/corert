@@ -2382,22 +2382,22 @@ namespace Internal.JitInterface
 
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
-            Relocation reloc;
-
-            reloc.RelocType = (RelocType)fRelocType;
-
-            BlockType locationBlock = findKnownBlock(location, out reloc.Offset);
+            int relocOffset;
+            BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
             // TODO: Arbitrary relocs
             if (locationBlock != BlockType.Code)
                 throw new NotImplementedException("Arbitrary relocs");
 
-            BlockType targetBlock = findKnownBlock(target, out reloc.Delta);
+            int relocDelta;
+            BlockType targetBlock = findKnownBlock(target, out relocDelta);
+
+            ISymbolNode relocTarget;
             switch (targetBlock)
             {
                 case BlockType.Code:
-                    reloc.Target = _methodCodeNode;
+                    relocTarget = _methodCodeNode;
                     break;
 
                 case BlockType.ColdCode:
@@ -2405,7 +2405,7 @@ namespace Internal.JitInterface
                     throw new NotImplementedException("Arbitrary relocs");
 
                 case BlockType.ROData:
-                    reloc.Target = _roDataBlob;
+                    relocTarget = _roDataBlob;
                     break;
 
                 default:
@@ -2418,15 +2418,15 @@ namespace Internal.JitInterface
                         throw new NotImplementedException("RuntimeFieldHandle is not implemented");
                     }
 
-                    reloc.Target = (ISymbolNode)targetObject;
+                    relocTarget = (ISymbolNode)targetObject;
                     break;
             }
 
-            reloc.Delta += addlDelta;
+            relocDelta += addlDelta;
 
             if (_relocs.Count == 0)
                 _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(reloc);
+            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget, relocDelta));
         }
 
         private ushort getRelocTypeHint(void* target)

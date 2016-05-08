@@ -120,7 +120,7 @@ namespace ILCompiler.SymbolReader
                 var name = _reader.GetString(localVariable.Name);
                 bool compilerGenerated = (localVariable.Attributes & LocalVariableAttributes.DebuggerHidden) != 0;
 
-                variables.Add(new ILLocalVariable() { Slot = localVariable.Index, Name = name, CompilerGenerated = compilerGenerated });
+                variables.Add(new ILLocalVariable(localVariable.Index, name, compilerGenerated));
             }
 
             var children = localScope.GetChildren();
