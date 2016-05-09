@@ -312,6 +312,8 @@ TrapThread:
 BadTransition:
         add         rsp, 80h
         pop         rbx                 ; restore preserved reg
+
+        mov         rcx, qword ptr [rsp]    ; arg <- return address
         jmp         RhpReversePInvokeBadTransition
 
 NESTED_END RhpReversePInvoke_RarePath, _TEXT

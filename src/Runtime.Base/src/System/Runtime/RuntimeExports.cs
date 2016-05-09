@@ -318,27 +318,12 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhpReversePInvokeBadTransition")]
-        public static void RhpReversePInvokeBadTransition()
+        public static void RhpReversePInvokeBadTransition(IntPtr returnAddress)
         {
-#if CORERT
-            EH.FallbackFailFast(RhFailFastReason.IllegalNativeCallableEntry, null);
-#else
-            IntPtr returnAddress = BinderIntrinsics.GetReturnAddress();
-            if (returnAddress != IntPtr.Zero)
-            {
-                EH.FailFastViaClasslib(
-                    RhFailFastReason.IllegalNativeCallableEntry,
-                    null,
-                    returnAddress);
-            }
-            else
-            {
-                // @HACKHACK: we need to force the method to have an EBP frame so that we can use the
-                // GetReturnAddress() intrinsic above.  This seems to be the smallest way to do this.
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
-                throw EH.GetClasslibException(ExceptionIDs.Arithmetic, returnAddress);
-            }
-#endif
+            EH.FailFastViaClasslib(
+                RhFailFastReason.IllegalNativeCallableEntry,
+                null,
+                returnAddress);
         }
 
         // EEType interrogation methods.
