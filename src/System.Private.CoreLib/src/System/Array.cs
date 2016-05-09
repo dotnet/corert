@@ -853,15 +853,24 @@ namespace System
             if (array == null)
                 throw new ArgumentNullException("array");
 
+#if !CORERT
+            // NOTE: ONCE WE GET RID OF THE IFDEFS, WE SHOULD RENAME THIS METHOD.
+            // Get the backing array if this is an MDArray instance
             array = array.FlattenedArray;
+#endif
 
             if (index < 0 || index > array.Length || length < 0 || length > array.Length)
                 throw new IndexOutOfRangeException();
             if (length > (array.Length - index))
                 throw new IndexOutOfRangeException();
 
+#if CORERT
+            // The above checks should have covered all the reasons why Clear would fail.
+            Debug.Assert(false);
+#else
             bool success = RuntimeImports.TryArrayClear(array, index, length);
             Debug.Assert(success);
+#endif
         }
 
         // We impose limits on maximum array lenght in each dimension to allow efficient 
