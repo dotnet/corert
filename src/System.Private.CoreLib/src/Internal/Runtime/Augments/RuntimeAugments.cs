@@ -114,7 +114,7 @@ namespace Internal.Runtime.Augments
         public static Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             // Don't make the easy mistake of passing in the element EEType rather than the "array of element" EEType.
-            Debug.Assert(typeHandleForArrayType.ToEETypePtr().IsArray);
+            Debug.Assert(typeHandleForArrayType.ToEETypePtr().IsSzArray);
             return RuntimeImports.RhNewArray(typeHandleForArrayType.ToEETypePtr(), count);
         }
 

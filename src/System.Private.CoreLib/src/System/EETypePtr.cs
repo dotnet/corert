@@ -112,6 +112,14 @@ namespace System
             }
         }
 
+        internal bool IsSzArray
+        {
+            get
+            {
+                return IsArray && BaseSize == Array.SZARRAY_BASE_SIZE;
+            }
+        }
+
         internal bool IsPointer
         {
             get
@@ -182,12 +190,14 @@ namespace System
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = RuntimeImports.RhGetNonArrayBaseType(this);
+#if !CORERT
                 if (baseEEType == typeof(MDArrayRank2).TypeHandle.ToEETypePtr() ||
                     baseEEType == typeof(MDArrayRank3).TypeHandle.ToEETypePtr() ||
                     baseEEType == typeof(MDArrayRank4).TypeHandle.ToEETypePtr())
                 {
                     return typeof(Array).TypeHandle.ToEETypePtr();
                 }
+#endif
 
                 return baseEEType;
             }
@@ -198,6 +208,14 @@ namespace System
             get
             {
                 return RuntimeImports.RhGetComponentSize(this);
+            }
+        }
+
+        internal uint BaseSize
+        {
+            get
+            {
+                return RuntimeImports.RhGetBaseSize(this);
             }
         }
 

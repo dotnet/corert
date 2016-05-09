@@ -37,6 +37,16 @@ namespace System
         private int _numComponents;
 #pragma warning restore
 
+#if BIT64
+        private const int POINTER_SIZE = 8;
+        //                                     Header       + m_pEEType    + _numComponents (with a 4-byte padding)
+        internal const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + 4 + 4;
+#else
+        private const int POINTER_SIZE = 4;
+        //                                     Header       + m_pEEType    + _numComponents
+        internal const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + 4;
+#endif
+
         public int Length
         {
             get
@@ -871,11 +881,21 @@ namespace System
         {
             get
             {
+#if CORERT
+                int boundsSize = (int)this.EETypePtr.BaseSize - SZARRAY_BASE_SIZE;
+                if (boundsSize > 0)
+                {
+                    // Multidim array case: Base size includes space for two Int32s
+                    // (upper and lower bound) per each dimension of the array.
+                    return boundsSize / (2 * sizeof(int));
+                }
+#else
                 MDArray mdArray = this as MDArray;
                 if (mdArray != null)
                 {
                     return mdArray.MDRank;
                 }
+#endif
 
                 return 1;
             }
@@ -2157,6 +2177,27 @@ namespace System
 
         public int GetLowerBound(int dimension)
         {
+#if CORERT
+            if (!this.EETypePtr.IsSzArray)
+            {
+                if ((dimension >= Rank) || (dimension < 0))
+                    throw new IndexOutOfRangeException();
+
+                unsafe
+                {
+                    fixed (int* pNumComponents = &_numComponents)
+                    {
+                        // Lower bounds follow after upper bounds.
+#if BIT64
+                        // _numComponents is padded on 64-bit systems.
+                        return *(pNumComponents + 1 + 1 + Rank + dimension);
+#else
+                        return *(pNumComponents + 1 + Rank + dimension);
+#endif
+                    }
+                }
+            }
+#else
             MDArray mdArray = this as MDArray;
             if (mdArray != null)
             {
@@ -2168,6 +2209,7 @@ namespace System
 
             if (this.Rank != 1)
                 throw new PlatformNotSupportedException(SR.Rank_MultiDimNotSupported);
+#endif
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return 0;
@@ -2175,6 +2217,27 @@ namespace System
 
         public int GetUpperBound(int dimension)
         {
+#if CORERT
+            if (!this.EETypePtr.IsSzArray)
+            {
+                if ((dimension >= Rank) || (dimension < 0))
+                    throw new IndexOutOfRangeException();
+
+                unsafe
+                {
+                    fixed (int* pNumComponents = &_numComponents)
+                    {
+                        // Upper bounds follow after _numComponents.
+#if BIT64
+                        // _numComponents is padded on 64-bit systems.
+                        return *(pNumComponents + 1 + 1 + dimension) - 1;
+#else
+                        return *(pNumComponents + 1 + dimension) - 1;
+#endif
+                    }
+                }
+            }
+#else
             MDArray mdArray = this as MDArray;
             if (mdArray != null)
             {
@@ -2183,6 +2246,7 @@ namespace System
 
             if (this.Rank != 1)
                 throw new PlatformNotSupportedException(SR.Rank_MultiDimNotSupported);
+#endif
             if (dimension != 0)
                 throw new IndexOutOfRangeException();
             return Length - 1;
@@ -2212,7 +2276,11 @@ namespace System
 
         public unsafe Object GetValue(int index)
         {
+#if CORERT
+            if (!this.EETypePtr.IsSzArray)
+#else
             if (this is MDArray)
+#endif
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
             EETypePtr pElementEEType = ElementEEType;
@@ -2254,7 +2322,11 @@ namespace System
 
         public unsafe void SetValue(Object value, int index)
         {
+#if CORERT
+            if (!this.EETypePtr.IsSzArray)
+#else
             if (this is MDArray)
+#endif
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
             if (index < 0 || index >= Length)
