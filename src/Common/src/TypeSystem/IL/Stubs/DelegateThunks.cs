@@ -126,7 +126,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.calli, emitter.NewToken(builder.ToSignature()));
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(this);
         }
 
         public override string Name
@@ -184,7 +184,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSignature));
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(this);
         }
 
         public override string Name
@@ -328,7 +328,7 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(this);
         }
 
         public override string Name
@@ -430,7 +430,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.conv_i);
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(this);
         }
 
         public override Instantiation Instantiation

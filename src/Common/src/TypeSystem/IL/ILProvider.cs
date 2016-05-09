@@ -53,7 +53,7 @@ namespace Internal.IL
 
             if (methodName == "UncheckedCast" && owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices")
             {
-                return new ILStubMethodIL(new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
             else
             if ((methodName == "CompareExchange" || methodName == "Exchange") && method.HasInstantiation && owningType.Name == "Interlocked" && owningType.Namespace == "System.Threading")
@@ -130,7 +130,7 @@ namespace Internal.IL
                 var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
                 if (methodDefinitionIL == null)
                     return null;
-                return new InstantiatedMethodIL(methodDefinitionIL, method.OwningType.Instantiation, method.Instantiation);
+                return new InstantiatedMethodIL(method, methodDefinitionIL, method.OwningType.Instantiation, method.Instantiation);
             }
             else
             if (method is ILStubMethod)

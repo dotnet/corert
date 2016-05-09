@@ -51,7 +51,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.call, emitter.NewToken(nonGenericMethod));
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(target);
         }
     }
 }

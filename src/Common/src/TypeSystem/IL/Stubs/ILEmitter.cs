@@ -234,13 +234,21 @@ namespace Internal.IL.Stubs
         private byte[] _ilBytes;
         private LocalVariableDefinition[] _locals;
         private Object[] _tokens;
+        private MethodDesc _method;
 
-        public ILStubMethodIL(byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens)
+        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens)
         {
             _ilBytes = ilBytes;
             _locals = locals;
             _tokens = tokens;
+            _method = owningMethod;
         }
+
+        public override MethodDesc GetOwningMethod()
+        {
+            return _method;
+        }
+
         public override byte[] GetILBytes()
         {
             return _ilBytes;
@@ -364,7 +372,7 @@ namespace Internal.IL.Stubs
             return newLabel;
         }
 
-        public MethodIL Link()
+        public MethodIL Link(MethodDesc owningMethod)
         {
             int totalLength = 0;
             for (int i = 0; i < _codeStreams.Count; i++)
@@ -384,7 +392,7 @@ namespace Internal.IL.Stubs
                 copiedLength += ilCodeStream._length;
             }
 
-            return new ILStubMethodIL(ilInstructions, _locals.ToArray(), _tokens.ToArray());
+            return new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray());
         }
     }
 

@@ -549,7 +549,7 @@ namespace Internal.IL.Stubs
             
             _unmarshallingCodestream.Emit(ILOpcode.ret);
 
-            return _emitter.Link();
+            return _emitter.Link(_targetMethod);
         }
 
         public static MethodIL EmitIL(MethodDesc method)
@@ -575,7 +575,7 @@ namespace Internal.IL.Stubs
                 codeStream.Emit(ILOpcode.throw_);
                 codeStream.Emit(ILOpcode.ret);
 
-                return emitter.Link();
+                return emitter.Link(method);
             }
         }
     }

@@ -332,10 +332,10 @@ namespace ILCompiler
             moduleData.PdbReader = reader;
         }
 
-        public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodDesc method, MethodIL methodIL)
+        public IEnumerable<ILSequencePoint> GetSequencePointsForMethod(MethodIL methodIL)
         {
-            MethodDesc uninstantiatedMethod = method.GetTypicalMethodDefinition();
             MethodIL uninstantiatedMethodIL = methodIL.GetMethodILDefinition();
+            MethodDesc uninstantiatedMethod = uninstantiatedMethodIL.GetOwningMethod();
 
             EcmaMethod ecmaMethod = uninstantiatedMethod as EcmaMethod;
             if (ecmaMethod == null)
@@ -355,10 +355,10 @@ namespace ILCompiler
             return moduleData.PdbReader.GetSequencePointsForMethod(MetadataTokens.GetToken(ecmaMethod.Handle));
         }
 
-        public IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(MethodDesc method, MethodIL methodIL)
+        public IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(MethodIL methodIL)
         {
-            MethodDesc uninstantiatedMethod = method.GetTypicalMethodDefinition();
             MethodIL uninstantiatedMethodIL = methodIL.GetMethodILDefinition();
+            MethodDesc uninstantiatedMethod = uninstantiatedMethodIL.GetOwningMethod();
 
             EcmaMethod ecmaMethod = uninstantiatedMethod as EcmaMethod;
             if (ecmaMethod == null)

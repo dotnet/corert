@@ -12,17 +12,27 @@ namespace Internal.IL
 {
     public sealed class InstantiatedMethodIL : MethodIL
     {
+        private MethodDesc _method;
         private MethodIL _methodIL;
         private Instantiation _typeInstantiation;
         private Instantiation _methodInstantiation;
 
-        public InstantiatedMethodIL(MethodIL methodIL, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        public InstantiatedMethodIL(MethodDesc owningMethod, MethodIL methodIL, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             Debug.Assert(!(methodIL is InstantiatedMethodIL));
+            Debug.Assert(owningMethod.HasInstantiation || owningMethod.OwningType.HasInstantiation);
+            Debug.Assert(owningMethod.GetTypicalMethodDefinition() == methodIL.GetOwningMethod());
+            
             _methodIL = methodIL;
+            _method = owningMethod;
 
             _typeInstantiation = typeInstantiation;
             _methodInstantiation = methodInstantiation;
+        }
+
+        public override MethodDesc GetOwningMethod()
+        {
+            return _method;
         }
 
         public override MethodIL GetMethodILDefinition()

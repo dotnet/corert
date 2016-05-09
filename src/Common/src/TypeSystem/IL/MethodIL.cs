@@ -58,6 +58,7 @@ namespace Internal.IL
             return this;
         }
 
+        public abstract MethodDesc GetOwningMethod();
         public abstract byte[] GetILBytes();
         public abstract int GetMaxStack();
         public abstract bool GetInitLocals();

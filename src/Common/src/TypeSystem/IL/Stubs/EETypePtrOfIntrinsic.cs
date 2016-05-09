@@ -40,7 +40,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(eetypePtrCtorMethod));
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(target);
         }
     }
 }

@@ -16,6 +16,7 @@ namespace Internal.IL
     public class EcmaMethodIL : MethodIL
     {
         private EcmaModule _module;
+        private EcmaMethod _method;
         private MethodBodyBlock _methodBody;
 
         // Cached values
@@ -28,13 +29,19 @@ namespace Internal.IL
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)
                 return null;
-            return new EcmaMethodIL(method.Module, rva);
+            return new EcmaMethodIL(method, rva);
         }
 
-        private EcmaMethodIL(EcmaModule module, int rva)
+        private EcmaMethodIL(EcmaMethod method, int rva)
         {
-            _module = module;
-            _methodBody = module.PEReader.GetMethodBody(rva);
+            _method = method;
+            _module = method.Module;
+            _methodBody = _module.PEReader.GetMethodBody(rva);
+        }
+
+        public override MethodDesc GetOwningMethod()
+        {
+            return _method;
         }
 
         public override byte[] GetILBytes()
