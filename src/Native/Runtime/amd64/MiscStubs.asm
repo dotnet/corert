@@ -71,7 +71,7 @@ LEAF_END RhpCheckCctor2, _TEXT
 ;;
 NESTED_ENTRY RhpCheckCctor2__SlowPath, _TEXT
 
-RhpCheckCctor2__SlowPath_FrameSize equ 20h + 10h  ;; Scratch space + storage to save off rax, and rdx value
+RhpCheckCctor2__SlowPath_FrameSize equ 20h + 10h + 8h ;; Scratch space + storage to save off rax/rdx value + align stack 
 
         alloc_stack RhpCheckCctor2__SlowPath_FrameSize
         save_reg_postrsp    rdx, 20h
