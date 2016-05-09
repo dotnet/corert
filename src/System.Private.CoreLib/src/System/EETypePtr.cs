@@ -190,7 +190,7 @@ namespace System
                     return new EETypePtr(default(IntPtr));
 
                 EETypePtr baseEEType = RuntimeImports.RhGetNonArrayBaseType(this);
-#if !CORERT
+#if !REAL_MULTIDIM_ARRAYS
                 if (baseEEType == typeof(MDArrayRank2).TypeHandle.ToEETypePtr() ||
                     baseEEType == typeof(MDArrayRank3).TypeHandle.ToEETypePtr() ||
                     baseEEType == typeof(MDArrayRank4).TypeHandle.ToEETypePtr())

@@ -853,7 +853,7 @@ namespace System
             if (array == null)
                 throw new ArgumentNullException("array");
 
-#if !CORERT
+#if !REAL_MULTIDIM_ARRAYS
             // NOTE: ONCE WE GET RID OF THE IFDEFS, WE SHOULD RENAME THIS METHOD.
             // Get the backing array if this is an MDArray instance
             array = array.FlattenedArray;
@@ -864,7 +864,7 @@ namespace System
             if (length > (array.Length - index))
                 throw new IndexOutOfRangeException();
 
-#if CORERT
+#if REAL_MULTIDIM_ARRAYS
             // The above checks should have covered all the reasons why Clear would fail.
             Debug.Assert(false);
 #else
@@ -890,7 +890,7 @@ namespace System
         {
             get
             {
-#if CORERT
+#if REAL_MULTIDIM_ARRAYS
                 int boundsSize = (int)this.EETypePtr.BaseSize - SZARRAY_BASE_SIZE;
                 if (boundsSize > 0)
                 {
@@ -2186,7 +2186,7 @@ namespace System
 
         public int GetLowerBound(int dimension)
         {
-#if CORERT
+#if REAL_MULTIDIM_ARRAYS
             if (!this.EETypePtr.IsSzArray)
             {
                 if ((dimension >= Rank) || (dimension < 0))
@@ -2226,7 +2226,7 @@ namespace System
 
         public int GetUpperBound(int dimension)
         {
-#if CORERT
+#if REAL_MULTIDIM_ARRAYS
             if (!this.EETypePtr.IsSzArray)
             {
                 if ((dimension >= Rank) || (dimension < 0))
@@ -2285,7 +2285,7 @@ namespace System
 
         public unsafe Object GetValue(int index)
         {
-#if CORERT
+#if REAL_MULTIDIM_ARRAYS
             if (!this.EETypePtr.IsSzArray)
 #else
             if (this is MDArray)
@@ -2331,7 +2331,7 @@ namespace System
 
         public unsafe void SetValue(Object value, int index)
         {
-#if CORERT
+#if REAL_MULTIDIM_ARRAYS
             if (!this.EETypePtr.IsSzArray)
 #else
             if (this is MDArray)
