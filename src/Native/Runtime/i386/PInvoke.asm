@@ -205,6 +205,7 @@ ReverseTrapReturningThread:
 BadTransition:
         pop         edx
         pop         ecx
+        mov         ecx, dword ptr [esp]        ; arg <- return address
         jmp         RhpReversePInvokeBadTransition
 FASTCALL_ENDFUNC
 
