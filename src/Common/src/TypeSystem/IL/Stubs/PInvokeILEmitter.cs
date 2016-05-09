@@ -11,14 +11,14 @@ using Debug = System.Diagnostics.Debug;
 namespace Internal.IL.Stubs
 {
     /// <summary>
-    /// Provides method bodies for PInvoke methods that require marshalling.
+    /// Provides method bodies for PInvoke methods
     /// 
     /// This by no means intends to provide full PInvoke support. The intended use of this is to
     /// a) prevent calls getting generated to targets that require a full marshaller
     /// (this compiler doesn't provide that), and b) offer a hand in some very simple marshalling
     /// situations (but support for this part might go away as the product matures).
     /// </summary>
-    public struct PInvokeMarshallingILEmitter
+    public struct PInvokeILEmitter
     {
         private MethodDesc _targetMethod;
         private TypeSystemContext _context;
@@ -29,10 +29,9 @@ namespace Internal.IL.Stubs
         private ILCodeStream _returnValueMarshallingCodeStream;
         private ILCodeStream _unmarshallingCodestream;
 
-        private PInvokeMarshallingILEmitter(MethodDesc targetMethod)
+        private PInvokeILEmitter(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsPInvoke);
-            Debug.Assert(RequiresMarshalling(targetMethod));
 
             _targetMethod = targetMethod;
             _context = _targetMethod.Context;
@@ -468,6 +467,7 @@ namespace Internal.IL.Stubs
             // - _unmarshallingCodestream is used to propagate [out] native arguments values to 
             // managed ones.
             _emitter = new ILEmitter();
+            ILCodeStream fnptrLoadStream = _emitter.NewCodeStream();
             _marshallingCodeStream = _emitter.NewCodeStream();
             ILCodeStream callsiteSetupCodeStream = _emitter.NewCodeStream();
             _returnValueMarshallingCodeStream = _emitter.NewCodeStream();
@@ -510,12 +510,43 @@ namespace Internal.IL.Stubs
 
             MethodSignature nativeSig = new MethodSignature(
                 targetMethodSignature.Flags, 0, nativeReturnType, nativeParameterTypes);
-            MethodDesc nativeMethod =
-                new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, _importMetadata);
 
-            // Call the native method
-            callsiteSetupCodeStream.Emit(ILOpcode.call, _emitter.NewToken(nativeMethod));
 
+            bool useLazyResolution;
+            string importModule = _importMetadata.Module;
+
+            // Determine whether this call should be made through a lazy resolution or a static reference
+            // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
+            if (importModule == "[MRT]" || importModule == "*")
+                useLazyResolution = false;
+            else if (_targetMethod.Context.Target.IsWindows)
+                useLazyResolution = !importModule.StartsWith("api-ms-win-");
+            else
+                useLazyResolution = !importModule.StartsWith("System.Private.");
+
+            // TODO: Test and make this work on non-Windows
+            useLazyResolution &= _targetMethod.Context.Target.IsWindows;
+
+            if (useLazyResolution)
+            {
+                MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
+                FieldDesc lazyDispatchCell = new PInvokeLazyFixupField((DefType)_targetMethod.OwningType, _importMetadata);
+                fnptrLoadStream.Emit(ILOpcode.ldsflda, _emitter.NewToken(lazyDispatchCell));
+                fnptrLoadStream.Emit(ILOpcode.call, _emitter.NewToken(lazyHelperType.GetKnownMethod("ResolvePInvoke", null)));
+
+                ILLocalVariable vNativeFunctionPointer = _emitter.NewLocal(_targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
+                fnptrLoadStream.EmitStLoc(vNativeFunctionPointer);
+                callsiteSetupCodeStream.EmitLdLoc(vNativeFunctionPointer);
+                callsiteSetupCodeStream.Emit(ILOpcode.calli, _emitter.NewToken(nativeSig));
+            }
+            else
+            {
+                // Eager call
+                MethodDesc nativeMethod =
+                    new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, _importMetadata);
+                callsiteSetupCodeStream.Emit(ILOpcode.call, _emitter.NewToken(nativeMethod));
+            }
+            
             _unmarshallingCodestream.Emit(ILOpcode.ret);
 
             return _emitter.Link();
@@ -523,12 +554,9 @@ namespace Internal.IL.Stubs
 
         public static MethodIL EmitIL(MethodDesc method)
         {
-            if (!RequiresMarshalling(method))
-                return null;
-
             try
             {
-                return new PInvokeMarshallingILEmitter(method).EmitIL();
+                return new PInvokeILEmitter(method).EmitIL();
             }
             catch (NotSupportedException)
             {
@@ -555,7 +583,7 @@ namespace Internal.IL.Stubs
     /// <summary>
     /// Synthetic method that represents the actual PInvoke target method.
     /// All parameters are simple types. There will be no code
-    /// generated for this method.
+    /// generated for this method. Instead, a static reference to a symbol will be emitted.
     /// </summary>
     internal sealed class PInvokeTargetNativeMethod : MethodDesc
     {
@@ -628,6 +656,100 @@ namespace Internal.IL.Stubs
         public override string ToString()
         {
             return "[EXTERNAL]" + Name;
+        }
+    }
+
+    /// <summary>
+    /// Synthetic RVA static field that represents PInvoke fixup cell. The RVA data is
+    /// backed by a small data structure generated on the fly from the <see cref="PInvokeMetadata"/>
+    /// carried by the instance of this class.
+    /// </summary>
+    internal sealed class PInvokeLazyFixupField : FieldDesc
+    {
+        private DefType _owningType;
+        private PInvokeMetadata _pInvokeMetadata;
+
+        public PInvokeLazyFixupField(DefType owningType, PInvokeMetadata pInvokeMetadata)
+        {
+            _owningType = owningType;
+            _pInvokeMetadata = pInvokeMetadata;
+        }
+
+        public PInvokeMetadata PInvokeMetadata
+        {
+            get
+            {
+                return _pInvokeMetadata;
+            }
+        }
+
+        public override TypeSystemContext Context
+        {
+            get
+            {
+                return _owningType.Context;
+            }
+        }
+
+        public override TypeDesc FieldType
+        {
+            get
+            {
+                return Context.GetHelperType("InteropHelpers").GetNestedType("MethodFixupCell");
+            }
+        }
+
+        public override bool HasRva
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        public override bool IsInitOnly
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public override bool IsLiteral
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public override bool IsStatic
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        public override bool IsThreadStatic
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public override DefType OwningType
+        {
+            get
+            {
+                return _owningType;
+            }
+        }
+
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return false;
         }
     }
 }

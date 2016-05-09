@@ -660,7 +660,7 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     }
     PTR_UIntNative RSP = (PTR_UIntNative)rawRSP;
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
     if (pInfoHeader->HasSavedXmmRegs())
     {
         typedef DPTR(Fp128) PTR_Fp128;

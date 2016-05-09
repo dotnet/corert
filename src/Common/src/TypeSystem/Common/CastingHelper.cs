@@ -107,7 +107,7 @@ namespace Internal.TypeSystem
 
             // Object parameters don't need an exact match but only inheritance, check for that
             TypeDesc fromParamUnderlyingType = curTypesParm.UnderlyingType;
-            if (fromParamUnderlyingType.IsObjRef)
+            if (fromParamUnderlyingType.IsGCPointer)
             {
                 return curTypesParm.CanCastToInternal(paramType, protect);
             }
@@ -354,7 +354,7 @@ namespace Internal.TypeSystem
         {
             TypeDesc fromUnderlyingType = thisType.UnderlyingType;
 
-            if (fromUnderlyingType.IsObjRef)
+            if (fromUnderlyingType.IsGCPointer)
             {
                 return thisType.CanCastToInternal(otherType, protect);
             }

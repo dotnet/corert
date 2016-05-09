@@ -88,15 +88,14 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (type.IsDefType && ((DefType)type).ContainsPointers)
+            if (type.IsDefType && ((DefType)type).ContainsGCPointers)
             {
                 flags |= (UInt16)EETypeFlags.HasPointersFlag;
             }
             else if (type.IsArray)
             {
-                ArrayType arrayType = type as ArrayType;
-                if ((arrayType.ElementType.IsValueType && ((DefType)arrayType.ElementType).ContainsPointers) ||
-                    !arrayType.ElementType.IsValueType)
+                var elementType = ((ArrayType)type).ElementType;
+                if ((elementType.IsValueType && ((DefType)elementType).ContainsGCPointers) || elementType.IsGCPointer)
                 {
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;
                 }
@@ -106,7 +105,7 @@ namespace Internal.Runtime
             {
                 flags |= (UInt16)EETypeFlags.IsGenericFlag;
 
-                if (type.GetTypeDefinition().HasVariance)
+                if (type.HasVariance)
                 {
                     flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
                 }

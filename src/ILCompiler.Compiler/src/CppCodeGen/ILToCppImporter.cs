@@ -151,15 +151,14 @@ namespace Internal.IL
                 var localSlotToInfoMap = new Dictionary<int, ILLocalVariable>();
                 foreach (var v in localVariables)
                 {
-                    ILLocalVariable modifiedLocal = v;
-                    modifiedLocal.Name = _compilation.NameMangler.SanitizeName(modifiedLocal.Name);
+                    string sanitizedName = _compilation.NameMangler.SanitizeName(v.Name);
                     if (!names.Add(v.Name))
                     {
-                        modifiedLocal.Name = string.Format("{0}_local{1}", v.Name, v.Slot);
-                        names.Add(modifiedLocal.Name);
+                        sanitizedName = string.Format("{0}_local{1}", v.Name, v.Slot);
+                        names.Add(sanitizedName);
                     }
 
-                    localSlotToInfoMap[v.Slot] = modifiedLocal;
+                    localSlotToInfoMap[v.Slot] = new ILLocalVariable(v.Slot, sanitizedName, v.CompilerGenerated);
                 }
                 _localSlotToInfoMap = localSlotToInfoMap;
             }
@@ -738,7 +737,9 @@ namespace Internal.IL
                         var arraySlot = _stack.Pop();
 
                         var fieldDesc = fieldSlot.LdToken;
-                        var memBlock = TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData((TypeSystem.Ecma.EcmaField)fieldDesc);
+                        var dataBlob = _compilation.GetFieldRvaData(fieldDesc).GetData(_compilation.NodeFactory, false);
+                        Debug.Assert(dataBlob.Relocs.Length == 0);
+                        var memBlock = dataBlob.Data;
 
                         // TODO: Need to do more for arches with different endianness?
                         var preinitDataHolder = NewTempName();

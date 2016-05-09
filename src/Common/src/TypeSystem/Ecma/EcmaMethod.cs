@@ -359,12 +359,15 @@ namespace Internal.TypeSystem.Ecma
             MethodImport import = metadataReader.GetMethodDefinition(_handle).GetImport();
             string name = metadataReader.GetString(import.Name);
 
+            ModuleReference moduleRef = metadataReader.GetModuleReference(import.Module);
+            string moduleName = metadataReader.GetString(moduleRef.Name);
+
             // Spot check the enums match
             Debug.Assert((int)MethodImportAttributes.CallingConventionStdCall == (int)PInvokeAttributes.CallingConventionStdCall);
             Debug.Assert((int)MethodImportAttributes.CharSetAuto == (int)PInvokeAttributes.CharSetAuto);
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
 
-            return new PInvokeMetadata(name, (PInvokeAttributes)import.Attributes);
+            return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes);
         }
     }
 }

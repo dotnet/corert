@@ -136,10 +136,10 @@ namespace ILCompiler.DependencyAnalysis
                 return new ThreadStaticsNode(type, this);
             });
 
-            _GCStaticEETypes = new NodeCache<bool[], GCStaticEETypeNode>((bool[] gcdesc) =>
+            _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
             {
-                return new GCStaticEETypeNode(gcdesc, this);
-            }, new BoolArrayEqualityComparer());
+                return new GCStaticEETypeNode(Target, gcMap);
+            });
 
             _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
             {
@@ -149,6 +149,16 @@ namespace ILCompiler.DependencyAnalysis
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
             {
                 return new ExternSymbolNode(name);
+            });
+
+            _pInvokeModuleFixups = new NodeCache<string, PInvokeModuleFixupNode>((string name) =>
+            {
+                return new PInvokeModuleFixupNode(name);
+            });
+
+            _pInvokeMethodFixups = new NodeCache<Tuple<string, string>, PInvokeMethodFixupNode>((Tuple<string, string> key) =>
+            {
+                return new PInvokeMethodFixupNode(key.Item1, key.Item2);
             });
 
             _internalSymbols = new NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode>(
@@ -330,36 +340,6 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchCells.GetOrAdd(method);
         }
 
-        private class BoolArrayEqualityComparer : IEqualityComparer<bool[]>
-        {
-            bool IEqualityComparer<bool[]>.Equals(bool[] x, bool[] y)
-            {
-                if (x.Length != y.Length)
-                    return false;
-
-                for (int i = 0; i < x.Length; i++)
-                {
-                    if (x[i] != y[i])
-                        return false;
-                }
-
-                return true;
-            }
-
-            int IEqualityComparer<bool[]>.GetHashCode(bool[] obj)
-            {
-                // TODO get better combining function for bools
-                int hash = 0x5d83481;
-                foreach (bool b in obj)
-                {
-                    int bAsInt = b ? 1 : 0;
-                    hash = (hash << 4) ^ hash ^ bAsInt;
-                }
-
-                return hash;
-            }
-        }
-
         private class BlobTupleEqualityComparer : IEqualityComparer<Tuple<string, byte[], int>>
         {
             bool IEqualityComparer<Tuple<string, byte[], int>>.Equals(Tuple<string, byte[], int> x, Tuple<string, byte[], int> y)
@@ -373,11 +353,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<bool[], GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
 
-        public ISymbolNode GCStaticEEType(bool[] gcdesc)
+        public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
         {
-            return _GCStaticEETypes.GetOrAdd(gcdesc);
+            return _GCStaticEETypes.GetOrAdd(gcMap);
         }
 
         private NodeCache<Tuple<string, byte[], int>, BlobNode> _readOnlyDataBlobs;
@@ -420,6 +400,20 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ExternSymbol(string name)
         {
             return _externSymbols.GetOrAdd(name);
+        }
+
+        private NodeCache<string, PInvokeModuleFixupNode> _pInvokeModuleFixups;
+
+        public ISymbolNode PInvokeModuleFixup(string moduleName)
+        {
+            return _pInvokeModuleFixups.GetOrAdd(moduleName);
+        }
+
+        private NodeCache<Tuple<string, string>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
+
+        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName)
+        {
+            return _pInvokeMethodFixups.GetOrAdd(new Tuple<string, string>(moduleName, entryPointName));
         }
 
         private NodeCache<Tuple<ObjectNode, int, string>, ObjectAndOffsetSymbolNode> _internalSymbols;

@@ -5,7 +5,6 @@
 using System;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Decoding;
 
 namespace Internal.TypeSystem.Ecma
 {

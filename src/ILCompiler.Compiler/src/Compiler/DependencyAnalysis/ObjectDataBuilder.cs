@@ -10,7 +10,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public struct ObjectDataBuilder
+    public struct ObjectDataBuilder : Internal.Runtime.ITargetBinaryWriter
     {
         public ObjectDataBuilder(NodeFactory factory)
         {
@@ -39,6 +39,14 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 return _data.Count;
+            }
+        }
+
+        public int TargetPointerSize
+        {
+            get
+            {
+                return _target.PointerSize;
             }
         }
 
@@ -81,6 +89,32 @@ namespace ILCompiler.DependencyAnalysis
             EmitByte((byte)((emit >> 40) & 0xFF));
             EmitByte((byte)((emit >> 48) & 0xFF));
             EmitByte((byte)((emit >> 56) & 0xFF));
+        }
+
+        public void EmitNaturalInt(int emit)
+        {
+            if (_target.PointerSize == 8)
+            {
+                EmitLong(emit);
+            }
+            else
+            {
+                Debug.Assert(_target.PointerSize == 4);
+                EmitInt(emit);
+            }
+        }
+
+        public void EmitHalfNaturalInt(short emit)
+        {
+            if (_target.PointerSize == 8)
+            {
+                EmitInt(emit);
+            }
+            else
+            {
+                Debug.Assert(_target.PointerSize == 4);
+                EmitShort(emit);
+            }
         }
 
         public void EmitCompressedUInt(uint emit)
@@ -187,11 +221,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int delta = 0)
         {
-            Relocation symbolReloc = new Relocation();
-            symbolReloc.Target = symbol;
-            symbolReloc.RelocType = relocType;
-            symbolReloc.Offset = offset;
-            symbolReloc.Delta = delta;
+            Relocation symbolReloc = new Relocation(relocType, offset, symbol, delta);
             _relocs.Add(symbolReloc);
         }
 

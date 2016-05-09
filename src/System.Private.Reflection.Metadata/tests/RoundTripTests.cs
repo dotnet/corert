@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 // Need to use "extern alias", because both the writer and reader define types with same names.
-extern alias reader;
 extern alias writer;
 
 using System;
@@ -12,7 +11,7 @@ using System.Linq;
 
 using Xunit;
 
-using Reader = reader.Internal.Metadata.NativeFormat;
+using Reader = Internal.Metadata.NativeFormat;
 using Writer = writer.Internal.Metadata.NativeFormat.Writer;
 
 using TypeAttributes = System.Reflection.TypeAttributes;

@@ -6,17 +6,9 @@ using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal struct DispatchMapEntry
-    {
-        public short InterfaceIndex;
-        public short InterfaceMethodSlot;
-        public short ImplementationMethodSlot;
-    }
-
     public class InterfaceDispatchMapNode : ObjectNode, ISymbolNode
     {
         const int IndexNotSet = int.MaxValue;
@@ -88,36 +80,36 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        DispatchMapEntry[] BuildDispatchMap(NodeFactory factory)
+        void EmitDispatchMap(ref ObjectDataBuilder builder, NodeFactory factory)
         {
-            ArrayBuilder<DispatchMapEntry> dispatchMapEntries = new ArrayBuilder<DispatchMapEntry>();
+            var entryCountReservation = builder.ReserveInt();
+            int entryCount = 0;
             
-            for (int i = 0; i < _type.RuntimeInterfaces.Length; i++)
+            for (int interfaceIndex = 0; interfaceIndex < _type.RuntimeInterfaces.Length; interfaceIndex++)
             {
-                var interfaceType = _type.RuntimeInterfaces[i];
+                var interfaceType = _type.RuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
                 
-                for (int j = 0; j < virtualSlots.Count; j++)
+                for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
-                    MethodDesc declMethod = virtualSlots[j];
+                    MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
                     var implMethod = _type.GetClosestMetadataType().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
 
                     // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
                     // dispatch will walk the inheritance chain).
                     if (implMethod != null)
                     {
-                        var entry = new DispatchMapEntry();
-                        entry.InterfaceIndex = checked((short)i);
-                        entry.InterfaceMethodSlot = checked((short)j);
-                        entry.ImplementationMethodSlot = checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod));
-                        dispatchMapEntries.Add(entry);
+                        builder.EmitShort(checked((short)interfaceIndex));
+                        builder.EmitShort(checked((short)interfaceMethodSlot));
+                        builder.EmitShort(checked((short)VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, implMethod)));
+                        entryCount++;
                     }
                 }
             }
 
-            return dispatchMapEntries.ToArray();
+            builder.EmitInt(entryCountReservation, entryCount);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -128,14 +120,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!relocsOnly)
             {
-                var entries = BuildDispatchMap(factory);
-                objData.EmitInt(entries.Length);
-                foreach (var entry in entries)
-                {
-                    objData.EmitShort(entry.InterfaceIndex);
-                    objData.EmitShort(entry.InterfaceMethodSlot);
-                    objData.EmitShort(entry.ImplementationMethodSlot);
-                }
+                EmitDispatchMap(ref objData, factory);
             }
 
             return objData.ToObjectData();

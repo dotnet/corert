@@ -270,34 +270,34 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        public void TestTypeContainsPointers()
+        public void TestTypeContainsGCPointers()
         {
-            MetadataType type = _testModule.GetType("ContainsPointers", "NoPointers");
-            Assert.False(type.ContainsPointers);
+            MetadataType type = _testModule.GetType("ContainsGCPointers", "NoPointers");
+            Assert.False(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "StillNoPointers");
-            Assert.False(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "StillNoPointers");
+            Assert.False(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "ClassNoPointers");
-            Assert.False(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "ClassNoPointers");
+            Assert.False(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "HasPointers");
-            Assert.True(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "HasPointers");
+            Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "FieldHasPointers");
-            Assert.True(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "FieldHasPointers");
+            Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "ClassHasPointers");
-            Assert.True(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "ClassHasPointers");
+            Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "BaseClassHasPointers");
-            Assert.True(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "BaseClassHasPointers");
+            Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "ClassHasIntArray");
-            Assert.True(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "ClassHasIntArray");
+            Assert.True(type.ContainsGCPointers);
 
-            type = _testModule.GetType("ContainsPointers", "ClassHasArrayOfClassType");
-            Assert.True(type.ContainsPointers);
+            type = _testModule.GetType("ContainsGCPointers", "ClassHasArrayOfClassType");
+            Assert.True(type.ContainsGCPointers);
         }
     }
 }

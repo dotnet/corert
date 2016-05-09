@@ -256,11 +256,9 @@ namespace Internal.JitInterface
             foreach (FunctionDecl decl in functionData)
             {
                 string returnType = decl.ReturnType.ManagedTypeName;
-                int marshalAs = returnType.LastIndexOf(']');
-                string returnTypeWithVirtual = returnType.Insert((marshalAs != -1) ? marshalAs + 1 : 0, "public virtual ");
 
-                tr.Write("        " + returnTypeWithVirtual + " " + decl.FunctionName + "(");
-                tr.Write("IntPtr _this");
+                tr.Write("        " + returnType + " " + decl.FunctionName + "(");
+                tr.Write("IntPtr thisHandle");
                 foreach (Parameter param in decl.Parameters)
                 {
                     tr.Write(", ");
@@ -274,15 +272,15 @@ namespace Internal.JitInterface
 
             foreach (FunctionDecl decl in functionData)
             {
-                tr.WriteLine("        [UnmanagedFunctionPointerAttribute(CallingConvention.ThisCall)]");
+                tr.WriteLine("        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]");
 
                 string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.ManagedTypeName;
                 int marshalAs = returnType.LastIndexOf(']');
                 string returnTypeWithDelegate = returnType.Insert((marshalAs != -1) ? (marshalAs + 1) : 0, "delegate ");
 
-                tr.Write("        " + returnTypeWithDelegate + " " + "_" + decl.FunctionName + "_wrapper" + "(");
+                tr.Write("        " + returnTypeWithDelegate + " " + "__" + decl.FunctionName + "(");
                 tr.Write("IntPtr _this");
-                tr.Write(", out IntPtr exception");
+                tr.Write(", IntPtr* ppException");
                 if (decl.ReturnAsParm)
                 {
                     tr.Write(", out " + decl.ReturnType.ManagedTypeName + " _return");
@@ -300,11 +298,11 @@ namespace Internal.JitInterface
             {
                 string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.ManagedTypeName;
                 int marshalAs = returnType.LastIndexOf(']');
-                string returnTypeWithDelegate = returnType.Insert((marshalAs != -1) ? (marshalAs + 1) : 0, "public virtual ");
+                string returnTypeWithStatic = returnType.Insert((marshalAs != -1) ? (marshalAs + 1) : 0, "static ");
 
-                tr.Write("        " + returnTypeWithDelegate + " " + decl.FunctionName + "_wrapper" + "(");
-                tr.Write("IntPtr _this");
-                tr.Write(", out IntPtr exception");
+                tr.Write("        " + returnTypeWithStatic + " " + "_" + decl.FunctionName + "(");
+                tr.Write("IntPtr thisHandle");
+                tr.Write(", IntPtr* ppException");
                 if (decl.ReturnAsParm)
                 {
                     tr.Write(", out " + decl.ReturnType.ManagedTypeName + " _return");
@@ -316,12 +314,12 @@ namespace Internal.JitInterface
                 }
                 tr.Write(@")
         {
-            exception = IntPtr.Zero;
+            var _this = GetThis(thisHandle);
             try
             {
 ");
                 bool isVoid = decl.ReturnAsParm || decl.ReturnType.ManagedTypeName == "void";
-                tr.Write("                " + (isVoid ? "" : "return ") + decl.FunctionName + "(");
+                tr.Write("                " + (isVoid ? "" : "return ") + "_this." + decl.FunctionName + "(");
                 bool isFirst = true;
                 if (decl.ReturnAsParm)
                 {
@@ -345,71 +343,47 @@ namespace Internal.JitInterface
                     }
                     tr.Write(param.Name);
                 }
-                tr.WriteLine(");");
-                if (isVoid)
-                {
-                    tr.Write("                return;");
-                }
+                tr.Write(");");
                 tr.Write(@"
             }
             catch (Exception ex)
             {
-                exception = AllocException(ex);
-            }
+                *ppException = _this.AllocException(ex);
 ");
                 if (!isVoid)
                 {
-                    tr.Write("            return ");
                     string retunTypeWithoutMarshalAs = marshalAs == -1 ? returnType : returnType.Substring(marshalAs + 1);
-                    switch (retunTypeWithoutMarshalAs)
-                    {
-                        case "bool":
-                            tr.Write("false");
-                            break;
-
-                        case "string":
-                            tr.Write("null");
-                            break;
-
-                        default:
-                            tr.Write("(" + retunTypeWithoutMarshalAs + ")0");
-                            break;
-                    }
-                    tr.WriteLine(";");
+                    tr.WriteLine("                return default(" + retunTypeWithoutMarshalAs + ");");
                 }
                 else if (decl.ReturnAsParm)
                 {
-                    tr.WriteLine("            _return = new " + decl.ReturnType.ManagedTypeName + "();");
+                    tr.WriteLine("                _return = default(" + decl.ReturnType.ManagedTypeName + ");");
                 }
+                tr.WriteLine(@"            }");
                 tr.WriteLine("        }");
                 tr.WriteLine();
             }
-            tr.WriteLine();
 
             int total = functionData.Count();
-            tr.WriteLine(@"        Object[] _keepalive;
-
-        protected IntPtr CreateUnmanagedInstance()
+            tr.WriteLine(@"
+        static IntPtr GetUnmanagedCallbacks(out Object keepAlive)
         {
-            IntPtr * vtable = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * " + total + @");
-            Object[] keepalive = new Object[" + total + @"];
-
-            _keepalive = keepalive;
+            IntPtr * callbacks = (IntPtr *)Marshal.AllocCoTaskMem(sizeof(IntPtr) * " + total + @");
+            Object[] delegates = new Object[" + total + @"];
 ");
 
             int index = 0;
             foreach (FunctionDecl decl in functionData)
             {
-                tr.WriteLine("            var d" + index + " = new _" + decl.FunctionName + "_wrapper(" + decl.FunctionName + "_wrapper);");
-                tr.WriteLine("            vtable[" + index + "] = Marshal.GetFunctionPointerForDelegate(d" + index + ");");
-                tr.WriteLine("            keepalive[" + index + "] = d" + index + ";");
+                tr.WriteLine("            var d" + index + " = new " + "__" + decl.FunctionName + "(" + "_" + decl.FunctionName + ");");
+                tr.WriteLine("            callbacks[" + index + "] = Marshal.GetFunctionPointerForDelegate(d" + index + ");");
+                tr.WriteLine("            delegates[" + index + "] = d" + index + ";");
                 index++;
             }
 
             tr.WriteLine(@"
-            IntPtr instance = Marshal.AllocCoTaskMem(sizeof(IntPtr));
-            *(IntPtr**)instance = vtable;
-            return instance;
+            keepAlive = delegates;
+            return (IntPtr)callbacks;
         }
     }
 }
@@ -428,15 +402,16 @@ namespace Internal.JitInterface
 
 struct CORINFO_LOOKUP_KIND;
 
-class IJitInterface
+struct JitInterfaceCallbacks
 {
-public:
 ");
 
             foreach (FunctionDecl decl in functionData)
             {
                 string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.NativeTypeName;
-                tw.Write("    virtual " + returnType + " " + decl.FunctionName + "(CorInfoException** ppException");
+                tw.Write("    " + returnType + " (__stdcall * " + decl.FunctionName + ")(");
+                tw.Write("void * thisHandle");
+                tw.Write(", CorInfoException** ppException");
                 if (decl.ReturnAsParm)
                 {
                     tw.Write(", " + decl.ReturnType.NativeTypeName + "* _return");
@@ -446,7 +421,7 @@ public:
                     tw.Write(", ");
                     tw.Write(param.Type.NativeTypeName + " " + param.Name);
                 }
-                tw.WriteLine(") = 0;");
+                tw.WriteLine(");");
             }
 
             tw.Write(@"
@@ -454,7 +429,15 @@ public:
 
 class JitInterfaceWrapper
 {
+    void * _thisHandle;
+    JitInterfaceCallbacks * _callbacks;
+
 public:
+    JitInterfaceWrapper(void * thisHandle, void ** callbacks)
+        : _thisHandle(thisHandle), _callbacks((JitInterfaceCallbacks *)callbacks)
+    {
+    }
+
 ");
 
             foreach (FunctionDecl decl in functionData)
@@ -488,28 +471,24 @@ public:
                 {
                     tw.Write(decl.ReturnType.NativeTypeName + " _ret = ");
                 }
-                tw.Write("_pCorInfo->" + decl.FunctionName + "(&pException");
+                tw.Write("_callbacks->" + decl.FunctionName + "(_thisHandle, &pException");
                 foreach (Parameter param in decl.Parameters)
                 {
                     tw.Write(", " + param.Name);
                 }
                 tw.Write(@");
         if (pException != nullptr)
-        {
             throw pException;
-        }
 ");
                 if (decl.ReturnType.NativeTypeName != "void")
                 {
                     tw.WriteLine("        return _ret;");
                 }
                 tw.WriteLine("    }");
+                tw.WriteLine();
             }
 
-            tw.Write(@"
-    IJitInterface *_pCorInfo;
-};
-");
+            tw.WriteLine("};");
         }
 
         static void Main(string[] args)

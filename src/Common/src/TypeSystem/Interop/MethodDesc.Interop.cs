@@ -61,11 +61,14 @@ namespace Internal.TypeSystem
     {
         public readonly string Name;
 
+        public readonly string Module;
+
         public readonly PInvokeAttributes Attributes;
 
-        public PInvokeMetadata(string name, PInvokeAttributes attributes)
+        public PInvokeMetadata(string module, string entrypoint, PInvokeAttributes attributes)
         {
-            Name = name;
+            Name = entrypoint;
+            Module = module;
             Attributes = attributes;
         }
     }

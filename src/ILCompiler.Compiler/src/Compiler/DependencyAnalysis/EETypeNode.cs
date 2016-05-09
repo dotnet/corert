@@ -26,6 +26,8 @@ namespace ILCompiler.DependencyAnalysis
     ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum CorElementType to
     ///                 | record whether it's back by an Int32, Int16 etc
     ///                 |
+    /// Uint32          | Base size.
+    ///                 |
     /// [Pointer Size]  | Related type. Base type for regular types. Element type for arrays / pointer types.
     ///                 |
     /// UInt16          | Number of VTable slots (X)
@@ -50,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    internal sealed class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
+    internal sealed partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
     {
         private TypeDesc _type;
         private bool _constructed;
@@ -131,7 +133,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return 0;
+                return GCDescSize;
             }
         }
 
@@ -151,7 +153,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_type.IsGenericDefinition)
                 ComputeOptionalEETypeFields(factory);
-            
+
+            OutputGCDesc(ref objData);
             OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
             OutputBaseSize(ref objData);
@@ -306,11 +309,40 @@ namespace ILCompiler.DependencyAnalysis
             return 16 + 2 * pointerSize;
         }
 
+        private int GCDescSize
+        {
+            get
+            {
+                if (!_constructed || _type.IsGenericDefinition)
+                    return 0;
+
+                return GCDescEncoder.GetGCDescSize(_type);
+            }
+        }
+
+        private void OutputGCDesc(ref ObjectDataBuilder builder)
+        {
+            if (!_constructed || _type.IsGenericDefinition)
+            {
+                Debug.Assert(GCDescSize == 0);
+                return;
+            }
+
+            GCDescEncoder.EncodeGCDesc(ref builder, _type);
+        }
+
         private void OutputComponentSize(ref ObjectDataBuilder objData)
         {
             if (_type.IsArray)
             {
-                objData.EmitShort((short)((ArrayType)_type).ElementType.GetElementSize());
+                int elementSize = ((ArrayType)_type).ElementType.GetElementSize();
+                if (elementSize >= 64 * 1024)
+                {
+                    // TODO: Array of type 'X' cannot be created because base value type is too large.
+                    throw new TypeLoadException();
+                }
+
+                objData.EmitShort((short)elementSize);
             }
             else if (_type.IsString)
             {

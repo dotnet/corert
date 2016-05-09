@@ -42,11 +42,13 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!FieldType.IsValueType)
-                    return true;
+                Debug.Assert(IsStatic);
 
-                DefType fieldType = FieldType as DefType;
-                return fieldType != null && fieldType.ContainsPointers;
+                TypeDesc fieldType = FieldType;
+                if (fieldType.IsValueType)
+                    return ((DefType)fieldType).ContainsGCPointers;
+                else
+                    return fieldType.IsGCPointer;
             }
         }
 
