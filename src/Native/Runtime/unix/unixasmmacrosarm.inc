@@ -32,10 +32,7 @@ C_FUNC(\Name):
         .fnstart
 .endm
 
-.macro LEAF_END_MARKED Name, Section
-        .thumb_func
-        .global C_FUNC(\Name\()_End)
-C_FUNC(\Name\()_End):
+.macro LEAF_END Name, Section
         .size \Name, .-\Name
         .fnend
 .endm

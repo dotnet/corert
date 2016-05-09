@@ -16,15 +16,18 @@
 .endm
 
 .macro NESTED_END Name, Section
-        LEAF_END \Name, \Section
 #if defined(__APPLE__)
+L\Name\()_End:
+        LEAF_END \Name, \Section
         .section __LD,__compact_unwind,regular,debug
         .quad C_FUNC(\Name)
-        .set C_FUNC(\Name\()_Size), C_FUNC(\Name\()_End) - C_FUNC(\Name)
-        .long C_FUNC(\Name\()_Size)
+        .set L\Name\()_Size, L\Name\()_End - C_FUNC(\Name)
+        .long L\Name\()_Size
         .long 0x04000000 # DWARF
         .quad 0
         .quad 0
+#else
+        LEAF_END \Name, \Section
 #endif
 .endm
 
@@ -50,9 +53,7 @@ C_FUNC(\Name):
         .cfi_startproc
 .endm
 
-.macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
-        .global C_FUNC(\Name\()_End)
+.macro LEAF_END Name, Section
 #if !defined(__APPLE__)
         .size \Name, .-\Name
 #endif
