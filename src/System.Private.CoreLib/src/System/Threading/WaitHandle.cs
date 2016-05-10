@@ -175,7 +175,7 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException(SR.ArgumentNull_Waithandles);
+                throw new ArgumentNullException("waitHandles", SR.ArgumentNull_Waithandles);
             }
             if (waitHandles.Length == 0)
             {
@@ -188,7 +188,7 @@ namespace System.Threading
                 // in CoreCLR, and ArgumentNullException in the desktop CLR.  This is ugly, but so is breaking
                 // user code.
                 //
-                throw new ArgumentNullException(SR.Argument_EmptyWaithandleArray);
+                throw new ArgumentNullException("waitHandles", SR.Argument_EmptyWaithandleArray);
             }
             if (waitHandles.Length > LowLevelThread.MAX_WAITHANDLES)
             {
@@ -205,7 +205,7 @@ namespace System.Threading
                 WaitHandle waitHandle = waitHandles[i];
 
                 if (waitHandle == null)
-                    throw new ArgumentNullException(SR.ArgumentNull_ArrayElement);
+                    throw new ArgumentNullException("waitHandles[" + i + "]", SR.ArgumentNull_ArrayElement);
 
                 internalWaitHandles[i] = waitHandle;
             }
@@ -260,7 +260,7 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException(SR.ArgumentNull_Waithandles);
+                throw new ArgumentNullException("waitHandles", SR.ArgumentNull_Waithandles);
             }
             if (waitHandles.Length == 0)
             {
@@ -281,7 +281,7 @@ namespace System.Threading
                 WaitHandle waitHandle = waitHandles[i];
 
                 if (waitHandle == null)
-                    throw new ArgumentNullException(SR.ArgumentNull_ArrayElement);
+                    throw new ArgumentNullException("waitHandles[" + i + "]", SR.ArgumentNull_ArrayElement);
 
                 internalWaitHandles[i] = waitHandle;
             }

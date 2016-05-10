@@ -1148,7 +1148,7 @@ namespace System.Text
                 {
                     return this;
                 }
-                throw new ArgumentNullException(SR.ArgumentNull_String);
+                throw new ArgumentNullException("value", SR.ArgumentNull_String);
             }
 
             //Range check the array.
