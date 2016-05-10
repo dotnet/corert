@@ -234,7 +234,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
         {
             if (newBuffer == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException("newBuffer");
 
             int lenAnsi;
             int lenUnicode;
@@ -378,7 +378,7 @@ namespace System.Runtime.InteropServices
 
             // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
             if (pNative == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException("pNative");
 
             int lenUnicode = managedArray.Length;
             fixed (char* pManaged = managedArray)
@@ -407,7 +407,7 @@ namespace System.Runtime.InteropServices
 
             // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
             if (managedArray == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException("managedArray");
 
             // COMPAT: Use the managed array length as the maximum length of native buffer
             // This obviously doesn't make sense but desktop CLR does that
@@ -459,7 +459,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
         {
             if (pNative == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException("pNative");
 
             if (str != null)
             {
@@ -647,7 +647,7 @@ namespace System.Runtime.InteropServices
             HSTRING* phString)
         {
             if (sourceString == null)
-                throw new ArgumentNullException(SR.Null_HString);
+                throw new ArgumentNullException("sourceString", SR.Null_HString);
 
             int hr = ExternalInterop.WindowsCreateStringReference(
                 pchPinnedSourceString,
@@ -663,7 +663,7 @@ namespace System.Runtime.InteropServices
         public static unsafe HSTRING StringToHString(string sourceString)
         {
             if (sourceString == null)
-                throw new ArgumentNullException(SR.Null_HString);
+                throw new ArgumentNullException("sourceString", SR.Null_HString);
 
             return StringToHStringInternal(sourceString);
         }
