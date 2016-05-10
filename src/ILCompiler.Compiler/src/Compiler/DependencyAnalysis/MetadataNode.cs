@@ -50,7 +50,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return ObjectNodeSection.DataSection;
+                return ObjectNodeSection.ReadOnlyDataSection;
             }
         }
 
