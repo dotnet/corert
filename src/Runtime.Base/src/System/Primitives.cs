@@ -61,7 +61,6 @@ namespace System
     ===========================================================*/
 
 
-
     // CONTRACT with Runtime
     // The Char type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type char
@@ -295,7 +294,6 @@ namespace System
     }
 
 
-
     /*============================================================
     **
     ** Class:  IntPtr
@@ -377,7 +375,7 @@ namespace System
         [Intrinsic]
         public unsafe static bool operator ==(IntPtr value1, IntPtr value2)
         {
-            return value1._value != value2._value;
+            return value1._value == value2._value;
         }
 
         [Intrinsic]
@@ -387,7 +385,6 @@ namespace System
         }
     }
 #pragma warning restore 0660, 0661
-#pragma warning restore 0661
 
 
     /*============================================================
@@ -477,4 +474,3 @@ namespace System
     }
 #pragma warning restore 0660, 0661
 }
-
