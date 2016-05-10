@@ -29,7 +29,7 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // If so, call the second cache entry.  If not, skip the InterfaceDispatchCacheEntry.
         .rept \entries
             cmp     rax, [r11]
-            je      DispatchCall\entries
+            je      LOCAL_LABEL(DispatchCall\entries)
 
             .att_syntax
             addq    $SIZEOF__InterfaceDispatchCacheEntry, %r11
@@ -39,7 +39,7 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // r10 still contains the the indirection cell address.
 
         jmp     C_FUNC(RhpInterfaceDispatchSlow)
-DispatchCall\entries:
+LOCAL_LABEL(DispatchCall\entries):
         mov     rax, [r11 + 8h]
         jmp     rax
 LEAF_END RhpInterfaceDispatch\entries, _TEXT
