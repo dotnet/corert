@@ -61,7 +61,11 @@ namespace System
         {
             get
             {
+#if REAL_MULTIDIM_ARRAYS
                 return this.EETypePtr.BaseSize == SZARRAY_BASE_SIZE;
+#else
+                return !(this is MDArray);
+#endif
             }
         }
 
@@ -2281,11 +2285,7 @@ namespace System
 
         public unsafe Object GetValue(int index)
         {
-#if REAL_MULTIDIM_ARRAYS
             if (!IsSzArray)
-#else
-            if (this is MDArray)
-#endif
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
             EETypePtr pElementEEType = ElementEEType;
@@ -2327,11 +2327,7 @@ namespace System
 
         public unsafe void SetValue(Object value, int index)
         {
-#if REAL_MULTIDIM_ARRAYS
             if (!IsSzArray)
-#else
-            if (this is MDArray)
-#endif
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
             if (index < 0 || index >= Length)
