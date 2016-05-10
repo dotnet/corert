@@ -1083,7 +1083,7 @@ bool Thread::TryFastReversePInvoke(ReversePInvokeFrame * pFrame)
     return true;
 }
 
-EXTERN_C void REDHAWK_CALLCONV RhpReversePInvokeBadTransition();
+EXTERN_C void REDHAWK_CALLCONV RhpReversePInvokeBadTransition(IntNative pReturnAddress);
 
 void Thread::ReversePInvoke(ReversePInvokeFrame * pFrame)
 {
@@ -1095,7 +1095,10 @@ void Thread::ReversePInvoke(ReversePInvokeFrame * pFrame)
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable 
     // methods on interfaces passed to native.
     if (IsCurrentThreadInCooperativeMode() && !IsStateSet(TSF_DoNotTriggerGc))
-        RhpReversePInvokeBadTransition();
+    {
+        // @TODO: CORERT: Pass in the actual return address here
+        RhpReversePInvokeBadTransition(0);
+    }
 
     for (;;)
     {

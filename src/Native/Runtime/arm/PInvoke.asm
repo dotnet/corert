@@ -185,6 +185,7 @@ AttachThread
 BadTransition
 
         EPILOG_POP  {r5-r7,lr}
+        EPILOG_NOP  mov r0, lr  ; arg <- return address
         EPILOG_BRANCH RhpReversePInvokeBadTransition
 
         NESTED_END RhpReversePInvoke
