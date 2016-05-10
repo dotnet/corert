@@ -39,13 +39,13 @@ namespace System
 
 #if BIT64
         private const int POINTER_SIZE = 8;
-        //                                     Header       + m_pEEType    + _numComponents (with a 4-byte padding)
-        internal const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + 4 + 4;
+        private const int DIMENSIONS_DELTA = 1;
 #else
         private const int POINTER_SIZE = 4;
-        //                                     Header       + m_pEEType    + _numComponents
-        internal const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + 4;
+        private const int DIMENSIONS_DELTA = 0;
 #endif
+        //                                     Header       + m_pEEType    + _numComponents (with an optional DIMENSIONS_DELTA padding)
+        internal const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + 4 + DIMENSIONS_DELTA * 4;
 
         public int Length
         {
@@ -54,6 +54,14 @@ namespace System
                 // NOTE: The compiler has assumptions about the implementation of this method.
                 // Changing the implementation here (or even deleting this) will NOT have the desired impact
                 return _numComponents;
+            }
+        }
+
+        internal bool IsSzArray
+        {
+            get
+            {
+                return this.EETypePtr.BaseSize == SZARRAY_BASE_SIZE;
             }
         }
 
@@ -189,12 +197,8 @@ namespace System
         // C# may optimize away the pinned local, producing incorrect results.
         static internal unsafe byte* GetAddrOfPinnedArrayFromEETypeField(IntPtr* ppEEType)
         {
-#if BIT64
-            // on 64-bit there is an extra 4 byte padding before the array data starts
-            return (byte*)ppEEType + sizeof(EETypePtr) + (2 * sizeof(int));
-#else
-            return (byte*)ppEEType + sizeof(EETypePtr) + sizeof(int);
-#endif
+            // on 64-bit there is an extra 4 byte padding (DIMENSIONS_DELTA) before the array data starts
+            return (byte*)ppEEType + sizeof(EETypePtr) + ((1 + DIMENSIONS_DELTA) * sizeof(int));
         }
 
 
@@ -2187,7 +2191,7 @@ namespace System
         public int GetLowerBound(int dimension)
         {
 #if REAL_MULTIDIM_ARRAYS
-            if (!this.EETypePtr.IsSzArray)
+            if (!IsSzArray)
             {
                 if ((dimension >= Rank) || (dimension < 0))
                     throw new IndexOutOfRangeException();
@@ -2197,12 +2201,8 @@ namespace System
                     fixed (int* pNumComponents = &_numComponents)
                     {
                         // Lower bounds follow after upper bounds.
-#if BIT64
-                        // _numComponents is padded on 64-bit systems.
-                        return *(pNumComponents + 1 + 1 + Rank + dimension);
-#else
-                        return *(pNumComponents + 1 + Rank + dimension);
-#endif
+                        // _numComponents is padded (DIMENSIONS_DELTA) on 64-bit systems.
+                        return *(pNumComponents + 1 + DIMENSIONS_DELTA + Rank + dimension);
                     }
                 }
             }
@@ -2227,7 +2227,7 @@ namespace System
         public int GetUpperBound(int dimension)
         {
 #if REAL_MULTIDIM_ARRAYS
-            if (!this.EETypePtr.IsSzArray)
+            if (!IsSzArray)
             {
                 if ((dimension >= Rank) || (dimension < 0))
                     throw new IndexOutOfRangeException();
@@ -2237,12 +2237,8 @@ namespace System
                     fixed (int* pNumComponents = &_numComponents)
                     {
                         // Upper bounds follow after _numComponents.
-#if BIT64
-                        // _numComponents is padded on 64-bit systems.
-                        return *(pNumComponents + 1 + 1 + dimension) - 1;
-#else
-                        return *(pNumComponents + 1 + dimension) - 1;
-#endif
+                        // _numComponents is padded (DIMENSIONS_DELTA) on 64-bit systems.
+                        return *(pNumComponents + 1 + DIMENSIONS_DELTA + dimension) - 1;
                     }
                 }
             }
@@ -2286,7 +2282,7 @@ namespace System
         public unsafe Object GetValue(int index)
         {
 #if REAL_MULTIDIM_ARRAYS
-            if (!this.EETypePtr.IsSzArray)
+            if (!IsSzArray)
 #else
             if (this is MDArray)
 #endif
@@ -2332,7 +2328,7 @@ namespace System
         public unsafe void SetValue(Object value, int index)
         {
 #if REAL_MULTIDIM_ARRAYS
-            if (!this.EETypePtr.IsSzArray)
+            if (!IsSzArray)
 #else
             if (this is MDArray)
 #endif
