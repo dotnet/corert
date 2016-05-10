@@ -30,9 +30,7 @@ C_FUNC(\Name):
         .cfi_startproc
 .endm
 
-.macro LEAF_END_MARKED Name, Section
-        .global C_FUNC(\Name\()_End)
-C_FUNC(\Name\()_End):
+.macro LEAF_END Name, Section
         .size \Name, .-\Name
         .cfi_endproc
 .endm

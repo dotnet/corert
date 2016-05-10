@@ -15,7 +15,7 @@
 
     // If g_GCShadow is 0, don't perform the check.
     cmp     qword ptr [C_VAR(g_GCShadow)], 0
-    je      \BASENAME\()_UpdateShadowHeap_Done_\REFREG
+    je      LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG)
 
     // Save DESTREG since we're about to modify it (and we need the original value both within the macro and
     // once we exit the macro). Note that this is naughty since we're altering the stack pointer outside of
@@ -29,10 +29,10 @@
 
     // Transform DESTREG into the equivalent address in the shadow heap.
     sub     \DESTREG, [C_VAR(g_lowest_address)]
-    jb      \BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG
+    jb      LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
     add     \DESTREG, [C_VAR(g_GCShadow)]
     cmp     \DESTREG, [C_VAR(g_GCShadowEnd)]
-    ja      \BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG
+    ja      LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG)
 
     // Update the shadow heap.
     mov     [\DESTREG], \REFREG
@@ -43,14 +43,14 @@
     // prefix).
     xchg    [rsp], \DESTREG
     cmp     [\DESTREG], \REFREG
-    jne     \BASENAME\()_UpdateShadowHeap_Invalidate_\REFREG
+    jne     LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Invalidate_\REFREG)
 
     // The original DESTREG value is now restored but the stack has a value (the shadow version of the
     // location) pushed. Need to discard this push before we are done.
     add     rsp, 8
-    jmp     \BASENAME\()_UpdateShadowHeap_Done_\REFREG
+    jmp     LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG)
 
-\BASENAME\()_UpdateShadowHeap_Invalidate_\REFREG:
+LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Invalidate_\REFREG):
     // Someone went and updated the real heap. We need to invalidate the shadow location since we can't
     // guarantee whose shadow update won.
 
@@ -65,11 +65,11 @@
     mov     qword ptr [\DESTREG], \REFREG
     pop     \REFREG
 
-\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG:
+LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_PopThenDone_\REFREG):
     // Restore original DESTREG value from the stack.
     pop     \DESTREG
 
-\BASENAME\()_UpdateShadowHeap_Done_\REFREG:
+LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 .endm
 
 #else // WRITE_BARRIER_CHECK
@@ -95,9 +95,9 @@
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
     cmp     \REFREG, [C_VAR(g_ephemeral_low)]
-    jb      \BASENAME\()_NoBarrierRequired_\REFREG
+    jb      LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
     cmp     \REFREG, [C_VAR(g_ephemeral_high)]
-    jae     \BASENAME\()_NoBarrierRequired_\REFREG
+    jae     LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
     // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
     // track this write. The location address is translated into an offset in the card table bitmap. We set
@@ -106,13 +106,13 @@
     shr     rdi, 11
     add     rdi, [C_VAR(g_card_table)]
     cmp     byte ptr [rdi], 0FFh
-    jne     \BASENAME\()_UpdateCardTable_\REFREG
+    jne     LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG)
 
-\BASENAME\()_NoBarrierRequired_\REFREG:
+LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG):
     ret
 
 // We get here if it's necessary to update the card table.
-\BASENAME\()_UpdateCardTable_\REFREG:
+LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG):
     mov     byte ptr [rdi], 0FFh
     ret
 
@@ -164,9 +164,9 @@ DEFINE_UNCHECKED_WRITE_BARRIER RSI, ESI
     // The location being updated might not even lie in the GC heap (a handle or stack location for instance),
     // in which case no write barrier is required.
     cmp     rdi, [C_VAR(g_lowest_address)]
-    jb      \BASENAME\()_NoBarrierRequired_\REFREG
+    jb      LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
     cmp     rdi, [C_VAR(g_highest_address)]
-    jae     \BASENAME\()_NoBarrierRequired_\REFREG
+    jae     LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG)
 
     DEFINE_UNCHECKED_WRITE_BARRIER_CORE \BASENAME, \REFREG
 
@@ -213,7 +213,7 @@ LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
     mov             rax, rdx
 ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [rdi], rsi
-    jne             RhpCheckedLockCmpXchg_NoBarrierRequired_RSI
+    jne             LOCAL_LABEL(RhpCheckedLockCmpXchg_NoBarrierRequired_RSI)
 
     DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedLockCmpXchg, RSI
 
@@ -252,9 +252,9 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     // Check whether the writes were even into the heap. If not there's no card update required.
     cmp     rdi, [C_VAR(g_lowest_address)]
-    jb      RhpByRefAssignRef_NotInHeap
+    jb      LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
     cmp     rdi, [C_VAR(g_highest_address)]
-    jae     RhpByRefAssignRef_NotInHeap
+    jae     LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
 
     // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     // we're in a debug build and write barrier checking has been enabled).
@@ -263,9 +263,9 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
     // If the reference is to an object that's not in an ephemeral generation we have no need to track it
     // (since the object won't be collected or moved by an ephemeral collection).
     cmp     rcx, [C_VAR(g_ephemeral_low)]
-    jb      RhpByRefAssignRef_NotInHeap
+    jb      LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
     cmp     rcx, [C_VAR(g_ephemeral_high)]
-    jae     RhpByRefAssignRef_NotInHeap
+    jae     LOCAL_LABEL(RhpByRefAssignRef_NotInHeap)
 
     // move current rdi value into rcx and then increment the pointers
     mov     rcx, rdi
@@ -279,15 +279,15 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
     shr     rcx, 11
     add     rcx, [C_VAR(g_card_table)]
     cmp     byte ptr [rcx], 0FFh
-    jne     RhpByRefAssignRef_UpdateCardTable
+    jne     LOCAL_LABEL(RhpByRefAssignRef_UpdateCardTable)
     ret
 
 // We get here if it's necessary to update the card table.
-RhpByRefAssignRef_UpdateCardTable:
+LOCAL_LABEL(RhpByRefAssignRef_UpdateCardTable):
     mov     byte ptr [rcx], 0FFh
     ret
 
-RhpByRefAssignRef_NotInHeap:
+LOCAL_LABEL(RhpByRefAssignRef_NotInHeap):
     // Increment the pointers before leaving
     add     rdi, 8h
     add     rsi, 8h
