@@ -58,7 +58,7 @@ namespace Internal.IL.Stubs
                     throw new InvalidOperationException();
             }
 
-            return _emitter.Link();
+            return _emitter.Link(_method);
         }
 
         public static MethodIL EmitIL(ArrayMethod arrayMethod)

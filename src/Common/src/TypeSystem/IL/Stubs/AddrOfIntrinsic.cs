@@ -32,7 +32,7 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(target);
         }
     }
 }

@@ -48,7 +48,7 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.calli, emitter.NewToken(signature));
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(target);
         }
     }
 }

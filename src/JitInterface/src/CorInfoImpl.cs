@@ -120,7 +120,7 @@ namespace Internal.JitInterface
                 _methodCodeNode = methodCodeNodeNeedingCode;
 
                 CORINFO_METHOD_INFO methodInfo;
-                Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
+                MethodIL methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
                 _methodScope = methodInfo.scope;
 
@@ -130,14 +130,16 @@ namespace Internal.JitInterface
 
                     if (!_compilation.Options.NoLineNumbers)
                     {
-                        IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
+                        IEnumerable<ILSequencePoint> ilSequencePoints =
+                            typeSystemContext.GetSequencePointsForMethod(methodIL);
                         if (ilSequencePoints != null)
                         {
                             SetSequencePoints(ilSequencePoints);
                         }
                     }
 
-                    IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(MethodBeingCompiled);
+                    IEnumerable<ILLocalVariable> localVariables =
+                        typeSystemContext.GetLocalVariableNamesForMethod(methodIL);
                     if (localVariables != null)
                     {
                         SetLocalVariables(localVariables);
@@ -365,13 +367,13 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
 
-        private bool Get_CORINFO_METHOD_INFO(MethodDesc method, out CORINFO_METHOD_INFO methodInfo)
+        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, out CORINFO_METHOD_INFO methodInfo)
         {
-            var methodIL = _compilation.GetMethodIL(method);
+            MethodIL methodIL = _compilation.GetMethodIL(method);
             if (methodIL == null)
             {
                 methodInfo = default(CORINFO_METHOD_INFO);
-                return false;
+                return null;
             }
 
             methodInfo.ftn = ObjectToHandle(method);
@@ -387,7 +389,7 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method.Signature, out methodInfo.args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), out methodInfo.locals);
 
-            return true;
+            return methodIL;
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
@@ -611,7 +613,8 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info)
         {
-            return Get_CORINFO_METHOD_INFO(HandleToObject(ftn), out info);
+            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), out info);
+            return methodIL != null;
         }
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
