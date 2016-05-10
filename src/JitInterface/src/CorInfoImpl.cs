@@ -563,9 +563,14 @@ namespace Internal.JitInterface
             // if (pMD->IsSharedByGenericInstantiations())
             //     result |= CORINFO_FLG_SHAREDINST;
 
-            // TODO: PInvoke
-            // if ((attribs & MethodAttributes.PinvokeImpl) != 0)
-            //    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+            if (method.IsPInvoke)
+            {
+                // TODO: Enable once the PInvoke transition helpers are in place
+                // result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+
+                // See comment in pInvokeMarshalingRequired
+                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
+            }
 
             // TODO: Cache inlining hits
             // Check for an inlining directive.
@@ -671,10 +676,47 @@ namespace Internal.JitInterface
         }
 
         private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("getUnmanagedCallConv"); }
+        {
+            PInvokeAttributes callingConv =
+                HandleToObject(method).GetPInvokeMethodMetadata().Attributes & PInvokeAttributes.CallingConventionMask;
+
+            switch (callingConv)
+            {
+                case PInvokeAttributes.CallingConventionWinApi:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL; // TODO: CDecl for varargs
+                case PInvokeAttributes.CallingConventionCDecl:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C;
+                case PInvokeAttributes.CallingConventionStdCall:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL;
+                case PInvokeAttributes.CallingConventionThisCall:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_THISCALL;
+                case PInvokeAttributes.CallingConventionFastCall:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_FASTCALL;
+                default:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
+            }
+        }
+
         [return: MarshalAs(UnmanagedType.Bool)]
-        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig)
-        { throw new NotImplementedException("pInvokeMarshalingRequired"); }
+        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
+        {
+            // TODO: Support for PInvoke calli with marshalling. For now, assume there is no marshalling required.
+            if (handle == null)
+                return false;
+
+            MethodDesc method = HandleToObject(handle);
+
+            if (method.IsRawPInvoke())
+                return false;
+
+            // TODO: Ideally, we would just give back the PInvoke stub IL to the JIT and let it inline it, without
+            // checking whether it is required upfront. Unfortunatelly, RyuJIT is not able to generate PInvoke
+            // transitions in inlined methods today (impCheckForPInvokeCall is not called for inlinees and number of other places
+            // depend on it). To get a decent code with this limitation, we mirror CoreCLR behavior: Check
+            // whether PInvoke stub is required here, and disable inlining of PInvoke methods in getMethodAttribsInternal.
+            return Internal.IL.Stubs.PInvokeILEmitter.IsStubRequired(method);
+        }
+
         [return: MarshalAs(UnmanagedType.Bool)]
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
@@ -1946,8 +1988,18 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
+
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
-        { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
+        {
+            MethodDesc md = HandleToObject(method);
+
+            string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
+            Debug.Assert(externName != null);
+
+            pLookup.accessType = InfoAccessType.IAT_VALUE;
+            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(externName));
+        }
+
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
         [return: MarshalAs(UnmanagedType.I1)]
@@ -2095,6 +2147,15 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
+                // TODO: Delete once the PInvoke transition helpers are in place
+                if (targetMethod.IsRawPInvoke())
+                {
+                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                    getAddressOfPInvokeTarget(pResult.hMethod, ref pResult.codePointerOrStubLookup.constLookup);
+                    pResult.nullInstanceCheck = false;
+                    return;
+                }
+
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
@@ -2462,7 +2523,7 @@ namespace Internal.JitInterface
                 flags.corJitFlags |= CorJitFlag.CORJIT_FLG_CFI_UNWIND;
             }
 
-            flags.corJitFlags2 = 0;
+            flags.corJitFlags2 = CorJitFlag2.CORJIT_FLG2_USE_PINVOKE_HELPERS;
 
             return (uint)sizeof(CORJIT_FLAGS);
         }

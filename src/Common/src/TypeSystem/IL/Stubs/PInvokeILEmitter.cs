@@ -44,9 +44,9 @@ namespace Internal.IL.Stubs
         }
 
         /// <summary>
-        /// Returns true if <paramref name="method"/> requires a marshalling stub to be generated.
+        /// Returns true if <paramref name="method"/> requires a stub to be generated.
         /// </summary>
-        public static bool RequiresMarshalling(MethodDesc method)
+        public static bool IsStubRequired(MethodDesc method)
         {
             Debug.Assert(method.IsPInvoke);
 
@@ -63,6 +63,11 @@ namespace Internal.IL.Stubs
                 {
                     return true;
                 }
+            }
+
+            if (UseLazyResolution(method, method.GetPInvokeMethodMetadata().Module))
+            {
+                return true;
             }
 
             return false;
@@ -114,6 +119,26 @@ namespace Internal.IL.Stubs
                 return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Returns true if the PInvoke target should be resolved lazily.
+        /// </summary>
+        private static bool UseLazyResolution(MethodDesc method, string importModule)
+        {
+            // TODO: Test and make this work on non-Windows
+            if (!method.Context.Target.IsWindows)
+                return false;
+
+            // Determine whether this call should be made through a lazy resolution or a static reference
+            // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
+            if (importModule == "[MRT]" || importModule == "*")
+                return false;
+
+            if (method.Context.Target.IsWindows)
+                return !importModule.StartsWith("api-ms-win-");
+            else
+                return !importModule.StartsWith("System.Private.");
         }
 
         /// <summary>
@@ -511,23 +536,7 @@ namespace Internal.IL.Stubs
             MethodSignature nativeSig = new MethodSignature(
                 targetMethodSignature.Flags, 0, nativeReturnType, nativeParameterTypes);
 
-
-            bool useLazyResolution;
-            string importModule = _importMetadata.Module;
-
-            // Determine whether this call should be made through a lazy resolution or a static reference
-            // Eventually, this should be controlled by a custom attribute (or an extension to the metadata format).
-            if (importModule == "[MRT]" || importModule == "*")
-                useLazyResolution = false;
-            else if (_targetMethod.Context.Target.IsWindows)
-                useLazyResolution = !importModule.StartsWith("api-ms-win-");
-            else
-                useLazyResolution = !importModule.StartsWith("System.Private.");
-
-            // TODO: Test and make this work on non-Windows
-            useLazyResolution &= _targetMethod.Context.Target.IsWindows;
-
-            if (useLazyResolution)
+            if (UseLazyResolution(_targetMethod, _importMetadata.Module))
             {
                 MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
                 FieldDesc lazyDispatchCell = new PInvokeLazyFixupField((DefType)_targetMethod.OwningType, _importMetadata);
@@ -542,8 +551,12 @@ namespace Internal.IL.Stubs
             else
             {
                 // Eager call
+                PInvokeMetadata nativeImportMetadata =
+                    new PInvokeMetadata(_importMetadata.Module, _importMetadata.Name ?? _targetMethod.Name, _importMetadata.Attributes);
+
                 MethodDesc nativeMethod =
-                    new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, _importMetadata);
+                    new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, nativeImportMetadata);
+
                 callsiteSetupCodeStream.Emit(ILOpcode.call, _emitter.NewToken(nativeMethod));
             }
             
@@ -592,7 +605,7 @@ namespace Internal.IL.Stubs
         private TypeDesc _owningType;
         private MethodSignature _signature;
         private PInvokeMetadata _methodMetadata;
-        private int sequenceNumber;
+        private int _sequenceNumber;
 
         public PInvokeTargetNativeMethod(TypeDesc owningType, MethodSignature signature, PInvokeMetadata methodMetadata)
         {
@@ -600,7 +613,7 @@ namespace Internal.IL.Stubs
             _signature = signature;
             _methodMetadata = methodMetadata;
 
-            sequenceNumber = System.Threading.Interlocked.Increment(ref nativeMethodCounter);
+            _sequenceNumber = System.Threading.Interlocked.Increment(ref nativeMethodCounter);
         }
 
         public override TypeSystemContext Context
@@ -631,7 +644,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "__pInvokeImpl" + _methodMetadata.Name + sequenceNumber;
+                return "__pInvokeImpl" + _methodMetadata.Name + _sequenceNumber;
             }
         }
 

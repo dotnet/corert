@@ -171,12 +171,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!_cppCodeGen)
                 {
-                    SpecialMethodKind kind = method.DetectSpecialMethodKind();
-                    if (kind == SpecialMethodKind.PInvoke)
-                    {
-                        return new PInvokeMethodNode(method);
-                    }
-                    else if (kind == SpecialMethodKind.RuntimeImport)
+                    if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                     {
                         return new RuntimeImportMethodNode(method);
                     }
