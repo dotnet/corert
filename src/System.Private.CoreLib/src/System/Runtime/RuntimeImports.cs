@@ -358,6 +358,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetComponentSize")]
         internal static extern ushort RhGetComponentSize(EETypePtr pEEType);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetBaseSize")]
+        internal static extern uint RhGetBaseSize(EETypePtr pEEType);
+
         //
         // EEType Parent Hierarchy
         //
