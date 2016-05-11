@@ -39,13 +39,13 @@ namespace System
 
 #if BIT64
         private const int POINTER_SIZE = 8;
-        private const int DIMENSIONS_DELTA = 1;
+        private const int PADDING = 1; // _numComponents is padded by one Int32 to make the first element pointer-aligned
 #else
         private const int POINTER_SIZE = 4;
-        private const int DIMENSIONS_DELTA = 0;
+        private const int PADDING = 0;
 #endif
-        //                                     Header       + m_pEEType    + _numComponents (with an optional DIMENSIONS_DELTA padding)
-        internal const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + 4 + DIMENSIONS_DELTA * 4;
+        //                                     Header       + m_pEEType    + _numComponents (with an optional padding)
+        internal const int SZARRAY_BASE_SIZE = POINTER_SIZE + POINTER_SIZE + (1 + PADDING) * 4;
 
         public int Length
         {
@@ -201,8 +201,7 @@ namespace System
         // C# may optimize away the pinned local, producing incorrect results.
         static internal unsafe byte* GetAddrOfPinnedArrayFromEETypeField(IntPtr* ppEEType)
         {
-            // on 64-bit there is an extra 4 byte padding (DIMENSIONS_DELTA) before the array data starts
-            return (byte*)ppEEType + sizeof(EETypePtr) + ((1 + DIMENSIONS_DELTA) * sizeof(int));
+            return (byte*)ppEEType + sizeof(EETypePtr) + ((1 + PADDING) * sizeof(int));
         }
 
 
@@ -2205,8 +2204,7 @@ namespace System
                     fixed (int* pNumComponents = &_numComponents)
                     {
                         // Lower bounds follow after upper bounds.
-                        // _numComponents is padded (DIMENSIONS_DELTA) on 64-bit systems.
-                        return *(pNumComponents + 1 + DIMENSIONS_DELTA + Rank + dimension);
+                        return *(pNumComponents + 1 + PADDING + Rank + dimension);
                     }
                 }
             }
@@ -2241,8 +2239,9 @@ namespace System
                     fixed (int* pNumComponents = &_numComponents)
                     {
                         // Upper bounds follow after _numComponents.
-                        // _numComponents is padded (DIMENSIONS_DELTA) on 64-bit systems.
-                        return *(pNumComponents + 1 + DIMENSIONS_DELTA + dimension) - 1;
+                        int hiBound = *(pNumComponents + 1 + PADDING + dimension);
+                        int loBound = *(pNumComponents + 1 + PADDING + Rank + dimension);
+                        return hiBound + loBound - 1;
                     }
                 }
             }
