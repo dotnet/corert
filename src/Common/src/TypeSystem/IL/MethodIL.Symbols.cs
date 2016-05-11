@@ -3,11 +3,51 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
 namespace Internal.IL
 {
+    partial class MethodIL
+    {
+        public virtual MethodDebugInformation GetDebugInfo()
+        {
+            return MethodDebugInformation.Empty;
+        }
+    }
+
+    partial class InstantiatedMethodIL
+    {
+        public override MethodDebugInformation GetDebugInfo()
+        {
+            return _methodIL.GetDebugInfo();
+        }
+    }
+
+    /// <summary>
+    /// Represents debug information attached to a <see cref="MethodIL"/>.
+    /// </summary>
+    public class MethodDebugInformation
+    {
+        public static MethodDebugInformation Empty = new MethodDebugInformation();
+
+        public virtual IEnumerable<ILSequencePoint> GetSequencePoints()
+        {
+            return Array.Empty<ILSequencePoint>();
+        }
+
+        public virtual IEnumerable<ILLocalVariable> GetLocalVariables()
+        {
+            return Array.Empty<ILLocalVariable>();
+        }
+
+        public virtual IEnumerable<string> GetParameterNames()
+        {
+            return Array.Empty<string>();
+        }
+    }
+
     /// <summary>
     /// Represents a sequence point within an IL method body.
     /// Sequence point describes a point in the method body at which all side effects of

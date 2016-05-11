@@ -51,7 +51,7 @@ namespace Internal.IL
     }
 
     [System.Diagnostics.DebuggerTypeProxy(typeof(MethodILDebugView))]
-    public abstract class MethodIL
+    public abstract partial class MethodIL
     {
         public virtual MethodIL GetMethodILDefinition()
         {
