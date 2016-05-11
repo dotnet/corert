@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 
 using Microsoft.DiaSymReader;
 
+using Internal.IL;
+
 namespace ILCompiler.SymbolReader
 {
     /// <summary>

@@ -178,6 +178,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.Symbols.cs">
+      <Link>IL\MethodIL.Symbols.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs">
       <Link>IL\MethodILDebugView.cs</Link>
     </Compile>

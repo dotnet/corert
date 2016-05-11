@@ -9,6 +9,8 @@ using System.IO.MemoryMappedFiles;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.IL;
+
 namespace ILCompiler.SymbolReader
 {
     /// <summary>
