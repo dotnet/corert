@@ -3,7 +3,7 @@
     "NETStandard.Library": "1.5.0-rc2-23911",
     "System.CommandLine": "0.1.0-e160323-1",
     "Microsoft.DotNet.ClrJit": "1.0.8-prerelease-00001",
-    "Microsoft.DotNet.ObjectWriter": "1.0.11-prerelease-00001"
+    "Microsoft.DotNet.ObjectWriter": "1.0.12-prerelease-00001"
   },
   "frameworks": {
     "netstandard1.3": {}
