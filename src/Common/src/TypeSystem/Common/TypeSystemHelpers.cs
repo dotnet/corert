@@ -262,8 +262,7 @@ namespace Internal.TypeSystem
         /// </summary>
         private static InstantiatedType InstantiateAsOpen(this MetadataType type)
         {
-            Debug.Assert(type.HasInstantiation);
-            Debug.Assert(type.IsTypeDefinition);
+            Debug.Assert(type.IsGenericDefinition);
 
             TypeSystemContext context = type.Context;
 
