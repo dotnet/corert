@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 using Internal.IL;
 
-namespace ILCompiler.SymbolReader
+namespace Internal.TypeSystem.Ecma
 {
     /// <summary>
     /// Abstraction for reading Pdb files

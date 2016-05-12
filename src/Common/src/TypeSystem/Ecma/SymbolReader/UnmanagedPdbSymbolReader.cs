@@ -10,12 +10,12 @@ using Microsoft.DiaSymReader;
 
 using Internal.IL;
 
-namespace ILCompiler.SymbolReader
+namespace Internal.TypeSystem.Ecma
 {
     /// <summary>
     ///  Provides PdbSymbolReader via unmanaged SymBinder from full .NET Framework
     /// </summary>
-    internal sealed class UnmanagedPdbSymbolReader : PdbSymbolReader
+    public sealed class UnmanagedPdbSymbolReader : PdbSymbolReader
     {
         [DllImport("mscoree.dll")]
         private static extern int CLRCreateInstance([In] ref Guid clsid, [In] ref Guid riid, [Out, MarshalAs(UnmanagedType.Interface)] out ICLRMetaHost ppInterface);

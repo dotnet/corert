@@ -123,9 +123,6 @@
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
-    <Compile Include="Compiler\SymbolReader\PdbSymbolReader.cs" />
-    <Compile Include="Compiler\SymbolReader\PortablePdbSymbolReader.cs" />
-    <Compile Include="Compiler\SymbolReader\UnmanagedPdbSymbolReader.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\TypeInitialization.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
@@ -160,32 +157,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
-      <Link>IL\EcmaMethodIL.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs">
-      <Link>IL\ILOpcode.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILProvider.cs">
       <Link>IL\ILProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
-      <Link>IL\InstantiatedMethodIL.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs">
-      <Link>IL\MethodIL.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.Symbols.cs">
-      <Link>IL\MethodIL.Symbols.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs">
-      <Link>IL\MethodILDebugView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs">
-      <Link>IL\ILDisassember.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>

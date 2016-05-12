@@ -13,7 +13,7 @@ namespace Internal.IL
     {
         public virtual MethodDebugInformation GetDebugInfo()
         {
-            return MethodDebugInformation.Empty;
+            return MethodDebugInformation.None;
         }
     }
 
@@ -30,21 +30,21 @@ namespace Internal.IL
     /// </summary>
     public class MethodDebugInformation
     {
-        public static MethodDebugInformation Empty = new MethodDebugInformation();
+        public static MethodDebugInformation None = new MethodDebugInformation();
 
         public virtual IEnumerable<ILSequencePoint> GetSequencePoints()
         {
-            return Array.Empty<ILSequencePoint>();
+            return null;
         }
 
         public virtual IEnumerable<ILLocalVariable> GetLocalVariables()
         {
-            return Array.Empty<ILLocalVariable>();
+            return null;
         }
 
         public virtual IEnumerable<string> GetParameterNames()
         {
-            return Array.Empty<string>();
+            return null;
         }
     }
 
