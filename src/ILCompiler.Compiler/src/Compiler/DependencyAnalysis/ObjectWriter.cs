@@ -33,6 +33,8 @@ namespace ILCompiler.DependencyAnalysis
 
         // Code offset to Cfi blobs
         private Dictionary<int, List<byte[]>> _offsetToCfis = new Dictionary<int, List<byte[]>>();
+        // Code offset to Lsda label index
+        private Dictionary<int, string> _offsetToCfiLsdaBlobName = new Dictionary<int, string>();
         // Code offsets that starts a frame
         private HashSet<int> _offsetToCfiStart = new HashSet<int>();
         // Code offsets that ends a frame
@@ -59,6 +61,9 @@ namespace ILCompiler.DependencyAnalysis
 
         // Nodefactory for which ObjectWriter is instantiated for.
         private NodeFactory _nodeFactory;
+
+        // Unix section containing LSDA data, like EH Info and GC Info
+        public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
 
 #if DEBUG
         static HashSet<string> _previouslyWrittenNodeNames = new HashSet<string>();
@@ -94,11 +99,6 @@ namespace ILCompiler.DependencyAnalysis
             ReadOnly = 0x0000,
             Writeable = 0x0001,
             Executable = 0x0002,
-
-            //
-            // Flags specific to particular binary formats
-            //
-            MachOInitFuncPointers = 0x0100,
         };
 
         /// <summary>
@@ -118,13 +118,6 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case SectionType.Writeable:
                     attributes |= CustomSectionAttributes.Writeable;
-                    break;
-            }
-
-            switch (section.Attributes)
-            {
-                case SectionAttributes.MachOInitFuncPointers:
-                    attributes |= CustomSectionAttributes.MachOInitFuncPointers;
                     break;
             }
 
@@ -198,6 +191,14 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(_frameOpened);
             EmitCFIEnd(_nativeObjectWriter, nativeOffset);
             _frameOpened = false;
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitCFILsda(IntPtr objWriter, string blobSymbolName);
+        public void EmitCFILsda(string blobSymbolName)
+        {
+            Debug.Assert(_frameOpened);
+            EmitCFILsda(_nativeObjectWriter, blobSymbolName);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -336,6 +337,7 @@ namespace ILCompiler.DependencyAnalysis
             _offsetToCfis.Clear();
             _offsetToCfiStart.Clear();
             _offsetToCfiEnd.Clear();
+            _offsetToCfiLsdaBlobName.Clear();
             _frameOpened = false;
 
             INodeWithCodeInfo nodeWithCodeInfo = node as INodeWithCodeInfo;
@@ -397,17 +399,44 @@ namespace ILCompiler.DependencyAnalysis
                         // For window, just emit the frame blob (UNWIND_INFO) as a whole.
                         EmitWinFrameInfo(start, end, len, blobSymbolName);
                     }
-
-                    EnsureCurrentSection();
                 }
                 else
                 {
+                    string blobSymbolName = "_lsda" + (i++).ToStringInvariant() + _currentNodeName;
+
+                    SwitchSection(_nativeObjectWriter, LsdaSection.Name);
+
+                    EmitAlignment(4);
+                    EmitSymbolDef(blobSymbolName);
+
+                    // emit relative offset from the main function
+                    EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
+
+                    // emit last byte from the blob - the function kind
+                    byte funcKind = blob[len - 1];
+                    if (ehInfo != null)
+                    {
+                        funcKind |= 0x04;
+                    }
+                    EmitIntValue(funcKind, 1);
+
+                    --len;
+
+                    if (ehInfo != null)
+                    {
+                        Debug.Assert(ehInfo.Alignment == 1);
+                        Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
+                        EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
+                        ehInfo = null;
+                    }
+
                     // For Unix, we build CFI blob map for each offset.
                     Debug.Assert(len % CfiCodeSize == 0);
 
                     // Record start/end of frames which shouldn't be overlapped.
                     _offsetToCfiStart.Add(start);
                     _offsetToCfiEnd.Add(end);
+                    _offsetToCfiLsdaBlobName.Add(start, blobSymbolName);
                     for (int j = 0; j < len; j += CfiCodeSize)
                     {
                         // The first byte of CFI_CODE is offset from the range the frame covers.
@@ -424,6 +453,8 @@ namespace ILCompiler.DependencyAnalysis
                         cfis.Add(cfi);
                     }
                 }
+
+                EnsureCurrentSection();
             }
         }
 
@@ -438,6 +469,17 @@ namespace ILCompiler.DependencyAnalysis
             if (_offsetToCfiStart.Contains(offset))
             {
                 EmitCFIStart(offset);
+
+                string blobSymbolName = ""; 
+                if (_offsetToCfiLsdaBlobName.TryGetValue(offset, out blobSymbolName))
+                {
+                    EmitCFILsda(blobSymbolName);
+                }
+                else
+                {
+                    // Internal compiler error
+                    Debug.Assert(false);
+                }
             }
 
             // Emit individual cfi blob for the given offset
@@ -610,20 +652,28 @@ namespace ILCompiler.DependencyAnalysis
         {
             using (ObjectWriter objectWriter = new ObjectWriter(objectFilePath, factory))
             {
-                // TODO: Exception handling on Unix
-                if (factory.Target.IsWindows)
+                if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    objectWriter.CreateCustomSection(MethodCodeNode.ContentSection);
+                    objectWriter.CreateCustomSection(WindowsMethodCodeNode.ContentSection);
 
                     // Emit sentinels for managed code section.
-                    ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ? MethodCodeNode.StartSection : MethodCodeNode.StartSection.GetSharedSection("__managedcode_a");
+                    ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
+                                                            WindowsMethodCodeNode.StartSection :
+                                                            WindowsMethodCodeNode.StartSection.GetSharedSection("__managedcode_a");
                     objectWriter.SetSection(codeStartSection);
                     objectWriter.EmitSymbolDef("__managedcode_a");
                     objectWriter.EmitIntValue(0, 1);
-                    ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ? MethodCodeNode.EndSection : MethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
+                    ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
+                                                            WindowsMethodCodeNode.EndSection :
+                                                            WindowsMethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
                     objectWriter.EmitSymbolDef("__managedcode_z");
                     objectWriter.EmitIntValue(0, 1);
+                }
+                else
+                {
+                    objectWriter.CreateCustomSection(UnixMethodCodeNode.ContentSection);
+                    objectWriter.CreateCustomSection(LsdaSection);
                 }
 
                 // Build file info map.

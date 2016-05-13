@@ -443,6 +443,43 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#ifdef PLATFORM_UNIX
+Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg)
+{
+    CONTEXT contextRecord;
+    EXCEPTION_RECORD exceptionRecord;
+    EXCEPTION_POINTERS exceptionPointers;
+
+    exceptionPointers.ContextRecord = &contextRecord;
+    exceptionPointers.ExceptionRecord = &exceptionRecord;
+
+    contextRecord.SetIP(palContext->GetIp());
+    contextRecord.SetSP(palContext->GetSp());
+#ifdef _ARM_
+    contextRecord.SetLR(palContext->GetLr());
+#endif
+
+    exceptionRecord.ExceptionCode = faultCode;
+    if (faultCode == STATUS_ACCESS_VIOLATION)
+    {
+        exceptionRecord.ExceptionInformation[1] = faultAddress;
+    }
+
+    Int32 result = RhpVectoredExceptionHandler(&exceptionPointers);
+
+    if (result == EXCEPTION_CONTINUE_EXECUTION)
+    {
+        *arg0Reg = contextRecord.GetArg0Reg();
+        *arg1Reg = contextRecord.GetArg1Reg();
+        palContext->SetIp(contextRecord.GetIP());
+        palContext->SetSp(contextRecord.GetSP());
+    }
+
+    return result;
+}
+#endif // PLATFORM_UNIX
+
+
 COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())
 {
     RhFailFast();

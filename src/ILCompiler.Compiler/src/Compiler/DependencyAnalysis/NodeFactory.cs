@@ -182,7 +182,16 @@ namespace ILCompiler.DependencyAnalysis
                     if (_cppCodeGen)
                         return new CppMethodCodeNode(method);
                     else
-                        return new MethodCodeNode(method);
+                    {
+                        if (Target.OperatingSystem == TargetOS.Windows)
+                        {
+                            return new WindowsMethodCodeNode(method);
+                        }
+                        else
+                        {
+                            return new UnixMethodCodeNode(method);
+                        }
+                    }
                 }
                 else
                 {
@@ -601,7 +610,18 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
 
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
-            graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
+
+            ModulesSectionNode modulesSectionNode;
+            if (Target.OperatingSystem == TargetOS.Windows)
+            {
+                modulesSectionNode = new WindowsModulesSectionNode();
+            }
+            else
+            {
+                modulesSectionNode = new UnixModulesSectionNode();
+            }
+
+            graph.AddRoot(modulesSectionNode, "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");

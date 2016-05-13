@@ -9,10 +9,8 @@
 #include "gcenv.base.h"
 
 #include <stdlib.h> 
-#include "vector.h"
 
 #ifndef CPPCODEGEN
-NoStl::vector<void*> __myVector;
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
 // startup of the application.
@@ -27,11 +25,7 @@ NoStl::vector<void*> __myVector;
 // On Windows, the #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
 // obj files into .rdata in alphabetical order.
 //
-// On Linux, a linker script is used (see src/scripts/linkerscript) to do the equivalent since there is no similar
-// #pragma directive.
-//
-// On OSX, neither of these options are available but we can use a feature of MachO sections that invokes
-// each pointer in the section as a function to achieve the same effect with the helper RegisterReadyToRunModule
+// On Linux and OSX, we use linker magic to get the sections start addresses and sizes. 
 //
 #if defined(_MSC_VER)
 
@@ -44,7 +38,7 @@ __declspec(allocate(".modules$A")) void * __modules_a[] = { nullptr };
 __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
 #pragma comment(linker, "/merge:.modules=.rdata")
 
-// Sentinels for managed code section are not implemented here because of the C++ compiler 
+// Sentinels for managed code section are not implemented here because of the C++ compiler
 // wraps them with a jump stub in debug builds. They are emitted in ilc instead.
 extern "C" void __managedcode_a();
 extern "C" void __managedcode_z();
@@ -53,26 +47,22 @@ extern "C" void __managedcode_z();
 
 #if defined(__APPLE__)
 
-//
-// On platforms with MachO binaries (OSX), we cannot use the above mechanism to register
-// global data for each module. Instead, we use a special section type whose contents
-// are a list of function pointers to call.  We create a jump stub that passes the global
-// data pointer into RegisterReadyToRunModule where we save it in a list for the startup
-// code to consume.
-//
-NoStl::vector<void*> __registeredModules;
-
-extern "C" void RegisterReadyToRunModule(void * pModule)
-{
-    __registeredModules.push_back(pModule);
-}
+extern void * __modules_a[] __asm("section$start$__DATA$__modules");
+extern void * __modules_z[] __asm("section$end$__DATA$__modules");
+extern char __managedcode_a __asm("section$start$__TEXT$__managedcode");
+extern char __managedcode_z __asm("section$end$__TEXT$__managedcode");
 
 #else // __APPLE__
 
-extern "C" __attribute((section (".modules$A"))) void * __modules_a[];
-extern "C" __attribute((section (".modules$Z"))) void * __modules_z[];
-__attribute((section (".modules$A"))) void * __modules_a[] = { nullptr };
-__attribute((section (".modules$Z"))) void * __modules_z[] = { nullptr };
+extern "C" void * __start___modules[];
+extern "C" void * __stop___modules[];
+static void * (&__modules_a)[] = __start___modules;
+static void * (&__modules_z)[] = __stop___modules;
+
+extern "C" char __start___managedcode;
+extern "C" char __stop___managedcode;
+static char& __managedcode_a = __start___managedcode;
+static char& __managedcode_z = __stop___managedcode;
 
 #endif // __APPLE__
 
@@ -139,6 +129,10 @@ extern "C" void RhpReversePInvokeReturn2(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
 
 extern "C" bool RhpRegisterCoffModule(void * pModule, 
+    void * pvStartRange, uint32_t cbRange,
+    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
+
+extern "C" bool RhpRegisterUnixModule(void * pModule, 
     void * pvStartRange, uint32_t cbRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
@@ -298,6 +292,8 @@ extern "C" void InitializeModules(void ** modules, int count);
 
 #ifdef _WIN32
 extern "C" void* WINAPI GetModuleHandleW(const wchar_t *);
+#else
+extern "C" void* WINAPI PalGetModuleHandleFromPointer(void* pointer);
 #endif
 
 extern "C" void GetRuntimeException();
@@ -323,20 +319,20 @@ int main(int argc, char* argv[])
 {
     if (__initialize_runtime() != 0) return -1;
 
-#if defined(_WIN32) && !defined(CPPCODEGEN)
-    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
-        &__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
-        (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
-    {
-        return -1;
-    }
-#endif
+#if !defined(CPPCODEGEN)
+#if defined(_WIN32)
+        if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
+#else // _WIN32
+        if (!RhpRegisterUnixModule(PalGetModuleHandleFromPointer((void*)&main),
+#endif // _WIN32
+            (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+            (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
+        {
+            return -1;
+        }
+#endif // !CPPCODEGEN
 
-#if defined (__APPLE__)
-    InitializeModules(&__registeredModules[0], __registeredModules.size());
-#else
     InitializeModules(__modules_a, (int)((__modules_z - __modules_a))); 
-#endif
 
     int retval;
     try

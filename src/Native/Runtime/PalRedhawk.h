@@ -277,8 +277,15 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     void SetIP(UIntNative ip) { Rip = ip; }
     void SetSP(UIntNative sp) { Rsp = sp; }
+#ifdef UNIX_AMD64_ABI
+    UIntNative GetArg0Reg() { return Rdi; }
+    UIntNative GetArg1Reg() { return Rsi; }
+    void SetArg0Reg(UIntNative val) { Rdi = val; }
+    void SetArg1Reg(UIntNative val) { Rsi = val; }
+#else // UNIX_AMD64_ABI
     void SetArg0Reg(UIntNative val) { Rcx = val; }
     void SetArg1Reg(UIntNative val) { Rdx = val; }
+#endif // UNIX_AMD64_ABI
     UIntNative GetIP() { return Rip; }
     UIntNative GetSP() { return Rsp; }
 } CONTEXT, *PCONTEXT;
@@ -780,6 +787,10 @@ REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
 
 #ifndef APP_LOCAL_RUNTIME
 REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(UInt32 firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
+#endif
+
+#ifdef PLATFORM_UNIX
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
 
 typedef UInt32 (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);

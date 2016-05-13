@@ -4,23 +4,12 @@
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ModulesSectionNode : ObjectNode, ISymbolNode
+    public abstract class ModulesSectionNode : ObjectNode, ISymbolNode
     {
         // Each compilation unit produces one module. When all compilation units are linked
         // together in multifile mode, the runtime needs to get list of modules present
         // in the final binary. This list is created via a special .modules section that
         // contains list of pointers to all module headers.
-
-        public static readonly string SectionName = ".modules$I";
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return new ObjectNodeSection(SectionName, SectionType.ReadOnly, SectionAttributes.MachOInitFuncPointers);
-            }
-        }
-
         public override string GetName()
         {
             return ((ISymbolNode)this).MangledName;
@@ -55,16 +44,36 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder objData = new ObjectDataBuilder(factory);
             objData.RequirePointerAlignment();
             objData.DefinedSymbols.Add(this);
-            if (factory.Target.OperatingSystem == Internal.TypeSystem.TargetOS.OSX)
-            {
-                objData.EmitPointerReloc(factory.JumpThunk((ExternSymbolNode)factory.ExternSymbol("RegisterReadyToRunModule"), factory.ReadyToRunHeader));
-            }
-            else
-            {
-                objData.EmitPointerReloc(factory.ReadyToRunHeader);
-            }
+            objData.EmitPointerReloc(factory.ReadyToRunHeader);
 
             return objData.ToObjectData();
+        }
+    }
+
+    public class WindowsModulesSectionNode : ModulesSectionNode
+    {
+        public static readonly string SectionName = ".modules$I";
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                return new ObjectNodeSection(SectionName, SectionType.ReadOnly);
+            }
+        }
+    }
+
+    public class UnixModulesSectionNode : ModulesSectionNode
+    {
+
+        public static readonly string SectionName = "__modules";
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                return new ObjectNodeSection(SectionName, SectionType.ReadOnly);
+            }
         }
     }
 }
