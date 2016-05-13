@@ -15,7 +15,6 @@ using Internal.TypeSystem;
 using Internal.IL;
 
 using ILCompiler;
-using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysis;
 
 namespace Internal.JitInterface
@@ -128,24 +127,24 @@ namespace Internal.JitInterface
                 {
                     CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
 
+                    MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
+
                     if (!_compilation.Options.NoLineNumbers)
                     {
-                        IEnumerable<ILSequencePoint> ilSequencePoints =
-                            typeSystemContext.GetSequencePointsForMethod(methodIL);
+                        IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
                         if (ilSequencePoints != null)
                         {
                             SetSequencePoints(ilSequencePoints);
                         }
                     }
 
-                    IEnumerable<ILLocalVariable> localVariables =
-                        typeSystemContext.GetLocalVariableNamesForMethod(methodIL);
+                    IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
                     if (localVariables != null)
                     {
                         SetLocalVariables(localVariables);
                     }
 
-                    IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(MethodBeingCompiled);
+                    IEnumerable<string> parameters = debugInfo.GetParameterNames();
                     if (parameters != null)
                     {
                         SetParameterNames(parameters);

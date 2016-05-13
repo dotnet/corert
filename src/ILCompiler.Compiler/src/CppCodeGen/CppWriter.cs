@@ -4,12 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Linq;
 using ILCompiler.Compiler.CppCodeGen;
-using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
@@ -93,6 +90,21 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
+        private IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
+        {
+            // TODO: The uses of this method need revision. The right way to get to this info is from
+            //       a MethodIL. For declarations, we don't need names.
+
+            method = method.GetTypicalMethodDefinition();
+            var ecmaMethod = method as EcmaMethod;
+            if (ecmaMethod != null && ecmaMethod.Module.PdbReader != null)
+            {
+                return (new EcmaMethodDebugInformation(ecmaMethod)).GetParameterNames();
+            }
+
+            return null;
+        }
+
         public string GetCppMethodDeclaration(MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null)
         {
             var sb = new CppGenerationBuffer();
@@ -137,7 +149,7 @@ namespace ILCompiler.CppCodeGen
             List<string> parameterNames = null;
             if (method != null)
             {
-                IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+                IEnumerable<string> parameters = GetParameterNamesForMethod(method);
                 if (parameters != null)
                 {
                     parameterNames = new List<string>(parameters);
@@ -208,7 +220,7 @@ namespace ILCompiler.CppCodeGen
                 argCount++;
 
             List<string> parameterNames = null;
-            IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+            IEnumerable<string> parameters = GetParameterNamesForMethod(method);
             if (parameters != null)
             {
                 parameterNames = new List<string>(parameters);
@@ -378,18 +390,20 @@ namespace ILCompiler.CppCodeGen
 
                 CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
 
+                MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
+
                 if (!_compilation.Options.NoLineNumbers)
                 {
-                    IEnumerable<ILSequencePoint> sequencePoints = typeSystemContext.GetSequencePointsForMethod(methodIL);
+                    IEnumerable<ILSequencePoint> sequencePoints = debugInfo.GetSequencePoints();
                     if (sequencePoints != null)
                         ilImporter.SetSequencePoints(sequencePoints);
                 }
 
-                IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(methodIL);
+                IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
                 if (localVariables != null)
                     ilImporter.SetLocalVariables(localVariables);
 
-                IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(method);
+                IEnumerable<string> parameters = GetParameterNamesForMethod(method);
                 if (parameters != null)
                     ilImporter.SetParameterNames(parameters);
 

@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaModule : ModuleDesc, IAssemblyDesc
+    public sealed partial class EcmaModule : ModuleDesc, IAssemblyDesc
     {
         private PEReader _peReader;
         private MetadataReader _metadataReader;

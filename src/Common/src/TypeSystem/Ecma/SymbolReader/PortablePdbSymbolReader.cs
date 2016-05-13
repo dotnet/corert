@@ -9,12 +9,14 @@ using System.IO.MemoryMappedFiles;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
-namespace ILCompiler.SymbolReader
+using Internal.IL;
+
+namespace Internal.TypeSystem.Ecma
 {
     /// <summary>
     ///  Provides PdbSymbolReader for portable PDB via System.Reflection.Metadata
     /// </summary>
-    internal class PortablePdbSymbolReader : PdbSymbolReader
+    public sealed class PortablePdbSymbolReader : PdbSymbolReader
     {
         private static unsafe MetadataReader TryOpenMetadataFile(string filePath, MetadataStringDecoder stringDecoder, out MemoryMappedViewAccessor mappedViewAccessor)
         {

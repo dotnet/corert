@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -13,7 +12,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
-    public class EcmaMethodIL : MethodIL
+    public partial class EcmaMethodIL : MethodIL
     {
         private EcmaModule _module;
         private EcmaMethod _method;

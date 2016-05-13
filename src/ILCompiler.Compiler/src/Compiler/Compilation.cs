@@ -305,5 +305,12 @@ namespace ILCompiler
         {
             return _typeInitManager.HasLazyStaticConstructor(type);
         }
+
+        public MethodDebugInformation GetDebugInfo(MethodIL methodIL)
+        {
+            // This method looks odd right now, but it's an extensibility point that lets us generate
+            // fake debugging information for things that don't have physical symbols.
+            return methodIL.GetDebugInfo();
+        }
     }
 }
