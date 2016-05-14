@@ -35,11 +35,6 @@ namespace Internal.IL
             return _method;
         }
 
-        public override MethodIL GetMethodILDefinition()
-        {
-            return _methodIL;
-        }
-        
         public override byte[] GetILBytes()
         {
             return _methodIL.GetILBytes();

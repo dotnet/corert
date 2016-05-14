@@ -53,11 +53,6 @@ namespace Internal.IL
     [System.Diagnostics.DebuggerTypeProxy(typeof(MethodILDebugView))]
     public abstract partial class MethodIL
     {
-        public virtual MethodIL GetMethodILDefinition()
-        {
-            return this;
-        }
-
         public abstract MethodDesc GetOwningMethod();
         public abstract byte[] GetILBytes();
         public abstract int GetMaxStack();
