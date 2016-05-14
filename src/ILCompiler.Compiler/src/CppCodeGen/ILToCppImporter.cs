@@ -498,7 +498,7 @@ namespace Internal.IL
             Append("{");
             Indent();
 
-            bool initLocals = _methodIL.GetInitLocals();
+            bool initLocals = _methodIL.IsInitLocals;
             for (int i = 0; i < _locals.Length; i++)
             {
                 AppendLine();
@@ -2300,7 +2300,7 @@ namespace Internal.IL
             Append(")");
             AppendSemicolon();
 
-            if (_methodIL.GetInitLocals())
+            if (_methodIL.IsInitLocals)
             {
                 AppendLine();
                 Append("memset(");

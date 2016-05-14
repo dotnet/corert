@@ -244,28 +244,39 @@ namespace Internal.IL.Stubs
             _method = owningMethod;
         }
 
-        public override MethodDesc GetOwningMethod()
+        public override MethodDesc OwningMethod
         {
-            return _method;
+            get
+            {
+                return _method;
+            }
         }
 
         public override byte[] GetILBytes()
         {
             return _ilBytes;
         }
-        public override int GetMaxStack()
+        public override int MaxStack
         {
-            // Conservative estimate...
-            return _ilBytes.Length;
+            get
+            {
+                // Conservative estimate...
+                return _ilBytes.Length;
+            }
         }
+
         public override ILExceptionRegion[] GetExceptionRegions()
         {
             return Array.Empty<ILExceptionRegion>();
         }
-        public override bool GetInitLocals()
+        public override bool IsInitLocals
         {
-            return true;
+            get
+            {
+                return true;
+            }
         }
+
         public override LocalVariableDefinition[] GetLocals()
         {
             return _locals;

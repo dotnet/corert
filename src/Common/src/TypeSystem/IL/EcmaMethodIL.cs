@@ -38,9 +38,12 @@ namespace Internal.IL
             _methodBody = _module.PEReader.GetMethodBody(rva);
         }
 
-        public override MethodDesc GetOwningMethod()
+        public override MethodDesc OwningMethod
         {
-            return _method;
+            get
+            {
+                return _method;
+            }
         }
 
         public override byte[] GetILBytes()
@@ -52,14 +55,20 @@ namespace Internal.IL
             return (_ilBytes = ilBytes);
         }
 
-        public override bool GetInitLocals()
+        public override bool IsInitLocals
         {
-            return _methodBody.LocalVariablesInitialized;
+            get
+            {
+                return _methodBody.LocalVariablesInitialized;
+            }
         }
 
-        public override int GetMaxStack()
+        public override int MaxStack
         {
-            return _methodBody.MaxStack;
+            get
+            {
+                return _methodBody.MaxStack;
+            }
         }
 
         public override LocalVariableDefinition[] GetLocals()
