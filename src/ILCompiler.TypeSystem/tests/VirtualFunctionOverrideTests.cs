@@ -74,7 +74,7 @@ namespace TypeSystemTests
             MethodDesc objectToString = objectType.GetMethod("ToString", toStringSig);
             Assert.NotNull(objectToString);
             MetadataType openTestType = _testModule.GetType("VirtualFunctionOverride", "SimpleGeneric`1");
-            InstantiatedType testInstance = openTestType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { objectType }));
+            InstantiatedType testInstance = openTestType.MakeInstantiatedType(objectType);
             MethodDesc targetOnInstance = testInstance.GetMethod("ToString", toStringSig);
 
             MethodDesc targetMethod = testInstance.FindVirtualFunctionTargetMethodOnObjectType(objectToString);
@@ -85,7 +85,7 @@ namespace TypeSystemTests
         public void TestVirtualDispatchOnGenericTypeWithOverload()
         {
             MetadataType openDerived = _testModule.GetType("VirtualFunctionOverride", "DerivedGenericWithOverload`1");
-            MetadataType derivedInstance = openDerived.MakeInstantiatedType(new Instantiation(new TypeDesc[] { _stringType }));
+            MetadataType derivedInstance = openDerived.MakeInstantiatedType(_stringType);
             MetadataType baseInstance = (MetadataType)derivedInstance.BaseType;
 
             MethodDesc baseNongenericOverload = baseInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _stringType }));

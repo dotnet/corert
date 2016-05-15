@@ -31,8 +31,7 @@ namespace Internal.TypeSystem
         {
             ArrayType arrayType = (ArrayType)_type;
             Debug.Assert(arrayType.IsSzArray);
-            Instantiation arrayInstantiation = new Instantiation(new TypeDesc[] { arrayType.ElementType });
-            TypeDesc arrayOfTInstantiation = _arrayOfTType.Context.GetInstantiatedType(_arrayOfTType, arrayInstantiation);
+            TypeDesc arrayOfTInstantiation = _arrayOfTType.MakeInstantiatedType(arrayType.ElementType);
 
             return arrayOfTInstantiation.RuntimeInterfaces;
         }

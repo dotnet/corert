@@ -53,7 +53,7 @@ namespace TypeSystemTests
             }
 
             // The set of interfaces on an array of type T shall include IList<T>
-            TypeDesc ilistOfObject = _context.GetInstantiatedType(systemIListOfTType, new Instantiation(new TypeDesc[] { objectType }));
+            TypeDesc ilistOfObject = systemIListOfTType.MakeInstantiatedType(objectType);
             Assert.Contains(ilistOfObject, objectArray.RuntimeInterfaces);
         }
 
@@ -82,7 +82,7 @@ namespace TypeSystemTests
             MetadataType derivedFromMidType = _testModule.GetType("InterfaceArrangements", "DerivedFromMid");
             MetadataType igen1Type = _testModule.GetType("InterfaceArrangements", "IGen1`1");
             TypeDesc stringType = _testModule.Context.GetWellKnownType(WellKnownType.String);
-            DefType igen1OfString = (DefType)_testModule.Context.GetInstantiatedType(igen1Type, new Instantiation(new TypeDesc[] { stringType }));
+            DefType igen1OfString = igen1Type.MakeInstantiatedType(stringType);
             MetadataType i1Type = _testModule.GetType("InterfaceArrangements", "I1");
 
             Assert.Equal(new DefType[] { igen1OfString, i1Type, igen1OfString }, derivedFromMidType.RuntimeInterfaces);
@@ -97,14 +97,14 @@ namespace TypeSystemTests
             MetadataType igen1Type = _testModule.GetType("InterfaceArrangements", "IGen1`1");
             TypeDesc stringType = _testModule.Context.GetWellKnownType(WellKnownType.String);
             TypeDesc objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
-            DefType igen1OfString = (DefType)_testModule.Context.GetInstantiatedType(igen1Type, new Instantiation(new TypeDesc[] { stringType }));
-            DefType igen1OfObject = (DefType)_testModule.Context.GetInstantiatedType(igen1Type, new Instantiation(new TypeDesc[] { objectType }));
+            DefType igen1OfString = igen1Type.MakeInstantiatedType(stringType);
+            DefType igen1OfObject = igen1Type.MakeInstantiatedType(objectType);
             MetadataType i1Type = _testModule.GetType("InterfaceArrangements", "I1");
 
-            TypeDesc mid_string_string = _testModule.Context.GetInstantiatedType(midType, new Instantiation(new TypeDesc[] { stringType, stringType }));
-            TypeDesc mid_string_object = _testModule.Context.GetInstantiatedType(midType, new Instantiation(new TypeDesc[] { stringType, objectType }));
-            TypeDesc mid_object_string = _testModule.Context.GetInstantiatedType(midType, new Instantiation(new TypeDesc[] { objectType, stringType }));
-            TypeDesc mid_object_object = _testModule.Context.GetInstantiatedType(midType, new Instantiation(new TypeDesc[] { objectType, objectType }));
+            TypeDesc mid_string_string = midType.MakeInstantiatedType(stringType, stringType);
+            TypeDesc mid_string_object = midType.MakeInstantiatedType(stringType, objectType);
+            TypeDesc mid_object_string = midType.MakeInstantiatedType(objectType, stringType);
+            TypeDesc mid_object_object = midType.MakeInstantiatedType(objectType, objectType);
 
             Assert.Equal(new DefType[] { igen1OfString, i1Type, igen1OfString }, mid_string_string.RuntimeInterfaces);
             Assert.Equal(new DefType[] { igen1OfString, i1Type, igen1OfObject }, mid_string_object.RuntimeInterfaces);

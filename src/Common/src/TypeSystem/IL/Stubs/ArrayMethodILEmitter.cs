@@ -102,7 +102,7 @@ namespace Internal.IL.Stubs
                     TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
 
                     MethodDesc eetypePtrOfMethod = eetypePtrType.GetKnownMethod("EETypePtrOf", null)
-                        .MakeInstantiatedMethod(new Instantiation(new[] { _elementType }));
+                        .MakeInstantiatedMethod(_elementType);
 
                     typeMismatchExceptionLabel = _emitter.NewCodeLabel();
 
