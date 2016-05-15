@@ -21,7 +21,7 @@ namespace Internal.IL
         {
             Debug.Assert(!(methodIL is InstantiatedMethodIL));
             Debug.Assert(owningMethod.HasInstantiation || owningMethod.OwningType.HasInstantiation);
-            Debug.Assert(owningMethod.GetTypicalMethodDefinition() == methodIL.GetOwningMethod());
+            Debug.Assert(owningMethod.GetTypicalMethodDefinition() == methodIL.OwningMethod);
             
             _methodIL = methodIL;
             _method = owningMethod;
@@ -30,24 +30,25 @@ namespace Internal.IL
             _methodInstantiation = methodInstantiation;
         }
 
-        public override MethodDesc GetOwningMethod()
+        public override MethodDesc OwningMethod
         {
-            return _method;
+            get
+            {
+                return _method;
+            }
         }
 
-        public override MethodIL GetMethodILDefinition()
-        {
-            return _methodIL;
-        }
-        
         public override byte[] GetILBytes()
         {
             return _methodIL.GetILBytes();
         }
 
-        public override int GetMaxStack()
+        public override int MaxStack
         {
-            return _methodIL.GetMaxStack();
+            get
+            {
+                return _methodIL.MaxStack;
+            }
         }
 
         public override ILExceptionRegion[] GetExceptionRegions()
@@ -55,9 +56,12 @@ namespace Internal.IL
             return _methodIL.GetExceptionRegions();
         }
 
-        public override bool GetInitLocals()
+        public override bool IsInitLocals
         {
-            return _methodIL.GetInitLocals();
+            get
+            {
+                return _methodIL.IsInitLocals;
+            }
         }
 
         public override LocalVariableDefinition[] GetLocals()

@@ -50,20 +50,48 @@ namespace Internal.IL
         }
     }
 
+    /// <summary>
+    /// Represents a method body.
+    /// </summary>
     [System.Diagnostics.DebuggerTypeProxy(typeof(MethodILDebugView))]
     public abstract partial class MethodIL
     {
-        public virtual MethodIL GetMethodILDefinition()
-        {
-            return this;
-        }
+        /// <summary>
+        /// Gets the method whose body this <see cref="MethodIL"/> represents.
+        /// </summary>
+        public abstract MethodDesc OwningMethod { get; }
 
-        public abstract MethodDesc GetOwningMethod();
+        /// <summary>
+        /// Gets the maximum possible stack depth this method declares.
+        /// </summary>
+        public abstract int MaxStack { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the locals should be initialized to zero
+        /// before first access.
+        /// </summary>
+        public abstract bool IsInitLocals { get; }
+
+        /// <summary>
+        /// Retrieves IL opcode bytes of this method body.
+        /// </summary>
         public abstract byte[] GetILBytes();
-        public abstract int GetMaxStack();
-        public abstract bool GetInitLocals();
+
+        /// <summary>
+        /// Gets the list of locals this method body defines.
+        /// </summary>
         public abstract LocalVariableDefinition[] GetLocals();
+
+        /// <summary>
+        /// Resolves a token from within the method body into a type system object
+        /// (typically a <see cref="MethodDesc"/>, <see cref="FieldDesc"/>, <see cref="TypeDesc"/>,
+        /// or <see cref="MethodSignature"/>).
+        /// </summary>
         public abstract Object GetObject(int token);
+
+        /// <summary>
+        /// Gets a list of exception regions this method body defines.
+        /// </summary>
         public abstract ILExceptionRegion[] GetExceptionRegions();
     }
 }

@@ -380,9 +380,9 @@ namespace Internal.JitInterface
             var ilCode = methodIL.GetILBytes();
             methodInfo.ILCode = (byte*)GetPin(ilCode);
             methodInfo.ILCodeSize = (uint)ilCode.Length;
-            methodInfo.maxStack = (uint)methodIL.GetMaxStack();
+            methodInfo.maxStack = (uint)methodIL.MaxStack;
             methodInfo.EHcount = (uint)methodIL.GetExceptionRegions().Length;
-            methodInfo.options = methodIL.GetInitLocals() ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
+            methodInfo.options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
             methodInfo.regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
 
             Get_CORINFO_SIG_INFO(method.Signature, out methodInfo.args);
