@@ -72,7 +72,7 @@ namespace TypeSystemTests
         {
             MetadataType ilistType = (MetadataType)_testModule.GetType("System.Collections.Generic", "IList`1");
             DefType systemArrayType = _context.GetWellKnownType(WellKnownType.Array);
-            DefType ilistOfSystemArray = ilistType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { systemArrayType }));
+            DefType ilistOfSystemArray = ilistType.MakeInstantiatedType(systemArrayType);
 
             int expectedIListOfTHashcode = TypeHashingAlgorithms.ComputeNameHashCode("System.Collections.Generic.IList`1");
             int expectedSystemArrayHashcode = TypeHashingAlgorithms.ComputeNameHashCode("System.Array");
@@ -88,8 +88,8 @@ namespace TypeSystemTests
             DefType intType = _context.GetWellKnownType(WellKnownType.Int32);
             DefType stringType = _context.GetWellKnownType(WellKnownType.String);
 
-            MetadataType genericTypeOfIntString = genericType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { intType, stringType }));
-            MetadataType genericTypeOfStringInt = genericType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { stringType, intType }));
+            MetadataType genericTypeOfIntString = genericType.MakeInstantiatedType(intType, stringType);
+            MetadataType genericTypeOfStringInt = genericType.MakeInstantiatedType(stringType, intType);
 
             // build up expected hash codes for the above
             int expHashNonNestedType = TypeHashingAlgorithms.ComputeNameHashCode("Hashcode.NonNestedType");
@@ -119,11 +119,11 @@ namespace TypeSystemTests
                 Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashCode(expectedTypeHash, genMethodNameHash), genMethod.GetHashCode());
 
                 // Instantiated over int
-                MethodDesc genMethodI = _context.GetInstantiatedMethod(genMethod, new Instantiation(new TypeDesc[] { intType }));
+                MethodDesc genMethodI = genMethod.MakeInstantiatedMethod(intType);
                 Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashCode(expectedTypeHash, genMethodNameAndIHash), genMethodI.GetHashCode());
 
                 // Instantiated over string
-                MethodDesc genMethodS = _context.GetInstantiatedMethod(genMethod, new Instantiation(new TypeDesc[] { stringType }));
+                MethodDesc genMethodS = genMethod.MakeInstantiatedMethod(stringType);
                 Assert.Equal(TypeHashingAlgorithms.ComputeMethodHashCode(expectedTypeHash, genMethodNameAndSHash), genMethodS.GetHashCode());
 
                 // Assert they aren't the same as the other hashes

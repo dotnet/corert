@@ -97,8 +97,7 @@ namespace TypeSystemTests
             MetadataType iListType = _context.SystemModule.GetType("System.Collections", "IList");
             MetadataType iListOfTType = _context.SystemModule.GetType("System.Collections.Generic", "IList`1");
 
-            InstantiatedType iListOfIntType =
-                iListOfTType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { intType }));
+            InstantiatedType iListOfIntType = iListOfTType.MakeInstantiatedType(intType);
             TypeDesc intSzArrayType = intType.MakeArrayType();
             TypeDesc intArrayType = intType.MakeArrayType(1);
 
@@ -176,10 +175,8 @@ namespace TypeSystemTests
 
             MetadataType iEnumerableOfTType =
                 _context.SystemModule.GetType("System.Collections.Generic", "IEnumerable`1");
-            InstantiatedType iEnumerableOfObjectType =
-                iEnumerableOfTType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { objectType }));
-            InstantiatedType iEnumerableOfExceptionType =
-                iEnumerableOfTType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { exceptionType }));
+            InstantiatedType iEnumerableOfObjectType = iEnumerableOfTType.MakeInstantiatedType(objectType);
+            InstantiatedType iEnumerableOfExceptionType = iEnumerableOfTType.MakeInstantiatedType(exceptionType);
 
             Assert.True(stringSzArrayType.CanCastTo(iEnumerableOfObjectType));
             Assert.False(stringSzArrayType.CanCastTo(iEnumerableOfExceptionType));
@@ -190,7 +187,7 @@ namespace TypeSystemTests
         {
             TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
             MetadataType nullableType = (MetadataType)_context.GetWellKnownType(WellKnownType.Nullable);
-            TypeDesc nullableOfIntType = nullableType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { intType }));
+            TypeDesc nullableOfIntType = nullableType.MakeInstantiatedType(intType);
 
             Assert.True(intType.CanCastTo(nullableOfIntType));
         }
@@ -203,7 +200,7 @@ namespace TypeSystemTests
             TypeDesc classWithRecursiveImplementation = _testModule.GetType("Casting", "ClassWithRecursiveImplementation");
             MetadataType iContravariantOfTType = (MetadataType)_testModule.GetType("Casting", "IContravariant`1");
 
-            TypeDesc testType = iContravariantOfTType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { classWithRecursiveImplementation }));
+            TypeDesc testType = iContravariantOfTType.MakeInstantiatedType(classWithRecursiveImplementation);
 
             Assert.False(classWithRecursiveImplementation.CanCastTo(testType));
         }
