@@ -36,6 +36,7 @@ struct JitInterfaceCallbacks
     void* (__stdcall * mapMethodDeclToMethodImpl)(void * thisHandle, CorInfoException** ppException, void* method);
     void (__stdcall * getGSCookie)(void * thisHandle, CorInfoException** ppException, void* pCookieVal, void** ppCookieVal);
     void (__stdcall * resolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
+    void (__stdcall * tryResolveToken)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
     void (__stdcall * findSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig);
     void (__stdcall * findCallSiteSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned methTOK, void* context, void* sig);
     void* (__stdcall * getTokenTypeAsHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
@@ -70,7 +71,7 @@ struct JitInterfaceCallbacks
     void* (__stdcall * getTypeForBox)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (__stdcall * getBoxHelper)(void * thisHandle, CorInfoException** ppException, void* cls);
     int (__stdcall * getUnBoxHelper)(void * thisHandle, CorInfoException** ppException, void* cls);
-    void (__stdcall * getReadyToRunHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, int id, void* pLookup);
+    bool (__stdcall * getReadyToRunHelper)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, void* pGenericLookupKind, int id, void* pLookup);
     void (__stdcall * getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoException** ppException, void* pTargetMethod, void* delegateType, void* pLookup);
     const char* (__stdcall * getHelperName)(void * thisHandle, CorInfoException** ppException, int helpFunc);
     int (__stdcall * initClass)(void * thisHandle, CorInfoException** ppException, void* field, void* method, void* context, bool speculative);
@@ -110,6 +111,7 @@ struct JitInterfaceCallbacks
     void (__stdcall * HandleException)(void * thisHandle, CorInfoException** ppException, void* pExceptionPointers);
     void (__stdcall * ThrowExceptionForJitResult)(void * thisHandle, CorInfoException** ppException, int result);
     void (__stdcall * ThrowExceptionForHelper)(void * thisHandle, CorInfoException** ppException, const void* throwHelper);
+    bool (__stdcall * runWithErrorTrap)(void * thisHandle, CorInfoException** ppException, void* function, void* parameter);
     void (__stdcall * getEEInfo)(void * thisHandle, CorInfoException** ppException, void* pEEInfoOut);
     const wchar_t* (__stdcall * getJitTimeLogFilename)(void * thisHandle, CorInfoException** ppException);
     unsigned int (__stdcall * getMethodDefFromMethod)(void * thisHandle, CorInfoException** ppException, void* hMethod);
@@ -407,6 +409,14 @@ public:
     {
         CorInfoException* pException = nullptr;
         _callbacks->resolveToken(_thisHandle, &pException, pResolvedToken);
+        if (pException != nullptr)
+            throw pException;
+    }
+
+    virtual void tryResolveToken(void* pResolvedToken)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->tryResolveToken(_thisHandle, &pException, pResolvedToken);
         if (pException != nullptr)
             throw pException;
     }
@@ -714,12 +724,13 @@ public:
         return _ret;
     }
 
-    virtual void getReadyToRunHelper(void* pResolvedToken, int id, void* pLookup)
+    virtual bool getReadyToRunHelper(void* pResolvedToken, void* pGenericLookupKind, int id, void* pLookup)
     {
         CorInfoException* pException = nullptr;
-        _callbacks->getReadyToRunHelper(_thisHandle, &pException, pResolvedToken, id, pLookup);
+        bool _ret = _callbacks->getReadyToRunHelper(_thisHandle, &pException, pResolvedToken, pGenericLookupKind, id, pLookup);
         if (pException != nullptr)
             throw pException;
+        return _ret;
     }
 
     virtual void getReadyToRunDelegateCtorHelper(void* pTargetMethod, void* delegateType, void* pLookup)
@@ -1047,6 +1058,7 @@ public:
             throw pException;
     }
 
+    virtual bool runWithErrorTrap(void* function, void* parameter);
     virtual void getEEInfo(void* pEEInfoOut)
     {
         CorInfoException* pException = nullptr;

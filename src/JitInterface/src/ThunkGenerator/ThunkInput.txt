@@ -81,6 +81,7 @@ unsigned*,ref uint
 DWORD*,ref uint,unsigned int*
 CORJIT_FLAGS*,ref CORJIT_FLAGS,void*
 CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP,void*
+CORINFO_LOOKUP_KIND*,ref CORINFO_LOOKUP_KIND,void*
 CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
 const CORINFO_EH_CLAUSE*,ref CORINFO_EH_CLAUSE,void*
 CORINFO_SIG_INFO*,,void*
@@ -182,6 +183,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(        CORINFO_METHOD_HANDLE       method        );
     void getGSCookie(        GSCookie * pCookieVal,        GSCookie ** ppCookieVal        );
     void resolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
+    void tryResolveToken(CORINFO_RESOLVED_TOKEN * pResolvedToken);
     void findSig(        CORINFO_MODULE_HANDLE       module,        unsigned                    sigTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO           *sig        );
     void findCallSiteSig(        CORINFO_MODULE_HANDLE       module,unsigned                    methTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO   *sig)
     CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken)
@@ -216,7 +218,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
-    void getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
+    bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_CONST_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context, BOOL speculative)
@@ -256,6 +258,7 @@ FUNCTIONS
     [ManualNativeWrapper] void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
     void ThrowExceptionForJitResult(HRESULT result);
     void ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper);
+    [ManualNativeWrapper] bool runWithErrorTrap(void* function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
     LPCWSTR getJitTimeLogFilename();
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
