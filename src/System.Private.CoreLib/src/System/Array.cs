@@ -2196,7 +2196,8 @@ namespace System
 #if REAL_MULTIDIM_ARRAYS
             if (!IsSzArray)
             {
-                if ((dimension >= Rank) || (dimension < 0))
+                int rank = Rank;
+                if ((uint)dimension >= rank)
                     throw new IndexOutOfRangeException();
 
                 unsafe
@@ -2204,7 +2205,7 @@ namespace System
                     fixed (int* pNumComponents = &_numComponents)
                     {
                         // Lower bounds follow after upper bounds.
-                        return *(pNumComponents + 1 + PADDING + Rank + dimension);
+                        return *(pNumComponents + 1 + PADDING + rank + dimension);
                     }
                 }
             }
@@ -2231,7 +2232,8 @@ namespace System
 #if REAL_MULTIDIM_ARRAYS
             if (!IsSzArray)
             {
-                if ((dimension >= Rank) || (dimension < 0))
+                int rank = Rank;
+                if ((uint)dimension >= rank)
                     throw new IndexOutOfRangeException();
 
                 unsafe
@@ -2240,7 +2242,7 @@ namespace System
                     {
                         // Upper bounds follow after _numComponents.
                         int hiBound = *(pNumComponents + 1 + PADDING + dimension);
-                        int loBound = *(pNumComponents + 1 + PADDING + Rank + dimension);
+                        int loBound = *(pNumComponents + 1 + PADDING + rank + dimension);
                         return hiBound + loBound - 1;
                     }
                 }
