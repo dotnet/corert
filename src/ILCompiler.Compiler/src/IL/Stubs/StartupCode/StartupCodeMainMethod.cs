@@ -93,6 +93,13 @@ namespace Internal.IL.Stubs.StartupCode
                 return _signature;
             }
         }
+
+        public override bool IsNativeCallable
+        {
+            get
+            {
+                return true;
+            }
+        }
     }
 }
-

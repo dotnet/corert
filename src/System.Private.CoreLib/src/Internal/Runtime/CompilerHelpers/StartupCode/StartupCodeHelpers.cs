@@ -22,7 +22,7 @@ namespace Internal.Runtime.CompilerHelpers
             get; private set;
         }
 
-        [RuntimeExport("InitializeModules")] // TODO: Change to NativeCallable
+        [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
         internal static void InitializeModules(IntPtr moduleHeaders, int count)
         {
             IntPtr[] modules = CreateModuleManagers(moduleHeaders, count);

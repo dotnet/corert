@@ -564,8 +564,7 @@ namespace Internal.JitInterface
 
             if (method.IsPInvoke)
             {
-                // TODO: Enable once the PInvoke transition helpers are in place
-                // result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+                result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
 
                 // See comment in pInvokeMarshalingRequired
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
@@ -807,8 +806,6 @@ namespace Internal.JitInterface
 
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
-            // TODO: dynamic scopes
-            // TODO: verification
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
             Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)).Signature, out *sig);
         }
@@ -1729,6 +1726,22 @@ namespace Internal.JitInterface
         private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)
         { throw new NotImplementedException("ThrowExceptionForHelper"); }
 
+        private uint SizeOfPInvokeTransitionFrame
+        {
+            get
+            {
+                // struct PInvokeTransitionFrame:
+                //  m_RIP
+                //  m_FramePointer
+                //  m_pThread
+                //  m_dwFlags + align
+                //  m_PreserverRegs - RSP
+                //      No need to save other preserved regs because of the JIT ensures that there are
+                //      no live GC references in callee saved registers around the PInvoke callsite.
+                return (uint)(this.PointerSize * 5);
+            }
+        }
+
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
         {
             pEEInfoOut = new CORINFO_EE_INFO();
@@ -1742,10 +1755,14 @@ namespace Internal.JitInterface
 
             int pointerSize = this.PointerSize;
 
+            pEEInfoOut.inlinedCallFrameInfo.size = this.SizeOfPInvokeTransitionFrame;
+
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
 
             pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
+
+            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
         }
 
         [return: MarshalAs(UnmanagedType.LPWStr)]
@@ -1889,6 +1906,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBLREM: id = JitHelperId.DblRem; break;
                 case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = JitHelperId.FltRound; break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.DblRound; break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN: id = JitHelperId.PInvokeBegin; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END: id = JitHelperId.PInvokeEnd; break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: id = JitHelperId.ReversePInvokeEnter; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT: id = JitHelperId.ReversePInvokeExit; break;
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
@@ -2161,15 +2184,6 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
-                // TODO: Delete once the PInvoke transition helpers are in place
-                if (targetMethod.IsRawPInvoke())
-                {
-                    pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
-                    getAddressOfPInvokeTarget(pResult.hMethod, ref pResult.codePointerOrStubLookup.constLookup);
-                    pResult.nullInstanceCheck = false;
-                    return;
-                }
-
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
@@ -2538,6 +2552,9 @@ namespace Internal.JitInterface
             }
 
             flags.corJitFlags2 = CorJitFlag2.CORJIT_FLG2_USE_PINVOKE_HELPERS;
+
+            if (this.MethodBeingCompiled.IsNativeCallable)
+                flags.corJitFlags2 |= CorJitFlag2.CORJIT_FLG2_REVERSE_PINVOKE;
 
             return (uint)sizeof(CORJIT_FLAGS);
         }
