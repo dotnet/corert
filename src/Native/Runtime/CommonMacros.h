@@ -41,9 +41,17 @@ char (*COUNTOF_helper(_CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
 #define offsetof(s,m)   (UIntNative)( (IntNative)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
 #endif // offsetof
 
-#ifndef GCENV_INCLUDED
+#ifndef FORCEINLINE
 #define FORCEINLINE __forceinline
-#endif // GCENV_INCLUDED
+#endif
+
+#ifndef NOINLINE
+#ifdef _MSC_VER
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE __attribute__((noinline))
+#endif
+#endif
 
 inline UIntNative ALIGN_UP(UIntNative val, UIntNative alignment);
 template <typename T>

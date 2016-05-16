@@ -19,6 +19,7 @@
 #include "event.h"
 #include "RWLock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "RuntimeInstance.h"
 #include "shash.h"
 #include "module.h"
@@ -62,46 +63,29 @@ PTR_VOID Thread::GetTransitionFrameForStackTrace()
     return m_pHackPInvokeTunnel;
 }
 
-void Thread::LeaveRendezVous(void * pTransitionFrame)
+void Thread::WaitForSuspend()
 {
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-
-    // ORDERING -- this write must occur before checking the trap
-    m_pTransitionFrame = pTransitionFrame;
-
-    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
-    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
-    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
-    _ReadWriteBarrier(); 
-
-    if (ThreadStore::IsTrapThreadsRequested())
-    {
-        Unhijack();
-        GetThreadStore()->WaitForSuspendComplete();
-    }
+    Unhijack();
+    GetThreadStore()->WaitForSuspendComplete();
 }
 
-bool Thread::TryReturnRendezVous(void * pTransitionFrame)
+void Thread::WaitForGC(void * pTransitionFrame)
 {
-    ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(!IsDoNotTriggerGcSet());
 
-    // ORDERING -- this write must occur before checking the trap
-    m_pTransitionFrame = 0;
-
-    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
-    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
-    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
-    _ReadWriteBarrier();
-
-    if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
+    do
     {
-        // Oops, a suspend request is pending.  Go back to preemptive mode and wait.
         m_pTransitionFrame = pTransitionFrame;
+
+        Unhijack();
         RedhawkGCInterface::WaitForGCCompletion();
-        // a retry is now required
-        return false;
+
+        m_pTransitionFrame = NULL;
+
+        // We need to prevent compiler reordering between above write and below read.
+        _ReadWriteBarrier();
     }
-    return true;
+    while (ThreadStore::IsTrapThreadsRequested());
 }
 
 //
@@ -152,20 +136,36 @@ void Thread::EnablePreemptiveMode()
 
     Unhijack();
 
-    LeaveRendezVous(m_pHackPInvokeTunnel);
+    // ORDERING -- this write must occur before checking the trap
+    m_pTransitionFrame = m_pHackPInvokeTunnel;
+
+    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
+    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
+    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
+    _ReadWriteBarrier();
+
+    if (ThreadStore::IsTrapThreadsRequested())
+    {
+        WaitForSuspend();
+    }
 }
 
 void Thread::DisablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
 
-    bool success = false;
+    // ORDERING -- this write must occur before checking the trap
+    m_pTransitionFrame = NULL;
 
-    do
+    // We need to prevent compiler reordering between above write and below read.  Both the read and the write
+    // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
+    // but if not, this barrier would be required.  If so, it won't change anything to add the barrier.
+    _ReadWriteBarrier();
+
+    if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
     {
-        success = TryReturnRendezVous(m_pHackPInvokeTunnel);
+        WaitForGC(m_pHackPInvokeTunnel);
     }
-    while (!success);
 }
 
 // This function setups the m_pHackPInvokeTunnel field for GC helpers entered via regular PInvoke.
@@ -658,7 +658,7 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void* HijackTarge
 {
     bool fSuccess = false;
 
-    if (IsStateSet(TSF_DoNotTriggerGc))
+    if (IsDoNotTriggerGcSet())
         return false;
 
     StackFrameIterator frameIterator(this, pSuspendCtx);
@@ -869,7 +869,8 @@ EXTERN_C void FASTCALL RhpUnsuppressGcStress()
 }
 #endif // FEATURE_GC_STRESS
 
-EXTERN_C void FASTCALL RhpPInvokeWaitEx(Thread * pThread)
+// Standard calling convention variant and actual implementation for RhpWaitForSuspend
+EXTERN_C NOINLINE void FASTCALL RhpWaitForSuspend2()
 {
 #ifdef _DEBUG
     // PInvoke must not trash win32 last error.  The wait operations below never should trash the last error,
@@ -879,13 +880,13 @@ EXTERN_C void FASTCALL RhpPInvokeWaitEx(Thread * pThread)
     UInt32 uLastErrorOnEntry = PalGetLastError();
 #endif // _DEBUG
 
-    pThread->Unhijack();
-    GetThreadStore()->WaitForSuspendComplete();
+    ThreadStore::GetCurrentThread()->WaitForSuspend();
 
     ASSERT_MSG(uLastErrorOnEntry == PalGetLastError(), "Unexpectedly trashed last error on PInvoke path!");
 }
 
-EXTERN_C void FASTCALL RhpPInvokeReturnWaitEx(Thread * pThread)
+// Standard calling convention variant and actual implementation for RhpWaitForGC
+EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 {
 #ifdef _DEBUG
     // PInvoke must not trash win32 last error.  The wait operations below never should trash the last error,
@@ -895,11 +896,12 @@ EXTERN_C void FASTCALL RhpPInvokeReturnWaitEx(Thread * pThread)
     UInt32 uLastErrorOnEntry = PalGetLastError();
 #endif // _DEBUG
 
-    pThread->Unhijack();
-    if (!pThread->IsDoNotTriggerGcSet())
-    {
-        RedhawkGCInterface::WaitForGCCompletion();
-    }
+    Thread * pThread = pFrame->m_pThread;
+
+    if (pThread->IsDoNotTriggerGcSet())
+        return;
+
+    pThread->WaitForGC(pFrame);
 
     ASSERT_MSG(uLastErrorOnEntry == PalGetLastError(), "Unexpectedly trashed last error on PInvoke path!");
 }
@@ -1051,9 +1053,7 @@ EXTERN_C REDHAWK_API UInt32 __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL ale
 }
 #endif // PLATFORM_UNIX
 
-EXTERN_C volatile UInt32 RhpTrapThreads;
-
-bool Thread::TryFastReversePInvoke(ReversePInvokeFrame * pFrame)
+FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame)
 {
     // Do we need to attach the thread?
     if (!IsStateSet(TSF_Attached))
@@ -1063,8 +1063,18 @@ bool Thread::TryFastReversePInvoke(ReversePInvokeFrame * pFrame)
     // a do not trigger mode.  The exception to the rule allows us to have [NativeCallable] methods that are called via 
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable 
     // methods on interfaces passed to native.
-    if (IsCurrentThreadInCooperativeMode() && !IsStateSet(TSF_DoNotTriggerGc))
+    if (IsCurrentThreadInCooperativeMode())
+    {
+        if (IsDoNotTriggerGcSet())
+        {
+            // RhpTrapThreads will always be set in this case, so we must skip that check.  We must be sure to 
+            // zero-out our 'previous transition frame' state first, however.
+            pFrame->m_savedPInvokeTransitionFrame = NULL;
+            return true;
+        }
+
         return false; // bad transition
+    }
 
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
@@ -1072,8 +1082,11 @@ bool Thread::TryFastReversePInvoke(ReversePInvokeFrame * pFrame)
     // set our mode to cooperative
     m_pTransitionFrame = NULL;
 
+    // We need to prevent compiler reordering between above write and below read.
+    _ReadWriteBarrier();
+
     // now check if we need to trap the thread
-    if (RhpTrapThreads != 0)
+    if (ThreadStore::IsTrapThreadsRequested())
     {
         // put the previous frame back (sets us back to preemptive mode)
         m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
@@ -1083,54 +1096,75 @@ bool Thread::TryFastReversePInvoke(ReversePInvokeFrame * pFrame)
     return true;
 }
 
-EXTERN_C void REDHAWK_CALLCONV RhpReversePInvokeBadTransition(IntNative pReturnAddress);
-
-void Thread::ReversePInvoke(ReversePInvokeFrame * pFrame)
+void Thread::ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame)
 {
     if (!IsStateSet(TSF_Attached))
         ThreadStore::AttachCurrentThread();
 
-    // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in 
-    // a do not trigger mode.  The exception to the rule allows us to have [NativeCallable] methods that are called via 
-    // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable 
-    // methods on interfaces passed to native.
-    if (IsCurrentThreadInCooperativeMode() && !IsStateSet(TSF_DoNotTriggerGc))
+    // If the thread is already in cooperative mode, this is a bad transition.
+    if (IsCurrentThreadInCooperativeMode())
     {
-        // @TODO: CORERT: Pass in the actual return address here
-        RhpReversePInvokeBadTransition(0);
-    }
+        // The TSF_DoNotTriggerGc mode is handled by the fast path (InlineTryFastReversePInvoke or equivalent assembly code)
+        ASSERT(!IsDoNotTriggerGcSet());
 
-    for (;;)
+        // The platform specific assembly PInvoke helpers will route this fault to the class library inferred from the return 
+        // address for nicer error reporting. For configurations without assembly helpers, we are going to fail fast without 
+        // going through the class library here.
+        // RhpReversePInvokeBadTransition(return address);
+        RhFailFast();
+   }
+
+    // save the previous transition frame
+    pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
+
+    // set our mode to cooperative
+    m_pTransitionFrame = NULL;
+
+    // We need to prevent compiler reordering between above write and below read.
+    _ReadWriteBarrier();
+
+    // now check if we need to trap the thread
+    if (ThreadStore::IsTrapThreadsRequested())
     {
-        // save the previous transition frame
-        pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
-
-        // set our mode to cooperative
-        m_pTransitionFrame = NULL;
-
-        // now check if we need to trap the thread
-        if (RhpTrapThreads == 0)
-        {
-            break;
-        }
-        else
-        {
-            // put the previous frame back (sets us back to preemptive mode)
-            m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
-            // wait
-            RhpPInvokeReturnWaitEx(this);
-            // now try again
-        }
+        WaitForGC(pFrame->m_savedPInvokeTransitionFrame);
     }
 }
 
-void Thread::ReversePInvokeReturn(ReversePInvokeFrame * pFrame)
+FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame)
 {
     m_pTransitionFrame = pFrame->m_savedPInvokeTransitionFrame;
-    if (RhpTrapThreads != 0)
+    if (ThreadStore::IsTrapThreadsRequested())
     {
-        RhpPInvokeWaitEx(this);
+        RhpWaitForSuspend2();
     }
+}
+
+// Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
+EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame * pFrame)
+{
+    ASSERT(pFrame->m_savedThread == ThreadStore::RawGetCurrentThread());
+    pFrame->m_savedThread->ReversePInvokeAttachOrTrapThread(pFrame);
+}
+
+//
+// PInvoke
+//
+
+// Standard calling convention variant of RhpReversePInvoke
+COOP_PINVOKE_HELPER(void, RhpReversePInvoke2, (ReversePInvokeFrame * pFrame))
+{
+    Thread * pCurThread = ThreadStore::RawGetCurrentThread();
+    pFrame->m_savedThread = pCurThread;
+    if (pCurThread->InlineTryFastReversePInvoke(pFrame))
+        return;
+
+    RhpReversePInvokeAttachOrTrapThread2(pFrame);
+}
+
+// Standard calling convention variant of RhpReversePInvokeReturn
+COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn2, (ReversePInvokeFrame * pFrame))
+{
+    pFrame->m_savedThread->InlineReversePInvokeReturn(pFrame);
 }
 
 #endif // !DACCESS_COMPILE

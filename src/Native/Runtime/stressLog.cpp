@@ -30,6 +30,7 @@
 #include "RWLock.h"
 #include "event.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 
 template<typename T> inline T VolatileLoad(T const * pt) { return *(T volatile const *)pt; }
 template<typename T> inline void VolatileStore(T* pt, T val) { *(T volatile *)pt = val; }

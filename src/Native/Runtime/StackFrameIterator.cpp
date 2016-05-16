@@ -20,6 +20,7 @@
 #include "RWLock.h"
 #include "event.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "stressLog.h"
 
 #include "shash.h"
