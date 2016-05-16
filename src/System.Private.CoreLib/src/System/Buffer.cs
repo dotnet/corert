@@ -36,7 +36,7 @@ namespace System
             if (!srcCorElementTypeInfo.IsPrimitive)
                 throw new ArgumentException(SR.Arg_MustBePrimArray, "src");
 
-            if (src != dst)
+            if (src != dst && src.EETypePtr != dst.EETypePtr)
             {
                 RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
                 if (!dstCorElementTypeInfo.IsPrimitive)
