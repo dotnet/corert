@@ -250,7 +250,6 @@ $Name
         SETALIAS G_EPHEMERAL_LOW, g_ephemeral_low
         SETALIAS G_EPHEMERAL_HIGH, g_ephemeral_high
         SETALIAS G_CARD_TABLE, g_card_table
-        SETALIAS THREADSTORE__ATTACHCURRENTTHREAD, ?AttachCurrentThread@ThreadStore@@SAXXZ
         SETALIAS G_FREE_OBJECT_EETYPE, ?g_pFreeObjectMethodTable@@3PAVMethodTable@@A
 #ifdef FEATURE_GC_STRESS
         SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPAUPAL_LIMITED_CONTEXT@@@Z
@@ -260,10 +259,10 @@ $Name
 ;; IMPORTS
 ;;
         EXTERN $REDHAWKGCINTERFACE__ALLOC
-        EXTERN $THREADSTORE__ATTACHCURRENTTHREAD
         EXTERN $PALDEBUGBREAK
-        EXTERN RhpPInvokeWaitEx
-        EXTERN RhpPInvokeReturnWaitEx
+        EXTERN RhpWaitForSuspend2
+        EXTERN RhpWaitForGC2
+        EXTERN RhpReversePInvokeAttachOrTrapThread2
         EXTERN RhExceptionHandling_FailedAllocation
         EXTERN RhpPublishObject
         EXTERN RhpCalculateStackTraceWorker

@@ -27,6 +27,7 @@
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 
 #include "eetype.h"
 #include "ObjectLayout.h"
@@ -54,24 +55,6 @@ struct alloc_context
 #endif // defined(FEATURE_SVR_GC)
     int            alloc_count;
 };
-
-//
-// PInvoke
-//
-COOP_PINVOKE_HELPER(void, RhpReversePInvoke2, (ReversePInvokeFrame* pFrame))
-{
-    Thread* pCurThread = ThreadStore::RawGetCurrentThread();
-    pFrame->m_savedThread = pCurThread;
-    if (pCurThread->TryFastReversePInvoke(pFrame))
-        return;
-
-    pCurThread->ReversePInvoke(pFrame);
-}
-
-COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame* pFrame))
-{
-    pFrame->m_savedThread->ReversePInvokeReturn(pFrame);
-}
 
 #if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
