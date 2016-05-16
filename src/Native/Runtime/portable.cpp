@@ -67,7 +67,7 @@ COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
 
 COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
 {
-    // TODO: RhpReversePInvokeReturn
+    // TODO: RhpPInvokeReturn
 }
 
 //

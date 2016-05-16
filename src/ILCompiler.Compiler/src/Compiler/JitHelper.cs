@@ -226,7 +226,7 @@ namespace ILCompiler
                     mangledName = "RhpReversePInvoke2";
                     break;
                 case JitHelperId.ReversePInvokeExit:
-                    mangledName = "RhpReversePInvokeReturn";
+                    mangledName = "RhpReversePInvokeReturn2";
                     break;
 
                 default:
