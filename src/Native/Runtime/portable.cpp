@@ -27,6 +27,7 @@
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 
 #include "eetype.h"
 #include "ObjectLayout.h"
@@ -67,21 +68,6 @@ COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
 COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
 {
     // TODO: RhpReversePInvokeReturn
-}
-
-COOP_PINVOKE_HELPER(void, RhpReversePInvoke2, (ReversePInvokeFrame* pFrame))
-{
-    Thread* pCurThread = ThreadStore::RawGetCurrentThread();
-    pFrame->m_savedThread = pCurThread;
-    if (pCurThread->TryFastReversePInvoke(pFrame))
-        return;
-
-    pCurThread->ReversePInvoke(pFrame);
-}
-
-COOP_PINVOKE_HELPER(void, RhpReversePInvokeReturn, (ReversePInvokeFrame* pFrame))
-{
-    pFrame->m_savedThread->ReversePInvokeReturn(pFrame);
 }
 
 //

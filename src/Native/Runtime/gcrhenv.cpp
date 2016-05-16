@@ -33,6 +33,7 @@
 #include "RhConfig.h"
 
 #include "threadstore.h"
+#include "threadstore.inl"
 
 #include "gcdesc.h"
 #include "SyncClean.hpp"

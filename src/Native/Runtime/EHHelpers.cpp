@@ -19,10 +19,11 @@
 #include "Crst.h"
 #include "RuntimeInstance.h"
 #include "event.h"
-#include "threadstore.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
+#include "threadstore.h"
+#include "threadstore.inl"
 #include "stressLog.h"
 
 // Find the code manager containing the given address, which might be a return address from a managed function. The
