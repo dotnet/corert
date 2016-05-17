@@ -100,7 +100,7 @@
         <dependency id="System.Runtime.CompilerServices.Unsafe" version="4.0.0-rc3-24102-00" />
         <dependency id="System.Xml.ReaderWriter" version="4.0.0" />
         <dependency id="Microsoft.DiaSymReader" version="1.0.8-rc2-60325" />
-        <dependency id="System.CommandLine" version="0.1.0-e160323-1" />
+        <dependency id="System.CommandLine" version="0.1.0-e160514-1" />
                     ]]></Dependencies>
             </NuSpecFile>
             
