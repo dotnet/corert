@@ -37,7 +37,7 @@ namespace System.Threading
                 throw new ArgumentNullException("obj");
 
             if (Lock.IsLock(obj))
-                return (Lock)obj;
+                return RuntimeHelpers.UncheckedCast<Lock>(obj);
 
             return GetLockFromTable(obj);
         }
