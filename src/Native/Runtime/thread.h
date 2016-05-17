@@ -145,12 +145,6 @@ private:
     //
     PTR_VOID    GetTransitionFrame();
 
-    //
-    // Synchronous state transitions -- these must occur on the thread whose state is changing
-    //
-    void        LeaveRendezVous(void * pTransitionFrame);
-    bool        TryReturnRendezVous(void * pTransitionFrame);
-
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
 public:
@@ -234,9 +228,16 @@ public:
     bool IsGCSpecial();
     bool CatchAtSafePoint();
 
-    bool TryFastReversePInvoke(ReversePInvokeFrame * pFrame);
-    void ReversePInvoke(ReversePInvokeFrame * pFrame);
-    void ReversePInvokeReturn(ReversePInvokeFrame * pFrame);
+    //
+    // Managed/unmanaged interop transitions support APIs
+    //
+    void WaitForSuspend();
+    void WaitForGC(void * pTransitionFrame);
+
+    void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);
+
+    bool InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame);
+    void InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame);
 };
 
 #ifndef GCENV_INCLUDED

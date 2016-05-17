@@ -26,6 +26,7 @@
 #include "thread.h"
 #include "event.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "gcrhinterface.h"
 #include "shash.h"
 #include "module.h"

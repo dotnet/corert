@@ -383,7 +383,6 @@ MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -8
 
 PALDEBUGBREAK                               equ ?PalDebugBreak@@YAXXZ
 REDHAWKGCINTERFACE__ALLOC                   equ ?Alloc@RedhawkGCInterface@@SAPEAXPEAVThread@@_KIPEAVEEType@@@Z
-THREADSTORE__ATTACHCURRENTTHREAD            equ ?AttachCurrentThread@ThreadStore@@SAXXZ
 THREAD__VALIDATEEXINFOPOP                   equ ?ValidateExInfoPop@Thread@@QEAAXPEAUExInfo@@PEAX@Z
 
 ifdef FEATURE_GC_STRESS
@@ -396,11 +395,11 @@ endif ;; FEATURE_GC_STRESS
 ;;
 
 EXTERN REDHAWKGCINTERFACE__ALLOC                : PROC
-EXTERN THREADSTORE__ATTACHCURRENTTHREAD         : PROC
 EXTERN THREAD__VALIDATEEXINFOPOP                : PROC
 EXTERN PALDEBUGBREAK                            : PROC
-EXTERN RhpPInvokeWaitEx                         : PROC
-EXTERN RhpPInvokeReturnWaitEx                   : PROC
+EXTERN RhpWaitForSuspend2                       : PROC
+EXTERN RhpWaitForGC2                            : PROC
+EXTERN RhpReversePInvokeAttachOrTrapThread2     : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhpPublishObject                         : PROC
 EXTERN RhpCalculateStackTraceWorker             : PROC

@@ -19,6 +19,7 @@
 #include "event.h"
 #include "RWLock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "RuntimeInstance.h"
 #include "ObjectLayout.h"
 #include "TargetPtrs.h"
@@ -294,12 +295,6 @@ void ThreadStore::ResumeAllThreads(CLREventStatic* pCompletionEvent)
     UnlockThreadStore();
 } // ResumeAllThreads
 
-// static
-bool ThreadStore::IsTrapThreadsRequested()
-{
-    return (RhpTrapThreads != 0);
-}
-
 void ThreadStore::WaitForSuspendComplete()
 {
     UInt32 waitResult = m_SuspendCompleteEvent.Wait(INFINITE, false);
@@ -344,33 +339,6 @@ void * ThreadStore::CreateCurrentThreadBuffer()
     ASSERT(RhpGetThread() == pvBuffer);
 
     return pvBuffer;
-}
-
-// static
-Thread * ThreadStore::RawGetCurrentThread()
-{
-    return (Thread *) &tls_CurrentThread;
-}
-
-// static
-Thread * ThreadStore::GetCurrentThread()
-{
-    Thread * pCurThread = RawGetCurrentThread();
-
-    // If this assert fires, and you only need the Thread pointer if the thread has ever previously
-    // entered the runtime, then you should be using GetCurrentThreadIfAvailable instead.
-    ASSERT(pCurThread->IsInitialized());    
-    return pCurThread;
-};
-
-// static
-Thread * ThreadStore::GetCurrentThreadIfAvailable()
-{
-    Thread * pCurThread = RawGetCurrentThread();
-    if (pCurThread->IsInitialized())
-        return pCurThread;
-
-    return NULL;
 }
 #endif // !DACCESS_COMPILE
 

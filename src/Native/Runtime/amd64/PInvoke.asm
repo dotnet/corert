@@ -35,9 +35,7 @@ NESTED_ENTRY RhpWaitForSuspend, _TEXT
 
         END_PROLOGUE
 
-        ; passing Thread pointer in rcx
-        INLINE_GETTHREAD rcx, rdx
-        call        RhpPInvokeWaitEx
+        call        RhpWaitForSuspend2
 
         movdqa      xmm0, [rsp + 20h + 0*10h]
         movdqa      xmm1, [rsp + 20h + 1*10h]
@@ -67,54 +65,25 @@ NESTED_END RhpWaitForSuspend, _TEXT
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpWaitForGC, _TEXT
         push_vol_reg    rax                 ; don't trash the integer return value
-        push_nonvol_reg rbx
-        alloc_stack     38h
+        alloc_stack     30h
         movdqa          [rsp + 20h], xmm0   ; don't trash the FP return value
         END_PROLOGUE
 
-        mov         rbx, rcx
+        mov         rdx, [rcx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
 
-RetryWaitForGC:
-        ; RBX: transition frame
-        mov         rcx, [rbx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
-
-        test        dword ptr [rcx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
+        test        dword ptr [rdx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
         jnz         Done
 
-        mov         [rcx + OFFSETOF__Thread__m_pTransitionFrame], rbx
-        
-        ; passing thread pointer in rcx
-        call        RhpPInvokeReturnWaitEx
-        
-        mov         rcx, [rbx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
-        mov         qword ptr [rcx + OFFSETOF__Thread__m_pTransitionFrame], 0
-
-        cmp         [RhpTrapThreads], 0
-        jne         RetryWaitForGC
+        ; passing transition frame pointer in rcx
+        call        RhpWaitForGC2
 
 Done:
         movdqa      xmm0, [rsp + 20h]
-        add         rsp, 38h
-        pop         rbx
+        add         rsp, 30h
         pop         rax
         ret
 
 NESTED_END RhpWaitForGC, _TEXT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpReversePInvoke2
-;;
-;; INCOMING: RCX -- address of reverse pinvoke frame
-;;
-;; This is useful for calling with a standard calling convention for code generators that don't insert this in 
-;; the prolog.
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-LEAF_ENTRY RhpReversePInvoke2, _TEXT
-        mov         rax, rcx
-        jmp         RhpReversePInvoke
-LEAF_END RhpReversePInvoke2, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -145,15 +114,8 @@ LEAF_ENTRY RhpReversePInvoke, _TEXT
         ;;     2) Performing a managed delegate invoke on a reverse pinvoke delegate.
         ;;
         cmp         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], 0
-        jne         ValidTransition
+        je          CheckBadTransition
 
-        ;; Allow 'bad transitions' in when the TSF_DoNotTriggerGc mode is set.  This allows us to have 
-        ;; [NativeCallable] methods that are called via the "restricted GC callouts" as well as from native,
-        ;; which is necessary because the methods are CCW vtable methods on interfaces passed to native.
-        test        dword ptr [r10 + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
-        jz          BadTransition
-
-ValidTransition:
         ; rax: reverse pinvoke frame
         ; r10: thread
 
@@ -168,40 +130,46 @@ ValidTransition:
 
         ret
 
+CheckBadTransition:
+        ;; Allow 'bad transitions' in when the TSF_DoNotTriggerGc mode is set.  This allows us to have 
+        ;; [NativeCallable] methods that are called via the "restricted GC callouts" as well as from native,
+        ;; which is necessary because the methods are CCW vtable methods on interfaces passed to native.
+        test        dword ptr [r10 + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
+        jz          BadTransition
 
-AttachThread:
-        mov         r11, 1
-        jmp         RhpReversePInvoke_RarePath
-
-BadTransition:
-        mov         r11, 2
-        jmp         RhpReversePInvoke_RarePath
+        ;; RhpTrapThreads will always be set in this case, so we must skip that check.  We must be sure to 
+        ;; zero-out our 'previous transition frame' state first, however.
+        mov         qword ptr [rax], 0
+        ret
 
 TrapThread:
-        mov         r11, 3
-        jmp         RhpReversePInvoke_RarePath
+        ;; put the previous frame back (sets us back to preemptive mode)
+        mov         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], r11
+
+AttachThread:
+        ; passing address of reverse pinvoke frame in rax
+        jmp         RhpReversePInvokeAttachOrTrapThread
+
+BadTransition:
+        mov         rcx, qword ptr [rsp]    ; arg <- return address
+        jmp         RhpReversePInvokeBadTransition
 
 LEAF_END RhpReversePInvoke, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpReversePInvoke_RarePath
+;; RhpReversePInvokeAttachOrTrapThread
 ;;
 ;;
 ;; INCOMING:  RAX -- address of reverse pinvoke frame
-;;                          0: save slot for previous M->U transition frame
-;;                          8: save slot for thread pointer to avoid re-calc in epilog sequence
-;;            R10 -- thread pointer
-;;            R11 -- reason for entering the rare path {1: attach thread, 2: bad transition, 3: trap thread}
 ;;
 ;; PRESERVES: RCX, RDX, R8, R9 -- need to preserve these because the caller assumes they aren't trashed
 ;;
 ;; TRASHES:   RAX, R10, R11
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpReversePInvoke_RarePath, _TEXT
-        push_nonvol_reg rbx
-        alloc_stack     80h     ; alloc scratch area and frame
+NESTED_ENTRY RhpReversePInvokeAttachOrTrapThread, _TEXT
+        alloc_stack     88h     ; alloc scratch area and frame
 
         ; save the integer arg regs
         save_reg_postrsp        rcx, (20h + 0*8)
@@ -217,50 +185,9 @@ NESTED_ENTRY RhpReversePInvoke_RarePath, _TEXT
 
         END_PROLOGUE
 
-        mov         rbx, rax    ; RBX <- address of previous frame save slot
-        
-        cmp         r11, 1
-        je          AttachThread
-        cmp         r11, 2
-        je          BadTransition
-        cmp         r11, 3
-        je          TrapThread
+        mov         rcx, rax        ; rcx <- reverse pinvoke frame
+        call        RhpReversePInvokeAttachOrTrapThread2
 
-        ; error: you called this function incorrectly
-        call        PALDEBUGBREAK
-        int 3
-
-Retry:
-        ; rbx: reverse pinvoke frame
-
-        ;; R10 = GetThread()
-        mov         r10, [rbx + 8]
-
-        test        dword ptr [r10 + OFFSETOF__Thread__m_ThreadStateFlags], TSF_Attached
-        jz          AttachThread
-
-        ;;
-        ;; Check for the correct mode.  This is accessible via various odd things that we cannot completely 
-        ;; prevent such as :
-        ;;     1) Registering a reverse pinvoke entrypoint as a vectored exception handler
-        ;;     2) Performing a managed delegate invoke on a reverse pinvoke delegate.
-        ;;
-        cmp         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], 0
-        je          CheckBadTransition
-
-        ; rbx: previous transition frame save slot
-        ; r10: thread
-
-        ; Save previous TransitionFrame prior to making the mode transition so that it is always valid 
-        ; whenever we might attempt to hijack this thread.
-        mov         r11, [r10 + OFFSETOF__Thread__m_pTransitionFrame]
-        mov         [rbx], r11
-
-        mov         qword ptr [r10 + OFFSETOF__Thread__m_pTransitionFrame], 0
-        cmp         [RhpTrapThreads], 0
-        jne         TrapThread
-
-AllDone:
         movdqa      xmm0, [rsp + (20h + 4*8 + 0*10h)]
         movdqa      xmm1, [rsp + (20h + 4*8 + 1*10h)]
         movdqa      xmm2, [rsp + (20h + 4*8 + 2*10h)]
@@ -272,51 +199,10 @@ AllDone:
         mov         r9,  [rsp + (20h + 3*8)]
 
         ;; epilog
-        add         rsp, 80h
-        pop         rbx                 ; restore preserved reg
+        add         rsp, 88h
         ret
 
-CheckBadTransition:
-        ;; Allow 'bad transitions' in when the TSF_DoNotTriggerGc mode is set.  This allows us to have 
-        ;; [NativeCallable] methods that are called via the "restricted GC callouts" as well as from native,
-        ;; which is necessary because the methods are CCW vtable methods on interfaces passed to native.
-        test        dword ptr [r10 + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
-        jz          BadTransition
-
-        ;; RhpTrapThreads will always be set in this case, so we must skip that check.  We must be sure to 
-        ;; zero-out our 'previous transition frame' state first, however.
-        mov         qword ptr [rbx], 0
-        jmp         AllDone
-
-
-AttachThread:
-        ;;
-        ;; Thread attach is done here to avoid taking the ThreadStore lock while in DllMain.  The lock is 
-        ;; avoided for DllMain thread attach notifications, but not process attach notifications because
-        ;; our managed DllMain does work during process attach, so it needs to reverse pinvoke.
-        ;;
-        call        THREADSTORE__ATTACHCURRENTTHREAD
-        jmp         Retry
-
-TrapThread:
-        ; rbx: previous transition frame save slot
-        ; r10: thread
-
-        mov         rcx, [rbx]
-        mov         [r10 + OFFSETOF__Thread__m_pTransitionFrame], rcx
-
-        mov         rcx, r10    ; passing Thread pointer in rcx
-        call        RhpPInvokeReturnWaitEx
-        jmp         Retry
-
-BadTransition:
-        add         rsp, 80h
-        pop         rbx                 ; restore preserved reg
-
-        mov         rcx, qword ptr [rsp]    ; arg <- return address
-        jmp         RhpReversePInvokeBadTransition
-
-NESTED_END RhpReversePInvoke_RarePath, _TEXT
+NESTED_END RhpReversePInvokeAttachOrTrapThread, _TEXT
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

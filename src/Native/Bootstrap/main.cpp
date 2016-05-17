@@ -135,7 +135,7 @@ void __range_check_fail()
 
 
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
-extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
+extern "C" void RhpReversePInvokeReturn2(ReversePInvokeFrame* pRevFrame);
 extern "C" int32_t RhpEnableConservativeStackReporting();
 
 extern "C" bool RhpRegisterCoffModule(void * pModule, 
@@ -172,7 +172,7 @@ void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame)
 
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
 {
-    RhpReversePInvokeReturn(pRevFrame);
+    RhpReversePInvokeReturn2(pRevFrame);
 }
 
 namespace System_Private_CoreLib { namespace System { 

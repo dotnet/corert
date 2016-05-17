@@ -23,9 +23,7 @@
         PROLOG_PUSH {r0-r4,lr}     ; Need to save argument registers r0-r3 and lr, r4 is just for alignment
         PROLOG_VPUSH {d0-d7}       ; Save float argument registers as well since they're volatile
 
-        ; passing Thread pointer in r0, trashes r1
-        INLINE_GETTHREAD r0, r1
-        bl          RhpPInvokeWaitEx
+        bl          RhpWaitForSuspend2
         
         EPILOG_VPOP {d0-d7}
         EPILOG_POP  {r0-r4,pc}
@@ -48,54 +46,20 @@
         PROLOG_PUSH {r0,r1,r4-r6,lr}  ; Even number of registers to maintain 8-byte stack alignment
         PROLOG_VPUSH {d0-d3}          ; Save float return value registers as well
 
-        mov         r4, r2
-        ldr         r5, [r4, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
+        ldr         r5, [r2, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
 
         ldr         r0, [r5, #OFFSETOF__Thread__m_ThreadStateFlags]
         tst         r0, #TSF_DoNotTriggerGc
         bne         Done
 
-RetryWaitForGC
-        ; r4: transition frame
-        ; r5: thread
-
-        str         r4, [r5, #OFFSETOF__Thread__m_pTransitionFrame]
-        dmb
-
-        mov         r0, r5                      ; passing Thread in r0
-        bl          RhpPInvokeReturnWaitEx
-
-        mov         r0, #0
-        str         r0, [r5, #OFFSETOF__Thread__m_pTransitionFrame]
-        dmb
-
-        ldr         r0, =RhpTrapThreads
-        ldr         r0, [r0]
-        cmp         r0, #0
-        bne         RetryWaitForGC
+        mov         r0, r2                      ; passing transition frame in r0
+        bl          RhpWaitForGC2
 
 Done
         EPILOG_VPOP {d0-d3}
         EPILOG_POP  {r0,r1,r4-r6,pc}
 
         NESTED_END RhpWaitForGC
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; RhpReversePInvoke2
-;;
-;; INCOMING: r0 -- address of reverse pinvoke frame
-;;
-;; This is useful for calling with a standard calling convention for code generators that don't insert this in 
-;; the prolog.
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        LEAF_ENTRY RhpReversePInvoke2
-
-        mov         r4, r0
-        b           RhpReversePInvoke
-
-        LEAF_END RhpReversePInvoke2
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -136,7 +100,6 @@ ThreadAttached
         ;; whenever we might attempt to hijack this thread.
         str         r6, [r4]
 
-ReverseRetry
         mov         r6, #0
         str         r6, [r5, #OFFSETOF__Thread__m_pTransitionFrame]
         dmb
@@ -166,24 +129,17 @@ CheckBadTransition
         b           AllDone
 
 TrapThread
-        ; r4 = prev save slot
-        ; r5 = thread
-        ; r6 = scratch
-        
+        ;; put the previous frame back (sets us back to preemptive mode)
         ldr         r6, [r4]
         str         r6, [r5, #OFFSETOF__Thread__m_pTransitionFrame]
         dmb
 
-        ; passing Thread pointer in r5
-        bl          RhpReversePInvokeTrapThread
-        b           ReverseRetry
-
 AttachThread
-        bl          RhpReversePInvokeAttachThread
-        b           ThreadAttached
+        ; passing address of reverse pinvoke frame in r4
+        EPILOG_POP  {r5-r7,lr}
+        EPILOG_BRANCH RhpReversePInvokeAttachOrTrapThread
 
 BadTransition
-
         EPILOG_POP  {r5-r7,lr}
         EPILOG_NOP  mov r0, lr  ; arg <- return address
         EPILOG_BRANCH RhpReversePInvokeBadTransition
@@ -195,55 +151,27 @@ BadTransition
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; RhpReversePInvokeTrapThread -- rare path for RhpPInvoke
+;; RhpReversePInvokeAttachOrTrapThread -- rare path for RhpPInvoke
 ;;
 ;;
-;; INPUT: r5 = thread
+;; INPUT: r4: address of reverse pinvoke frame
 ;;
 ;; TRASHES: none
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        NESTED_ENTRY RhpReversePInvokeTrapThread
+        NESTED_ENTRY RhpReversePInvokeAttachOrTrapThread
 
         PROLOG_PUSH {r0-r4,lr}     ; Need to save argument registers r0-r3 and lr, r4 is just for alignment
         PROLOG_VPUSH {d0-d7}       ; Save float argument registers as well since they're volatile
 
-        mov         r0, r5         ; passing Thread pointer in r0
-        bl          RhpPInvokeReturnWaitEx
+        mov         r0, r4         ; passing reverse pinvoke frame pointer in r0
+        bl          RhpReversePInvokeAttachOrTrapThread2
 
         EPILOG_VPOP {d0-d7}
         EPILOG_POP  {r0-r4,pc}
 
         NESTED_END RhpReversePInvokeTrapThread
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; AttachCurrentThread -- rare path for RhpPInvoke
-;;
-;;
-;; INPUT: none
-;;
-;; TRASHES: none
-;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        NESTED_ENTRY RhpReversePInvokeAttachThread
-
-        ;;
-        ;; Thread attach is done here to avoid taking the ThreadStore lock while in DllMain.  The lock is 
-        ;; avoided for DllMain thread attach notifications, but not process attach notifications because
-        ;; our managed DllMain does work during process attach, so it needs to reverse pinvoke.
-        ;;
-
-        PROLOG_PUSH {r0-r4,lr}     ; Need to save argument registers r0-r3 and lr, r4 is just for alignment
-        PROLOG_VPUSH {d0-d7}       ; Save float argument registers as well since they're volatile
-
-        bl          $THREADSTORE__ATTACHCURRENTTHREAD
-        
-        EPILOG_VPOP {d0-d7}
-        EPILOG_POP  {r0-r4,pc}
-
-        NESTED_END RhpReversePInvokeAttachThread
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
