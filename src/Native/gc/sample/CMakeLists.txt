@@ -29,6 +29,6 @@ else()
         gcenv.unix.cpp)
 endif()
 
-_add_executable(gcsample
+add_executable(gcsample
     ${SOURCES}
 )
