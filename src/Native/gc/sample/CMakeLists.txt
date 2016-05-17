@@ -17,6 +17,7 @@ set(SOURCES
     ../handletablecore.cpp
     ../handletablescan.cpp
     ../objecthandle.cpp
+    ../softwarewritewatch.cpp
 )
 
 if(WIN32)
@@ -28,6 +29,6 @@ else()
         gcenv.unix.cpp)
 endif()
 
-add_executable(gcsample
+_add_executable(gcsample
     ${SOURCES}
 )
