@@ -1814,11 +1814,12 @@ namespace System
                 throw new ArgumentNullException("keys");
             if (keys.Rank != 1 || (items != null && items.Rank != 1))
                 throw new RankException(SR.Rank_MultiDimNotSupported);
-            if (items != null && keys.GetLowerBound(0) != items.GetLowerBound(0))
+            int keysLowerBound = keys.GetLowerBound(0);
+            if (items != null && keysLowerBound != items.GetLowerBound(0))
                 throw new ArgumentException(SR.Arg_LowerBoundsMustMatch);
-            if (index < keys.GetLowerBound(0) || length < 0)
+            if (index < keysLowerBound || length < 0)
                 throw new ArgumentOutOfRangeException((length < 0 ? "length" : "index"), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (keys.Length - (index - keys.GetLowerBound(0)) < length || (items != null && (index - items.GetLowerBound(0)) > items.Length - length))
+            if (keys.Length - (index - keysLowerBound) < length || (items != null && (index - keysLowerBound) > items.Length - length))
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
             if (length > 1)
