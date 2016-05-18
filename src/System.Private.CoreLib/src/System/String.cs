@@ -871,12 +871,12 @@ namespace System
 
         public override bool Equals(Object obj)
         {
+            if (Object.ReferenceEquals(this, obj))
+                return true;
+                
             String str = obj as String;
             if (str == null)
                 return false;
-
-            if (Object.ReferenceEquals(this, obj))
-                return true;
 
             if (this.Length != str.Length)
                 return false;
@@ -889,11 +889,15 @@ namespace System
 
         public bool Equals(String value)
         {
-            if (value == null)
-                return false;
-
             if (Object.ReferenceEquals(this, value))
                 return true;
+            
+            // NOTE: No need to worry about casting to object here.
+            // If either side of an == comparison between strings
+            // is null, Roslyn generates a simple ceq instruction
+            // instead of calling string.op_Equality.
+            if (value == null)
+                return false;
 
             if (this.Length != value.Length)
                 return false;
