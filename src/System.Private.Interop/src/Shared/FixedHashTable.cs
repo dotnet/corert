@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic.Internal;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -29,11 +30,11 @@ namespace System.Runtime.InteropServices
     /// Simple fixed-size hash table. Create once and use to speed table lookup.
     /// Good for tool time generated data table lookup. The hash table itself be generated at tool time, but runtime generation will take less disk space
     ///
-    /// 1. Size is given in construtor and never change afterwards
+    /// 1. Size is given in constructor and never changed afterwards
     /// 2. Only add is supported, but remove can be added quite easily
     /// 3. For each entry, an integer index can be stored and received. If index is always the same as inserting order, this can be removed too.
-    /// 4. Value is not stored. It should be managed seperately
-    /// 5. Non-generic, there there is single copy in memory
+    /// 4. Value is not stored. It should be managed separately
+    /// 5. Non-generic, there is single copy in memory
     /// 6. Searching is implemented using two methods: GetFirst and GetNext
     ///
     /// Check StringMap below for a Dictionary<string, int> like implementation where strings are stored elsewhere, possibly in compressed form
@@ -48,41 +49,6 @@ namespace System.Runtime.InteropServices
         int m_size;
         int m_count;
 
-        static internal bool IsPrime(int num)
-        {
-            int t = 3;
-
-            while (t * t < num)
-            {
-                if ((num % t) == 0)
-                {
-                    return false;
-                }
-
-                t += 2;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// HashHelpers.GetPrime not accessible here
-        /// </summary>
-        static internal int GetNextPrime(int num)
-        {
-            if ((num & 1) == 0)
-            {
-                num++;
-            }
-
-            while (!IsPrime(num))
-            {
-                num += 2;
-            }
-
-            return num;
-        }
-
         /// <summary>
         /// Construct empty hash table
         /// </summary>
@@ -91,7 +57,7 @@ namespace System.Runtime.InteropServices
         {
             // Prime number is essential to reduce hash collision
             // Add 10%, minimum 11 to make sure hash table has around 10% free entries to reduce collision
-            m_size = GetNextPrime(Math.Max(11, size * 11 / 10));
+            m_size = HashHelpers.GetPrime(Math.Max(11, size * 11 / 10));
 
             // Using int array instead of creating an Entry[] array with three ints to avoid
             // adding a new array type, which costs around 3kb in binary size
