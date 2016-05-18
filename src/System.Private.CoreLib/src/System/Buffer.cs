@@ -38,9 +38,10 @@ namespace System
 
             if (src != dst)
             {
+                RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = srcCorElementTypeInfo;
                 if (src.EETypePtr.RawValue != dst.EETypePtr.RawValue)
                 {
-                    RuntimeImports.RhCorElementTypeInfo dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
+                    dstCorElementTypeInfo = dst.ElementEEType.CorElementTypeInfo;
                     if (!dstCorElementTypeInfo.IsPrimitive)
                         throw new ArgumentException(SR.Arg_MustBePrimArray, "dst");
                 }
