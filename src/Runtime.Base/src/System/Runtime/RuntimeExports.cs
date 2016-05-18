@@ -349,6 +349,13 @@ namespace System.Runtime
             return pEEType->ComponentSize;
         }
 
+        [RuntimeExport("RhGetBaseSize")]
+        public static unsafe uint RhGetBaseSize(EETypePtr ptrEEType)
+        {
+            EEType* pEEType = ptrEEType.ToPointer();
+            return pEEType->BaseSize;
+        }
+
         [RuntimeExport("RhGetNumInterfaces")]
         public static unsafe uint RhGetNumInterfaces(EETypePtr ptrEEType)
         {

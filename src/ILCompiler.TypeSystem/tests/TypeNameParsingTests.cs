@@ -137,49 +137,47 @@ namespace TypeSystemTests
             var nullableType = (MetadataType)_context.GetWellKnownType(WellKnownType.Nullable);
 
             {
-                TypeDesc expected = _genericType.MakeInstantiatedType(new Instantiation(new[] { _simpleType }));
+                TypeDesc expected = _genericType.MakeInstantiatedType(_simpleType);
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Generic`1[TypeNameParsing.Simple]");
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = _veryGenericType.MakeInstantiatedType(new Instantiation(new[]
-                {
+                TypeDesc expected = _veryGenericType.MakeInstantiatedType(
                     _simpleType,
-                    _genericType.MakeInstantiatedType(new Instantiation(new[] { _simpleType })),
+                    _genericType.MakeInstantiatedType(_simpleType),
                     _structType
-                }));
+                );
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.VeryGeneric`3[TypeNameParsing.Simple,TypeNameParsing.Generic`1[TypeNameParsing.Simple],TypeNameParsing.Struct]");
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = _genericType.MakeInstantiatedType(new Instantiation(new[] { _context.GetWellKnownType(WellKnownType.Object) }));
+                TypeDesc expected = _genericType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Object));
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Generic`1[[System.Object, " + _coreAssemblyQualifier + "]]");
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = _veryGenericType.MakeInstantiatedType(new Instantiation(new[]
-                {
+                TypeDesc expected = _veryGenericType.MakeInstantiatedType(
                     _context.GetWellKnownType(WellKnownType.Object),
                     _simpleType,
                     _context.GetWellKnownType(WellKnownType.Int32)
-                }));
+                );
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
                     "TypeNameParsing.VeryGeneric`3[[System.Object, {0}],TypeNameParsing.Simple,[System.Int32, {0}]]", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = nullableType.MakeInstantiatedType(new Instantiation(new[] { _structType }));
+                TypeDesc expected = nullableType.MakeInstantiatedType(_structType);
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
                     "System.Nullable`1[TypeNameParsing.Struct], {0}", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = nullableType.MakeInstantiatedType(new Instantiation(new[] { _context.GetWellKnownType(WellKnownType.Int32) }));
+                TypeDesc expected = nullableType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
                     "System.Nullable`1[[System.Int32, {0}]], {0}", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
@@ -192,31 +190,31 @@ namespace TypeSystemTests
             var nullableType = (MetadataType)_context.GetWellKnownType(WellKnownType.Nullable);
 
             {
-                TypeDesc expected = _genericType.MakeInstantiatedType(new Instantiation(new[] { _structType.MakePointerType().MakeArrayType() }));
+                TypeDesc expected = _genericType.MakeInstantiatedType(_structType.MakePointerType().MakeArrayType());
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Generic`1[TypeNameParsing.Struct*[]]");
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = _genericType.MakeInstantiatedType(new Instantiation(new[] { _structType.MakePointerType().MakePointerType().MakeArrayType().MakeArrayType(2) }));
+                TypeDesc expected = _genericType.MakeInstantiatedType(_structType.MakePointerType().MakePointerType().MakeArrayType().MakeArrayType(2));
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName("TypeNameParsing.Generic`1[TypeNameParsing.Struct**[][,]]");
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = _nestedNongenericType.MakeInstantiatedType(new Instantiation(new[] {
-                    nullableType.MakeInstantiatedType(new Instantiation(new[] { _structType }))
-                }));
+                TypeDesc expected = _nestedNongenericType.MakeInstantiatedType(
+                    nullableType.MakeInstantiatedType(_structType)
+                );
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
                     "TypeNameParsing.Generic`1+NestedNongeneric[[System.Nullable`1[TypeNameParsing.Struct], {0}]]", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);
             }
 
             {
-                TypeDesc expected = _nestedGenericType.MakeInstantiatedType(new Instantiation(new TypeDesc[] {
-                    nullableType.MakeInstantiatedType(new Instantiation(new[] { _context.GetWellKnownType(WellKnownType.Int32) })),
+                TypeDesc expected = _nestedGenericType.MakeInstantiatedType(
+                    nullableType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32)),
                     _nestedType.MakeArrayType()
-                }));
+                );
                 TypeDesc result = _testModule.GetTypeByCustomAttributeTypeName(String.Format(
                     "TypeNameParsing.Generic`1+NestedGeneric`1[[System.Nullable`1[[System.Int32, {0}]], {0}],TypeNameParsing.Simple+Nested[]]", _coreAssemblyQualifier));
                 Assert.Equal(expected, result);

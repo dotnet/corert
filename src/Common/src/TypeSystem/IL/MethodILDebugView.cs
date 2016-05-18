@@ -29,14 +29,14 @@ namespace Internal.IL
                 sb.Append(ilBytes.Length);
                 sb.AppendLine();
                 sb.Append(".maxstack ");
-                sb.Append(_methodIL.GetMaxStack());
+                sb.Append(_methodIL.MaxStack);
                 sb.AppendLine();
 
                 LocalVariableDefinition[] locals = _methodIL.GetLocals();
                 if (locals != null && locals.Length > 0)
                 {
                     sb.Append(".locals ");
-                    if (_methodIL.GetInitLocals())
+                    if (_methodIL.IsInitLocals)
                         sb.Append("init ");
 
                     sb.Append("(");

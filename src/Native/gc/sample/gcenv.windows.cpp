@@ -282,18 +282,39 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
     return g_SystemInfo.dwNumberOfProcessors;
 }
 
+// Return the size of the user-mode portion of the virtual address space of this process.
+// Return:
+//  non zero if it has succeeded, 0 if it has failed
+size_t GCToOSInterface::GetVirtualMemoryLimit()
+{
+    MEMORYSTATUSEX memStatus;
+
+    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
+    BOOL fRet = GlobalMemoryStatusEx(&memStatus);
+    _ASSERTE(fRet);
+
+    return (size_t)memStatus.ullTotalVirtual;
+}
+
+// Get the physical memory that this process can use.
+// Return:
+//  non zero if it has succeeded, 0 if it has failed
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
+{
+    MEMORYSTATUSEX memStatus;
+
+    memStatus.dwLength = sizeof(MEMORYSTATUSEX);
+    BOOL fRet = GlobalMemoryStatusEx(&memStatus);
+    _ASSERTE(fRet);
+
+    return memStatus.ullTotalPhys;
+}
+
 // Get global memory status
 // Parameters:
 //  ms - pointer to the structure that will be filled in with the memory status
-void GCToOSInterface::GetMemoryStatus(GCMemoryStatus* ms)
+void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
     MEMORYSTATUSEX memStatus;
 
     memStatus.dwLength = sizeof(MEMORYSTATUSEX);
@@ -301,20 +322,18 @@ void GCToOSInterface::GetMemoryStatus(GCMemoryStatus* ms)
     _ASSERTE (fRet);
 
     // If the machine has more RAM than virtual address limit, let us cap it.
-    // Our GC can never use more than virtual address limit.
+    // The GC can never use more than virtual address limit.
     if (memStatus.ullAvailPhys > memStatus.ullTotalVirtual)
     {
         memStatus.ullAvailPhys = memStatus.ullAvailVirtual;
     }
 
-    // Convert Windows struct to abstract struct
-    ms->dwMemoryLoad              = memStatus.dwMemoryLoad           ;
-    ms->ullTotalPhys              = memStatus.ullTotalPhys           ;
-    ms->ullAvailPhys              = memStatus.ullAvailPhys           ;
-    ms->ullTotalPageFile          = memStatus.ullTotalPageFile       ;
-    ms->ullAvailPageFile          = memStatus.ullAvailPageFile       ;
-    ms->ullTotalVirtual           = memStatus.ullTotalVirtual        ;
-    ms->ullAvailVirtual           = memStatus.ullAvailVirtual        ;
+    if (memory_load != NULL)
+        *memory_load = memStatus.dwMemoryLoad;
+    if (available_physical != NULL)
+        *available_physical = memStatus.ullAvailPhys;
+    if (available_page_file != NULL)
+        *available_page_file = memStatus.ullAvailPageFile;
 }
 
 // Get a high precision performance counter

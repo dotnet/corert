@@ -143,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _readOnlyDataBlobs = new NodeCache<Tuple<string, byte[], int>, BlobNode>((Tuple<string, byte[], int> key) =>
             {
-                return new BlobNode(key.Item1, ObjectNodeSection.TextSection, key.Item2, key.Item3);
+                return new BlobNode(key.Item1, ObjectNodeSection.ReadOnlyDataSection, key.Item2, key.Item3);
             }, new BlobTupleEqualityComparer());
 
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
@@ -171,12 +171,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (!_cppCodeGen)
                 {
-                    SpecialMethodKind kind = method.DetectSpecialMethodKind();
-                    if (kind == SpecialMethodKind.PInvoke)
-                    {
-                        return new PInvokeMethodNode(method);
-                    }
-                    else if (kind == SpecialMethodKind.RuntimeImport)
+                    if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                     {
                         return new RuntimeImportMethodNode(method);
                     }

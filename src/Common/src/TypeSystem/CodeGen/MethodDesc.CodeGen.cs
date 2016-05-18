@@ -71,6 +71,18 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets a value specifying whether this method is directly callable
+        /// by external unmanaged code.
+        /// </summary>
+        public virtual bool IsNativeCallable
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 
     // Additional members of InstantiatedMethod related to code generation.
@@ -115,6 +127,14 @@ namespace Internal.TypeSystem
                 return _methodDef.IsInternalCall;
             }
         }
+
+        public override bool IsNativeCallable
+        {
+            get
+            {
+                return _methodDef.IsNativeCallable;
+            }
+        }
     }
 
     // Additional members of MethodForInstantiatedType related to code generation.
@@ -157,6 +177,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsInternalCall;
+            }
+        }
+
+        public override bool IsNativeCallable
+        {
+            get
+            {
+                return _typicalMethodDef.IsNativeCallable;
             }
         }
     }

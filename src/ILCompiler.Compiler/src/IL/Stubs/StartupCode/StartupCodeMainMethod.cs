@@ -74,7 +74,7 @@ namespace Internal.IL.Stubs.StartupCode
 
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(this);
         }
 
         public override MethodSignature Signature
@@ -93,6 +93,13 @@ namespace Internal.IL.Stubs.StartupCode
                 return _signature;
             }
         }
+
+        public override bool IsNativeCallable
+        {
+            get
+            {
+                return true;
+            }
+        }
     }
 }
-

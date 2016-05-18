@@ -91,6 +91,14 @@ namespace ILCompiler
         FltRem                      = 0xE1,
         DblRound                    = 0xE2,
         FltRound                    = 0xE3,
+
+        // P/Invoke support
+        PInvokeBegin                = 0xF0,
+        PInvokeEnd                  = 0xF1,
+
+        // P/Invoke support
+        ReversePInvokeEnter         = 0xF2,
+        ReversePInvokeExit          = 0xF3,
     }
 
     internal class JitHelper
@@ -205,6 +213,20 @@ namespace ILCompiler
                     break;
                 case JitHelperId.FltRem:
                     mangledName = "RhpFltRem";
+                    break;
+
+                case JitHelperId.PInvokeBegin:
+                    mangledName = "RhpPInvoke";
+                    break;
+                case JitHelperId.PInvokeEnd:
+                    mangledName = "RhpPInvokeReturn";
+                    break;
+
+                case JitHelperId.ReversePInvokeEnter:
+                    mangledName = "RhpReversePInvoke2";
+                    break;
+                case JitHelperId.ReversePInvokeExit:
+                    mangledName = "RhpReversePInvokeReturn2";
                     break;
 
                 default:

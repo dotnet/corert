@@ -4,12 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Linq;
 using ILCompiler.Compiler.CppCodeGen;
-using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
@@ -93,6 +90,21 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
+        private IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
+        {
+            // TODO: The uses of this method need revision. The right way to get to this info is from
+            //       a MethodIL. For declarations, we don't need names.
+
+            method = method.GetTypicalMethodDefinition();
+            var ecmaMethod = method as EcmaMethod;
+            if (ecmaMethod != null && ecmaMethod.Module.PdbReader != null)
+            {
+                return (new EcmaMethodDebugInformation(ecmaMethod)).GetParameterNames();
+            }
+
+            return null;
+        }
+
         public string GetCppMethodDeclaration(MethodDesc method, bool implementation, string externalMethodName = null, MethodSignature methodSignature = null)
         {
             var sb = new CppGenerationBuffer();
@@ -137,7 +149,7 @@ namespace ILCompiler.CppCodeGen
             List<string> parameterNames = null;
             if (method != null)
             {
-                IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+                IEnumerable<string> parameters = GetParameterNamesForMethod(method);
                 if (parameters != null)
                 {
                     parameterNames = new List<string>(parameters);
@@ -208,7 +220,7 @@ namespace ILCompiler.CppCodeGen
                 argCount++;
 
             List<string> parameterNames = null;
-            IEnumerable<string> parameters = _compilation.TypeSystemContext.GetParameterNamesForMethod(method);
+            IEnumerable<string> parameters = GetParameterNamesForMethod(method);
             if (parameters != null)
             {
                 parameterNames = new List<string>(parameters);
@@ -296,84 +308,58 @@ namespace ILCompiler.CppCodeGen
             return varName;
         }
 
-        private string CompileSpecialMethod(MethodDesc method, SpecialMethodKind kind)
+        private void CompileExternMethod(CppMethodCodeNode methodCodeNodeNeedingCode, string importName)
         {
-            var builder = new CppGenerationBuffer();
-            switch (kind)
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+            MethodSignature methodSignature = method.Signature;
+
+            bool slotCastRequired = false;
+
+            MethodSignature externCSignature;
+            if (_externCSignatureMap.TryGetValue(importName, out externCSignature))
             {
-                case SpecialMethodKind.PInvoke:
-                case SpecialMethodKind.RuntimeImport:
-                    {
-                        EcmaMethod ecmaMethod = method as EcmaMethod;
-
-                        string importName = kind == SpecialMethodKind.PInvoke ?
-                            method.GetPInvokeMethodMetadata().Name : ecmaMethod.GetRuntimeImportName();
-
-                        if (importName == null)
-                            importName = method.Name;
-
-                        MethodSignature methodSignature = method.Signature;
-                        bool slotCastRequired = false;
-
-                        MethodSignature externCSignature;
-                        if (_externCSignatureMap.TryGetValue(importName, out externCSignature))
-                        {
-                            slotCastRequired = !externCSignature.Equals(method.Signature);
-                        }
-                        else
-                        {
-                            _externCSignatureMap.Add(importName, methodSignature);
-                            externCSignature = methodSignature;
-                        }
-
-                        builder.AppendLine();
-                        builder.Append(GetCppMethodDeclaration(method, true));
-                        builder.AppendLine();
-                        builder.Append("{");
-                        builder.Indent();
-
-                        if (slotCastRequired)
-                        {
-                            AppendSlotTypeDef(builder, method);
-                        }
-
-                        builder.AppendLine();
-                        if (!method.Signature.ReturnType.IsVoid)
-                        {
-                            builder.Append("return ");
-                        }
-
-                        if (slotCastRequired)
-                            builder.Append("((__slot__" + GetCppMethodName(method) + ")");
-                        builder.Append("::");
-                        builder.Append(importName);
-                        if (slotCastRequired)
-                            builder.Append(")");
-
-                        builder.Append("(");
-                        builder.Append(GetCppMethodCallParamList(method));
-                        builder.Append(");");
-                        builder.Exdent();
-                        builder.AppendLine();
-                        builder.Append("}");
-
-                        return builder.ToString();
-                    }
-
-                default:
-                    builder.AppendLine();
-                    builder.Append(GetCppMethodDeclaration(method, true));
-                    builder.AppendLine();
-                    builder.Append("{");
-                    builder.Indent();
-                    builder.AppendLine();
-                    builder.Append("throw 0xC000C000;");
-                    builder.Exdent();
-                    builder.AppendLine();
-                    builder.Append("}");
-
-                    return builder.ToString();
+                slotCastRequired = !externCSignature.Equals(methodSignature);
             }
+            else
+            {
+                _externCSignatureMap.Add(importName, methodSignature);
+                externCSignature = methodSignature;
+            }
+
+            var builder = new CppGenerationBuffer();
+
+            builder.AppendLine();
+            builder.Append(GetCppMethodDeclaration(method, true));
+            builder.AppendLine();
+            builder.Append("{");
+            builder.Indent();
+
+            if (slotCastRequired)
+            {
+                AppendSlotTypeDef(builder, method);
+            }
+
+            builder.AppendLine();
+            if (!method.Signature.ReturnType.IsVoid)
+            {
+                builder.Append("return ");
+            }
+
+            if (slotCastRequired)
+                builder.Append("((__slot__" + GetCppMethodName(method) + ")");
+            builder.Append("::");
+            builder.Append(importName);
+            if (slotCastRequired)
+                builder.Append(")");
+
+            builder.Append("(");
+            builder.Append(GetCppMethodCallParamList(method));
+            builder.Append(");");
+            builder.Exdent();
+            builder.AppendLine();
+            builder.Append("}");
+
+            methodCodeNodeNeedingCode.SetCode(builder.ToString(), Array.Empty<Object>());
         }
 
         public void CompileMethod(CppMethodCodeNode methodCodeNodeNeedingCode)
@@ -382,13 +368,15 @@ namespace ILCompiler.CppCodeGen
 
             _compilation.Log.WriteLine("Compiling " + method.ToString());
 
-            SpecialMethodKind kind = method.DetectSpecialMethodKind();
-
-            if (kind != SpecialMethodKind.Unknown)
+            if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
-                string specialMethodCode = CompileSpecialMethod(method, kind);
+                CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
+                return;
+            }
 
-                methodCodeNodeNeedingCode.SetCode(specialMethodCode, Array.Empty<Object>());
+            if (method.IsRawPInvoke())
+            {
+                CompileExternMethod(methodCodeNodeNeedingCode, method.GetPInvokeMethodMetadata().Name ?? method.Name);
                 return;
             }
 
@@ -402,18 +390,20 @@ namespace ILCompiler.CppCodeGen
 
                 CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
 
+                MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
+
                 if (!_compilation.Options.NoLineNumbers)
                 {
-                    IEnumerable<ILSequencePoint> sequencePoints = typeSystemContext.GetSequencePointsForMethod(method);
+                    IEnumerable<ILSequencePoint> sequencePoints = debugInfo.GetSequencePoints();
                     if (sequencePoints != null)
                         ilImporter.SetSequencePoints(sequencePoints);
                 }
 
-                IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(method);
+                IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
                 if (localVariables != null)
                     ilImporter.SetLocalVariables(localVariables);
 
-                IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(method);
+                IEnumerable<string> parameters = GetParameterNamesForMethod(method);
                 if (parameters != null)
                     ilImporter.SetParameterNames(parameters);
 

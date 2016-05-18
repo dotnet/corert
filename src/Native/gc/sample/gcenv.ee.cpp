@@ -241,11 +241,24 @@ bool IsGCSpecialThread()
     return false;
 }
 
-void StompWriteBarrierEphemeral()
+void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 {
 }
 
-void StompWriteBarrierResize(bool /*bReqUpperBoundsCheck*/)
+void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoundsCheck*/)
+{
+}
+
+bool IsSuspendEEThread()
+{
+    return false;
+}
+
+void SwitchToWriteWatchBarrier()
+{
+}
+
+void SwitchToNonWriteWatchBarrier()
 {
 }
 

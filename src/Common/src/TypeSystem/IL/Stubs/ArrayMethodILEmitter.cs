@@ -58,7 +58,7 @@ namespace Internal.IL.Stubs
                     throw new InvalidOperationException();
             }
 
-            return _emitter.Link();
+            return _emitter.Link(_method);
         }
 
         public static MethodIL EmitIL(ArrayMethod arrayMethod)
@@ -102,7 +102,7 @@ namespace Internal.IL.Stubs
                     TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
 
                     MethodDesc eetypePtrOfMethod = eetypePtrType.GetKnownMethod("EETypePtrOf", null)
-                        .MakeInstantiatedMethod(new Instantiation(new[] { _elementType }));
+                        .MakeInstantiatedMethod(_elementType);
 
                     typeMismatchExceptionLabel = _emitter.NewCodeLabel();
 

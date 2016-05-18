@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -12,7 +11,6 @@ using Internal.TypeSystem;
 using ILCompiler;
 using ILCompiler.Compiler.CppCodeGen;
 using ILCompiler.CppCodeGen;
-using ILCompiler.SymbolReader;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -500,7 +498,7 @@ namespace Internal.IL
             Append("{");
             Indent();
 
-            bool initLocals = _methodIL.GetInitLocals();
+            bool initLocals = _methodIL.IsInitLocals;
             for (int i = 0; i < _locals.Length; i++)
             {
                 AppendLine();
@@ -2302,7 +2300,7 @@ namespace Internal.IL
             Append(")");
             AppendSemicolon();
 
-            if (_methodIL.GetInitLocals())
+            if (_methodIL.IsInitLocals)
             {
                 AppendLine();
                 Append("memset(");

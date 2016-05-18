@@ -1660,32 +1660,39 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
     return ::PalGetProcessCpuCount();
 }
 
-// Get global memory status
-// Parameters:
-//  ms - pointer to the structure that will be filled in with the memory status
-void GCToOSInterface::GetMemoryStatus(GCMemoryStatus* ms)
+// Return the size of the user-mode portion of the virtual address space of this process.
+// Return:
+//  non zero if it has succeeded, 0 if it has failed
+size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
-    ms->dwMemoryLoad = 0;
-    ms->ullTotalPhys = 0;
-    ms->ullAvailPhys = 0;
-    ms->ullTotalPageFile = 0;
-    ms->ullAvailPageFile = 0;
-    ms->ullTotalVirtual = 0;
-    ms->ullAvailVirtual = 0;
+#ifdef BIT64
+    // There is no API to get the total virtual address space size on
+    // Unix, so we use a constant value representing 128TB, which is
+    // the approximate size of total user virtual address space on
+    // the currently supported Unix systems.
+    static const uint64_t _128TB = (1ull << 47);
+    return _128TB;
+#else
+    return (size_t)-1;
+#endif
+}
 
-    UInt32_BOOL fRetVal = UInt32_FALSE;
+// Get the physical memory that this process can use.
+// Return:
+//  non zero if it has succeeded, 0 if it has failed
+// Remarks:
+//  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
+//  specified, it returns amount of actual physical memory.
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
+{
+    int64_t physical_memory = 0;
 
     // Get the physical memory size
 #if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    int64_t physical_memory;
-
     // Get the Physical memory size
-    physical_memory = sysconf( _SC_PHYS_PAGES ) * sysconf( _SC_PAGE_SIZE );
-    ms->ullTotalPhys = (uint64_t)physical_memory;
-    fRetVal = UInt32_TRUE;
+    physical_memory = sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGE_SIZE);
 #elif HAVE_SYSCTL
     int mib[2];
-    int64_t physical_memory;
     size_t length;
 
     // Get the Physical memory size
@@ -1697,54 +1704,61 @@ void GCToOSInterface::GetMemoryStatus(GCMemoryStatus* ms)
     {
         ASSERT_UNCONDITIONALLY("sysctl failed for HW_MEMSIZE\n");
     }
-    else
-    {
-        ms->ullTotalPhys = (uint64_t)physical_memory;
-        fRetVal = UInt32_TRUE;
-    }
 #elif // HAVE_SYSINFO
     // TODO: implement getting memory details via sysinfo. On Linux, it provides swap file details that
     // we can use to fill in the xxxPageFile members.
 
 #endif // HAVE_SYSCONF
 
-    // Get the physical memory in use - from it, we can get the physical memory available.
-    // We do this only when we have the total physical memory available.
-    if (ms->ullTotalPhys > 0)
+    return physical_memory;
+}
+
+// Get global memory status
+// Parameters:
+//  ms - pointer to the structure that will be filled in with the memory status
+void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
+{
+    if (memory_load != nullptr || available_physical != nullptr)
     {
-#ifndef __APPLE__
-        ms->ullAvailPhys = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
-        int64_t used_memory = ms->ullTotalPhys - ms->ullAvailPhys;
-        ms->dwMemoryLoad = (uint32_t)((used_memory * 100) / ms->ullTotalPhys);
-#else
-        vm_size_t page_size;
-        mach_port_t mach_port;
-        mach_msg_type_number_t count;
-        vm_statistics_data_t vm_stats;
-        mach_port = mach_host_self();
-        count = sizeof(vm_stats) / sizeof(natural_t);
-        if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+        uint64_t total = GetPhysicalMemoryLimit();
+
+        uint64_t available = 0;
+        uint32_t load = 0;
+
+        // Get the physical memory in use - from it, we can get the physical memory available.
+        // We do this only when we have the total physical memory available.
+        if (total > 0)
         {
-            if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
+#ifndef __APPLE__
+            available = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
+            uint64_t used = total - available;
+            load = (uint32_t)((used * 100) / total);
+#else
+            mach_port_t mach_port = mach_host_self();
+            vm_size_t page_size;
+            if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
             {
-                ms->ullAvailPhys = (int64_t)vm_stats.free_count * (int64_t)page_size;
-                int64_t used_memory = ((int64_t)vm_stats.active_count + (int64_t)vm_stats.inactive_count + (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
-                ms->dwMemoryLoad = (uint32_t)((used_memory * 100) / ms->ullTotalPhys);
+                vm_statistics_data_t vm_stats;
+                mach_msg_type_number_t count = sizeof(vm_stats) / sizeof(natural_t);
+                if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
+                {
+                    available = (uint64_t)vm_stats.free_count * (uint64_t)page_size;
+                    uint64_t used = ((uint64_t)vm_stats.active_count + (uint64_t)vm_stats.inactive_count + (uint64_t)vm_stats.wire_count) *  (uint64_t)page_size;
+                    load = (uint32_t)((used * 100) / total);
+                }
             }
-        }
-        mach_port_deallocate(mach_task_self(), mach_port);
+            mach_port_deallocate(mach_task_self(), mach_port);
 #endif // __APPLE__
+        }
+
+        if (memory_load != nullptr)
+            *memory_load = load;
+        if (available_physical != nullptr)
+            *available_physical = available;
     }
 
-    // There is no API to get the total virtual address space size on
-    // Unix, so we use a constant value representing 128TB, which is
-    // the approximate size of total user virtual address space on
-    // the currently supported Unix systems.
-    static const uint64_t _128TB = (1ull << 47);
-    ms->ullTotalVirtual = _128TB;
-    ms->ullAvailVirtual = ms->ullAvailPhys;
-
-    // UNIXTODO: failfast for !fRetVal?
+    if (available_page_file != nullptr)
+        *available_page_file = 0;
 }
 
 // Get a high precision performance counter

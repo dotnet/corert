@@ -173,6 +173,18 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
       <Link>Ecma\CustomAttributeTypeProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
+      <Link>Ecma\EcmaModule.Symbols.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\SymbolReader\PdbSymbolReader.cs">
+      <Link>Ecma\SymbolReader\PdbSymbolReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\SymbolReader\PortablePdbSymbolReader.cs">
+      <Link>Ecma\SymbolReader\PortablePdbSymbolReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\SymbolReader\UnmanagedPdbSymbolReader.cs">
+      <Link>Ecma\SymbolReader\UnmanagedPdbSymbolReader.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.cs">
       <Link>Ecma\EcmaField.cs</Link>
     </Compile>
@@ -205,6 +217,30 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Ecma\CachingMetadataStringDecoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs">
+      <Link>IL\EcmaMethodIL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.Symbols.cs">
+      <Link>IL\EcmaMethodIL.Symbols.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.cs">
+      <Link>IL\MethodIL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodIL.Symbols.cs">
+      <Link>IL\MethodIL.Symbols.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\MethodILDebugView.cs">
+      <Link>IL\MethodILDebugView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILDisassember.cs">
+      <Link>IL\ILDisassember.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\InstantiatedMethodIL.cs">
+      <Link>IL\InstantiatedMethodIL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILOpcode.cs">
+      <Link>IL\ILOpcode.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
       <Link>TypeSystem\Interop\InstantiatedType.Interop.cs</Link>

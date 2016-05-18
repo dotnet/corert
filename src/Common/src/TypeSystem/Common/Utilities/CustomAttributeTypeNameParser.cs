@@ -108,7 +108,7 @@ namespace Internal.TypeSystem
                 Debug.Assert(ch == genericInstantiationEnd);
                 ch++;
 
-                loadedType = typeDef.MakeInstantiatedType(new Instantiation(genericArgs.ToArray()));
+                loadedType = typeDef.MakeInstantiatedType(genericArgs.ToArray());
             }
             else
             {

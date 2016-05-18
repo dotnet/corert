@@ -58,6 +58,19 @@ struct alloc_context
 
 #if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
+// PInvoke
+//
+COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
+{
+    // TODO: RhpPInvoke
+}
+
+COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
+{
+    // TODO: RhpPInvokeReturn
+}
+
+//
 // Allocations
 //
 COOP_PINVOKE_HELPER(Object *, RhpNewFast, (EEType* pEEType))

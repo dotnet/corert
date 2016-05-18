@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -13,9 +12,10 @@ using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
-    public class EcmaMethodIL : MethodIL
+    public partial class EcmaMethodIL : MethodIL
     {
         private EcmaModule _module;
+        private EcmaMethod _method;
         private MethodBodyBlock _methodBody;
 
         // Cached values
@@ -28,13 +28,22 @@ namespace Internal.IL
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)
                 return null;
-            return new EcmaMethodIL(method.Module, rva);
+            return new EcmaMethodIL(method, rva);
         }
 
-        private EcmaMethodIL(EcmaModule module, int rva)
+        private EcmaMethodIL(EcmaMethod method, int rva)
         {
-            _module = module;
-            _methodBody = module.PEReader.GetMethodBody(rva);
+            _method = method;
+            _module = method.Module;
+            _methodBody = _module.PEReader.GetMethodBody(rva);
+        }
+
+        public override MethodDesc OwningMethod
+        {
+            get
+            {
+                return _method;
+            }
         }
 
         public override byte[] GetILBytes()
@@ -46,14 +55,20 @@ namespace Internal.IL
             return (_ilBytes = ilBytes);
         }
 
-        public override bool GetInitLocals()
+        public override bool IsInitLocals
         {
-            return _methodBody.LocalVariablesInitialized;
+            get
+            {
+                return _methodBody.LocalVariablesInitialized;
+            }
         }
 
-        public override int GetMaxStack()
+        public override int MaxStack
         {
-            return _methodBody.MaxStack;
+            get
+            {
+                return _methodBody.MaxStack;
+            }
         }
 
         public override LocalVariableDefinition[] GetLocals()

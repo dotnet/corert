@@ -7,13 +7,6 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public enum SpecialMethodKind
-    {
-        Unknown,
-        PInvoke,
-        RuntimeImport
-    };
-
     internal static class MethodExtensions
     {
         public static string GetRuntimeImportName(this EcmaMethod This)
@@ -71,21 +64,6 @@ namespace ILCompiler
             }
 
             return null;
-        }
-
-        public static SpecialMethodKind DetectSpecialMethodKind(this MethodDesc method)
-        {
-            if (method.IsRawPInvoke())
-            {
-                return SpecialMethodKind.PInvoke;
-            }
-
-            if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
-            {
-                return SpecialMethodKind.RuntimeImport;
-            }
-
-            return SpecialMethodKind.Unknown;
         }
 
         /// <summary>

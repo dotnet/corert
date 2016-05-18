@@ -28,7 +28,7 @@ namespace ILCompiler
             if (type.IsSzArray && !((ArrayType)type).ElementType.IsPointer)
             {
                 MetadataType arrayType = type.Context.SystemModule.GetKnownType("System", "Array`1");
-                return arrayType.MakeInstantiatedType(new Instantiation(new TypeDesc[] { ((ArrayType)type).ElementType }));
+                return arrayType.MakeInstantiatedType(((ArrayType)type).ElementType);
             }
             else if (type.IsArray)
             {

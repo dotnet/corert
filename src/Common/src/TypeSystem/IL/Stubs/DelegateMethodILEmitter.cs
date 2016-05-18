@@ -22,7 +22,7 @@ namespace Internal.IL.Stubs
                 ILCodeStream codeStream = emit.NewCodeStream();
                 MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
                 codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
-                return emit.Link();
+                return emit.Link(method);
             }
 
             if (method.Name == ".ctor")
@@ -47,7 +47,7 @@ namespace Internal.IL.Stubs
                 codeStream.Emit(ILOpcode.stfld, emit.NewToken(functionPointerField));
                 codeStream.Emit(ILOpcode.ret);
 
-                return emit.Link();
+                return emit.Link(method);
             }
 
             return null;

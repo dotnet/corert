@@ -15,7 +15,6 @@ using Internal.TypeSystem;
 using Internal.IL;
 
 using ILCompiler;
-using ILCompiler.SymbolReader;
 using ILCompiler.DependencyAnalysis;
 
 namespace Internal.JitInterface
@@ -120,7 +119,7 @@ namespace Internal.JitInterface
                 _methodCodeNode = methodCodeNodeNeedingCode;
 
                 CORINFO_METHOD_INFO methodInfo;
-                Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
+                MethodIL methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
                 _methodScope = methodInfo.scope;
 
@@ -128,22 +127,24 @@ namespace Internal.JitInterface
                 {
                     CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;
 
+                    MethodDebugInformation debugInfo = _compilation.GetDebugInfo(methodIL);
+
                     if (!_compilation.Options.NoLineNumbers)
                     {
-                        IEnumerable<ILSequencePoint> ilSequencePoints = typeSystemContext.GetSequencePointsForMethod(MethodBeingCompiled);
+                        IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
                         if (ilSequencePoints != null)
                         {
                             SetSequencePoints(ilSequencePoints);
                         }
                     }
 
-                    IEnumerable<ILLocalVariable> localVariables = typeSystemContext.GetLocalVariableNamesForMethod(MethodBeingCompiled);
+                    IEnumerable<ILLocalVariable> localVariables = debugInfo.GetLocalVariables();
                     if (localVariables != null)
                     {
                         SetLocalVariables(localVariables);
                     }
 
-                    IEnumerable<string> parameters = typeSystemContext.GetParameterNamesForMethod(MethodBeingCompiled);
+                    IEnumerable<string> parameters = debugInfo.GetParameterNames();
                     if (parameters != null)
                     {
                         SetParameterNames(parameters);
@@ -365,13 +366,13 @@ namespace Internal.JitInterface
         private FieldDesc HandleToObject(CORINFO_FIELD_STRUCT_* field) { return (FieldDesc)HandleToObject((IntPtr)field); }
         private CORINFO_FIELD_STRUCT_* ObjectToHandle(FieldDesc field) { return (CORINFO_FIELD_STRUCT_*)ObjectToHandle((Object)field); }
 
-        private bool Get_CORINFO_METHOD_INFO(MethodDesc method, out CORINFO_METHOD_INFO methodInfo)
+        private MethodIL Get_CORINFO_METHOD_INFO(MethodDesc method, out CORINFO_METHOD_INFO methodInfo)
         {
-            var methodIL = _compilation.GetMethodIL(method);
+            MethodIL methodIL = _compilation.GetMethodIL(method);
             if (methodIL == null)
             {
                 methodInfo = default(CORINFO_METHOD_INFO);
-                return false;
+                return null;
             }
 
             methodInfo.ftn = ObjectToHandle(method);
@@ -379,15 +380,15 @@ namespace Internal.JitInterface
             var ilCode = methodIL.GetILBytes();
             methodInfo.ILCode = (byte*)GetPin(ilCode);
             methodInfo.ILCodeSize = (uint)ilCode.Length;
-            methodInfo.maxStack = (uint)methodIL.GetMaxStack();
+            methodInfo.maxStack = (uint)methodIL.MaxStack;
             methodInfo.EHcount = (uint)methodIL.GetExceptionRegions().Length;
-            methodInfo.options = methodIL.GetInitLocals() ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
+            methodInfo.options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
             methodInfo.regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
 
             Get_CORINFO_SIG_INFO(method.Signature, out methodInfo.args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), out methodInfo.locals);
 
-            return true;
+            return methodIL;
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
@@ -561,9 +562,13 @@ namespace Internal.JitInterface
             // if (pMD->IsSharedByGenericInstantiations())
             //     result |= CORINFO_FLG_SHAREDINST;
 
-            // TODO: PInvoke
-            // if ((attribs & MethodAttributes.PinvokeImpl) != 0)
-            //    result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+            if (method.IsPInvoke)
+            {
+                result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
+
+                // See comment in pInvokeMarshalingRequired
+                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
+            }
 
             // TODO: Cache inlining hits
             // Check for an inlining directive.
@@ -611,7 +616,8 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.I1)]
         private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_METHOD_INFO info)
         {
-            return Get_CORINFO_METHOD_INFO(HandleToObject(ftn), out info);
+            MethodIL methodIL = Get_CORINFO_METHOD_INFO(HandleToObject(ftn), out info);
+            return methodIL != null;
         }
 
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, ref uint pRestrictions)
@@ -668,10 +674,47 @@ namespace Internal.JitInterface
         }
 
         private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("getUnmanagedCallConv"); }
+        {
+            PInvokeAttributes callingConv =
+                HandleToObject(method).GetPInvokeMethodMetadata().Attributes & PInvokeAttributes.CallingConventionMask;
+
+            switch (callingConv)
+            {
+                case PInvokeAttributes.CallingConventionWinApi:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL; // TODO: CDecl for varargs
+                case PInvokeAttributes.CallingConventionCDecl:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C;
+                case PInvokeAttributes.CallingConventionStdCall:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL;
+                case PInvokeAttributes.CallingConventionThisCall:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_THISCALL;
+                case PInvokeAttributes.CallingConventionFastCall:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_FASTCALL;
+                default:
+                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
+            }
+        }
+
         [return: MarshalAs(UnmanagedType.Bool)]
-        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* callSiteSig)
-        { throw new NotImplementedException("pInvokeMarshalingRequired"); }
+        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
+        {
+            // TODO: Support for PInvoke calli with marshalling. For now, assume there is no marshalling required.
+            if (handle == null)
+                return false;
+
+            MethodDesc method = HandleToObject(handle);
+
+            if (method.IsRawPInvoke())
+                return false;
+
+            // TODO: Ideally, we would just give back the PInvoke stub IL to the JIT and let it inline it, without
+            // checking whether it is required upfront. Unfortunatelly, RyuJIT is not able to generate PInvoke
+            // transitions in inlined methods today (impCheckForPInvokeCall is not called for inlinees and number of other places
+            // depend on it). To get a decent code with this limitation, we mirror CoreCLR behavior: Check
+            // whether PInvoke stub is required here, and disable inlining of PInvoke methods in getMethodAttribsInternal.
+            return Internal.IL.Stubs.PInvokeILEmitter.IsStubRequired(method);
+        }
+
         [return: MarshalAs(UnmanagedType.Bool)]
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
@@ -749,6 +792,12 @@ namespace Internal.JitInterface
             pResolvedToken.cbMethodSpec = 0;
         }
 
+        private bool tryResolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
+        {
+            resolveToken(ref pResolvedToken);
+            return true;
+        }
+
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
@@ -757,8 +806,6 @@ namespace Internal.JitInterface
 
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
-            // TODO: dynamic scopes
-            // TODO: verification
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
             Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)).Signature, out *sig);
         }
@@ -1065,7 +1112,7 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-        private void getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
+        private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
             pLookup.accessType = InfoAccessType.IAT_VALUE;
 
@@ -1111,6 +1158,7 @@ namespace Internal.JitInterface
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
+            return true;
         }
 
         private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_CONST_LOOKUP pLookup)
@@ -1665,10 +1713,34 @@ namespace Internal.JitInterface
             throw new NotSupportedException("HandleException");
         }
 
+        private bool runWithErrorTrap(void* function, void* parameter)
+        {
+            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
+            // and should never reach the managed implementation.
+            Debug.Assert(false, "CorInfoImpl.runWithErrorTrap should not be called");
+            throw new NotSupportedException("runWithErrorTrap");
+        }
+
         private void ThrowExceptionForJitResult(HRESULT result)
         { throw new NotImplementedException("ThrowExceptionForJitResult"); }
         private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)
         { throw new NotImplementedException("ThrowExceptionForHelper"); }
+
+        private uint SizeOfPInvokeTransitionFrame
+        {
+            get
+            {
+                // struct PInvokeTransitionFrame:
+                //  m_RIP
+                //  m_FramePointer
+                //  m_pThread
+                //  m_dwFlags + align
+                //  m_PreserverRegs - RSP
+                //      No need to save other preserved regs because of the JIT ensures that there are
+                //      no live GC references in callee saved registers around the PInvoke callsite.
+                return (uint)(this.PointerSize * 5);
+            }
+        }
 
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
         {
@@ -1683,10 +1755,14 @@ namespace Internal.JitInterface
 
             int pointerSize = this.PointerSize;
 
+            pEEInfoOut.inlinedCallFrameInfo.size = this.SizeOfPInvokeTransitionFrame;
+
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = (uint)(4 * pointerSize);   // Delegate::m_functionPointer
 
             pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
+
+            pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
         }
 
         [return: MarshalAs(UnmanagedType.LPWStr)]
@@ -1831,6 +1907,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = JitHelperId.FltRound; break;
                 case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.DblRound; break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN: id = JitHelperId.PInvokeBegin; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END: id = JitHelperId.PInvokeEnd; break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: id = JitHelperId.ReversePInvokeEnter; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT: id = JitHelperId.ReversePInvokeExit; break;
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
@@ -1943,8 +2025,18 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
+
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
-        { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
+        {
+            MethodDesc md = HandleToObject(method);
+
+            string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
+            Debug.Assert(externName != null);
+
+            pLookup.accessType = InfoAccessType.IAT_VALUE;
+            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(externName));
+        }
+
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
         [return: MarshalAs(UnmanagedType.I1)]
@@ -2459,7 +2551,10 @@ namespace Internal.JitInterface
                 flags.corJitFlags |= CorJitFlag.CORJIT_FLG_CFI_UNWIND;
             }
 
-            flags.corJitFlags2 = 0;
+            flags.corJitFlags2 = CorJitFlag2.CORJIT_FLG2_USE_PINVOKE_HELPERS;
+
+            if (this.MethodBeingCompiled.IsNativeCallable)
+                flags.corJitFlags2 |= CorJitFlag2.CORJIT_FLG2_REVERSE_PINVOKE;
 
             return (uint)sizeof(CORJIT_FLAGS);
         }
