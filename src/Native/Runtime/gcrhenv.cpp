@@ -1270,12 +1270,18 @@ void DestroyThread(Thread * /*pThread*/)
 {
     // TODO: Implement
 }
-void StompWriteBarrierEphemeral()
+
+void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 {
 }
 
-void StompWriteBarrierResize(bool /*bReqUpperBoundsCheck*/)
+void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoundsCheck*/)
 {
+}
+
+bool IsSuspendEEThread()
+{
+    return false;
 }
 
 void LogSpewAlways(const char * /*fmt*/, ...)
