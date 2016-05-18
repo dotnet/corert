@@ -1703,9 +1703,10 @@ namespace System
         {
             if (array == null)
                 throw new ArgumentNullException("array");
-            if (index < 0 || length < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? "index" : "length"), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (array.Length - index < length)
+            int lowerBound = array.GetLowerBound(0);
+            if (index < lowerBound || length < 0)
+                throw new ArgumentOutOfRangeException((index < lowerBound ? "index" : "length"), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (array.Length - (index - lowerBound) < length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             if (array.Rank != 1)
                 throw new RankException(SR.Rank_MultiDimNotSupported);
