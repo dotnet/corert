@@ -1755,7 +1755,6 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
             *memory_load = load;
         if (available_physical != nullptr)
             *available_physical = available;
-
     }
 
     if (available_page_file != nullptr)
