@@ -13,8 +13,14 @@ namespace Internal.TypeSystem
     public enum MethodSignatureFlags
     {
         None = 0x0000,
-        Static = 0x0001,
         // TODO: Generic, etc.
+
+        UnmanagedCallingConventionMask       = 0x000F,
+        UnmanagedCallingConventionCdecl      = 0x0001,
+        UnmanagedCallingConventionStdCall    = 0x0002,
+        UnmanagedCallingConventionThisCall   = 0x0003,
+
+        Static = 0x0010,
     }
 
     public sealed class MethodSignature

@@ -71,5 +71,26 @@ namespace Internal.TypeSystem
             Module = module;
             Attributes = attributes;
         }
+
+        /// <summary>
+        /// Converts unmanaged calling convention encoded as PInvokeAttributes to unmanaged 
+        /// calling convention encoded as MethodSignatureFlags.
+        /// </summary>
+        public static MethodSignatureFlags GetUnmanagedCallingConvention(PInvokeAttributes attributes)
+        {
+            switch (attributes & PInvokeAttributes.CallingConventionMask)
+            {
+                case PInvokeAttributes.CallingConventionWinApi:
+                    return MethodSignatureFlags.UnmanagedCallingConventionStdCall; // TODO: CDecl for varargs
+                case PInvokeAttributes.CallingConventionCDecl:
+                    return MethodSignatureFlags.UnmanagedCallingConventionCdecl;
+                case PInvokeAttributes.CallingConventionStdCall:
+                    return MethodSignatureFlags.UnmanagedCallingConventionStdCall;
+                case PInvokeAttributes.CallingConventionThisCall:
+                    return MethodSignatureFlags.UnmanagedCallingConventionThisCall;
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
     }
 }

@@ -533,9 +533,6 @@ namespace Internal.IL.Stubs
 
             TypeDesc nativeReturnType = MarshalReturnValue(targetMethodSignature.ReturnType);
 
-            MethodSignature nativeSig = new MethodSignature(
-                targetMethodSignature.Flags, 0, nativeReturnType, nativeParameterTypes);
-
             if (UseLazyResolution(_targetMethod, _importMetadata.Module))
             {
                 MetadataType lazyHelperType = _targetMethod.Context.GetHelperType("InteropHelpers");
@@ -543,16 +540,24 @@ namespace Internal.IL.Stubs
                 fnptrLoadStream.Emit(ILOpcode.ldsflda, _emitter.NewToken(lazyDispatchCell));
                 fnptrLoadStream.Emit(ILOpcode.call, _emitter.NewToken(lazyHelperType.GetKnownMethod("ResolvePInvoke", null)));
 
+                MethodSignatureFlags unmanagedCallConv = PInvokeMetadata.GetUnmanagedCallingConvention(_importMetadata.Attributes);
+
+                MethodSignature nativeCalliSig = new MethodSignature(
+                    targetMethodSignature.Flags | unmanagedCallConv, 0, nativeReturnType, nativeParameterTypes);
+
                 ILLocalVariable vNativeFunctionPointer = _emitter.NewLocal(_targetMethod.Context.GetWellKnownType(WellKnownType.IntPtr));
                 fnptrLoadStream.EmitStLoc(vNativeFunctionPointer);
                 callsiteSetupCodeStream.EmitLdLoc(vNativeFunctionPointer);
-                callsiteSetupCodeStream.Emit(ILOpcode.calli, _emitter.NewToken(nativeSig));
+                callsiteSetupCodeStream.Emit(ILOpcode.calli, _emitter.NewToken(nativeCalliSig));
             }
             else
             {
                 // Eager call
                 PInvokeMetadata nativeImportMetadata =
                     new PInvokeMetadata(_importMetadata.Module, _importMetadata.Name ?? _targetMethod.Name, _importMetadata.Attributes);
+
+                MethodSignature nativeSig = new MethodSignature(
+                    targetMethodSignature.Flags, 0, nativeReturnType, nativeParameterTypes);
 
                 MethodDesc nativeMethod =
                     new PInvokeTargetNativeMethod(_targetMethod.OwningType, nativeSig, nativeImportMetadata);
