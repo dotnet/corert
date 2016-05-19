@@ -130,6 +130,9 @@ namespace Internal.TypeSystem.Ecma
         {
             try
             {
+                if (s_metadataDispenser == null || s_symBinder == null)
+                    return null;
+
                 Guid IID_IMetaDataImport = new Guid(0x7dac8207, 0xd3ae, 0x4c75, 0x9b, 0x67, 0x92, 0x80, 0x1a, 0x49, 0x7d, 0x44);
 
                 // Open an metadata importer on the given filename. We'll end up passing this importer straight
