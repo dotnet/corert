@@ -5,6 +5,7 @@
 using System;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 using Internal.TypeSystem;
 
@@ -149,9 +150,21 @@ namespace Internal.TypeSystem.Ecma
 
         public MethodSignature ParseMethodSignature()
         {
+            SignatureHeader header = _reader.ReadSignatureHeader();
+
             MethodSignatureFlags flags = 0;
 
-            SignatureHeader header = _reader.ReadSignatureHeader();
+            SignatureCallingConvention signatureCallConv = header.CallingConvention;
+            if (signatureCallConv != SignatureCallingConvention.Default)
+            {
+                // Verify that it is safe to convert CallingConvention to MethodSignatureFlags via a simple cast
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)SignatureCallingConvention.CDecl);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)SignatureCallingConvention.StdCall);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
+
+                flags = (MethodSignatureFlags)signatureCallConv;
+            }
+
             if (!header.IsInstance)
                 flags |= MethodSignatureFlags.Static;
 
