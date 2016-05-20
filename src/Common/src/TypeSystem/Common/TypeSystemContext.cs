@@ -63,11 +63,6 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        public virtual bool IsWellKnownType(TypeDesc type, WellKnownType wellKnownType)
-        {
-            return type == GetWellKnownType(wellKnownType);
-        }
-
         //
         // Array types
         //

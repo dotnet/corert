@@ -124,7 +124,7 @@ namespace Internal.Runtime
             {
                 corElementType = ComputeRhCorElementType(type);
             }
-            else if (type.Context.IsWellKnownType(type, WellKnownType.Array))
+            else if (type.IsWellKnownType(WellKnownType.Array))
             {
                 // Mark System.Array with CorElementType so casting code can distinguish it
                 corElementType = 0x14; // ELEMENT_TYPE_ARRAY

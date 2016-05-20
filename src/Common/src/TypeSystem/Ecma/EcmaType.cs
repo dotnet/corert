@@ -204,12 +204,12 @@ namespace Internal.TypeSystem.Ecma
             {
                 TypeDesc baseType = this.BaseType;
 
-                if (_module.Context.IsWellKnownType(baseType, WellKnownType.ValueType))
+                if (baseType != null && baseType.IsWellKnownType(WellKnownType.ValueType))
                 {
                     flags |= TypeFlags.ValueType;
                 }
                 else
-                if (_module.Context.IsWellKnownType(baseType, WellKnownType.Enum))
+                if (baseType != null && baseType.IsWellKnownType(WellKnownType.Enum))
                 {
                     flags |= TypeFlags.Enum;
                 }

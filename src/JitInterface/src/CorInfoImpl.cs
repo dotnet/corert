@@ -1435,8 +1435,8 @@ namespace Internal.JitInterface
                     else
                     {
                         var owningType = field.OwningType;
-                        if ((field.Context.IsWellKnownType(owningType, WellKnownType.IntPtr) ||
-                                field.Context.IsWellKnownType(owningType, WellKnownType.UIntPtr)) &&
+                        if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
+                                owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
                                     field.Name == "Zero")
                         {
                             fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;

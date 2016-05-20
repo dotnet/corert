@@ -268,7 +268,8 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.Context.IsWellKnownType(this.BaseType, WellKnownType.MulticastDelegate);
+                var baseType = this.BaseType;
+                return (baseType != null) ? baseType.IsWellKnownType(WellKnownType.MulticastDelegate) : false;
             }
         }
 
@@ -284,7 +285,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.Context.IsWellKnownType(this, WellKnownType.String);
+                return this.IsWellKnownType(WellKnownType.String);
             }
         }
 
@@ -292,7 +293,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.Context.IsWellKnownType(this, WellKnownType.Object);
+                return this.IsWellKnownType(WellKnownType.Object);
             }
         }
 
@@ -300,7 +301,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.Context.IsWellKnownType(GetTypeDefinition(), WellKnownType.Nullable);
+                return this.GetTypeDefinition().IsWellKnownType(WellKnownType.Nullable);
             }
         }
 
