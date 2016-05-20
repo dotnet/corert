@@ -1358,11 +1358,11 @@ namespace Internal.JitInterface
 
     // These are error codes returned by CompileMethod
     public enum CorJitResult
-    {/*
+    {
         // Note that I dont use FACILITY_NULL for the facility number,
         // we may want to get a 'real' facility number
-        CORJIT_OK = NO_ERROR,
-        CORJIT_BADCODE = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 1),
+        CORJIT_OK = 0 /*NO_ERROR*/,
+      /*CORJIT_BADCODE = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 1),
         CORJIT_OUTOFMEM = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2),
         CORJIT_INTERNALERROR = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3),
         CORJIT_SKIPPED = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4),
