@@ -1423,7 +1423,7 @@ namespace Internal.JitInterface
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
                     pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
-                    ReadyToRunHelperId helperId;
+                    ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
                     if (field.IsThreadStatic)
                     {
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
@@ -1434,11 +1434,24 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        var owningType = field.OwningType;
+                        if ((field.Context.IsWellKnownType(owningType, WellKnownType.IntPtr) ||
+                                field.Context.IsWellKnownType(owningType, WellKnownType.UIntPtr)) &&
+                                    field.Name == "Zero")
+                        {
+                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
+                        }
+                        else
+                        {
+                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        }
                     }
 
-                    pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
-                    pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                    if (helperId != ReadyToRunHelperId.Invalid)
+                    {
+                        pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                        pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                    }
                 }
             }
             else
