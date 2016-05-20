@@ -10,6 +10,11 @@ namespace Internal.TypeSystem
 {
     static public class TypeSystemHelpers
     {
+        static public bool IsWellKnownType(this TypeDesc type, WellKnownType wellKnownType)
+        {
+            return type == type.Context.GetWellKnownType(wellKnownType);
+        }
+
         static public InstantiatedType MakeInstantiatedType(this MetadataType typeDef, Instantiation instantiation)
         {
             return typeDef.Context.GetInstantiatedType(typeDef, instantiation);

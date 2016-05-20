@@ -51,7 +51,7 @@ namespace Internal.TypeSystem
             }
 
             if (thisType.HasNotNullableValueTypeConstraint &&
-                thisType.Context.IsWellKnownType(otherType, WellKnownType.ValueType))
+                otherType.IsWellKnownType(WellKnownType.ValueType))
             {
                 return true;
             }
