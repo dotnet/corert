@@ -15,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public enum ReadyToRunHelperId
     {
+        Invalid,
         NewHelper,
         NewArr1,
         VirtualCall,
