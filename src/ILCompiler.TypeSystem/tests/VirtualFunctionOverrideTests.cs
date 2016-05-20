@@ -112,7 +112,7 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        [ActiveIssue(-1)] // Disabled due to https://github.com/dotnet/corert/issues/1302
+        [ActiveIssue(1302)]
         public void TestExplicitOverride()
         {
             //
