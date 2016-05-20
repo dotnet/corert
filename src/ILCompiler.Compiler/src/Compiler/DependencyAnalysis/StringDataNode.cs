@@ -5,6 +5,8 @@
 using System;
 using System.Text;
 
+using Internal.TypeSystem;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public class StringDataNode : ObjectNode, ISymbolNode
@@ -57,6 +59,16 @@ namespace ILCompiler.DependencyAnalysis
         public void SetId(int id)
         {
             _id = id;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            // Allocating string literal from the literal data requires the string EEType.
+            var list = new DependencyList() {
+                new DependencyListEntry(factory.ConstructedTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String)), "String literal")
+            };
+
+            return list;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

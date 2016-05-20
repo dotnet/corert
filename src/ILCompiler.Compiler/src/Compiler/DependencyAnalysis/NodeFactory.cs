@@ -59,6 +59,14 @@ namespace ILCompiler.DependencyAnalysis
             get; private set;
         }
 
+        public CompilerTypeSystemContext TypeSystemContext
+        {
+            get
+            {
+                return _context;
+            }
+        }
+
         private struct NodeCache<TKey, TValue>
         {
             private Func<TKey, TValue> _creator;
