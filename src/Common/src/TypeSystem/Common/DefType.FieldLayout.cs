@@ -267,8 +267,8 @@ namespace Internal.TypeSystem
                 {
                     Debug.Assert(fieldAndOffset.Field.OwningType == this);
                     fieldAndOffset.Field.InitializeOffset(fieldAndOffset.Offset);
-                    _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceTypeFieldsLayout);
                 }
+                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceTypeFieldsLayout);
             }
 
             _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedInstanceTypeLayout);
