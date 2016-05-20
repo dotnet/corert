@@ -2184,17 +2184,22 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
+                IMethodNode targetNode;
+
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    targetMethod = targetMethod.GetStringInitializer();
+                    targetNode = _compilation.NodeFactory.Constructor(targetMethod.GetStringInitializer());
+                }
+                else
+                {
+                    targetNode = _compilation.NodeFactory.MethodEntrypoint(targetMethod);
                 }
 
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(targetNode);
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
