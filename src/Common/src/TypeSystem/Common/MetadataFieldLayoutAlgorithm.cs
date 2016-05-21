@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -482,6 +484,119 @@ namespace Internal.TypeSystem
             byteCount.Alignment = alignment;
 
             return result;
+        }
+
+        public override ValueTypePassingCharacteristics ComputeValueTypePassingCharacteristics(DefType type)
+        {
+            ValueTypePassingCharacteristics result = ComputeHomogeneousFloatAggregateCharacteristic(type);
+
+            // TODO: System V AMD64 characteristics (https://github.com/dotnet/corert/issues/158)
+
+            return result;
+        }
+
+        private ValueTypePassingCharacteristics ComputeHomogeneousFloatAggregateCharacteristic(DefType type)
+        {
+            MetadataType metadataType = (MetadataType)type;
+
+            // No HFAs with explicit layout. There may be cases where explicit layout may be still
+            // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
+            // unconditionally disable HFAs for explicit layout.
+            if (metadataType.IsExplicitLayout)
+                return ValueTypePassingCharacteristics.None;
+
+            switch (metadataType.Category)
+            {
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    // These are the primitive types that constitute a HFA type.
+                    return ValueTypePassingCharacteristics.HomogenousFloatAggregate;
+
+                case TypeFlags.ValueType:
+                    DefType expectedElementType = null;
+
+                    foreach (FieldDesc field in metadataType.GetFields())
+                    {
+                        if (field.IsStatic)
+                            continue;
+
+                        // If a field isn't a DefType, then this type cannot be an HFA type
+                        // If a field isn't a HFA type, then this type cannot be an HFA type
+                        DefType fieldType = field.FieldType as DefType;
+                        if (fieldType == null || !fieldType.IsHfa)
+                            return ValueTypePassingCharacteristics.None;
+
+                        if (expectedElementType == null)
+                        {
+                            // If we hadn't yet figured out what form of HFA this type might be, we've
+                            // now found one case.
+                            expectedElementType = fieldType.HfaElementType;
+                            Debug.Assert(expectedElementType != null);
+                        }
+                        else if (expectedElementType != fieldType.HfaElementType)
+                        {
+                            // If we had already determined the possible HFA type of the current type, but
+                            // the field we've encountered is not of that type, then the current type cannot
+                            // be an HFA type.
+                            return ValueTypePassingCharacteristics.None;
+                        }
+                    }
+
+                    // No fields means this is not HFA.
+                    if (expectedElementType == null)
+                        return ValueTypePassingCharacteristics.None;
+
+                    // Note that we check the total size, but do not perform any checks on number of fields:
+                    // - Type of fields can be HFA valuetype itself
+                    // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
+                    //   the valuetype is HFA and explicitly specified size
+                    int maxSize = expectedElementType.InstanceFieldSize * expectedElementType.Context.Target.MaximumHfaElementCount;
+                    if (type.InstanceFieldSize > maxSize)
+                        return ValueTypePassingCharacteristics.None;
+
+                    // All the tests passed. This is an HFA type.
+                    return ValueTypePassingCharacteristics.HomogenousFloatAggregate;
+            }
+
+            return ValueTypePassingCharacteristics.None;
+        }
+
+        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
+        {
+            if (!type.IsHfa)
+                return null;
+
+            if (type.IsWellKnownType(WellKnownType.Double) || type.IsWellKnownType(WellKnownType.Single))
+                return type;
+
+            for (;;)
+            {
+                Debug.Assert(type.IsValueType);
+
+                // All HFA fields have to be of the same type, so we can just return the type of the first field
+                IEnumerator<FieldDesc> fieldEnumerator = type.GetFields().GetEnumerator();
+                bool hasElement = fieldEnumerator.MoveNext();
+                Debug.Assert(hasElement);
+                TypeDesc firstFieldType = fieldEnumerator.Current.FieldType;
+
+                switch (firstFieldType.Category)
+                {
+                    case TypeFlags.Single:
+                    case TypeFlags.Double:
+                        return (DefType)firstFieldType;
+
+                    case TypeFlags.ValueType:
+                        // Drill into the struct and find the type of its first field
+                        type = (DefType)firstFieldType;
+                        break;
+
+                    default:
+                        // This should never happen. IsHfa should be set only on types
+                        // that have a valid HFA type when the flag is used to track HFA status.
+                        Debug.Assert(false);
+                        return null;
+                }
+            }
         }
 
         private struct SizeAndAlignment

@@ -35,6 +35,17 @@ namespace Internal.TypeSystem
         /// Compute if the fields of the specified type contain a GC pointer
         /// </summary>
         public abstract bool ComputeContainsGCPointers(DefType type);
+
+        /// <summary>
+        /// Compute rules around passing valuetype parameters by value.
+        /// </summary>
+        public abstract ValueTypePassingCharacteristics ComputeValueTypePassingCharacteristics(DefType type);
+
+        /// <summary>
+        /// If the type has <see cref="ValueTypePassingCharacteristics.HomogenousFloatAggregate"/> characteristic, returns
+        /// the element type of the homogenous float aggregate. This will either be System.Double or System.Float.
+        /// </summary>
+        public abstract DefType ComputeHomogeneousFloatAggregateElementType(DefType type);
     }
 
     public struct ComputedInstanceFieldLayout
@@ -69,5 +80,18 @@ namespace Internal.TypeSystem
         /// Otherwise, only the non-field based data is considered to be complete
         /// </summary>
         public FieldAndOffset[] Offsets;
+    }
+
+    /// <summary>
+    /// Describes special rules around passing struct type parameters of a given type by value.
+    /// </summary>
+    public enum ValueTypePassingCharacteristics
+    {
+        None = 0x00,
+
+        /// <summary>
+        /// The structure is an aggregate of floating point values of the same type.
+        /// </summary>
+        HomogenousFloatAggregate = 0x01,
     }
 }

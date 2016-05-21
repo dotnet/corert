@@ -44,6 +44,11 @@ namespace Internal.TypeSystem
             /// True if the static field layout for the static fields have been computed
             /// </summary>
             public const int ComputedStaticFieldsLayout = 0x20;
+
+            /// <summary>
+            /// True information about how to pass valuetype parameters by value has been computed
+            /// </summary>
+            public const int ComputedValueTypePassingCharacteristics = 0x40;
         }
 
         private class StaticBlockInfo
@@ -62,6 +67,8 @@ namespace Internal.TypeSystem
 
         // Information about various static blocks is rare, so we keep it out of line.
         StaticBlockInfo _staticBlockInfo;
+
+        ValueTypePassingCharacteristics _valueTypePassingCharacteristics;
 
         /// <summary>
         /// Does a type transitively have any fields which are GC object pointers
@@ -242,13 +249,41 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Do the fields of the type satisfy the Homogeneous Float Aggregate classification on ARM architecture?
+        /// Gets a value indicating whether the fields of the type satisfy the Homogeneous Float Aggregate classification.
         /// </summary>
-        public virtual bool IsHFA()
+        public bool IsHfa
         {
-            return false;
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypePassingCharacteristics))
+                {
+                    ComputeValueTypePassingCharacteristics();
+                }
+                return (_valueTypePassingCharacteristics & ValueTypePassingCharacteristics.HomogenousFloatAggregate) != 0;
+            }
         }
-        
+
+        /// <summary>
+        /// Get the Homogeneous Float Aggregate element type if this is a HFA type (<see cref="IsHfa"/> is true).
+        /// </summary>
+        public DefType HfaElementType
+        {
+            get
+            {
+                Debug.Assert(IsHfa);
+
+                // We are not caching this because this is rare and not worth wasting space in DefType.
+                return this.Context.GetLayoutAlgorithmForType(this).ComputeHomogeneousFloatAggregateElementType(this);
+            }
+        }
+
+        private void ComputeValueTypePassingCharacteristics()
+        {
+            _valueTypePassingCharacteristics = this.Context.GetLayoutAlgorithmForType(this).ComputeValueTypePassingCharacteristics(this);
+            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedValueTypePassingCharacteristics);
+        }
+
+
         internal void ComputeInstanceLayout(InstanceLayoutKind layoutKind)
         {
             if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeFieldsLayout | FieldLayoutFlags.ComputedInstanceTypeLayout))
