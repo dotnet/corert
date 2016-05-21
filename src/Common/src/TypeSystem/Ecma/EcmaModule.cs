@@ -487,5 +487,11 @@ namespace Internal.TypeSystem.Ecma
             // String literals are not cached
             return _metadataReader.GetUserString(userStringHandle);
         }
+
+        public override string ToString()
+        {
+            ModuleDefinition moduleDefinition = _metadataReader.GetModuleDefinition();
+            return _metadataReader.GetString(moduleDefinition.Name);
+        }
     }
 }
