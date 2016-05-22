@@ -36,7 +36,12 @@ namespace System.Threading
             if (obj == null)
                 throw new ArgumentNullException("obj");
 
-            if (Lock.IsLock(obj))
+            //
+            // Avoids the overhead of the full casting logic in the runtime.  This is only safe because 
+            // a) EETypePtr overloads operator == to do the right thing, and 
+            // b) Lock is sealed, so we don't need to waste time traversing the inheritence heirarchy.
+            //
+            if (obj.EETypePtr == EETypePtr.EETypePtrOf<Lock>())
                 return RuntimeHelpers.UncheckedCast<Lock>(obj);
 
             return GetLockFromTable(obj);
