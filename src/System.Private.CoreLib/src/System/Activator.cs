@@ -68,24 +68,7 @@ namespace System
         }
 
         [Intrinsic]
-#if CORERT
-        // CORERT-TODO: Add CreateInstanceIntrinsic intrinsic support.
-        // https://github.com/dotnet/corert/issues/368
-        private static T CreateInstanceIntrinsic<T>()
-        {
-            if (RuntimeImports.RhIsValueType(EETypePtr.EETypePtrOf<T>()))
-            {
-                // Assuming the struct has no default constructor is reasonable, given this
-                // is just a workaround. To be 100% correct, this also needs to run the default
-                // ctor if any.
-                return (T)RuntimeImports.RhNewObject(EETypePtr.EETypePtrOf<T>());
-            }
-
-            throw new NotSupportedException("CreateInstance");
-        }
-#else
         private extern static T CreateInstanceIntrinsic<T>();
-#endif
 
         [ThreadStatic]
         internal static bool s_createInstanceMissingDefaultConstructor;
