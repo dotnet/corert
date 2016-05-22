@@ -56,6 +56,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\EETypePtrOfIntrinsic.cs">
       <Link>IL\Stubs\EETypePtrOfIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CreateInstanceIntrinsic.cs">
+      <Link>IL\Stubs\CreateInstanceIntrinsic.cs</Link>
+    </Compile>
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
