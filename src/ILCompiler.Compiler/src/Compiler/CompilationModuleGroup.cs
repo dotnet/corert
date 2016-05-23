@@ -69,16 +69,6 @@ namespace ILCompiler
             }
         }
 
-        public void AddWellKnownTypes()
-        {
-            var stringType = _typeSystemContext.GetWellKnownType(WellKnownType.String);
-
-            if (ContainsType(stringType))
-            {
-                _rootProvider.AddCompilationRoot(stringType, "String type is always generated");
-            }
-        }
-
         protected void AddCompilationRootsForRuntimeExports(EcmaModule module)
         {
             foreach (var type in module.GetAllTypes())

@@ -59,6 +59,14 @@ namespace ILCompiler.DependencyAnalysis
             get; private set;
         }
 
+        public CompilerTypeSystemContext TypeSystemContext
+        {
+            get
+            {
+                return _context;
+            }
+        }
+
         private struct NodeCache<TKey, TValue>
         {
             private Func<TKey, TValue> _creator;
@@ -112,6 +120,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new ExternEETypeSymbolNode(type);
                 }
+            });
+
+            _constructors = new NodeCache<MethodDesc, ConstructorNode>((MethodDesc constructorMethod) =>
+            {
+                return new ConstructorNode(MethodEntrypoint(constructorMethod));
             });
             
             _nonGCStatics = new NodeCache<MetadataType, NonGCStaticsNode>((MetadataType type) =>
@@ -277,6 +290,13 @@ namespace ILCompiler.DependencyAnalysis
         public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
         {
             return _constructedTypeSymbols.GetOrAdd(type);
+        }
+
+        private NodeCache<MethodDesc, ConstructorNode> _constructors;
+
+        public ConstructorNode Constructor(MethodDesc constructorMethod)
+        {
+            return _constructors.GetOrAdd(constructorMethod);
         }
 
         private NodeCache<MetadataType, NonGCStaticsNode> _nonGCStatics;

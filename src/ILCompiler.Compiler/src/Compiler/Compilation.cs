@@ -163,7 +163,6 @@ namespace ILCompiler
 
             _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            _compilationModuleGroup.AddWellKnownTypes();
             _compilationModuleGroup.AddCompilationRoots();
 
             if (!_options.IsCppCodeGen && !_options.MultiFile)
