@@ -488,6 +488,9 @@ namespace Internal.TypeSystem
 
         public override ValueTypePassingCharacteristics ComputeValueTypePassingCharacteristics(DefType type)
         {
+            if (!type.IsValueType)
+                return ValueTypePassingCharacteristics.None;
+
             ValueTypePassingCharacteristics result = ComputeHomogeneousFloatAggregateCharacteristic(type);
 
             // TODO: System V AMD64 characteristics (https://github.com/dotnet/corert/issues/158)
@@ -497,6 +500,8 @@ namespace Internal.TypeSystem
 
         private ValueTypePassingCharacteristics ComputeHomogeneousFloatAggregateCharacteristic(DefType type)
         {
+            Debug.Assert(type.IsValueType);
+
             MetadataType metadataType = (MetadataType)type;
 
             // No HFAs with explicit layout. There may be cases where explicit layout may be still
