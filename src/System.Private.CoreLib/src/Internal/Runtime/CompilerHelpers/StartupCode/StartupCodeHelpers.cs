@@ -157,7 +157,7 @@ namespace Internal.Runtime.CompilerHelpers
                 int count = LowLevelUTF8Encoding.GetCharCount(bytes, len);
                 Debug.Assert(count >= 0);
 
-                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.EETypePtrOf<string>(), count);
+                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.ConstructedEETypePtrOf<string>(), count);
                 fixed (char* dest = newStr)
                 {
                     int newCount = LowLevelUTF8Encoding.GetChars(bytes, len, dest, count);

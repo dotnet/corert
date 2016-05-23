@@ -254,6 +254,11 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Retrieves <see cref="EETypePtr"/> for a type. This can potentially be an EEType that has the VTable
+        /// and GCDesc optimized away. If the EEType pointer is getting used as part of an allocation, use
+        /// <see cref="ConstructedEETypePtrOf{T}"/>.
+        /// </summary>
 #if CORERT
         [Intrinsic]
 #endif
@@ -263,6 +268,30 @@ namespace System
             // This can be achieved by optimizing away the reflection part of this implementation
             // by optimizing typeof(!!0).TypeHandle into "ldtoken !!0", or by
             // completely replacing the body of this method.
+
+            // Compilers are allowed to optimize away some of the components of the emitted EEType
+            // (e.g. the GCDesc and VTable may not be present).
+
+            return typeof(T).TypeHandle.ToEETypePtr();
+        }
+
+        /// <summary>
+        /// Retrieves <see cref="EETypePtr"/> for a type that is safe to be passed to RhNewObj and similar APIs.
+        /// If the EEType is not used as part of allocation, use <see cref="EETypePtrOf{T}"/>.
+        /// </summary>
+#if CORERT
+        [Intrinsic]
+#endif
+        internal static EETypePtr ConstructedEETypePtrOf<T>()
+        {
+            // Compilers are required to provide a low level implementation of this method.
+            // This can be achieved by optimizing away the reflection part of this implementation
+            // by optimizing typeof(!!0).TypeHandle into "ldtoken !!0", or by
+            // completely replacing the body of this method.
+
+            // Compilers are required to track EEType pointers obtained through this method as if they
+            // were constructed (i.e. their VTable and GCDesc has to be present).
+
             return typeof(T).TypeHandle.ToEETypePtr();
         }
     }

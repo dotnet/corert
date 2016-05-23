@@ -793,6 +793,19 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case "ConstructedEETypePtrOf":
+                    if (IsTypeName(method, "System", "EETypePtr"))
+                    {
+                        TypeDesc typeOfEEType = method.Instantiation[0];
+
+                        // Marking the type as constructed is the side effect we care for here.
+                        AddTypeReference(typeOfEEType, true);
+
+                        // We marked the type as constructed, but since we didn't attempt to expand the intrinsic, return false
+                        // so that we process the IL body of the instrinsic.
+                        return false;
+                    }
+                    break;
                 default:
                     break;
             }

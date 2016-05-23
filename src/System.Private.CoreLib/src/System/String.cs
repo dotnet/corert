@@ -1632,7 +1632,7 @@ namespace System
                 // We allocate one extra char as an interop convenience so that our strings are null-
                 // terminated, however, we don't pass the extra +1 to the array allocation because the base
                 // size of this object includes the _firstChar field.
-                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.EETypePtrOf<string>(), length);
+                string newStr = RuntimeImports.RhNewArrayAsString(EETypePtr.ConstructedEETypePtrOf<string>(), length);
                 Debug.Assert(newStr._stringLength == length);
                 return newStr;
             }

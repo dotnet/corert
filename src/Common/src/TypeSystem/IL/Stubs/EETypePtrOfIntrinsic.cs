@@ -17,7 +17,11 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc target)
         {
-            Debug.Assert(target.Name == "EETypePtrOf");
+            // Note: The expanded method body can't fully capture the semantic of ConstructedEETypePtrOf.
+            //       Codegen backend either needs to not use this body and provide its own expansion, or have
+            //       some special casing to capture the difference elsewhere.
+
+            Debug.Assert(target.Name == "EETypePtrOf" || target.Name == "ConstructedEETypePtrOf");
             Debug.Assert(target.Signature.Length == 0
                 && target.Signature.ReturnType == target.OwningType);
             Debug.Assert(target.Instantiation.Length == 1);
