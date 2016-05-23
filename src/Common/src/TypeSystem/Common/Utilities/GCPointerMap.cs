@@ -62,6 +62,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Returns true if the map is all pointers
+        /// </summary>
+        public bool IsAllGCPointers
+        {
+            get
+            {
+                for (int i = 0; i < _numCells; i++)
+                {
+                    if (!this[i])
+                        return false;
+                }
+                return true;
+            }
+        }
+
         public bool this[int index]
         {
             get

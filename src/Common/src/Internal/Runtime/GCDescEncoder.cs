@@ -32,9 +32,18 @@ namespace Internal.Runtime
                     var defType = (DefType)elementType;
                     if (defType.ContainsGCPointers)
                     {
-                        int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
-                        Debug.Assert(numSeries > 0);
-                        return (numSeries + 2) * type.Context.Target.PointerSize;
+                        GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(defType);
+                        if (pointerMap.IsAllGCPointers)
+                        {
+                            // For efficiency this is special cased and encoded as one serie.
+                            return 3 * type.Context.Target.PointerSize;
+                        }
+                        else
+                        {
+                            int numSeries = pointerMap.NumSeries;
+                            Debug.Assert(numSeries > 0);
+                            return (numSeries + 2) * type.Context.Target.PointerSize;
+                        }
                     }
                 }
             }
@@ -72,19 +81,22 @@ namespace Internal.Runtime
 
                 if (elementType.IsGCPointer)
                 {
-                    // TODO: this optimization can be also applied to all element types that have all '1' GCPointerMap
-                    //       get_GCDescSize needs to be updated appropriately when this optimization is enabled
-                    EncodeStandardGCDesc(ref builder,
-                        new GCPointerMap(new[] { 1 }, 1),
-                        4 * builder.TargetPointerSize,
-                        baseSize);
+                    EncodeAllGCPointersArrayGCDesc(ref builder, baseSize);
                 }
                 else if (elementType.IsDefType)
                 {
                     var elementDefType = (DefType)elementType;
                     if (elementDefType.ContainsGCPointers)
                     {
-                        EncodeArrayGCDesc(ref builder, GCPointerMap.FromInstanceLayout(elementDefType), baseSize);
+                        GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(elementDefType);
+                        if (pointerMap.IsAllGCPointers)
+                        {
+                            EncodeAllGCPointersArrayGCDesc(ref builder, baseSize);
+                        }
+                        else
+                        {
+                            EncodeArrayGCDesc(ref builder, pointerMap, baseSize);
+                        }
                     }
                 }
             }
@@ -138,7 +150,18 @@ namespace Internal.Runtime
             builder.EmitNaturalInt(numSeries);
         }
 
-        private static void EncodeArrayGCDesc<T>(ref T builder, GCPointerMap map, int size)
+        // Arrays of all GC references are encoded as special kind of GC desc for efficiency
+        private static void EncodeAllGCPointersArrayGCDesc<T>(ref T builder, int baseSize)
+            where T : struct, ITargetBinaryWriter
+        {
+            builder.EmitNaturalInt(-3 * builder.TargetPointerSize);
+            builder.EmitNaturalInt(baseSize);
+
+            // NumSeries
+            builder.EmitNaturalInt(1);
+        }
+
+        private static void EncodeArrayGCDesc<T>(ref T builder, GCPointerMap map, int baseSize)
             where T : struct, ITargetBinaryWriter
         {
             // NOTE: This format cannot properly represent element types with sizes >= 64k bytes.
@@ -185,7 +208,7 @@ namespace Internal.Runtime
             }
 
             Debug.Assert(numSeries > 0);
-            builder.EmitNaturalInt(size + leadingNonPointerCount * pointerSize);
+            builder.EmitNaturalInt(baseSize + leadingNonPointerCount * pointerSize);
             builder.EmitNaturalInt(-numSeries);
         }
     }
