@@ -270,8 +270,6 @@ namespace Internal.TypeSystem
         {
             get
             {
-                Debug.Assert(IsHfa);
-
                 // We are not caching this because this is rare and not worth wasting space in DefType.
                 return this.Context.GetLayoutAlgorithmForType(this).ComputeHomogeneousFloatAggregateElementType(this);
             }

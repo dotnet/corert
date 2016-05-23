@@ -10,6 +10,7 @@ namespace ValueTypePassingCharacteristics
 {
     struct SimpleHfaFloatStruct
     {
+        static int irrelevantField;
         float field;
     }
 

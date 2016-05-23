@@ -573,11 +573,17 @@ namespace Internal.TypeSystem
             {
                 Debug.Assert(type.IsValueType);
 
-                // All HFA fields have to be of the same type, so we can just return the type of the first field
-                IEnumerator<FieldDesc> fieldEnumerator = type.GetFields().GetEnumerator();
-                bool hasElement = fieldEnumerator.MoveNext();
-                Debug.Assert(hasElement);
-                TypeDesc firstFieldType = fieldEnumerator.Current.FieldType;
+                // All HFA fields have to be of the same HFA type, so we can just return the type of the first field
+                TypeDesc firstFieldType = null;
+                foreach (var field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+
+                    firstFieldType = field.FieldType;
+                    break;
+                }
+                Debug.Assert(firstFieldType != null, "Why is IsHfa true on this type?");
 
                 switch (firstFieldType.Category)
                 {
