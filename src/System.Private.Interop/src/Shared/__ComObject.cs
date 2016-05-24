@@ -2323,6 +2323,10 @@ namespace System.Runtime.InteropServices
                         }
                         else
                         {
+                            //
+                            // Reset the stream (ignoring any errors).
+                            // 
+                            McgComHelpers.SeekStreamToBeginning(pStream);
                             return pUnknown;
                         }
                     }
