@@ -173,6 +173,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
       <Link>Ecma\CustomAttributeTypeProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.cs">
+      <Link>Ecma\EcmaAssembly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
+      <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
       <Link>Ecma\EcmaModule.Symbols.cs</Link>
     </Compile>

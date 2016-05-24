@@ -29,7 +29,7 @@ namespace MetadataTransformTests
 
         public EcmaModule CreateModuleForSimpleName(string simpleName)
         {
-            EcmaModule module = new EcmaModule(this, new PEReader(File.OpenRead(simpleName + ".dll")));
+            EcmaModule module = EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")));
             _modules.Add(simpleName, module);
             return module;
         }

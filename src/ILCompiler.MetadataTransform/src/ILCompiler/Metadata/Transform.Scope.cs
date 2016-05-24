@@ -62,13 +62,13 @@ namespace ILCompiler.Metadata
 
                 scopeDefinition.PublicKey = assemblyName.GetPublicKey();
 
-                Cts.Ecma.EcmaModule ecmaModule = module as Cts.Ecma.EcmaModule;
-                if (ecmaModule != null)
+                Cts.Ecma.EcmaAssembly ecmaAssembly = module as Cts.Ecma.EcmaAssembly;
+                if (ecmaAssembly != null)
                 {
-                    Ecma.CustomAttributeHandleCollection customAttributes = ecmaModule.AssemblyDefinition.GetCustomAttributes();
+                    Ecma.CustomAttributeHandleCollection customAttributes = ecmaAssembly.AssemblyDefinition.GetCustomAttributes();
                     if (customAttributes.Count > 0)
                     {
-                        scopeDefinition.CustomAttributes = HandleCustomAttributes(ecmaModule, customAttributes);
+                        scopeDefinition.CustomAttributes = HandleCustomAttributes(ecmaAssembly, customAttributes);
                     }
                 }
             }

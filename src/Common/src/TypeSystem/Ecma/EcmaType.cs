@@ -429,7 +429,7 @@ namespace Internal.TypeSystem.Ecma
 
         public override string ToString()
         {
-            return "[" + _module.GetName().Name + "]" + this.GetFullName();
+            return "[" + _module.ToString() + "]" + this.GetFullName();
         }
 
         public override ClassLayoutMetadata GetClassLayout()

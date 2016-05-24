@@ -37,7 +37,7 @@ namespace TypeSystemTests
 
         public ModuleDesc CreateModuleForSimpleName(string simpleName)
         {
-            ModuleDesc module = new Internal.TypeSystem.Ecma.EcmaModule(this, new PEReader(File.OpenRead(simpleName + ".dll")));
+            ModuleDesc module = Internal.TypeSystem.Ecma.EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")));
             _modules.Add(simpleName, module);
             return module;
         }
