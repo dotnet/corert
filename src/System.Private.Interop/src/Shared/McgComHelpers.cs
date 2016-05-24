@@ -160,6 +160,12 @@ namespace System.Runtime.InteropServices
             if (pMarshal == default(IntPtr))
                 return false;
 
+#if CORECLR 
+           // Temp Workaround for coreclr
+           McgMarshal.ComRelease_StdCall(pMarshal);
+           return true;
+#else
+
             try
             {
                 //
@@ -194,6 +200,7 @@ namespace System.Runtime.InteropServices
             {
                 McgMarshal.ComRelease_StdCall(pMarshal);
             }
+#endif
         }
 
         /// <summary>
