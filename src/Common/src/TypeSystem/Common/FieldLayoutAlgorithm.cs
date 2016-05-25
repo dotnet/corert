@@ -37,12 +37,13 @@ namespace Internal.TypeSystem
         public abstract bool ComputeContainsGCPointers(DefType type);
 
         /// <summary>
-        /// Compute rules around passing valuetype parameters by value.
+        /// Compute the shape of a valuetype. The shape information is used to control code generation and allocation
+        /// (such as vectorization, passing the valuetype by value across method calls, or boxing alignment).
         /// </summary>
-        public abstract ValueTypePassingCharacteristics ComputeValueTypePassingCharacteristics(DefType type);
+        public abstract ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type);
 
         /// <summary>
-        /// If the type has <see cref="ValueTypePassingCharacteristics.HomogenousFloatAggregate"/> characteristic, returns
+        /// If the type has <see cref="ValueTypeShapeCharacteristics.HomogenousFloatAggregate"/> characteristic, returns
         /// the element type of the homogenous float aggregate. This will either be System.Double or System.Float.
         /// </summary>
         public abstract DefType ComputeHomogeneousFloatAggregateElementType(DefType type);
@@ -83,9 +84,9 @@ namespace Internal.TypeSystem
     }
 
     /// <summary>
-    /// Describes special rules around passing struct type parameters of a given type by value.
+    /// Describes shape of a value type for code generation and allocation purposes.
     /// </summary>
-    public enum ValueTypePassingCharacteristics
+    public enum ValueTypeShapeCharacteristics
     {
         None = 0x00,
 

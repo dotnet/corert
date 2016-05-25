@@ -486,19 +486,19 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        public override ValueTypePassingCharacteristics ComputeValueTypePassingCharacteristics(DefType type)
+        public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (!type.IsValueType)
-                return ValueTypePassingCharacteristics.None;
+                return ValueTypeShapeCharacteristics.None;
 
-            ValueTypePassingCharacteristics result = ComputeHomogeneousFloatAggregateCharacteristic(type);
+            ValueTypeShapeCharacteristics result = ComputeHomogeneousFloatAggregateCharacteristic(type);
 
             // TODO: System V AMD64 characteristics (https://github.com/dotnet/corert/issues/158)
 
             return result;
         }
 
-        private ValueTypePassingCharacteristics ComputeHomogeneousFloatAggregateCharacteristic(DefType type)
+        private ValueTypeShapeCharacteristics ComputeHomogeneousFloatAggregateCharacteristic(DefType type)
         {
             Debug.Assert(type.IsValueType);
 
@@ -508,14 +508,14 @@ namespace Internal.TypeSystem
             // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
             // unconditionally disable HFAs for explicit layout.
             if (metadataType.IsExplicitLayout)
-                return ValueTypePassingCharacteristics.None;
+                return ValueTypeShapeCharacteristics.None;
 
             switch (metadataType.Category)
             {
                 case TypeFlags.Single:
                 case TypeFlags.Double:
                     // These are the primitive types that constitute a HFA type.
-                    return ValueTypePassingCharacteristics.HomogenousFloatAggregate;
+                    return ValueTypeShapeCharacteristics.HomogenousFloatAggregate;
 
                 case TypeFlags.ValueType:
                     DefType expectedElementType = null;
@@ -529,7 +529,7 @@ namespace Internal.TypeSystem
                         // If a field isn't a HFA type, then this type cannot be an HFA type
                         DefType fieldType = field.FieldType as DefType;
                         if (fieldType == null || !fieldType.IsHfa)
-                            return ValueTypePassingCharacteristics.None;
+                            return ValueTypeShapeCharacteristics.None;
 
                         if (expectedElementType == null)
                         {
@@ -543,13 +543,13 @@ namespace Internal.TypeSystem
                             // If we had already determined the possible HFA type of the current type, but
                             // the field we've encountered is not of that type, then the current type cannot
                             // be an HFA type.
-                            return ValueTypePassingCharacteristics.None;
+                            return ValueTypeShapeCharacteristics.None;
                         }
                     }
 
                     // No fields means this is not HFA.
                     if (expectedElementType == null)
-                        return ValueTypePassingCharacteristics.None;
+                        return ValueTypeShapeCharacteristics.None;
 
                     // Note that we check the total size, but do not perform any checks on number of fields:
                     // - Type of fields can be HFA valuetype itself
@@ -557,13 +557,13 @@ namespace Internal.TypeSystem
                     //   the valuetype is HFA and explicitly specified size
                     int maxSize = expectedElementType.InstanceFieldSize * expectedElementType.Context.Target.MaximumHfaElementCount;
                     if (type.InstanceFieldSize > maxSize)
-                        return ValueTypePassingCharacteristics.None;
+                        return ValueTypeShapeCharacteristics.None;
 
                     // All the tests passed. This is an HFA type.
-                    return ValueTypePassingCharacteristics.HomogenousFloatAggregate;
+                    return ValueTypeShapeCharacteristics.HomogenousFloatAggregate;
             }
 
-            return ValueTypePassingCharacteristics.None;
+            return ValueTypeShapeCharacteristics.None;
         }
 
         public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
@@ -602,9 +602,7 @@ namespace Internal.TypeSystem
                         break;
 
                     default:
-                        // This should never happen. IsHfa should be set only on types
-                        // that have a valid HFA type when the flag is used to track HFA status.
-                        Debug.Assert(false);
+                        Debug.Assert(false, "Why is IsHfa true on this type?");
                         return null;
                 }
             }

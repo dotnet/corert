@@ -46,9 +46,9 @@ namespace Internal.TypeSystem
             public const int ComputedStaticFieldsLayout = 0x20;
 
             /// <summary>
-            /// True information about how to pass valuetype parameters by value has been computed
+            /// True if information about the shape of value type has been computed.
             /// </summary>
-            public const int ComputedValueTypePassingCharacteristics = 0x40;
+            public const int ComputedValueTypeShapeCharacteristics = 0x40;
         }
 
         private class StaticBlockInfo
@@ -68,7 +68,7 @@ namespace Internal.TypeSystem
         // Information about various static blocks is rare, so we keep it out of line.
         StaticBlockInfo _staticBlockInfo;
 
-        ValueTypePassingCharacteristics _valueTypePassingCharacteristics;
+        ValueTypeShapeCharacteristics _valueTypeShapeCharacteristics;
 
         /// <summary>
         /// Does a type transitively have any fields which are GC object pointers
@@ -255,11 +255,11 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypePassingCharacteristics))
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics))
                 {
-                    ComputeValueTypePassingCharacteristics();
+                    ComputeValueTypeShapeCharacteristics();
                 }
-                return (_valueTypePassingCharacteristics & ValueTypePassingCharacteristics.HomogenousFloatAggregate) != 0;
+                return (_valueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.HomogenousFloatAggregate) != 0;
             }
         }
 
@@ -275,10 +275,10 @@ namespace Internal.TypeSystem
             }
         }
 
-        private void ComputeValueTypePassingCharacteristics()
+        private void ComputeValueTypeShapeCharacteristics()
         {
-            _valueTypePassingCharacteristics = this.Context.GetLayoutAlgorithmForType(this).ComputeValueTypePassingCharacteristics(this);
-            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedValueTypePassingCharacteristics);
+            _valueTypeShapeCharacteristics = this.Context.GetLayoutAlgorithmForType(this).ComputeValueTypeShapeCharacteristics(this);
+            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics);
         }
 
 

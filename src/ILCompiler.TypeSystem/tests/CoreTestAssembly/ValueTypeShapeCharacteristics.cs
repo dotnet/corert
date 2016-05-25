@@ -6,7 +6,7 @@ using System;
 
 #pragma warning disable 169
 
-namespace ValueTypePassingCharacteristics
+namespace ValueTypeShapeCharacteristics
 {
     struct SimpleHfaFloatStruct
     {

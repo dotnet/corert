@@ -8,14 +8,14 @@ using Xunit;
 
 namespace TypeSystemTests
 {
-    public class ValueTypePassingCharacteristicsTests
+    public class ValueTypeShapeCharacteristicsTests
     {
         TestTypeSystemContext _context;
         ModuleDesc _testModule;
         DefType _singleType;
         DefType _doubleType;
 
-        public ValueTypePassingCharacteristicsTests()
+        public ValueTypeShapeCharacteristicsTests()
         {
             _context = new TestTypeSystemContext(TargetArchitecture.X64);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
@@ -40,15 +40,15 @@ namespace TypeSystemTests
         [Fact]
         public void TestSimpleHfa()
         {
-            var simpleHfaFloatStruct = _testModule.GetType("ValueTypePassingCharacteristics", "SimpleHfaFloatStruct");
+            var simpleHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaFloatStruct");
             Assert.True(simpleHfaFloatStruct.IsHfa);
             Assert.Equal(_singleType, simpleHfaFloatStruct.HfaElementType);
 
-            var simpleHfaFloatStructWithManyFields = _testModule.GetType("ValueTypePassingCharacteristics", "SimpleHfaFloatStructWithManyFields");
+            var simpleHfaFloatStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaFloatStructWithManyFields");
             Assert.True(simpleHfaFloatStructWithManyFields.IsHfa);
             Assert.Equal(_singleType, simpleHfaFloatStructWithManyFields.HfaElementType);
 
-            var simpleHfaDoubleStruct = _testModule.GetType("ValueTypePassingCharacteristics", "SimpleHfaDoubleStruct");
+            var simpleHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaDoubleStruct");
             Assert.True(simpleHfaDoubleStruct.IsHfa);
             Assert.Equal(_doubleType, simpleHfaDoubleStruct.HfaElementType);
         }
@@ -56,11 +56,11 @@ namespace TypeSystemTests
         [Fact]
         public void TestCompositeHfa()
         {
-            var compositeHfaFloatStruct = _testModule.GetType("ValueTypePassingCharacteristics", "CompositeHfaFloatStruct");
+            var compositeHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "CompositeHfaFloatStruct");
             Assert.True(compositeHfaFloatStruct.IsHfa);
             Assert.Equal(_singleType, compositeHfaFloatStruct.HfaElementType);
 
-            var compositeHfaDoubleStruct = _testModule.GetType("ValueTypePassingCharacteristics", "CompositeHfaDoubleStruct");
+            var compositeHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "CompositeHfaDoubleStruct");
             Assert.True(compositeHfaDoubleStruct.IsHfa);
             Assert.Equal(_doubleType, compositeHfaDoubleStruct.HfaElementType);
         }
@@ -68,19 +68,19 @@ namespace TypeSystemTests
         [Fact]
         public void TestHfaNegative()
         {
-            var nonHfaEmptyStruct = _testModule.GetType("ValueTypePassingCharacteristics", "NonHfaEmptyStruct");
+            var nonHfaEmptyStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaEmptyStruct");
             Assert.False(nonHfaEmptyStruct.IsHfa);
 
-            var nonHfaStruct = _testModule.GetType("ValueTypePassingCharacteristics", "NonHfaStruct");
+            var nonHfaStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaStruct");
             Assert.False(nonHfaStruct.IsHfa);
 
-            var nonHfaMixedStruct = _testModule.GetType("ValueTypePassingCharacteristics", "NonHfaMixedStruct");
+            var nonHfaMixedStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaMixedStruct");
             Assert.False(nonHfaMixedStruct.IsHfa);
 
-            var nonHfaCompositeStruct = _testModule.GetType("ValueTypePassingCharacteristics", "NonHfaCompositeStruct");
+            var nonHfaCompositeStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaCompositeStruct");
             Assert.False(nonHfaCompositeStruct.IsHfa);
 
-            var nonHfaStructWithManyFields = _testModule.GetType("ValueTypePassingCharacteristics", "NonHfaStructWithManyFields");
+            var nonHfaStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaStructWithManyFields");
             Assert.False(nonHfaStructWithManyFields.IsHfa);
 
             var objectType = _context.GetWellKnownType(WellKnownType.Object);
