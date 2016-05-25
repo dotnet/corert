@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection;
 using ILCompiler.Metadata;
 using Internal.TypeSystem;
 
@@ -10,6 +11,9 @@ namespace MetadataTransformTests
 {
     struct SingleFileMetadataPolicy : IMetadataPolicy
     {
+        private static object s_lazyInitThreadSafetyLock = new object();
+        private ExplicitScopeAssemblyPolicyMixin _explicitScopePolicyMixin;
+
         public bool GeneratesMetadata(MethodDesc methodDef)
         {
             return true;
@@ -34,6 +38,20 @@ namespace MetadataTransformTests
                 return true;
 
             return false;
+        }
+
+        public ModuleDesc GetModuleOfType(MetadataType typeDef)
+        {
+            if (_explicitScopePolicyMixin == null)
+            {
+                lock (s_lazyInitThreadSafetyLock)
+                {
+                    if (_explicitScopePolicyMixin == null)
+                        _explicitScopePolicyMixin = new ExplicitScopeAssemblyPolicyMixin();
+                }
+            }
+
+            return _explicitScopePolicyMixin.GetModuleOfType(typeDef);
         }
     }
 }

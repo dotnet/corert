@@ -17,11 +17,13 @@ namespace MetadataTransformTests
     /// </summary>
     struct MultifileMetadataPolicy : IMetadataPolicy
     {
+        ExplicitScopeAssemblyPolicyMixin _explicitScopePolicyMixin;
         HashSet<ModuleDesc> _modules;
 
         public MultifileMetadataPolicy(params ModuleDesc[] modules)
         {
             _modules = new HashSet<ModuleDesc>(modules);
+            _explicitScopePolicyMixin = new ExplicitScopeAssemblyPolicyMixin();
         }
 
         public bool GeneratesMetadata(MethodDesc methodDef)
@@ -48,6 +50,11 @@ namespace MetadataTransformTests
                 return true;
 
             return false;
+        }
+
+        public ModuleDesc GetModuleOfType(MetadataType typeDef)
+        {
+            return _explicitScopePolicyMixin.GetModuleOfType(typeDef);
         }
     }
 }

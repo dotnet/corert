@@ -141,10 +141,12 @@ namespace ILCompiler
         private struct DummyMetadataPolicy : IMetadataPolicy
         {
             private MetadataGeneration _parent;
+            private ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
 
             public DummyMetadataPolicy(MetadataGeneration parent)
             {
                 _parent = parent;
+                _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
             }
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
@@ -179,6 +181,11 @@ namespace ILCompiler
             public bool IsBlocked(MetadataType typeDef)
             {
                 return false;
+            }
+
+            public ModuleDesc GetModuleOfType(MetadataType typeDef)
+            {
+                return _explicitScopeMixin.GetModuleOfType(typeDef);
             }
         }
     }
