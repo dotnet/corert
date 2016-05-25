@@ -11,7 +11,8 @@ namespace MetadataTransformTests
 {
     struct SingleFileMetadataPolicy : IMetadataPolicy
     {
-        ExplicitScopeAssemblyPolicyMixin _explicitScopePolicyMixin;
+        private static object s_lazyInitThreadSafetyLock = new object();
+        private ExplicitScopeAssemblyPolicyMixin _explicitScopePolicyMixin;
 
         public bool GeneratesMetadata(MethodDesc methodDef)
         {
@@ -42,7 +43,13 @@ namespace MetadataTransformTests
         public ModuleDesc GetModuleOfType(MetadataType typeDef)
         {
             if (_explicitScopePolicyMixin == null)
-                _explicitScopePolicyMixin = new ExplicitScopeAssemblyPolicyMixin();
+            {
+                lock (s_lazyInitThreadSafetyLock)
+                {
+                    if (_explicitScopePolicyMixin == null)
+                        _explicitScopePolicyMixin = new ExplicitScopeAssemblyPolicyMixin();
+                }
+            }
 
             return _explicitScopePolicyMixin.GetModuleOfType(typeDef);
         }
