@@ -44,6 +44,11 @@ namespace Internal.TypeSystem
             /// True if the static field layout for the static fields have been computed
             /// </summary>
             public const int ComputedStaticFieldsLayout = 0x20;
+
+            /// <summary>
+            /// True if information about the shape of value type has been computed.
+            /// </summary>
+            public const int ComputedValueTypeShapeCharacteristics = 0x40;
         }
 
         private class StaticBlockInfo
@@ -62,6 +67,8 @@ namespace Internal.TypeSystem
 
         // Information about various static blocks is rare, so we keep it out of line.
         StaticBlockInfo _staticBlockInfo;
+
+        ValueTypeShapeCharacteristics _valueTypeShapeCharacteristics;
 
         /// <summary>
         /// Does a type transitively have any fields which are GC object pointers
@@ -242,13 +249,39 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Do the fields of the type satisfy the Homogeneous Float Aggregate classification on ARM architecture?
+        /// Gets a value indicating whether the fields of the type satisfy the Homogeneous Float Aggregate classification.
         /// </summary>
-        public virtual bool IsHFA()
+        public bool IsHfa
         {
-            return false;
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics))
+                {
+                    ComputeValueTypeShapeCharacteristics();
+                }
+                return (_valueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.HomogenousFloatAggregate) != 0;
+            }
         }
-        
+
+        /// <summary>
+        /// Get the Homogeneous Float Aggregate element type if this is a HFA type (<see cref="IsHfa"/> is true).
+        /// </summary>
+        public DefType HfaElementType
+        {
+            get
+            {
+                // We are not caching this because this is rare and not worth wasting space in DefType.
+                return this.Context.GetLayoutAlgorithmForType(this).ComputeHomogeneousFloatAggregateElementType(this);
+            }
+        }
+
+        private void ComputeValueTypeShapeCharacteristics()
+        {
+            _valueTypeShapeCharacteristics = this.Context.GetLayoutAlgorithmForType(this).ComputeValueTypeShapeCharacteristics(this);
+            _fieldLayoutFlags.AddFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics);
+        }
+
+
         internal void ComputeInstanceLayout(InstanceLayoutKind layoutKind)
         {
             if (_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeFieldsLayout | FieldLayoutFlags.ComputedInstanceTypeLayout))
