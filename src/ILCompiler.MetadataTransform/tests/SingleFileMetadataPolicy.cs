@@ -13,11 +13,6 @@ namespace MetadataTransformTests
     {
         ExplicitScopeAssemblyPolicyMixin _explicitScopePolicyMixin;
 
-        public void Init()
-        {
-            _explicitScopePolicyMixin = new ExplicitScopeAssemblyPolicyMixin();
-        }
-
         public bool GeneratesMetadata(MethodDesc methodDef)
         {
             return true;
@@ -46,6 +41,9 @@ namespace MetadataTransformTests
 
         public ModuleDesc GetModuleOfType(MetadataType typeDef)
         {
+            if (_explicitScopePolicyMixin == null)
+                _explicitScopePolicyMixin = new ExplicitScopeAssemblyPolicyMixin();
+
             return _explicitScopePolicyMixin.GetModuleOfType(typeDef);
         }
     }

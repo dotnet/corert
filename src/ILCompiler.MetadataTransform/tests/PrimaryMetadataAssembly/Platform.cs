@@ -148,11 +148,3 @@ namespace Internal.Reflection
         { }
     }
 }
-
-namespace Windows
-{
-    [Internal.Reflection.ExplicitScope("Windows, Version=255.255.255.255, Culture=neutral, PublicKeyToken=null, ContentType=WindowsRuntime")]
-    public class Control
-    {
-    }
-}

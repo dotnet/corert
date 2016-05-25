@@ -76,11 +76,11 @@ namespace ILCompiler.Metadata
             }
         }
 
-        private class ExplicitScopeAssemblyDesc : Cts.ModuleDesc, Cts.IAssemblyDesc
+        private class ExplicitScopeAssembly : Cts.ModuleDesc, Cts.IAssemblyDesc
         {
             AssemblyName _assemblyName;
 
-            public ExplicitScopeAssemblyDesc(Cts.TypeSystemContext context, AssemblyName assemblyName) : base(context)
+            public ExplicitScopeAssembly(Cts.TypeSystemContext context, AssemblyName assemblyName) : base(context)
             {
                 _assemblyName = assemblyName;
             }
@@ -93,7 +93,7 @@ namespace ILCompiler.Metadata
             public override Cts.MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
             {
                 if (throwIfNotFound)
-                    throw new TypeLoadException("GetType on an ExplicitScopeAssemblyDesc is not supported");
+                    throw new TypeLoadException("GetType on an ExplicitScopeAssembly is not supported");
                 return null;
             }
 
@@ -108,8 +108,8 @@ namespace ILCompiler.Metadata
             }
         }
 
-        private Dictionary<AssemblyName, ExplicitScopeAssemblyDesc> _dynamicallyGeneratedExplicitScopes = 
-            new Dictionary<AssemblyName, ExplicitScopeAssemblyDesc>(AssemblyNameEqualityComparer.Instance);
+        private Dictionary<AssemblyName, ExplicitScopeAssembly> _dynamicallyGeneratedExplicitScopes = 
+            new Dictionary<AssemblyName, ExplicitScopeAssembly>(AssemblyNameEqualityComparer.Instance);
 
         private Cts.ModuleDesc OverrideModuleOfTypeViaExplicitScope(Cts.MetadataType typeDef)
         {
@@ -135,13 +135,13 @@ namespace ILCompiler.Metadata
 
                 lock(_dynamicallyGeneratedExplicitScopes)
                 {
-                    ExplicitScopeAssemblyDesc explicitScopeAssembly;
+                    ExplicitScopeAssembly explicitScopeAssembly;
 
                     if (_dynamicallyGeneratedExplicitScopes.TryGetValue(assemblyName, out explicitScopeAssembly))
                     {
                         return explicitScopeAssembly;
                     }
-                    explicitScopeAssembly = new ExplicitScopeAssemblyDesc(typeDef.Context, assemblyName);
+                    explicitScopeAssembly = new ExplicitScopeAssembly(typeDef.Context, assemblyName);
                     _dynamicallyGeneratedExplicitScopes.Add(assemblyName, explicitScopeAssembly);
                     return explicitScopeAssembly;
                 }

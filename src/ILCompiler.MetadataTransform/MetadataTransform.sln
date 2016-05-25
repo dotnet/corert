@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.24711.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform", "src\ILCompiler.MetadataTransform.csproj", "{A965EA82-219D-48F7-AD51-BC030C16CC6F}"
 EndProject
@@ -14,6 +14,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimaryMetadataAssembly", "tests\PrimaryMetadataAssembly\PrimaryMetadataAssembly.csproj", "{C29B7395-F925-4B0E-972D-187D2D4BFEC7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleMetadataAssembly", "tests\SampleMetadataAssembly\SampleMetadataAssembly.csproj", "{D29B7395-A925-5B0E-972D-387D2D4BFEC8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsWinrtMetadataAssembly", "tests\WindowsWinrtMetadataAssembly\WindowsWinrtMetadataAssembly.csproj", "{19D0BAA8-8762-4D64-80AF-53D7A2BBC4AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleWinRTMetadataAssembly", "tests\SampleWinRTMetadataAssembly\SampleWinRTMetadataAssembly.csproj", "{46CDD663-FCCC-4E74-901F-3D9D5A36A0D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +49,14 @@ Global
 		{D29B7395-A925-5B0E-972D-387D2D4BFEC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D29B7395-A925-5B0E-972D-387D2D4BFEC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D29B7395-A925-5B0E-972D-387D2D4BFEC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19D0BAA8-8762-4D64-80AF-53D7A2BBC4AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19D0BAA8-8762-4D64-80AF-53D7A2BBC4AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19D0BAA8-8762-4D64-80AF-53D7A2BBC4AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19D0BAA8-8762-4D64-80AF-53D7A2BBC4AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46CDD663-FCCC-4E74-901F-3D9D5A36A0D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46CDD663-FCCC-4E74-901F-3D9D5A36A0D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46CDD663-FCCC-4E74-901F-3D9D5A36A0D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46CDD663-FCCC-4E74-901F-3D9D5A36A0D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
