@@ -18,25 +18,40 @@ namespace MetadataTransformTests
     {
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
-        public EcmaModule GetModuleForSimpleName(string simpleName)
+        public EcmaModule GetModuleForSimpleName(string simpleName, bool throwIfNotFound = true)
         {
-            EcmaModule existingModule;
-            if (_modules.TryGetValue(simpleName, out existingModule))
-                return existingModule;
+            EcmaModule module;
+            if (!_modules.TryGetValue(simpleName, out module))
+            {
+                module = CreateModuleForSimpleName(simpleName);
+            }
 
-            return CreateModuleForSimpleName(simpleName);
+            if (module == null && throwIfNotFound)
+            {
+                throw new FileNotFoundException(simpleName + ".dll");
+            }
+            return module;
         }
 
         public EcmaModule CreateModuleForSimpleName(string simpleName)
         {
-            EcmaModule module = EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")));
+            EcmaModule module = null;
+            try
+            {
+                module = EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")));
+            }
+            catch (FileNotFoundException)
+            {
+                // FileNotFound is treated as being unable to load the module
+            }
+
             _modules.Add(simpleName, module);
             return module;
         }
 
         public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
         {
-            return GetModuleForSimpleName(name.Name);
+            return GetModuleForSimpleName(name.Name, throwIfNotFound);
         }
     }
 }

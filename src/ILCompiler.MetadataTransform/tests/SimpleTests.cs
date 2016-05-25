@@ -7,7 +7,6 @@ using Internal.Metadata.NativeFormat.Writer;
 using ILCompiler.Metadata;
 
 using Cts = Internal.TypeSystem;
-using NativeFormat = Internal.Metadata.NativeFormat;
 
 using Xunit;
 
@@ -35,7 +34,7 @@ namespace MetadataTransformTests
             
             Assert.Equal(
                 _systemModule.GetAllTypes().Count(x => !policy.IsBlocked(x)),
-                transformResult.Scopes.First().GetAllTypes().Count());
+                transformResult.Scopes.Single().GetAllTypes().Count());
         }
 
         [Fact]
@@ -64,9 +63,7 @@ namespace MetadataTransformTests
         [Fact]
         public void TestStandaloneSignatureGeneration()
         {
-            var policy = new SingleFileMetadataPolicy();
-
-            var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
+            var transformResult = MetadataTransform.Run(new SingleFileMetadataPolicy(), new[] { _systemModule });
 
             var stringRecord = transformResult.GetTransformedTypeDefinition(
                 (Cts.MetadataType)_context.GetWellKnownType(Cts.WellKnownType.String));
@@ -89,7 +86,6 @@ namespace MetadataTransformTests
         public void TestSampleMetadataGeneration()
         {
             var policy = new SingleFileMetadataPolicy();
-
             var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
             var transformResult = MetadataTransform.Run(policy,
                 new[] { _systemModule, sampleMetadataModule });
@@ -115,7 +111,7 @@ namespace MetadataTransformTests
 
             Assert.Equal(1, transformResult.Scopes.Count);
 
-            var sampleScope = transformResult.Scopes.First();
+            var sampleScope = transformResult.Scopes.Single();
             Assert.Equal(sampleMetadataModule.GetAllTypes().Count(t => !policy.IsBlocked(t)), sampleScope.GetAllTypes().Count());
 
             var objectType = (Cts.MetadataType)_context.GetWellKnownType(Cts.WellKnownType.Object);
@@ -185,7 +181,6 @@ namespace MetadataTransformTests
             Cts.MetadataType attributeHolder = sampleMetadataModule.GetType("BlockedMetadata", "AttributeHolder");
 
             var policy = new SingleFileMetadataPolicy();
-
             var transformResult = MetadataTransform.Run(policy,
                 new[] { _systemModule, sampleMetadataModule });
 

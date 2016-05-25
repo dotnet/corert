@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
@@ -15,7 +16,8 @@ namespace ILCompiler.Metadata
     /// 
     /// ExplicitScopeAttribute is used to relocate where a given type appears in metadata from one 
     /// metadata assembly to another. It must not be used to relocate into an assembly which otherwise 
-    /// exists within the compilation operation (Current implementation is not reliable in those circumstances.)
+    /// exists within the compilation operation. (Current implementation is not reliable in those
+    /// circumstances, but there is an assert that in debug builds will detect violations.)
     /// </summary>
     public class ExplicitScopeAssemblyPolicyMixin
     {
@@ -132,7 +134,7 @@ namespace ILCompiler.Metadata
 
                 string assemblyNameString = (string)customAttributeValue.Value.FixedArguments[0].Value;
                 AssemblyName assemblyName = new AssemblyName(assemblyNameString);
-
+                Debug.Assert(typeDef.Context.ResolveAssembly(assemblyName, false) == null, "ExplicitScopeAttribute must not refer to an assembly which is actually present in the type system.");
                 lock(_dynamicallyGeneratedExplicitScopes)
                 {
                     ExplicitScopeAssembly explicitScopeAssembly;
