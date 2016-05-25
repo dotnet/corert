@@ -29,10 +29,6 @@ namespace ILCompiler.Metadata
 
         private void InitializeScopeDefinition(Cts.ModuleDesc module, ScopeDefinition scopeDefinition)
         {
-            // Make sure we're expected to create a scope definition here. If the assert fires, the metadata
-            // policy should have directed us to create a scope reference (or the list of inputs was incomplete).
-            Debug.Assert(_modulesToTransform.Contains(module), "Incomplete list of input modules with respect to metadata policy");
-
             var assemblyDesc = module as Cts.IAssemblyDesc;
             if (assemblyDesc != null)
             {

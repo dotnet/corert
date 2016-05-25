@@ -1650,3 +1650,16 @@ namespace SampleMetadataRex
     }
 }
 
+namespace SampleMetadataWinRT
+{
+    // This class should appear to be in a regular managed module
+    public class DerivedFromControl : Windows.Control
+    { }
+
+    // This class should appear to be in a winmd called SampleMetadataWinRT
+    [global::Internal.Reflection.ExplicitScope("SampleMetadataWinRT, Version=255.255.255.255, Culture=neutral, PublicKeyToken=null, ContentType=WindowsRuntime")]
+    public class DerivedFromControlAndInCustomScope : Windows.Control
+    {
+    }
+}
+

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection;
 using ILCompiler.Metadata;
 using Internal.TypeSystem;
 
@@ -10,6 +11,13 @@ namespace MetadataTransformTests
 {
     struct SingleFileMetadataPolicy : IMetadataPolicy
     {
+        ExplicitScopeAssemblyPolicyMixin _explicitScopePolicyMixin;
+
+        public void Init()
+        {
+            _explicitScopePolicyMixin = new ExplicitScopeAssemblyPolicyMixin();
+        }
+
         public bool GeneratesMetadata(MethodDesc methodDef)
         {
             return true;
@@ -34,6 +42,11 @@ namespace MetadataTransformTests
                 return true;
 
             return false;
+        }
+
+        public ModuleDesc GetModuleOfType(MetadataType typeDef)
+        {
+            return _explicitScopePolicyMixin.GetModuleOfType(typeDef);
         }
     }
 }

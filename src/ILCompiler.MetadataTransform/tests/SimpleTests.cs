@@ -7,6 +7,7 @@ using Internal.Metadata.NativeFormat.Writer;
 using ILCompiler.Metadata;
 
 using Cts = Internal.TypeSystem;
+using NativeFormat = Internal.Metadata.NativeFormat;
 
 using Xunit;
 
@@ -28,13 +29,14 @@ namespace MetadataTransformTests
         public void TestAllTypes()
         {
             var policy = new SingleFileMetadataPolicy();
+            policy.Init();
             var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
 
-            Assert.Equal(1, transformResult.Scopes.Count());
+            Assert.Equal(2, transformResult.Scopes.Count());
             
             Assert.Equal(
                 _systemModule.GetAllTypes().Count(x => !policy.IsBlocked(x)),
-                transformResult.Scopes.Single().GetAllTypes().Count());
+                transformResult.Scopes.First().GetAllTypes().Count() + transformResult.Scopes.Last().GetAllTypes().Count());
         }
 
         [Fact]
@@ -44,6 +46,7 @@ namespace MetadataTransformTests
             // up in the __ComObject interface list.
 
             var policy = new SingleFileMetadataPolicy();
+            policy.Init();
             var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
 
             Cts.MetadataType icastable = _systemModule.GetType("System.Private.CompilerServices", "ICastable");
@@ -63,7 +66,10 @@ namespace MetadataTransformTests
         [Fact]
         public void TestStandaloneSignatureGeneration()
         {
-            var transformResult = MetadataTransform.Run(new SingleFileMetadataPolicy(), new[] { _systemModule });
+            var policy = new SingleFileMetadataPolicy();
+            policy.Init();
+
+            var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
 
             var stringRecord = transformResult.GetTransformedTypeDefinition(
                 (Cts.MetadataType)_context.GetWellKnownType(Cts.WellKnownType.String));
@@ -86,17 +92,21 @@ namespace MetadataTransformTests
         public void TestSampleMetadataGeneration()
         {
             var policy = new SingleFileMetadataPolicy();
+            policy.Init();
+
             var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
             var transformResult = MetadataTransform.Run(policy,
                 new[] { _systemModule, sampleMetadataModule });
 
-            Assert.Equal(2, transformResult.Scopes.Count);
+            Assert.Equal(4, transformResult.Scopes.Count);
 
             var systemScope = transformResult.Scopes.Single(s => s.Name.Value == "PrimaryMetadataAssembly");
             var sampleScope = transformResult.Scopes.Single(s => s.Name.Value == "SampleMetadataAssembly");
+            var windowsWinRTScope = transformResult.Scopes.Single(s => s.Name.Value == "Windows");
+            var sampleWinRTScope = transformResult.Scopes.Single(s => s.Name.Value == "SampleMetadataWinRT");
 
-            Assert.Equal(_systemModule.GetAllTypes().Count(t => !policy.IsBlocked(t)), systemScope.GetAllTypes().Count());
-            Assert.Equal(sampleMetadataModule.GetAllTypes().Count(t => !policy.IsBlocked(t)), sampleScope.GetAllTypes().Count());
+            Assert.Equal(_systemModule.GetAllTypes().Count(t => !policy.IsBlocked(t)), systemScope.GetAllTypes().Count() + windowsWinRTScope.GetAllTypes().Count());
+            Assert.Equal(sampleMetadataModule.GetAllTypes().Count(t => !policy.IsBlocked(t)), sampleScope.GetAllTypes().Count() + sampleWinRTScope.GetAllTypes().Count());
 
             // TODO: check individual types
         }
@@ -109,10 +119,11 @@ namespace MetadataTransformTests
             var transformResult = MetadataTransform.Run(policy,
                 new[] { _systemModule, sampleMetadataModule });
 
-            Assert.Equal(1, transformResult.Scopes.Count);
+            Assert.Equal(2, transformResult.Scopes.Count);
 
-            var sampleScope = transformResult.Scopes.Single();
-            Assert.Equal(sampleMetadataModule.GetAllTypes().Count(t => !policy.IsBlocked(t)), sampleScope.GetAllTypes().Count());
+            var sampleScope = transformResult.Scopes.First();
+            var sampleScopeWinRTThing = transformResult.Scopes.Last();
+            Assert.Equal(sampleMetadataModule.GetAllTypes().Count(t => !policy.IsBlocked(t)), sampleScope.GetAllTypes().Count() + sampleScopeWinRTThing.GetAllTypes().Count());
 
             var objectType = (Cts.MetadataType)_context.GetWellKnownType(Cts.WellKnownType.Object);
             var objectRecord = transformResult.GetTransformedTypeReference(objectType);
@@ -181,6 +192,8 @@ namespace MetadataTransformTests
             Cts.MetadataType attributeHolder = sampleMetadataModule.GetType("BlockedMetadata", "AttributeHolder");
 
             var policy = new SingleFileMetadataPolicy();
+            policy.Init();
+
             var transformResult = MetadataTransform.Run(policy,
                 new[] { _systemModule, sampleMetadataModule });
 
@@ -206,6 +219,107 @@ namespace MetadataTransformTests
 
             Assert.Equal(5, allowedCount);
             Assert.Equal(8, blockedCount);
+        }
+
+        public ScopeDefinition GetScopeDefinitionOfType(TypeDefinition typeDefinition)
+        {
+            Assert.NotNull(typeDefinition);
+            ScopeDefinition scope = null;
+            NamespaceDefinition currentNamespaceDefinition = typeDefinition.NamespaceDefinition;
+
+            while (scope == null)
+            {
+                Assert.NotNull(currentNamespaceDefinition);
+                scope = currentNamespaceDefinition.ParentScopeOrNamespace as ScopeDefinition;
+                currentNamespaceDefinition = currentNamespaceDefinition.ParentScopeOrNamespace as NamespaceDefinition;
+            }
+
+            return scope;
+        }
+
+        public ScopeReference GetScopeReferenceOfType(TypeReference typeReference)
+        {
+            Assert.NotNull(typeReference);
+            ScopeReference scope = null;
+            NamespaceReference currentNamespaceReference = typeReference.ParentNamespaceOrType as NamespaceReference;
+
+            while (scope == null)
+            {
+                Assert.NotNull(currentNamespaceReference);
+                scope = currentNamespaceReference.ParentScopeOrNamespace as ScopeReference;
+                currentNamespaceReference = currentNamespaceReference.ParentScopeOrNamespace as NamespaceReference;
+            }
+
+            return scope;
+        }
+
+        public void CheckTypeDefinitionForProperWinRTHome(TypeDefinition typeDefinition, string module)
+        {
+            ScopeDefinition scope = GetScopeDefinitionOfType(typeDefinition);
+            Assert.Equal(module, scope.Name.Value);
+            int windowsRuntimeFlag = ((int)System.Reflection.AssemblyContentType.WindowsRuntime << 9);
+            Assert.True((((int)scope.Flags) & windowsRuntimeFlag) == windowsRuntimeFlag);
+        }
+
+
+        public void CheckTypeReferenceForProperWinRTHome(TypeReference typeReference, string module)
+        {
+            ScopeReference scope = GetScopeReferenceOfType(typeReference);
+            Assert.Equal(module, scope.Name.Value);
+            int windowsRuntimeFlag = ((int)System.Reflection.AssemblyContentType.WindowsRuntime << 9);
+            Assert.True((((int)scope.Flags) & windowsRuntimeFlag) == windowsRuntimeFlag);
+        }
+
+        [Fact]
+        public void TestExplicitScopeAttributesForWinRTSingleFilePolicy()
+        {
+            // Test that custom attributes referring to blocked types don't show up in metadata
+
+            var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
+            Cts.MetadataType controlType = _systemModule.GetType("Windows", "Control");
+            Cts.MetadataType derivedFromControl = sampleMetadataModule.GetType("SampleMetadataWinRT", "DerivedFromControl");
+            Cts.MetadataType derivedFromControlInCustomScope = sampleMetadataModule.GetType("SampleMetadataWinRT", "DerivedFromControlAndInCustomScope");
+
+            var policy = new SingleFileMetadataPolicy();
+            policy.Init();
+
+            var transformResult = MetadataTransform.Run(policy,
+                new[] { _systemModule, sampleMetadataModule });
+
+            var controlTypeMetadata = transformResult.GetTransformedTypeDefinition(controlType);
+            var derivedFromControlMetadata = transformResult.GetTransformedTypeDefinition(derivedFromControl);
+            var derivedFromControlInCustomScopeMetadata = transformResult.GetTransformedTypeDefinition(derivedFromControlInCustomScope);
+
+            CheckTypeDefinitionForProperWinRTHome(controlTypeMetadata, "Windows");
+            ScopeDefinition scopeDefOfDerivedFromControlType = GetScopeDefinitionOfType(derivedFromControlMetadata);
+            Assert.Equal("SampleMetadataAssembly", scopeDefOfDerivedFromControlType.Name.Value);
+            CheckTypeDefinitionForProperWinRTHome(derivedFromControlInCustomScopeMetadata, "SampleMetadataWinRT");
+        }
+
+
+        [Fact]
+        public void TestExplicitScopeAttributesForWinRTMultiFilePolicy()
+        {
+            // Test that custom attributes referring to blocked types don't show up in metadata
+
+            var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
+            Cts.MetadataType controlType = _systemModule.GetType("Windows", "Control");
+            Cts.MetadataType derivedFromControl = sampleMetadataModule.GetType("SampleMetadataWinRT", "DerivedFromControl");
+            Cts.MetadataType derivedFromControlInCustomScope = sampleMetadataModule.GetType("SampleMetadataWinRT", "DerivedFromControlAndInCustomScope");
+
+            var policy = new MultifileMetadataPolicy(sampleMetadataModule);
+
+            var transformResult = MetadataTransform.Run(policy,
+                new[] { _systemModule, sampleMetadataModule });
+
+            var controlTypeMetadata = transformResult.GetTransformedTypeReference(controlType);
+            var derivedFromControlMetadata = transformResult.GetTransformedTypeDefinition(derivedFromControl);
+            var derivedFromControlInCustomScopeMetadata = transformResult.GetTransformedTypeDefinition(derivedFromControlInCustomScope);
+
+            CheckTypeReferenceForProperWinRTHome(controlTypeMetadata, "Windows");
+            ScopeDefinition scopeDefOfDerivedFromControlType = GetScopeDefinitionOfType(derivedFromControlMetadata);
+            Assert.Equal("SampleMetadataAssembly", scopeDefOfDerivedFromControlType.Name.Value);
+            CheckTypeDefinitionForProperWinRTHome(derivedFromControlInCustomScopeMetadata, "SampleMetadataWinRT");
         }
     }
 }

@@ -140,3 +140,19 @@ namespace System.Runtime.CompilerServices
     }
 }
 
+namespace Internal.Reflection
+{
+    public sealed class ExplicitScopeAttribute : System.Attribute
+    {
+        public ExplicitScopeAttribute(string explicitScope)
+        { }
+    }
+}
+
+namespace Windows
+{
+    [Internal.Reflection.ExplicitScope("Windows, Version=255.255.255.255, Culture=neutral, PublicKeyToken=null, ContentType=WindowsRuntime")]
+    public class Control
+    {
+    }
+}
