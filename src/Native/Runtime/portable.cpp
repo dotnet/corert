@@ -56,7 +56,7 @@ struct alloc_context
     int            alloc_count;
 };
 
-#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
+#ifdef USE_PORTABLE_HELPERS
 //
 // PInvoke
 //
@@ -69,7 +69,9 @@ COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
 {
     // TODO: RhpPInvokeReturn
 }
+#endif
 
+#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
 // Allocations
 //

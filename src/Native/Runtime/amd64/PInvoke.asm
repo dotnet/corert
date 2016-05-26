@@ -260,8 +260,6 @@ LEAF_ENTRY RhpPInvoke, _TEXT
         ret
 @@:
         jmp         RhpWaitForSuspend
-
-        ret
 LEAF_END RhpPInvoke, _TEXT
 
 
@@ -278,7 +276,7 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov         rdx, [rcx + OFFSETOF__PInvokeTransitionFrame__m_pThread]
         mov         qword ptr [rdx + OFFSETOF__Thread__m_pTransitionFrame], 0
         cmp         [RhpTrapThreads], 0
-        jne         @f                  ; forward branch - predicted not taken
+        jne         @F                  ; forward branch - predicted not taken
         ret
 @@:
         ; passing transition frame pointer in rcx
