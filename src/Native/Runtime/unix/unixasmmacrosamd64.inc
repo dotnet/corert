@@ -238,7 +238,17 @@ C_FUNC(\Name):
 #define THREAD__VALIDATEEXINFOPOP C_FUNC(_ZN6Thread17ValidateExInfoPopEP6ExInfoPv)
 
 .macro INLINE_GETTHREAD
-        call    C_FUNC(RhpGetThread)
+        // Inlined version of call C_FUNC(RhpGetThread)
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _tls_CurrentThread@TLVP(%rip), %rdi
+        callq   *(%rdi)
+#else
+        leaq    tls_CurrentThread@TLSLD(%rip), %rdi
+        callq   __tls_get_addr@PLT
+        addq    $tls_CurrentThread@DTPOFF, %rax
+#endif
+        .intel_syntax noprefix
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
