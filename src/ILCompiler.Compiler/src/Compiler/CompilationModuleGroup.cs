@@ -87,9 +87,12 @@ namespace ILCompiler
                 {
                     EcmaMethod ecmaMethod = (EcmaMethod)method;
 
-                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                    if (runtimeExportName != null)
-                        _rootProvider.AddCompilationRoot(method, "Runtime export", runtimeExportName);
+                    if (ecmaMethod.IsRuntimeExport)
+                    {
+                        string runtimeExportName = ecmaMethod.GetRuntimeExportName();
+                        if (runtimeExportName != null)
+                            _rootProvider.AddCompilationRoot(method, "Runtime export", runtimeExportName);
+                    }
 
                     if (ecmaMethod.IsNativeCallable)
                     {
