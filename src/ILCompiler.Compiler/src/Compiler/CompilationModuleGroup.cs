@@ -65,7 +65,7 @@ namespace ILCompiler
                 if (module.PEReader.PEHeaders.IsExe)
                     AddMainMethodCompilationRoot(module);
 
-                AddCompilationRootsForRuntimeExports(module);
+                AddCompilationRootsForExports(module);
             }
         }
 
@@ -79,7 +79,7 @@ namespace ILCompiler
             }
         }
 
-        protected void AddCompilationRootsForRuntimeExports(EcmaModule module)
+        protected void AddCompilationRootsForExports(EcmaModule module)
         {
             foreach (var type in module.GetAllTypes())
             {
@@ -87,13 +87,19 @@ namespace ILCompiler
                 {
                     EcmaMethod ecmaMethod = (EcmaMethod)method;
 
-                    string runtimeExportName = ecmaMethod.GetRuntimeExportName();
-                    if (runtimeExportName != null)
-                        _rootProvider.AddCompilationRoot(method, "Runtime export", runtimeExportName);
+                    if (ecmaMethod.IsRuntimeExport)
+                    {
+                        string runtimeExportName = ecmaMethod.GetRuntimeExportName();
+                        if (runtimeExportName != null)
+                            _rootProvider.AddCompilationRoot(method, "Runtime export", runtimeExportName);
+                    }
 
-                    string nativeCallableExportName = ecmaMethod.GetNativeCallableExportName();
-                    if (nativeCallableExportName != null)
-                        _rootProvider.AddCompilationRoot(method, "Native callable", nativeCallableExportName);
+                    if (ecmaMethod.IsNativeCallable)
+                    {
+                        string nativeCallableExportName = ecmaMethod.GetNativeCallableExportName();
+                        if (nativeCallableExportName != null)
+                            _rootProvider.AddCompilationRoot(method, "Native callable", nativeCallableExportName);
+                    }
                 }
             }
         }

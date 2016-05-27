@@ -83,6 +83,18 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets a value specifying whether this method is an exported managed
+        /// entrypoint.
+        /// </summary>
+        public virtual bool IsRuntimeExport
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 
     // Additional members of InstantiatedMethod related to code generation.
