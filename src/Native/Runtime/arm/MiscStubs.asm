@@ -121,6 +121,7 @@ GetHijackedReturnAddress
 
     LEAF_END RhpLoadReturnAddress
 
+        INLINE_GETTHREAD_CONSTANT_POOL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
