@@ -194,4 +194,58 @@ namespace Internal.Runtime
         // Number of field types we support
         Count
     }
+
+    enum EETypeField
+    {
+        ETF_InterfaceMap,
+        ETF_Finalizer,
+        ETF_OptionalFieldsPtr,
+        ETF_NullableType,
+        ETF_SealedVirtualSlots,
+        ETF_DynamicTemplateType,
+        ETF_DynamicDispatchMap,
+    }
+
+    enum CorElementType
+    {
+        ELEMENT_TYPE_VOID = 0x1,
+        ELEMENT_TYPE_BOOLEAN = 0x2,
+        ELEMENT_TYPE_CHAR = 0x3,
+        ELEMENT_TYPE_I1 = 0x4,
+        ELEMENT_TYPE_U1 = 0x5,
+        ELEMENT_TYPE_I2 = 0x6,
+        ELEMENT_TYPE_U2 = 0x7,
+        ELEMENT_TYPE_I4 = 0x8,
+        ELEMENT_TYPE_U4 = 0x9,
+        ELEMENT_TYPE_I8 = 0xa,
+        ELEMENT_TYPE_U8 = 0xb,
+        ELEMENT_TYPE_R4 = 0xc,
+        ELEMENT_TYPE_R8 = 0xd,
+        ELEMENT_TYPE_STRING = 0xe,
+        ELEMENT_TYPE_PTR = 0xf,
+        ELEMENT_TYPE_BYREF = 0x10,
+        ELEMENT_TYPE_VALUETYPE = 0x11,
+        ELEMENT_TYPE_CLASS = 0x12,
+
+        ELEMENT_TYPE_ARRAY = 0x14,
+
+        ELEMENT_TYPE_TYPEDBYREF = 0x16,
+        ELEMENT_TYPE_I = 0x18,
+        ELEMENT_TYPE_U = 0x19,
+        ELEMENT_TYPE_FNPTR = 0x1b,
+        ELEMENT_TYPE_OBJECT = 0x1c,
+        ELEMENT_TYPE_SZARRAY = 0x1d,
+    }
+
+    enum EETypeOptionalFieldTag : byte
+    {
+        OFT_RareFlags,
+        OFT_ICastableIsInstSlot,
+        OFT_DispatchMap,
+        OFT_ValueTypeFieldPadding,
+        OFT_ICastableGetImplTypeSlot,
+        OFT_NullableValueOffset,
+
+        OFT_Count // Number of field types we support
+    }
 }
