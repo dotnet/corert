@@ -1650,4 +1650,22 @@ namespace SampleMetadataRex
     }
 }
 
+namespace SampleMetadataMethodImpl
+{
+    interface ICloneable
+    {
+        void Clone();
+        void GenericClone<T>();
+    }
+
+    class ImplementsICloneable : ICloneable
+    {
+        void ICloneable.Clone()
+        {
+        }
+        void ICloneable.GenericClone<T>()
+        {
+        }
+    }
+}
 

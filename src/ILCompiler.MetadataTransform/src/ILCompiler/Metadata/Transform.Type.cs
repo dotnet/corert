@@ -302,9 +302,24 @@ namespace ILCompiler.Metadata
                 {
                     record.CustomAttributes = HandleCustomAttributes(ecmaEntity.EcmaModule, customAttributes);
                 }
-            }
 
-            // TODO: MethodImpls
+                foreach (var miHandle in ecmaRecord.GetMethodImplementations())
+                {
+                    Ecma.MetadataReader reader = ecmaEntity.EcmaModule.MetadataReader;
+
+                    Ecma.MethodImplementation miDef = reader.GetMethodImplementation(miHandle);
+
+                    Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodBody);
+                    Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodDeclaration);
+                    MethodImpl methodImplRecord = new MethodImpl
+                    {
+                        MethodBody = HandleQualifiedMethod(methodBody),
+                        MethodDeclaration = HandleQualifiedMethod(methodDecl)
+                    };
+
+                    record.MethodImpls.Add(methodImplRecord);
+                }
+            }
         }
 
         private TypeAttributes GetTypeAttributes(Cts.MetadataType type)
