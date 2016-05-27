@@ -31,7 +31,7 @@ namespace MetadataTransformTests
             var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
 
             Assert.Equal(1, transformResult.Scopes.Count());
-            
+
             Assert.Equal(
                 _systemModule.GetAllTypes().Count(x => !policy.IsBlocked(x)),
                 transformResult.Scopes.Single().GetAllTypes().Count());
@@ -206,6 +206,53 @@ namespace MetadataTransformTests
 
             Assert.Equal(5, allowedCount);
             Assert.Equal(8, blockedCount);
+        }
+
+        [Fact]
+        public void TestMethodImplMetadata()
+        {
+            // Test that custom attributes referring to blocked types don't show up in metadata
+
+            var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
+            Cts.MetadataType iCloneable = sampleMetadataModule.GetType("SampleMetadataMethodImpl", "ICloneable");
+            Cts.MetadataType implementsICloneable = sampleMetadataModule.GetType("SampleMetadataMethodImpl", "ImplementsICloneable");
+            Cts.MethodDesc iCloneableDotClone = iCloneable.GetMethod("Clone", null);
+            Cts.MethodDesc iCloneableImplementation = implementsICloneable.GetMethod("SampleMetadataMethodImpl.ICloneable.Clone", null);
+            Cts.MethodDesc iCloneableDotGenericClone = iCloneable.GetMethod("GenericClone", null);
+            Cts.MethodDesc iCloneableGenericImplementation = implementsICloneable.GetMethod("SampleMetadataMethodImpl.ICloneable.GenericClone", null);
+
+            var policy = new SingleFileMetadataPolicy();
+            var transformResult = MetadataTransform.Run(policy,
+                new[] { _systemModule, sampleMetadataModule });
+
+            var iCloneableType = transformResult.GetTransformedTypeDefinition(iCloneable);
+            var implementsICloneableType = transformResult.GetTransformedTypeDefinition(implementsICloneable);
+
+            Assert.Equal(2, implementsICloneableType.MethodImpls.Count);
+
+            // non-generic MethodImpl
+            Method iCloneableDotCloneMethod = transformResult.GetTransformedMethodDefinition(iCloneableDotClone);
+            Method iCloneableImplementationMethod = transformResult.GetTransformedMethodDefinition(iCloneableImplementation);
+            QualifiedMethod methodImplMethodDecl = (QualifiedMethod)implementsICloneableType.MethodImpls[0].MethodDeclaration;
+            QualifiedMethod methodImplMethodBody = (QualifiedMethod)implementsICloneableType.MethodImpls[0].MethodBody;
+
+            Assert.Equal(iCloneableDotCloneMethod, methodImplMethodDecl.Method);
+            Assert.Equal(iCloneableType, methodImplMethodDecl.EnclosingType);
+
+            Assert.Equal(iCloneableImplementationMethod, methodImplMethodBody.Method);
+            Assert.Equal(implementsICloneableType, methodImplMethodBody.EnclosingType);
+
+            // generic MethodImpl
+            Method iCloneableDotGenericCloneMethod = transformResult.GetTransformedMethodDefinition(iCloneableDotGenericClone);
+            Method iCloneableGenericImplementationMethod = transformResult.GetTransformedMethodDefinition(iCloneableGenericImplementation);
+            QualifiedMethod methodImplGenericMethodDecl = (QualifiedMethod)implementsICloneableType.MethodImpls[1].MethodDeclaration;
+            QualifiedMethod methodImplGenericMethodBody = (QualifiedMethod)implementsICloneableType.MethodImpls[1].MethodBody;
+
+            Assert.Equal(iCloneableDotGenericCloneMethod, methodImplGenericMethodDecl.Method);
+            Assert.Equal(iCloneableType, methodImplGenericMethodDecl.EnclosingType);
+
+            Assert.Equal(iCloneableGenericImplementationMethod, methodImplGenericMethodBody.Method);
+            Assert.Equal(implementsICloneableType, methodImplGenericMethodBody.EnclosingType);
         }
     }
 }
