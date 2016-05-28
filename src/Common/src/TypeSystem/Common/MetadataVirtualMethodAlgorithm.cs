@@ -106,7 +106,11 @@ namespace Internal.TypeSystem
                 if (!IsInGroup(newDefiningMethod) &&
                     DefiningMethod != newDefiningMethod)
                 {
+                    // When we set the defining method, ensure that the old defining method isn't removed from the group
+                    MethodDesc oldDefiningMethod = DefiningMethod;
                     DefiningMethod = newDefiningMethod;
+                    AddToGroup(oldDefiningMethod);
+
                     // TODO! Add assertion that DefiningMethod is a slot defining method
                 }
             }
@@ -128,6 +132,7 @@ namespace Internal.TypeSystem
                         if (_members[i] == null)
                         {
                             _members[i] = method;
+                            break;
                         }
                     }
                 }

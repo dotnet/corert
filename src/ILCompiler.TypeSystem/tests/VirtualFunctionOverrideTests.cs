@@ -112,7 +112,6 @@ namespace TypeSystemTests
         }
 
         [Fact]
-        [ActiveIssue(1302)]
         public void TestExplicitOverride()
         {
             //
