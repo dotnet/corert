@@ -126,23 +126,6 @@ GetHijackedReturnAddress:
 LEAF_END RhpLoadReturnAddress, _TEXT
 
 
-;;
-;; RCX = output buffer (an IntPtr[] managed object)
-;;
-NESTED_ENTRY RhGetCurrentThreadStackTrace, _TEXT
-        INLINE_GETTHREAD        rax, r10        ; rax <- Thread pointer, r10 <- trashed
-        mov                     r11, rax        ; r11 <- Thread pointer
-        PUSH_COOP_PINVOKE_FRAME rax, r10, no_extraStack ; rax <- in: Thread, out: trashed, r10 <- trashed
-        END_PROLOGUE
-
-        ;; pass-through argument registers
-        call        RhpCalculateStackTraceWorker
-
-        POP_COOP_PINVOKE_FRAME  no_extraStack
-        ret
-NESTED_END RhGetCurrentThreadStackTrace, _TEXT
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* RhpCopyMultibyteNoGCRefs(void*, void*, size_t)
