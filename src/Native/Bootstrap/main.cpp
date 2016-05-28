@@ -292,10 +292,6 @@ extern "C" void RhpCallFinallyFunclet()
 }
 #endif // CPPCODEGEN
 
-extern "C" void RhGetCurrentThreadStackTrace()
-{
-    throw "RhGetCurrentThreadStackTrace";
-}
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";

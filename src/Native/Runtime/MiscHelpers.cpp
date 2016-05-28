@@ -657,6 +657,17 @@ EXTERN_C REDHAWK_API void __cdecl RhpReleaseCastCacheLock()
     g_CastCacheLock.Leave();
 }
 
+EXTERN_C Int32 __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, UInt32 outputBufferLength);
+
+EXTERN_C REDHAWK_API Int32 __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, UInt32 outputBufferLength)
+{
+    // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
+
+    ThreadStore::GetCurrentThread()->SetupHackPInvokeTunnel();
+
+    return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength);
+}
+
 #ifdef CORERT
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (ModuleManager* pModule, Int32 headerId, Int32* length))
 {

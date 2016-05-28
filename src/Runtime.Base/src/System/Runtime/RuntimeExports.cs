@@ -8,6 +8,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
@@ -494,6 +495,17 @@ namespace System.Runtime
             return pEEType->HashCode;
         }
 
+        [RuntimeExport("RhGetCurrentThreadStackTrace")]
+        [MethodImpl(MethodImplOptions.NoInlining)] // Ensures that the RhGetCurrentThreadStackTrace frame is always present
+        public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)
+        {
+            fixed (IntPtr* pOutputBuffer = outputBuffer)
+                return RhpGetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0));
+        }
+
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        private static unsafe extern int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength);
+
         // Worker for RhGetCurrentThreadStackTrace.  RhGetCurrentThreadStackTrace just allocates a transition
         // frame that will be used to seed the stack trace and this method does all the real work.
         //
@@ -506,26 +518,29 @@ namespace System.Runtime
         // NOTE: We don't want to allocate the array on behalf of the caller because we don't know which class
         // library's objects the caller understands (we support multiple class libraries with multiple root
         // System.Object types).
-        [RuntimeExport("RhpCalculateStackTraceWorker")]
-        public static unsafe int RhpCalculateStackTraceWorker(IntPtr[] outputBuffer)
+        [NativeCallable(EntryPoint = "RhpCalculateStackTraceWorker", CallingConvention = CallingConvention.Cdecl)]
+        private static unsafe int RhpCalculateStackTraceWorker(IntPtr * pOutputBuffer, uint outputBufferLength)
         {
-            int nFrames = 0;
-            bool success = (outputBuffer != null);
+            uint nFrames = 0;
+            bool success = true;
 
             StackFrameIterator frameIter = new StackFrameIterator();
+
             bool isValid = frameIter.Init(null);
-            for (; isValid; isValid = frameIter.Next())
+            Debug.Assert(isValid, "Missing RhGetCurrentThreadStackTrace frame");
+
+            // Note that the while loop will skip RhGetCurrentThreadStackTrace frame
+            while (frameIter.Next())
             {
-                if (outputBuffer != null)
-                {
-                    if (nFrames < outputBuffer.Length)
-                        outputBuffer[nFrames] = new IntPtr(frameIter.ControlPC);
-                    else
-                        success = false;
-                }
+                if (nFrames < outputBufferLength)
+                    pOutputBuffer[nFrames] = new IntPtr(frameIter.ControlPC);
+                else
+                    success = false;
+
                 nFrames++;
             }
-            return success ? nFrames : -nFrames;
+
+            return success ? (int)nFrames : -(int)nFrames;
         }
 
         // The GC conservative reporting descriptor is a special structure of data that the GC

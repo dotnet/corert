@@ -1891,6 +1891,7 @@ namespace System.Runtime.InteropServices
                 pIID->Equals(Interop.COM.IID_IStream) ||
                 pIID->Equals(Interop.COM.IID_ISequentialStream))
             {
+                CalliIntrinsics.StdCall__int(pIStream->pVtable->pfnAddRef, __IntPtr__pComThis);
                 *ppvObject = pIStream;
                 return Interop.COM.S_OK;
             }
@@ -1925,6 +1926,7 @@ namespace System.Runtime.InteropServices
             System.Diagnostics.Debug.Assert(pcbRead == IntPtr.Zero);
             System.Diagnostics.Debug.Assert(pcbWritten == IntPtr.Zero);
             System.Diagnostics.Debug.Assert(cb >= 0);
+
             try
             {
                 __com_IStream* pIStream = (__com_IStream*)pComThis;
@@ -1939,8 +1941,14 @@ namespace System.Runtime.InteropServices
                         cbRead = cbTotal;
                     fixed (byte* pBuf = buffer)
                     {
-                        CalliIntrinsics.StdCall__int(pIStream->pVtable->pfnRead, pComThis, pBuf, (int)cbRead, IntPtr.Zero);
-                        CalliIntrinsics.StdCall__int(pToIStream->pVtable->pfnWrite, pstm, pBuf, (int)cbRead, IntPtr.Zero);
+                        int hr;
+
+                        hr = CalliIntrinsics.StdCall__int(pIStream->pVtable->pfnRead, pComThis, pBuf, (int)cbRead, IntPtr.Zero);
+                        if (hr < 0)
+                            return hr;
+                        hr = CalliIntrinsics.StdCall__int(pToIStream->pVtable->pfnWrite, pstm, pBuf, (int)cbRead, IntPtr.Zero);
+                        if (hr < 0)
+                            return hr;
                     }
                     cbTotal -= cbRead;
                 }
@@ -1966,13 +1974,15 @@ namespace System.Runtime.InteropServices
             if (cbRead <= 0)
                 return Interop.COM.S_FALSE;
 
-            for (int i = 0; i < cbRead; i++)
-            {
-                pByte[i] = pIStream->m_pMem[pIStream->m_cbCurrent + i];
-            }
+            Buffer.MemoryCopy(
+                &pIStream->m_pMem[pIStream->m_cbCurrent],
+                (void*)pv,
+                cb,
+                cb);
             if (pcbRead != null)
                 *pcbRead  = cbRead;
             pIStream->m_cbCurrent += cbRead;
+
             return Interop.COM.S_OK;
         }
 
@@ -1985,14 +1995,15 @@ namespace System.Runtime.InteropServices
             if (cb + pIStream->m_cbCurrent > pIStream->m_cbSize)
                 return Interop.COM.E_OUTOFMEMORY;
 
-            for (int i = 0; i < cb; i++)
-            {
-                pIStream->m_pMem[i + pIStream->m_cbCurrent] = pByte[i];
-            }
+            Buffer.MemoryCopy(
+                (void*)pv,
+                &pIStream->m_pMem[pIStream->m_cbCurrent],
+                cb,
+                cb);
             pIStream->m_cbCurrent += cb;
-
             if (cbWritten != null)
                 *cbWritten = cb;
+
             return Interop.COM.S_OK;
         }
 
@@ -2031,6 +2042,7 @@ namespace System.Runtime.InteropServices
             __com_IStream* pIStream = (__com_IStream*)pComThis;
             pstatstg = new ComTypes.STATSTG();
             pstatstg.cbSize = pIStream->m_cbSize;
+            pstatstg.type = 2; // STGTY_STREAM
             return Interop.COM.S_OK;
         }
 

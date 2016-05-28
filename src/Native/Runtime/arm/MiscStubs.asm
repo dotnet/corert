@@ -121,23 +121,6 @@ GetHijackedReturnAddress
 
     LEAF_END RhpLoadReturnAddress
 
-
-    ;;
-    ;; r0 = output buffer (an IntPtr[] managed object)
-    ;;
-    NESTED_ENTRY RhGetCurrentThreadStackTrace
-
-        COOP_PINVOKE_FRAME_PROLOG
-
-        ;; pass-through argument registers
-        bl          RhpCalculateStackTraceWorker
-
-        nop     ; debugger bug workaround, this fixes the stack trace
-
-        COOP_PINVOKE_FRAME_EPILOG
-
-    NESTED_END RhGetCurrentThreadStackTrace
-
         INLINE_GETTHREAD_CONSTANT_POOL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

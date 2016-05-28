@@ -121,27 +121,6 @@ GetHijackedReturnAddress:
 
 FASTCALL_ENDFUNC
 
-;;
-;; ECX = output buffer (an IntPtr[] managed object)
-;;
-FASTCALL_FUNC RhGetCurrentThreadStackTrace, 4
-
-        push        ebp
-        mov         ebp, esp
-
-        INLINE_GETTHREAD edx, eax       ; edx <- thread, eax <- trashed
-        PUSH_COOP_PINVOKE_FRAME edx
-
-        ;; pass-through argument registers
-        call        RhpCalculateStackTraceWorker
-
-        POP_COOP_PINVOKE_FRAME
-
-        pop         ebp
-        ret
-
-FASTCALL_ENDFUNC
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* __cdecl RhpCopyMultibyteNoGCRefs(void*, void*, size_t)

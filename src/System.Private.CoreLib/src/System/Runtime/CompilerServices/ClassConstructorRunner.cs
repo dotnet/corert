@@ -166,7 +166,7 @@ namespace System.Runtime.CompilerServices
                 // deadlock themselves, then that's a bug in user code.
                 for (;;)
                 {
-                    lock (s_cctorGlobalLock)
+                    using (LockHolder.Hold(s_cctorGlobalLock))
                     {
                         // Ask the guy who holds the cctor lock we're trying to acquire who he's waiting for. Keep 
                         // walking down that chain until we either discover a cycle or reach a non-blocking state. Note 
@@ -281,8 +281,7 @@ namespace System.Runtime.CompilerServices
 #else
                 const int Grow = 10;
 #endif
-                s_cctorGlobalLock.Acquire();
-                try
+                using (LockHolder.Hold(s_cctorGlobalLock))
                 {
                     Cctor[] resultArray = null;
                     int resultIndex = -1;
@@ -348,10 +347,6 @@ namespace System.Runtime.CompilerServices
                     Interlocked.Increment(ref resultArray[resultIndex]._refCount);
                     return new CctorHandle(resultArray, resultIndex);
                 }
-                finally
-                {
-                    s_cctorGlobalLock.Release();
-                }
             }
 
             public static int Count
@@ -365,8 +360,7 @@ namespace System.Runtime.CompilerServices
 
             public static void Release(CctorHandle cctor)
             {
-                s_cctorGlobalLock.Acquire();
-                try
+                using (LockHolder.Hold(s_cctorGlobalLock))
                 {
                     Cctor[] cctors = cctor.Array;
                     int cctorIndex = cctor.Index;
@@ -378,10 +372,6 @@ namespace System.Runtime.CompilerServices
                             s_count--;
                         }
                     }
-                }
-                finally
-                {
-                    s_cctorGlobalLock.Release();
                 }
             }
         }
@@ -427,7 +417,7 @@ namespace System.Runtime.CompilerServices
 #else
                 const int Grow = 10;
 #endif
-                lock (s_cctorGlobalLock)
+                using (LockHolder.Hold(s_cctorGlobalLock))
                 {
                     if (s_blockingRecords == null)
                         s_blockingRecords = new BlockingRecord[Grow];
@@ -458,10 +448,10 @@ namespace System.Runtime.CompilerServices
 
             public static void UnmarkThreadAsBlocked(int blockRecordIndex)
             {
-                lock (s_cctorGlobalLock)
-                {
-                    s_blockingRecords[blockRecordIndex].BlockedOn = new CctorHandle(null, 0);
-                }
+                // This method must never throw
+                s_cctorGlobalLock.Acquire();
+                s_blockingRecords[blockRecordIndex].BlockedOn = new CctorHandle(null, 0);
+                s_cctorGlobalLock.Release();
             }
 
             public static CctorHandle GetCctorThatThreadIsBlockedOn(int managedThreadId)
