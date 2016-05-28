@@ -350,7 +350,7 @@ namespace System
         /// provider" will be able to save the buffer's contents into triage dumps.
         /// 
         /// Thread safety information: The guarantee of this method is that the buffer it produces will have
-        /// complete and correct information for all live exceptions on the current thread (as long as the same excption object
+        /// complete and correct information for all live exceptions on the current thread (as long as the same exception object
         /// is not thrown simultaneously on multiple threads). It will do a best-effort attempt to serialize information about exceptions
         /// already recorded on other threads, but that data can be lost or corrupted. The restrictions are:
         /// 1. Only exceptions active or recorded on the current thread have their table data modified.
@@ -409,6 +409,15 @@ namespace System
             }
 
             int currentNestingLevel = curThreadExceptions.Length - 1;
+
+            // Make sure we serialize currentException
+            if (!exceptions.Contains(currentException))
+            {
+                // When this happens, currentException is probably passed to this function through System.Environment.FailFast(), we 
+                // would want to treat as if this exception is last thrown in the current thread.
+                exceptions.Insert(0, currentException);
+                currentNestingLevel++;
+            }
 
             // Populate exception data for all exceptions interesting to this thread.
             // Whether or not there was previously data for that object, it might have changed.

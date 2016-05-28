@@ -61,7 +61,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException("key");
             }
 
-            lock (_lock)
+            using (LockHolder.Hold(_lock))
             {
                 object otherValue;
                 int entryIndex = _container.FindEntry(key, out otherValue);
@@ -90,7 +90,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException("key");
             }
 
-            lock (_lock)
+            using (LockHolder.Hold(_lock))
             {
                 return _container.Remove(key);
             }
@@ -141,7 +141,7 @@ namespace System.Runtime.CompilerServices
             // to generate the new value for the key. 
             TValue newValue = createValueCallback(key);
 
-            lock (_lock)
+            using (LockHolder.Hold(_lock))
             {
                 // Now that we've taken the lock, must recheck in case we lost a race to add the key.
                 TValue existingValue;
@@ -187,7 +187,7 @@ namespace System.Runtime.CompilerServices
         //--------------------------------------------------------------------------------------------
         internal TKey FindEquivalentKeyUnsafe(TKey key, out TValue value)
         {
-            lock (_lock)
+            using (LockHolder.Hold(_lock))
             {
                 return _container.FindEquivalentKeyUnsafe(key, out value);
             }
@@ -200,7 +200,7 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                lock (_lock)
+                using (LockHolder.Hold(_lock))
                 {
                     return _container.Keys;
                 }
@@ -214,7 +214,7 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                lock (_lock)
+                using (LockHolder.Hold(_lock))
                 {
                     return _container.Values;
                 }
@@ -226,7 +226,7 @@ namespace System.Runtime.CompilerServices
         //--------------------------------------------------------------------------------------------
         internal void Clear()
         {
-            lock (_lock)
+            using (LockHolder.Hold(_lock))
             {
                 _container = new Container();
             }
@@ -375,14 +375,8 @@ namespace System.Runtime.CompilerServices
             {
                 object secondary;
                 int entryIndex = FindEntry(key, out secondary);
-                if (entryIndex != -1)
-                {
-                    value = (TValue)secondary;
-                    return true;
-                }
-
-                value = default(TValue);
-                return false;
+                value = RuntimeHelpers.UncheckedCast<TValue>(secondary);
+                return (entryIndex != -1);
             }
 
             //----------------------------------------------------------------------------------------
@@ -519,7 +513,7 @@ namespace System.Runtime.CompilerServices
                     {
                         for (int entriesIndex = _buckets[bucket]; entriesIndex != -1; entriesIndex = _entries[entriesIndex].next)
                         {
-                            TKey thisKey = (TKey)_entries[entriesIndex].depHnd.GetPrimary();
+                            TKey thisKey = RuntimeHelpers.UncheckedCast<TKey>(_entries[entriesIndex].depHnd.GetPrimary());
                             if (thisKey != null)
                             {
                                 list.Add(thisKey);
@@ -552,7 +546,7 @@ namespace System.Runtime.CompilerServices
                             // expired key as a live key with a null value.)
                             if (primary != null)
                             {
-                                list.Add((TValue)secondary);
+                                list.Add(RuntimeHelpers.UncheckedCast<TValue>(secondary));
                             }
                         }
                     }
@@ -578,8 +572,8 @@ namespace System.Runtime.CompilerServices
                         if (Object.Equals(thisKey, key))
                         {
                             GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
-                            value = (TValue)thisValue;
-                            return (TKey)thisKey;
+                            value = RuntimeHelpers.UncheckedCast<TValue>(thisValue);
+                            return RuntimeHelpers.UncheckedCast<TKey>(thisKey);
                         }
                     }
                 }
@@ -651,9 +645,6 @@ namespace System.Runtime.CompilerServices
     }
     #endregion
 
-
-
-
     #region DependentHandle
     //=========================================================================================
     // This struct collects all operations on native DependentHandles. The DependentHandle
@@ -724,16 +715,16 @@ namespace System.Runtime.CompilerServices
                 RuntimeImports.RhHandleFree(handle);
             }
         }
+        #endregion
 
+        #region Internal Members
         internal DependentHandle AllocateCopy()
         {
             object primary, secondary;
             primary = GetPrimaryAndSecondary(out secondary);
             return new DependentHandle(primary, secondary);
         }
-
         #endregion
-
 
         #region Private Data Member
         private IntPtr _handle;
@@ -742,4 +733,3 @@ namespace System.Runtime.CompilerServices
     } // struct DependentHandle
     #endregion
 }
-
