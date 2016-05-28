@@ -629,6 +629,9 @@
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Threading\LockHolder.cs">
+      <Link>System\Threading\LockHolder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
       <Link>System\NotImplemented.cs</Link>
     </Compile>

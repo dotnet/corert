@@ -22,30 +22,23 @@ namespace System.Threading
     {
         #region Object->Lock mappings
 
-        private static ConditionalWeakTable<object, Lock> s_lockTable;
-        private static ConditionalWeakTable<object, Condition> s_conditionTable;
+        private static ConditionalWeakTable<object, Lock> s_lockTable = new ConditionalWeakTable<object, Lock>();
+        private static ConditionalWeakTable<object, Lock>.CreateValueCallback s_createLock = (o) => new Lock();
 
-        private static Lock GetLockFromTable(Object obj)
-        {
-            ConditionalWeakTable<object, Lock> table = LazyInitializer.EnsureInitialized(ref s_lockTable, () => new ConditionalWeakTable<object, Lock>());
-            return table.GetValue(obj, (o) => new Lock());
-        }
+        private static ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
+        private static ConditionalWeakTable<object, Condition>.CreateValueCallback s_createCondition = (o) => new Condition(GetLock(o));
 
         private static Lock GetLock(Object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException("obj");
 
-            if (Lock.IsLock(obj))
+            // TODO: Fix framework code to not call Monitor methods on Lock objects and replace this check with an assertion.
+            // The Lock class is sealed and never cloned, therefore it is safe to use raw pointer equality.
+            if (obj.EETypePtr.RawValue == EETypePtr.EETypePtrOf<Lock>().RawValue)
                 return RuntimeHelpers.UncheckedCast<Lock>(obj);
 
-            return GetLockFromTable(obj);
-        }
-
-        private static Condition GetConditionFromTable(Object obj)
-        {
-            ConditionalWeakTable<object, Condition> table = LazyInitializer.EnsureInitialized(ref s_conditionTable, () => new ConditionalWeakTable<object, Condition>());
-            return table.GetValue(obj, (o) => new Condition(GetLock(o)));
+            return s_lockTable.GetValue(obj, s_createLock);
         }
 
         private static Condition GetCondition(Object obj)
@@ -53,7 +46,7 @@ namespace System.Threading
             Debug.Assert(
                 !(obj is Condition || obj is Lock),
                 "Do not use Monitor.Pulse or Wait on a Lock or Condition instance; use the methods on Condition instead.");
-            return GetConditionFromTable(obj);
+            return s_conditionTable.GetValue(obj, s_createCondition);
         }
         #endregion
 
