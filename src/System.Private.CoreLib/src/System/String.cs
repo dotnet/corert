@@ -2036,15 +2036,35 @@ namespace System
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
-                for (int i = 0; i < count; i++)
+
+                while (count >= 4)
+                {
+                    if (*pCh == value) goto ReturnIndex;
+                    if (*(pCh + 1) == value) goto ReturnIndex1;
+                    if (*(pCh + 2) == value) goto ReturnIndex2;
+                    if (*(pCh + 3) == value) goto ReturnIndex3;
+
+                    count -= 4;
+                    pCh += 4;
+                }
+
+                while (count > 0)
                 {
                     if (*pCh == value)
-                        return i + startIndex;
+                        goto ReturnIndex;
+
+                    count--;
                     pCh++;
                 }
-            }
 
-            return -1;
+                return -1;
+
+                ReturnIndex3: pCh++;
+                ReturnIndex2: pCh++;
+                ReturnIndex1: pCh++;
+                ReturnIndex:
+                return (int)(pCh - pChars);
+            }
         }
 
         // Returns the index of the first occurrence of any specified character in the current instance.
@@ -2249,16 +2269,36 @@ namespace System
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
+
                 //We search [startIndex..EndIndex]
-                for (int i = 0; i < count; i++)
+                while (count >= 4)
+                {
+                    if (*pCh == value) goto ReturnIndex;
+                    if (*(pCh - 1) == value) goto ReturnIndex1;
+                    if (*(pCh - 2) == value) goto ReturnIndex2;
+                    if (*(pCh - 3) == value) goto ReturnIndex3;
+
+                    count -= 4;
+                    pCh -= 4;
+                }
+
+                while (count > 0)
                 {
                     if (*pCh == value)
-                        return startIndex - i;
+                        goto ReturnIndex;
+
+                    count--;
                     pCh--;
                 }
-            }
 
-            return -1;
+                return -1;
+
+                ReturnIndex3: pCh--;
+                ReturnIndex2: pCh--;
+                ReturnIndex1: pCh--;
+                ReturnIndex:
+                return (int)(pCh - pChars);
+            }
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.
