@@ -208,6 +208,8 @@ namespace Internal.Runtime
 
     enum CorElementType
     {
+        ELEMENT_TYPE_END = 0x00,
+
         ELEMENT_TYPE_VOID = 0x1,
         ELEMENT_TYPE_BOOLEAN = 0x2,
         ELEMENT_TYPE_CHAR = 0x3,
