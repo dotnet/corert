@@ -70,9 +70,7 @@ COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
 {
     // TODO: RhpPInvokeReturn
 }
-#endif
 
-#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
 // Allocations
 //
@@ -192,7 +190,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
 
     return pObject;
 }
-#endif // USE_PORTABLE_HELPERS || !_WIN32
+#endif // USE_PORTABLE_HELPERS
 
 COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank, ...))
 {

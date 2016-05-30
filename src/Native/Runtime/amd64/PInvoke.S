@@ -16,7 +16,7 @@
 // Also, the codegenerator must ensure that there are no live GC references in callee saved registers.
 //
 NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
-        push_register rbx
+        push_nonvol_reg rbx
         mov         rbx, rdi
 
         // RAX = GetThread()
@@ -34,7 +34,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         mov         qword ptr [rax + OFFSETOF__Thread__m_pTransitionFrame], rbx
 
         cmp         dword ptr [C_VAR(RhpTrapThreads)], 0 
-        pop_register rbx
+        pop_nonvol_reg rbx
         jne         0f                  // forward branch - predicted not taken
         ret
 0:

@@ -79,7 +79,6 @@ if(WIN32)
 
   list(APPEND RUNTIME_SOURCES_ARCH_ASM
     ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX}
-    ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
   )
 
 else()
@@ -104,6 +103,7 @@ else()
 endif()
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
+  ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ManagedCalloutThunk.${ASM_SUFFIX}
