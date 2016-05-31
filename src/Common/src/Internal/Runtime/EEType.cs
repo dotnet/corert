@@ -53,9 +53,35 @@ namespace Internal.Runtime
         UInt32 _entryCount;
         DispatchMapEntry _dispatchMap; // at least one entry if any interfaces defined
 
-        public bool IsEmpty { get { return _entryCount == 0; } }
-        public UInt32 NumEntries { get { return _entryCount; } set { _entryCount = value; } }
-        public int Size { get { return sizeof(UInt32) + sizeof(DispatchMapEntry) * (int)_entryCount; } }
+        public bool IsEmpty
+        {
+            get
+            {
+                return _entryCount == 0;
+            }
+        }
+
+        public UInt32 NumEntries
+        {
+            get
+            {
+                return _entryCount;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _entryCount = value;
+            }
+#endif
+        }
+
+        public int Size
+        {
+            get
+            {
+                return sizeof(UInt32) + sizeof(DispatchMapEntry) * (int)_entryCount;
+            }
+        }
 
         public DispatchMapEntry* this[int index]
         {
@@ -848,6 +874,7 @@ namespace Internal.Runtime
             return 0;
         }
 
+#if TYPE_LOADER_IMPLEMENTATION
         static internal UInt32 GetSizeofEEType(
             UInt16 cVirtuals,
             UInt16 cInterfaces,
@@ -874,5 +901,6 @@ namespace Internal.Runtime
                 (fRequiresNullableType ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0));
         }
+#endif
     }
 }
