@@ -193,7 +193,7 @@ namespace System
 #if !REAL_MULTIDIM_ARRAYS
                 if (baseEEType == EETypePtr.EETypePtrOf<MDArrayRank2>() ||
                     baseEEType == EETypePtr.EETypePtrOf<MDArrayRank3>() ||
-                    baseEEType == EETypePtr.EETypePtrOf<MDArrayRank4>()
+                    baseEEType == EETypePtr.EETypePtrOf<MDArrayRank4>())
                 {
                     return EETypePtr.EETypePtrOf<Array>();
                 }
