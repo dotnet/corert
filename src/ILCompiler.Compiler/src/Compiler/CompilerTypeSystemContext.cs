@@ -217,7 +217,7 @@ namespace ILCompiler
                 PEReader peReader = OpenPEFile(filePath, out mappedViewAccessor);
                 pdbReader = OpenAssociatedSymbolFile(filePath);
 
-                EcmaModule module = new EcmaModule(this, peReader, pdbReader);
+                EcmaModule module = EcmaModule.Create(this, peReader, pdbReader);
 
                 MetadataReader metadataReader = module.MetadataReader;
                 string simpleName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);

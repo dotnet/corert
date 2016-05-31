@@ -43,5 +43,11 @@ namespace ILCompiler.Metadata
         /// blocked types are dropped from metadata.
         /// </summary>
         bool IsBlocked(Cts.MetadataType typeDef);
+
+        /// <summary>
+        /// Return the Module that should be treated as defining the type. Typically implementations
+        /// will return typeDef.Module, but in some circumstances it may return a different value.
+        /// </summary>
+        Cts.ModuleDesc GetModuleOfType(Cts.MetadataType typeDef);
     }
 }

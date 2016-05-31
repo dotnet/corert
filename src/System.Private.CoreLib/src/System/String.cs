@@ -1203,7 +1203,7 @@ namespace System
         //
         public String[] Split(params char[] separator)
         {
-            return SplitInternal(separator, Int32.MaxValue, StringSplitOptions.None);
+            return Split(separator, Int32.MaxValue, StringSplitOptions.None);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1219,20 +1219,15 @@ namespace System
         //
         public string[] Split(char[] separator, int count)
         {
-            return SplitInternal(separator, count, StringSplitOptions.None);
+            return Split(separator, count, StringSplitOptions.None);
         }
 
         public String[] Split(char[] separator, StringSplitOptions options)
         {
-            return SplitInternal(separator, Int32.MaxValue, options);
+            return Split(separator, Int32.MaxValue, options);
         }
 
         public String[] Split(char[] separator, int count, StringSplitOptions options)
-        {
-            return SplitInternal(separator, count, options);
-        }
-
-        internal String[] SplitInternal(char[] separator, int count, StringSplitOptions options)
         {
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count",
@@ -1264,11 +1259,11 @@ namespace System
 
             if (omitEmptyEntries)
             {
-                return InternalSplitOmitEmptyEntries(sepList, null, numReplaces, count);
+                return SplitOmitEmptyEntries(sepList, null, numReplaces, count);
             }
             else
             {
-                return InternalSplitKeepEmptyEntries(sepList, null, numReplaces, count);
+                return SplitKeepEmptyEntries(sepList, null, numReplaces, count);
             }
         }
 
@@ -1294,7 +1289,7 @@ namespace System
 
             if (separator == null || separator.Length == 0)
             {
-                return SplitInternal((char[])null, count, options);
+                return Split((char[])null, count, options);
             }
 
             if ((count == 0) || (omitEmptyEntries && this.Length == 0))
@@ -1319,11 +1314,11 @@ namespace System
 
             if (omitEmptyEntries)
             {
-                return InternalSplitOmitEmptyEntries(sepList, lengthList, numReplaces, count);
+                return SplitOmitEmptyEntries(sepList, lengthList, numReplaces, count);
             }
             else
             {
-                return InternalSplitKeepEmptyEntries(sepList, lengthList, numReplaces, count);
+                return SplitKeepEmptyEntries(sepList, lengthList, numReplaces, count);
             }
         }
 
@@ -1332,7 +1327,7 @@ namespace System
         //     the original string will be returned regardless of the count. 
         //
 
-        private String[] InternalSplitKeepEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 numReplaces, int count)
+        private String[] SplitKeepEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 numReplaces, int count)
         {
             int currIndex = 0;
             int arrIndex = 0;
@@ -1367,7 +1362,7 @@ namespace System
 
 
         // This function will not keep the Empty String 
-        private String[] InternalSplitOmitEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 numReplaces, int count)
+        private String[] SplitOmitEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 numReplaces, int count)
         {
             // Allocate array to hold items. This array may not be 
             // filled completely in this function, we will create a 
@@ -2041,15 +2036,35 @@ namespace System
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
-                for (int i = 0; i < count; i++)
+
+                while (count >= 4)
+                {
+                    if (*pCh == value) goto ReturnIndex;
+                    if (*(pCh + 1) == value) goto ReturnIndex1;
+                    if (*(pCh + 2) == value) goto ReturnIndex2;
+                    if (*(pCh + 3) == value) goto ReturnIndex3;
+
+                    count -= 4;
+                    pCh += 4;
+                }
+
+                while (count > 0)
                 {
                     if (*pCh == value)
-                        return i + startIndex;
+                        goto ReturnIndex;
+
+                    count--;
                     pCh++;
                 }
-            }
 
-            return -1;
+                return -1;
+
+                ReturnIndex3: pCh++;
+                ReturnIndex2: pCh++;
+                ReturnIndex1: pCh++;
+                ReturnIndex:
+                return (int)(pCh - pChars);
+            }
         }
 
         // Returns the index of the first occurrence of any specified character in the current instance.
@@ -2254,16 +2269,36 @@ namespace System
             fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
+
                 //We search [startIndex..EndIndex]
-                for (int i = 0; i < count; i++)
+                while (count >= 4)
+                {
+                    if (*pCh == value) goto ReturnIndex;
+                    if (*(pCh - 1) == value) goto ReturnIndex1;
+                    if (*(pCh - 2) == value) goto ReturnIndex2;
+                    if (*(pCh - 3) == value) goto ReturnIndex3;
+
+                    count -= 4;
+                    pCh -= 4;
+                }
+
+                while (count > 0)
                 {
                     if (*pCh == value)
-                        return startIndex - i;
+                        goto ReturnIndex;
+
+                    count--;
                     pCh--;
                 }
-            }
 
-            return -1;
+                return -1;
+
+                ReturnIndex3: pCh--;
+                ReturnIndex2: pCh--;
+                ReturnIndex1: pCh--;
+                ReturnIndex:
+                return (int)(pCh - pChars);
+            }
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.

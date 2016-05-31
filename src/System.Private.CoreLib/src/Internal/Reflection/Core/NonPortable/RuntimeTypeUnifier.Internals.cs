@@ -84,11 +84,11 @@ namespace Internal.Reflection.Core.NonPortable
                             return new RuntimeEENamedNonGenericType(eeType);
                         }
 
-                        if (RuntimeImports.AreTypesAssignable(eeType, typeof(MDArrayRank2).TypeHandle.ToEETypePtr()))
+                        if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank2>()))
                             return new RuntimeEEArrayType(eeType, rank: 2);
-                        if (RuntimeImports.AreTypesAssignable(eeType, typeof(MDArrayRank3).TypeHandle.ToEETypePtr()))
+                        if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank3>()))
                             return new RuntimeEEArrayType(eeType, rank: 3);
-                        if (RuntimeImports.AreTypesAssignable(eeType, typeof(MDArrayRank4).TypeHandle.ToEETypePtr()))
+                        if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank4>()))
                             return new RuntimeEEArrayType(eeType, rank: 4);
                         return new RuntimeEEConstructedGenericType(eeType);
                     default:

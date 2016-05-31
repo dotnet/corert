@@ -15,17 +15,20 @@ namespace MetadataTransformTests
         private Func<FieldDesc, bool> _fieldGeneratesMetadata;
 
         private Func<MetadataType, bool> _isBlockedType;
+        private Func<MetadataType, ModuleDesc> _moduleOfType;
 
         public MockPolicy(
             Func<MetadataType, bool> typeGeneratesMetadata,
             Func<MethodDesc, bool> methodGeneratesMetadata = null,
             Func<FieldDesc, bool> fieldGeneratesMetadata = null,
-            Func<MetadataType, bool> isBlockedType = null)
+            Func<MetadataType, bool> isBlockedType = null,
+            Func<MetadataType, ModuleDesc> moduleOfType = null)
         {
             _typeGeneratesMetadata = typeGeneratesMetadata;
             _methodGeneratesMetadata = methodGeneratesMetadata;
             _fieldGeneratesMetadata = fieldGeneratesMetadata;
             _isBlockedType = isBlockedType;
+            _moduleOfType = moduleOfType;
         }
 
         public bool GeneratesMetadata(MethodDesc methodDef)
@@ -52,6 +55,13 @@ namespace MetadataTransformTests
             if (_isBlockedType != null)
                 return _isBlockedType(typeDef);
             return false;
+        }
+
+        public ModuleDesc GetModuleOfType(MetadataType typeDef)
+        {
+            if (_moduleOfType != null)
+                return _moduleOfType(typeDef);
+            return typeDef.Module;
         }
     }
 }

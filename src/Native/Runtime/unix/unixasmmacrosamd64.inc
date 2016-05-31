@@ -233,12 +233,22 @@ C_FUNC(\Name):
 #define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 #define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
 
-#define MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET 8
+#define MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET -8
 
 #define THREAD__VALIDATEEXINFOPOP C_FUNC(_ZN6Thread17ValidateExInfoPopEP6ExInfoPv)
 
 .macro INLINE_GETTHREAD
-        call    C_FUNC(RhpGetThread)
+        // Inlined version of call C_FUNC(RhpGetThread)
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _tls_CurrentThread@TLVP(%rip), %rdi
+        callq   *(%rdi)
+#else
+        leaq    tls_CurrentThread@TLSLD(%rip), %rdi
+        callq   __tls_get_addr@PLT
+        addq    $tls_CurrentThread@DTPOFF, %rax
+#endif
+        .intel_syntax noprefix
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

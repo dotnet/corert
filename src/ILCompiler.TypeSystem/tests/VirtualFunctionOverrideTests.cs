@@ -110,5 +110,24 @@ namespace TypeSystemTests
             Assert.NotNull(actualFinalizer);
             Assert.NotEqual(actualFinalizer, finalizeMethod);
         }
+
+        [Fact]
+        public void TestExplicitOverride()
+        {
+            //
+            // Test that explicit virtual method overriding works.
+            //
+
+            var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
+            var explicitOverrideClass = ilModule.GetType("VirtualFunctionOverride", "ExplicitOverride");
+
+            var myGetHashCodeMethod = explicitOverrideClass.GetMethod("MyGetHashCode", null);
+
+            var objectGetHashCodeMethod = _context.GetWellKnownType(WellKnownType.Object).GetMethod("GetHashCode", null);
+
+            var foundOverride = explicitOverrideClass.FindVirtualFunctionTargetMethodOnObjectType(objectGetHashCodeMethod);
+
+            Assert.Equal(myGetHashCodeMethod, foundOverride);
+        }
     }
 }

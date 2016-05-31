@@ -161,9 +161,13 @@ namespace Internal.JitInterface
                 IntPtr exception;
                 IntPtr nativeEntry;
                 uint codeSize;
-                JitCompileMethod(out exception, 
+                var result = JitCompileMethod(out exception, 
                         _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
                         ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
+                if (result != CorJitResult.CORJIT_OK)
+                {
+                    throw new Exception("JIT Failed");
+                }
                 if (exception != IntPtr.Zero)
                 {
                     char* szMessage = GetExceptionMessage(exception);
@@ -393,7 +397,7 @@ namespace Internal.JitInterface
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
         {
-            sig.callConv = (CorInfoCallConv)0;
+            sig.callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
             if (!signature.IsStatic) sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
 
             TypeDesc returnType = signature.ReturnType;
@@ -675,24 +679,16 @@ namespace Internal.JitInterface
 
         private CorInfoUnmanagedCallConv getUnmanagedCallConv(CORINFO_METHOD_STRUCT_* method)
         {
-            PInvokeAttributes callingConv =
-                HandleToObject(method).GetPInvokeMethodMetadata().Attributes & PInvokeAttributes.CallingConventionMask;
+            var attributes = HandleToObject(method).GetPInvokeMethodMetadata().Attributes;
 
-            switch (callingConv)
-            {
-                case PInvokeAttributes.CallingConventionWinApi:
-                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL; // TODO: CDecl for varargs
-                case PInvokeAttributes.CallingConventionCDecl:
-                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C;
-                case PInvokeAttributes.CallingConventionStdCall:
-                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL;
-                case PInvokeAttributes.CallingConventionThisCall:
-                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_THISCALL;
-                case PInvokeAttributes.CallingConventionFastCall:
-                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_FASTCALL;
-                default:
-                    return CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_UNKNOWN;
-            }
+            MethodSignatureFlags unmanagedCallConv = PInvokeMetadata.GetUnmanagedCallingConvention(attributes);
+
+            // Verify that it is safe to convert MethodSignatureFlags.UnmanagedCallingConvention to CorInfoUnmanagedCallConv via a simple cast
+            Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_C == (int)MethodSignatureFlags.UnmanagedCallingConventionCdecl);
+            Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_STDCALL == (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall);
+            Debug.Assert((int)CorInfoUnmanagedCallConv.CORINFO_UNMANAGED_CALLCONV_THISCALL == (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall);
+
+            return (CorInfoUnmanagedCallConv)unmanagedCallConv;
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -1427,7 +1423,7 @@ namespace Internal.JitInterface
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
                     pResult.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
-                    ReadyToRunHelperId helperId;
+                    ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
                     if (field.IsThreadStatic)
                     {
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
@@ -1438,11 +1434,24 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        var owningType = field.OwningType;
+                        if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
+                                owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
+                                    field.Name == "Zero")
+                        {
+                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
+                        }
+                        else
+                        {
+                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        }
                     }
 
-                    pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
-                    pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                    if (helperId != ReadyToRunHelperId.Invalid)
+                    {
+                        pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                        pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                    }
                 }
             }
             else

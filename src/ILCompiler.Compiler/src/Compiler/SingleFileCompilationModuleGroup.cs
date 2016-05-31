@@ -27,7 +27,7 @@ namespace ILCompiler
         {
             base.AddCompilationRoots();
 
-            AddCompilationRootsForRuntimeExports((EcmaModule)_typeSystemContext.SystemModule);
+            AddCompilationRootsForExports((EcmaModule)_typeSystemContext.SystemModule);
         }
 
         public override bool IsSingleFileCompilation

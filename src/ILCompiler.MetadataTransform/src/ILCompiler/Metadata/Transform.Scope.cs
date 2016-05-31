@@ -29,10 +29,6 @@ namespace ILCompiler.Metadata
 
         private void InitializeScopeDefinition(Cts.ModuleDesc module, ScopeDefinition scopeDefinition)
         {
-            // Make sure we're expected to create a scope definition here. If the assert fires, the metadata
-            // policy should have directed us to create a scope reference (or the list of inputs was incomplete).
-            Debug.Assert(_modulesToTransform.Contains(module), "Incomplete list of input modules with respect to metadata policy");
-
             var assemblyDesc = module as Cts.IAssemblyDesc;
             if (assemblyDesc != null)
             {
@@ -62,13 +58,13 @@ namespace ILCompiler.Metadata
 
                 scopeDefinition.PublicKey = assemblyName.GetPublicKey();
 
-                Cts.Ecma.EcmaModule ecmaModule = module as Cts.Ecma.EcmaModule;
-                if (ecmaModule != null)
+                Cts.Ecma.EcmaAssembly ecmaAssembly = module as Cts.Ecma.EcmaAssembly;
+                if (ecmaAssembly != null)
                 {
-                    Ecma.CustomAttributeHandleCollection customAttributes = ecmaModule.AssemblyDefinition.GetCustomAttributes();
+                    Ecma.CustomAttributeHandleCollection customAttributes = ecmaAssembly.AssemblyDefinition.GetCustomAttributes();
                     if (customAttributes.Count > 0)
                     {
-                        scopeDefinition.CustomAttributes = HandleCustomAttributes(ecmaModule, customAttributes);
+                        scopeDefinition.CustomAttributes = HandleCustomAttributes(ecmaAssembly, customAttributes);
                     }
                 }
             }

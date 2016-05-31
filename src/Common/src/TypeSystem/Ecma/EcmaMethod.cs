@@ -30,6 +30,7 @@ namespace Internal.TypeSystem.Ecma
             public const int AttributeMetadataCache = 0x1000;
             public const int Intrinsic              = 0x2000;
             public const int NativeCallable         = 0x4000;
+            public const int RuntimeExport          = 0x8000;
         };
 
         private EcmaType _type;
@@ -185,6 +186,14 @@ namespace Internal.TypeSystem.Ecma
                             flags |= MethodFlags.NativeCallable;
                         }
                     }
+                    else
+                    if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime"))
+                    {
+                        if (metadataReader.StringComparer.Equals(nameHandle, "RuntimeExportAttribute"))
+                        {
+                            flags |= MethodFlags.RuntimeExport;
+                        }
+                    }
                 }
 
                 flags |= MethodFlags.AttributeMetadataCache;
@@ -282,6 +291,14 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.NativeCallable) & MethodFlags.NativeCallable) != 0;
+            }
+        }
+
+        public override bool IsRuntimeExport
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.RuntimeExport) & MethodFlags.RuntimeExport) != 0;
             }
         }
 

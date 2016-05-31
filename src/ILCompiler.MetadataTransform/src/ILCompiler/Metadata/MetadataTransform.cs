@@ -34,7 +34,7 @@ namespace ILCompiler.Metadata
             // - change the way TypeDefs are hooked up into namespaces and scopes
             // - queue up calls to the various Initialize* methods on a threadpool
 
-            var transform = new Transform<TPolicy>(policy, modules);
+            var transform = new Transform<TPolicy>(policy);
 
             foreach (var module in modules)
             {

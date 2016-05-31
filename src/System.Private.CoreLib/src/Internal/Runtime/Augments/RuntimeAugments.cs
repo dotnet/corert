@@ -90,9 +90,9 @@ namespace Internal.Runtime.Augments
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
             if (RuntimeImports.RhIsNullable(eeType)
-                || eeType == typeof(String).TypeHandle.ToEETypePtr()
-                || eeType == typeof(IntPtr).TypeHandle.ToEETypePtr()
-                || eeType == typeof(UIntPtr).TypeHandle.ToEETypePtr()
+                || eeType == EETypePtr.EETypePtrOf<String>()
+                || eeType == EETypePtr.EETypePtrOf<IntPtr>()
+                || eeType == EETypePtr.EETypePtrOf<UIntPtr>()
                )
                 return null;
             return RuntimeImports.RhNewObject(eeType);

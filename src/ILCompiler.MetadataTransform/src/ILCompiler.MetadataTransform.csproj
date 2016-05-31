@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ILCompiler\Metadata\EntityMap.cs" />
+    <Compile Include="ILCompiler\Metadata\ExplicitScopeAssemblyPolicyMixin.cs" />
     <Compile Include="ILCompiler\Metadata\IMetadataPolicy.cs" />
     <Compile Include="ILCompiler\Metadata\MetadataTransform.cs" />
     <Compile Include="ILCompiler\Metadata\MetadataTransformResult.cs" />

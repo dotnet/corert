@@ -21,7 +21,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
-      <Link>Utilities\MethodDesc.CodeGen.cs</Link>
+      <Link>TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
@@ -30,13 +30,13 @@
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
-      <Link>IAssemblyDesc.cs</Link>
+      <Link>TypeSystem\Common\IAssemblyDesc.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs">
       <Link>TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ModuleDesc.cs">
-      <Link>ModuleDesc.cs</Link>
+      <Link>TypeSystem\Common\ModuleDesc.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
@@ -173,6 +173,12 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
       <Link>Ecma\CustomAttributeTypeProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.cs">
+      <Link>Ecma\EcmaAssembly.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
+      <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
       <Link>Ecma\EcmaModule.Symbols.cs</Link>
     </Compile>
@@ -258,7 +264,7 @@
       <Link>NoMetadata\NoMetadataType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
-      <Link>LocalVariableDefinition.cs</Link>
+      <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

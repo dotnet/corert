@@ -51,7 +51,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal unsafe static IntPtr ResolvePInvoke(MethodFixupCell* pCell)
         {
-            if ((void*)pCell->Target != null)
+            if (pCell->Target != IntPtr.Zero)
                 return pCell->Target;
 
             return ResolvePInvokeSlow(pCell);

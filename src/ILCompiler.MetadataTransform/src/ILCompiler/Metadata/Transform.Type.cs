@@ -192,7 +192,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.Namespace);
+                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(_policy.GetModuleOfType(containingType), containingType.Namespace);
             }
 
             return parentReferenceRecord;
@@ -208,7 +208,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                record.ParentNamespaceOrType = HandleNamespaceReference(entity.Module, entity.Namespace);
+                record.ParentNamespaceOrType = HandleNamespaceReference(_policy.GetModuleOfType(entity), entity.Namespace);
             }
 
             record.TypeName = HandleString(entity.Name);
@@ -225,12 +225,12 @@ namespace ILCompiler.Metadata
                 enclosingType.NestedTypes.Add(record);
 
                 var namespaceDefinition =
-                    HandleNamespaceDefinition(entity.ContainingType.Module, entity.ContainingType.Namespace);
+                    HandleNamespaceDefinition(_policy.GetModuleOfType(entity.ContainingType), entity.ContainingType.Namespace);
                 record.NamespaceDefinition = namespaceDefinition;
             }
             else
             {
-                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.Namespace);
+                var namespaceDefinition = HandleNamespaceDefinition(_policy.GetModuleOfType(entity), entity.Namespace);
                 record.NamespaceDefinition = namespaceDefinition;
                 namespaceDefinition.TypeDefinitions.Add(record);
             }
@@ -302,9 +302,24 @@ namespace ILCompiler.Metadata
                 {
                     record.CustomAttributes = HandleCustomAttributes(ecmaEntity.EcmaModule, customAttributes);
                 }
-            }
 
-            // TODO: MethodImpls
+                foreach (var miHandle in ecmaRecord.GetMethodImplementations())
+                {
+                    Ecma.MetadataReader reader = ecmaEntity.EcmaModule.MetadataReader;
+
+                    Ecma.MethodImplementation miDef = reader.GetMethodImplementation(miHandle);
+
+                    Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodBody);
+                    Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodDeclaration);
+                    MethodImpl methodImplRecord = new MethodImpl
+                    {
+                        MethodBody = HandleQualifiedMethod(methodBody),
+                        MethodDeclaration = HandleQualifiedMethod(methodDecl)
+                    };
+
+                    record.MethodImpls.Add(methodImplRecord);
+                }
+            }
         }
 
         private TypeAttributes GetTypeAttributes(Cts.MetadataType type)

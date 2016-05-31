@@ -120,7 +120,9 @@ namespace ILCompiler
         {
             if (type is EcmaType)
             {
-                string prependAssemblyName = SanitizeName(((EcmaType)type).EcmaModule.GetName().Name);
+                EcmaType ecmaType = (EcmaType)type;
+
+                string prependAssemblyName = SanitizeName(((EcmaAssembly)ecmaType.EcmaModule).GetName().Name);
 
                 var deduplicator = new HashSet<string>();
 
@@ -357,7 +359,7 @@ namespace ILCompiler
             {
                 if (_compilationUnitPrefix == null)
                 {
-                    string systemModuleName = ((EcmaModule)_compilation.TypeSystemContext.SystemModule).GetName().Name;
+                    string systemModuleName = ((EcmaAssembly)_compilation.TypeSystemContext.SystemModule).GetName().Name;
 
                     // TODO: just something to get Runtime.Base compiled
                     if (systemModuleName != "System.Private.CoreLib")

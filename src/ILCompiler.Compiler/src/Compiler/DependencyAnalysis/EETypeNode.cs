@@ -600,7 +600,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
             }
 
-            if (_type.IsDefType && ((DefType)_type).IsHFA())
+            if (_type.IsDefType && ((DefType)_type).IsHfa)
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }

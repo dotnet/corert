@@ -11,7 +11,7 @@ namespace Internal.Runtime
 {
     internal static class EETypeBuilderHelpers
     {
-        private static int ComputeRhCorElementType(TypeDesc type)
+        private static CorElementType ComputeRhCorElementType(TypeDesc type)
         {
             Debug.Assert(type.IsPrimitive);
             Debug.Assert(type.Category != TypeFlags.Unknown);
@@ -19,35 +19,35 @@ namespace Internal.Runtime
             switch (type.Category)
             {
                 case TypeFlags.Void:
-                    return 0x00;
+                    return CorElementType.ELEMENT_TYPE_VOID;
                 case TypeFlags.Boolean:
-                    return 0x02;
+                    return CorElementType.ELEMENT_TYPE_BOOLEAN;
                 case TypeFlags.Char:
-                    return 0x03;
+                    return CorElementType.ELEMENT_TYPE_CHAR;
                 case TypeFlags.SByte:
-                    return 0x04;
+                    return CorElementType.ELEMENT_TYPE_I1;
                 case TypeFlags.Byte:
-                    return 0x05;
+                    return CorElementType.ELEMENT_TYPE_U1;
                 case TypeFlags.Int16:
-                    return 0x06;
+                    return CorElementType.ELEMENT_TYPE_I2;
                 case TypeFlags.UInt16:
-                    return 0x07;
+                    return CorElementType.ELEMENT_TYPE_U2;
                 case TypeFlags.Int32:
-                    return 0x08;
+                    return CorElementType.ELEMENT_TYPE_I4;
                 case TypeFlags.UInt32:
-                    return 0x09;
+                    return CorElementType.ELEMENT_TYPE_U4;
                 case TypeFlags.Int64:
-                    return 0x0A;
+                    return CorElementType.ELEMENT_TYPE_I8;
                 case TypeFlags.UInt64:
-                    return 0x0B;
+                    return CorElementType.ELEMENT_TYPE_U8;
                 case TypeFlags.IntPtr:
-                    return 0x18;
+                    return CorElementType.ELEMENT_TYPE_I;
                 case TypeFlags.UIntPtr:
-                    return 0x19;
+                    return CorElementType.ELEMENT_TYPE_U;
                 case TypeFlags.Single:
-                    return 0x0C;
+                    return CorElementType.ELEMENT_TYPE_R4;
                 case TypeFlags.Double:
-                    return 0x0D;
+                    return CorElementType.ELEMENT_TYPE_R8;
                 default:
                     break;
             }
@@ -111,7 +111,7 @@ namespace Internal.Runtime
                 }
             }
 
-            int corElementType = 0;
+            CorElementType corElementType = CorElementType.ELEMENT_TYPE_END;
 
             // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
             if (type.IsEnum)
@@ -124,14 +124,15 @@ namespace Internal.Runtime
             {
                 corElementType = ComputeRhCorElementType(type);
             }
-            else if (type.IsArray)
+            else if (type.IsWellKnownType(WellKnownType.Array))
             {
-                corElementType = 0x14; // ELEMENT_TYPE_ARRAY
+                // Mark System.Array with CorElementType so casting code can distinguish it
+                corElementType = CorElementType.ELEMENT_TYPE_ARRAY;
             }
 
-            if (corElementType > 0)
+            if (corElementType != CorElementType.ELEMENT_TYPE_END)
             {
-                flags |= (UInt16)(corElementType << (UInt16)EETypeFlags.CorElementTypeShift);
+                flags |= (UInt16)((UInt16)corElementType << (UInt16)EETypeFlags.CorElementTypeShift);
             }
 
             return flags;

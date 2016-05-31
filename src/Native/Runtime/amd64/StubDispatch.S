@@ -18,30 +18,21 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // Load the EEType from the object instance in rdi.
         mov     rax, [rdi]
 
-        // Point r11 at the address of the first cache entry
-        // Switch to ATT syntax because add r11, OFFSETOF__InterfaceDispatchCache__m_rgEntries
-        // refuses to treat symbols as immediate values.
-        .att_syntax
-        addq     $OFFSETOF__InterfaceDispatchCache__m_rgEntries, %r11
-        .intel_syntax noprefix
+        CurrentOffset = 0
 
         // For each entry in the cache, see if its EEType type matches the EEType in rax.
         // If so, call the second cache entry.  If not, skip the InterfaceDispatchCacheEntry.
         .rept \entries
-            cmp     rax, [r11]
-            je      LOCAL_LABEL(DispatchCall\entries)
-
-            .att_syntax
-            addq    $SIZEOF__InterfaceDispatchCacheEntry, %r11
-            .intel_syntax noprefix
+            cmp     rax, [r11 + OFFSETOF__InterfaceDispatchCache__m_rgEntries + CurrentOffset]
+            jne     0f
+            jmp     [r11 + OFFSETOF__InterfaceDispatchCache__m_rgEntries + CurrentOffset + 8]
+        0:
+            CurrentOffset = CurrentOffset + 16
         .endr
 
         // r10 still contains the the indirection cell address.
 
         jmp     C_FUNC(RhpInterfaceDispatchSlow)
-LOCAL_LABEL(DispatchCall\entries):
-        mov     rax, [r11 + 8h]
-        jmp     rax
 LEAF_END RhpInterfaceDispatch\entries, _TEXT
 
 .endm // DEFINE_INTERFACE_DISPATCH_STUB
@@ -73,28 +64,31 @@ LEAF_END RhpInitialInterfaceDispatch, _TEXT
 // Cache miss case, call the runtime to resolve the target and update the cache.
 NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
 
-        #define RIDS_ReservedStack 0x108 // 30h + 50h + 80h + 8h => Scratch space, transition frame, xmm registers and padding
+        #define RIDS_ReservedStack 0x108 // 0x50 + 0x80 + 0x30 + 8 => transition frame, xmm registers, argument registers and padding
+
+        rsp_offsetof_xmmregs = 0x50
+        rsp_offsetof_argregs = 0x50 + 0x80
 
         alloc_stack         RIDS_ReservedStack
 
         // Preserve the argument registers in the scratch space across the helper call. Note that we depend on these
         // registers (which may contain GC references) being spilled before we build the PInvokeTransitionFrame below
         // due to the way we build a stack range to report to the GC conservatively during a collection.
-        mov     [rsp + 8*0], rdi
-        mov     [rsp + 8*1], rsi
-        mov     [rsp + 8*2], rdx
-        mov     [rsp + 8*3], rcx
-        mov     [rsp + 8*4], r8
-        mov     [rsp + 8*5], r9
+        mov     [rsp + rsp_offsetof_argregs + 8*0], rdi
+        mov     [rsp + rsp_offsetof_argregs + 8*1], rsi
+        mov     [rsp + rsp_offsetof_argregs + 8*2], rdx
+        mov     [rsp + rsp_offsetof_argregs + 8*3], rcx
+        mov     [rsp + rsp_offsetof_argregs + 8*4], r8
+        mov     [rsp + rsp_offsetof_argregs + 8*5], r9
 
-        save_xmm128_postrsp xmm0, (30h + 50h + 16*0)
-        save_xmm128_postrsp xmm1, (30h + 50h + 16*1)
-        save_xmm128_postrsp xmm2, (30h + 50h + 16*2)
-        save_xmm128_postrsp xmm3, (30h + 50h + 16*3)
-        save_xmm128_postrsp xmm4, (30h + 50h + 16*4)
-        save_xmm128_postrsp xmm5, (30h + 50h + 16*5)
-        save_xmm128_postrsp xmm6, (30h + 50h + 16*6)
-        save_xmm128_postrsp xmm7, (30h + 50h + 16*7)
+        save_xmm128_postrsp xmm0, (rsp_offsetof_xmmregs + 16*0)
+        save_xmm128_postrsp xmm1, (rsp_offsetof_xmmregs + 16*1)
+        save_xmm128_postrsp xmm2, (rsp_offsetof_xmmregs + 16*2)
+        save_xmm128_postrsp xmm3, (rsp_offsetof_xmmregs + 16*3)
+        save_xmm128_postrsp xmm4, (rsp_offsetof_xmmregs + 16*4)
+        save_xmm128_postrsp xmm5, (rsp_offsetof_xmmregs + 16*5)
+        save_xmm128_postrsp xmm6, (rsp_offsetof_xmmregs + 16*6)
+        save_xmm128_postrsp xmm7, (rsp_offsetof_xmmregs + 16*7)
         END_PROLOGUE
 
         // Build PInvokeTransitionFrame. This is only required if we end up resolving the interface method via
@@ -106,28 +100,28 @@ NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
 
         // Save caller's rip.
         mov     rax, [rsp + RIDS_ReservedStack]
-        mov     [rsp + 30h + 8*0], rax
+        mov     [rsp + 8*0], rax
 
         // Save caller's rbp.
-        mov     [rsp + 30h + 8*1], rbp
+        mov     [rsp + 8*1], rbp
 
         // Zero out the Thread*, it's not used by the stackwalker.
         xor     rax, rax
-        mov     [rsp + 30h + 8*2], rax
+        mov     [rsp + 8*2], rax
 
         // Set the flags.
-        mov     dword ptr [rsp + 30h + 8*3], PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
+        mov     dword ptr [rsp + 8*3], PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 
         // Save callee saved registers.
-        mov     [rsp + 30h + 8*4], rbx
-        mov     [rsp + 30h + 8*5], r12
-        mov     [rsp + 30h + 8*6], r13
-        mov     [rsp + 30h + 8*7], r14
-        mov     [rsp + 30h + 8*8], r15
+        mov     [rsp + 8*4], rbx
+        mov     [rsp + 8*5], r12
+        mov     [rsp + 8*6], r13
+        mov     [rsp + 8*7], r14
+        mov     [rsp + 8*8], r15
 
         // Calculate and store the caller's rsp.
         lea     rax, [rsp + RIDS_ReservedStack + 8]
-        mov     [rsp + 30h + 8*9], rax
+        mov     [rsp + 8*9], rax
 
         // First argument is the instance we're dispatching on which is already in rdi.
 
@@ -140,29 +134,29 @@ NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
         call    C_FUNC(RhpResolveInterfaceMethodCacheMiss)
 
         // Recover callee-saved values from the transition frame in case a GC updated them.
-        mov     rbx, [rsp + 30h + 8*4]
-        mov     r12, [rsp + 30h + 8*5]
-        mov     r13, [rsp + 30h + 8*6]
-        mov     r14, [rsp + 30h + 8*7]
-        mov     r15, [rsp + 30h + 8*8]
+        mov     rbx, [rsp + 8*4]
+        mov     r12, [rsp + 8*5]
+        mov     r13, [rsp + 8*6]
+        mov     r14, [rsp + 8*7]
+        mov     r15, [rsp + 8*8]
 
         // Restore the argument registers.
-        movdqa  xmm0, [rsp + 30h + 50h + 16*0]
-        movdqa  xmm1, [rsp + 30h + 50h + 16*1]
-        movdqa  xmm2, [rsp + 30h + 50h + 16*2]
-        movdqa  xmm3, [rsp + 30h + 50h + 16*3]
-        movdqa  xmm4, [rsp + 30h + 50h + 16*4]
-        movdqa  xmm5, [rsp + 30h + 50h + 16*5]
-        movdqa  xmm6, [rsp + 30h + 50h + 16*6]
-        movdqa  xmm7, [rsp + 30h + 50h + 16*7]
-        mov     r9,   [rsp + 8*5]
-        mov     r8,   [rsp + 8*4]
-        mov     rcx,  [rsp + 8*3]
-        mov     rdx,  [rsp + 8*2]
-        mov     rsi,  [rsp + 8*1]
-        mov     rdi,  [rsp + 8*0]
+        movdqa  xmm0, [rsp + rsp_offsetof_xmmregs + 16*0]
+        movdqa  xmm1, [rsp + rsp_offsetof_xmmregs + 16*1]
+        movdqa  xmm2, [rsp + rsp_offsetof_xmmregs + 16*2]
+        movdqa  xmm3, [rsp + rsp_offsetof_xmmregs + 16*3]
+        movdqa  xmm4, [rsp + rsp_offsetof_xmmregs + 16*4]
+        movdqa  xmm5, [rsp + rsp_offsetof_xmmregs + 16*5]
+        movdqa  xmm6, [rsp + rsp_offsetof_xmmregs + 16*6]
+        movdqa  xmm7, [rsp + rsp_offsetof_xmmregs + 16*7]
+        mov     r9,   [rsp + rsp_offsetof_argregs + 8*5]
+        mov     r8,   [rsp + rsp_offsetof_argregs + 8*4]
+        mov     rcx,  [rsp + rsp_offsetof_argregs + 8*3]
+        mov     rdx,  [rsp + rsp_offsetof_argregs + 8*2]
+        mov     rsi,  [rsp + rsp_offsetof_argregs + 8*1]
+        mov     rdi,  [rsp + rsp_offsetof_argregs + 8*0]
 
-        add     rsp,  RIDS_ReservedStack
-        
+        add     rsp, RIDS_ReservedStack
+
         jmp     rax
 NESTED_END RhpInterfaceDispatchSlow, _TEXT

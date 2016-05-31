@@ -84,7 +84,8 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.Alignment = 16;
             dataBuilder.DefinedSymbols.Add(this);
 
-            int totalSize = _gcMap.Size * _target.PointerSize;
+            // +2 for SyncBlock and EETypePtr field
+            int totalSize = (_gcMap.Size + 2) * _target.PointerSize;
 
             // We only need to check for containsPointers because ThreadStatics are always allocated
             // on the GC heap (no matter what "HasGCStaticBase" says).

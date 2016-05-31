@@ -9,10 +9,6 @@
 
 .macro UPDATE_GC_SHADOW BASENAME, REFREG, DESTREG
 
-	.ifc \REFREG, RAX
-	.error "REFREG cannot be RAX since this macro uses RAX as a helper register!"
-	.endif
-
     // If g_GCShadow is 0, don't perform the check.
     cmp     qword ptr [C_VAR(g_GCShadow)], 0
     je      LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG)
@@ -85,9 +81,6 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
 // object reference (this should be in upper case as it's used in the definition of the name of the helper).
 .macro DEFINE_UNCHECKED_WRITE_BARRIER_CORE BASENAME, REFREG
 
-	.ifc \REFREG, RAX
-	.error "REFREG cannot be RAX since this macro uses RAX as a helper register!"
-	.endif
     // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
     // we're in a debug build and write barrier checking has been enabled).
     UPDATE_GC_SHADOW \BASENAME, \REFREG, rdi

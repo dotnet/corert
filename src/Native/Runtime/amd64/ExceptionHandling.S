@@ -262,7 +262,7 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
         locArg2         = 0x20
         locArg3         = 0x28
 
-        alloc_stack     0x30    // locals
+        alloc_stack     0x38    // locals
 
         END_PROLOGUE
 

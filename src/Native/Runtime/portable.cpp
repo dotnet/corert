@@ -56,7 +56,7 @@ struct alloc_context
     int            alloc_count;
 };
 
-#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
+#ifdef USE_PORTABLE_HELPERS
 //
 // PInvoke
 //
@@ -69,7 +69,9 @@ COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
 {
     // TODO: RhpPInvokeReturn
 }
+#endif
 
+#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 //
 // Allocations
 //
@@ -291,18 +293,22 @@ COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
-#endif
 
-#if defined(USE_PORTABLE_HELPERS) || !defined(_WIN32)
 typedef UIntTarget (*TargetFunc2)(UIntTarget, UIntTarget);
 COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame))
 {
-    // @TODO Implement ManagedCallout2 on Unix
-    // https://github.com/dotnet/corert/issues/685
     TargetFunc2 target = (TargetFunc2)pTargetMethod;
     return (*target)(argument1, argument2);
 }
 #endif
+
+// @TODO Implement UniversalTransition
+EXTERN_C void * ReturnFromUniversalTransition;
+void * ReturnFromUniversalTransition;
+
+// @TODO Implement CallDescrThunk
+EXTERN_C void * ReturnFromCallDescrThunk;
+void * ReturnFromCallDescrThunk;
 
 // 
 // Return address hijacking

@@ -186,5 +186,23 @@ namespace Internal.TypeSystem
                 return OperatingSystem == TargetOS.Windows;
             }
         }
+
+        /// <summary>
+        /// Maximum number of elements in a HFA type.
+        /// </summary>
+        public int MaximumHfaElementCount
+        {
+            get
+            {
+                // There is a hard limit of 4 elements on an HFA type, see
+                // http://blogs.msdn.com/b/vcblog/archive/2013/07/12/introducing-vector-calling-convention.aspx
+                Debug.Assert(Architecture == TargetArchitecture.ARM ||
+                    Architecture == TargetArchitecture.ARM64 ||
+                    Architecture == TargetArchitecture.X64 ||
+                    Architecture == TargetArchitecture.X86);
+
+                return 4;
+            }
+        }
     }
 }

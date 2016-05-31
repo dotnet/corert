@@ -20,12 +20,10 @@ namespace ILCompiler.Metadata
         where TPolicy : struct, IMetadataPolicy
     {
         private TPolicy _policy;
-        private HashSet<Cts.ModuleDesc> _modulesToTransform;
 
-        public Transform(TPolicy policy, IEnumerable<Cts.ModuleDesc> modules)
+        public Transform(TPolicy policy)
         {
             _policy = policy;
-            _modulesToTransform = new HashSet<Cts.ModuleDesc>(modules);
         }
 
         private bool IsBlocked(Cts.TypeDesc type)
