@@ -219,6 +219,13 @@ public:
     //
     void                EnablePreemptiveMode();
     void                DisablePreemptiveMode();
+
+    // Set the m_pHackPInvokeTunnel field for GC allocation helpers that setup transition frame 
+    // in assembly code. Do not use anywhere else.
+    void                SetCurrentThreadPInvokeTunnelForGcAlloc(void * pTransitionFrame);
+
+    // Setup the m_pHackPInvokeTunnel field for GC helpers entered via regular PInvoke.
+    // Do not use anywhere else.
     void                SetupHackPInvokeTunnel();
 
     //

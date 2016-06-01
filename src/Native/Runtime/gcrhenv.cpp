@@ -34,6 +34,7 @@
 
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "gcdesc.h"
 #include "SyncClean.hpp"
@@ -212,20 +213,23 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 #endif // !DACCESS_COMPILE
 
 // Allocate an object on the GC heap.
-//  pThread         -  current Thread
-//  cbSize          -  size in bytes of the final object
-//  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
 //  pEEType         -  type of the object
+//  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
+//  cbSize          -  size in bytes of the final object
+//  pTransitionFrame-  transition frame to make stack crawable
 // Returns a pointer to the object allocated or NULL on failure.
 
-// static
-void* RedhawkGCInterface::Alloc(Thread *pThread, UIntNative cbSize, UInt32 uFlags, EEType *pEEType)
+COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame))
 {
+    Thread * pThread = ThreadStore::GetCurrentThread();
+
+    pThread->SetCurrentThreadPInvokeTunnelForGcAlloc(pTransitionFrame);
+
     ASSERT(GCHeap::UseAllocationContexts());
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
     // Save the EEType for instrumentation purposes.
-    SetLastAllocEEType(pEEType);
+    RedhawkGCInterface::SetLastAllocEEType(pEEType);
 
     Object * pObject;
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -248,24 +252,6 @@ COOP_PINVOKE_HELPER(void*, RhpPublishObject, (void* pObject, UIntNative cbSize))
     GCHeap::GetGCHeap()->PublishObject((uint8_t*)pObject);
     return pObject;
 }
-
-#if 0 // @TODO: This is unused, why is it here?
-
-// Allocate an object on the large GC heap. Used when you want to force an allocation on the large heap
-// that wouldn't normally go there (e.g. objects containing double fields).
-//  cbSize          -  size in bytes of the final object
-//  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
-// Returns a pointer to the object allocated or NULL on failure.
-
-// static 
-void* RedhawkGCInterface::AllocLarge(UIntNative cbSize, UInt32 uFlags)
-{
-    ASSERT(!GetThread()->IsDoNotTriggerGcSet());
-    Object * pObject = GCHeap::GetGCHeap()->AllocLHeap(cbSize, uFlags);
-    // NOTE: we cannot call PublishObject here because the object isn't initialized!
-    return pObject;
-}
-#endif
 
 // static
 void RedhawkGCInterface::InitAllocContext(alloc_context * pAllocContext)

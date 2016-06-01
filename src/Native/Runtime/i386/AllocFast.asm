@@ -46,31 +46,26 @@ FASTCALL_FUNC   RhpNewFast, 4
 AllocFailed:
 
         ;;
-        ;; SLOW PATH, PInvoke to redhawku!RedhawkGCInterface::Alloc(Thread* pThread, UIntNative cbSize, Uint32 uFlags)
+        ;; SLOW PATH, call RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
         ;;
         ;; ecx: EEType pointer
-        ;; edx: Thread pointer
         ;;
         push        ebp
         mov         ebp, esp
 
         PUSH_COOP_PINVOKE_FRAME edx
 
-ifdef _DEBUG
-        ;; save the Thread pointer in ebx
-        mov         ebx, edx
-endif ; _DEBUG
-
-        ;; Push alloc helper arguments (thread, size, flags, EEType).
-        push        ecx                                             ; EEType
-        push        0                                               ; Flags
-        push        dword ptr [ecx + OFFSETOF__EEType__m_uBaseSize] ; Size
-        push        edx                                             ; Current thread
-
         ;; Preserve EEType in ESI.
         mov         esi, ecx
 
-        call        REDHAWKGCINTERFACE__ALLOC
+        ;; Push alloc helper arguments
+        push        edx                                             ; transition frame
+        push        dword ptr [ecx + OFFSETOF__EEType__m_uBaseSize] ; Size
+        xor         edx, edx                                        ; Flags
+        ;; Passing EEType in ecx
+
+        ;; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
+        call        RhpGcAlloc
 
         ;; Set the new object's EEType pointer on success.
         test        eax, eax
@@ -115,22 +110,19 @@ FASTCALL_FUNC   RhpNewFinalizable, 4
         push        ebp
         mov         ebp, esp
 
-        ;; edx = GetThread(), TRASHES eax
-        INLINE_GETTHREAD edx, eax
-
         PUSH_COOP_PINVOKE_FRAME edx
-
-        ;; Push alloc helper arguments (thread, size, flags, EEType).
-        push        ecx                                             ; EEType
-        push        GC_ALLOC_FINALIZE                               ; Flags
-        push        dword ptr [ecx + OFFSETOF__EEType__m_uBaseSize] ; Size
-        push        edx                                             ; Current thread
 
         ;; Preserve EEType in ESI
         mov         esi, ecx
 
-        ;; Call the common allocation helper.
-        call        REDHAWKGCINTERFACE__ALLOC
+        ;; Push alloc helper arguments
+        push        edx                                             ; transition frame
+        push        dword ptr [ecx + OFFSETOF__EEType__m_uBaseSize] ; Size
+        mov         edx, GC_ALLOC_FINALIZE                          ; Flags
+        ;; Passing EEType in ecx
+
+        ;; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
+        call        RhpGcAlloc
 
         ;; Set the new object's EEType pointer on success.
         test        eax, eax
@@ -238,7 +230,6 @@ ArraySizeBig:
 
 ArrayAllocContextOverflow:
         ; ECX == array size
-        ; EDX == thread
         ;   original ECX pushed
         ;   original EDX pushed
 
@@ -258,13 +249,13 @@ ArrayAllocContextOverflow:
         mov         ecx, dword ptr [ebp - 8]
 
         ; Push alloc helper arguments (thread, size, flags, EEType).
-        push        ecx                                                         ; EEType
-        push        0                                                           ; Flags
-        push        edi                                                         ; Size
-        push        edx                                                         ; Current thread
+        push        edx                                             ; transition frame
+        push        edi                                             ; Size
+        xor         edx, edx                                        ; Flags
+        ;; Passing EEType in ecx
 
-        ; Call the rest of the allocation helper.
-        call        REDHAWKGCINTERFACE__ALLOC
+        ;; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
+        call        RhpGcAlloc
 
         ; Set the new object's EEType pointer and length on success.
         test        eax, eax

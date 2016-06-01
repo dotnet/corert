@@ -235,8 +235,6 @@ C_FUNC(\Name):
 
 #define MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET -8
 
-#define THREAD__VALIDATEEXINFOPOP C_FUNC(_ZN6Thread17ValidateExInfoPopEP6ExInfoPv)
-
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
        .att_syntax

@@ -121,21 +121,6 @@ public:
     // todo: figure out the final error reporting strategy
     static bool InitializeSubsystems(GCType gcType);
 
-    // Allocate an object on the GC heap.
-    //  pThread         -  current Thread
-    //  cbSize          -  size in bytes of the final object
-    //  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
-    //  pEEType         -  type of the object
-    // Returns a pointer to the object allocated or NULL on failure.
-    static void* Alloc(Thread *pThread, UIntNative cbSize, UInt32 uFlags, EEType *pEEType);
-
-    // Allocate an object on the large GC heap. Used when you want to force an allocation on the large heap
-    // that wouldn't normally go there (e.g. objects containing double fields).
-    //  cbSize          -  size in bytes of the final object
-    //  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
-    // Returns a pointer to the object allocated or NULL on failure.
-    static void* AllocLarge(UIntNative cbSize, UInt32 uFlags);
-
     static void InitAllocContext(alloc_context * pAllocContext);
     static void ReleaseAllocContext(alloc_context * pAllocContext);
 
