@@ -25,6 +25,15 @@ namespace Internal.TypeSystem
             _instantiation = instantiation;
         }
 
+        // This constructor is a performance optimization - it allows supplying the hash code if it has already
+        // been computed prior to the allocation of this type. The supplied hash code still has to match the
+        // hash code this type would compute on it's own (and we assert to enforce that).
+        internal InstantiatedMethod(MethodDesc methodDef, Instantiation instantiation, int hashcode)
+            : this(methodDef, instantiation)
+        {
+            SetHashCode(hashcode);
+        }
+
         protected override int ComputeHashCode()
         {
             return TypeHashingAlgorithms.ComputeMethodHashCode(OwningType.GetHashCode(), Instantiation.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(Name)));
