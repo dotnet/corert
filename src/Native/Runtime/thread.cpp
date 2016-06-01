@@ -20,6 +20,7 @@
 #include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 #include "RuntimeInstance.h"
 #include "shash.h"
 #include "module.h"
@@ -166,14 +167,6 @@ void Thread::DisablePreemptiveMode()
     {
         WaitForGC(m_pHackPInvokeTunnel);
     }
-}
-
-// This function setups the m_pHackPInvokeTunnel field for GC helpers entered via regular PInvoke.
-void Thread::SetupHackPInvokeTunnel()
-{
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-    ASSERT(!Thread::IsCurrentThreadInCooperativeMode());
-    m_pHackPInvokeTunnel = m_pTransitionFrame;
 }
 #endif // !DACCESS_COMPILE
 
@@ -930,6 +923,11 @@ void Thread::ValidateExInfoPop(ExInfo * pExInfo, void * limitSP)
     UNREFERENCED_PARAMETER(pExInfo);
     UNREFERENCED_PARAMETER(limitSP);
 #endif // _DEBUG
+}
+
+COOP_PINVOKE_HELPER(void, RhpValidateExInfoPop, (Thread * pThread, ExInfo * pExInfo, void * limitSP))
+{
+    pThread->ValidateExInfoPop(pExInfo, limitSP);
 }
 
 bool Thread::IsDoNotTriggerGcSet()

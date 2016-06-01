@@ -259,7 +259,6 @@ INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2
 @@:
 endm
 
-no_extraStack equ 0
 DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 
 ;;
@@ -272,15 +271,14 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 ;; interesting GC references. In all our helper cases this corresponds to the most recent managed frame (e.g.
 ;; the helper's caller).
 ;;
-;; This macro builds a frame describing the current state of managed code and stashes a pointer to this frame
-;; on the current thread, ready to be used if and when the helper needs to transition to pre-emptive mode.
+;; This macro builds a frame describing the current state of managed code.
 ;;
 ;; INVARIANTS
 ;; - The macro assumes it is called from a prolog, prior to a frame pointer being setup.
 ;; - All preserved registers remain unchanged from their values in managed code. 
 ;;
-PUSH_COOP_PINVOKE_FRAME macro threadReg, trashReg, extraStack
-    lea             trashReg, [rsp +  8h + extraStack]
+PUSH_COOP_PINVOKE_FRAME macro trashReg
+    lea             trashReg, [rsp +  8h]
     push_vol_reg    trashReg                    ; save caller's RSP
     push_nonvol_reg r15                         ; save preserved registers
     push_nonvol_reg r14                         ;   ..
@@ -290,30 +288,21 @@ PUSH_COOP_PINVOKE_FRAME macro threadReg, trashReg, extraStack
     push_nonvol_reg rsi                         ;   ..
     push_nonvol_reg rbx                         ;   ..
     push_imm        DEFAULT_FRAME_SAVE_FLAGS    ; save the register bitmask
-    push_vol_reg    threadReg                   ; Thread * (unused by stackwalker)
+    push_vol_reg    trashReg                    ; Thread * (unused by stackwalker)
     push_nonvol_reg rbp                         ; save caller's RBP
-    mov             trashReg, [rsp + 11*8 + extraStack]  ; Find the return address
+    mov             trashReg, [rsp + 11*8]      ; Find the return address
     push_vol_reg    trashReg                    ; save m_RIP
     lea             trashReg, [rsp + 0]         ; trashReg == address of frame
 
     ;; allocate scratch space and any required alignment
-    alloc_stack     20h + ((extraStack+8) AND (10h-1))
-
-    ; link the frame into the Thread
-    mov             [threadReg + OFFSETOF__Thread__m_pHackPInvokeTunnel], trashReg
+    alloc_stack     28h
 endm
 
 ;;
-;; Remove the frame from a previous call to PUSH_COOP_PINVOKE_FRAME from the top of the stack and restore EBX,
-;; ESI and EDI to their previous values.
+;; Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
 ;;
-POP_COOP_PINVOKE_FRAME macro extraStack
-    ;; We do not need to clear m_pHackPInvokeTunnel here because it is 'on the side' information.
-    ;; The actual transition to/from preemptive mode is done elsewhere (EnablePreemptiveMode,
-    ;; DisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
-    ;; so as long as we always set it on the way into a "cooperative pinvoke" method, we're fine
-    ;; because it is only looked at inside these "cooperative pinvoke" methods.
-    add         rsp, 20h + ((extraStack+8) AND (10h-1)) + 8
+POP_COOP_PINVOKE_FRAME macro
+    add         rsp, 30h
     pop         rbp     ; restore RBP
     pop         r10     ; discard thread
     pop         r10     ; discard bitmask
@@ -325,11 +314,6 @@ POP_COOP_PINVOKE_FRAME macro extraStack
     pop         r14
     pop         r15
     pop         r10     ; discard caller RSP
-endm
-
-REP_RET macro
-    db 0f3h
-    ret
 endm
 
 ;  - TAILCALL_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction 
@@ -382,8 +366,6 @@ MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -8
 ;;
 
 PALDEBUGBREAK                               equ ?PalDebugBreak@@YAXXZ
-REDHAWKGCINTERFACE__ALLOC                   equ ?Alloc@RedhawkGCInterface@@SAPEAXPEAVThread@@_KIPEAVEEType@@@Z
-THREAD__VALIDATEEXINFOPOP                   equ ?ValidateExInfoPop@Thread@@QEAAXPEAUExInfo@@PEAX@Z
 
 ifdef FEATURE_GC_STRESS
 REDHAWKGCINTERFACE__STRESSGC                equ ?StressGc@RedhawkGCInterface@@SAXXZ
@@ -394,8 +376,8 @@ endif ;; FEATURE_GC_STRESS
 ;; IMPORTS
 ;;
 
-EXTERN REDHAWKGCINTERFACE__ALLOC                : PROC
-EXTERN THREAD__VALIDATEEXINFOPOP                : PROC
+EXTERN RhpGcAlloc                               : PROC
+EXTERN RhpValidateExInfoPop                     : PROC
 EXTERN PALDEBUGBREAK                            : PROC
 EXTERN RhpWaitForSuspend2                       : PROC
 EXTERN RhpWaitForGC2                            : PROC

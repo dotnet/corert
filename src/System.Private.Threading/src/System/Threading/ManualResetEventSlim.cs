@@ -339,7 +339,7 @@ namespace System.Threading
             if (Waiters > 0)
             {
                 Contract.Assert(m_lock != null && m_condition != null); //if waiters>0, then m_lock has already been created.
-                lock (m_lock)
+                using (LockHolder.Hold(m_lock))
                 {
                     m_condition.SignalAll();
                 }
@@ -620,7 +620,7 @@ namespace System.Threading
                 // We must register and deregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCallback, this))
                 {
-                    lock (m_lock)
+                    using (LockHolder.Hold(m_lock))
                     {
                         // Loop to cope with spurious wakeups from other waits being canceled
                         while (!IsSet)
@@ -739,7 +739,7 @@ namespace System.Threading
             ManualResetEventSlim mre = obj as ManualResetEventSlim;
             Contract.Assert(mre != null, "Expected a ManualResetEventSlim");
             Contract.Assert(mre.m_lock != null); //the lock should have been created before this callback is registered for use.
-            lock (mre.m_lock)
+            using (LockHolder.Hold(mre.m_lock))
             {
                 mre.m_condition.SignalAll(); // awaken all waiters
             }

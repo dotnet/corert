@@ -35,6 +35,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
+EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
 
 #if defined(FEATURE_SVR_GC)
@@ -96,7 +97,7 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (EEType* pEEType))
         return pObject;
     }
 
-    pObject = (Object *)RedhawkGCInterface::Alloc(pCurThread, size, 0, pEEType);
+    pObject = (Object *)RhpGcAlloc(pEEType, 0, size, NULL);
     if (pObject == nullptr)
     {
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
@@ -116,12 +117,9 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFinalizable, (EEType* pEEType))
     ASSERT(!pEEType->RequiresAlign8());
     ASSERT(pEEType->HasFinalizer());
 
-    Thread * pCurThread = ThreadStore::GetCurrentThread();
-    Object * pObject;
-
     size_t size = pEEType->get_BaseSize();
 
-    pObject = (Object *)RedhawkGCInterface::Alloc(pCurThread, size, GC_ALLOC_FINALIZE, pEEType);
+    Object * pObject = (Object *)RhpGcAlloc(pEEType, GC_ALLOC_FINALIZE, size, NULL);
     if (pObject == nullptr)
     {
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
@@ -181,7 +179,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
         return pObject;
     }
 
-    pObject = (Array *)RedhawkGCInterface::Alloc(pCurThread, size, 0, pArrayEEType);
+    pObject = (Array *)RhpGcAlloc(pArrayEEType, 0, size, NULL);
     if (pObject == nullptr)
     {
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
@@ -231,7 +229,7 @@ COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank
     else
     {
         needsPublish = true;
-        pObject = (MDArray *)RedhawkGCInterface::Alloc(pCurThread, size, 0, pArrayEEType);
+        pObject = (MDArray *)RhpGcAlloc(pArrayEEType, 0, size, NULL);
         if (pObject == nullptr)
         {
             ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM

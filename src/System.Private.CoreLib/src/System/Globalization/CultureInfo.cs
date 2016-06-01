@@ -1048,7 +1048,7 @@ namespace System.Globalization
             else
             {
                 bool ret;
-                lock (s_lock)
+                using (LockHolder.Hold(s_lock))
                 {
                     ret = tempNameHT.TryGetValue(name, out retval);
                 }
@@ -1075,7 +1075,7 @@ namespace System.Globalization
             string newName = CultureData.AnsiToLower(retval.m_name);
 
             // We add this new culture info object to both tables.
-            lock (s_lock)
+            using (LockHolder.Hold(s_lock))
             {
                 tempNameHT[newName] = retval;
             }

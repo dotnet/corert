@@ -115,16 +115,16 @@ namespace ILCompiler.Metadata
                 return HandleString((string)value);
             }
 
+            if (value == null)
+            {
+                return new ConstantReferenceValue();
+            }
+
             if (type.IsSzArray)
             {
                 return HandleCustomAttributeConstantArray(
                     (Cts.ArrayType)type,
                     (ImmutableArray<Ecma.CustomAttributeTypedArgument<Cts.TypeDesc>>)value);
-            }
-
-            if (value == null)
-            {
-                return new ConstantReferenceValue();
             }
 
             Debug.Assert(value is Cts.TypeDesc);
@@ -217,6 +217,11 @@ namespace ILCompiler.Metadata
 
         private bool IsBlockedCustomAttributeConstantValue(Cts.TypeDesc type, object value)
         {
+            if (value == null)
+            {
+                return false;
+            }
+
             if (type.IsSzArray)
             {
                 var arrayType = (Cts.ArrayType)type;

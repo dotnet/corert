@@ -80,7 +80,7 @@ namespace System
 
             private TimeZoneInfo CreateLocal()
             {
-                lock (_lock)
+                using (LockHolder.Hold(_lock))
                 {
                     TimeZoneInfo timeZone = _localTimeZone;
                     if (timeZone == null)
@@ -120,7 +120,7 @@ namespace System
 
             private TimeZoneInfo CreateUtc()
             {
-                lock (_lock)
+                using (LockHolder.Hold(_lock))
                 {
                     TimeZoneInfo timeZone = _utcTimeZone;
                     if (timeZone == null)

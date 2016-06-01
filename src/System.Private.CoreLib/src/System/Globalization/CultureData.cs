@@ -323,7 +323,7 @@ namespace System.Globalization
             else
             {
                 // Check the hash table
-                lock (s_lock)
+                using (LockHolder.Hold(s_lock))
                 {
                     tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -359,7 +359,7 @@ namespace System.Globalization
             if (retVal != null && (retVal.IsNeutralCulture == false))
             {
                 // first add it to the cache
-                lock (s_lock)
+                using (LockHolder.Hold(s_lock))
                 {
                     tempHashTable[hashName] = retVal;
                 }
@@ -512,7 +512,7 @@ namespace System.Globalization
                 // Check the hash table
                 bool ret;
                 CultureData retVal;
-                lock (s_lock)
+                using (LockHolder.Hold(s_lock))
                 {
                     ret = tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -530,7 +530,7 @@ namespace System.Globalization
             }
 
             // Found one, add it to the cache
-            lock (s_lock)
+            using (LockHolder.Hold(s_lock))
             {
                 tempHashTable[hashName] = culture;
             }

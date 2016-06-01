@@ -56,7 +56,14 @@ namespace ILCompiler.Metadata
                     scopeDefinition.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
                 }
 
-                scopeDefinition.PublicKey = assemblyName.GetPublicKey();
+                if ((scopeDefinition.Flags & AssemblyFlags.PublicKey) != 0)
+                {
+                    scopeDefinition.PublicKey = assemblyName.GetPublicKey();
+                }
+                else
+                {
+                    scopeDefinition.PublicKey = assemblyName.GetPublicKeyToken();
+                }
 
                 Cts.Ecma.EcmaAssembly ecmaAssembly = module as Cts.Ecma.EcmaAssembly;
                 if (ecmaAssembly != null)
