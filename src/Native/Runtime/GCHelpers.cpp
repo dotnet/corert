@@ -20,6 +20,10 @@
 #include "StackFrameIterator.h"
 
 #include "thread.h"
+#include "RWLock.h"
+#include "threadstore.h"
+#include "threadstore.inl"
+#include "thread.inl"
 
 EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
 {
