@@ -131,7 +131,7 @@ namespace System.Threading
                     return m_waitHandle;
 
                 //lock the count to avoid multiple threads initializing the handle if it is null
-                lock (m_lock)
+                using (LockHolder.Hold(m_lock))
                 {
                     if (m_waitHandle == null)
                     {
@@ -608,7 +608,7 @@ namespace System.Threading
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCancellation<bool>(cancellationToken);
 
-            lock (m_lock)
+            using (LockHolder.Hold(m_lock))
             {
                 // If there are counts available, allow this waiter to succeed.
                 if (m_currentCount > 0)
@@ -713,7 +713,7 @@ namespace System.Threading
 
             // If the await completed synchronously, we still hold the lock.  If it didn't,
             // we no longer hold the lock.  As such, acquire it.
-            lock (m_lock)
+            using (LockHolder.Hold(m_lock))
             {
                 // Remove the task from the list.  If we're successful in doing so,
                 // we know that no one else has tried to complete this waiter yet,
@@ -764,7 +764,7 @@ namespace System.Threading
             }
             int returnCount;
 
-            lock (m_lock)
+            using (LockHolder.Hold(m_lock))
             {
                 // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
                 int currentCount = m_currentCount;
@@ -883,7 +883,7 @@ namespace System.Threading
         {
             SemaphoreSlim semaphore = obj as SemaphoreSlim;
             Contract.Assert(semaphore != null, "Expected a SemaphoreSlim");
-            lock (semaphore.m_lock)
+            using (LockHolder.Hold(semaphore.m_lock))
             {
                 semaphore.m_condition.SignalAll(); //wake up all waiters.
             }

@@ -172,7 +172,7 @@ namespace System.Threading
 
         internal void Pause()
         {
-            lock (Lock)
+            using (LockHolder.Hold(Lock))
             {
                 // Delete the native timer so that no timers are fired in the Pause zone
                 if (m_appDomainTimer != null && !m_appDomainTimer.IsInvalid)
@@ -190,7 +190,7 @@ namespace System.Threading
             //
             // Update timers to adjust their due-time to accomodate Pause/Resume
             //
-            lock (Lock)
+            using (LockHolder.Hold(Lock))
             {
                 // prevent ThreadAbort while updating state
                 try { }
@@ -261,7 +261,7 @@ namespace System.Threading
             TimerQueueTimer timerToFireOnThisThread = null;
             Object previousTimer = null;
 
-            lock (Lock)
+            using (LockHolder.Hold(Lock))
             {
                 // prevent ThreadAbort while updating state
                 try { }
@@ -493,7 +493,7 @@ namespace System.Threading
         {
             bool success;
 
-            lock (TimerQueue.Instance.Lock)
+            using (LockHolder.Hold(TimerQueue.Instance.Lock))
             {
                 if (m_canceled)
                     throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
@@ -522,7 +522,7 @@ namespace System.Threading
 
         public void Close()
         {
-            lock (TimerQueue.Instance.Lock)
+            using (LockHolder.Hold(TimerQueue.Instance.Lock))
             {
                 // prevent ThreadAbort while updating state
                 try { }
@@ -543,7 +543,7 @@ namespace System.Threading
         //    bool success;
         //    bool shouldSignal = false;
 
-        //    lock (TimerQueue.Instance.Lock)
+        //    using (LockHolder.Hold(TimerQueue.Instance.Lock))
         //    {
         //        // prevent ThreadAbort while updating state
         //        try { }
@@ -578,7 +578,7 @@ namespace System.Threading
         {
             bool canceled = false;
 
-            //lock (TimerQueue.Instance.Lock)
+            //using (LockHolder.Hold(TimerQueue.Instance.Lock))
             //{
             //    // prevent ThreadAbort while updating state
             //    try { }
@@ -595,7 +595,7 @@ namespace System.Threading
 
             CallCallback();
             //bool shouldSignal = false;
-            //lock (TimerQueue.Instance.Lock)
+            //using (LockHolder.Hold(TimerQueue.Instance.Lock))
             //{
             //    // prevent ThreadAbort while updating state
             //    try { }
@@ -607,8 +607,8 @@ namespace System.Threading
             //    }
             //}
 
-            //if (shouldSignal)
-            //    SignalNoCallbacksRunning();
+                //if (shouldSignal)
+                //    SignalNoCallbacksRunning();
         }
 
         //internal void SignalNoCallbacksRunning()
