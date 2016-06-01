@@ -119,17 +119,16 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 ;; interesting GC references. In all our helper cases this corresponds to the most recent managed frame (e.g.
 ;; the helper's caller).
 ;;
-;; This macro builds a frame describing the current state of managed code and stashes a pointer to this frame
-;; on the current thread, ready to be used if and when the helper needs to transition to pre-emptive mode.
+;; This macro builds a frame describing the current state of managed code.
 ;;
 ;; INVARIANTS
 ;; - The macro assumes it defines the method prolog, it should typically be the first code in a method and
 ;;   certainly appear before any attempt to alter the stack pointer.
-;; - This macro uses r4 and r5 (after their initial values have been saved in the frame) and upon exit r4
-;;   will contain the current Thread*.
+;; - This macro uses trashReg (after its initial value has been saved in the frame) and upon exit trashReg
+;;   will contain the address of transition frame.
 ;;
     MACRO
-        COOP_PINVOKE_FRAME_PROLOG
+        PUSH_COOP_PINVOKE_FRAME $trashReg
 
         PROLOG_STACK_ALLOC 4        ; Save space for caller's SP
         PROLOG_PUSH {r4-r6,r8-r10}  ; Save preserved registers
@@ -138,45 +137,24 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
         PROLOG_PUSH {r11,lr}        ; Save caller's frame-chain pointer and PC
 
         ; Compute SP value at entry to this method and save it in the last slot of the frame (slot #11).
-        add         r4, sp, #(12 * 4)
-        str         r4, [sp, #(11 * 4)]
+        add         $trashReg, sp, #(12 * 4)
+        str         $trashReg, [sp, #(11 * 4)]
 
         ; Record the bitmask of saved registers in the frame (slot #4).
-        mov         r4, #DEFAULT_FRAME_SAVE_FLAGS
-        str         r4, [sp, #(4 * 4)]
+        mov         $trashReg, #DEFAULT_FRAME_SAVE_FLAGS
+        str         $trashReg, [sp, #(4 * 4)]
 
-        ; Save the current Thread * in the frame (slot #3).
-        INLINE_GETTHREAD r4, r5
-        str         r4, [sp, #(3 * 4)]
-
-        ; Store the frame in the thread
-        str         sp, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        mov         $trashReg, sp
     MEND
 
-;; Pop the frame and restore register state preserved by COOP_PINVOKE_FRAME_PROLOG but don't return to the
-;; caller (typically used when we want to tail call instead).
+;; Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
     MACRO
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-
-        ;; We do not need to clear m_pHackPInvokeTunnel here because it is 'on the side' information.
-        ;; The actual transition to/from preemptive mode is done elsewhere (EnablePreemptiveMode,
-        ;; DisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
-        ;; so as long as we always set it on the way into a "cooperative pinvoke" method, we're fine
-        ;; because it is only looked at inside these "cooperative pinvoke" methods.
-
+        POP_COOP_PINVOKE_FRAME
         EPILOG_POP  {r11,lr}        ; Restore caller's frame-chain pointer and PC (return address)
         EPILOG_POP  {r7}            ; Restore caller's FP
         EPILOG_STACK_FREE 8         ; Discard flags and Thread*
         EPILOG_POP  {r4-r6,r8-r10}  ; Restore preserved registers
         EPILOG_STACK_FREE 4         ; Discard caller's SP
-    MEND
-
-;; The same as COOP_PINVOKE_FRAME_EPILOG_NO_RETURN but return to the location specified by the restored LR.
-    MACRO
-        COOP_PINVOKE_FRAME_EPILOG
-
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-        EPILOG_RETURN
     MEND
 
 
@@ -244,7 +222,6 @@ $Name
 ;;
 
         SETALIAS PALDEBUGBREAK, ?PalDebugBreak@@YAXXZ
-        SETALIAS REDHAWKGCINTERFACE__ALLOC, ?Alloc@RedhawkGCInterface@@SAPAXPAVThread@@IIPAVEEType@@@Z
         SETALIAS G_LOWEST_ADDRESS, g_lowest_address
         SETALIAS G_HIGHEST_ADDRESS, g_highest_address
         SETALIAS G_EPHEMERAL_LOW, g_ephemeral_low
@@ -258,7 +235,7 @@ $Name
 ;;
 ;; IMPORTS
 ;;
-        EXTERN $REDHAWKGCINTERFACE__ALLOC
+        EXTERN RhpGcAlloc
         EXTERN $PALDEBUGBREAK
         EXTERN RhpWaitForSuspend2
         EXTERN RhpWaitForGC2

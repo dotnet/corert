@@ -38,7 +38,7 @@ m_SavedAPSR     field 4         ; saved condition codes
 PROBE_FRAME_SIZE    field 0
 
     ;; Support for setting up a transition frame when performing a GC probe. In many respects this is very
-    ;; similar to the logic in COOP_PINVOKE_FRAME_PROLOG in AsmMacros.h. In most cases setting up the
+    ;; similar to the logic in PUSH_COOP_PINVOKE_FRAME in AsmMacros.h. In most cases setting up the
     ;; transition frame comprises the entirety of the caller's prolog (and initial non-prolog code) and
     ;; similarly for the epilog. Those cases can be dealt with using PROLOG_PROBE_FRAME and EPILOG_PROBE_FRAME
     ;; defined below. For the special cases where additional work has to be done in the prolog we also provide

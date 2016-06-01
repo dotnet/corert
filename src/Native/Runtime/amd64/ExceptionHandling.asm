@@ -411,7 +411,7 @@ ifdef _DEBUG
         mov     rcx, [rsp + 20h]                                    ;; rcx <- Thread*
         mov     rdx, [rsp + rsp_offsetof_arguments + 18h]           ;; rdx <- current ExInfo *
         mov     r8, [r8 + OFFSETOF__REGDISPLAY__SP]                 ;; r8  <- resume SP value
-        call    THREAD__VALIDATEEXINFOPOP
+        call    RhpValidateExInfoPop
 
         mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]

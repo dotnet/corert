@@ -78,8 +78,7 @@ endm
 ;; interesting GC references. In all our helper cases this corresponds to the most recent managed frame (e.g.
 ;; the helper's caller).
 ;;
-;; This macro builds a frame describing the current state of managed code and stashes a pointer to this frame
-;; on the current thread, ready to be used if and when the helper needs to transition to pre-emptive mode.
+;; This macro builds a frame describing the current state of managed code.
 ;;
 ;; The macro assumes it is called from a helper that has already set up an EBP frame and that the values of
 ;; EBX, ESI and EDI remain unchanged from their values in managed code. It pushes the frame at the top of the
@@ -87,21 +86,20 @@ endm
 ;;
 ;; EAX is trashed by this macro.
 ;;
-PUSH_COOP_PINVOKE_FRAME macro threadReg
+PUSH_COOP_PINVOKE_FRAME macro transitionFrameReg
     lea         eax, [ebp + 8]                      ; get the ESP of the caller
     push        eax                                 ; save ESP
     push        edi
     push        esi
     push        ebx
     push        PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
-    push        threadReg                           ; Thread * (unused by stackwalker)
+    push        eax                                 ; Thread * (unused by stackwalker)
     mov         eax, [ebp + 0]                      ; Find previous EBP value
     push        eax                                 ; save EBP
     mov         eax, [ebp + 4]                      ; Find the return address
     push        eax                                 ; save m_RIP
 
-    lea         eax, [esp + 0]                      ; EAX == address of frame
-    mov         [threadReg + OFFSETOF__Thread__m_pHackPInvokeTunnel], eax ; Link frame to thread
+    lea         transitionFrameReg, [esp + 0]       ; transitionFrameReg == address of frame
 endm
 
 ;;
@@ -111,11 +109,6 @@ endm
 ;; TRASHES ECX
 ;;
 POP_COOP_PINVOKE_FRAME macro
-    ;; We do not need to clear m_pHackPInvokeTunnel here because it is 'on the side' information.
-    ;; The actual transition to/from preemptive mode is done elsewhere (EnablePreemptiveMode,
-    ;; DisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
-    ;; so as long as we always set it on the way into a "cooperative pinvoke" method, we're fine
-    ;; because it is only looked at inside these "cooperative pinvoke" methods.
     add         esp, 4*4
     pop         ebx
     pop         esi
@@ -162,7 +155,7 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
 ;;
 
 PALDEBUGBREAK                               equ ?PalDebugBreak@@YGXXZ
-REDHAWKGCINTERFACE__ALLOC                   equ ?Alloc@RedhawkGCInterface@@SGPAXPAVThread@@IIPAVEEType@@@Z
+RhpGcAlloc                                  equ @RhpGcAlloc@16
 G_LOWEST_ADDRESS                            equ _g_lowest_address
 G_HIGHEST_ADDRESS                           equ _g_highest_address
 G_EPHEMERAL_LOW                             equ _g_ephemeral_low
@@ -182,7 +175,7 @@ endif ;; FEATURE_GC_STRESS
 ;;
 ;; IMPORTS
 ;;
-EXTERN REDHAWKGCINTERFACE__ALLOC                : PROC
+EXTERN RhpGcAlloc                               : PROC
 EXTERN PALDEBUGBREAK                            : PROC
 EXTERN RhpWaitForSuspend2                       : PROC
 EXTERN RhpWaitForGC2                            : PROC
