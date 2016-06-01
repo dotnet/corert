@@ -76,7 +76,7 @@ namespace System.Threading
                 while (true)
                 {
                     T[] array = m_array;
-                    lock (m_lock)
+                    using (LockHolder.Hold(m_lock))
                     {
                         for (int i = 0; i < array.Length; i++)
                         {
@@ -105,7 +105,7 @@ namespace System.Threading
             internal void Remove(T e)
             {
                 T[] array = m_array;
-                lock (m_lock)
+                using (LockHolder.Hold(m_lock))
                 {
                     for (int i = 0; i < m_array.Length; i++)
                     {

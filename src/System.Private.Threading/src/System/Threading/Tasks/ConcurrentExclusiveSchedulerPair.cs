@@ -134,7 +134,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public void Complete()
         {
-            lock (ValueLock)
+            using (LockHolder.Hold(ValueLock))
             {
                 if (!CompletionRequested)
                 {
@@ -376,7 +376,7 @@ namespace System.Threading.Tasks
                     "Somehow we ended up escaping exclusive mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
-                lock (ValueLock)
+                using (LockHolder.Hold(ValueLock))
                 {
                     // When this task was launched, we tracked it by setting m_processingCount to WRITER_IN_PROGRESS.
                     // now reset it to 0.  Then check to see whether there's more processing to be done.
@@ -435,7 +435,7 @@ namespace System.Threading.Tasks
                     "Somehow we ended up escaping concurrent mode.");
                 m_threadProcessingMode.Value = ProcessingMode.NotCurrentlyProcessing;
 
-                lock (ValueLock)
+                using (LockHolder.Hold(ValueLock))
                 {
                     // When this task was launched, we tracked it with a positive processing count;
                     // decrement that count.  Then check to see whether there's more processing to be done.
@@ -516,7 +516,7 @@ namespace System.Threading.Tasks
             protected internal override void QueueTask(Task task)
             {
                 Contract.Assert(task != null, "Infrastructure should have provided a non-null task.");
-                lock (m_pair.ValueLock)
+                using (LockHolder.Hold(m_pair.ValueLock))
                 {
                     // If the scheduler has already had completion requested, no new work is allowed to be scheduled
                     if (m_pair.CompletionRequested) throw new InvalidOperationException(GetType().ToString());

@@ -423,7 +423,7 @@ namespace System.Threading.Tasks
         //
 
         private static EventHandler<UnobservedTaskExceptionEventArgs> _unobservedTaskException;
-        private static readonly object _unobservedTaskExceptionLockObject = new Lock();
+        private static readonly Lock _unobservedTaskExceptionLockObject = new Lock();
 
         /// <summary>
         /// Occurs when a faulted <see cref="System.Threading.Tasks.Task"/>'s unobserved exception is about to trigger exception escalation
@@ -441,13 +441,19 @@ namespace System.Threading.Tasks
             {
                 if (value != null)
                 {
-                    lock (_unobservedTaskExceptionLockObject) _unobservedTaskException += value;
+                    using (LockHolder.Hold(_unobservedTaskExceptionLockObject))
+                    {
+                        _unobservedTaskException += value;
+                    }
                 }
             }
 
             remove
             {
-                lock (_unobservedTaskExceptionLockObject) _unobservedTaskException -= value;
+                using (LockHolder.Hold(_unobservedTaskExceptionLockObject))
+                {
+                    _unobservedTaskException -= value;
+                }
             }
         }
 
@@ -465,7 +471,7 @@ namespace System.Threading.Tasks
         internal static void PublishUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs ueea)
         {
             // Lock this logic to prevent just-unregistered handlers from being called.
-            lock (_unobservedTaskExceptionLockObject)
+            using (LockHolder.Hold(_unobservedTaskExceptionLockObject))
             {
                 // Since we are under lock, it is technically no longer necessary
                 // to make a copy.  It is done here for convenience.

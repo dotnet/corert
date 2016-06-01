@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    struct LockHolder : IDisposable
+    public struct LockHolder : IDisposable
     {
         Lock _lock;
 

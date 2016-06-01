@@ -429,6 +429,7 @@
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\LazyInitializer.cs" />
     <Compile Include="System\Threading\LazyThreadSafetyMode.cs" />
+    <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\ManualResetEvent.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
@@ -628,9 +629,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\Threading\LockHolder.cs">
-      <Link>System\Threading\LockHolder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
       <Link>System\NotImplemented.cs</Link>

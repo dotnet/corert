@@ -185,7 +185,7 @@ namespace System.Threading
         {
             int id;
 
-            lock (s_idManager.m_lock)
+            using (LockHolder.Hold(s_idManager.m_lock))
             {
                 id = ~m_idComplement;
                 m_idComplement = 0;
@@ -412,7 +412,7 @@ namespace System.Threading
             var linkedSlot = new LinkedSlot(slotArray);
 
             // Insert the LinkedSlot into the linked list maintained by this ThreadLocal<> instance and into the slot array
-            lock (s_idManager.m_lock)
+            using (LockHolder.Hold(s_idManager.m_lock))
             {
                 // Check that the instance has not been disposed. It is important to check this under a lock, since
                 // Dispose also executes under a lock.
@@ -561,7 +561,7 @@ namespace System.Threading
             // Dispose could use a stale SlotArray reference and clear out a slot in the old array only, while 
             // the value continues to be referenced from the new (larger) array.
             //
-            lock (s_idManager.m_lock)
+            using (LockHolder.Hold(s_idManager.m_lock))
             {
                 for (int i = 0; i < table.Length; i++)
                 {
@@ -679,7 +679,7 @@ namespace System.Threading
 
             internal int GetId()
             {
-                lock (m_lock)
+                using (LockHolder.Hold(m_lock))
                 {
                     int availableId = m_nextIdToTry;
                     while (availableId < m_freeIds.Count)
@@ -706,7 +706,7 @@ namespace System.Threading
             // Return an ID to the pool
             internal void ReturnId(int id)
             {
-                lock (m_lock)
+                using (LockHolder.Hold(m_lock))
                 {
                     m_freeIds[id] = true;
                     if (id < m_nextIdToTry) m_nextIdToTry = id;
@@ -760,7 +760,7 @@ namespace System.Threading
                     {
                         // Remove the LinkedSlot from the linked list. Once the FinalizationHelper is done, all back-references to
                         // the table will be have been removed, and so the table can get GC'd.
-                        lock (s_idManager.m_lock)
+                        using (LockHolder.Hold(s_idManager.m_lock))
                         {
                             if (linkedSlot.Next != null)
                             {
