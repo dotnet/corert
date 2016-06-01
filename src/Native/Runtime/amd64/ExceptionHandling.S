@@ -339,7 +339,7 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
         mov     rdi, [rsp]                                          // rdi <- Thread*
         mov     rsi, [rsp + locArg3]                                // rsi <- current ExInfo *
         mov     rdx, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdx  <- resume SP value
-        call    RhpValidateExInfoPop
+        call    C_FUNC(RhpValidateExInfoPop)
 
         mov     rdx, [rsp + locArg2]          // rdx <- dispatch context
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
