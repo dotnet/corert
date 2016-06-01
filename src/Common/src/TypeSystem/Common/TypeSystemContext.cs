@@ -404,9 +404,7 @@ namespace Internal.TypeSystem
 
                 protected override InstantiatedMethod CreateValueFromKey(InstantiatedMethodKey key)
                 {
-                    InstantiatedMethod returnValue = new InstantiatedMethod(key.MethodDef, key.Instantiation);
-                    returnValue.SetHashCode(key._hashcode);
-                    return returnValue;
+                    return new InstantiatedMethod(key.MethodDef, key.Instantiation, key._hashcode);
                 }
             }
         }
@@ -479,9 +477,7 @@ namespace Internal.TypeSystem
 
                 protected override MethodForInstantiatedType CreateValueFromKey(MethodForInstantiatedTypeKey key)
                 {
-                    MethodForInstantiatedType returnValue = new MethodForInstantiatedType(key.TypicalMethodDef, key.InstantiatedType);
-                    returnValue.SetHashCode(key._hashcode);
-                    return returnValue;
+                    return new MethodForInstantiatedType(key.TypicalMethodDef, key.InstantiatedType, key._hashcode);
                 }
             }
         }
