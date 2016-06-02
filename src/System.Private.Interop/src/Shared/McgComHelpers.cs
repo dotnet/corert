@@ -194,7 +194,6 @@ namespace System.Runtime.InteropServices
             {
                 McgMarshal.ComRelease_StdCall(pMarshal);
             }
-#endif
         }
 
         /// <summary>
