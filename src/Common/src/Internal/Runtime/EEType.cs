@@ -312,7 +312,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return RareFlags.HasFlag(EETypeRareFlags.IsNullableFlag);
+                return (RareFlags & EETypeRareFlags.IsNullableFlag) != 0;
             }
         }
 
@@ -376,7 +376,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return RareFlags.HasFlag(EETypeRareFlags.IsDynamicTypeFlag);
+                return (RareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0;
             }
         }
 
@@ -384,7 +384,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return RareFlags.HasFlag(EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag);
+                return (RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0;
             }
         }
 
@@ -392,7 +392,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return RareFlags.HasFlag(EETypeRareFlags.NullableTypeViaIATFlag);
+                return (RareFlags & EETypeRareFlags.NullableTypeViaIATFlag) != 0;
             }
         }
 
@@ -416,7 +416,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return RareFlags.HasFlag(EETypeRareFlags.RequiresAlign8Flag);
+                return (RareFlags & EETypeRareFlags.RequiresAlign8Flag) != 0;
             }
         }
 
@@ -453,7 +453,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return RareFlags.HasFlag(EETypeRareFlags.IsHFAFlag);
+                return (RareFlags & EETypeRareFlags.IsHFAFlag) != 0;
             }
         }
 
@@ -807,7 +807,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return RareFlags.HasFlag(EETypeRareFlags.HasCctorFlag);
+                return (RareFlags & EETypeRareFlags.HasCctorFlag) != 0;
             }
         }
         
@@ -853,7 +853,7 @@ namespace Internal.Runtime
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
 
-            if (IsNullable || RareFlags.HasFlag(EETypeRareFlags.IsDynamicTypeWithSealedVTableEntriesFlag))
+            if (IsNullable || (RareFlags & EETypeRareFlags.IsDynamicTypeWithSealedVTableEntriesFlag) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicDispatchMap)
@@ -861,7 +861,7 @@ namespace Internal.Runtime
                 Debug.Assert(IsDynamicType);
                 return cbOffset;
             }
-            if (RareFlags.HasFlag(EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag))
+            if ((RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
             if (eField == EETypeField.ETF_DynamicTemplateType)
