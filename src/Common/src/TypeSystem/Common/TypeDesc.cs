@@ -9,90 +9,9 @@ using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem
 {
-    public struct Instantiation
-    {
-        private TypeDesc[] _genericParameters;
-
-        public Instantiation(params TypeDesc[] genericParameters)
-        {
-            _genericParameters = genericParameters;
-        }
-
-        [System.Runtime.CompilerServices.IndexerName("GenericParameters")]
-        public TypeDesc this[int index]
-        {
-            get
-            {
-                return _genericParameters[index];
-            }
-        }
-
-        public int Length
-        {
-            get
-            {
-                return _genericParameters.Length;
-            }
-        }
-
-        public bool IsNull
-        {
-            get
-            {
-                return _genericParameters == null;
-            }
-        }
-
-        /// <summary>
-        /// Combines the given generic definition's hash code with the hashes
-        /// of the generic parameters in this instantiation
-        /// </summary>
-        public int ComputeGenericInstanceHashCode(int genericDefinitionHashCode)
-        {
-            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeGenericInstanceHashCode(genericDefinitionHashCode, _genericParameters);
-        }
-
-        public static readonly Instantiation Empty = new Instantiation(TypeDesc.EmptyTypes);
-
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(_genericParameters);
-        }
-
-        /// <summary>
-        /// Enumerator for iterating over the types in an instantiation
-        /// </summary>
-        public struct Enumerator
-        {
-            private TypeDesc[] _collection;
-            private int _currentIndex;
-
-            public Enumerator(TypeDesc[] collection)
-            {
-                _collection = collection;
-                _currentIndex = -1;
-            }
-
-            public TypeDesc Current
-            {
-                get
-                {
-                    return _collection[_currentIndex];
-                }
-            }
-
-            public bool MoveNext()
-            {
-                _currentIndex++;
-                if (_currentIndex >= _collection.Length)
-                {
-                    return false;
-                }
-                return true;
-            }
-        }
-    }
-
+    /// <summary>
+    /// Represents the fundamental base type of all types within the type system.
+    /// </summary>
     public abstract partial class TypeDesc
     {
         public static readonly TypeDesc[] EmptyTypes = new TypeDesc[0];
@@ -127,11 +46,19 @@ namespace Internal.TypeSystem
         // The most frequently used type properties are cached here to avoid excesive virtual calls
         private TypeFlags _typeFlags;
 
+        /// <summary>
+        /// Gets the type system context this type belongs to.
+        /// </summary>
         public abstract TypeSystemContext Context
         {
             get;
         }
 
+        /// <summary>
+        /// Gets the generic instantiation information of this type.
+        /// For generic definitions, retrieves the generic parameters of the type.
+        /// For generic instantiation, retrieves the generic arguments of the type.
+        /// </summary>
         public virtual Instantiation Instantiation
         {
             get
@@ -140,6 +67,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type has a generic instantiation.
+        /// This will be true for generic type instantiations and generic definitions.
+        /// </summary>
         public bool HasInstantiation
         {
             get
@@ -148,7 +79,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public void SetWellKnownType(WellKnownType wellKnownType)
+        internal void SetWellKnownType(WellKnownType wellKnownType)
         {
             TypeFlags flags;
 
@@ -224,6 +155,10 @@ namespace Internal.TypeSystem
             return InitializeTypeFlags(mask);
         }
 
+        /// <summary>
+        /// Retrieves the category of the type. This is one of the possible values of
+        /// <see cref="TypeFlags"/> less than <see cref="TypeFlags.CategoryMask"/>.
+        /// </summary>
         public TypeFlags Category
         {
             get
@@ -232,6 +167,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is an interface type.
+        /// </summary>
         public bool IsInterface
         {
             get
@@ -240,6 +178,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is a value type (not a reference type).
+        /// </summary>
         public bool IsValueType
         {
             get
@@ -248,6 +189,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is one of the primitive types (boolean, char, void,
+        /// a floating point, or an integer type).
+        /// </summary>
         public bool IsPrimitive
         {
             get
@@ -256,6 +201,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is an enum type.
+        /// Access <see cref="UnderlyingType"/> to retrieve the underlying integral type.
+        /// </summary>
         public bool IsEnum
         {
             get
@@ -264,6 +213,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a delegate type.
+        /// </summary>
         public bool IsDelegate
         {
             get
@@ -273,6 +225,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is System.Void type.
+        /// </summary>
         public bool IsVoid
         {
             get
@@ -281,6 +236,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is System.String type.
+        /// </summary>
         public bool IsString
         {
             get
@@ -289,6 +247,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is System.Object type.
+        /// </summary>
         public bool IsObject
         {
             get
@@ -297,6 +258,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a generic definition, or
+        /// an instance of System.Nullable`1.
+        /// </summary>
         public bool IsNullable
         {
             get
@@ -305,6 +270,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is an array type (<see cref="ArrayType"/>).
+        /// Note this will return true for both multidimensional array types and vector types.
+        /// Use <see cref="IsSzArray"/> to check for vector types.
+        /// </summary>
         public bool IsArray
         {
             get
@@ -313,6 +283,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a vector type. A vector is a single-dimensional
+        /// array with a zero lower bound. To check for arrays in general, use <see cref="IsArray"/>.
+        /// </summary>
         public bool IsSzArray
         {
             get
@@ -321,6 +295,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a managed pointer type (<see cref="ByRefType"/>).
+        /// </summary>
         public bool IsByRef
         {
             get
@@ -329,6 +306,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is an unmanaged pointer type (<see cref="PointerType"/>).
+        /// </summary>
         public bool IsPointer
         {
             get
@@ -337,6 +317,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a generic parameter (<see cref="GenericParameterDesc"/>).
+        /// </summary>
         public bool IsGenericParameter
         {
             get
@@ -345,6 +328,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a class, an interface, a value type, or a
+        /// generic instance of one of them.
+        /// </summary>
         public bool IsDefType
         {
             get
@@ -377,6 +364,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the type from which this type derives from, or null if there's no such type.
+        /// </summary>
         public virtual DefType BaseType
         {
             get
@@ -385,6 +375,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type has a base type.
+        /// </summary>
         public bool HasBaseType
         {
             get
@@ -393,7 +386,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public virtual TypeDesc UnderlyingType // For enums
+        /// <summary>
+        /// If this is an enum type, gets the underlying integral type of the enum type.
+        /// For all other types, returns 'this'.
+        /// </summary>
+        public virtual TypeDesc UnderlyingType
         {
             get
             {
@@ -411,6 +408,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type has a class constructor method.
+        /// Use <see cref="GetStaticConstructor"/> to retrieve it.
+        /// </summary>
         public virtual bool HasStaticConstructor
         {
             get
@@ -419,11 +420,21 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets all methods on this type defined within the type's metadata.
+        /// This will not include methods injected by the type system context.
+        /// </summary>
         public virtual IEnumerable<MethodDesc> GetMethods()
         {
             return MethodDesc.EmptyMethods;
         }
 
+        /// <summary>
+        /// Gets a named method on the type. This method only looks at methods defined
+        /// in type's metadata. The <paramref name="signature"/> parameter can be null.
+        /// If signature is not specified and there are multiple matches, the first one
+        /// is returned. Returns null if method not found.
+        /// </summary>
         // TODO: Substitutions, generics, modopts, ...
         public virtual MethodDesc GetMethod(string name, MethodSignature signature)
         {
@@ -438,17 +449,28 @@ namespace Internal.TypeSystem
             return null;
         }
 
+        /// <summary>
+        /// Retrieves the class constructor method of this type.
+        /// </summary>
+        /// <returns></returns>
         public virtual MethodDesc GetStaticConstructor()
         {
             return null;
         }
 
+        /// <summary>
+        /// Gets all fields on the type as defined in the metadata.
+        /// </summary>
         public virtual IEnumerable<FieldDesc> GetFields()
         {
             return FieldDesc.EmptyFields;
         }
 
+        /// <summary>
+        /// Gets a named field on the type. Returns null if the field wasn't found.
+        /// </summary>
         // TODO: Substitutions, generics, modopts, ...
+        // TODO: field signature
         public virtual FieldDesc GetField(string name)
         {
             foreach (var field in GetFields())
@@ -464,12 +486,19 @@ namespace Internal.TypeSystem
             return this;
         }
 
-        // Strips instantiation. E.g C<int> -> C<T>
+        /// <summary>
+        /// Gets the definition of the type. If this is a generic type instance,
+        /// this method strips the instantiation (E.g C&lt;int&gt; -> C&lt;T&gt;)
+        /// </summary>
         public virtual TypeDesc GetTypeDefinition()
         {
             return this;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a type definition. Returns false
+        /// if this is an instantiated generic type.
+        /// </summary>
         public bool IsTypeDefinition
         {
             get
@@ -486,6 +515,10 @@ namespace Internal.TypeSystem
             return GetTypeDefinition() == otherType.GetTypeDefinition();
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type has a finalizer method.
+        /// Use <see cref="GetFinalizer"/> to retrieve the method.
+        /// </summary>
         public virtual bool HasFinalizer
         {
             get
@@ -494,6 +527,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the finalizer method (an override of the System.Object::Finalize method)
+        /// if this type has one. Returns null if the type doesn't define one.
+        /// </summary>
         public virtual MethodDesc GetFinalizer()
         {
             return null;
@@ -511,6 +548,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is an uninstantiated definition of a generic type.
+        /// </summary>
         public bool IsGenericDefinition
         {
             get

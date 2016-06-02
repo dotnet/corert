@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Represents a managed pointer type.
+    /// </summary>
     public sealed partial class ByRefType : ParameterizedType
     {
         internal ByRefType(TypeDesc parameter)
@@ -24,6 +25,7 @@ namespace Internal.TypeSystem
             return instantiatedParameterType.MakeByRefType();
         }
 
+        // TODO: this is a pretty weird semantic...
         public override TypeDesc GetTypeDefinition()
         {
             TypeDesc result = this;

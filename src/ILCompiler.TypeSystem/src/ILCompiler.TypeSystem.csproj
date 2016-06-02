@@ -32,6 +32,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>TypeSystem\Common\IAssemblyDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Instantiation.cs">
+      <Link>TypeSystem\Common\Instantiation.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs">
       <Link>TypeSystem\Common\MetadataVirtualMethodEnumerationAlgorithm.cs</Link>
     </Compile>

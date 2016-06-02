@@ -8,6 +8,7 @@ namespace Internal.TypeSystem
 {
     /// <summary>
     /// Type with metadata available that is equivalent to a TypeDef record in an ECMA 335 metadata stream.
+    /// A class, an interface, or a value type.
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
@@ -103,7 +104,8 @@ namespace Internal.TypeSystem
         public abstract IEnumerable<MetadataType> GetNestedTypes();
 
         /// <summary>
-        /// Get a specific type nested in this type.
+        /// Get a specific type nested in this type. Returns null if the type
+        /// doesn't exist.
         /// </summary>
         public abstract MetadataType GetNestedType(string name);
     }
