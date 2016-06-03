@@ -2,23 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
-    public enum InstanceLayoutKind
-    {
-        TypeOnly,
-        TypeAndFields
-    }
-
-    public enum StaticLayoutKind
-    {
-        StaticRegionSizes,
-        StaticRegionSizesAndFields
-    }
-
+    /// <summary>
+    /// Pluggable field layout algorithm. Provides means to compute static/instance sizes for types,
+    /// offsets for their fields and other type information that depends on type's fields.
+    /// The information computed by this algorithm is exposed on various properties of
+    /// <see cref="DefType"/> and <see cref="FieldDesc"/>.
+    /// </summary>
+    /// <remarks>
+    /// The algorithms are expected to be directly used by <see cref="TypeSystemContext"/> derivatives
+    /// only. The most obvious implementation of this algorithm that uses type's metadata to
+    /// compute the answers is in <see cref="MetadataFieldLayoutAlgorithm"/>.
+    /// </remarks>
     public abstract class FieldLayoutAlgorithm
     {
         /// <summary>
@@ -32,7 +28,7 @@ namespace Internal.TypeSystem
         public abstract ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind);
 
         /// <summary>
-        /// Compute if the fields of the specified type contain a GC pointer
+        /// Compute whether the fields of the specified type contain a GC pointer.
         /// </summary>
         public abstract bool ComputeContainsGCPointers(DefType type);
 
@@ -47,6 +43,38 @@ namespace Internal.TypeSystem
         /// the element type of the homogenous float aggregate. This will either be System.Double or System.Float.
         /// </summary>
         public abstract DefType ComputeHomogeneousFloatAggregateElementType(DefType type);
+    }
+
+    /// <summary>
+    /// Specifies the level to which to compute the instance field layout.
+    /// </summary>
+    public enum InstanceLayoutKind
+    {
+        /// <summary>
+        /// Compute instance sizes and alignments.
+        /// </summary>
+        TypeOnly,
+
+        /// <summary>
+        /// Compute instance sizes, alignments and field offsets.
+        /// </summary>
+        TypeAndFields
+    }
+
+    /// <summary>
+    /// Specifies the level to which to compute static field layout.
+    /// </summary>
+    public enum StaticLayoutKind
+    {
+        /// <summary>
+        /// Compute static region sizes.
+        /// </summary>
+        StaticRegionSizes,
+
+        /// <summary>
+        /// Compute static region sizes and static field offsets.
+        /// </summary>
+        StaticRegionSizesAndFields
     }
 
     public struct ComputedInstanceFieldLayout
