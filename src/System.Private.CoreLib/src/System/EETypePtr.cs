@@ -179,6 +179,25 @@ namespace System
             }
         }
 
+#if REAL_MULTIDIM_ARRAYS
+        internal int ArrayRank
+        {
+            get
+            {
+                Debug.Assert(this.IsArray);
+
+                int boundsSize = (int)this.BaseSize - Array.SZARRAY_BASE_SIZE;
+                if (boundsSize > 0)
+                {
+                    // Multidim array case: Base size includes space for two Int32s
+                    // (upper and lower bound) per each dimension of the array.
+                    return boundsSize / (2 * sizeof(int));
+                }
+                return 1;
+            }
+        }
+#endif
+
         internal EETypePtr BaseType
         {
             get

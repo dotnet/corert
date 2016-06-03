@@ -126,7 +126,7 @@ namespace Internal.Runtime.Augments
         // As a concession to the fact that we don't actually support non-zero lower bounds, "lowerBounds" accepts "null"
         // to avoid unnecessary array allocations by the caller.
         //
-        public static Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds)
+        public static unsafe Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds)
         {
             Debug.Assert(lengths != null);
             Debug.Assert(lowerBounds == null || lowerBounds.Length == lengths.Length);
@@ -140,9 +140,18 @@ namespace Internal.Runtime.Augments
                 }
             }
 
+#if REAL_MULTIDIM_ARRAYS
+            // Create a local copy of the lenghts that cannot be motified by the caller
+            int * pLengths = stackalloc int[lengths.Length];
+            for (int i = 0; i < lengths.Length; i++)
+                pLengths[i] = lengths[i];
+
+            return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
+#else
             MDArray mdArray = (MDArray)(NewObject(typeHandleForArrayType));
             mdArray.MDInitialize(lengths);
             return mdArray;
+#endif
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
