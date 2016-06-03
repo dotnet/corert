@@ -25,17 +25,6 @@ namespace Internal.TypeSystem
             return instantiatedParameterType.Context.GetPointerType(instantiatedParameterType);
         }
 
-        public override TypeDesc GetTypeDefinition()
-        {
-            TypeDesc result = this;
-
-            TypeDesc parameterDef = this.ParameterType.GetTypeDefinition();
-            if (parameterDef != this.ParameterType)
-                result = parameterDef.Context.GetPointerType(parameterDef);
-
-            return result;
-        }
-
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = TypeFlags.Pointer;
