@@ -120,18 +120,6 @@ namespace Internal.TypeSystem
             return instantiatedElementType.Context.GetArrayType(instantiatedElementType, _rank);
         }
 
-        // TODO: this is a pretty weird semantic...
-        public override TypeDesc GetTypeDefinition()
-        {
-            TypeDesc result = this;
-
-            TypeDesc elementDef = this.ElementType.GetTypeDefinition();
-            if (elementDef != this.ElementType)
-                result = elementDef.Context.GetArrayType(elementDef);
-
-            return result;
-        }
-
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = _rank == -1 ? TypeFlags.SzArray : TypeFlags.Array;

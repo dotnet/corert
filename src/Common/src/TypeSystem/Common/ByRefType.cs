@@ -25,18 +25,6 @@ namespace Internal.TypeSystem
             return instantiatedParameterType.MakeByRefType();
         }
 
-        // TODO: this is a pretty weird semantic...
-        public override TypeDesc GetTypeDefinition()
-        {
-            TypeDesc result = this;
-
-            TypeDesc parameterDef = this.ParameterType.GetTypeDefinition();
-            if (parameterDef != this.ParameterType)
-                result = parameterDef.MakeByRefType();
-
-            return result;
-        }
-
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = TypeFlags.ByRef;
