@@ -6,10 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Represents an array type - either a multidimensional array, or a vector
+    /// (a one-dimensional array with a zero lower bound).
+    /// </summary>
     public sealed partial class ArrayType : ParameterizedType
     {
         private int _rank; // -1 for regular single dimensional arrays, > 0 for multidimensional arrays
@@ -33,6 +35,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the type of the element of this array.
+        /// </summary>
         public TypeDesc ElementType
         {
             get
@@ -43,6 +48,9 @@ namespace Internal.TypeSystem
 
         internal MethodDesc[] _methods;
 
+        /// <summary>
+        /// Gets a value indicating whether this type is a vector.
+        /// </summary>
         public new bool IsSzArray
         {
             get
@@ -51,6 +59,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the rank of this array. Note this returns "1" for both vectors, and
+        /// for general arrays of rank 1. Use <see cref="IsSzArray"/> to disambiguate.
+        /// </summary>
         public int Rank
         {
             get
@@ -108,6 +120,7 @@ namespace Internal.TypeSystem
             return instantiatedElementType.Context.GetArrayType(instantiatedElementType, _rank);
         }
 
+        // TODO: this is a pretty weird semantic...
         public override TypeDesc GetTypeDefinition()
         {
             TypeDesc result = this;
@@ -149,6 +162,11 @@ namespace Internal.TypeSystem
         Ctor
     }
 
+    /// <summary>
+    /// Represents one of the methods on array types. While array types are not typical
+    /// classes backed by metadata, they do have methods that can be referenced from the IL
+    /// and the type system needs to provide a way to represent them.
+    /// </summary>
     public partial class ArrayMethod : MethodDesc
     {
         private ArrayType _owningType;
@@ -261,21 +279,9 @@ namespace Internal.TypeSystem
             }
         }
 
-        // Strips method instantiation. E.g C<int>.m<string> -> C<int>.m<U>
-        public override MethodDesc GetMethodDefinition()
-        {
-            return this;
-        }
-
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;
-        }
-
-        // Strips both type and method instantiation. E.g C<int>.m<string> -> C<T>.m<U>
-        public override MethodDesc GetTypicalMethodDefinition()
-        {
-            return this;
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
