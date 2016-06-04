@@ -21,10 +21,6 @@ namespace Internal.Runtime
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct EEInterfaceInfo
     {
-        // CS0169: The private field '{blah}' is never used
-        // CS0649: Field '{blah}' is never assigned to, and will always have its default value
-#pragma warning disable 169, 649
-
         [StructLayout(LayoutKind.Explicit)]
         private unsafe struct InterfaceTypeUnion
         {
@@ -35,8 +31,6 @@ namespace Internal.Runtime
         }
 
         private InterfaceTypeUnion _interfaceType;
-
-#pragma warning restore
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -141,10 +135,6 @@ namespace Internal.Runtime
             }
         }
 
-        // CS0169: The private field '{blah}' is never used
-        // CS0649: Field '{blah}' is never assigned to, and will always have its default value
-#pragma warning disable 169, 649
-
         private UInt16 _usComponentSize;
         private UInt16 _usFlags;
         private UInt32 _uBaseSize;
@@ -154,8 +144,6 @@ namespace Internal.Runtime
         private UInt32 _uHashCode;
 
         // vtable follows
-
-#pragma warning restore
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
     // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
@@ -420,6 +408,76 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsICastable
+        {
+            get
+            {
+                return (RareFlags & EETypeRareFlags.ICastableFlag) != 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets the pointer to the method that implements ICastable.IsInstanceOfInterface.
+        /// </summary>
+        internal IntPtr ICastableIsInstanceOfInterfaceMethod
+        {
+            get
+            {
+                Debug.Assert(IsICastable);
+
+                byte* optionalFields = OptionalFieldsPtr;
+                Debug.Assert(optionalFields != null);
+
+                const UInt16 NoSlot = 0xFFFF;
+                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_ICastableIsInstSlot, NoSlot);
+                if (uiSlot != NoSlot)
+                {
+                    if (uiSlot < NumVtableSlots)
+                        return GetVTableStartAddress()[uiSlot];
+                    else
+                        return GetSealedVirtualSlot((UInt16)(uiSlot - NumVtableSlots));
+                }
+
+                EEType* baseType = BaseType;
+                if (baseType != null)
+                    return baseType->ICastableIsInstanceOfInterfaceMethod;
+
+                Debug.Assert(false);
+                return IntPtr.Zero;
+            }
+        }
+
+        /// <summary>
+        /// Gets the pointer to the method that implements ICastable.GetImplType.
+        /// </summary>
+        internal IntPtr ICastableGetImplTypeMethod
+        {
+            get
+            {
+                Debug.Assert(IsICastable);
+
+                byte* optionalFields = OptionalFieldsPtr;
+                Debug.Assert(optionalFields != null);
+
+                const UInt16 NoSlot = 0xFFFF;
+                UInt16 uiSlot = (UInt16)OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_ICastableGetImplTypeSlot, NoSlot);
+                if (uiSlot != NoSlot)
+                {
+                    if (uiSlot < NumVtableSlots)
+                        return GetVTableStartAddress()[uiSlot];
+                    else
+                        return GetSealedVirtualSlot((UInt16)(uiSlot - NumVtableSlots));
+                }
+
+                EEType* baseType = BaseType;
+                if (baseType != null)
+                    return baseType->ICastableGetImplTypeMethod;
+
+                Debug.Assert(false);
+                return IntPtr.Zero;
+            }
+        }
+
         internal bool IsValueType
         {
             get
@@ -496,6 +554,18 @@ namespace Internal.Runtime
             get
             {
                 return ((_usFlags & (UInt16)EETypeFlags.RuntimeAllocatedFlag) != 0);
+            }
+        }
+
+        internal EEInterfaceInfo* InterfaceMap
+        {
+            get
+            {
+                fixed (EEType* start = &this)
+                {
+                    // interface info table starts after the vtable and has _usNumInterfaces entries
+                    return (EEInterfaceInfo*)((byte*)start + sizeof(EEType) + sizeof(void*) * _usNumVtableSlots);
+                }
             }
         }
 
@@ -616,6 +686,28 @@ namespace Internal.Runtime
 #endif
         }
 
+        /// <summary>
+        /// Gets the offset of the value embedded in a Nullable&lt;T&gt;.
+        /// </summary>
+        internal byte NullableValueOffset
+        {
+            get
+            {
+                Debug.Assert(IsNullable);
+
+                // Grab optional fields. If there aren't any then the offset was the default of 1 (immediately after the
+                // Nullable's boolean flag).
+                byte* optionalFields = OptionalFieldsPtr;
+                if (optionalFields == null)
+                    return 1;
+
+                // The offset is never zero (Nullable has a boolean there indicating whether the value is valid). So the
+                // offset is encoded - 1 to save space. The zero below is the default value if the field wasn't encoded at
+                // all.
+                return (byte)(OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.OFT_NullableValueOffset, 0) + 1);
+            }
+        }
+
         internal EEType* RelatedParameterType
         {
             get
@@ -635,6 +727,18 @@ namespace Internal.Runtime
                 _relatedType._pRelatedParameterType = value;
             }
 #endif
+        }
+
+        internal unsafe IntPtr* GetVTableStartAddress()
+        {
+            byte* pResult;
+
+            // EETypes are always in unmanaged memory, so 'leaking' the 'fixed pointer' is safe.
+            fixed (EEType* pThis = &this)
+                pResult = (byte*)pThis;
+
+            pResult += sizeof(EEType);
+            return (IntPtr*)pResult;
         }
 
         static IntPtr FollowRelativePointer(Int32* pDist)
