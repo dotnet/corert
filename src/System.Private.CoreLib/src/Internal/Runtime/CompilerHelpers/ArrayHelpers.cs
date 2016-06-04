@@ -16,6 +16,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         /// <summary>
         /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
+        /// The content of the dimensions block may be modified by the helper.
         /// </summary>
         private static unsafe Array NewObjArray(IntPtr pEEType, int nDimensions, int* pDimensions)
         {
@@ -29,7 +30,7 @@ namespace Internal.Runtime.CompilerHelpers
 
                 if (nDimensions > 1)
                 {
-                    // Allocate jagged array
+                    // Jagged arrays have constructor for each possible depth
                     EETypePtr elementType = eeType.ArrayElementType;
                     Debug.Assert(elementType.IsSzArray);
 
@@ -40,22 +41,25 @@ namespace Internal.Runtime.CompilerHelpers
 
                 return ret;
             }
-
-            int rank = eeType.ArrayRank;
-            Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
-
-            if (rank < nDimensions)
+            else
             {
-                for (int i = 0; i < rank; i++)
+                // Multidimensional arrays have two ctors, one with and one without lower bounds
+                int rank = eeType.ArrayRank;
+                Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
+
+                if (rank < nDimensions)
                 {
-                    if (pDimensions[2 * i] != 0)
-                        throw new PlatformNotSupportedException(SR.Arg_NotSupportedNonZeroLowerBound);
+                    for (int i = 0; i < rank; i++)
+                    {
+                        if (pDimensions[2 * i] != 0)
+                            throw new PlatformNotSupportedException(SR.Arg_NotSupportedNonZeroLowerBound);
 
-                    pDimensions[i] = pDimensions[2 * i + 1];
+                        pDimensions[i] = pDimensions[2 * i + 1];
+                    }
                 }
-            }
 
-            return Array.NewMultiDimArray(eeType, pDimensions, rank);
+                return Array.NewMultiDimArray(eeType, pDimensions, rank);
+            }
         }
     }
 }
