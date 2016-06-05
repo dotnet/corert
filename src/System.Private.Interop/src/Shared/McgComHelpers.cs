@@ -160,12 +160,6 @@ namespace System.Runtime.InteropServices
             if (pMarshal == default(IntPtr))
                 return false;
 
-#if CORECLR 
-           // Temp Workaround for coreclr
-           McgMarshal.ComRelease_StdCall(pMarshal);
-           return true;
-#else
-
             try
             {
                 //
@@ -176,9 +170,9 @@ namespace System.Runtime.InteropServices
                 fixed (Guid* pGuid = &Interop.COM.IID_IUnknown)
                 {
                     Guid clsid;
-                    int hr = CalliIntrinsics.StdCall<int>(
+                    int hr = CalliIntrinsics.StdCall__int(
                         pIMarshalNativePtr->vtbl->pfnGetUnmarshalClass,
-                        pIMarshalNativePtr,
+                        new IntPtr(pIMarshalNativePtr),
                         pGuid,
                         default(IntPtr),
                         (uint)Interop.COM.MSHCTX.MSHCTX_INPROC,
@@ -200,7 +194,6 @@ namespace System.Runtime.InteropServices
             {
                 McgMarshal.ComRelease_StdCall(pMarshal);
             }
-#endif
         }
 
         /// <summary>

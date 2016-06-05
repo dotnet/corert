@@ -119,6 +119,21 @@ namespace System.Runtime.InteropServices
             return default(int);
         }
 
+        internal static int StdCall__int(
+          IntPtr pfn,
+          IntPtr pComThis,
+          void* arg0,
+          IntPtr arg1,
+          uint arg2,
+          IntPtr arg3,
+          uint arg4,
+          void* arg5)
+        {
+
+            // This method is implemented elsewhere in the toolchain
+            return default(int);
+        }
+
         internal static T StdCall<T>(
                     System.IntPtr pfn,
                     void* pComThis,
@@ -137,19 +152,6 @@ namespace System.Runtime.InteropServices
                     void* arg2,
                     int arg3,
                     IntPtr arg4)
-        {
-            // This method is implemented elsewhere in the toolchain
-            return default(T);
-        }
-        internal static T StdCall<T>(
-                    System.IntPtr pfn,
-                    void* pComThis,
-                    void* arg0,
-                    IntPtr arg1,
-                    uint arg2,
-                    IntPtr arg3,
-                    uint arg4,
-                    void* arg5)
         {
             // This method is implemented elsewhere in the toolchain
             return default(T);
