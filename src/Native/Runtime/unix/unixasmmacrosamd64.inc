@@ -145,6 +145,13 @@ C_FUNC(\Name):
         .cfi_adjust_cfa_offset 8
 .endm
 
+.macro push_imm imm
+.att_syntax
+        push            $\imm
+.intel_syntax noprefix
+        .cfi_adjust_cfa_offset 8
+.endm
+
 .macro push_eflags
         pushfq
         .cfi_adjust_cfa_offset 8
@@ -216,9 +223,21 @@ C_FUNC(\Name):
 
 .endm
 
+//
+// CONSTANTS -- INTEGER
+//
 #define TSF_Attached                    0x01
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
+
+//
+// Rename fields of nested structs
+//
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr    OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__alloc_context__alloc_ptr
+#define OFFSETOF__Thread__m_alloc_context__alloc_limit  OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__alloc_context__alloc_limit
+
+// GC type flags
+#define GC_ALLOC_FINALIZE           1
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 #define PTFF_SAVE_RBX            00000001h
@@ -263,4 +282,38 @@ C_FUNC(\Name):
         mov         qword ptr [\threadReg + OFFSETOF__Thread__m_pvHijackedReturnAddress], 0
 
 1:
+.endm
+
+DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
+
+.macro PUSH_COOP_PINVOKE_FRAME trashReg
+    push_nonvol_reg rbp
+    mov             rbp, rsp
+    lea             \trashReg, [rsp +  10h]
+    push_register   \trashReg                   // save caller's RSP
+    push_nonvol_reg r15                         // save preserved registers
+    push_nonvol_reg r14                         //   ..
+    push_nonvol_reg r13                         //   ..
+    push_nonvol_reg r12                         //   ..
+    push_nonvol_reg rbx                         //   ..
+    push_imm        DEFAULT_FRAME_SAVE_FLAGS   // save the register bitmask
+    push_register   \trashReg                   // Thread * (unused by stackwalker)
+    push_register   rbp                         // save caller's RBP
+    mov             \trashReg, [rsp + 9*8]      // Find the return address
+    push_register   \trashReg                   // save m_RIP
+    lea             \trashReg, [rsp]            // trashReg == address of frame
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+    pop_register r10    // discard RIP
+    pop_register r10    // discarp RBP
+    pop_register r10    // discard thread
+    pop_register r10    // discard bitmask
+    pop_nonvol_reg rbx
+    pop_nonvol_reg r12
+    pop_nonvol_reg r13
+    pop_nonvol_reg r14
+    pop_nonvol_reg r15
+    pop_register r10    // discard caller RSP
+    pop_nonvol_reg rbp
 .endm
