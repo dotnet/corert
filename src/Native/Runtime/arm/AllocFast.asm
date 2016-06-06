@@ -486,7 +486,11 @@ NewArray8_SkipPublish
 Array8SizeOverflow
         ; We get here if the size of the final array object can't be represented as an unsigned 
         ; 32-bit value. We're going to tail-call to a managed helper that will throw
-        ; an overflow exception that the caller of this allocator understands.
+        ; an OOM or overflow exception that the caller of this allocator understands.
+
+        ; if the element count is non-negative, it's an OOM error
+        cmp         r1, #0
+        bge         Array8OutOfMemory1
 
         ; r0 holds EEType pointer already
         mov         r1, #1              ;; Indicate that we should throw OverflowException
@@ -499,6 +503,7 @@ Array8OutOfMemory
         ; an out of memory exception that the caller of this allocator understands.
 
         mov         r0, r5              ;; EEType pointer
+Array8OutOfMemory1
         mov         r1, #0              ;; Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
