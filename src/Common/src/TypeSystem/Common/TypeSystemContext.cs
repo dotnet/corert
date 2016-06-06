@@ -120,8 +120,8 @@ namespace Internal.TypeSystem
                     if (key._elementType != value.ElementType)
                         return false;
 
-                    if ((key._rank == -1) && value.IsSzArray)
-                        return true;
+                    if (value.IsSzArray)
+                        return key._rank == -1;
 
                     return key._rank == value.Rank;
                 }
