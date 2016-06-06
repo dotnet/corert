@@ -452,9 +452,7 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_TypeNEQ,
         CORINFO_INTRINSIC_Object_GetType,
         CORINFO_INTRINSIC_StubHelpers_GetStubContext,
-// #ifdef _WIN64
         CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr,
-// #endif
         CORINFO_INTRINSIC_StubHelpers_GetNDirectTarget,
         CORINFO_INTRINSIC_InterlockedAdd32,
         CORINFO_INTRINSIC_InterlockedAdd64,
@@ -847,6 +845,12 @@ namespace Internal.JitInterface
         CORINFO_PAL,
     }
 
+    public enum CORINFO_RUNTIME_ABI
+    {
+        CORINFO_DESKTOP_ABI = 0x100,
+        CORINFO_CORECLR_ABI = 0x200,
+        CORINFO_CORERT_ABI = 0x300,
+    }
 
     // For some highly optimized paths, the JIT must generate code that directly
     // manipulates internal EE data structures. The getEEInfo() helper returns
@@ -886,6 +890,16 @@ namespace Internal.JitInterface
 
         // Reverse PInvoke offsets
         public uint sizeOfReversePInvokeFrame;
+
+        // OS Page size
+        public UIntPtr osPageSize;
+
+        // Null object offset
+        public UIntPtr maxUncheckedOffsetForNullObject;
+
+        // Target ABI. Combined with target architecture and OS to determine
+        // GC, EH, and unwind styles.
+        public CORINFO_RUNTIME_ABI targetAbi;
 
         public CORINFO_OS osType;
         public uint osMajor;
@@ -1386,7 +1400,6 @@ namespace Internal.JitInterface
         CORJIT_FLG_USE_AVX2            = 0x00000800,
         CORJIT_FLG_USE_AVX_512         = 0x00001000,
         CORJIT_FLG_FEATURE_SIMD        = 0x00002000,
-        CORJIT_FLG_CFI_UNWIND          = 0x00004000, // Emit CFI unwind info
         CORJIT_FLG_MAKEFINALCODE       = 0x00008000, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLG_READYTORUN          = 0x00010000, // Use version-resilient code generation
 
@@ -1417,6 +1430,7 @@ namespace Internal.JitInterface
         CORJIT_FLG2_SAMPLING_JIT_BACKGROUND = 0x00000001, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLG2_USE_PINVOKE_HELPERS     = 0x00000002, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLG2_REVERSE_PINVOKE         = 0x00000004, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
+        CORJIT_FLG2_DESKTOP_QUIRKS          = 0x00000008, // The JIT should generate desktop-quirk-compatible code
     };
 
     struct CORJIT_FLAGS

@@ -55,6 +55,7 @@ namespace ILCompiler
         Unbox                       = 0x5A,
         Unbox_Nullable              = 0x5B,
         NewMultiDimArr              = 0x5C,
+        NewMultiDimArr_NonVarArg    = 0x5D,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,
@@ -158,8 +159,8 @@ namespace ILCompiler
                     mangledName = "RhUnboxNullable";
                     break;
 
-                case JitHelperId.NewMultiDimArr:
-                    mangledName = "RhNewMDArray";
+                case JitHelperId.NewMultiDimArr_NonVarArg:
+                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
                     break;
 
                 case JitHelperId.Stelem_Ref:
