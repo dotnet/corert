@@ -79,6 +79,7 @@ namespace Internal.TypeSystem
             {
                 numCtors = 1;
 
+                // Jagged arrays have constructor for each possible depth
                 var t = this.ElementType;
                 while (t.IsSzArray)
                 {
@@ -88,7 +89,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                // ELEMENT_TYPE_ARRAY has two ctor functions, one with and one without lower bounds
+                // Multidimensional arrays have two ctors, one with and one without lower bounds
                 numCtors = 2;
             }
 

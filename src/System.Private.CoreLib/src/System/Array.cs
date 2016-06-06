@@ -898,24 +898,52 @@ namespace System
             get
             {
 #if REAL_MULTIDIM_ARRAYS
-                int boundsSize = (int)this.EETypePtr.BaseSize - SZARRAY_BASE_SIZE;
-                if (boundsSize > 0)
-                {
-                    // Multidim array case: Base size includes space for two Int32s
-                    // (upper and lower bound) per each dimension of the array.
-                    return boundsSize / (2 * sizeof(int));
-                }
+                return this.EETypePtr.ArrayRank;
 #else
                 MDArray mdArray = this as MDArray;
                 if (mdArray != null)
                 {
                     return mdArray.MDRank;
                 }
-#endif
-
                 return 1;
+#endif
             }
         }
+
+#if REAL_MULTIDIM_ARRAYS
+        // Allocate new multidimensional array of given dimensions. Assumes that that pLengths is immutable.
+        internal unsafe static Array NewMultiDimArray(EETypePtr eeType, int * pLengths, int rank)
+        {
+            Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
+            Debug.Assert(rank == eeType.ArrayRank);
+
+            for (int i = 0; i < rank; i++)
+            {
+                if (pLengths[i] < 0)
+                    throw new OverflowException();
+            }
+
+            int totalLength = 1;
+
+            for (int i = 0; i < rank; i++)
+            {
+                totalLength = checked(totalLength * pLengths[i]);
+            }
+
+            Array ret = RuntimeImports.RhNewArray(eeType, totalLength);
+
+            fixed (int* pNumComponents = &ret._numComponents)
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    // Upper bounds follow after _numComponents.
+                    *(pNumComponents + 1 + PADDING + i) = pLengths[i];
+                }
+            }
+
+            return ret;
+        }
+#endif // REAL_MULTIDIM_ARRAYS
 
         // Number of elements in the Array.
         int ICollection.Count
