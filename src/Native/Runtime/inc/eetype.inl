@@ -6,11 +6,6 @@
 #define __eetype_inl__
 //-----------------------------------------------------------------------------------------------------------
 #ifndef BINDER
-inline void EEType::SetHashCode(UInt32 value)
-{
-    ASSERT(IsDynamicType());
-    m_uHashCode = value;
-}
 inline UInt32 EEType::GetHashCode()
 {
     return m_uHashCode;
@@ -38,7 +33,6 @@ inline PTR_PTR_Code EEType::get_SlotPtr(UInt16 slotNumber)
     return dac_cast<PTR_PTR_Code>(dac_cast<TADDR>(this) + offsetof(EEType, m_VTable)) + slotNumber;
 }
 
-//-----------------------------------------------------------------------------------------------------------
 #if !defined(BINDER) && !defined(DACCESS_COMPILE)
 inline PTR_UInt8 FollowRelativePointer(const Int32 *pDist)
 {
@@ -76,17 +70,6 @@ inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
     PTR_Code result = FollowRelativePointer(&pSealedVirtualsSlotTable[slotNumber]);
 
     return result;
-}
-
-inline void EEType::set_SealedVirtualSlot(PTR_Code pValue, UInt16 slotNumber)
-{
-    ASSERT(IsDynamicType());
-
-    UInt32 cbSealedVirtualSlotsTypeOffset = GetFieldOffset(ETF_SealedVirtualSlots);
-
-    PTR_PTR_Code pSealedVirtualsSlotTable = *(PTR_PTR_Code*)((PTR_UInt8)this + cbSealedVirtualSlotsTypeOffset);
-
-    pSealedVirtualsSlotTable[slotNumber] = pValue;
 }
 #endif // !BINDER && !DACCESS_COMPILE
 
@@ -308,15 +291,6 @@ inline PTR_OptionalFields EEType::get_OptionalFields()
 #endif
 }
 
-inline void EEType::set_OptionalFields(OptionalFields * pOptionalFields)
-{
-    m_usFlags |= OptionalFieldsFlag;
-
-    UInt32 cbOptionalFieldsOffset = GetFieldOffset(ETF_OptionalFieldsPtr);
-
-    *(OptionalFields**)((UInt8*)this + cbOptionalFieldsOffset) = pOptionalFields;
-}
-
 // Retrieve the amount of padding added to value type fields in order to align them for boxed allocation on
 // the GC heap. This value to can be used along with the result of get_BaseSize to determine the size of a
 // value type embedded in the stack, and array or another type.
@@ -443,15 +417,6 @@ inline EEType * EEType::GetNullableType()
         return *(EEType**)((UInt8*)this + cbNullableTypeOffset);
 }
 
-// Set the value type T from a Nullable<T> for dynamically created instantiations.
-inline void EEType::SetNullableType(EEType * pTheT)
-{
-    ASSERT(IsNullable() && IsDynamicType() && !IsNullableTypeViaIAT());
-
-    UInt32 cbNullableTypeOffset = GetFieldOffset(ETF_NullableType);
-    *((EEType**)((UInt8*)this + cbNullableTypeOffset)) = pTheT;
-}
-
 // Retrieve the offset of the value embedded in a Nullable<T>.
 inline UInt8 EEType::GetNullableValueOffset()
 {
@@ -519,25 +484,6 @@ inline EEType * EEType::get_DynamicTemplateType()
 
 #endif
 }
-
-inline void EEType::set_DynamicTemplateType(EEType * pTemplate)
-{
-    ASSERT(IsDynamicType());
-
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicTemplateType);
-
-    *(EEType**)((UInt8*)this + cbOffset) = pTemplate;
-}
-
-inline void EEType::set_RelatedParameterType(EEType * pParameterType)
-{
-    ASSERT(IsParameterizedType());
-
-    m_usFlags &= ~RelatedTypeViaIATFlag;
-    m_RelatedType.m_pRelatedParameterType = pParameterType;
-}
-
-
 #endif // !BINDER
 
 #ifdef BINDER
