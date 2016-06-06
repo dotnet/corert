@@ -344,7 +344,6 @@ public:
     PTR_PTR_Code get_SlotPtr(UInt16 slotNumber);
 
     PTR_Code get_SealedVirtualSlot(UInt16 slotNumber);
-    void set_SealedVirtualSlot(PTR_Code pValue, UInt16 slotNumber);
 
     Kinds get_Kind();
 
@@ -381,8 +380,6 @@ public:
     // A parameterized type shape is 0 to indicate that it is a pointer type, 
     // and non-zero to indicate that it is an array type
     UInt32 get_ParameterizedTypeShape() { return m_uBaseSize; }
-
-    void set_RelatedParameterType(EEType * pParameterType);
 
     bool get_IsValueType()
         { return ((m_usFlags & (UInt16)ValueTypeFlag) != 0); }
@@ -523,9 +520,6 @@ public:
     // Retrieve the value type T from a Nullable<T>.
     EEType * GetNullableType();
 
-    // Set the value of type T for dynamic instantiations of Nullable<T>
-    void SetNullableType(EEType * pEEType);
-
     // Retrieve the offset of the value embedded in a Nullable<T>.
     UInt8 GetNullableValueOffset();
 
@@ -553,14 +547,11 @@ public:
 
     // Retrieve template used to create the dynamic type
     EEType * get_DynamicTemplateType();
-    void set_DynamicTemplateType(EEType * pTemplate);
 
-    void SetHashCode(UInt32 value);
     UInt32 GetHashCode();
 
     // Retrieve optional fields associated with this EEType. May be NULL if no such fields exist.
     inline PTR_OptionalFields get_OptionalFields();
-    void set_OptionalFields(OptionalFields * pOptionalFields);
 
     // Retrieve the amount of padding added to value type fields in order to align them for boxed allocation
     // on the GC heap. This value to can be used along with the result of get_BaseSize to determine the size
