@@ -260,16 +260,7 @@ Object * __load_string_literal(const char * string)
         p[i] = string[i];
     return pString;
 }
-#endif // CPPCODEGEN
 
-#ifdef CPPCODEGEN
-extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = 0;
-#else
-extern "C" void * __EEType_System_Private_CoreLib_System_Array;
-extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = &__EEType_System_Private_CoreLib_System_Array;
-#endif
-
-#if defined(CPPCODEGEN)
 extern "C" void RhpThrowEx(void * pEx)
 {
     throw "RhpThrowEx";

@@ -546,19 +546,11 @@ inline EEType * EEType::get_DynamicTemplateType()
         + (fHasSealedVirtuals ? sizeof(Int32) : 0);
 }
 
-#ifdef CORERT
-extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround;
-#endif
-
 #if !defined(BINDER) && !defined(DACCESS_COMPILE)
 // get the base type of an array EEType - this is special because the base type of arrays is not explicitly
 // represented - instead the classlib has a common one for all arrays
 inline EEType * EEType::GetArrayBaseType()
 {
-#ifdef CORERT
-    return (EEType*)g_pSystemArrayEETypeTemporaryWorkaround;
-#endif
-
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
     Module * pModule = NULL;
     if (pRuntimeInstance->IsInStandaloneExeMode())
