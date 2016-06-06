@@ -35,6 +35,8 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
+#ifdef USE_PORTABLE_HELPERS
+
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
 
@@ -56,20 +58,6 @@ struct alloc_context
 #endif // defined(FEATURE_SVR_GC)
     int            alloc_count;
 };
-
-#ifdef USE_PORTABLE_HELPERS
-//
-// PInvoke
-//
-COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
-{
-    // TODO: RhpPInvoke
-}
-
-COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
-{
-    // TODO: RhpPInvokeReturn
-}
 
 //
 // Allocations
@@ -190,66 +178,20 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
 
     return pObject;
 }
-#endif // USE_PORTABLE_HELPERS
 
-COOP_PINVOKE_HELPER(MDArray *, RhNewMDArray, (EEType * pArrayEEType, UInt32 rank, ...))
+//
+// PInvoke
+//
+COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
 {
-    ASSERT_MSG(!pArrayEEType->RequiresAlign8(), "NYI");
-
-    Thread * pCurThread = ThreadStore::GetCurrentThread();
-    alloc_context * acontext = pCurThread->GetAllocContext();
-    MDArray * pObject;
-
-    va_list argp;
-    va_start(argp, rank);
-
-    int numElements = va_arg(argp, int);
-
-    for (UInt32 i = 1; i < rank; i++)
-    {
-        // TODO: Overflow checks
-        numElements *= va_arg(argp, Int32);
-    }
-
-    // TODO: Overflow checks
-    size_t size = 3 * sizeof(UIntNative) + 2 * rank * sizeof(Int32) + (numElements * pArrayEEType->get_ComponentSize());
-    // Align up
-    size = (size + (sizeof(UIntNative) - 1)) & ~(sizeof(UIntNative) - 1);
-
-    UInt8* result = acontext->alloc_ptr;
-    UInt8* advance = result + size;
-    bool needsPublish = false;
-    if (advance <= acontext->alloc_limit)
-    {
-        acontext->alloc_ptr = advance;
-        pObject = (MDArray *)result;
-    }
-    else
-    {
-        needsPublish = true;
-        pObject = (MDArray *)RhpGcAlloc(pArrayEEType, 0, size, NULL);
-        if (pObject == nullptr)
-        {
-            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
-        }
-    }
-
-    pObject->set_EEType(pArrayEEType);
-    pObject->InitMDArrayLength((UInt32)numElements);
-
-    va_start(argp, rank);
-    for (UInt32 i = 0; i < rank; i++)
-    {
-        pObject->InitMDArrayDimension(i, va_arg(argp, UInt32));
-    }
-
-    if (needsPublish && size >= RH_LARGE_OBJECT_SIZE)
-        RhpPublishObject(pObject, size);
-
-    return pObject;
+    // TODO: RhpPInvoke
 }
 
-#if defined(USE_PORTABLE_HELPERS)
+COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
+{
+    // TODO: RhpPInvokeReturn
+}
+
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
@@ -296,7 +238,7 @@ COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarg
     TargetFunc2 target = (TargetFunc2)pTargetMethod;
     return (*target)(argument1, argument2);
 }
-#endif
+#endif // USE_PORTABLE_HELPERS
 
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;

@@ -100,16 +100,3 @@ public:
     void* GetArrayData();
 };
 typedef DPTR(Array) PTR_Array;
-
-//-------------------------------------------------------------------------------------------------
-class MDArray : public Object
-{
-    UInt32       m_Length;
-#if defined(BIT64)
-    UInt32       m_uAlignpad;
-#endif // BIT64
-    UInt32       m_Dimensions[1];
-public:  
-    void InitMDArrayLength(UInt32 length);
-    void InitMDArrayDimension(UInt32 dimension, UInt32 value);
-};
