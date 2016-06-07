@@ -378,7 +378,7 @@
     <Compile Include="System\String.cs" />
     <Compile Include="System\StringComparer.cs" />
     <Compile Include="System\Array.cs" />
-    <Compile Include="System\MDArray.cs" />
+    <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'"/>
     <Compile Include="System\IDisposable.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />

@@ -114,6 +114,9 @@ namespace System.Runtime.InteropServices
                     throw new InvalidOperationException(); // SR.InvalidOperation_HandleIsNotInitialized);
                 }
 
+                if (IsPinned())
+                    GCHandleValidatePinnedObject(value);
+
                 RuntimeImports.RhHandleSet(GetHandleValue(), value);
             }
         }
