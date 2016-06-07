@@ -20,4 +20,22 @@ namespace Internal.TypeSystem
             return this;
         }
     }
+
+    // Implements canonicalization for array methods
+    partial class ArrayMethod
+    {
+        public override bool IsCanonicalMethod(CanonicalFormKind policy)
+        {
+            return _owningType.IsCanonicalSubtype(policy);
+        }
+
+        public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
+        {
+            TypeDesc canonicalizedTypeOfTargetMethod = _owningType.ConvertToCanonForm(kind);
+            if (canonicalizedTypeOfTargetMethod == _owningType)
+                return this;
+
+            return ((ArrayType)canonicalizedTypeOfTargetMethod).GetArrayMethod(_kind);
+        }
+    }
 }

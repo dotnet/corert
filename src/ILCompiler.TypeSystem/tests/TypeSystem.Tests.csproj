@@ -35,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
+    <Compile Include="CanonicalizationTests.cs" />
     <Compile Include="GCPointerMapTests.cs" />
     <Compile Include="GenericTypeAndMethodTests.cs" />
     <Compile Include="CastingTests.cs" />

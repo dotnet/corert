@@ -20,6 +20,51 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\ArrayType.Canon.cs">
+      <Link>TypeSystem\Canon\ArrayType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\ByRefType.Canon.cs">
+      <Link>TypeSystem\Canon\ByRefType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.cs">
+      <Link>TypeSystem\Canon\CanonTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonUtilites.cs">
+      <Link>TypeSystem\Canon\CanonUtilites.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\DefType.Canon.cs">
+      <Link>TypeSystem\Canon\DefType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\InstantiatedMethod.Canon.cs">
+      <Link>TypeSystem\Canon\InstantiatedMethod.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\InstantiatedType.Canon.cs">
+      <Link>TypeSystem\Canon\InstantiatedType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\MetadataType.Canon.cs">
+      <Link>TypeSystem\Canon\MetadataType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\MethodDesc.Canon.cs">
+      <Link>TypeSystem\Canon\MethodDesc.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\MethodForInstantiatedType.Canon.cs">
+      <Link>TypeSystem\Canon\MethodForInstantiatedType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\ParameterizedType.Canon.cs">
+      <Link>TypeSystem\Canon\ParameterizedType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\PointerType.Canon.cs">
+      <Link>TypeSystem\Canon\PointerType.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\SignatureVariable.Canon.cs">
+      <Link>TypeSystem\Canon\SignatureVariable.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\TypeDesc.Canon.cs">
+      <Link>TypeSystem\Canon\TypeDesc.Canon.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\TypeSystemContext.Canon.cs">
+      <Link>TypeSystem\Canon\TypeSystemContext.Canon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
     </Compile>
@@ -181,6 +226,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaAssembly.Symbols.cs">
       <Link>Ecma\EcmaAssembly.Symbols.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Canon.cs">
+      <Link>Ecma\EcmaGenericParameter.Canon.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
       <Link>Ecma\EcmaModule.Symbols.cs</Link>
