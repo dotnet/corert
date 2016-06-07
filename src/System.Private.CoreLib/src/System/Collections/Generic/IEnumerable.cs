@@ -17,10 +17,6 @@ namespace System.Collections.Generic
     // without jitting.  Hence the TypeDependencyAttribute on SZArrayHelper.
     // This is a special hack internally though - see VM\compile.cpp.
     // The same attribute is on IList<T> and ICollection<T>.
-
-#if CONTRACTS_FULL
-    [ContractClass(typeof(IEnumerableContract<>))]
-#endif // CONTRACTS_FULL
     public interface IEnumerable<out T> : IEnumerable
     {
         // Returns an IEnumerator for this enumerable Object.  The enumerator provides
@@ -28,21 +24,4 @@ namespace System.Collections.Generic
         /// <include file='doc\IEnumerable.uex' path='docs/doc[@for="IEnumerable.GetEnumerator"]/*' />
         new IEnumerator<T> GetEnumerator();
     }
-#if CONTRACTS_FULL
-    [ContractClassFor(typeof(IEnumerable<>))]
-    internal abstract class IEnumerableContract<T> : IEnumerable<T>
-    {
-        [Pure]
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            Contract.Ensures(Contract.Result<IEnumerator<T>>() != null);
-            return default(IEnumerator<T>);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return default(IEnumerator);
-        }
-    }
-#endif // CONTRACTS_FULL
 }
