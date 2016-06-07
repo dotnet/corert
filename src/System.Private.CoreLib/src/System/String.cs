@@ -1080,16 +1080,17 @@ namespace System
         {
             // Huge performance improvement for short strings by doing this.
             int length = Length;
-            char[] chars = new char[length];
             if (length > 0)
             {
+                char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
                     fixed (char* dest = chars)
                 {
                     wstrcpy(dest, src, length);
                 }
+                return chars;
             }
-            return chars;
+            return Array.Empty<char>();
         }
 
         // Returns a substring of this string as an array of characters.
@@ -1102,16 +1103,17 @@ namespace System
             if (length < 0)
                 throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_Index);
 
-            char[] chars = new char[length];
             if (length > 0)
             {
+                char[] chars = new char[length];
                 fixed (char* src = &_firstChar)
                     fixed (char* dest = chars)
                 {
                     wstrcpy(dest, src + startIndex, length);
                 }
+                return chars;
             }
-            return chars;
+            return Array.Empty<char>();
         }
 
         public static bool IsNullOrEmpty(String value)
