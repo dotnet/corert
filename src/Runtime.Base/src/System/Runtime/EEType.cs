@@ -474,12 +474,17 @@ namespace System.Runtime
                 return InternalCalls.RhpGetSealedVirtualSlot(pThis, index);
         }
 
+        internal Exception GetClasslibException(ExceptionIDs id)
+        {
+            return EH.GetClasslibException(id, GetAssociatedModuleAddress());
+        }
+
         // Returns an address in the module most closely associated with this EEType that can be handed to
         // EH.GetClasslibException and use to locate the compute the correct exception type. In most cases 
         // this is just the EEType pointer itself, but when this type represents a generic that has been 
         // unified at runtime (and thus the EEType pointer resides in the process heap rather than a specific 
         // module) we need to do some work.
-        internal unsafe IntPtr GetAssociatedModuleAddress()
+        private unsafe IntPtr GetAssociatedModuleAddress()
         {
             fixed (EEType* pThis = &this)
             {
