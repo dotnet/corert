@@ -48,6 +48,7 @@
     <Compile Include="InstanceFieldLayoutTests.cs" />
     <Compile Include="StaticFieldLayoutTests.cs" />
     <Compile Include="TestTypeSystemContext.cs" />
+    <Compile Include="WellKnownTypeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
