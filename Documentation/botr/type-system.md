@@ -12,7 +12,7 @@ Some of the high level services the type system provides are:
 * Computing set of interfaces implemented by a specific type
 * Computing static and instance field layout (assigning offsets to individual fields)
 * Computing static and instance GC layout of types (identifying GC pointers within object/class data)
-* Computing VTable layout (assigning slots to virtual methods)
+* Computing VTable layout (assigning slots to virtual methods) and resolving virtual methods to slots
 * Deciding whether a type can be stored to a location of another type
 
 Three major themes drive the design of the type system:
@@ -29,9 +29,9 @@ The type system in its purest form (i.e. without any partial class extensions) t
 
 ## Relationship with metadata
 
-While metadata (such as the file formats described in the ECMA-335 specification) has a close relationship with the type system, there is a clear distinction between these two: the metadata describes how a type looks like on the low level (e.g. what is the base class of the type; or what fields does it have), but the type system builds higher level representations of those (e.g. how many bytes are required to store an instance of the type at runtime).
+While metadata (such as the file formats described in the ECMA-335 specification) has a close relationship with the type system, there is a clear distinction between these two: the metadata describes physical shape of the type (e.g. what is the base class of the type; or what fields does it have), but the type system builds higher level concepts on top of the shape (e.g. how many bytes are required to store an instance of the type at runtime; what interfaces does the type implement, including the inherited ones).
 
-The type system provides access to most of the underlying metadata, but abstracts the way it was obtained away. This allows types and members that are backed by metadata in other formats, or in no physical format at all (such as methods on array types), to be representable within the same type system context.
+The type system provides access to most of the underlying metadata, but abstracts the way it was obtained. This allows types and members that are backed by metadata in other formats, or in no physical format at all (such as methods on array types), to be representable within the same type system context.
 
 ## Type system class hierarchy
 
@@ -39,9 +39,9 @@ The classes that represent types within the type system are:
 
 ![hierarchy](../images/typesystem-hierarchy.png)
 
-Most of the classes in this hierarchy are not supposed to be derived by type system user and many of them are sealed to prevent that.
+Most of the classes in this hierarchy are not supposed to be derived by the type system user and many of them are sealed to prevent that.
 
-The classes that are extensible (and are actually abstract classes) are shown with dark background above. The concrete class should provide implementation of the abstract and virtual methods based on some logic, such as reading metadata from an ECMA 335 module file (the type system already provides such implementation of `MetadataType` in its `EcmaType`, for example). Ideally, the type system consumers should operate on the abstract classes and use the concrete class only when creating a new instance. Casting to the concrete implementation type is discouraged.
+The classes that are extensible (and are actually abstract classes) are shown with dark background above. The concrete class should provide implementation of the abstract and virtual methods based on some logic, such as reading metadata from an ECMA-335 module file (the type system already provides such implementation of `MetadataType` in its `EcmaType`, for example). Ideally, the type system consumers should operate on the abstract classes and use the concrete class only when creating a new instance. Casting to the concrete implementation type such as `EcmaType` is discouraged.
 
 ## Type system classes
 
@@ -49,11 +49,11 @@ Following section goes briefly over the classes representing types within the ty
 
 ### TypeDesc
 
-`TypeDesc` is the base class of all types within the type system. It defines a list of operations all classes must support. Not all operations might make sense for all the children of `TypeDesc` (for example, it doesn't make sense to request a list of methods on a pointer type), but care is taken to provide an implementation that makes sense for each particular child (i.e. the list of methods on a pointer type is simply empty).
+`TypeDesc` is the base class of all types within the type system. It defines a list of operations all classes must support. Not all operations might make sense for all the children of `TypeDesc` (for example, it doesn't make sense to request a list of methods on a pointer type), but care is taken to provide an implementation that makes sense for each particular child (i.e. the list of methods on a pointer type is empty).
 
 ### ParametrizedType (ArrayType, ByRefType, PointerType)
 
-These are simply constructed types:
+These are constructed types with a single parameter:
 
 * an array (either multi-dimensional, or a vector - a single dimensional array with an implicit zero lower bound),
 * a managed reference, or
@@ -63,15 +63,17 @@ Note the distinction between multidimensional arrays of rank 1 and vectors is a 
 
 ### DefType (NoMetadataType, MetadataType)
 
-`DefType` represents a value type, interface, or a class. While most instances of `DefType` will be of children of `MetadataType` (a type that is based off of some concrete metadata describing the type in full), there will be scenarios where full metadata is no longer available. In those cases, only restricted information (such as the number of bytes occupied by the instance of the type on the GC heap, or whether the type is a value type) is available. It is important that the type system is able to operate on such types and e.g. the restricted metadata types can be used to make them participate in computing field layouts of full metadata types.
+`DefType` represents a value type, interface, or a class. While most instances of `DefType` will be of children of `MetadataType` (a type that is based off of some concrete metadata describing the type in full), there will be scenarios where full metadata is no longer available. In those cases, only restricted information (such as the number of bytes occupied by the instance of the type on the GC heap, or whether the type is a value type) is available. It is important that the type system is able to operate on such types. E.g. it should be possible for a type with restricted metadata to be a base type for a type with full metadata and the field layout algorithm should be able to compute the field layout of such type.
 
 ### GenericParameter
 
 Represents a generic parameter, along with its constraints. Generic definitions are represented as instantiations over generic parameters.
 
+Note for readers familiar with the .NET reflection type system: while the .NET reflection type system doesn't distinguish between a generic definition (e.g. `List<T>`) and an open instantiation of a generic type (e.g. `List<!0>`), the CoreRT type system draws a distinction between those two. This distinction is important when representing member references from within IL method bodies - e.g. an IL reference using an LDTOKEN instruction to `List<T>.Add` should always refer to the uninstantiated definition, while a reference to `List<!0>.Add` will refer to a concrete method after substituting the signature variable.
+
 ### SignatureVariable (SignatureTypeVariable, SignatureMethodVariable)
 
-Signature variables represent variables that can be substituted by other types within the system. The differ from generic parameters (because e.g. they don't have constraints). They are simply placeholders to be replaced by other types as part of a process called instantiation. Signature variables have an index that refers to a position within the instantiation context.
+Signature variables represent variables that can be substituted by other types within the system. They differ from generic parameters (because e.g. they don't have constraints or variance). They are simply placeholders to be replaced by other types as part of a process called instantiation. Signature variables have an index that refers to a position within the instantiation context.
 
 ## Other type system classes
 
