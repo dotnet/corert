@@ -176,8 +176,7 @@ namespace System.Runtime
 
                         ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
 
-                        IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                        Exception e = EH.GetClasslibException(exID, addr);
+                        Exception e = ptrUnboxToEEType->GetClasslibException(exID);
 
                         BinderIntrinsics.TailCall_RhpThrowEx(e);
                     }
@@ -192,8 +191,7 @@ namespace System.Runtime
                 }
                 else
                 {
-                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
+                    Exception e = ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
 
                     BinderIntrinsics.TailCall_RhpThrowEx(e);
                 }
@@ -213,8 +211,7 @@ namespace System.Runtime
                 // We allow enums and their primtive type to be interchangable
                 if (obj.EEType->CorElementType != ptrUnboxToEEType->CorElementType)
                 {
-                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
+                    Exception e = ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
 
                     BinderIntrinsics.TailCall_RhpThrowEx(e);
                 }
@@ -241,8 +238,7 @@ namespace System.Runtime
             {
                 if ((obj != null) && (obj.EEType != ptrUnboxToEEType->GetNullableType()))
                 {
-                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
+                    Exception e = ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
 
                     BinderIntrinsics.TailCall_RhpThrowEx(e);
                 }
