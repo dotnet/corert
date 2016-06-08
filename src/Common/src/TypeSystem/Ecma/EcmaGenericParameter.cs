@@ -77,20 +77,6 @@ namespace Internal.TypeSystem.Ecma
             return flags;
         }
 
-        public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
-        {
-            GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-            if (parameter.Parent.Kind == HandleKind.MethodDefinition)
-            {
-                return methodInstantiation[parameter.Index];
-            }
-            else
-            {
-                Debug.Assert(parameter.Parent.Kind == HandleKind.TypeDefinition);
-                return typeInstantiation[parameter.Index];
-            }
-        }
-
         public override GenericParameterKind Kind
         {
             get
