@@ -61,6 +61,9 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
+            // We might be able to compute the type flags for some masks, but for some this will always throw (e.g.
+            // Category and GenericVariance should always throw). If you hit an exception, it means you need a
+            // special case for IsSignatureVariable.
             throw new NotImplementedException();
         }
 
@@ -96,6 +99,9 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
+            // We might be able to compute the type flags for some masks, but for some this will always throw (e.g.
+            // Category and GenericVariance should always throw). If you hit an exception, it means you need a
+            // special case for IsSignatureVariable.
             throw new NotImplementedException();
         }
 
