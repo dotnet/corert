@@ -318,6 +318,17 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a <see cref="SignatureTypeVariable"/> or <see cref="SignatureMethodVariable"/>.
+        /// </summary>
+        public bool IsSignatureVariable
+        {
+            get
+            {
+                return this.GetType() == typeof(SignatureTypeVariable) || this.GetType() == typeof(SignatureMethodVariable);
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a generic parameter (<see cref="GenericParameterDesc"/>).
         /// </summary>
         public bool IsGenericParameter
