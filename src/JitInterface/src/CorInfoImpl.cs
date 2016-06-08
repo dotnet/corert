@@ -2379,7 +2379,7 @@ namespace Internal.JitInterface
             if (extraBlobData != 0)
             {
                 // Capture the type of the funclet in unwind info blob
-                pUnwindBlock[unwindSize] = (byte)funcKind;
+                blobData[unwindSize] = (byte)funcKind;
             }
 
             _frameInfos[_usedFrameInfos++] = new FrameInfo((int)startOffset, (int)endOffset, blobData);

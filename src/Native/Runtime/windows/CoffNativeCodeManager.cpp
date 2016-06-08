@@ -249,16 +249,18 @@ bool CoffNativeCodeManager::IsFunclet(MethodInfo * pMethInfo)
     return (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
 }
 
-PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
+PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
                                          REGDISPLAY *   pRegisterSet)
 {
-    // If the method has EHinfo then it is guaranteed to have a frame pointer.
-    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+    CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethInfo;
 
-    // Get to unwind info
-    PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(m_moduleBase + pNativeMethodInfo->runtimeFunction->UnwindInfoAddress));
+    size_t unwindDataBlobSize;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pMethodInfo->runtimeFunction, &unwindDataBlobSize);
 
-    if (pUnwindInfo->FrameRegister != 0)
+    uint8_t unwindBlockFlags = *(dac_cast<DPTR(uint8_t)>(pUnwindDataBlob) + unwindDataBlobSize);
+
+    // Return frame pointer for methods with EH and funclets
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0 || (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
     {
         return (PTR_VOID)pRegisterSet->GetFP();
     }
