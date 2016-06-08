@@ -1031,6 +1031,7 @@ namespace System
         {
             [NonVersionable]
 #if CORERT
+            [Intrinsic]
             get
             {
                 if ((uint)index >= _stringLength)
