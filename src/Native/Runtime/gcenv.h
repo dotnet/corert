@@ -29,6 +29,7 @@
 #include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
+#include "stressLog.h"
 #ifdef FEATURE_ETW
 
     // @TODO: ETW update required -- placeholders
@@ -60,6 +61,7 @@
 #endif // FEATURE_ETW
 
 #define MAX_LONGPATH 1024
+#define LOG(x)
 
 #ifndef YieldProcessor
 #define YieldProcessor PalYieldProcessor
