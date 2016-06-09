@@ -109,7 +109,6 @@ internal static extern System.IntPtr System.Runtime.RuntimeImports.RhAllocateThu
 internal static extern object System.Runtime.RuntimeImports.RhBox(System.EETypePtr pEEType, void* pData)
 internal static extern void System.Runtime.RuntimeImports.RhBulkMoveWithWriteBarrier(byte* dmem, byte* smem, int size)
 internal static extern void System.Runtime.RuntimeImports.RhCallDescrWorker(System.IntPtr callDescr)
-internal static extern bool System.Runtime.RuntimeImports.RhCanUnloadModule(System.IntPtr hOsModule)
 internal static extern void System.Runtime.RuntimeImports.RhCheckArrayStore(object array, object obj)
 internal static extern void System.Runtime.RuntimeImports.RhCollect(int generation, System.InternalGCCollectionMode mode)
 private static extern int System.Runtime.RuntimeImports.RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, System.IntPtr* handles)

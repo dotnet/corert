@@ -250,13 +250,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
         internal static extern String RhNewArrayAsString(EETypePtr pEEType, int length);
 
-        // Given the OS handle of a loaded Redhawk module, return true if the runtime no longer has any
-        // references to resources in that module (i.e. the module can be safely unloaded with FreeLibrary, at
-        // least as far as the runtime knows).
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCanUnloadModule")]
-        internal static extern bool RhCanUnloadModule(IntPtr hOsModule);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBox")]
         internal static unsafe extern object RhBox(EETypePtr pEEType, void* pData);
