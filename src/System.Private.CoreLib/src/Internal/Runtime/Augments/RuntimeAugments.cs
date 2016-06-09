@@ -323,6 +323,7 @@ namespace Internal.Runtime.Augments
             ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
+#if !REAL_MULTIDIM_ARRAYS
         public static bool GetMdArrayRankTypeHandleIfSupported(int rank, out RuntimeTypeHandle mdArrayTypeHandle)
         {
             switch (rank)
@@ -341,6 +342,7 @@ namespace Internal.Runtime.Augments
                     return false;
             }
         }
+#endif
 
         public static RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
         {

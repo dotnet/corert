@@ -476,7 +476,11 @@ namespace System.Runtime
 
         internal Exception GetClasslibException(ExceptionIDs id)
         {
+#if INPLACE_RUNTIME
+            return RuntimeExceptionHelpers.GetRuntimeException(id);
+#else
             return EH.GetClasslibException(id, GetAssociatedModuleAddress());
+#endif
         }
 
         // Returns an address in the module most closely associated with this EEType that can be handed to
