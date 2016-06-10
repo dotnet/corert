@@ -29,6 +29,7 @@
 #include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
+#include "stressLog.h"
 #ifdef FEATURE_ETW
 
     #ifndef _INC_WINDOWS
@@ -53,6 +54,7 @@
 #endif // FEATURE_ETW
 
 #define MAX_LONGPATH 1024
+#define LOG(x)
 
 #ifndef YieldProcessor
 #define YieldProcessor PalYieldProcessor

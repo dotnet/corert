@@ -283,7 +283,7 @@ namespace System.Runtime
         }
 
         // Given an ExceptionID and an address pointing somewhere into a managed module, get
-        // an exception object of a type that the module contianing the given address will understand.
+        // an exception object of a type that the module containing the given address will understand.
         // This finds the classlib-defined GetRuntimeException function and asks it for the exception object.
         internal static Exception GetClasslibException(ExceptionIDs id, IntPtr address)
         {
@@ -403,8 +403,7 @@ namespace System.Runtime
 
             // Throw the out of memory exception defined by the classlib, using the input EEType* 
             // to find the correct classlib.
-            IntPtr addr = pEEType.ToPointer()->GetAssociatedModuleAddress();
-            Exception e = GetClasslibException(exID, addr);
+            Exception e = pEEType.ToPointer()->GetClasslibException(exID);
 
             BinderIntrinsics.TailCall_RhpThrowEx(e);
         }

@@ -198,6 +198,8 @@ namespace Internal.TypeSystem
         private int _hashcode;
 
         /// <summary>
+        /// Allows a performance optimization that skips the potentially expensive
+        /// construction of a hash code if a hash code has already been computed elsewhere.
         /// Use to allow objects to have their hashcode computed
         /// independently of the allocation of a MethodDesc object
         /// For instance, compute the hashcode when looking up the object,
@@ -205,7 +207,7 @@ namespace Internal.TypeSystem
         /// The hashcode specified MUST exactly match the algorithm implemented
         /// on this type normally.
         /// </summary>
-        public void SetHashCode(int hashcode)
+        protected void SetHashCode(int hashcode)
         {
             _hashcode = hashcode;
             Debug.Assert(hashcode == ComputeHashCode());

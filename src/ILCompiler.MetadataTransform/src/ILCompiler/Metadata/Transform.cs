@@ -31,7 +31,7 @@ namespace ILCompiler.Metadata
             if (type.IsArray || type.IsByRef || type.IsPointer)
                 return IsBlocked(((Cts.ParameterizedType)type).ParameterType);
 
-            if (type is Cts.SignatureVariable)
+            if (type.IsSignatureVariable)
                 return false;
 
             if (!type.IsTypeDefinition)

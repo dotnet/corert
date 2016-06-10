@@ -515,10 +515,6 @@ namespace Internal.Reflection.Execution
 
             arrayTypeHandle = new RuntimeTypeHandle();
 
-            RuntimeTypeHandle mdArrayTypeHandle;
-            if (!RuntimeAugments.GetMdArrayRankTypeHandleIfSupported(rank, out mdArrayTypeHandle))
-                return false;
-
             // We can call directly into the type loader, bypassing the constraint validator because we know
             // MDArrays have no constraints. This also prevents us from hitting a MissingMetadataException
             // due to MDArray not being metadata enabled.
@@ -538,20 +534,7 @@ namespace Internal.Reflection.Execution
         {
             Debug.Assert(rank > 0);
 
-            elementTypeHandle = new RuntimeTypeHandle();
-
-            RuntimeTypeHandle expectedMdArrayTypeHandle;
-            if (!RuntimeAugments.GetMdArrayRankTypeHandleIfSupported(rank, out expectedMdArrayTypeHandle))
-                return false;
-            RuntimeTypeHandle actualMdArrayTypeHandle;
-            RuntimeTypeHandle[] elementTypeHandles;
-            if (!TryGetConstructedGenericTypeComponents(arrayTypeHandle, out actualMdArrayTypeHandle, out elementTypeHandles))
-                return false;
-            if (!(actualMdArrayTypeHandle.Equals(expectedMdArrayTypeHandle)))
-                return false;
-            if (elementTypeHandles.Length != 1)
-                return false;
-            elementTypeHandle = elementTypeHandles[0];
+            elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
             return true;
         }
 

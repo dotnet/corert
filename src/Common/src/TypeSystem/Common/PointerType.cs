@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Represents an unmanaged pointer type.
+    /// </summary>
     public sealed partial class PointerType : ParameterizedType
     {
         internal PointerType(TypeDesc parameterType)
@@ -22,17 +23,6 @@ namespace Internal.TypeSystem
         {
             TypeDesc instantiatedParameterType = this.ParameterType.InstantiateSignature(typeInstantiation, methodInstantiation);
             return instantiatedParameterType.Context.GetPointerType(instantiatedParameterType);
-        }
-
-        public override TypeDesc GetTypeDefinition()
-        {
-            TypeDesc result = this;
-
-            TypeDesc parameterDef = this.ParameterType.GetTypeDefinition();
-            if (parameterDef != this.ParameterType)
-                result = parameterDef.Context.GetPointerType(parameterDef);
-
-            return result;
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)

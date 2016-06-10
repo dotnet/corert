@@ -2,14 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     /// <summary>
-    /// Pluggable RuntimeInterfaces computation algorithm
+    /// Pluggable RuntimeInterfaces computation algorithm. Provides an abstraction to compute
+    /// the list of interfaces effectively implemented by a type at runtime.
+    /// The computed list is exposed as <see cref="TypeDesc.RuntimeInterfaces"/>.
     /// </summary>
+    /// <remarks>
+    /// The algorithms are expected to be directly used by <see cref="TypeSystemContext"/> derivatives
+    /// only. The most obvious implementation of this algorithm that uses type's metadata to
+    /// compute the answers is in <see cref="MetadataRuntimeInterfacesAlgorithm"/>.
+    /// </remarks>
     public abstract class RuntimeInterfacesAlgorithm
     {
         /// <summary>

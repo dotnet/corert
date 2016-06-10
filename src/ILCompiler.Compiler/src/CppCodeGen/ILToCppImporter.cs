@@ -799,12 +799,46 @@ namespace Internal.IL
             return false;
         }
 
+        private void ImportNewObjArray(TypeDesc owningType, MethodDesc method)
+        {
+            AppendLine();
+
+            string dimensionsTemp = NewTempName();
+            Append("int32_t " + dimensionsTemp + "[] = { ");
+            int argumentsCount = method.Signature.Length;
+            for (int i = 0; i < argumentsCount; i++)
+            {
+                Append("(int32_t)(");
+                Append(_stack[_stack.Top - argumentsCount + i]);
+                Append("),");
+            }
+            _stack.PopN(argumentsCount);
+
+            Append("};");
+
+            PushTemp(StackValueKind.ObjRef, owningType);
+
+            AddTypeReference(owningType, true);
+
+            MethodDesc helper = _typeSystemContext.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
+            AddMethodReference(helper);
+
+            Append(_writer.GetCppTypeName(helper.OwningType) + "::" + _writer.GetCppMethodName(helper));
+            Append("((intptr_t)");
+            Append(_writer.GetCppTypeName(method.OwningType));
+            Append("::__getMethodTable(),");
+            Append(argumentsCount.ToStringInvariant());
+            Append(",");
+            Append(dimensionsTemp);
+            Append(")");
+            AppendSemicolon();
+       }
+
         private void ImportCall(ILOpcode opcode, int token)
         {
             bool callViaSlot = false;
             bool delegateInvoke = false;
             DelegateCreationInfo delegateInfo = null;
-            bool mdArrayCreate = false;
 
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
 
@@ -854,7 +888,8 @@ namespace Internal.IL
                     }
                     else if (owningType.IsArray)
                     {
-                        mdArrayCreate = true;
+                        ImportNewObjArray(owningType, method);
+                        return;
                     }
                     else if (owningType.IsDelegate)
                     {
@@ -893,7 +928,7 @@ namespace Internal.IL
                 }
             }
 
-            if (!callViaSlot && !delegateInvoke && !mdArrayCreate)
+            if (!callViaSlot && !delegateInvoke)
                 AddMethodReference(method);
 
             if (opcode == ILOpcode.newobj)
@@ -937,7 +972,7 @@ namespace Internal.IL
                 needNewLine = true;
             }
 
-            if (opcode == ILOpcode.newobj && !mdArrayCreate)
+            if (opcode == ILOpcode.newobj)
             {
                 if (!retType.IsValueType)
                 {
@@ -994,10 +1029,6 @@ namespace Internal.IL
                             v.Name + ")->m_firstParameter";
                 }
             }
-            else if (mdArrayCreate)
-            {
-                Append("RhNewMDArray");
-            }
             else
             {
                 Append(_writer.GetCppTypeName(method.OwningType));
@@ -1007,14 +1038,7 @@ namespace Internal.IL
 
             TypeDesc thisArgument = null;
             Append("(");
-            if (mdArrayCreate)
-            {
-                Append(_writer.GetCppTypeName(method.OwningType));
-                Append("::__getMethodTable(), ");
-                Append(((ArrayType)method.OwningType).Rank.ToStringInvariant());
-                Append(", ");
-            }
-            else if (opcode == ILOpcode.newobj)
+            if (opcode == ILOpcode.newobj)
             {
                 Append("(");
                 if (retType.IsValueType)

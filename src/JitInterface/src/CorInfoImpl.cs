@@ -1772,6 +1772,13 @@ namespace Internal.JitInterface
             pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
+
+            pEEInfoOut.osPageSize = new UIntPtr(0x1000);
+
+            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.Options.TargetOS == TargetOS.Windows) ?
+                new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
+
+            pEEInfoOut.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORERT_ABI;
         }
 
         [return: MarshalAs(UnmanagedType.LPWStr)]
@@ -1882,7 +1889,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE: id = JitHelperId.Box_Nullable; break;
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX: id = JitHelperId.Unbox; break;
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE: id = JitHelperId.Unbox_Nullable; break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR: id = JitHelperId.NewMultiDimArr; break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG: id = JitHelperId.NewMultiDimArr_NonVarArg; break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL: id = JitHelperId.LMul; break;
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL_OVF: id = JitHelperId.LMulOfv; break;
@@ -2372,7 +2379,7 @@ namespace Internal.JitInterface
             if (extraBlobData != 0)
             {
                 // Capture the type of the funclet in unwind info blob
-                pUnwindBlock[unwindSize] = (byte)funcKind;
+                blobData[unwindSize] = (byte)funcKind;
             }
 
             _frameInfos[_usedFrameInfos++] = new FrameInfo((int)startOffset, (int)endOffset, blobData);
@@ -2554,11 +2561,6 @@ namespace Internal.JitInterface
                 CorJitFlag.CORJIT_FLG_RELOC |
                 CorJitFlag.CORJIT_FLG_DEBUG_INFO |
                 CorJitFlag.CORJIT_FLG_PREJIT;
-
-            if (_compilation.Options.TargetOS != TargetOS.Windows)
-            {
-                flags.corJitFlags |= CorJitFlag.CORJIT_FLG_CFI_UNWIND;
-            }
 
             flags.corJitFlags2 = CorJitFlag2.CORJIT_FLG2_USE_PINVOKE_HELPERS;
 

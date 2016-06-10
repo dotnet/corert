@@ -222,7 +222,7 @@ namespace Internal.IL.Stubs
             ILLocalVariable delegateToCallLocal = emitter.NewLocal(SystemDelegateType);
 
             ILLocalVariable returnValueLocal = 0;
-            if (Signature.ReturnType is SignatureVariable || !Signature.ReturnType.IsVoid)
+            if (Signature.ReturnType.IsSignatureVariable || !Signature.ReturnType.IsVoid)
             {
                 returnValueLocal = emitter.NewLocal(Signature.ReturnType);
             }

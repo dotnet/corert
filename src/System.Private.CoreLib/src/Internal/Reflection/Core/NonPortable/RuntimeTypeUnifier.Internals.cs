@@ -63,7 +63,14 @@ namespace Internal.Reflection.Core.NonPortable
                     case RuntimeImports.RhEETypeClassification.Regular:
                         return new RuntimeEENamedNonGenericType(eeType);
                     case RuntimeImports.RhEETypeClassification.Array:
+#if REAL_MULTIDIM_ARRAYS
+                        if (!eeType.IsSzArray)
+                            return new RuntimeEEArrayType(eeType, eeType.ArrayRank);
+                        else
+                            return new RuntimeEEArrayType(eeType);
+#else
                         return new RuntimeEEArrayType(eeType);
+#endif
                     case RuntimeImports.RhEETypeClassification.UnmanagedPointer:
                         return new RuntimeEEPointerType(eeType);
                     case RuntimeImports.RhEETypeClassification.GenericTypeDefinition:
@@ -84,12 +91,14 @@ namespace Internal.Reflection.Core.NonPortable
                             return new RuntimeEENamedNonGenericType(eeType);
                         }
 
+#if !REAL_MULTIDIM_ARRAYS
                         if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank2>()))
                             return new RuntimeEEArrayType(eeType, rank: 2);
                         if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank3>()))
                             return new RuntimeEEArrayType(eeType, rank: 3);
                         if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank4>()))
                             return new RuntimeEEArrayType(eeType, rank: 4);
+#endif
                         return new RuntimeEEConstructedGenericType(eeType);
                     default:
                         throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);

@@ -164,10 +164,7 @@ namespace System.Runtime
                 // Throw the invalid cast exception defined by the classlib, using the input EEType* 
                 // to find the correct classlib.
 
-                ExceptionIDs exID = ExceptionIDs.InvalidCast;
-
-                IntPtr addr = ((EEType*)pvTargetEEType)->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(exID, addr);
+                Exception e = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
 
                 BinderIntrinsics.TailCall_RhpThrowEx(e);
             }
@@ -189,10 +186,7 @@ namespace System.Runtime
             // Throw the invalid cast exception defined by the classlib, using the input object's EEType* 
             // to find the correct classlib.
 
-            ExceptionIDs exID = ExceptionIDs.InvalidCast;
-
-            IntPtr addr = obj.EEType->GetAssociatedModuleAddress();
-            Exception e = EH.GetClasslibException(exID, addr);
+            Exception e = obj.EEType->GetClasslibException(ExceptionIDs.InvalidCast);
 
             BinderIntrinsics.TailCall_RhpThrowEx(e);
         }
@@ -250,10 +244,7 @@ namespace System.Runtime
                 // Throw the invalid cast exception defined by the classlib, using the input EEType* 
                 // to find the correct classlib.
 
-                ExceptionIDs exID = ExceptionIDs.InvalidCast;
-
-                IntPtr addr = ((EEType*)pvTargetEEType)->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(exID, addr);
+                Exception e = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
 
                 BinderIntrinsics.TailCall_RhpThrowEx(e);
             }
@@ -716,9 +707,8 @@ namespace System.Runtime
             // correct classlib unless ICastable.IsInstanceOfInterface returned a more specific exception for
             // us to use.
 
-            IntPtr addr = ((EEType*)pvTargetEEType)->GetAssociatedModuleAddress();
             if (castError == null)
-                castError = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
+                castError = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
 
             BinderIntrinsics.TailCall_RhpThrowEx(castError);
             throw castError;
@@ -746,10 +736,7 @@ namespace System.Runtime
             // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
             // to find the correct classlib.
 
-            ExceptionIDs exID = ExceptionIDs.ArrayTypeMismatch;
-
-            IntPtr addr = array.EEType->GetAssociatedModuleAddress();
-            Exception e = EH.GetClasslibException(exID, addr);
+            Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
 
             BinderIntrinsics.TailCall_RhpThrowEx(e);
         }
@@ -780,10 +767,8 @@ namespace System.Runtime
             {
                 // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
                 // to find the correct classlib.
-                ExceptionIDs exID = ExceptionIDs.ArrayTypeMismatch;
 
-                IntPtr addr = array.EEType->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(exID, addr);
+                Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
 
                 BinderIntrinsics.TailCall_RhpThrowEx(e);
             }
@@ -806,8 +791,7 @@ namespace System.Runtime
 
             if (index >= array.GetArrayLength())
             {
-                IntPtr addr = array.EEType->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(ExceptionIDs.IndexOutOfRange, addr);
+                Exception e = array.EEType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
                 throw e;
             }
 
@@ -824,8 +808,7 @@ namespace System.Runtime
                         // Throw the array type mismatch exception defined by the classlib, using the input array's 
                         // EEType* to find the correct classlib.
 
-                        IntPtr addr = array.EEType->GetAssociatedModuleAddress();
-                        Exception e = EH.GetClasslibException(ExceptionIDs.ArrayTypeMismatch, addr);
+                        Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
 
                         BinderIntrinsics.TailCall_RhpThrowEx(e);
                     }
@@ -860,8 +843,7 @@ namespace System.Runtime
                 // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
                 // to find the correct classlib.
 
-                IntPtr addr = array.EEType->GetAssociatedModuleAddress();
-                Exception e = EH.GetClasslibException(ExceptionIDs.ArrayTypeMismatch, addr);
+                Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
 
                 BinderIntrinsics.TailCall_RhpThrowEx(e);
             }

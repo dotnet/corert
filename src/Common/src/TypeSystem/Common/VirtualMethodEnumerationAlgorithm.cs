@@ -7,8 +7,14 @@ using System.Collections.Generic;
 namespace Internal.TypeSystem
 {
     /// <summary>
-    /// Pluggable virtual method computation algorithm.
+    /// Pluggable virtual method computation algorithm. Provides an abstraction to compute the list
+    /// of all virtual methods defined on a type.
     /// </summary>
+    /// <remarks>
+    /// The algorithms are expected to be directly used by <see cref="TypeSystemContext"/> derivatives
+    /// only. The most obvious implementation of this algorithm that uses type's metadata to
+    /// compute the answers is in <see cref="MetadataVirtualMethodEnumerationAlgorithm"/>.
+    /// </remarks>
     public abstract class VirtualMethodEnumerationAlgorithm
     {
         /// <summary>
