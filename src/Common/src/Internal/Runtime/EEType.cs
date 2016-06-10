@@ -650,6 +650,29 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal EEType* NonArrayBaseType
+        {
+            get
+            {
+                Debug.Assert(!IsArray, "array type not supported in BaseType");
+
+                if (IsCloned)
+                {
+                    // Assuming that since this is not an Array, the CanonicalEEType is also not an array
+                    return CanonicalEEType->NonArrayBaseType;
+                }
+
+                Debug.Assert(IsCanonical, "we expect canonical types here");
+
+                if (IsRelatedTypeViaIAT)
+                {
+                    return *_relatedType._ppBaseTypeViaIAT;
+                }
+
+                return _relatedType._pBaseType;
+            }
+        }
+
         internal EEType* CanonicalEEType
         {
             get

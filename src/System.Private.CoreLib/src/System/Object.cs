@@ -19,6 +19,10 @@ using System.Runtime.Versioning;
 
 using Internal.Reflection.Core.NonPortable;
 
+#if INPLACE_RUNTIME
+using EEType = Internal.Runtime.EEType;
+#endif
+
 namespace System
 {
     // CONTRACT with Runtime

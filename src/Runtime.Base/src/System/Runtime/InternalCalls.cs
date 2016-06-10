@@ -9,6 +9,8 @@
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
+
 namespace System.Runtime
 {
     internal static class InternalCalls
