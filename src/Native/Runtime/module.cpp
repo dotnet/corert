@@ -81,9 +81,8 @@ Module * Module::Create(ModuleHeader *pModuleHeader)
     }
 
     // Determine OS module handle. This assumes that only one Redhawk module can exist in a given PE image,
-    // which is true for now. It's also exposed by a number of exports (RhCanUnloadModule,
-    // RhGetModuleFromEEType etc.) so if we ever rethink this then the public contract needs to change as
-    // well.
+    // which is true for now. It's also exposed by a number of exports (RhGetModuleFromEEType etc.) so if 
+    // we ever rethink this then the public contract needs to change as well.
     pNewModule->m_hOsModuleHandle = PalGetModuleHandleFromPointer(pModuleHeader);
     if (!pNewModule->m_hOsModuleHandle)
     {
