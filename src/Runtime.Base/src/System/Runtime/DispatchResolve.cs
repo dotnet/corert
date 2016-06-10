@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 
+using Internal.Runtime;
+
 namespace System.Runtime
 {
     internal unsafe static class DispatchResolve

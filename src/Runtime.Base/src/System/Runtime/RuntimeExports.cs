@@ -10,6 +10,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
+
 namespace System.Runtime
 {
     internal static class RuntimeExports
@@ -129,16 +131,16 @@ namespace System.Runtime
                     // if they have an exactly matching cor element type.
                     switch (ptrUnboxToEEType->CorElementType)
                     {
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I1:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U1:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I2:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U2:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I4:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U4:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I8:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U8:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U:
+                        case CorElementType.ELEMENT_TYPE_I1:
+                        case CorElementType.ELEMENT_TYPE_U1:
+                        case CorElementType.ELEMENT_TYPE_I2:
+                        case CorElementType.ELEMENT_TYPE_U2:
+                        case CorElementType.ELEMENT_TYPE_I4:
+                        case CorElementType.ELEMENT_TYPE_U4:
+                        case CorElementType.ELEMENT_TYPE_I8:
+                        case CorElementType.ELEMENT_TYPE_U8:
+                        case CorElementType.ELEMENT_TYPE_I:
+                        case CorElementType.ELEMENT_TYPE_U:
                             result = true;
                             break;
                     }
