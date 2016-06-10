@@ -68,6 +68,8 @@ namespace Internal.Reflection.Core.NonPortable
                             return new RuntimeEEArrayType(eeType, eeType.ArrayRank);
                         else
                             return new RuntimeEEArrayType(eeType);
+#else
+                        return new RuntimeEEArrayType(eeType);
 #endif
                     case RuntimeImports.RhEETypeClassification.UnmanagedPointer:
                         return new RuntimeEEPointerType(eeType);

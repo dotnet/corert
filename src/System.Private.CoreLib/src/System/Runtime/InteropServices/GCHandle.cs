@@ -114,8 +114,10 @@ namespace System.Runtime.InteropServices
                     throw new InvalidOperationException(); // SR.InvalidOperation_HandleIsNotInitialized);
                 }
 
+#if CORERT // TODO: Higher level ProjectN frameworks took dependency on this validation missing
                 if (IsPinned())
                     GCHandleValidatePinnedObject(value);
+#endif
 
                 RuntimeImports.RhHandleSet(GetHandleValue(), value);
             }
