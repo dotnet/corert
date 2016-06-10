@@ -32,9 +32,9 @@ namespace System
         }
 
 #if INPLACE_RUNTIME
-        internal unsafe System.Runtime.EEType* ToPointer()
+        internal unsafe Internal.Runtime.EEType* ToPointer()
         {
-            return (System.Runtime.EEType*)(void*)_value;
+            return (Internal.Runtime.EEType*)(void*)_value;
         }
 #endif
 

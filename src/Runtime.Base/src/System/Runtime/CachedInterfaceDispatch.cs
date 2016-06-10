@@ -5,6 +5,8 @@
 using System;
 using System.Runtime;
 
+using Internal.Runtime;
+
 namespace System.Runtime
 {
     internal unsafe static class CachedInterfaceDispatch

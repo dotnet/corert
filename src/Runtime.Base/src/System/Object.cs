@@ -15,6 +15,9 @@
 using System.Runtime;
 using System.Diagnostics;
 
+// TODO: remove when m_pEEType becomes EETypePtr
+using EEType = Internal.Runtime.EEType;
+
 namespace System
 {
     // CONTRACT with Runtime

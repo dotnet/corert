@@ -107,6 +107,7 @@
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
     <Compile Include="System\Runtime\EEType.cs" />
+    <Compile Include="System\Runtime\EEType.Runtime.cs" />
     <Compile Include="System\Runtime\EETypePtr.cs" />
     <Compile Include="System\Runtime\ExceptionHandling.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
