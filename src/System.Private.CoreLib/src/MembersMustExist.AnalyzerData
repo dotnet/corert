@@ -246,3 +246,6 @@ public int System.IntPtr.ToInt32()
 public long System.IntPtr.ToInt64()
 public void* System.IntPtr.ToPointer()
 public string System.IntPtr.ToString(string format)
+
+# Visual Studio
+private static System.Text.StringBuilder System.Text.StringBuilderCache.t_cachedInstance
