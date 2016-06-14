@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,7 +9,6 @@ namespace Internal.Runtime.CompilerHelpers
     /// <summary>
     /// These methods are used to throw exceptions from generated code.
     /// </summary>
-    [System.Runtime.CompilerServices.DependencyReductionRoot] /* keep rooted as code gen may add references to these */
     internal static class ThrowHelpers
     {
         private static void ThrowOverflowException()
@@ -44,18 +43,20 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static void ThrowTypeLoadException()
         {
-            throw new TypeLoadException();
+            // exception doesn't exist in MRT: throw PlatformNotSupportedException() instead
+            throw new PlatformNotSupportedException();
         }
 
         private static void ThrowArgumentException()
         {
-            throw new ArgumentException();
+            // exception doesn't exist in MRT: throw PlatformNotSupportedException() instead
+            throw new PlatformNotSupportedException();
         }
 
         private static void ThrowArgumentOutOfRangeException()
         {
-            throw new ArgumentOutOfRangeException();
+            // exception doesn't exist in MRT: throw PlatformNotSupportedException() instead
+            throw new PlatformNotSupportedException();
         }
-
     }
 }
