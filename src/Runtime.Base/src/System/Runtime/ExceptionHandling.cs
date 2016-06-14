@@ -111,8 +111,8 @@ namespace System.Runtime
             internal RhEHClauseKind _clauseKind;
             internal uint _tryStartOffset;
             internal uint _tryEndOffset;
-            internal uint _filterOffset;
-            internal uint _handlerOffset;
+            internal byte* _filterAddress;
+            internal byte* _handlerAddress;
             internal void* _pTargetType;
 
             ///<summary>
@@ -827,20 +827,20 @@ namespace System.Runtime
                 {
                     if (ShouldTypedClauseCatchThisException(exception, (EEType*)ehClause._pTargetType))
                     {
-                        pHandler = (pbMethodStartAddress + ehClause._handlerOffset);
+                        pHandler = ehClause._handlerAddress;
                         tryRegionIdx = curIdx;
                         return true;
                     }
                 }
                 else
                 {
-                    byte* pFilterFunclet = (pbMethodStartAddress + ehClause._filterOffset);
+                    byte* pFilterFunclet = ehClause._filterAddress;
                     bool shouldInvokeHandler =
                         InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
 
                     if (shouldInvokeHandler)
                     {
-                        pHandler = (pbMethodStartAddress + ehClause._handlerOffset);
+                        pHandler = ehClause._handlerAddress;
                         tryRegionIdx = curIdx;
                         return true;
                     }
@@ -933,7 +933,7 @@ namespace System.Runtime
                 // funclet, and we need to reset it if/when we fall out of the loop and we know that the 
                 // method will no longer get any more GC callbacks.
 
-                byte* pFinallyHandler = (pbMethodStartAddress + ehClause._handlerOffset);
+                byte* pFinallyHandler = ehClause._handlerAddress;
                 exInfo._idxCurClause = curIdx;
                 InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
                 exInfo._idxCurClause = MaxTryRegionIdx;

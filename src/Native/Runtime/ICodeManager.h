@@ -61,8 +61,8 @@ struct EHClause
     EHClauseKind m_clauseKind;
     UInt32 m_tryStartOffset;
     UInt32 m_tryEndOffset;
-    UInt32 m_filterOffset;
-    UInt32 m_handlerOffset;
+    UInt8* m_filterAddress;
+    UInt8* m_handlerAddress;
     void* m_pTargetType;
 };
 
@@ -81,8 +81,7 @@ class ICodeManager
 {
 public:
     virtual bool FindMethodInfo(PTR_VOID        ControlPC, 
-                                MethodInfo *    pMethodInfoOut,
-                                UInt32 *        pCodeOffset) = 0;
+                                MethodInfo *    pMethodInfoOut) = 0;
 
     virtual bool IsFunclet(MethodInfo * pMethodInfo) = 0;
 
@@ -90,12 +89,11 @@ public:
                                      REGDISPLAY *   pRegisterSet) = 0;
 
     virtual void EnumGcRefs(MethodInfo *    pMethodInfo, 
-                            UInt32          codeOffset,
+                            PTR_VOID        safePointAddress,
                             REGDISPLAY *    pRegisterSet,
                             GCEnumContext * hCallback) = 0;
 
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
-                                  UInt32          codeOffset,
                                   REGDISPLAY *    pRegisterSet,                     // in/out
                                   PTR_VOID *      ppPreviousTransitionFrame) = 0;   // out
 
@@ -103,14 +101,13 @@ public:
                                                                 REGDISPLAY *   pRegisterSet) = 0;
 
     virtual bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
-                                            UInt32          codeOffset,
                                             REGDISPLAY *    pRegisterSet,           // in
                                             PTR_PTR_VOID *  ppvRetAddrLocation,     // out
                                             GCRefKind *     pRetValueKind) = 0;     // out
 
     virtual void UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo) = 0;
 
-    virtual void RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * pCodeOffset) = 0;
+    virtual PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC) = 0;
 
     virtual bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState) = 0;
 

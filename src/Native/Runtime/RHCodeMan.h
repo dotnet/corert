@@ -34,6 +34,19 @@ public:
 
 EEMethodInfo * GetEEMethodInfo(MethodInfo * pMethodInfo);
 
+struct MethodGcInfoPointers
+{
+    GCInfoHeader *  m_pGCInfoHeader;
+    PTR_UInt8       m_pbEncodedSafePointList;
+    PTR_UInt8       m_pbCallsiteStringBlob;
+    PTR_UInt8       m_pbDeltaShortcutTable;
+
+    GCInfoHeader * GetGCInfoHeader()
+    {
+        return m_pGCInfoHeader;
+    }
+};
+
 class EECodeManager
 {
 public:
@@ -43,12 +56,10 @@ public:
         multiple times (but all differenct references pointing to the same
         object have to be individually enumerated).
     */
-    static void EnumGcRefs(EEMethodInfo *   pMethodInfo,
+    static void EnumGcRefs(MethodGcInfoPointers * pMethodInfo,
                            UInt32           codeOffset,
                            REGDISPLAY *     pContext,
-                           GCEnumContext *  hCallback,        
-                           PTR_UInt8        pbCallsiteStringBlob,
-                           PTR_UInt8        pbDeltaShortcutTable);
+                           GCEnumContext *  hCallback);
 
     /*
     Unwind the current stack frame, i.e. update the virtual register
@@ -58,26 +69,28 @@ public:
     registers are trashed)
     Returns success of operation.
     */
-    static bool UnwindStackFrame(EEMethodInfo * pMethodInfo,
-                                 UInt32         codeOffset,
+    static bool UnwindStackFrame(GCInfoHeader * pInfoHeader,
                                  REGDISPLAY *   pContext);
 
-    static PTR_VOID GetReversePInvokeSaveFrame(EEMethodInfo *   pMethodInfo, 
+    static PTR_VOID GetReversePInvokeSaveFrame(GCInfoHeader *   pInfoHeader,
                                                REGDISPLAY *     pContext);
 
-    static UIntNative GetConservativeUpperBoundForOutgoingArgs(EEMethodInfo *   pMethodInfo, 
+    static UIntNative GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader *   pInfoHeader, 
                                                                REGDISPLAY *     pContext);
 
-    static PTR_VOID GetFramePointer(EEMethodInfo *  pMethodInfo, 
+    static PTR_VOID GetFramePointer(GCInfoHeader *  pInfoHeader,
                                     REGDISPLAY *    pContext);
 
-    static PTR_PTR_VOID GetReturnAddressLocationForHijack(EEMethodInfo *    pMethodInfo,
-                                                          UInt32            codeOffset,
-                                                          REGDISPLAY *      pContext);
+    static PTR_PTR_VOID GetReturnAddressLocationForHijack(GCInfoHeader *      pGCInfoHeader,
+                                                          UInt32              cbMethodCodeSize,
+                                                          PTR_UInt8           pbEpilogTable,
+                                                          UInt32              codeOffset,
+                                                          REGDISPLAY *        pContext);
 
-    static GCRefKind GetReturnValueKind(EEMethodInfo * pMethodInfo);
+    static GCRefKind GetReturnValueKind(GCInfoHeader * pInfoHeader);
 
-    static bool GetEpilogOffset(EEMethodInfo * pMethodInfo, UInt32 codeOffset, UInt32 * epilogOffsetOut, UInt32 * epilogSizeOut);
+    static bool GetEpilogOffset(GCInfoHeader * pInfoHeader, UInt32 cbMethodCodeSize, PTR_UInt8 pbEpilogTable, 
+                                UInt32 codeOffset, UInt32 * epilogOffsetOut, UInt32 * epilogSizeOut);
 
     static void ** GetReturnAddressLocationFromEpilog(GCInfoHeader * pInfoHeader, REGDISPLAY * pContext, 
                                                       UInt32 epilogOffset, UInt32 epilogSize);

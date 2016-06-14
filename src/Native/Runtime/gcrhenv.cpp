@@ -489,7 +489,7 @@ static void EnumGcRefsCallback(void * hCallback, PTR_PTR_VOID pObject, UInt32 fl
 // static 
 void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
                                     MethodInfo * pMethodInfo, 
-                                    UInt32 codeOffset,
+                                    PTR_VOID safePointAddress,
                                     REGDISPLAY * pRegisterSet,
                                     void * pfnEnumCallback,
                                     void * pvCallbackData)
@@ -501,7 +501,7 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
     ctx.sc->stack_limit = pRegisterSet->GetSP();
 
     pCodeManager->EnumGcRefs(pMethodInfo, 
-                             codeOffset,
+                             safePointAddress,
                              pRegisterSet,
                              &ctx);
 }
