@@ -39,7 +39,7 @@ public:
     bool            IsValid();
     void            CalculateCurrentMethodState();
     void            Next();
-    UInt32          GetCodeOffset();
+    PTR_VOID        GetEffectiveSafePointAddress();
     REGDISPLAY *    GetRegisterSet();
     ICodeManager *  GetCodeManager();
     MethodInfo *    GetMethodInfo();
@@ -92,9 +92,6 @@ private:
     // than the SP reference value passed in.  This is useful when 'restarting' the stackwalk from a 
     // particular PInvokeTransitionFrame or after we have a 'collided unwind' that may skip over ExInfos. 
     void ResetNextExInfoForSP(UIntNative SP);
-
-    void UpdateStateForRemappedGCSafePoint(UInt32 funcletStartOffset);
-    void RemapHardwareFaultToGCSafePoint();
 
     void UpdateFromExceptionDispatch(PTR_StackFrameIterator pSourceIterator);
 
@@ -186,7 +183,7 @@ protected:
     REGDISPLAY          m_RegDisplay;
     ICodeManager *      m_pCodeManager;
     MethodInfo          m_methodInfo;
-    UInt32              m_codeOffset;
+    PTR_VOID            m_effectiveSafePointAddress;
     PTR_RtuObjectRef    m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
     PTR_UIntNative      m_pConservativeStackRangeLowerBound;

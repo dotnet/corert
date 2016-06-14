@@ -64,8 +64,7 @@ public:
     PTR_UInt8 FindMethodStartAddress(PTR_VOID ControlPC);
 
     bool FindMethodInfo(PTR_VOID        ControlPC, 
-                        MethodInfo *    pMethodInfoOut,
-                        UInt32 *        pCodeOffset);
+                        MethodInfo *    pMethodInfoOut);
 
     bool IsFunclet(MethodInfo * pMethodInfo);
 
@@ -73,12 +72,11 @@ public:
                              REGDISPLAY *   pRegisterSet);
 
     void EnumGcRefs(MethodInfo *    pMethodInfo, 
-                    UInt32          codeOffset,
+                    PTR_VOID        safePointAddress,
                     REGDISPLAY *    pRegisterSet,
                     GCEnumContext * hCallback);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
-                          UInt32          codeOffset,
                           REGDISPLAY *    pRegisterSet,
                           PTR_VOID *      ppPreviousTransitionFrame);
 
@@ -86,7 +84,6 @@ public:
                                                         REGDISPLAY *   pRegisterSet);
 
     bool GetReturnAddressHijackInfo(MethodInfo *     pMethodInfo,
-                                    UInt32           codeOffset,
                                     REGDISPLAY *     pRegisterSet,
                                     PTR_PTR_VOID *   ppvRetAddrLocation,
                                     GCRefKind *      pRetValueKind);
@@ -101,7 +98,7 @@ public:
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddressOut, EHEnumState * pEHEnumStateOut);
     bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut);
 
-    void RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * pCodeOffset);
+    PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 
     DispatchMap ** GetDispatchMapLookupTable();
     

@@ -395,17 +395,17 @@ void ReportScratchRegs(UInt8 firstEncByte, REGDISPLAY * pContext, GCEnumContext 
 // location cannot be enumerated multiple times (but all differenct references pointing to the same object 
 // have to be individually enumerated). 
 // Returns success of operation.
-void EECodeManager::EnumGcRefs(EEMethodInfo *   pMethodInfo,
+void EECodeManager::EnumGcRefs(MethodGcInfoPointers *   pMethodInfo,
                                UInt32           codeOffset,
                                REGDISPLAY *     pContext,
-                               GCEnumContext *  hCallback,
-                               PTR_UInt8        pbCallsiteStringBlob,
-                               PTR_UInt8        pbDeltaShortcutTable)
+                               GCEnumContext *  hCallback)
 {
-    PTR_UInt8 pCursor = pMethodInfo->GetGCInfo();
+    PTR_UInt8 pbCallsiteStringBlob = pMethodInfo->m_pbCallsiteStringBlob;
+    PTR_UInt8 pbDeltaShortcutTable = pMethodInfo->m_pbDeltaShortcutTable;
+    PTR_UInt8 pCursor = pMethodInfo->m_pbEncodedSafePointList;
 
     // Early-out for the common case of no callsites 
-    if (*pCursor == 0xFF)
+    if ((pCursor == NULL) || (*pCursor == 0xFF))
         return;
 
 
@@ -602,30 +602,15 @@ ContinueUnconditionally:
 // Returns success of operation.
 // NOTE: When making changes to this function, it is important to check whether corresponding changes
 // are needed in GetConservativeUpperBoundForOutgoingArgs.
-bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
-                                     UInt32         codeOffset,
+bool EECodeManager::UnwindStackFrame(GCInfoHeader * pInfoHeader,
                                      REGDISPLAY *   pContext)
 {
 #ifdef _TARGET_ARM64_
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
 #endif
 
-    GCInfoHeader *  pInfoHeader = pMethodInfo->GetGCInfoHeader();
-
     // We could implement this unwind if we wanted, but there really isn't any reason
     ASSERT(pInfoHeader->GetReturnKind() != GCInfoHeader::MRK_ReturnsToNative);
-
-#if defined(_DEBUG) || defined(DACCESS_COMPILE)
-    // unwinding in the prolog is unsupported
-    ASSERT_OR_DAC_RETURN_FALSE(codeOffset >= pInfoHeader->GetPrologSize());
-
-    // unwinding in the epilog is unsupported
-    UInt32 epilogOffset = 0;
-    UInt32 epilogSize = 0;
-    ASSERT_OR_DAC_RETURN_FALSE(!GetEpilogOffset(pMethodInfo, codeOffset, &epilogOffset, &epilogSize));
-#else 
-    UNREFERENCED_PARAMETER(codeOffset);
-#endif
 
     bool ebpFrame = pInfoHeader->HasFramePointer();
 
@@ -777,10 +762,8 @@ bool EECodeManager::UnwindStackFrame(EEMethodInfo * pMethodInfo,
     return true;
 }
 
-PTR_VOID EECodeManager::GetReversePInvokeSaveFrame(EEMethodInfo * pMethodInfo, REGDISPLAY * pContext)
+PTR_VOID EECodeManager::GetReversePInvokeSaveFrame(GCInfoHeader * pHeader, REGDISPLAY * pContext)
 {
-    GCInfoHeader *  pHeader = pMethodInfo->GetGCInfoHeader();
-
     if (pHeader->GetReturnKind() != GCInfoHeader::MRK_ReturnsToNative)
         return NULL;
 
@@ -795,10 +778,9 @@ PTR_VOID EECodeManager::GetReversePInvokeSaveFrame(EEMethodInfo * pMethodInfo, R
 // callsite when the call was made.  This upper bound helps the runtime apply conservative
 // GC reporting to stack-passed arguments in situations where it has no knowledge of the
 // callsite signature.
-UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(EEMethodInfo * pMethodInfo, REGDISPLAY * pContext)
+UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(GCInfoHeader * pInfoHeader, REGDISPLAY * pContext)
 {
     UIntNative upperBound;
-    GCInfoHeader * pInfoHeader = pMethodInfo->GetGCInfoHeader();
 
     if (pInfoHeader->GetReturnKind() == GCInfoHeader::MRK_ReturnsToNative)
     {
@@ -870,10 +852,9 @@ UIntNative EECodeManager::GetConservativeUpperBoundForOutgoingArgs(EEMethodInfo 
     return upperBound;
 }
 
-PTR_VOID EECodeManager::GetFramePointer(EEMethodInfo *  pMethodInfo, 
+PTR_VOID EECodeManager::GetFramePointer(GCInfoHeader *  pUnwindInfo,
                                         REGDISPLAY *    pContext)
 {
-    GCInfoHeader* pUnwindInfo = pMethodInfo->GetGCInfoHeader();
     return (pUnwindInfo->HasFramePointer() || pUnwindInfo->IsFunclet())
                         ? (PTR_VOID)pContext->GetFP()
                         : NULL;
@@ -881,11 +862,14 @@ PTR_VOID EECodeManager::GetFramePointer(EEMethodInfo *  pMethodInfo,
 
 #ifndef DACCESS_COMPILE
 
-PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    pMethodInfo,
-                                                              UInt32            codeOffset,
-                                                              REGDISPLAY *      pContext)
+PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(
+    GCInfoHeader *      pGCInfoHeader,
+    UInt32              cbMethodCodeSize,
+    PTR_UInt8           pbEpilogTable,
+    UInt32              codeOffset,
+    REGDISPLAY *        pContext)
 {
-    GCInfoHeader * pHeader = pMethodInfo->GetGCInfoHeader();
+    GCInfoHeader * pHeader = pGCInfoHeader;
 
     // We *could* hijack a reverse-pinvoke method, but it doesn't get us much because we already synchronize
     // with the GC on the way back to native code.
@@ -914,7 +898,7 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 
     UInt32 epilogOffset = 0;
     UInt32 epilogSize = 0;
-    if (GetEpilogOffset(pMethodInfo, codeOffset, &epilogOffset, &epilogSize)) 
+    if (GetEpilogOffset(pGCInfoHeader, cbMethodCodeSize, pbEpilogTable, codeOffset, &epilogOffset, &epilogSize)) 
     {
 #ifdef _ARM_
         // Disable hijacking from epilogs on ARM until we implement GetReturnAddressLocationFromEpilog.
@@ -983,13 +967,13 @@ PTR_PTR_VOID EECodeManager::GetReturnAddressLocationForHijack(EEMethodInfo *    
 
 #endif
 
-GCRefKind EECodeManager::GetReturnValueKind(EEMethodInfo * pMethodInfo)
+GCRefKind EECodeManager::GetReturnValueKind(GCInfoHeader * pInfoHeader)
 {
     static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsScalar == GCRK_Scalar, "GCInfoHeader::MRK_ReturnsScalar does not match GCRK_Scalar");
     static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsObject == GCRK_Object, "GCInfoHeader::MRK_ReturnsObject does not match GCRK_Object");
     static_assert((GCRefKind)GCInfoHeader::MRK_ReturnsByref  == GCRK_Byref, "GCInfoHeader::MRK_ReturnsByref does not match GCRK_Byref");
 
-    GCInfoHeader::MethodReturnKind retKind = pMethodInfo->GetGCInfoHeader()->GetReturnKind();
+    GCInfoHeader::MethodReturnKind retKind = pInfoHeader->GetReturnKind();
     switch (retKind)
     {
         case GCInfoHeader::MRK_ReturnsScalar:
@@ -1005,10 +989,10 @@ GCRefKind EECodeManager::GetReturnValueKind(EEMethodInfo * pMethodInfo)
     UNREACHABLE_MSG("unexpected return kind");
 }
 
-bool EECodeManager::GetEpilogOffset(EEMethodInfo * pMethodInfo, UInt32 codeOffset, UInt32 * epilogOffsetOut, UInt32 * epilogSizeOut)
+bool EECodeManager::GetEpilogOffset(
+    GCInfoHeader * pInfoHeader, UInt32 cbMethodCodeSize, PTR_UInt8 pbEpilogTable, 
+    UInt32 codeOffset, UInt32 * epilogOffsetOut, UInt32 * epilogSizeOut)
 {
-    GCInfoHeader * pInfoHeader = pMethodInfo->GetGCInfoHeader();
-
     UInt32 epilogStart;
 
     if (pInfoHeader->IsEpilogAtEnd())
@@ -1016,7 +1000,7 @@ bool EECodeManager::GetEpilogOffset(EEMethodInfo * pMethodInfo, UInt32 codeOffse
         ASSERT(pInfoHeader->GetEpilogCount() == 1);
         UInt32 epilogSize = pInfoHeader->GetFixedEpilogSize();
 
-        epilogStart = pMethodInfo->GetCodeSize() - epilogSize;
+        epilogStart = cbMethodCodeSize - epilogSize;
 
         // If we're at offset 0, it's equivalent to being in the body of the method
         if (codeOffset > epilogStart)
@@ -1029,7 +1013,6 @@ bool EECodeManager::GetEpilogOffset(EEMethodInfo * pMethodInfo, UInt32 codeOffse
         return false;
     }
 
-    PTR_UInt8 pbEpilogTable = pMethodInfo->GetEpilogTable();
     epilogStart = 0;
     bool hasVaryingEpilogSizes = pInfoHeader->HasVaryingEpilogSizes();
     for (UInt32 idx = 0; idx < pInfoHeader->GetEpilogCount(); idx++)

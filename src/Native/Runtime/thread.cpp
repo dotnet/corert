@@ -458,11 +458,11 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
         {
             frameIterator.CalculateCurrentMethodState();
         
-            STRESS_LOG1(LF_GCROOTS, LL_INFO1000, "Scanning method %pK\n", frameIterator.GetRegisterSet()->IP);
-        
+            STRESS_LOG1(LF_GCROOTS, LL_INFO1000, "Scanning method %pK\n", (void*)frameIterator.GetRegisterSet()->IP);
+       
             RedhawkGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
                                            frameIterator.GetMethodInfo(), 
-                                           frameIterator.GetCodeOffset(),
+                                           frameIterator.GetEffectiveSafePointAddress(),
                                            frameIterator.GetRegisterSet(),
                                            pfnEnumCallback,
                                            pvCallbackData);
@@ -668,7 +668,6 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void* HijackTarge
         GCRefKind retValueKind;
 
         if (frameIterator.GetCodeManager()->GetReturnAddressHijackInfo(frameIterator.GetMethodInfo(),
-                                                                  frameIterator.GetCodeOffset(),
                                                                   frameIterator.GetRegisterSet(),
                                                                   &ppvRetAddrLocation, 
                                                                   &retValueKind))

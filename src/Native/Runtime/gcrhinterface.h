@@ -132,7 +132,7 @@ public:
 
     static void EnumGcRefs(ICodeManager * pCodeManager,
                            MethodInfo * pMethodInfo, 
-                           UInt32 codeOffset,
+                           PTR_VOID safePointAddress,
                            REGDISPLAY * pRegisterSet,
                            void * pfnEnumCallback,
                            void * pvCallbackData);

@@ -439,7 +439,7 @@ PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
         ASSERT(IsValid());
 
         if ((pExInfo->m_kind == EK_HardwareFault) && (curFlags & RemapHardwareFaultsToSafePoint))
-            GetCodeManager()->RemapHardwareFaultToGCSafePoint(&m_methodInfo, &m_codeOffset);
+            m_effectiveSafePointAddress = GetCodeManager()->RemapHardwareFaultToGCSafePoint(&m_methodInfo, m_ControlPC);
     }
     else
     {
@@ -1112,7 +1112,7 @@ UnwindOutOfCurrentManagedFrame:
 #endif
 
     PTR_VOID pPreviousTransitionFrame;
-    FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, m_codeOffset, &m_RegDisplay, &pPreviousTransitionFrame));
+    FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, &m_RegDisplay, &pPreviousTransitionFrame));
     bool doingFuncletUnwind = GetCodeManager()->IsFunclet(&m_methodInfo);
 
     if (pPreviousTransitionFrame != NULL)
@@ -1428,10 +1428,10 @@ REGDISPLAY * StackFrameIterator::GetRegisterSet()
     return &m_RegDisplay;
 }
 
-UInt32 StackFrameIterator::GetCodeOffset()
+PTR_VOID StackFrameIterator::GetEffectiveSafePointAddress()
 {
     ASSERT(IsValid());
-    return m_codeOffset;
+    return m_effectiveSafePointAddress;
 }
 
 ICodeManager * StackFrameIterator::GetCodeManager()
@@ -1458,14 +1458,15 @@ void StackFrameIterator::CalculateCurrentMethodState()
         return;
 
     // Assume that the caller is likely to be in the same module
-    if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo, &m_codeOffset))
+    if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))
     {
         m_pCodeManager = m_pInstance->FindCodeManagerByAddress(m_ControlPC);
         FAILFAST_OR_DAC_FAIL(m_pCodeManager);
 
-        FAILFAST_OR_DAC_FAIL(m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo, &m_codeOffset));
+        FAILFAST_OR_DAC_FAIL(m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo));
     }
 
+    m_effectiveSafePointAddress = m_ControlPC;
     m_FramePointer = GetCodeManager()->GetFramePointer(&m_methodInfo, &m_RegDisplay);
 
     m_dwFlags |= MethodStateCalculated;
