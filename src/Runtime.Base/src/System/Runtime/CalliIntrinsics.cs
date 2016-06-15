@@ -13,13 +13,13 @@ namespace System.Runtime
         internal static void CallVoid(IntPtr pfn) { Call<int>(pfn); }
         internal static void CallVoid(IntPtr pfn, object arg0) { Call<int>(pfn, arg0); }
         internal static void CallVoid(IntPtr pfn, IntPtr arg0, object arg1) { Call<int>(pfn, arg0, arg1); }
-        internal static void CallVoid(IntPtr pfn, RhFailFastReason arg0, object arg1, IntPtr arg2) { Call<int>(pfn, arg0, arg1, arg2); }
+        internal static void CallVoid(IntPtr pfn, RhFailFastReason arg0, object arg1, IntPtr arg2, IntPtr arg3) { Call<int>(pfn, arg0, arg1, arg2, arg3); }
         internal static void CallVoid(IntPtr pfn, object arg0, IntPtr arg1, int arg2) { Call<int>(pfn, arg0, arg1, arg2); }
 
         internal static T Call<T>(IntPtr pfn) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, object arg0) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, IntPtr arg0, object arg1) { throw new NotImplementedException(); }
-        internal static T Call<T>(IntPtr pfn, RhFailFastReason arg0, object arg1, IntPtr arg2) { throw new NotImplementedException(); }
+        internal static T Call<T>(IntPtr pfn, RhFailFastReason arg0, object arg1, IntPtr arg2, IntPtr arg3) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, object arg0, IntPtr arg1, int arg2) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, object arg0, IntPtr arg1) { throw new NotImplementedException(); }
         internal static T Call<T>(IntPtr pfn, ExceptionIDs arg0) { throw new NotImplementedException(); }
