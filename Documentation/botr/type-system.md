@@ -25,7 +25,7 @@ Low overhead is achieved by lazy loading - instead of eagerly populating the typ
 
 Where necessary, partial classes, extension methods, and pluggable algorithms are used to achieve goal 3 instead of polymorphism and object hierarchies. The reusability of the type system is at the source level (source-including different sets of files to get different features). This allows extensibility without making sacrifices that would take us away from goal 1.
 
-The type system in its purest form (i.e. without any partial class extensions) tries to avoid introducing concepts that are not defined in the [ECMA-335 specification](http://www.ecma-international.org/publications/standards/Ecma-335.htm). The specification is a suggested pre-requisite reading to this document and provides definitions to various terms used in this document.
+The type system in its purest form (i.e. without any partial class extensions) tries to avoid introducing concepts that are not defined in the [ECMA-335 specification](http://www.ecma-international.org/publications/standards/Ecma-335.htm). The specification is a suggested prerequisite reading to this document and provides definitions to various terms used in this document.
 
 ## Relationship with metadata
 
@@ -51,7 +51,7 @@ Following section goes briefly over the classes representing types within the ty
 
 `TypeDesc` is the base class of all types within the type system. It defines a list of operations all classes must support. Not all operations might make sense for all the children of `TypeDesc` (for example, it doesn't make sense to request a list of methods on a pointer type), but care is taken to provide an implementation that makes sense for each particular child (i.e. the list of methods on a pointer type is empty).
 
-### ParametrizedType (ArrayType, ByRefType, PointerType)
+### ParameterizedType (ArrayType, ByRefType, PointerType)
 
 These are constructed types with a single parameter:
 
@@ -63,7 +63,7 @@ Note the distinction between multidimensional arrays of rank 1 and vectors is a 
 
 ### DefType (NoMetadataType, MetadataType)
 
-`DefType` represents a value type, interface, or a class. While most instances of `DefType` will be of children of `MetadataType` (a type that is based off of some concrete metadata describing the type in full), there will be scenarios where full metadata is no longer available. In those cases, only restricted information (such as the number of bytes occupied by the instance of the type on the GC heap, or whether the type is a value type) is available. It is important that the type system is able to operate on such types. E.g. it should be possible for a type with restricted metadata to be a base type for a type with full metadata and the field layout algorithm should be able to compute the field layout of such type.
+`DefType` represents a value type, interface, or a class. While most instances of `DefType` will be of children of `MetadataType` (a type that is based off of some concrete metadata describing the type in full), there will be scenarios where full metadata is no longer available. In those cases, only restricted information (such as the number of bytes occupied by the instance of the type on the GC heap, or whether the type is a value type) is available. It is important that the type system is able to operate on such types. E.g. it should be possible for a type with restricted metadata to be a base type for a type with full metadata and the field layout algorithm should be able to compute the field layout of such a type.
 
 ### GenericParameter
 

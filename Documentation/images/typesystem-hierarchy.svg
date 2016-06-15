@@ -113,7 +113,7 @@
          y="219.74541"
          x="-478.96786"
          height="118.04868"
-         width="412.33441"
+         width="432.33441"
          id="rect3338-1" />
       <text
          sodipodi:linespacing="125%"
@@ -125,7 +125,7 @@
            id="tspan3369"
            y="289.94162"
            x="-452.25378"
-           sodipodi:role="line">ParametrizedType</tspan></text>
+           sodipodi:role="line">ParameterizedType</tspan></text>
     </g>
     <g
        id="g3534"
