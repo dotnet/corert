@@ -319,8 +319,7 @@ PTR_UInt8 Module::FindMethodStartAddress(PTR_VOID ControlPC)
 }
 
 bool Module::FindMethodInfo(PTR_VOID        ControlPC, 
-                            MethodInfo *    pMethodInfoOut,
-                            UInt32 *        pCodeOffset)
+                            MethodInfo *    pMethodInfoOut)
 {
     if (!ContainsCodeAddress(ControlPC))
         return false;
@@ -346,7 +345,6 @@ bool Module::FindMethodInfo(PTR_VOID        ControlPC,
 #ifdef _ARM_
     codeOffset &= ~1;
 #endif
-    *pCodeOffset = codeOffset;
 
     pEEMethodInfo->DecodeGCInfoHeader(codeOffset, GetUnwindInfoBlob());
 
@@ -423,67 +421,75 @@ bool Module::IsFunclet(MethodInfo * pMethodInfo)
 PTR_VOID Module::GetFramePointer(MethodInfo *   pMethodInfo, 
                                  REGDISPLAY *   pRegisterSet)
 {
-    return EECodeManager::GetFramePointer(GetEEMethodInfo(pMethodInfo), pRegisterSet);
+    return EECodeManager::GetFramePointer(GetEEMethodInfo(pMethodInfo)->GetGCInfoHeader(), pRegisterSet);
 }
 
 void Module::EnumGcRefs(MethodInfo *    pMethodInfo,
-                        UInt32          codeOffset,
+                        PTR_VOID        safePointAddress,
                         REGDISPLAY *    pRegisterSet,
                         GCEnumContext * hCallback)
 {
-    EECodeManager::EnumGcRefs(GetEEMethodInfo(pMethodInfo),
-                              codeOffset,
-                              pRegisterSet,
-                              hCallback,
-                              GetCallsiteStringBlob(),
-                              GetDeltaShortcutTable());
+
+    MethodGcInfoPointers infoPtrs;
+    infoPtrs.m_pGCInfoHeader            = GetEEMethodInfo(pMethodInfo)->GetGCInfoHeader();
+    infoPtrs.m_pbEncodedSafePointList   = GetEEMethodInfo(pMethodInfo)->GetGCInfo();
+    infoPtrs.m_pbCallsiteStringBlob     = GetCallsiteStringBlob();
+    infoPtrs.m_pbDeltaShortcutTable     = GetDeltaShortcutTable();
+
+    UInt32 codeOffset = (UInt32)(dac_cast<TADDR>(safePointAddress) - dac_cast<TADDR>(GetEEMethodInfo(pMethodInfo)->GetCode()));
+    ASSERT(codeOffset < GetEEMethodInfo(pMethodInfo)->GetCodeSize())
+    EECodeManager::EnumGcRefs(&infoPtrs, codeOffset, pRegisterSet, hCallback);
 }
 
 bool Module::UnwindStackFrame(MethodInfo *  pMethodInfo,
-                              UInt32        codeOffset,
                               REGDISPLAY *  pRegisterSet,
                               PTR_VOID *    ppPreviousTransitionFrame)
 {
     EEMethodInfo * pEEMethodInfo = GetEEMethodInfo(pMethodInfo);
 
-    *ppPreviousTransitionFrame = EECodeManager::GetReversePInvokeSaveFrame(pEEMethodInfo, pRegisterSet);
+    *ppPreviousTransitionFrame = EECodeManager::GetReversePInvokeSaveFrame(pEEMethodInfo->GetGCInfoHeader(), pRegisterSet);
     if (*ppPreviousTransitionFrame != NULL)
         return true;
 
-    return EECodeManager::UnwindStackFrame(pEEMethodInfo, codeOffset, pRegisterSet);
+    return EECodeManager::UnwindStackFrame(pEEMethodInfo->GetGCInfoHeader(), pRegisterSet);
 }
 
 UIntNative Module::GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
                                                             REGDISPLAY *   pRegisterSet)
 {
-    EEMethodInfo * pEEMethodInfo = GetEEMethodInfo(pMethodInfo);
-    return EECodeManager::GetConservativeUpperBoundForOutgoingArgs(pEEMethodInfo, pRegisterSet);
+    return EECodeManager::GetConservativeUpperBoundForOutgoingArgs(
+        GetEEMethodInfo(pMethodInfo)->GetGCInfoHeader(), pRegisterSet);
 }
 
 bool Module::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
-                                        UInt32          codeOffset,
                                         REGDISPLAY *    pRegisterSet,
                                         PTR_PTR_VOID *  ppvRetAddrLocation,
                                         GCRefKind *     pRetValueKind)
 {
 #ifdef DACCESS_COMPILE
     UNREFERENCED_PARAMETER(pMethodInfo);
-    UNREFERENCED_PARAMETER(codeOffset);
     UNREFERENCED_PARAMETER(pRegisterSet);
     UNREFERENCED_PARAMETER(ppvRetAddrLocation);
     UNREFERENCED_PARAMETER(pRetValueKind);
     return false;
 #else
     EEMethodInfo * pEEMethodInfo = GetEEMethodInfo(pMethodInfo);
+    GCInfoHeader * pInfoHeader = pEEMethodInfo->GetGCInfoHeader();
 
-    PTR_PTR_VOID pRetAddr = EECodeManager::GetReturnAddressLocationForHijack(pEEMethodInfo, 
-                                                                             codeOffset, 
-                                                                             pRegisterSet);
+    PTR_UInt8 controlPC = (PTR_UInt8)pRegisterSet->GetIP();
+    UInt32 codeOffset = (UInt32)(controlPC - (PTR_UInt8)pEEMethodInfo->GetCode());
+    PTR_PTR_VOID pRetAddr = EECodeManager::GetReturnAddressLocationForHijack(
+        pInfoHeader,
+        pEEMethodInfo->GetCodeSize(),
+        pEEMethodInfo->GetEpilogTable(),
+        codeOffset, 
+        pRegisterSet);
+
     if (pRetAddr == NULL)
         return false;
 
     *ppvRetAddrLocation = pRetAddr;
-    *pRetValueKind = EECodeManager::GetReturnValueKind(pEEMethodInfo);
+    *pRetValueKind = EECodeManager::GetReturnValueKind(pInfoHeader);
 
     return true;
 #endif
@@ -491,6 +497,7 @@ bool Module::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
 
 struct EEEHEnumState
 {
+    PTR_UInt8 pMethodStartAddress;
     PTR_UInt8 pEHInfo;
     UInt32 uClause;
     UInt32 nClauses;
@@ -510,6 +517,7 @@ bool Module::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress
     *pMethodStartAddressOut = pInfo->GetCode();
 
     EEEHEnumState * pEnumState = (EEEHEnumState *)pEHEnumStateOut;
+    pEnumState->pMethodStartAddress = (PTR_UInt8)pInfo->GetCode();
     pEnumState->pEHInfo = (PTR_UInt8)pEHInfo;
     pEnumState->uClause = 0;
     pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
@@ -539,11 +547,11 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
     //      4b) if (filter)                      { filter start offset }
     //
     // The first two integers have already been decoded
-
+    UInt8* methodStartAddress = dac_cast<UInt8*>(pEnumState->pMethodStartAddress);
     switch (pEHClauseOut->m_clauseKind)
     {
     case EH_CLAUSE_TYPED:
-        pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = methodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
 
         {
             UInt32 typeIndex = VarInt::ReadUnsigned(pEnumState->pEHInfo);
@@ -560,11 +568,11 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
         }
         break;
     case EH_CLAUSE_FAULT:
-        pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = methodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
         break;
     case EH_CLAUSE_FILTER:
-        pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
-        pEHClauseOut->m_filterOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = methodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_filterAddress = methodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
         break;
     default:
         ASSERT_UNCONDITIONALLY("Unexpected EHClauseKind");
@@ -574,7 +582,7 @@ bool Module::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClauseOut)
     return true;
 }
 
-static void UpdateStateForRemappedGCSafePoint(Module * pModule, EEMethodInfo * pInfo, UInt32 funcletStart, UInt32 * pRemappedCodeOffset)
+static PTR_VOID GetFuncletSafePointForIncomingLiveReferences(Module * pModule, EEMethodInfo * pInfo, UInt32 funcletStart)
 {
     // The binder will encode a GC safe point (as appropriate) at the first code offset after the 
     // prolog to represent the "incoming" GC references.  This safe point is 'special' because it 
@@ -591,7 +599,8 @@ static void UpdateStateForRemappedGCSafePoint(Module * pModule, EEMethodInfo * p
 
     EEMethodInfo tempInfo;
 
-    tempInfo.Init(pInfo->GetCode(), pInfo->GetCodeSize(), pInfo->GetRawGCInfo(), pInfo->GetEHInfo());
+    PTR_UInt8 methodStart = (PTR_UInt8)pInfo->GetCode();
+    tempInfo.Init(methodStart, pInfo->GetCodeSize(), pInfo->GetRawGCInfo(), pInfo->GetEHInfo());
 
     tempInfo.DecodeGCInfoHeader(funcletStart, pModule->GetUnwindInfoBlob());
 
@@ -602,32 +611,34 @@ static void UpdateStateForRemappedGCSafePoint(Module * pModule, EEMethodInfo * p
     codeOffset &= ~1;
 #endif
 
-    *pRemappedCodeOffset = codeOffset;
+    return methodStart + codeOffset;
 }
 
-void Module::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * pCodeOffset)
+PTR_VOID Module::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
 {
     EEMethodInfo * pInfo = GetEEMethodInfo(pMethodInfo);
 
     EHEnumState ehEnum;
     PTR_VOID pMethodStartAddress;
     if (!EHEnumInit(pMethodInfo, &pMethodStartAddress, &ehEnum))
-        return;
+        return controlPC;
 
+    PTR_UInt8 methodStart = (PTR_UInt8)pInfo->GetCode();
+    UInt32 codeOffset = (UInt32)((PTR_UInt8)controlPC - methodStart);
     EHClause ehClause;
     while (EHEnumNext(&ehEnum, &ehClause))
     {
-        if ((ehClause.m_tryStartOffset <= *pCodeOffset) && (*pCodeOffset < ehClause.m_tryEndOffset))
+        if ((ehClause.m_tryStartOffset <= codeOffset) && (codeOffset < ehClause.m_tryEndOffset))
         {
-            UpdateStateForRemappedGCSafePoint(this, pInfo, ehClause.m_handlerOffset, pCodeOffset);
-            return;
+            UInt32 handlerOffset = (UInt32)(dac_cast<PTR_UInt8>(ehClause.m_handlerAddress) - methodStart);
+            return GetFuncletSafePointForIncomingLiveReferences(this, pInfo, handlerOffset);
         }
     }
 
     // We didn't find a try region covering our PC.  However, if the PC is in a funclet, we must do more work.
     GCInfoHeader * pThisFuncletUnwindInfo = pInfo->GetGCInfoHeader();
     if (!pThisFuncletUnwindInfo->IsFunclet())
-        return;
+        return controlPC;
 
     // For funclets, we must correlate the funclet to its corresponding try region and check for enclosing try
     // regions that might catch the exception as it "escapes" the funclet.
@@ -642,17 +653,17 @@ void Module::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * 
 
     while (EHEnumNext(&ehEnum, &ehClause))
     {
+        UInt32 handlerOffset = (UInt32)(dac_cast<PTR_UInt8>(ehClause.m_handlerAddress) - methodStart);
         if (foundTryRegion && (ehClause.m_tryStartOffset <= tryRegionStart) && (tryRegionEnd <= ehClause.m_tryEndOffset))
         {
             // the regions aren't nested if they have exactly the same range.
             if ((ehClause.m_tryStartOffset != tryRegionStart) || (tryRegionEnd != ehClause.m_tryEndOffset))
             {
-                UpdateStateForRemappedGCSafePoint(this, pInfo, ehClause.m_handlerOffset, pCodeOffset);
-                return;
+                return GetFuncletSafePointForIncomingLiveReferences(this, pInfo, handlerOffset);
             }
         }
 
-        if (ehClause.m_handlerOffset == thisFuncletOffset)
+        if (handlerOffset == thisFuncletOffset)
         {
             tryRegionStart = ehClause.m_tryStartOffset;
             tryRegionEnd = ehClause.m_tryEndOffset;
@@ -663,6 +674,7 @@ void Module::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * 
         }
     }
     ASSERT(foundTryRegion);
+    return controlPC;
 }
 
 #ifndef DACCESS_COMPILE

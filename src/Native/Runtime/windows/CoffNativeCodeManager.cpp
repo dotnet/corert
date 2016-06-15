@@ -197,8 +197,7 @@ struct CoffNativeMethodInfo
 static_assert(sizeof(CoffNativeMethodInfo) <= sizeof(MethodInfo), "CoffNativeMethodInfo too big");
 
 bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC, 
-                                    MethodInfo *    pMethodInfoOut,
-                                    UInt32 *        pCodeOffset)
+                                           MethodInfo *    pMethodInfoOut)
 {
     CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethodInfoOut;
 
@@ -230,8 +229,6 @@ bool CoffNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     pMethodInfo->mainRuntimeFunction = pRuntimeFunction;
 
     pMethodInfo->executionAborted = false;
-
-    *pCodeOffset = (UInt32)(relativePC - pMethodInfo->mainRuntimeFunction->BeginAddress);
 
     return true;
 }
@@ -271,9 +268,9 @@ PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
 // void EnumGCRefs(PTR_VOID pGCInfo, UINT32 curOffs, REGDISPLAY * pRD, GCEnumContext * hCallback, bool executionAborted);
 
 void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo, 
-                                UInt32          codeOffset,
-                                REGDISPLAY *    pRegisterSet,
-                                GCEnumContext * hCallback)
+                                       PTR_VOID        safePointAddress,
+                                       REGDISPLAY *    pRegisterSet,
+                                       GCEnumContext * hCallback)
 {
     // @TODO: CORERT: PInvoke transitions
 
@@ -298,7 +295,6 @@ UIntNative CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
 }
 
 bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
-                                      UInt32          codeOffset,
                                       REGDISPLAY *    pRegisterSet,                 // in/out
                                       PTR_VOID *      ppPreviousTransitionFrame)    // out
 {
@@ -361,7 +357,6 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 }
 
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
-                                                UInt32          codeOffset,
                                                 REGDISPLAY *    pRegisterSet,       // in
                                                 PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                 GCRefKind *     pRetValueKind)      // out
@@ -375,7 +370,7 @@ void CoffNativeCodeManager::UnsynchronizedHijackMethodLoops(MethodInfo * pMethod
     // @TODO: CORERT: UnsynchronizedHijackMethodLoops
 }
 
-void CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * pCodeOffset)
+PTR_VOID CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
 {
     // GCInfo decoder needs to know whether execution of the method is aborted 
     // while querying for gc-info.  But ICodeManager::EnumGCRef() doesn't receive any
@@ -388,11 +383,12 @@ void CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethod
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
     pNativeMethodInfo->executionAborted = true;
 
-    return;
+    return controlPC;
 }
 
 struct CoffEHEnumState
 {
+    PTR_UInt8 pMethodStartAddress;
     PTR_UInt8 pEHInfo;
     UInt32 uClause;
     UInt32 nClauses;
@@ -422,7 +418,7 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     }
 
     *pMethodStartAddress = dac_cast<PTR_VOID>(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress);
-
+    pEnumState->pMethodStartAddress = dac_cast<PTR_UInt8>(*pMethodStartAddress);
     pEnumState->pEHInfo = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize + 1;
     pEnumState->uClause = 0;
     pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
@@ -458,7 +454,7 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     switch (pEHClauseOut->m_clauseKind)
     {
     case EH_CLAUSE_TYPED:
-        pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
 
         // Read target type
         {
@@ -469,11 +465,11 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
         }
         break;
     case EH_CLAUSE_FAULT:
-        pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
         break;
     case EH_CLAUSE_FILTER:
-        pEHClauseOut->m_handlerOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
-        pEHClauseOut->m_filterOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_filterAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
         break;
     default:
         UNREACHABLE_MSG("unexpected EHClauseKind");

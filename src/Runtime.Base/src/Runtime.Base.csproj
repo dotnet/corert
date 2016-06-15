@@ -101,6 +101,7 @@
     <Compile Include="System\RuntimeHandles.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\String.cs" />
+    <Compile Include="System\ThrowHelpers.cs" />
     <Compile Include="System\Void.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="System\Diagnostics\Debug.cs" />

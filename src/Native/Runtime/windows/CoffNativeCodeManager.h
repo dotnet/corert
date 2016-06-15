@@ -57,8 +57,7 @@ public:
     //
 
     bool FindMethodInfo(PTR_VOID        ControlPC, 
-                        MethodInfo *    pMethodInfoOut,
-                        UInt32 *        pCodeOffset);
+                        MethodInfo *    pMethodInfoOut);
 
     bool IsFunclet(MethodInfo * pMethodInfo);
 
@@ -66,12 +65,11 @@ public:
                              REGDISPLAY *   pRegisterSet);
 
     void EnumGcRefs(MethodInfo *    pMethodInfo, 
-                    UInt32          codeOffset,
+                    PTR_VOID        safePointAddress,
                     REGDISPLAY *    pRegisterSet,
                     GCEnumContext * hCallback);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
-                          UInt32          codeOffset,
                           REGDISPLAY *    pRegisterSet,                 // in/out
                           PTR_VOID *      ppPreviousTransitionFrame);   // out
 
@@ -79,14 +77,13 @@ public:
                                                         REGDISPLAY *   pRegisterSet);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
-                                    UInt32          codeOffset,
                                     REGDISPLAY *    pRegisterSet,       // in
                                     PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                     GCRefKind *     pRetValueKind);     // out
 
     void UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo);
 
-    void RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * pCodeOffset);
+    PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState);
 
