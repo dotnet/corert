@@ -174,7 +174,7 @@ namespace System.Runtime
             try
             {
                 // Invoke the classlib fail fast function.
-                CalliIntrinsics.CallVoid(pFailFastFunction, reason, unhandledException, IntPtr.Zero);
+                CalliIntrinsics.CallVoid(pFailFastFunction, reason, unhandledException, IntPtr.Zero, IntPtr.Zero);
             }
             catch
             {
@@ -246,7 +246,7 @@ namespace System.Runtime
 
             try
             {
-                CalliIntrinsics.CallVoid(pFailFastFunction, reason, unhandledException, (IntPtr)pContext);
+                CalliIntrinsics.CallVoid(pFailFastFunction, reason, unhandledException, exInfo._pExContext->IP, (IntPtr)pContext);
             }
             catch
             {

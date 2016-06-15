@@ -71,54 +71,6 @@ internal partial class Interop
 #endif
     }
 
-    internal unsafe struct _CONTEXT
-    {
-        internal uint ContextFlags;
-        internal uint Dr0;
-        internal uint Dr1;
-        internal uint Dr2;
-        internal uint Dr3;
-        internal uint Dr6;
-        internal uint Dr7;
-        internal _FLOATING_SAVE_AREA FloatSave;
-        internal uint SegGs;
-        internal uint SegFs;
-        internal uint SegEs;
-        internal uint SegDs;
-        internal uint Edi;
-        internal uint Esi;
-        internal uint Ebx;
-        internal uint Edx;
-        internal uint Ecx;
-        internal uint Eax;
-        internal uint Ebp;
-#if AMD64
-        internal uint Rip;
-#elif ARM
-        internal uint Pc;
-#else
-        internal uint Eip;
-#endif
-        internal uint SegCs;
-        internal uint EFlags;
-        internal uint Esp;
-        internal uint SegSs;
-        internal fixed byte ExtendedRegisters[512];
-    }
-
-    internal unsafe struct _FLOATING_SAVE_AREA
-    {
-        internal uint ControlWord;
-        internal uint StatusWord;
-        internal uint TagWord;
-        internal uint ErrorOffset;
-        internal uint ErrorSelector;
-        internal uint DataOffset;
-        internal uint DataSelector;
-        internal fixed byte RegisterArea[80];
-        internal uint Cr0NpxState;
-    }
-
 #pragma warning restore 649
     internal partial class mincore
     {
@@ -194,48 +146,33 @@ internal partial class Interop
 
             PInvoke_RaiseFailFastException(
                                 &exceptionRecord,
-                                null,
+                                IntPtr.Zero,
                                 (uint)Constants.FailFastGenerateExceptionAddress);
         }
 
         //
         // Wrapper for calling RaiseFailFastException
         //
-        internal static unsafe void RaiseFailFastException(uint faultCode, IntPtr pExContext)
+        internal static unsafe void RaiseFailFastException(uint faultCode, IntPtr pExAddress, IntPtr pExContext)
         {
-            long ctxIP = 0;
-            Interop._CONTEXT* pContext = (Interop._CONTEXT*)pExContext.ToPointer();
-            if (pExContext != IntPtr.Zero)
-            {
-#if AMD64
-                ctxIP = (long)pContext->Rip;
-#elif ARM
-                ctxIP = (long)pContext->Pc;
-#elif X86
-                ctxIP = (long)pContext->Eip;
-#else
-                System.Diagnostics.Debug.Assert(false, "Unsupported architecture");
-#endif
-            }
-
             _EXCEPTION_RECORD exceptionRecord;
             exceptionRecord.ExceptionCode = faultCode;
             exceptionRecord.ExceptionFlags = (uint)Constants.ExceptionNonContinuable;
             exceptionRecord.ExceptionRecord = IntPtr.Zero;
-            exceptionRecord.ExceptionAddress = new IntPtr(ctxIP);  // use the IP set in context record as the exception address
+            exceptionRecord.ExceptionAddress = pExAddress;
             exceptionRecord.NumberParameters = 0;
             // don't care about exceptionRecord.ExceptionInformation as we set exceptionRecord.NumberParameters to zero
 
             PInvoke_RaiseFailFastException(
                 &exceptionRecord,
-                pContext,
-                ctxIP == 0 ? (uint)Constants.FailFastGenerateExceptionAddress : 0);
+                pExContext,
+                pExAddress == IntPtr.Zero ? (uint)Constants.FailFastGenerateExceptionAddress : 0);
         }
 
         [DllImport("api-ms-win-core-kernel32-legacy-l1-1-0.dll", EntryPoint = "RaiseFailFastException")]
         private extern static unsafe void PInvoke_RaiseFailFastException(
                     _EXCEPTION_RECORD* pExceptionRecord,
-                    _CONTEXT* pContextRecord,
+                    IntPtr pContextRecord,
                     uint dwFlags);
 
         private readonly static System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
