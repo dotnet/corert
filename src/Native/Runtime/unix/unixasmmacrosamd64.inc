@@ -16,18 +16,15 @@
 .endm
 
 .macro NESTED_END Name, Section
-#if defined(__APPLE__)
-L\Name\()_End:
         LEAF_END \Name, \Section
+#if defined(__APPLE__)
+        .set LOCAL_LABEL(\Name\()_Size), . - C_FUNC(\Name)
         .section __LD,__compact_unwind,regular,debug
         .quad C_FUNC(\Name)
-        .set L\Name\()_Size, L\Name\()_End - C_FUNC(\Name)
-        .long L\Name\()_Size
+        .long LOCAL_LABEL(\Name\()_Size) 
         .long 0x04000000 # DWARF
         .quad 0
         .quad 0
-#else
-        LEAF_END \Name, \Section
 #endif
 .endm
 
