@@ -249,3 +249,10 @@ public string System.IntPtr.ToString(string format)
 
 # Visual Studio
 private static System.Text.StringBuilder System.Text.StringBuilderCache.t_cachedInstance
+private int string._stringLength
+private char string._firstChar
+private void* System.IntPtr._value
+private static volatile System.Collections.Generic.ArraySortHelper<TKey, TValue> System.Collections.Generic.ArraySortHelper<TKey, TValue>.s_defaultArraySortHelper
+private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentCulture
+private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentUICulture
+private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
