@@ -87,12 +87,6 @@ bool InitDLL(HANDLE hPalInstance)
     UInt32 dwStressLogLevel = g_pRhConfig->GetStressLogLevel();
 
     unsigned facility = (unsigned)LF_ALL;
-#ifdef _DEBUG
-    if (dwTotalStressLogSize == 0)
-        dwTotalStressLogSize = 1024 * STRESSLOG_CHUNK_SIZE;
-    if (dwStressLogLevel == 0)
-        dwStressLogLevel = LL_INFO1000;
-#endif
     unsigned dwPerThreadChunks = (dwTotalStressLogSize / 24) / STRESSLOG_CHUNK_SIZE;
     if (dwTotalStressLogSize != 0)
     {
