@@ -24,6 +24,10 @@ namespace System
 
     public struct IntPtr
     {
+        // The following field is required for interop with the VS Debugger
+        // Prior to making any changes to this field, please reach out to the VS Debugger 
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
         unsafe private void* _value; // The compiler treats void* closest to uint hence explicit casts are required to preserve int behavior
 
         [Intrinsic]

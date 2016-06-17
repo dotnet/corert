@@ -107,6 +107,11 @@ namespace System.Globalization
         // All of the following will be created on demand.
         //
 
+        // The following three fields are required for interop with the VS Debugger
+        // Prior to making any changes to these fields, please reach out to the VS Debugger 
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
+
         //The Invariant culture;
         private static volatile CultureInfo s_InvariantCultureInfo;
 
