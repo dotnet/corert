@@ -101,6 +101,10 @@ namespace System
 #if !CORERT
         [Bound]
 #endif
+        // The following two fields are required for interop with the VS Debugger
+        // Prior to making any changes to these fields, please reach out to the VS Debugger 
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
         private int _stringLength;
         private char _firstChar;
 
