@@ -320,47 +320,97 @@ namespace System.Runtime
             }
         }
 
-        // RhExceptionHandling_ functions are used to throw exceptions out of our asm helpers. We tail-call from 
-        // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that 
-        // the stack is crawlable from within these functions.
+#if !CORERT
+#region ItWouldBeNiceToRemoveThese
+        // These four functions are used to implement the special THROW_* MDIL instructions.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
-        public static void ThrowClasslibOverflowException(IntPtr address)
+        public static void ThrowClasslibOverflowException()
         {
-            // Throw the overflow exception defined by the classlib, using the return address of the asm helper
+            // Throw the overflow exception defined by the classlib, using the return address from this helper
             // to find the correct classlib.
 
-            Exception e = GetClasslibException(ExceptionIDs.Overflow, address);
+            ExceptionIDs exID = ExceptionIDs.Overflow;
+
+            IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
+            Exception e = GetClasslibException(exID, returnAddr);
 
             BinderIntrinsics.TailCall_RhpThrowEx(e);
             throw e;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
-        public static void ThrowClasslibDivideByZeroException(IntPtr address)
+        public static void ThrowClasslibDivideByZeroException()
         {
-            // Throw the divide by zero exception defined by the classlib, using the return address of the asm helper
-            // to find the correct classlib.
+            // Throw the divide by zero exception defined by the classlib, using the return address from this 
+            // helper to find the correct classlib.
 
-            Exception e = GetClasslibException(ExceptionIDs.DivideByZero, address);
+            ExceptionIDs exID = ExceptionIDs.DivideByZero;
+
+            IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
+            Exception e = GetClasslibException(exID, returnAddr);
 
             BinderIntrinsics.TailCall_RhpThrowEx(e);
             throw e;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [RuntimeExport("RhExceptionHandling_ThrowClasslibArithmeticException")]
+        public static void ThrowClasslibArithmeticException()
+        {
+            // Throw the arithmetic exception defined by the classlib, using the return address from this 
+            // helper to find the correct classlib.
+
+            ExceptionIDs exID = ExceptionIDs.Arithmetic;
+
+            IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
+            Exception e = GetClasslibException(exID, returnAddr);
+
+            BinderIntrinsics.TailCall_RhpThrowEx(e);
+            throw e;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [RuntimeExport("RhExceptionHandling_ThrowClasslibIndexOutOfRangeException")]
+        public static void ThrowClasslibIndexOutOfRangeException()
+        {
+            // Throw the index out of range exception defined by the classlib, using the return address from 
+            // this helper to find the correct classlib.
+
+            ExceptionIDs exID = ExceptionIDs.IndexOutOfRange;
+
+            IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
+            Exception e = GetClasslibException(exID, returnAddr);
+
+            BinderIntrinsics.TailCall_RhpThrowEx(e);
+            throw e;
+        }
+#endregion // ItWouldBeNiceToRemoveThese
+#endif
+
+        // This function is used to throw exceptions out of our fast allocation helpers, implemented in asm. We tail-call
+        // from the allocation helpers to this function, which performs the throw. The tail-call is important: it ensures
+        // that the stack is crawlable from within this function. Throwing from a sub-function is important, since this
+        // is how we enforce our locality requirements and ensure that the method that invokes "new" is the method that
+        // catches the exception.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(EETypePtr pEEType, bool fIsOverflow)
         {
+            // Throw the out of memory or overflow exception defined by the classlib, using the return address from this helper
+            // to find the correct classlib.
+
             ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
 
             // Throw the out of memory exception defined by the classlib, using the input EEType* 
             // to find the correct classlib.
-
             Exception e = pEEType.ToPointer()->GetClasslibException(exID);
 
             BinderIntrinsics.TailCall_RhpThrowEx(e);
         }
 
-#if !INPLACE_RUNTIME
+#if !CORERT
         private static OutOfMemoryException s_theOOMException = new OutOfMemoryException();
 
         // Rtm exports GetRuntimeException for the few cases where we have a helper that throws an exception

@@ -73,18 +73,16 @@ FASTCALL_ENDFUNC
         ;; make it look like the managed code called this directly
         ;; by popping the parameters and putting the return address in the proper place
 ThrowClasslibOverflowException proc
-        pop     ecx
+        pop     eax
         add     esp,16
-        push    ecx
-        ;; passing return address in ecx
+        push    eax
         jmp     RhExceptionHandling_ThrowClasslibOverflowException
 ThrowClasslibOverflowException endp
 
 ThrowClasslibDivideByZeroException proc
-        pop     ecx
+        pop     eax
         add     esp,16
-        push    ecx
-        ;; passing return address in ecx
+        push    eax
         jmp     RhExceptionHandling_ThrowClasslibDivideByZeroException
 ThrowClasslibDivideByZeroException endp
 
