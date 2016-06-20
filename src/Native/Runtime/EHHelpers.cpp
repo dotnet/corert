@@ -27,10 +27,9 @@
 #include "stressLog.h"
 
 // Find the code manager containing the given address, which might be a return address from a managed function. The
-// address may be to another managed function, or it may be to an unmanaged function, or it may be to a GC
-// hijack. The address may also refer to an EEType if we've been called from RhpGetClasslibFunction. If it is
-// a GC hijack, we will recognize that and use the real return address.
-static ICodeManager * FindCodeManagerRespectingReturnAddressHijacks(void * address)
+// address may be to another managed function, or it may be to an unmanaged function. The address may also refer to 
+// an EEType.
+static ICodeManager * FindCodeManagerForClasslibFunction(void * address)
 {
     RuntimeInstance * pRI = GetRuntimeInstance();
 
@@ -46,16 +45,7 @@ static ICodeManager * FindCodeManagerRespectingReturnAddressHijacks(void * addre
     if (pModule != NULL)
         return pModule;
 
-    // Corner-case: The thread might be hijacked -- @TODO: this is a bit brittle because there is no validation that
-    // the hijacked return address from the thread is actually related to place where the caller got the hijack 
-    // target.
-    Thread * pCurThread = ThreadStore::GetCurrentThread();
-    if (pCurThread->IsHijacked() && Thread::IsHijackTarget(address))
-    {
-        ICodeManager * pCodeManagerForHijack = pRI->FindCodeManagerByAddress(pCurThread->GetHijackedReturnAddress());
-        ASSERT_MSG(pCodeManagerForHijack != NULL, "expected to find the module for a hijacked return address");
-        return pCodeManagerForHijack;
-    }
+    ASSERT_MSG(!Thread::IsHijackTarget(address), "not expected to be called with hijacked return address");
 
     return NULL;
 }
@@ -82,7 +72,7 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunction, (void * address, ClasslibFun
     // Find the code manager for the given address, which is an address into some managed module. It could
     // be code, or it could be an EEType. No matter what, it's an address into a managed module in some non-Rtm
     // type system.
-    ICodeManager * pCodeManager = FindCodeManagerRespectingReturnAddressHijacks(address);
+    ICodeManager * pCodeManager = FindCodeManagerForClasslibFunction(address);
 
     // If the address isn't in a managed module then we have no classlib function.
     if (pCodeManager == NULL)

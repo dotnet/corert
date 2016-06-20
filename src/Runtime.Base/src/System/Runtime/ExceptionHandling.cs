@@ -537,7 +537,7 @@ namespace System.Runtime
 
             exInfo.Init(exceptionToThrow);
             DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
-            BinderIntrinsics.DebugBreak();
+            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
@@ -559,7 +559,7 @@ namespace System.Runtime
 
             exInfo.Init(exceptionObj);
             DispatchEx(ref exInfo._frameIter, ref exInfo, MaxTryRegionIdx);
-            BinderIntrinsics.DebugBreak();
+            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
         [RuntimeExport("RhRethrow")]
@@ -576,7 +576,7 @@ namespace System.Runtime
 
             exInfo.Init(rethrownException, ref activeExInfo);
             DispatchEx(ref exInfo._frameIter, ref exInfo, activeExInfo._idxCurClause);
-            BinderIntrinsics.DebugBreak();
+            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
         private static void DispatchEx(ref StackFrameIterator frameIter, ref ExInfo exInfo, uint startIdx)
@@ -686,7 +686,7 @@ namespace System.Runtime
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
             // currently, RhpCallCatchFunclet will resume after the catch
             Debug.Assert(false, "unreachable");
-            BinderIntrinsics.DebugBreak();
+            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
