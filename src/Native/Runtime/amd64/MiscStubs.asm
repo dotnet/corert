@@ -102,30 +102,6 @@ RhpCheckCctor2__SlowPath_FrameSize equ 20h + 10h + 8h ;; Scratch space + storage
 NESTED_END RhpCheckCctor2__SlowPath, _TEXT
 
 
-;;
-;; Input:
-;;      rcx: address of location on stack containing return address.
-;;      
-;; Outpt:
-;;      rax: proper (unhijacked) return address
-;;
-;; Trashes: rdx
-;;
-LEAF_ENTRY RhpLoadReturnAddress, _TEXT
-
-        INLINE_GETTHREAD   rax, rdx
-        cmp     rcx, [rax + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        je      GetHijackedReturnAddress
-        mov     rax, [rcx]
-        ret
-
-GetHijackedReturnAddress:
-        mov     rax, [rax + OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        ret
-
-LEAF_END RhpLoadReturnAddress, _TEXT
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* RhpCopyMultibyteNoGCRefs(void*, void*, size_t)

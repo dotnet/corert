@@ -97,31 +97,6 @@ RhpCheckCctor__SlowPath
 
     NESTED_END RhpCheckCctor__SlowPath2
 
-;;
-;; Input:
-;;      r0: address of location on stack containing return address.
-;;      
-;; Outpt:
-;;      r0: proper (unhijacked) return address
-;;
-;; Trashes: r1, r2
-;;
-    LEAF_ENTRY RhpLoadReturnAddress
-
-        INLINE_GETTHREAD   r1, r2
-        ldr     r2, [r1, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        cmp     r0, r2
-        beq     GetHijackedReturnAddress
-        ldr     r0, [r0]
-        bx      lr
-
-GetHijackedReturnAddress
-        ldr     r0, [r1, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        bx      lr
-
-    LEAF_END RhpLoadReturnAddress
-
-        INLINE_GETTHREAD_CONSTANT_POOL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
