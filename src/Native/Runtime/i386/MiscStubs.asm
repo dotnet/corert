@@ -98,28 +98,6 @@ RhpCheckCctor2__SlowPath:
 
 FASTCALL_ENDFUNC
 
-;;
-;; Input:
-;;      ecx: address of location on stack containing return address.
-;;      
-;; Outpt:
-;;      eax: proper (unhijacked) return address
-;;
-;; Trashes: ecx, edx
-;;
-FASTCALL_FUNC RhpLoadReturnAddress, 0
-
-        INLINE_GETTHREAD   eax, edx
-        cmp     ecx, [eax + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        je      GetHijackedReturnAddress
-        mov     eax, [ecx]
-        ret
-
-GetHijackedReturnAddress:
-        mov     eax, [eax + OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        ret
-
-FASTCALL_ENDFUNC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
