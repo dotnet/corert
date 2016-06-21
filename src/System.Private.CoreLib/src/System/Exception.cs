@@ -279,6 +279,10 @@ namespace System
             return s;
         }
 
+        // The following fields (_message, _innerException and _HResult) are required for interop with the SOS
+        // Prior to making any changes to these fields, please reach out to the CLR Diagnostics
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
         internal String _message;
         private IDictionary _data;
         private Exception _innerException;
@@ -315,6 +319,11 @@ namespace System
             }
             return ips;
         }
+
+        // The following fields (_corDbgStackTrace and _idxFirstFreeStackTraceEntry) are required for interop with the SOS
+        // Prior to making any changes to these fields, please reach out to the CLR Diagnostics
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
 
         // _corDbgStackTrace: Do not rename: This is for the use of the CorDbg interface. Contains the stack trace as an array of EIP's (ordered from
         // most nested call to least.) May also include a few "special" IP's from the SpecialIP class:

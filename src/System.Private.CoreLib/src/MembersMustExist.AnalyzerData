@@ -256,3 +256,12 @@ private static volatile System.Collections.Generic.ArraySortHelper<TKey, TValue>
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentCulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentUICulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
+
+# SOS
+internal string System.Exception._message
+private System.Exception System.Exception._innerException
+private System.IntPtr[] System.Exception._corDbgStackTrace
+private int System.Exception._idxFirstFreeStackTraceEntry
+private int System.Exception._HResult
+
+# NOTE: SOS is currently accessing m_target of some CCW object, that field no longer exists, that is probably a bug
