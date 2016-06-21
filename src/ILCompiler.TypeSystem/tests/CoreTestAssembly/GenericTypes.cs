@@ -25,4 +25,38 @@ namespace GenericTypes
         }
     }
 
+    /// <summary>
+    /// Generic class with multiple parameters to be used for testing.
+    /// </summary>
+    public class TwoParamGenericClass<T,U>
+    {
+        /// <summary>
+        /// Purpose is to allow testing of the properties of non-generic methods on generic types
+        /// </summary>
+        public void NonGenericFunction()
+        {
+        }
+
+        /// <summary>
+        /// Purpose is to allow testing of the properties of generic methods on generic types
+        /// </summary>
+        public void GenericFunction<K, V>()
+        {
+        }
+    }
+
+    /// <summary>
+    /// Non-generic type which has a generic method in it
+    /// </summary>
+    public class NonGenericClass
+    {
+        /// <summary>
+        /// Purpose is to allow testing the properties of generic methods on nongeneric types
+        /// </summary>
+        /// <typeparam name="K"></typeparam>
+        /// <typeparam name="V"></typeparam>
+        public void GenericFunction<K, V>()
+        {
+        }
+    }
 }

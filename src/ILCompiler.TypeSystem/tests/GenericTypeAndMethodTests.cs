@@ -42,7 +42,7 @@ namespace TypeSystemTests
             Assert.True(fooMethod.IsTypicalMethodDefinition);
 
             // Verify that instantiating a method definition has no effect
-            MethodDesc instantiatedMethod = fooMethod.InstantiateSignature( new Instantiation(_context.GetWellKnownType(WellKnownType.Int32)), Instantiation.Empty);
+            MethodDesc instantiatedMethod = fooMethod.InstantiateSignature(new Instantiation(_context.GetWellKnownType(WellKnownType.Int32)), Instantiation.Empty);
             Assert.Same(fooMethod, instantiatedMethod);
 
             MetadataType instantiatedType = t.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
@@ -80,6 +80,143 @@ namespace TypeSystemTests
             MethodSignature sig = new MethodSignature(MethodSignatureFlags.None, 0, t.Instantiation[0], new TypeDesc[0] { });
             MethodDesc fooMethod = t.GetMethod("Foo", sig);
             Assert.NotNull(fooMethod);
+        }
+
+        [Fact]
+        public void TestConstructedTypeAdjustment()
+        {
+            TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
+            TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);
+            TypeDesc charType = _context.GetWellKnownType(WellKnownType.Char);
+            TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
+
+            MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
+
+            InstantiatedType genericOfCharObject = genericOpenType.MakeInstantiatedType(charType, objectType);
+            InstantiatedType genericOfCharString = genericOpenType.MakeInstantiatedType(charType, stringType);
+            InstantiatedType genericOfIntString = genericOpenType.MakeInstantiatedType(intType, stringType);
+            InstantiatedType genericOfIntObject = genericOpenType.MakeInstantiatedType(intType, objectType);
+
+            Assert.Equal(true, genericOfCharObject.IsConstructedOverType(new TypeDesc[] { charType }));
+            Assert.Equal(true, genericOfCharObject.IsConstructedOverType(new TypeDesc[] { objectType }));
+            Assert.Equal(false, genericOfCharObject.IsConstructedOverType(new TypeDesc[] { intType }));
+            Assert.Equal(false, genericOfCharObject.IsConstructedOverType(new TypeDesc[] { stringType }));
+            Assert.Equal(false, genericOfCharObject.IsConstructedOverType(new TypeDesc[] { genericOpenType }));
+
+            Assert.Equal(true, genericOfCharString.IsConstructedOverType(new TypeDesc[] { charType }));
+            Assert.Equal(false, genericOfCharString.IsConstructedOverType(new TypeDesc[] { objectType }));
+            Assert.Equal(false, genericOfCharString.IsConstructedOverType(new TypeDesc[] { intType }));
+            Assert.Equal(true, genericOfCharString.IsConstructedOverType(new TypeDesc[] { stringType }));
+
+            // Test direct replacement
+            TypeDesc testDirectReplaceAllTypes = genericOfCharObject.ReplaceTypesInConstructionOfType(new TypeDesc[] { charType, objectType }, new TypeDesc[] { intType, stringType });
+            Assert.Equal(genericOfIntString, testDirectReplaceAllTypes);
+
+            // Test direct replacement where not all types are replaced
+            TypeDesc testDirectReplaceFirstType = genericOfCharObject.ReplaceTypesInConstructionOfType(new TypeDesc[] { charType }, new TypeDesc[] { intType });
+            Assert.Equal(genericOfIntObject, testDirectReplaceFirstType);
+
+            TypeDesc testDirectReplaceSecondType = genericOfCharObject.ReplaceTypesInConstructionOfType(new TypeDesc[] { objectType }, new TypeDesc[] { stringType });
+            Assert.Equal(genericOfCharString, testDirectReplaceSecondType);
+
+            // Test Arrays
+            TypeDesc arrayChar = _context.GetArrayType(charType);
+            TypeDesc arrayInt = _context.GetArrayType(intType);
+
+            InstantiatedType genericOfCharArrayObject = genericOpenType.MakeInstantiatedType(arrayChar, objectType);
+            InstantiatedType genericOfIntArrayObject = genericOpenType.MakeInstantiatedType(arrayInt, objectType);
+            TypeDesc testReplaceTypeInArrayInGeneric = genericOfCharArrayObject.ReplaceTypesInConstructionOfType(new TypeDesc[] { charType }, new TypeDesc[] { intType });
+            Assert.Equal(genericOfIntArrayObject, testReplaceTypeInArrayInGeneric);
+
+            // Test multidimensional arrays
+            TypeDesc mdArrayChar = _context.GetArrayType(charType, 3);
+            TypeDesc mdArrayInt = _context.GetArrayType(intType, 3);
+
+            InstantiatedType genericOfCharMdArrayObject = genericOpenType.MakeInstantiatedType(mdArrayChar, objectType);
+            InstantiatedType genericOfIntMdArrayObject = genericOpenType.MakeInstantiatedType(mdArrayInt, objectType);
+            TypeDesc testReplaceTypeInMdArrayInGeneric = genericOfCharMdArrayObject.ReplaceTypesInConstructionOfType(new TypeDesc[] { charType }, new TypeDesc[] { intType });
+            Assert.Equal(genericOfIntMdArrayObject, testReplaceTypeInMdArrayInGeneric);
+
+            // Test pointers
+            TypeDesc charPointer = _context.GetPointerType(charType);
+            TypeDesc intPointer = _context.GetPointerType(intType);
+            TypeDesc testReplaceTypeInPointer = charPointer.ReplaceTypesInConstructionOfType(new TypeDesc[] { charType }, new TypeDesc[] { intType });
+            Assert.Equal(intPointer, testReplaceTypeInPointer);
+
+            Assert.Equal(true, charPointer.IsConstructedOverType(new TypeDesc[] { charType }));
+            Assert.Equal(false, charPointer.IsConstructedOverType(new TypeDesc[] { intType }));
+
+            // Test byref
+            TypeDesc charByRef = _context.GetByRefType(charType);
+            TypeDesc intByRef = _context.GetByRefType(intType);
+            TypeDesc testReplaceTypeInByRef = charByRef.ReplaceTypesInConstructionOfType(new TypeDesc[] { charType }, new TypeDesc[] { intType });
+            Assert.Equal(intByRef, testReplaceTypeInByRef);
+
+            Assert.Equal(true, charByRef.IsConstructedOverType(new TypeDesc[] { charType }));
+            Assert.Equal(false, charByRef.IsConstructedOverType(new TypeDesc[] { intType }));
+
+            // Test replace type entirely
+            TypeDesc testReplaceTypeEntirely = charByRef.ReplaceTypesInConstructionOfType(new TypeDesc[] { charByRef }, new TypeDesc[] { intByRef });
+            Assert.Equal(intByRef, testReplaceTypeEntirely);
+            Assert.Equal(true, charByRef.IsConstructedOverType(new TypeDesc[] { charByRef }));
+        }
+
+        [Fact]
+        public void TestConstructedMethodAdjustment()
+        {
+            TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
+            TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);
+            TypeDesc charType = _context.GetWellKnownType(WellKnownType.Char);
+            TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
+
+            MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
+            MetadataType nonGenericType = _testModule.GetType("GenericTypes", "NonGenericClass");
+
+            MethodDesc nonGenericOnGeneric = genericOpenType.GetMethod("NonGenericFunction", null);
+            MethodDesc genericOnGeneric = genericOpenType.GetMethod("GenericFunction", null);
+            MethodDesc genericOnNonGeneric = nonGenericType.GetMethod("GenericFunction", null);
+
+            InstantiatedType genericIntString = genericOpenType.MakeInstantiatedType(intType, stringType);
+            InstantiatedType genericCharString = genericOpenType.MakeInstantiatedType(charType, stringType);
+            InstantiatedType genericCharObject = genericOpenType.MakeInstantiatedType(charType, objectType);
+
+            MethodDesc nonGenericOnGenericIntString = genericIntString.GetMethod("NonGenericFunction", null);
+            MethodDesc nonGenericOnGenericCharString = genericCharString.GetMethod("NonGenericFunction", null);
+            MethodDesc nonGenericOnGenericCharObject = genericCharObject.GetMethod("NonGenericFunction", null);
+
+            MethodDesc genericIntStringOnGenericIntString = genericIntString.GetMethod("GenericFunction", null).MakeInstantiatedMethod(intType, stringType);
+            MethodDesc genericCharStringOnGenericCharString = genericCharString.GetMethod("GenericFunction", null).MakeInstantiatedMethod(charType, stringType);
+            MethodDesc genericCharObjectOnGenericCharObject = genericCharObject.GetMethod("GenericFunction", null).MakeInstantiatedMethod(charType, objectType);
+
+            MethodDesc genericIntStringOnNonGeneric = genericOnNonGeneric.MakeInstantiatedMethod(intType, stringType);
+            MethodDesc genericCharStringOnNonGeneric = genericOnNonGeneric.MakeInstantiatedMethod(charType, stringType);
+            MethodDesc genericCharObjectOnNonGeneric = genericOnNonGeneric.MakeInstantiatedMethod(charType, objectType);
+
+            // Test complete replacement
+            MethodDesc testDirectReplacementNonGenericOnGeneric = nonGenericOnGenericIntString.ReplaceTypesInConstructionOfMethod(new TypeDesc[] { intType, stringType }, new TypeDesc[] { charType, objectType });
+            Assert.Equal(nonGenericOnGenericCharObject, testDirectReplacementNonGenericOnGeneric);
+            MethodDesc testDirectReplacementGenericOnGeneric = genericIntStringOnGenericIntString.ReplaceTypesInConstructionOfMethod(new TypeDesc[] { intType, stringType }, new TypeDesc[] { charType, objectType });
+            Assert.Equal(genericCharObjectOnGenericCharObject, testDirectReplacementGenericOnGeneric);
+            MethodDesc testDirectReplacementGenericOnNonGeneric = genericIntStringOnNonGeneric.ReplaceTypesInConstructionOfMethod(new TypeDesc[] { intType, stringType }, new TypeDesc[] { charType, objectType });
+            Assert.Equal(genericCharObjectOnNonGeneric, testDirectReplacementGenericOnNonGeneric);
+
+            // Test replace first type in instantiation
+            MethodDesc testPartialReplacementNonGenericOnGeneric = nonGenericOnGenericIntString.ReplaceTypesInConstructionOfMethod(new TypeDesc[] { intType }, new TypeDesc[] { charType });
+            Assert.Equal(nonGenericOnGenericCharString, testPartialReplacementNonGenericOnGeneric);
+            MethodDesc testPartialReplacementGenericOnGeneric = genericIntStringOnGenericIntString.ReplaceTypesInConstructionOfMethod(new TypeDesc[] { intType }, new TypeDesc[] { charType });
+            Assert.Equal(genericCharStringOnGenericCharString, testPartialReplacementGenericOnGeneric);
+            MethodDesc testPartialReplacementGenericOnNonGeneric = genericIntStringOnNonGeneric.ReplaceTypesInConstructionOfMethod(new TypeDesc[] { intType }, new TypeDesc[] { charType });
+            Assert.Equal(genericCharStringOnNonGeneric, testPartialReplacementGenericOnNonGeneric);
+
+            // Test ArrayMethod case
+            ArrayType mdArrayChar = _context.GetArrayType(charType, 3);
+            ArrayType mdArrayInt = _context.GetArrayType(intType, 3);
+
+            MethodDesc getMethodOnMDIntArray = mdArrayInt.GetArrayMethod(ArrayMethodKind.Get);
+            MethodDesc getMethodOnMDCharArray = mdArrayChar.GetArrayMethod(ArrayMethodKind.Get);
+
+            MethodDesc testArrayMethodCase = getMethodOnMDIntArray.ReplaceTypesInConstructionOfMethod(new TypeDesc[] { intType }, new TypeDesc[] { charType });
+            Assert.Equal(getMethodOnMDCharArray, testArrayMethodCase);
         }
     }
 }

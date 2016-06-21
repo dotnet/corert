@@ -79,7 +79,7 @@ namespace Internal.TypeSystem
             return type.GetMethod(".ctor", sig);
         }
 
-        static private MethodDesc FindMethodOnExactTypeWithMatchingTypicalMethod(this TypeDesc type, MethodDesc method)
+        static internal MethodDesc FindMethodOnExactTypeWithMatchingTypicalMethod(this TypeDesc type, MethodDesc method)
         {
             MethodDesc methodTypicalDefinition = method.GetTypicalMethodDefinition();
 
@@ -88,6 +88,11 @@ namespace Internal.TypeSystem
             {
                 Debug.Assert(instantiatedType.GetTypeDefinition() == methodTypicalDefinition.OwningType);
                 return method.Context.GetMethodForInstantiatedType(methodTypicalDefinition, instantiatedType);
+            }
+            else if (type.IsArray)
+            {
+                Debug.Assert(method.OwningType.IsArray);
+                return ((ArrayType)type).GetArrayMethod(((ArrayMethod)method).Kind);
             }
             else
             {
