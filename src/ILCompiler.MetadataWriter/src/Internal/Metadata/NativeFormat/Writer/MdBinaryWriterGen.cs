@@ -263,12 +263,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.WriteUnsigned((uint)value);
         } // Write
 
-        public static void Write(this NativeWriter writer, PInvokeAttributes value)
+        public static void Write(this NativeWriter writer, ParameterAttributes value)
         {
             writer.WriteUnsigned((uint)value);
         } // Write
 
-        public static void Write(this NativeWriter writer, ParameterAttributes value)
+        public static void Write(this NativeWriter writer, PInvokeAttributes value)
         {
             writer.WriteUnsigned((uint)value);
         } // Write
@@ -292,556 +292,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count());
             foreach (MetadataRecord value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, TypeDefinition record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<TypeDefinition> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (TypeDefinition value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, TypeReference record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<TypeReference> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (TypeReference value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, TypeSpecification record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<TypeSpecification> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (TypeSpecification value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ScopeDefinition record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<ScopeDefinition> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (ScopeDefinition value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ScopeReference record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<ScopeReference> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (ScopeReference value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, NamespaceDefinition record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<NamespaceDefinition> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (NamespaceDefinition value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, NamespaceReference record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<NamespaceReference> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (NamespaceReference value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, Method record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<Method> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (Method value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, QualifiedMethod record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<QualifiedMethod> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (QualifiedMethod value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, MethodInstantiation record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<MethodInstantiation> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (MethodInstantiation value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, MemberReference record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<MemberReference> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (MemberReference value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, Field record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<Field> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (Field value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, QualifiedField record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<QualifiedField> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (QualifiedField value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, Property record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<Property> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (Property value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, Event record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<Event> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (Event value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, CustomAttribute record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<CustomAttribute> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (CustomAttribute value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, FixedArgument record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<FixedArgument> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (FixedArgument value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, NamedArgument record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<NamedArgument> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (NamedArgument value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ConstantBoxedEnumValue record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantBoxedEnumValue> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (ConstantBoxedEnumValue value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, GenericParameter record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<GenericParameter> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (GenericParameter value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, MethodImpl record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<MethodImpl> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (MethodImpl value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, Parameter record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<Parameter> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (Parameter value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, MethodSemantics record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<MethodSemantics> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (MethodSemantics value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, TypeInstantiationSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<TypeInstantiationSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (TypeInstantiationSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, SZArraySignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<SZArraySignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (SZArraySignature value in values)
             {
                 writer.Write(value);
             }
@@ -891,226 +341,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, PointerSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<PointerSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (PointerSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, TypeVariableSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<TypeVariableSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (TypeVariableSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, MethodTypeVariableSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<MethodTypeVariableSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (MethodTypeVariableSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, FieldSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<FieldSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (FieldSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, PropertySignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<PropertySignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (PropertySignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, MethodSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<MethodSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (MethodSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ReturnTypeSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<ReturnTypeSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (ReturnTypeSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ParameterTypeSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<ParameterTypeSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (ParameterTypeSignature value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, TypeForwarder record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<TypeForwarder> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (TypeForwarder value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, CustomModifier record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, IEnumerable<CustomModifier> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count());
-            foreach (CustomModifier value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, ConstantBooleanArray record)
         {
             if (record != null)
@@ -1150,6 +380,28 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count());
             foreach (ConstantBooleanValue value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, ConstantBoxedEnumValue record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<ConstantBoxedEnumValue> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (ConstantBoxedEnumValue value in values)
             {
                 writer.Write(value);
             }
@@ -1722,6 +974,754 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count());
             foreach (ConstantUInt64Value value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, CustomAttribute record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<CustomAttribute> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (CustomAttribute value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, CustomModifier record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<CustomModifier> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (CustomModifier value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, Event record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<Event> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (Event value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, Field record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<Field> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (Field value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, FieldSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<FieldSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (FieldSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, FixedArgument record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<FixedArgument> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (FixedArgument value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, GenericParameter record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<GenericParameter> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (GenericParameter value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, MemberReference record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<MemberReference> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (MemberReference value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, Method record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<Method> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (Method value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, MethodImpl record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<MethodImpl> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (MethodImpl value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, MethodInstantiation record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<MethodInstantiation> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (MethodInstantiation value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, MethodSemantics record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<MethodSemantics> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (MethodSemantics value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, MethodSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<MethodSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (MethodSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, MethodTypeVariableSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<MethodTypeVariableSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (MethodTypeVariableSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, NamedArgument record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<NamedArgument> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (NamedArgument value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, NamespaceDefinition record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<NamespaceDefinition> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (NamespaceDefinition value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, NamespaceReference record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<NamespaceReference> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (NamespaceReference value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, Parameter record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<Parameter> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (Parameter value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, ParameterTypeSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<ParameterTypeSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (ParameterTypeSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, PointerSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<PointerSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (PointerSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, Property record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<Property> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (Property value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, PropertySignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<PropertySignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (PropertySignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, QualifiedField record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<QualifiedField> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (QualifiedField value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, QualifiedMethod record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<QualifiedMethod> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (QualifiedMethod value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, ReturnTypeSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<ReturnTypeSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (ReturnTypeSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, SZArraySignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<SZArraySignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (SZArraySignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, ScopeDefinition record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<ScopeDefinition> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (ScopeDefinition value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, ScopeReference record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<ScopeReference> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (ScopeReference value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, TypeDefinition record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<TypeDefinition> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (TypeDefinition value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, TypeForwarder record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<TypeForwarder> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (TypeForwarder value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, TypeInstantiationSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<TypeInstantiationSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (TypeInstantiationSignature value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, TypeReference record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<TypeReference> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (TypeReference value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, TypeSpecification record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<TypeSpecification> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (TypeSpecification value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
+        public static void Write(this NativeWriter writer, TypeVariableSignature record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, IEnumerable<TypeVariableSignature> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count());
+            foreach (TypeVariableSignature value in values)
             {
                 writer.Write(value);
             }
