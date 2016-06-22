@@ -1045,6 +1045,10 @@ namespace System.Runtime.InteropServices
         /// </summary>
         __ComObject m_innerRCW;
 
+        // The following field is required for interop with the SOS
+        // Prior to making any changes to this field, please reach out to the CLR Diagnostics
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
         /// <summary>
         /// Points to the target object
         /// </summary>
