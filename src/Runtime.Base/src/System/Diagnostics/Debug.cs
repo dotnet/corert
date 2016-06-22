@@ -18,5 +18,15 @@ namespace System.Diagnostics
                 EH.FallbackFailFast(RhFailFastReason.InternalError, null);
             }
         }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void Assert(bool condition)
+        {
+            if (!condition)
+            {
+                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+            }
+        }
     }
 }

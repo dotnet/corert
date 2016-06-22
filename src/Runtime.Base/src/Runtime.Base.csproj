@@ -107,7 +107,6 @@
     <Compile Include="System\Diagnostics\Debug.cs" />
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
-    <Compile Include="System\Runtime\EEType.cs" />
     <Compile Include="System\Runtime\EEType.Runtime.cs" />
     <Compile Include="System\Runtime\EETypePtr.cs" />
     <Compile Include="System\Runtime\ExceptionHandling.cs" />
@@ -142,6 +141,12 @@
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
       <Link>Common\EEType.Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs" >
+      <Link>Common\EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs" >
+      <Link>Common\NativeFormatReader.Primitives.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
