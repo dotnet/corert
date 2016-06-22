@@ -68,6 +68,18 @@ namespace Internal.Metadata.NativeFormat
     } // GenericParameterKind
 
     /// <summary>
+    /// NamedArgumentMemberKind
+    /// </summary>
+    public enum NamedArgumentMemberKind : byte
+    {
+        /// Specifies the name of a property
+        Property = 0x0,
+
+        /// Specifies the name of a field
+        Field = 0x1,
+    } // NamedArgumentMemberKind
+
+    /// <summary>
     /// HandleType
     /// </summary>
     public enum HandleType : byte
@@ -139,18 +151,6 @@ namespace Internal.Metadata.NativeFormat
         TypeSpecification = 0x40,
         TypeVariableSignature = 0x41,
     } // HandleType
-
-    /// <summary>
-    /// NamedArgumentMemberKind
-    /// </summary>
-    public enum NamedArgumentMemberKind : byte
-    {
-        /// Specifies the name of a property
-        Property = 0x0,
-
-        /// Specifies the name of a field
-        Field = 0x1,
-    } // NamedArgumentMemberKind
 
     /// <summary>
     /// IArraySignature
@@ -1755,91 +1755,6 @@ namespace Internal.Metadata.NativeFormat
     } // GenericParameterHandle
 
     /// <summary>
-    /// IHandle
-    /// </summary>
-    internal interface IHandle : IEquatable<Handle>, IEquatable<Object>
-    {
-        int GetHashCode();
-        HandleType HandleType
-        {
-            get;
-        } // HandleType
-
-        PropertySignatureHandle ToPropertySignatureHandle(MetadataReader reader);
-        MethodSemanticsHandle ToMethodSemanticsHandle(MetadataReader reader);
-        ByReferenceSignatureHandle ToByReferenceSignatureHandle(MetadataReader reader);
-        ConstantStringArrayHandle ToConstantStringArrayHandle(MetadataReader reader);
-        ConstantInt64ValueHandle ToConstantInt64ValueHandle(MetadataReader reader);
-        ConstantReferenceValueHandle ToConstantReferenceValueHandle(MetadataReader reader);
-        NamespaceReferenceHandle ToNamespaceReferenceHandle(MetadataReader reader);
-        ScopeDefinitionHandle ToScopeDefinitionHandle(MetadataReader reader);
-        PointerSignatureHandle ToPointerSignatureHandle(MetadataReader reader);
-        ReturnTypeSignatureHandle ToReturnTypeSignatureHandle(MetadataReader reader);
-        ConstantSByteArrayHandle ToConstantSByteArrayHandle(MetadataReader reader);
-        ConstantInt16ArrayHandle ToConstantInt16ArrayHandle(MetadataReader reader);
-        ConstantStringValueHandle ToConstantStringValueHandle(MetadataReader reader);
-        MethodTypeVariableSignatureHandle ToMethodTypeVariableSignatureHandle(MetadataReader reader);
-        TypeForwarderHandle ToTypeForwarderHandle(MetadataReader reader);
-        ConstantInt16ValueHandle ToConstantInt16ValueHandle(MetadataReader reader);
-        ConstantUInt32ArrayHandle ToConstantUInt32ArrayHandle(MetadataReader reader);
-        ConstantByteArrayHandle ToConstantByteArrayHandle(MetadataReader reader);
-        FieldHandle ToFieldHandle(MetadataReader reader);
-        NamedArgumentHandle ToNamedArgumentHandle(MetadataReader reader);
-        TypeReferenceHandle ToTypeReferenceHandle(MetadataReader reader);
-        ConstantHandleArrayHandle ToConstantHandleArrayHandle(MetadataReader reader);
-        CustomAttributeHandle ToCustomAttributeHandle(MetadataReader reader);
-        ConstantByteValueHandle ToConstantByteValueHandle(MetadataReader reader);
-        ConstantSingleArrayHandle ToConstantSingleArrayHandle(MetadataReader reader);
-        MemberReferenceHandle ToMemberReferenceHandle(MetadataReader reader);
-        ArraySignatureHandle ToArraySignatureHandle(MetadataReader reader);
-        MethodHandle ToMethodHandle(MetadataReader reader);
-        QualifiedMethodHandle ToQualifiedMethodHandle(MetadataReader reader);
-        ConstantUInt32ValueHandle ToConstantUInt32ValueHandle(MetadataReader reader);
-        ConstantCharArrayHandle ToConstantCharArrayHandle(MetadataReader reader);
-        TypeVariableSignatureHandle ToTypeVariableSignatureHandle(MetadataReader reader);
-        ConstantCharValueHandle ToConstantCharValueHandle(MetadataReader reader);
-        ScopeReferenceHandle ToScopeReferenceHandle(MetadataReader reader);
-        MethodSignatureHandle ToMethodSignatureHandle(MetadataReader reader);
-        ConstantBoxedEnumValueHandle ToConstantBoxedEnumValueHandle(MetadataReader reader);
-        CustomModifierHandle ToCustomModifierHandle(MetadataReader reader);
-        ConstantSingleValueHandle ToConstantSingleValueHandle(MetadataReader reader);
-        ConstantSByteValueHandle ToConstantSByteValueHandle(MetadataReader reader);
-        ConstantUInt16ArrayHandle ToConstantUInt16ArrayHandle(MetadataReader reader);
-        ConstantUInt64ValueHandle ToConstantUInt64ValueHandle(MetadataReader reader);
-        TypeDefinitionHandle ToTypeDefinitionHandle(MetadataReader reader);
-        ConstantInt32ValueHandle ToConstantInt32ValueHandle(MetadataReader reader);
-        ConstantInt64ArrayHandle ToConstantInt64ArrayHandle(MetadataReader reader);
-        FixedArgumentHandle ToFixedArgumentHandle(MetadataReader reader);
-        ParameterTypeSignatureHandle ToParameterTypeSignatureHandle(MetadataReader reader);
-        PropertyHandle ToPropertyHandle(MetadataReader reader);
-        ConstantDoubleArrayHandle ToConstantDoubleArrayHandle(MetadataReader reader);
-        FieldSignatureHandle ToFieldSignatureHandle(MetadataReader reader);
-        MethodInstantiationHandle ToMethodInstantiationHandle(MetadataReader reader);
-        ConstantUInt64ArrayHandle ToConstantUInt64ArrayHandle(MetadataReader reader);
-        ConstantBooleanValueHandle ToConstantBooleanValueHandle(MetadataReader reader);
-        NamespaceDefinitionHandle ToNamespaceDefinitionHandle(MetadataReader reader);
-        MethodImplHandle ToMethodImplHandle(MetadataReader reader);
-        TypeSpecificationHandle ToTypeSpecificationHandle(MetadataReader reader);
-        ConstantInt32ArrayHandle ToConstantInt32ArrayHandle(MetadataReader reader);
-        EventHandle ToEventHandle(MetadataReader reader);
-        QualifiedFieldHandle ToQualifiedFieldHandle(MetadataReader reader);
-        ConstantUInt16ValueHandle ToConstantUInt16ValueHandle(MetadataReader reader);
-        ConstantBooleanArrayHandle ToConstantBooleanArrayHandle(MetadataReader reader);
-        GenericParameterHandle ToGenericParameterHandle(MetadataReader reader);
-        TypeInstantiationSignatureHandle ToTypeInstantiationSignatureHandle(MetadataReader reader);
-        SZArraySignatureHandle ToSZArraySignatureHandle(MetadataReader reader);
-        ConstantDoubleValueHandle ToConstantDoubleValueHandle(MetadataReader reader);
-        ParameterHandle ToParameterHandle(MetadataReader reader);
-    } // IHandle
-
-    /// <summary>
-    /// Handle
-    /// </summary>
-    public partial struct Handle : IHandle
-    {
-    } // Handle
-
-    /// <summary>
     /// IMemberReference
     /// </summary>
     internal interface IMemberReference
@@ -1892,93 +1807,6 @@ namespace Internal.Metadata.NativeFormat
     public partial struct MemberReferenceHandle : IMemberReferenceHandle
     {
     } // MemberReferenceHandle
-
-    /// <summary>
-    /// IMetadataReader
-    /// </summary>
-    public interface IMetadataReader
-    {
-        ConstantInt64Value GetConstantInt64Value(ConstantInt64ValueHandle handle);
-        Property GetProperty(PropertyHandle handle);
-        SZArraySignature GetSZArraySignature(SZArraySignatureHandle handle);
-        TypeDefinition GetTypeDefinition(TypeDefinitionHandle handle);
-        ParameterTypeSignature GetParameterTypeSignature(ParameterTypeSignatureHandle handle);
-        ConstantDoubleValue GetConstantDoubleValue(ConstantDoubleValueHandle handle);
-        ConstantCharValue GetConstantCharValue(ConstantCharValueHandle handle);
-        ConstantBooleanValue GetConstantBooleanValue(ConstantBooleanValueHandle handle);
-        ConstantSingleArray GetConstantSingleArray(ConstantSingleArrayHandle handle);
-        ConstantUInt64Array GetConstantUInt64Array(ConstantUInt64ArrayHandle handle);
-        ConstantInt16Array GetConstantInt16Array(ConstantInt16ArrayHandle handle);
-        ConstantSByteValue GetConstantSByteValue(ConstantSByteValueHandle handle);
-        ConstantByteValue GetConstantByteValue(ConstantByteValueHandle handle);
-        ScopeDefinition GetScopeDefinition(ScopeDefinitionHandle handle);
-        ArraySignature GetArraySignature(ArraySignatureHandle handle);
-        ConstantInt32Array GetConstantInt32Array(ConstantInt32ArrayHandle handle);
-        ConstantUInt32Array GetConstantUInt32Array(ConstantUInt32ArrayHandle handle);
-        ScopeReference GetScopeReference(ScopeReferenceHandle handle);
-        MethodInstantiation GetMethodInstantiation(MethodInstantiationHandle handle);
-        CustomModifier GetCustomModifier(CustomModifierHandle handle);
-        ConstantDoubleArray GetConstantDoubleArray(ConstantDoubleArrayHandle handle);
-        Event GetEvent(EventHandle handle);
-        ConstantSByteArray GetConstantSByteArray(ConstantSByteArrayHandle handle);
-        ReturnTypeSignature GetReturnTypeSignature(ReturnTypeSignatureHandle handle);
-        ConstantBoxedEnumValue GetConstantBoxedEnumValue(ConstantBoxedEnumValueHandle handle);
-        ConstantInt32Value GetConstantInt32Value(ConstantInt32ValueHandle handle);
-        ConstantSingleValue GetConstantSingleValue(ConstantSingleValueHandle handle);
-        Parameter GetParameter(ParameterHandle handle);
-        QualifiedMethod GetQualifiedMethod(QualifiedMethodHandle handle);
-        ConstantUInt16Value GetConstantUInt16Value(ConstantUInt16ValueHandle handle);
-        ConstantInt16Value GetConstantInt16Value(ConstantInt16ValueHandle handle);
-        ConstantCharArray GetConstantCharArray(ConstantCharArrayHandle handle);
-        TypeVariableSignature GetTypeVariableSignature(TypeVariableSignatureHandle handle);
-        ConstantStringArray GetConstantStringArray(ConstantStringArrayHandle handle);
-        ByReferenceSignature GetByReferenceSignature(ByReferenceSignatureHandle handle);
-        TypeReference GetTypeReference(TypeReferenceHandle handle);
-        ConstantUInt32Value GetConstantUInt32Value(ConstantUInt32ValueHandle handle);
-        ConstantUInt64Value GetConstantUInt64Value(ConstantUInt64ValueHandle handle);
-        MethodImpl GetMethodImpl(MethodImplHandle handle);
-        MethodSemantics GetMethodSemantics(MethodSemanticsHandle handle);
-        GenericParameter GetGenericParameter(GenericParameterHandle handle);
-        MethodTypeVariableSignature GetMethodTypeVariableSignature(MethodTypeVariableSignatureHandle handle);
-        TypeInstantiationSignature GetTypeInstantiationSignature(TypeInstantiationSignatureHandle handle);
-        FieldSignature GetFieldSignature(FieldSignatureHandle handle);
-        NamespaceReference GetNamespaceReference(NamespaceReferenceHandle handle);
-        MethodSignature GetMethodSignature(MethodSignatureHandle handle);
-        PointerSignature GetPointerSignature(PointerSignatureHandle handle);
-        NamedArgument GetNamedArgument(NamedArgumentHandle handle);
-        ConstantStringValue GetConstantStringValue(ConstantStringValueHandle handle);
-        CustomAttribute GetCustomAttribute(CustomAttributeHandle handle);
-        ConstantInt64Array GetConstantInt64Array(ConstantInt64ArrayHandle handle);
-        MemberReference GetMemberReference(MemberReferenceHandle handle);
-        ConstantReferenceValue GetConstantReferenceValue(ConstantReferenceValueHandle handle);
-        FixedArgument GetFixedArgument(FixedArgumentHandle handle);
-        Field GetField(FieldHandle handle);
-        ConstantByteArray GetConstantByteArray(ConstantByteArrayHandle handle);
-        ConstantHandleArray GetConstantHandleArray(ConstantHandleArrayHandle handle);
-        Method GetMethod(MethodHandle handle);
-        ConstantBooleanArray GetConstantBooleanArray(ConstantBooleanArrayHandle handle);
-        QualifiedField GetQualifiedField(QualifiedFieldHandle handle);
-        TypeForwarder GetTypeForwarder(TypeForwarderHandle handle);
-        NamespaceDefinition GetNamespaceDefinition(NamespaceDefinitionHandle handle);
-        PropertySignature GetPropertySignature(PropertySignatureHandle handle);
-        ConstantUInt16Array GetConstantUInt16Array(ConstantUInt16ArrayHandle handle);
-        TypeSpecification GetTypeSpecification(TypeSpecificationHandle handle);
-        IEnumerable<ScopeDefinitionHandle> ScopeDefinitions
-        {
-            get;
-        } // ScopeDefinitions
-        Handle NullHandle
-        {
-            get;
-        } // NullHandle
-    } // IMetadataReader
-
-    /// <summary>
-    /// MetadataReader
-    /// </summary>
-    public partial class MetadataReader : IMetadataReader
-    {
-    } // MetadataReader
 
     /// <summary>
     /// IMethod
@@ -3378,4 +3206,179 @@ namespace Internal.Metadata.NativeFormat
     public partial struct TypeVariableSignatureHandle : ITypeVariableSignatureHandle
     {
     } // TypeVariableSignatureHandle
+
+    /// <summary>
+    /// IHandle
+    /// </summary>
+    internal interface IHandle : IEquatable<Handle>, IEquatable<Object>
+    {
+        int GetHashCode();
+
+        HandleType HandleType
+        {
+            get;
+        } // HandleType
+
+        ArraySignatureHandle ToArraySignatureHandle(MetadataReader reader);
+        ByReferenceSignatureHandle ToByReferenceSignatureHandle(MetadataReader reader);
+        ConstantBooleanArrayHandle ToConstantBooleanArrayHandle(MetadataReader reader);
+        ConstantBooleanValueHandle ToConstantBooleanValueHandle(MetadataReader reader);
+        ConstantBoxedEnumValueHandle ToConstantBoxedEnumValueHandle(MetadataReader reader);
+        ConstantByteArrayHandle ToConstantByteArrayHandle(MetadataReader reader);
+        ConstantByteValueHandle ToConstantByteValueHandle(MetadataReader reader);
+        ConstantCharArrayHandle ToConstantCharArrayHandle(MetadataReader reader);
+        ConstantCharValueHandle ToConstantCharValueHandle(MetadataReader reader);
+        ConstantDoubleArrayHandle ToConstantDoubleArrayHandle(MetadataReader reader);
+        ConstantDoubleValueHandle ToConstantDoubleValueHandle(MetadataReader reader);
+        ConstantHandleArrayHandle ToConstantHandleArrayHandle(MetadataReader reader);
+        ConstantInt16ArrayHandle ToConstantInt16ArrayHandle(MetadataReader reader);
+        ConstantInt16ValueHandle ToConstantInt16ValueHandle(MetadataReader reader);
+        ConstantInt32ArrayHandle ToConstantInt32ArrayHandle(MetadataReader reader);
+        ConstantInt32ValueHandle ToConstantInt32ValueHandle(MetadataReader reader);
+        ConstantInt64ArrayHandle ToConstantInt64ArrayHandle(MetadataReader reader);
+        ConstantInt64ValueHandle ToConstantInt64ValueHandle(MetadataReader reader);
+        ConstantReferenceValueHandle ToConstantReferenceValueHandle(MetadataReader reader);
+        ConstantSByteArrayHandle ToConstantSByteArrayHandle(MetadataReader reader);
+        ConstantSByteValueHandle ToConstantSByteValueHandle(MetadataReader reader);
+        ConstantSingleArrayHandle ToConstantSingleArrayHandle(MetadataReader reader);
+        ConstantSingleValueHandle ToConstantSingleValueHandle(MetadataReader reader);
+        ConstantStringArrayHandle ToConstantStringArrayHandle(MetadataReader reader);
+        ConstantStringValueHandle ToConstantStringValueHandle(MetadataReader reader);
+        ConstantUInt16ArrayHandle ToConstantUInt16ArrayHandle(MetadataReader reader);
+        ConstantUInt16ValueHandle ToConstantUInt16ValueHandle(MetadataReader reader);
+        ConstantUInt32ArrayHandle ToConstantUInt32ArrayHandle(MetadataReader reader);
+        ConstantUInt32ValueHandle ToConstantUInt32ValueHandle(MetadataReader reader);
+        ConstantUInt64ArrayHandle ToConstantUInt64ArrayHandle(MetadataReader reader);
+        ConstantUInt64ValueHandle ToConstantUInt64ValueHandle(MetadataReader reader);
+        CustomAttributeHandle ToCustomAttributeHandle(MetadataReader reader);
+        CustomModifierHandle ToCustomModifierHandle(MetadataReader reader);
+        EventHandle ToEventHandle(MetadataReader reader);
+        FieldHandle ToFieldHandle(MetadataReader reader);
+        FieldSignatureHandle ToFieldSignatureHandle(MetadataReader reader);
+        FixedArgumentHandle ToFixedArgumentHandle(MetadataReader reader);
+        GenericParameterHandle ToGenericParameterHandle(MetadataReader reader);
+        MemberReferenceHandle ToMemberReferenceHandle(MetadataReader reader);
+        MethodHandle ToMethodHandle(MetadataReader reader);
+        MethodImplHandle ToMethodImplHandle(MetadataReader reader);
+        MethodInstantiationHandle ToMethodInstantiationHandle(MetadataReader reader);
+        MethodSemanticsHandle ToMethodSemanticsHandle(MetadataReader reader);
+        MethodSignatureHandle ToMethodSignatureHandle(MetadataReader reader);
+        MethodTypeVariableSignatureHandle ToMethodTypeVariableSignatureHandle(MetadataReader reader);
+        NamedArgumentHandle ToNamedArgumentHandle(MetadataReader reader);
+        NamespaceDefinitionHandle ToNamespaceDefinitionHandle(MetadataReader reader);
+        NamespaceReferenceHandle ToNamespaceReferenceHandle(MetadataReader reader);
+        ParameterHandle ToParameterHandle(MetadataReader reader);
+        ParameterTypeSignatureHandle ToParameterTypeSignatureHandle(MetadataReader reader);
+        PointerSignatureHandle ToPointerSignatureHandle(MetadataReader reader);
+        PropertyHandle ToPropertyHandle(MetadataReader reader);
+        PropertySignatureHandle ToPropertySignatureHandle(MetadataReader reader);
+        QualifiedFieldHandle ToQualifiedFieldHandle(MetadataReader reader);
+        QualifiedMethodHandle ToQualifiedMethodHandle(MetadataReader reader);
+        ReturnTypeSignatureHandle ToReturnTypeSignatureHandle(MetadataReader reader);
+        SZArraySignatureHandle ToSZArraySignatureHandle(MetadataReader reader);
+        ScopeDefinitionHandle ToScopeDefinitionHandle(MetadataReader reader);
+        ScopeReferenceHandle ToScopeReferenceHandle(MetadataReader reader);
+        TypeDefinitionHandle ToTypeDefinitionHandle(MetadataReader reader);
+        TypeForwarderHandle ToTypeForwarderHandle(MetadataReader reader);
+        TypeInstantiationSignatureHandle ToTypeInstantiationSignatureHandle(MetadataReader reader);
+        TypeReferenceHandle ToTypeReferenceHandle(MetadataReader reader);
+        TypeSpecificationHandle ToTypeSpecificationHandle(MetadataReader reader);
+        TypeVariableSignatureHandle ToTypeVariableSignatureHandle(MetadataReader reader);
+    } // IHandle
+
+    /// <summary>
+    /// Handle
+    /// </summary>
+    public partial struct Handle : IHandle
+    {
+    } // Handle
+
+    /// <summary>
+    /// IMetadataReader
+    /// </summary>
+    public interface IMetadataReader
+    {
+        ArraySignature GetArraySignature(ArraySignatureHandle handle);
+        ByReferenceSignature GetByReferenceSignature(ByReferenceSignatureHandle handle);
+        ConstantBooleanArray GetConstantBooleanArray(ConstantBooleanArrayHandle handle);
+        ConstantBooleanValue GetConstantBooleanValue(ConstantBooleanValueHandle handle);
+        ConstantBoxedEnumValue GetConstantBoxedEnumValue(ConstantBoxedEnumValueHandle handle);
+        ConstantByteArray GetConstantByteArray(ConstantByteArrayHandle handle);
+        ConstantByteValue GetConstantByteValue(ConstantByteValueHandle handle);
+        ConstantCharArray GetConstantCharArray(ConstantCharArrayHandle handle);
+        ConstantCharValue GetConstantCharValue(ConstantCharValueHandle handle);
+        ConstantDoubleArray GetConstantDoubleArray(ConstantDoubleArrayHandle handle);
+        ConstantDoubleValue GetConstantDoubleValue(ConstantDoubleValueHandle handle);
+        ConstantHandleArray GetConstantHandleArray(ConstantHandleArrayHandle handle);
+        ConstantInt16Array GetConstantInt16Array(ConstantInt16ArrayHandle handle);
+        ConstantInt16Value GetConstantInt16Value(ConstantInt16ValueHandle handle);
+        ConstantInt32Array GetConstantInt32Array(ConstantInt32ArrayHandle handle);
+        ConstantInt32Value GetConstantInt32Value(ConstantInt32ValueHandle handle);
+        ConstantInt64Array GetConstantInt64Array(ConstantInt64ArrayHandle handle);
+        ConstantInt64Value GetConstantInt64Value(ConstantInt64ValueHandle handle);
+        ConstantReferenceValue GetConstantReferenceValue(ConstantReferenceValueHandle handle);
+        ConstantSByteArray GetConstantSByteArray(ConstantSByteArrayHandle handle);
+        ConstantSByteValue GetConstantSByteValue(ConstantSByteValueHandle handle);
+        ConstantSingleArray GetConstantSingleArray(ConstantSingleArrayHandle handle);
+        ConstantSingleValue GetConstantSingleValue(ConstantSingleValueHandle handle);
+        ConstantStringArray GetConstantStringArray(ConstantStringArrayHandle handle);
+        ConstantStringValue GetConstantStringValue(ConstantStringValueHandle handle);
+        ConstantUInt16Array GetConstantUInt16Array(ConstantUInt16ArrayHandle handle);
+        ConstantUInt16Value GetConstantUInt16Value(ConstantUInt16ValueHandle handle);
+        ConstantUInt32Array GetConstantUInt32Array(ConstantUInt32ArrayHandle handle);
+        ConstantUInt32Value GetConstantUInt32Value(ConstantUInt32ValueHandle handle);
+        ConstantUInt64Array GetConstantUInt64Array(ConstantUInt64ArrayHandle handle);
+        ConstantUInt64Value GetConstantUInt64Value(ConstantUInt64ValueHandle handle);
+        CustomAttribute GetCustomAttribute(CustomAttributeHandle handle);
+        CustomModifier GetCustomModifier(CustomModifierHandle handle);
+        Event GetEvent(EventHandle handle);
+        Field GetField(FieldHandle handle);
+        FieldSignature GetFieldSignature(FieldSignatureHandle handle);
+        FixedArgument GetFixedArgument(FixedArgumentHandle handle);
+        GenericParameter GetGenericParameter(GenericParameterHandle handle);
+        MemberReference GetMemberReference(MemberReferenceHandle handle);
+        Method GetMethod(MethodHandle handle);
+        MethodImpl GetMethodImpl(MethodImplHandle handle);
+        MethodInstantiation GetMethodInstantiation(MethodInstantiationHandle handle);
+        MethodSemantics GetMethodSemantics(MethodSemanticsHandle handle);
+        MethodSignature GetMethodSignature(MethodSignatureHandle handle);
+        MethodTypeVariableSignature GetMethodTypeVariableSignature(MethodTypeVariableSignatureHandle handle);
+        NamedArgument GetNamedArgument(NamedArgumentHandle handle);
+        NamespaceDefinition GetNamespaceDefinition(NamespaceDefinitionHandle handle);
+        NamespaceReference GetNamespaceReference(NamespaceReferenceHandle handle);
+        Parameter GetParameter(ParameterHandle handle);
+        ParameterTypeSignature GetParameterTypeSignature(ParameterTypeSignatureHandle handle);
+        PointerSignature GetPointerSignature(PointerSignatureHandle handle);
+        Property GetProperty(PropertyHandle handle);
+        PropertySignature GetPropertySignature(PropertySignatureHandle handle);
+        QualifiedField GetQualifiedField(QualifiedFieldHandle handle);
+        QualifiedMethod GetQualifiedMethod(QualifiedMethodHandle handle);
+        ReturnTypeSignature GetReturnTypeSignature(ReturnTypeSignatureHandle handle);
+        SZArraySignature GetSZArraySignature(SZArraySignatureHandle handle);
+        ScopeDefinition GetScopeDefinition(ScopeDefinitionHandle handle);
+        ScopeReference GetScopeReference(ScopeReferenceHandle handle);
+        TypeDefinition GetTypeDefinition(TypeDefinitionHandle handle);
+        TypeForwarder GetTypeForwarder(TypeForwarderHandle handle);
+        TypeInstantiationSignature GetTypeInstantiationSignature(TypeInstantiationSignatureHandle handle);
+        TypeReference GetTypeReference(TypeReferenceHandle handle);
+        TypeSpecification GetTypeSpecification(TypeSpecificationHandle handle);
+        TypeVariableSignature GetTypeVariableSignature(TypeVariableSignatureHandle handle);
+
+        IEnumerable<ScopeDefinitionHandle> ScopeDefinitions
+        {
+            get;
+        } // ScopeDefinitions
+
+        Handle NullHandle
+        {
+            get;
+        } // NullHandle
+    } // IMetadataReader
+
+    /// <summary>
+    /// MetadataReader
+    /// </summary>
+    public partial class MetadataReader : IMetadataReader
+    {
+    } // MetadataReader
 } // Internal.Metadata.NativeFormat
