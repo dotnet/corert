@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace Internal.NativeFormat
 {
-    internal unsafe struct NativePrimitiveDecoder
+    internal unsafe partial struct NativePrimitiveDecoder
     {
         static public void ThrowBadImageFormatException()
         {
@@ -21,59 +21,6 @@ namespace Internal.NativeFormat
             throw new BadImageFormatException();
         }
 
-        static public byte ReadUInt8(ref byte* stream)
-        {
-            byte result = *(stream); // Assumes little endian and unaligned access
-            stream++;
-            return result;
-        }
-
-        static public ushort ReadUInt16(ref byte* stream)
-        {
-            ushort result = *(ushort*)(stream); // Assumes little endian and unaligned access
-            stream += 2;
-            return result;
-        }
-
-        static public uint ReadUInt32(ref byte* stream)
-        {
-            uint result = *(uint*)(stream); // Assumes little endian and unaligned access
-            stream += 4;
-            return result;
-        }
-
-        static public ulong ReadUInt64(ref byte* stream)
-        {
-            ulong result = *(ulong*)(stream); // Assumes little endian and unaligned access
-            stream += 8;
-            return result;
-        }
-
-        static public unsafe float ReadFloat(ref byte* stream)
-        {
-            uint value = ReadUInt32(ref stream);
-            return *(float*)(&value);
-        }
-
-        static public double ReadDouble(ref byte* stream)
-        {
-            ulong value = ReadUInt64(ref stream);
-            return *(double*)(&value);
-        }
-
-        static public uint GetUnsignedEncodingSize(uint value)
-        {
-            if (value < 128) return 1;
-            if (value < 128 * 128) return 2;
-            if (value < 128 * 128 * 128) return 3;
-            if (value < 128 * 128 * 128 * 128) return 4;
-            return 5;
-        }
-
-        static public uint DecodeUnsigned(ref byte* stream)
-        {
-            return DecodeUnsigned(ref stream, stream + Byte.MaxValue /* unknown stream end */);
-        }
         static public uint DecodeUnsigned(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
@@ -128,10 +75,6 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public int DecodeSigned(ref byte* stream)
-        {
-            return DecodeSigned(ref stream, stream + Byte.MaxValue /* unknown stream end */);
-        }
         static public int DecodeSigned(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
@@ -186,10 +129,6 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public ulong DecodeUnsignedLong(ref byte* stream)
-        {
-            return DecodeUnsignedLong(ref stream, stream + Byte.MaxValue /* unknown stream end */);
-        }
         static public ulong DecodeUnsignedLong(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
@@ -216,10 +155,6 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public long DecodeSignedLong(ref byte* stream)
-        {
-            return DecodeSignedLong(ref stream, stream + Byte.MaxValue /* unknown stream end */);
-        }
         static public long DecodeSignedLong(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)

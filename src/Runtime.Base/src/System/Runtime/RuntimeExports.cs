@@ -73,8 +73,8 @@ namespace System.Runtime
 
                 // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
                 // to the value embedded within the nullable.
-                pData = (byte*)pData + ptrEEType->GetNullableValueOffset();
-                ptrEEType = ptrEEType->GetNullableType();
+                pData = (byte*)pData + ptrEEType->NullableValueOffset;
+                ptrEEType = ptrEEType->NullableType;
             }
 
 #if FEATURE_64BIT_ALIGNMENT
@@ -165,7 +165,7 @@ namespace System.Runtime
                     bool isValid = false;
 
                     if (ptrUnboxToEEType->IsNullable)
-                        isValid = (o == null) || TypeCast.AreTypesEquivalentInternal(o.EEType, ptrUnboxToEEType->GetNullableType());
+                        isValid = (o == null) || TypeCast.AreTypesEquivalentInternal(o.EEType, ptrUnboxToEEType->NullableType);
                     else if (o != null)
                     {
                         isValid = UnboxAnyTypeCompare(o.EEType, ptrUnboxToEEType);
@@ -238,7 +238,7 @@ namespace System.Runtime
             // and going back one pointer-sized unit
             fixed (IntPtr* pData = &data.p)
             {
-                if ((obj != null) && (obj.EEType != ptrUnboxToEEType->GetNullableType()))
+                if ((obj != null) && (obj.EEType != ptrUnboxToEEType->NullableType))
                 {
                     Exception e = ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
 
@@ -440,14 +440,14 @@ namespace System.Runtime
         public static unsafe EETypePtr RhGetNullableType(EETypePtr ptrEEType)
         {
             EEType* pEEType = ptrEEType.ToPointer();
-            return new EETypePtr((IntPtr)pEEType->GetNullableType());
+            return new EETypePtr((IntPtr)pEEType->NullableType);
         }
 
         [RuntimeExport("RhHasReferenceFields")]
         public static unsafe bool RhHasReferenceFields(EETypePtr ptrEEType)
         {
             EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->HasReferenceFields;
+            return pEEType->HasGCPointers;
         }
 
         [RuntimeExport("RhGetCorElementType")]
@@ -480,7 +480,7 @@ namespace System.Runtime
             if (pEEType->IsGenericTypeDefinition)
                 return RhEETypeClassification.GenericTypeDefinition;
 
-            if (pEEType->IsPointerTypeDefinition)
+            if (pEEType->IsPointerType)
                 return RhEETypeClassification.UnmanagedPointer;
 
             return RhEETypeClassification.Regular;

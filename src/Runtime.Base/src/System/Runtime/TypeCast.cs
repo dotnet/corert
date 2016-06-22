@@ -68,7 +68,7 @@ namespace System.Runtime
                 // walk the type hierarchy looking for a match
                 do
                 {
-                    pObjType = pObjType->BaseType;
+                    pObjType = pObjType->RawBaseType;
 
                     if (pObjType == null)
                     {
@@ -540,7 +540,7 @@ namespace System.Runtime
             // AreTypesAssignableInternal, so no sense making all the other paths pay the cost of the check.
             if (pTargetType->IsNullable && pSourceType->IsValueType && !pSourceType->IsNullable)
             {
-                EEType* pNullableType = pTargetType->GetNullableType();
+                EEType* pNullableType = pTargetType->NullableType;
 
                 return AreTypesEquivalentInternal(pSourceType, pNullableType);
             }
@@ -597,7 +597,7 @@ namespace System.Runtime
                     && (pTargetType->ParameterizedTypeShape == pSourceType->ParameterizedTypeShape))
                 {
                     // Source type is also a parameterized type. Are the parameter types compatible? 
-                    if (pSourceType->RelatedParameterType->IsPointerTypeDefinition)
+                    if (pSourceType->RelatedParameterType->IsPointerType)
                     {
                         // If the parameter types are pointers, then only exact matches are correct.
                         // As we've already called AreTypesEquivalent at the start of this function,

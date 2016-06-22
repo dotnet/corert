@@ -57,6 +57,9 @@
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs" >
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
@@ -668,9 +671,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CalliIntrinsics.cs" >
       <Link>Runtime.Base\src\System\Runtime\CalliIntrinsics.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\EEType.cs" >
-      <Link>Runtime.Base\src\System\Runtime\EEType.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\EEType.Runtime.cs" >
       <Link>Runtime.Base\src\System\Runtime\EEType.Runtime.cs</Link>
     </Compile>
@@ -697,6 +697,9 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs" >
       <Link>Runtime.Base\src\RhBaseName.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs" >
+      <Link>Internal\Runtime\EEType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
       <Link>Internal\Runtime\EEType.Constants.cs</Link>

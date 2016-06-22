@@ -317,6 +317,19 @@ namespace System
         [Intrinsic]
         public static readonly IntPtr Zero;
 
+        public unsafe static int Size
+        {
+            [Intrinsic]
+            get
+            {
+#if BIT64
+                return 8;
+#else
+                return 4;
+#endif
+            }
+        }
+
         [Intrinsic]
         public unsafe IntPtr(void* value)
         {

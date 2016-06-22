@@ -31,6 +31,29 @@ namespace Internal.Runtime
         }
 
         private InterfaceTypeUnion _interfaceType;
+
+        internal EEType* InterfaceType
+        {
+            get
+            {
+                if ((unchecked((uint)_interfaceType._pInterfaceEEType) & 1u) != 0)
+                {
+#if BIT64
+                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) & ~1ul);
+#else
+                    EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) & ~1u);
+#endif
+                    return *ppInterfaceEETypeViaIAT;
+                }
+
+                return _interfaceType._pInterfaceEEType;
+            }
+            // TODO: put the setter under TYPE_LOADER_IMPLEMENTATION when we get rid of RhSetInterface
+            set
+            {
+                _interfaceType._pInterfaceEEType = value;
+            }
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -143,6 +166,10 @@ namespace Internal.Runtime
         private UInt16 _usNumInterfaces;
         private UInt32 _uHashCode;
 
+#if CORERT
+        private IntPtr _ppModuleManager;
+#endif
+
         // vtable follows
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -200,12 +227,6 @@ namespace Internal.Runtime
 #endif
         }
 
-        // If the kind is ParameterizedEEType, then the base size is a parameterized type shape.
-        // The parameterized type shape defines the particular form of parameterized type that
-        // is being represented.
-        // Currently, the meaning is a shape of 0 indicates that this is a Pointer
-        // and non-zero indicates that this is an array.
-        // Two types are not equivalent if their shapes do not exactly match.
         internal UInt32 BaseSize
         {
             get
@@ -324,7 +345,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && BaseSize != 0;
+                return IsParameterizedType && ParameterizedTypeShape != 0;
             }
         }
         
@@ -348,7 +369,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && BaseSize == 0;
+                return IsParameterizedType && ParameterizedTypeShape == 0;
             }
         }
 
@@ -389,6 +410,19 @@ namespace Internal.Runtime
             get
             {
                 return Kind == EETypeKind.ParameterizedEEType;
+            }
+        }
+
+        // The parameterized type shape defines the particular form of parameterized type that
+        // is being represented.
+        // Currently, the meaning is a shape of 0 indicates that this is a Pointer
+        // and non-zero indicates that this is an array.
+        // Two types are not equivalent if their shapes do not exactly match.
+        internal UInt32 ParameterizedTypeShape
+        {
+            get
+            {
+                return _uBaseSize;
             }
         }
 
@@ -668,6 +702,36 @@ namespace Internal.Runtime
                 {
                     return *_relatedType._ppBaseTypeViaIAT;
                 }
+
+                return _relatedType._pBaseType;
+            }
+        }
+
+        internal EEType* NonClonedNonArrayBaseType
+        {
+            get
+            {
+                Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
+                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
+                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
+
+                if (IsRelatedTypeViaIAT)
+                {
+                    return *_relatedType._ppBaseTypeViaIAT;
+                }
+
+                return _relatedType._pBaseType;
+            }
+        }
+
+        internal EEType* RawBaseType
+        {
+            get
+            {
+                Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
+                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
+                Debug.Assert(IsCanonical, "we expect canonical types here");
+                Debug.Assert(!IsRelatedTypeViaIAT, "Non IAT");
 
                 return _relatedType._pBaseType;
             }
