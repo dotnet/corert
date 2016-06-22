@@ -1086,7 +1086,8 @@ extern "C" UInt32 GetEnvironmentVariableA(const char * name, char * buffer, UInt
 
 extern "C" UInt16 RtlCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3, UInt32* arg4)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // UNIXTODO: Implement this function
+    return 0;
 }
 
 extern "C" HANDLE GetProcessHeap()
