@@ -601,7 +601,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
 
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
-            graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
+            graph.AddRoot(new ModulesSectionNode(Target), "ModulesSection is always generated");
 
             graph.AddRoot(GCStaticsRegion, "GC StaticsRegion is always generated");
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");

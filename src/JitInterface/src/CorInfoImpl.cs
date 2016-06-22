@@ -236,7 +236,11 @@ namespace Internal.JitInterface
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
                             var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
 
-                            builder.EmitReloc(typeSymbol, RelocType.IMAGE_REL_BASED_ABSOLUTE);
+                            RelocType rel = (_compilation.Options.TargetOS == TargetOS.Windows) ?
+                                RelocType.IMAGE_REL_BASED_ABSOLUTE :
+                                RelocType.IMAGE_REL_BASED_REL32;
+
+                            builder.EmitReloc(typeSymbol, rel);
                         }
                         break;
                     case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
@@ -2360,14 +2364,9 @@ namespace Internal.JitInterface
 
         private void allocUnwindInfo(byte* pHotCode, byte* pColdCode, uint startOffset, uint endOffset, uint unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
         {
-            int extraBlobData = 0;
-
-            if (_compilation.Options.TargetOS == TargetOS.Windows)
-            {
-                // The unwind info blob are followed by byte that identifies the type of the funclet
-                // and other optional data that follows
-                extraBlobData = 1;
-            }
+            // The unwind info blob are followed by byte that identifies the type of the funclet
+            // and other optional data that follows
+            const int extraBlobData = 1;
 
             byte[] blobData = new byte[unwindSize + extraBlobData];
 
@@ -2376,12 +2375,8 @@ namespace Internal.JitInterface
                 blobData[i] = pUnwindBlock[i];
             }
 
-            if (extraBlobData != 0)
-            {
-                // Capture the type of the funclet in unwind info blob
-                blobData[unwindSize] = (byte)funcKind;
-            }
-
+            // Capture the type of the funclet in unwind info blob
+            blobData[unwindSize] = (byte)funcKind;
             _frameInfos[_usedFrameInfos++] = new FrameInfo((int)startOffset, (int)endOffset, blobData);
         }
 

@@ -83,6 +83,8 @@ struct PAL_LIMITED_CONTEXT
 
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return Rsp; }
+    void SetIp(UIntNative ip) { IP = ip; }
+    void SetSp(UIntNative sp) { Rsp = sp; }
     UIntNative GetFp() const { return Rbp; }
 #else // _TARGET_ARM_
     UIntNative  IP;
@@ -117,5 +119,9 @@ struct PAL_LIMITED_CONTEXT
 };
 
 void __stdcall RuntimeThreadShutdown(void* thread);
+
+#ifdef PLATFORM_UNIX
+typedef Int32 (*PHARDWARE_EXCEPTION_HANDLER)(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
+#endif
 
 #endif // __PAL_REDHAWK_COMMON_INCLUDED

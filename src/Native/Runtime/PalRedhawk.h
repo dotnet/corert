@@ -275,12 +275,19 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     UInt64 LastExceptionToRip;
     UInt64 LastExceptionFromRip;
 
-    void SetIP(UIntNative ip) { Rip = ip; }
-    void SetSP(UIntNative sp) { Rsp = sp; }
+    void SetIp(UIntNative ip) { Rip = ip; }
+    void SetSp(UIntNative sp) { Rsp = sp; }
+#ifdef UNIX_AMD64_ABI
+    UIntNative GetArg0Reg() { return Rdi; }
+    UIntNative GetArg1Reg() { return Rsi; }
+    void SetArg0Reg(UIntNative val) { Rdi = val; }
+    void SetArg1Reg(UIntNative val) { Rsi = val; }
+#else // UNIX_AMD64_ABI
     void SetArg0Reg(UIntNative val) { Rcx = val; }
     void SetArg1Reg(UIntNative val) { Rdx = val; }
-    UIntNative GetIP() { return Rip; }
-    UIntNative GetSP() { return Rsp; }
+#endif // UNIX_AMD64_ABI
+    UIntNative GetIp() { return Rip; }
+    UIntNative GetSp() { return Rsp; }
 } CONTEXT, *PCONTEXT;
 #elif defined(_ARM_)
 
@@ -322,8 +329,8 @@ typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
     void SetIP(UIntNative ip) { Pc = ip; }
     void SetArg0Reg(UIntNative val) { R0 = val; }
     void SetArg1Reg(UIntNative val) { R1 = val; }
-    UIntNative GetIP() { return Pc; }
-    UIntNative GetLR() { return Lr; }
+    UIntNative GetIp() { return Pc; }
+    UIntNative GetLr() { return Lr; }
 } CONTEXT, *PCONTEXT;
 
 #elif defined(_X86_)
@@ -374,8 +381,8 @@ typedef struct _CONTEXT {
     void SetSP(UIntNative sp) { Esp = sp; }
     void SetArg0Reg(UIntNative val) { Ecx = val; }
     void SetArg1Reg(UIntNative val) { Edx = val; }
-    UIntNative GetIP() { return Eip; }
-    UIntNative GetSP() { return Esp; }
+    UIntNative GetIp() { return Eip; }
+    UIntNative GetSp() { return Esp; }
 } CONTEXT, *PCONTEXT;
 #include "poppack.h"
 
@@ -455,8 +462,8 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     void SetIP(UIntNative ip) { Pc = ip; }
     void SetArg0Reg(UIntNative val) { X0 = val; }
     void SetArg1Reg(UIntNative val) { X1 = val; }
-    UIntNative GetIP() { return Pc; }
-    UIntNative GetLR() { return Lr; }
+    UIntNative GetIp() { return Pc; }
+    UIntNative GetLr() { return Lr; }
 } CONTEXT, *PCONTEXT;
 
 #endif 
@@ -779,8 +786,15 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(UInt32 exitCode
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifndef APP_LOCAL_RUNTIME
+
+#ifdef PLATFORM_UNIX
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
+#else
 REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(UInt32 firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
 #endif
+
+#endif
+
 
 typedef UInt32 (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);

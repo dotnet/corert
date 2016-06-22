@@ -86,7 +86,10 @@ else()
   include_directories(unix)
 
   list(APPEND COMMON_RUNTIME_SOURCES
+    unix/HardwareExceptions.cpp
     unix/PalRedhawkUnix.cpp
+    unix/UnixContext.cpp
+    unix/UnixNativeCodeManager.cpp
   )
 
   if(CLR_CMAKE_PLATFORM_ARCH_AMD64)

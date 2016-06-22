@@ -369,7 +369,7 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
 
 LOCAL_LABEL(ExInfoLoop):
         mov     rdi, [rdi + OFFSETOF__ExInfo__m_pPrevExInfo]        // rdi <- next ExInfo
-        cmp     rdi, rsi
+        cmp     rdi, rcx
         je      LOCAL_LABEL(ExInfoLoopDone)                         // we're done if it's null
         cmp     rdi, rdx
         jl      LOCAL_LABEL(ExInfoLoop)                             // keep looping if it's lower than the new SP

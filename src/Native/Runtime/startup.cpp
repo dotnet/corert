@@ -36,7 +36,12 @@ unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance);
 
 
+#ifdef PLATFORM_UNIX
+Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
+#else
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+#endif
+
 void CheckForPalFallback();
 void DetectCPUFeatures();
 
@@ -65,7 +70,11 @@ bool InitDLL(HANDLE hPalInstance)
         return false;
 
 #ifndef APP_LOCAL_RUNTIME
+#ifndef PLATFORM_UNIX
     PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
+#else
+    PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
+#endif
 #endif
 
     //
