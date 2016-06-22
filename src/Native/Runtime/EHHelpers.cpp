@@ -355,19 +355,27 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
     return false;
 }
 
-static UIntNative UnwindWriteBarrierToCaller(_CONTEXT * pContext)
+
+
+static UIntNative UnwindWriteBarrierToCaller(
+#ifdef PLATFORM_UNIX
+    PAL_LIMITED_CONTEXT * pContext
+#else
+    _CONTEXT * pContext
+#endif
+    )
 {
 #if defined(_DEBUG)
-    UIntNative faultingIP = pContext->GetIP();
+    UIntNative faultingIP = pContext->GetIp();
     ASSERT(InWriteBarrierHelper(faultingIP));
 #endif
 #if defined(_AMD64_) || defined(_X86_)
     // simulate a ret instruction
-    UIntNative sp = pContext->GetSP();      // get the stack pointer
+    UIntNative sp = pContext->GetSp();      // get the stack pointer
     UIntNative adjustedFaultingIP = *(UIntNative *)sp - 5;   // call instruction will be 6 bytes - act as if start of call instruction + 1 were the faulting IP
-    pContext->SetSP(sp+sizeof(UIntNative)); // pop the stack
+    pContext->SetSp(sp+sizeof(UIntNative)); // pop the stack
 #elif defined(_ARM_)
-    UIntNative adjustedFaultingIP = pContext->GetLR() - 2;   // bl instruction will be 4 bytes - act as if start of call instruction + 2 were the faulting IP
+    UIntNative adjustedFaultingIP = pContext->GetLr() - 2;   // bl instruction will be 4 bytes - act as if start of call instruction + 2 were the faulting IP
 #elif defined(_ARM64_)
     PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
     UIntNative adjustedFaultingIP = -1;
@@ -377,9 +385,49 @@ static UIntNative UnwindWriteBarrierToCaller(_CONTEXT * pContext)
     return adjustedFaultingIP;
 }
 
+#ifdef PLATFORM_UNIX
+
+Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg)
+{
+    UIntNative faultingIP = palContext->GetIp();
+
+    ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress((PTR_VOID)faultingIP);
+    if ((pCodeManager != NULL) || (faultCode == STATUS_ACCESS_VIOLATION && InWriteBarrierHelper(faultingIP)))
+    {
+        if (faultCode == STATUS_ACCESS_VIOLATION)
+        {
+            if (faultAddress < NULL_AREA_SIZE)
+            {
+                faultCode = STATUS_REDHAWK_NULL_REFERENCE;
+            }
+
+            if (pCodeManager == NULL)
+            {
+                // we were AV-ing in a write barrier helper - unwind our way to our caller
+                faultingIP = UnwindWriteBarrierToCaller(palContext);
+            }
+        }
+        else if (faultCode == STATUS_STACK_OVERFLOW)
+        {
+            ASSERT_UNCONDITIONALLY("managed stack overflow");
+            RhFailFast();
+        }
+
+        *arg0Reg = faultCode;
+        *arg1Reg = faultingIP;
+        palContext->SetIp((UIntNative)&RhpThrowHwEx);
+
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+#else // PLATFORM_UNIX
+
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 {
-    UIntNative faultingIP = pExPtrs->ContextRecord->GetIP();
+    UIntNative faultingIP = pExPtrs->ContextRecord->GetIp();
 
     ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress((PTR_VOID)faultingIP);
     UIntNative faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
@@ -401,14 +449,13 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
         }
 
-        pExPtrs->ContextRecord->SetIP((UIntNative)&RhpThrowHwEx);
+        pExPtrs->ContextRecord->SetIp((UIntNative)&RhpThrowHwEx);
         pExPtrs->ContextRecord->SetArg0Reg(faultCode);
         pExPtrs->ContextRecord->SetArg1Reg(faultingIP);
 
         return EXCEPTION_CONTINUE_EXECUTION;
     }
 
-#ifndef PLATFORM_UNIX
     {
         static UInt8 *s_pbRuntimeModuleLower = NULL;
         static UInt8 *s_pbRuntimeModuleUpper = NULL;
@@ -438,47 +485,11 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             RhFailFast2(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
         }
     }
-#endif // PLATFORM_UNIX
 
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#ifdef PLATFORM_UNIX
-Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg)
-{
-    CONTEXT contextRecord;
-    EXCEPTION_RECORD exceptionRecord;
-    EXCEPTION_POINTERS exceptionPointers;
-
-    exceptionPointers.ContextRecord = &contextRecord;
-    exceptionPointers.ExceptionRecord = &exceptionRecord;
-
-    contextRecord.SetIP(palContext->GetIp());
-    contextRecord.SetSP(palContext->GetSp());
-#ifdef _ARM_
-    contextRecord.SetLR(palContext->GetLr());
-#endif
-
-    exceptionRecord.ExceptionCode = faultCode;
-    if (faultCode == STATUS_ACCESS_VIOLATION)
-    {
-        exceptionRecord.ExceptionInformation[1] = faultAddress;
-    }
-
-    Int32 result = RhpVectoredExceptionHandler(&exceptionPointers);
-
-    if (result == EXCEPTION_CONTINUE_EXECUTION)
-    {
-        *arg0Reg = contextRecord.GetArg0Reg();
-        *arg1Reg = contextRecord.GetArg1Reg();
-        palContext->SetIp(contextRecord.GetIP());
-        palContext->SetSp(contextRecord.GetSP());
-    }
-
-    return result;
-}
 #endif // PLATFORM_UNIX
-
 
 COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())
 {

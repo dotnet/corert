@@ -8,8 +8,13 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal abstract class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
+    internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
     {
+        public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
+        public static readonly ObjectNodeSection WindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
+        public static readonly ObjectNodeSection UnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
+        public static readonly ObjectNodeSection EndSection = new ObjectNodeSection(".managedcode$Z", SectionType.Executable);
+
         private MethodDesc _method;
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
@@ -39,6 +44,14 @@ namespace ILCompiler.DependencyAnalysis
         public override string GetName()
         {
             return ((ISymbolNode)this).MangledName;
+        }
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                return _method.Context.Target.IsWindows ? WindowsContentSection : UnixContentSection;
+            }
         }
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
@@ -157,43 +170,4 @@ namespace ILCompiler.DependencyAnalysis
             _debugVarInfos = debugVarInfos;
         }
     }
-
-    internal class WindowsMethodCodeNode : MethodCodeNode
-    {
-        public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
-        public static readonly ObjectNodeSection ContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
-        public static readonly ObjectNodeSection EndSection = new ObjectNodeSection(".managedcode$Z", SectionType.Executable);
-
-        public WindowsMethodCodeNode(MethodDesc method)
-            : base(method)
-        {
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ContentSection;
-            }
-        }
-    }
-
-    internal class UnixMethodCodeNode : MethodCodeNode
-    {
-        public static readonly ObjectNodeSection ContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
-
-        public UnixMethodCodeNode(MethodDesc method)
-            : base(method)
-        {
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ContentSection;
-            }
-        }
-    }
-
 }

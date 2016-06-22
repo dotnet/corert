@@ -654,25 +654,25 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
-                    objectWriter.CreateCustomSection(WindowsMethodCodeNode.ContentSection);
+                    objectWriter.CreateCustomSection(MethodCodeNode.WindowsContentSection);
 
                     // Emit sentinels for managed code section.
                     ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
-                                                            WindowsMethodCodeNode.StartSection :
-                                                            WindowsMethodCodeNode.StartSection.GetSharedSection("__managedcode_a");
+                                                            MethodCodeNode.StartSection :
+                                                            MethodCodeNode.StartSection.GetSharedSection("__managedcode_a");
                     objectWriter.SetSection(codeStartSection);
                     objectWriter.EmitSymbolDef("__managedcode_a");
                     objectWriter.EmitIntValue(0, 1);
                     ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
-                                                            WindowsMethodCodeNode.EndSection :
-                                                            WindowsMethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
+                                                            MethodCodeNode.EndSection :
+                                                            MethodCodeNode.EndSection.GetSharedSection("__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
                     objectWriter.EmitSymbolDef("__managedcode_z");
                     objectWriter.EmitIntValue(0, 1);
                 }
                 else
                 {
-                    objectWriter.CreateCustomSection(UnixMethodCodeNode.ContentSection);
+                    objectWriter.CreateCustomSection(MethodCodeNode.UnixContentSection);
                     objectWriter.CreateCustomSection(LsdaSection);
                 }
 

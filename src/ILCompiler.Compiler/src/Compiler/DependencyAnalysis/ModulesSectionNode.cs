@@ -2,14 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.TypeSystem;
+
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class ModulesSectionNode : ObjectNode, ISymbolNode
+    public class ModulesSectionNode : ObjectNode, ISymbolNode
     {
         // Each compilation unit produces one module. When all compilation units are linked
         // together in multifile mode, the runtime needs to get list of modules present
         // in the final binary. This list is created via a special .modules section that
         // contains list of pointers to all module headers.
+        public static readonly string WindowsSectionName = ".modules$I";
+        public static readonly string UnixSectionName = "__modules";
+
+        private TargetDetails _target;
+
+        public ModulesSectionNode(TargetDetails target)
+        {
+            _target = target;
+        }
+
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                string sectionName = _target.IsWindows ? WindowsSectionName : UnixSectionName;
+                return new ObjectNodeSection(sectionName, SectionType.ReadOnly);
+            }
+        }
+
         public override string GetName()
         {
             return ((ISymbolNode)this).MangledName;
@@ -47,33 +68,6 @@ namespace ILCompiler.DependencyAnalysis
             objData.EmitPointerReloc(factory.ReadyToRunHeader);
 
             return objData.ToObjectData();
-        }
-    }
-
-    public class WindowsModulesSectionNode : ModulesSectionNode
-    {
-        public static readonly string SectionName = ".modules$I";
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return new ObjectNodeSection(SectionName, SectionType.ReadOnly);
-            }
-        }
-    }
-
-    public class UnixModulesSectionNode : ModulesSectionNode
-    {
-
-        public static readonly string SectionName = "__modules";
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return new ObjectNodeSection(SectionName, SectionType.ReadOnly);
-            }
         }
     }
 }
