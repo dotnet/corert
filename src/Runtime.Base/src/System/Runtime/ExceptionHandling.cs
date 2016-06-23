@@ -217,9 +217,9 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal unsafe static void UnhandledExceptionFailFastViaClasslib(
-                                    RhFailFastReason reason, Exception unhandledException, ref ExInfo exInfo)
+                                    RhFailFastReason reason, Exception unhandledException, IntPtr classlibAddress, ref ExInfo exInfo)
         {
-            IntPtr pFailFastFunction = (IntPtr)InternalCalls.RhpGetClasslibFunction(exInfo._pExContext->IP,
+            IntPtr pFailFastFunction = (IntPtr)InternalCalls.RhpGetClasslibFunction(classlibAddress,
                                                               ClassLibFunctionId.FailFast);
 
             if (pFailFastFunction == IntPtr.Zero)
@@ -227,7 +227,7 @@ namespace System.Runtime
                 FailFastViaClasslib(
                     reason,
                     unhandledException,
-                    exInfo._pExContext->IP);
+                    classlibAddress);
             }
 
             // 16-byte align the context.  This is overkill on x86 and ARM, but simplifies things slightly.
@@ -264,9 +264,9 @@ namespace System.Runtime
         }
 
         internal unsafe static void AppendExceptionStackFrameViaClasslib(
-            Exception exception, IntPtr IP, bool isFirstRethrowFrame, IntPtr classlibAddress, bool isFirstFrame)
+            Exception exception, IntPtr IP, bool isFirstRethrowFrame, bool isFirstFrame)
         {
-            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunction(classlibAddress,
+            IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunction(IP,
                                                                ClassLibFunctionId.AppendExceptionStackFrame);
             int flags = (isFirstFrame ? (int)RhEHFrameType.RH_EH_FIRST_FRAME : 0) |
                         (isFirstRethrowFrame ? (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME : 0);
@@ -329,10 +329,7 @@ namespace System.Runtime
             // Throw the overflow exception defined by the classlib, using the return address of the asm helper
             // to find the correct classlib.
 
-            Exception e = GetClasslibException(ExceptionIDs.Overflow, address);
-
-            BinderIntrinsics.TailCall_RhpThrowEx(e);
-            throw e;
+            throw GetClasslibException(ExceptionIDs.Overflow, address);
         }
 
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
@@ -341,10 +338,7 @@ namespace System.Runtime
             // Throw the divide by zero exception defined by the classlib, using the return address of the asm helper
             // to find the correct classlib.
 
-            Exception e = GetClasslibException(ExceptionIDs.DivideByZero, address);
-
-            BinderIntrinsics.TailCall_RhpThrowEx(e);
-            throw e;
+            throw GetClasslibException(ExceptionIDs.DivideByZero, address);
         }
 
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
@@ -355,9 +349,7 @@ namespace System.Runtime
             // Throw the out of memory exception defined by the classlib, using the input EEType* 
             // to find the correct classlib.
 
-            Exception e = pEEType.ToPointer()->GetClasslibException(exID);
-
-            BinderIntrinsics.TailCall_RhpThrowEx(e);
+            throw pEEType.ToPointer()->GetClasslibException(exID);
         }
 
 #if !INPLACE_RUNTIME
@@ -596,6 +588,7 @@ namespace System.Runtime
             bool isFirstRethrowFrame = (startIdx != MaxTryRegionIdx);
             bool isFirstFrame = true;
 
+            byte* prevControlPC = null;
             UIntPtr prevFramePtr = UIntPtr.Zero;
             bool unwoundReversePInvoke = false;
 
@@ -608,6 +601,8 @@ namespace System.Runtime
                 // disallow dispatching exceptions across native code.
                 if (unwoundReversePInvoke)
                     break;
+
+                prevControlPC = frameIter.ControlPC;
 
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 
@@ -637,6 +632,7 @@ namespace System.Runtime
                 UnhandledExceptionFailFastViaClasslib(
                     RhFailFastReason.PN_UnhandledException,
                     exceptionObj,
+                    (IntPtr)prevControlPC, // IP of the last frame that did not handle the exception
                     ref exInfo);
             }
 
@@ -715,7 +711,7 @@ namespace System.Runtime
             if ((prevFramePtr == UIntPtr.Zero) || (curFramePtr != prevFramePtr))
             {
                 AppendExceptionStackFrameViaClasslib(exceptionObj, (IntPtr)exInfo._frameIter.ControlPC,
-                                                     isFirstRethrowFrame, exInfo._pExContext->IP, isFirstFrame);
+                                                     isFirstRethrowFrame, isFirstFrame);
             }
             prevFramePtr = curFramePtr;
             isFirstRethrowFrame = false;
