@@ -23,7 +23,6 @@ enum WellKnownEntryPoint
     WKM_GENERICLOOKUPANDCAST,               // Perform a generic lookup and call a method passing the lookup result as an argument
     WKM_GENERICLOOKUPANDCHECKARRAYELEMTYPE, // Perform a generic lookup and call a method passing the lookup result as an argument
     WKM_BINDERINTRINSIC_GCSTRESS_FINALIZE,  // The GCStress objects Finalize method
-    WKM_BINDERINTRINSIC_TAILCALL_RHPTHROWEX,// Tail-call the throw helper.
     WKM_DBL2INT_OVF,                        // Convert double to int with overflow check
     WKM_DBL2LNG_OVF,                        // Convert double to long with overflow check
     WKM_DBL2ULNG_OVF,                       // Convert double to ulong with overflow check
