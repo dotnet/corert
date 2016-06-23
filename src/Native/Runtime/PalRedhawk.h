@@ -278,8 +278,6 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     void SetIp(UIntNative ip) { Rip = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
 #ifdef UNIX_AMD64_ABI
-    UIntNative GetArg0Reg() { return Rdi; }
-    UIntNative GetArg1Reg() { return Rsi; }
     void SetArg0Reg(UIntNative val) { Rdi = val; }
     void SetArg1Reg(UIntNative val) { Rsi = val; }
 #else // UNIX_AMD64_ABI
@@ -326,7 +324,7 @@ typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
     UInt32 Wcr[ARM_MAX_WATCHPOINTS];
     UInt32 Padding2[2];
 
-    void SetIP(UIntNative ip) { Pc = ip; }
+    void SetIp(UIntNative ip) { Pc = ip; }
     void SetArg0Reg(UIntNative val) { R0 = val; }
     void SetArg1Reg(UIntNative val) { R1 = val; }
     UIntNative GetIp() { return Pc; }
@@ -377,8 +375,8 @@ typedef struct _CONTEXT {
     UInt32 SegSs;
     UInt8  ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 
-    void SetIP(UIntNative ip) { Eip = ip; }
-    void SetSP(UIntNative sp) { Esp = sp; }
+    void SetIp(UIntNative ip) { Eip = ip; }
+    void SetSp(UIntNative sp) { Esp = sp; }
     void SetArg0Reg(UIntNative val) { Ecx = val; }
     void SetArg1Reg(UIntNative val) { Edx = val; }
     UIntNative GetIp() { return Eip; }
@@ -459,7 +457,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     UInt32 Wcr[ARM64_MAX_WATCHPOINTS];
     UInt64 Wvr[ARM64_MAX_WATCHPOINTS];
 
-    void SetIP(UIntNative ip) { Pc = ip; }
+    void SetIp(UIntNative ip) { Pc = ip; }
     void SetArg0Reg(UIntNative val) { X0 = val; }
     void SetArg1Reg(UIntNative val) { X1 = val; }
     UIntNative GetIp() { return Pc; }
