@@ -29,9 +29,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonUtilites.cs">
-      <Link>TypeSystem\Canon\CanonUtilites.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\DefType.Canon.cs">
       <Link>TypeSystem\Canon\DefType.Canon.cs</Link>
     </Compile>
@@ -319,6 +316,33 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\CanonUtilites.cs">
+      <Link>TypeSystem\RuntimeDetermined\CanonUtilites.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\GenericParameterDesc.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\GenericParameterDesc.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ParameterizedType.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\ParameterizedType.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs">
+      <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedTypeUtilities.cs">
+      <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedTypeUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\SignatureVariable.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\SignatureVariable.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeDesc.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\TypeDesc.RuntimeDetermined.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs">
+      <Link>TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

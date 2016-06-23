@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Interlocked = System.Threading.Interlocked;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -38,6 +39,23 @@ namespace Internal.TypeSystem
                     Interlocked.CompareExchange(ref _universalCanonType, new UniversalCanonType(this), null);
                 }
                 return _universalCanonType;
+            }
+        }
+
+        public bool IsCanonicalDefinitionType(TypeDesc type, CanonicalFormKind kind)
+        {
+            if (kind == CanonicalFormKind.Any)
+            {
+                return type == CanonType || type == UniversalCanonType;
+            }
+            else if (kind == CanonicalFormKind.Specific)
+            {
+                return type == CanonType;
+            }
+            else
+            {
+                Debug.Assert(kind == CanonicalFormKind.Universal);
+                return type == UniversalCanonType;
             }
         }
     }

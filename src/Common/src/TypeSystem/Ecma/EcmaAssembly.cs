@@ -50,7 +50,7 @@ namespace Internal.TypeSystem.Ecma
 
         public override string ToString()
         {
-            return GetName().FullName;
+            return GetName().Name;
         }
 
         public bool HasAssemblyCustomAttribute(string attributeNamespace, string attributeName)
