@@ -19,9 +19,6 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {
-    /// <summary>
-    /// ArraySignature
-    /// </summary>
     public partial class ArraySignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -114,9 +111,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public int[] LowerBounds;
     } // ArraySignature
 
-    /// <summary>
-    /// ByReferenceSignature
-    /// </summary>
     public partial class ByReferenceSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -185,9 +179,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // ByReferenceSignature
 
-    /// <summary>
-    /// ConstantBooleanArray
-    /// </summary>
     public partial class ConstantBooleanArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -257,9 +248,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public bool[] Value;
     } // ConstantBooleanArray
 
-    /// <summary>
-    /// ConstantBooleanValue
-    /// </summary>
     public partial class ConstantBooleanValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -323,9 +311,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public bool Value;
     } // ConstantBooleanValue
 
-    /// <summary>
-    /// ConstantBoxedEnumValue
-    /// </summary>
     public partial class ConstantBoxedEnumValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -407,9 +392,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // ConstantBoxedEnumValue
 
-    /// <summary>
-    /// ConstantByteArray
-    /// </summary>
     public partial class ConstantByteArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -479,9 +461,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public byte[] Value;
     } // ConstantByteArray
 
-    /// <summary>
-    /// ConstantByteValue
-    /// </summary>
     public partial class ConstantByteValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -545,9 +524,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public byte Value;
     } // ConstantByteValue
 
-    /// <summary>
-    /// ConstantCharArray
-    /// </summary>
     public partial class ConstantCharArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -617,9 +593,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public char[] Value;
     } // ConstantCharArray
 
-    /// <summary>
-    /// ConstantCharValue
-    /// </summary>
     public partial class ConstantCharValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -683,9 +656,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public char Value;
     } // ConstantCharValue
 
-    /// <summary>
-    /// ConstantDoubleArray
-    /// </summary>
     public partial class ConstantDoubleArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -755,9 +725,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public double[] Value;
     } // ConstantDoubleArray
 
-    /// <summary>
-    /// ConstantDoubleValue
-    /// </summary>
     public partial class ConstantDoubleValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -821,9 +788,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public double Value;
     } // ConstantDoubleValue
 
-    /// <summary>
-    /// ConstantHandleArray
-    /// </summary>
     public partial class ConstantHandleArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -887,9 +851,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<MetadataRecord> Value = new List<MetadataRecord>();
     } // ConstantHandleArray
 
-    /// <summary>
-    /// ConstantInt16Array
-    /// </summary>
     public partial class ConstantInt16Array : MetadataRecord
     {
         public override HandleType HandleType
@@ -959,9 +920,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public short[] Value;
     } // ConstantInt16Array
 
-    /// <summary>
-    /// ConstantInt16Value
-    /// </summary>
     public partial class ConstantInt16Value : MetadataRecord
     {
         public override HandleType HandleType
@@ -1025,9 +983,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public short Value;
     } // ConstantInt16Value
 
-    /// <summary>
-    /// ConstantInt32Array
-    /// </summary>
     public partial class ConstantInt32Array : MetadataRecord
     {
         public override HandleType HandleType
@@ -1097,9 +1052,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public int[] Value;
     } // ConstantInt32Array
 
-    /// <summary>
-    /// ConstantInt32Value
-    /// </summary>
     public partial class ConstantInt32Value : MetadataRecord
     {
         public override HandleType HandleType
@@ -1163,9 +1115,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public int Value;
     } // ConstantInt32Value
 
-    /// <summary>
-    /// ConstantInt64Array
-    /// </summary>
     public partial class ConstantInt64Array : MetadataRecord
     {
         public override HandleType HandleType
@@ -1235,9 +1184,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public long[] Value;
     } // ConstantInt64Array
 
-    /// <summary>
-    /// ConstantInt64Value
-    /// </summary>
     public partial class ConstantInt64Value : MetadataRecord
     {
         public override HandleType HandleType
@@ -1301,9 +1247,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public long Value;
     } // ConstantInt64Value
 
-    /// <summary>
-    /// ConstantReferenceValue
-    /// </summary>
     public partial class ConstantReferenceValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -1363,9 +1306,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     } // ConstantReferenceValue
 
-    /// <summary>
-    /// ConstantSByteArray
-    /// </summary>
     public partial class ConstantSByteArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -1435,9 +1375,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public sbyte[] Value;
     } // ConstantSByteArray
 
-    /// <summary>
-    /// ConstantSByteValue
-    /// </summary>
     public partial class ConstantSByteValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -1501,9 +1438,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public sbyte Value;
     } // ConstantSByteValue
 
-    /// <summary>
-    /// ConstantSingleArray
-    /// </summary>
     public partial class ConstantSingleArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -1573,9 +1507,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public float[] Value;
     } // ConstantSingleArray
 
-    /// <summary>
-    /// ConstantSingleValue
-    /// </summary>
     public partial class ConstantSingleValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -1639,9 +1570,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public float Value;
     } // ConstantSingleValue
 
-    /// <summary>
-    /// ConstantStringArray
-    /// </summary>
     public partial class ConstantStringArray : MetadataRecord
     {
         public override HandleType HandleType
@@ -1711,9 +1639,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public string[] Value;
     } // ConstantStringArray
 
-    /// <summary>
-    /// ConstantStringValue
-    /// </summary>
     public partial class ConstantStringValue : MetadataRecord
     {
         public override HandleType HandleType
@@ -1783,9 +1708,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public string Value;
     } // ConstantStringValue
 
-    /// <summary>
-    /// ConstantUInt16Array
-    /// </summary>
     public partial class ConstantUInt16Array : MetadataRecord
     {
         public override HandleType HandleType
@@ -1855,9 +1777,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort[] Value;
     } // ConstantUInt16Array
 
-    /// <summary>
-    /// ConstantUInt16Value
-    /// </summary>
     public partial class ConstantUInt16Value : MetadataRecord
     {
         public override HandleType HandleType
@@ -1921,9 +1840,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort Value;
     } // ConstantUInt16Value
 
-    /// <summary>
-    /// ConstantUInt32Array
-    /// </summary>
     public partial class ConstantUInt32Array : MetadataRecord
     {
         public override HandleType HandleType
@@ -1993,9 +1909,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public uint[] Value;
     } // ConstantUInt32Array
 
-    /// <summary>
-    /// ConstantUInt32Value
-    /// </summary>
     public partial class ConstantUInt32Value : MetadataRecord
     {
         public override HandleType HandleType
@@ -2059,9 +1972,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public uint Value;
     } // ConstantUInt32Value
 
-    /// <summary>
-    /// ConstantUInt64Array
-    /// </summary>
     public partial class ConstantUInt64Array : MetadataRecord
     {
         public override HandleType HandleType
@@ -2131,9 +2041,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ulong[] Value;
     } // ConstantUInt64Array
 
-    /// <summary>
-    /// ConstantUInt64Value
-    /// </summary>
     public partial class ConstantUInt64Value : MetadataRecord
     {
         public override HandleType HandleType
@@ -2197,9 +2104,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ulong Value;
     } // ConstantUInt64Value
 
-    /// <summary>
-    /// CustomAttribute
-    /// </summary>
     public partial class CustomAttribute : MetadataRecord
     {
         public CustomAttribute()
@@ -2306,9 +2210,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<NamedArgument> NamedArguments = new List<NamedArgument>();
     } // CustomAttribute
 
-    /// <summary>
-    /// CustomModifier
-    /// </summary>
     public partial class CustomModifier : MetadataRecord
     {
         public override HandleType HandleType
@@ -2381,9 +2282,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // CustomModifier
 
-    /// <summary>
-    /// Event
-    /// </summary>
     public partial class Event : MetadataRecord
     {
         public override HandleType HandleType
@@ -2483,9 +2381,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Event
 
-    /// <summary>
-    /// Field
-    /// </summary>
     public partial class Field : MetadataRecord
     {
         public override HandleType HandleType
@@ -2611,9 +2506,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Field
 
-    /// <summary>
-    /// FieldSignature
-    /// </summary>
     public partial class FieldSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -2686,9 +2578,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomModifier> CustomModifiers = new List<CustomModifier>();
     } // FieldSignature
 
-    /// <summary>
-    /// FixedArgument
-    /// </summary>
     public partial class FixedArgument : MetadataRecord
     {
         public override HandleType HandleType
@@ -2798,9 +2687,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Value;
     } // FixedArgument
 
-    /// <summary>
-    /// GenericParameter
-    /// </summary>
     public partial class GenericParameter : MetadataRecord
     {
         public override HandleType HandleType
@@ -2896,9 +2782,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // GenericParameter
 
-    /// <summary>
-    /// MemberReference
-    /// </summary>
     public partial class MemberReference : MetadataRecord
     {
         public override HandleType HandleType
@@ -2984,9 +2867,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // MemberReference
 
-    /// <summary>
-    /// Method
-    /// </summary>
     public partial class Method : MetadataRecord
     {
         public override HandleType HandleType
@@ -3090,9 +2970,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Method
 
-    /// <summary>
-    /// MethodImpl
-    /// </summary>
     public partial class MethodImpl : MetadataRecord
     {
         public override HandleType HandleType
@@ -3168,9 +3045,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord MethodDeclaration;
     } // MethodImpl
 
-    /// <summary>
-    /// MethodInstantiation
-    /// </summary>
     public partial class MethodInstantiation : MetadataRecord
     {
         public override HandleType HandleType
@@ -3250,9 +3124,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // MethodInstantiation
 
-    /// <summary>
-    /// MethodSemantics
-    /// </summary>
     public partial class MethodSemantics : MetadataRecord
     {
         public override HandleType HandleType
@@ -3321,9 +3192,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public Method Method;
     } // MethodSemantics
 
-    /// <summary>
-    /// MethodSignature
-    /// </summary>
     public partial class MethodSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -3418,9 +3286,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<ParameterTypeSignature> VarArgParameters = new List<ParameterTypeSignature>();
     } // MethodSignature
 
-    /// <summary>
-    /// MethodTypeVariableSignature
-    /// </summary>
     public partial class MethodTypeVariableSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -3484,9 +3349,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public int Number;
     } // MethodTypeVariableSignature
 
-    /// <summary>
-    /// NamedArgument
-    /// </summary>
     public partial class NamedArgument : MetadataRecord
     {
         public override HandleType HandleType
@@ -3560,9 +3422,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public FixedArgument Value;
     } // NamedArgument
 
-    /// <summary>
-    /// NamespaceDefinition
-    /// </summary>
     public partial class NamespaceDefinition : MetadataRecord
     {
         public override HandleType HandleType
@@ -3644,9 +3503,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<NamespaceDefinition> NamespaceDefinitions = new List<NamespaceDefinition>();
     } // NamespaceDefinition
 
-    /// <summary>
-    /// NamespaceReference
-    /// </summary>
     public partial class NamespaceReference : MetadataRecord
     {
         public override HandleType HandleType
@@ -3719,9 +3575,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ConstantStringValue Name;
     } // NamespaceReference
 
-    /// <summary>
-    /// Parameter
-    /// </summary>
     public partial class Parameter : MetadataRecord
     {
         public override HandleType HandleType
@@ -3835,9 +3688,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Parameter
 
-    /// <summary>
-    /// ParameterTypeSignature
-    /// </summary>
     public partial class ParameterTypeSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -3910,9 +3760,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // ParameterTypeSignature
 
-    /// <summary>
-    /// PointerSignature
-    /// </summary>
     public partial class PointerSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -3981,9 +3828,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // PointerSignature
 
-    /// <summary>
-    /// Property
-    /// </summary>
     public partial class Property : MetadataRecord
     {
         public override HandleType HandleType
@@ -4116,9 +3960,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Property
 
-    /// <summary>
-    /// PropertySignature
-    /// </summary>
     public partial class PropertySignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -4206,9 +4047,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<ParameterTypeSignature> Parameters = new List<ParameterTypeSignature>();
     } // PropertySignature
 
-    /// <summary>
-    /// QualifiedField
-    /// </summary>
     public partial class QualifiedField : MetadataRecord
     {
         public override HandleType HandleType
@@ -4278,9 +4116,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public TypeDefinition EnclosingType;
     } // QualifiedField
 
-    /// <summary>
-    /// QualifiedMethod
-    /// </summary>
     public partial class QualifiedMethod : MetadataRecord
     {
         public override HandleType HandleType
@@ -4350,9 +4185,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public TypeDefinition EnclosingType;
     } // QualifiedMethod
 
-    /// <summary>
-    /// ReturnTypeSignature
-    /// </summary>
     public partial class ReturnTypeSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -4425,9 +4257,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord Type;
     } // ReturnTypeSignature
 
-    /// <summary>
-    /// SZArraySignature
-    /// </summary>
     public partial class SZArraySignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -4496,9 +4325,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public MetadataRecord ElementType;
     } // SZArraySignature
 
-    /// <summary>
-    /// ScopeDefinition
-    /// </summary>
     public partial class ScopeDefinition : MetadataRecord
     {
         public override HandleType HandleType
@@ -4608,9 +4434,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // ScopeDefinition
 
-    /// <summary>
-    /// ScopeReference
-    /// </summary>
     public partial class ScopeReference : MetadataRecord
     {
         public override HandleType HandleType
@@ -4714,9 +4537,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // ScopeReference
 
-    /// <summary>
-    /// TypeDefinition
-    /// </summary>
     public partial class TypeDefinition : MetadataRecord
     {
         public override HandleType HandleType
@@ -4835,9 +4655,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // TypeDefinition
 
-    /// <summary>
-    /// TypeForwarder
-    /// </summary>
     public partial class TypeForwarder : MetadataRecord
     {
         public override HandleType HandleType
@@ -4915,9 +4732,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // TypeForwarder
 
-    /// <summary>
-    /// TypeInstantiationSignature
-    /// </summary>
     public partial class TypeInstantiationSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -4994,9 +4808,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<MetadataRecord> GenericTypeArguments = new List<MetadataRecord>();
     } // TypeInstantiationSignature
 
-    /// <summary>
-    /// TypeReference
-    /// </summary>
     public partial class TypeReference : MetadataRecord
     {
         public override HandleType HandleType
@@ -5073,9 +4884,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // TypeReference
 
-    /// <summary>
-    /// TypeSpecification
-    /// </summary>
     public partial class TypeSpecification : MetadataRecord
     {
         public override HandleType HandleType
@@ -5154,9 +4962,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // TypeSpecification
 
-    /// <summary>
-    /// TypeVariableSignature
-    /// </summary>
     public partial class TypeVariableSignature : MetadataRecord
     {
         public override HandleType HandleType

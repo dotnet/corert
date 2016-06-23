@@ -90,15 +90,4 @@ class CsWriter : IDisposable
     {
         WriteLine("/// " + s);
     }
-
-    public void WriteSummary(string s)
-    {
-        WriteLineIfNeeded();
-
-        WriteDocComment("<summary>");
-        WriteDocComment(s);
-        WriteDocComment("</summary>");
-
-        _emptyLineAssumed = true;
-    }
 }

@@ -64,7 +64,7 @@ namespace Internal.Metadata.NativeFormat
         MaxValue = 0xFFFF,
     }
 
-    public partial struct Handle : IHandle
+    public partial struct Handle
     {
         public override bool Equals(Object obj)
         {
@@ -167,7 +167,7 @@ namespace Internal.Metadata.NativeFormat
         }
     }
 
-    public sealed partial class MetadataReader : IMetadataReader
+    public sealed partial class MetadataReader
     {
         private MetadataHeader _header;
 

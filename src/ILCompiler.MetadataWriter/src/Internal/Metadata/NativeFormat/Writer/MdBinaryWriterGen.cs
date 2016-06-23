@@ -16,9 +16,6 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Metadata.NativeFormat.Writer
 {
-    /// <summary>
-    /// MdBinaryWriter
-    /// </summary>
     internal static partial class MdBinaryWriter
     {
         public static void Write(this NativeWriter writer, IEnumerable<bool> values)

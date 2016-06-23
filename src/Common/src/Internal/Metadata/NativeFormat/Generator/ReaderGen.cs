@@ -44,7 +44,6 @@ class ReaderGen : CsWriter
 
     private void EmitRecord(RecordDef record)
     {
-        WriteSummary(record.Name);
         OpenScope($"public partial struct {record.Name}");
 
         WriteLine("internal MetadataReader _reader;");
@@ -89,7 +88,6 @@ class ReaderGen : CsWriter
     {
         string handleName = $"{record.Name}Handle";
 
-        WriteSummary(handleName);
         OpenScope($"public partial struct {handleName}");
 
         OpenScope("public override bool Equals(object obj)");
@@ -164,7 +162,6 @@ class ReaderGen : CsWriter
 
     private void EmitOpaqueHandle()
     {
-        WriteSummary("Handle");
         OpenScope("public partial struct Handle");
 
         foreach (var record in SchemaDef.RecordSchema)
@@ -181,8 +178,7 @@ class ReaderGen : CsWriter
 
     private void EmitMetadataReader()
     {
-        WriteSummary("MetadataReader");
-        OpenScope("public partial class MetadataReader : IMetadataReader");
+        OpenScope("public partial class MetadataReader");
 
         foreach (var record in SchemaDef.RecordSchema)
         {
