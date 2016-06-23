@@ -43,13 +43,12 @@ namespace Internal.TypeSystem
             _context = context;
         }
 
-        public override DefType BaseType { get { return null; } }
-
-        public override TypeSystemContext Context { get { return _context; } }
-
-        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        public sealed override TypeSystemContext Context
         {
-            throw new NotImplementedException();
+            get
+            {
+                return _context;
+            }
         }
     }
 
@@ -72,6 +71,14 @@ namespace Internal.TypeSystem
         // consumer-specific initialization.
         partial void Initialize();
 
+        public override DefType BaseType
+        {
+            get
+            {
+                return Context.GetWellKnownType(WellKnownType.Object);
+            }
+        }
+
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {
             return policy == CanonicalFormKind.Specific ||
@@ -86,7 +93,15 @@ namespace Internal.TypeSystem
         
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            return TypeFlags.Class;
+            TypeFlags flags = 0;
+
+            if ((mask & TypeFlags.CategoryMask) != 0)
+            {
+                flags |= TypeFlags.Class;
+            }
+
+            Debug.Assert((flags & mask) != 0);
+            return flags;
         }
 
         public override int GetHashCode()
@@ -124,6 +139,15 @@ namespace Internal.TypeSystem
         // consumer-specific initialization.
         partial void Initialize();
 
+        public override DefType BaseType
+        {
+            get
+            {
+                // Behavior for this is undefined.
+                throw new NotSupportedException();
+            }
+        }
+
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {
             return policy == CanonicalFormKind.Universal || 
@@ -134,6 +158,20 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(kind == CanonicalFormKind.Universal);
             return this;
+        }
+
+        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        {
+            TypeFlags flags = 0;
+
+            if ((mask & TypeFlags.CategoryMask) != 0)
+            {
+                // Behavior for this is undefined.
+                throw new NotSupportedException();
+            }
+
+            Debug.Assert((flags & mask) != 0);
+            return flags;
         }
 
         public override int GetHashCode()
