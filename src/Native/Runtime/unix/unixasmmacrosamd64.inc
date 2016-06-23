@@ -71,16 +71,16 @@ C_FUNC(\Name):
 
 .macro alloc_stack Size
 .att_syntax
-        lea -\Size(%rsp), %rsp
+        lea -(\Size)(%rsp), %rsp
 .intel_syntax noprefix
-        .cfi_adjust_cfa_offset \Size
+        .cfi_adjust_cfa_offset (\Size)
 .endm
 
 .macro free_stack Size
 .att_syntax
-        lea \Size(%rsp), %rsp
+        lea (\Size)(%rsp), %rsp
 .intel_syntax noprefix
-        .cfi_adjust_cfa_offset -\Size
+        .cfi_adjust_cfa_offset -(\Size)
 .endm
 
 .macro set_cfa_register Reg, Offset
