@@ -11,7 +11,8 @@ namespace ILCompiler.DependencyAnalysis
     internal class MethodCodeNode : ObjectNode, IMethodNode, INodeWithCodeInfo, INodeWithDebugInfo
     {
         public static readonly ObjectNodeSection StartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
-        public static readonly ObjectNodeSection ContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
+        public static readonly ObjectNodeSection WindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
+        public static readonly ObjectNodeSection UnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
         public static readonly ObjectNodeSection EndSection = new ObjectNodeSection(".managedcode$Z", SectionType.Executable);
 
         private MethodDesc _method;
@@ -49,8 +50,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                // TODO: Exception handling on Unix
-                return _method.Context.Target.IsWindows ? ContentSection : ObjectNodeSection.TextSection;
+                return _method.Context.Target.IsWindows ? WindowsContentSection : UnixContentSection;
             }
         }
 

@@ -54,7 +54,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1603870787;
+            int hash = -1695197362;
             hash = ((hash << 13) - (hash >> 19)) ^ (ElementType == null ? 0 : ElementType.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ Rank.GetHashCode();
             if (Sizes != null)
@@ -146,7 +146,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -695627658;
+            int hash = -1073148208;
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -200,7 +200,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -217,7 +216,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1799185487;
+            int hash = 1669156255;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -273,7 +272,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -290,7 +288,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 842390402;
+            int hash = -2123694264;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -359,7 +357,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1942215075;
+            int hash = -146484973;
             hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             LeaveGetHashCode();
@@ -424,7 +422,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -441,7 +438,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -216020972;
+            int hash = 1517728553;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -497,7 +494,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -514,7 +510,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 229129511;
+            int hash = 956121649;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -564,7 +560,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -581,7 +576,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 306354450;
+            int hash = 87299501;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -637,7 +632,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -654,7 +648,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1395702369;
+            int hash = -1144623449;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -704,7 +698,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -721,7 +714,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1926817667;
+            int hash = 306507680;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -777,7 +770,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -794,7 +786,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1481871770;
+            int hash = 255842732;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -861,7 +853,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 245030796;
+            int hash = 419821497;
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -910,7 +902,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -927,7 +918,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 511421544;
+            int hash = -841758326;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -983,7 +974,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1000,7 +990,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 981319805;
+            int hash = 1889575196;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -1050,7 +1040,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1067,7 +1056,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1821266972;
+            int hash = -564945703;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -1123,7 +1112,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1140,7 +1128,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -586694639;
+            int hash = 428854007;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -1190,7 +1178,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1207,7 +1194,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -769479382;
+            int hash = -1370374469;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -1263,7 +1250,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1280,7 +1266,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1994441023;
+            int hash = -119643031;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -1330,7 +1316,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1346,7 +1331,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -498183990;
+            int hash = -356868119;
             LeaveGetHashCode();
             _hash = hash;
             return _hash;
@@ -1354,7 +1339,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Save(NativeWriter writer)
         {
-
         } // Save
 
         internal static ConstantReferenceValueHandle AsHandle(ConstantReferenceValue record)
@@ -1376,6 +1360,7 @@ namespace Internal.Metadata.NativeFormat.Writer
                 return new ConstantReferenceValueHandle(HandleOffset);
             }
         } // Handle
+
     } // ConstantReferenceValue
 
     /// <summary>
@@ -1393,7 +1378,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1410,7 +1394,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1904334730;
+            int hash = -858483880;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -1466,7 +1450,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1483,7 +1466,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1000778923;
+            int hash = 1687678717;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -1533,7 +1516,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1550,7 +1532,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 212052597;
+            int hash = -1835856492;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -1606,7 +1588,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1623,7 +1604,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1786883192;
+            int hash = -1485562241;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -1673,7 +1654,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1690,7 +1670,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 270977183;
+            int hash = -229915937;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -1746,7 +1726,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1763,7 +1742,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 280549046;
+            int hash = -988868645;
             hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -1774,8 +1753,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             if (Value == null)
                 return;
-            
-            
+
             writer.Write(Value);
         } // Save
 
@@ -1820,7 +1798,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1837,7 +1814,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -462047045;
+            int hash = -1674143188;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -1893,7 +1870,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1910,7 +1886,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1667604030;
+            int hash = -781837543;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -1960,7 +1936,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -1977,7 +1952,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -453396483;
+            int hash = 669818817;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -2033,7 +2008,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2050,7 +2024,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1659477760;
+            int hash = 1507697544;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -2100,7 +2074,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2117,7 +2090,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -470567020;
+            int hash = -1046451052;
             if (Value != null)
             {
                 for (int i = 0; i < Value.Length; i++)
@@ -2173,7 +2146,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2190,7 +2162,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1678745429;
+            int hash = 288849578;
             hash = ((hash << 13) - (hash >> 19)) ^ Value.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -2245,9 +2217,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            Constructor = visitor.Visit(this, Constructor);
             FixedArguments = visitor.Visit(this, FixedArguments.AsEnumerable());
             NamedArguments = visitor.Visit(this, NamedArguments.AsEnumerable());
-            Constructor = visitor.Visit(this, Constructor);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2271,25 +2243,25 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             return true;
         } // Equals
-
         private ThreadLocal<ReentrancyGuardStack> _equalsReentrancyGuard;
+
         public override sealed int GetHashCode()
         {
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1789737237;
+            int hash = -371886834;
             hash = ((hash << 13) - (hash >> 19)) ^ (Constructor == null ? 0 : Constructor.GetHashCode());
             if (FixedArguments != null)
             {
-                for (int i = 0; i < FixedArguments.Count; i++)
+            for (int i = 0; i < FixedArguments.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (FixedArguments[i] == null ? 0 : FixedArguments[i].GetHashCode());
                 }
             }
             if (NamedArguments != null)
             {
-                for (int i = 0; i < NamedArguments.Count; i++)
+            for (int i = 0; i < NamedArguments.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (NamedArguments[i] == null ? 0 : NamedArguments[i].GetHashCode());
                 }
@@ -2367,7 +2339,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -227081198;
+            int hash = -282314442;
             hash = ((hash << 13) - (hash >> 19)) ^ IsOptional.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             LeaveGetHashCode();
@@ -2425,9 +2397,9 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
+            Type = visitor.Visit(this, Type);
             MethodSemantics = visitor.Visit(this, MethodSemantics.AsEnumerable());
             CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
-            Type = visitor.Visit(this, Type);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2448,20 +2420,20 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1560445450;
+            int hash = -1407612499;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             if (MethodSemantics != null)
             {
-                for (int i = 0; i < MethodSemantics.Count; i++)
+            for (int i = 0; i < MethodSemantics.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
                 }
             }
             if (CustomAttributes != null)
             {
-                for (int i = 0; i < CustomAttributes.Count; i++)
+            for (int i = 0; i < CustomAttributes.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
                 }
@@ -2528,8 +2500,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
             Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             DefaultValue = visitor.Visit(this, DefaultValue);
+            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2551,7 +2523,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1184596707;
+            int hash = 1722033859;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
@@ -2559,7 +2531,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ Offset.GetHashCode();
             if (CustomAttributes != null)
             {
-                for (int i = 0; i < CustomAttributes.Count; i++)
+            for (int i = 0; i < CustomAttributes.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
                 }
@@ -2673,7 +2645,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -964924677;
+            int hash = 1452889806;
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -2749,7 +2721,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -346484021;
+            int hash = 512823826;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
@@ -2842,8 +2814,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             Constraints = Constraints.Select(value => visitor.Visit(this, value)).ToList();
+            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2865,14 +2837,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1752735177;
+            int hash = -1401825903;
             hash = ((hash << 13) - (hash >> 19)) ^ Number.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ Kind.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             if (Constraints != null)
             {
-                for (int i = 0; i < Constraints.Count; i++)
+            for (int i = 0; i < Constraints.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (Constraints[i] == null ? 0 : Constraints[i].GetHashCode());
                 }
@@ -2939,10 +2911,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            Parent = visitor.Visit(this, Parent);
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
             Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
             CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
-            Parent = visitor.Visit(this, Parent);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2962,7 +2934,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -2088053629;
+            int hash = -847180714;
             hash = ((hash << 13) - (hash >> 19)) ^ (Parent == null ? 0 : Parent.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
@@ -3013,13 +2985,6 @@ namespace Internal.Metadata.NativeFormat.Writer
     } // MemberReference
 
     /// <summary>
-    /// MetadataWriter
-    /// </summary>
-    public partial class MetadataWriter
-    {
-    } // MetadataWriter
-
-    /// <summary>
     /// Method
     /// </summary>
     public partial class Method : MetadataRecord
@@ -3061,21 +3026,21 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 414302350;
+            int hash = 1130967176;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ ImplFlags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
             if (Parameters != null)
             {
-                for (int i = 0; i < Parameters.Count; i++)
+            for (int i = 0; i < Parameters.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
                 }
             }
             if (GenericParameters != null)
             {
-                for (int i = 0; i < GenericParameters.Count; i++)
+            for (int i = 0; i < GenericParameters.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (GenericParameters[i] == null ? 0 : GenericParameters[i].GetHashCode());
                 }
@@ -3159,7 +3124,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -470854868;
+            int hash = -1490558383;
             hash = ((hash << 13) - (hash >> 19)) ^ (MethodBody == null ? 0 : MethodBody.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (MethodDeclaration == null ? 0 : MethodDeclaration.GetHashCode());
             LeaveGetHashCode();
@@ -3218,9 +3183,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             Method = visitor.Visit(this, Method);
             GenericTypeArguments = GenericTypeArguments.Select(value => visitor.Visit(this, value)).ToList();
+            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3239,7 +3204,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1994047112;
+            int hash = 2033905662;
             hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -3318,7 +3283,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 849522319;
+            int hash = 1730364226;
             hash = ((hash << 13) - (hash >> 19)) ^ Attributes.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
             LeaveGetHashCode();
@@ -3394,20 +3359,20 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -177286454;
+            int hash = -696464046;
             hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ GenericParameterCount.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (ReturnType == null ? 0 : ReturnType.GetHashCode());
             if (Parameters != null)
             {
-                for (int i = 0; i < Parameters.Count; i++)
+            for (int i = 0; i < Parameters.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
                 }
             }
             if (VarArgParameters != null)
             {
-                for (int i = 0; i < VarArgParameters.Count; i++)
+            for (int i = 0; i < VarArgParameters.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (VarArgParameters[i] == null ? 0 : VarArgParameters[i].GetHashCode());
                 }
@@ -3468,7 +3433,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3485,7 +3449,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -581196591;
+            int hash = 1216181014;
             hash = ((hash << 13) - (hash >> 19)) ^ Number.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;
@@ -3555,7 +3519,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 745864020;
+            int hash = -399497579;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Value == null ? 0 : Value.GetHashCode());
@@ -3611,11 +3575,11 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
             TypeDefinitions = visitor.Visit(this, TypeDefinitions.AsEnumerable());
             TypeForwarders = visitor.Visit(this, TypeForwarders.AsEnumerable());
             NamespaceDefinitions = visitor.Visit(this, NamespaceDefinitions.AsEnumerable());
-            ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3633,7 +3597,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1498718221;
+            int hash = -1150713441;
             hash = ((hash << 13) - (hash >> 19)) ^ (ParentScopeOrNamespace == null ? 0 : ParentScopeOrNamespace.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             LeaveGetHashCode();
@@ -3695,8 +3659,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
             ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
+            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3714,7 +3678,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 895578098;
+            int hash = -1740610489;
             hash = ((hash << 13) - (hash >> 19)) ^ (ParentScopeOrNamespace == null ? 0 : ParentScopeOrNamespace.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             LeaveGetHashCode();
@@ -3771,8 +3735,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             DefaultValue = visitor.Visit(this, DefaultValue);
+            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3793,7 +3757,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -929818086;
+            int hash = -1779262986;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ Sequence.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
@@ -3905,7 +3869,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -898234212;
+            int hash = -637529837;
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -3978,7 +3942,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 335490965;
+            int hash = 643277471;
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -4035,8 +3999,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
             Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
             MethodSemantics = visitor.Visit(this, MethodSemantics.AsEnumerable());
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
             DefaultValue = visitor.Visit(this, DefaultValue);
+            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4058,13 +4022,13 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -101394342;
+            int hash = 2101011354;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
             if (MethodSemantics != null)
             {
-                for (int i = 0; i < MethodSemantics.Count; i++)
+            for (int i = 0; i < MethodSemantics.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (MethodSemantics[i] == null ? 0 : MethodSemantics[i].GetHashCode());
                 }
@@ -4072,7 +4036,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             hash = ((hash << 13) - (hash >> 19)) ^ (DefaultValue == null ? 0 : DefaultValue.GetHashCode());
             if (CustomAttributes != null)
             {
-                for (int i = 0; i < CustomAttributes.Count; i++)
+            for (int i = 0; i < CustomAttributes.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (CustomAttributes[i] == null ? 0 : CustomAttributes[i].GetHashCode());
                 }
@@ -4189,12 +4153,12 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -401451631;
+            int hash = -1740963703;
             hash = ((hash << 13) - (hash >> 19)) ^ CallingConvention.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             if (Parameters != null)
             {
-                for (int i = 0; i < Parameters.Count; i++)
+            for (int i = 0; i < Parameters.Count; i++)
                 {
                     hash = ((hash << 13) - (hash >> 19)) ^ (Parameters[i] == null ? 0 : Parameters[i].GetHashCode());
                 }
@@ -4276,7 +4240,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -577389343;
+            int hash = 352418299;
             hash = ((hash << 13) - (hash >> 19)) ^ (Field == null ? 0 : Field.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (EnclosingType == null ? 0 : EnclosingType.GetHashCode());
             LeaveGetHashCode();
@@ -4348,7 +4312,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -565292777;
+            int hash = 740048845;
             hash = ((hash << 13) - (hash >> 19)) ^ (Method == null ? 0 : Method.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (EnclosingType == null ? 0 : EnclosingType.GetHashCode());
             LeaveGetHashCode();
@@ -4420,7 +4384,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1808955079;
+            int hash = 2015635549;
             hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -4493,7 +4457,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 1118159789;
+            int hash = 1196606943;
             hash = ((hash << 13) - (hash >> 19)) ^ (ElementType == null ? 0 : ElementType.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -4575,7 +4539,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 13322760;
+            int hash = 1520241250;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ HashAlgorithm.GetHashCode();
@@ -4686,7 +4650,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -769863623;
+            int hash = 398568190;
             hash = ((hash << 13) - (hash >> 19)) ^ Flags.GetHashCode();
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ MajorVersion.GetHashCode();
@@ -4765,19 +4729,19 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            BaseType = visitor.Visit(this, BaseType);
+            NamespaceDefinition = visitor.Visit(this, NamespaceDefinition);
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
+            EnclosingType = visitor.Visit(this, EnclosingType);
             NestedTypes = visitor.Visit(this, NestedTypes.AsEnumerable());
             Methods = visitor.Visit(this, Methods.AsEnumerable());
             Fields = visitor.Visit(this, Fields.AsEnumerable());
             Properties = visitor.Visit(this, Properties.AsEnumerable());
             Events = visitor.Visit(this, Events.AsEnumerable());
             GenericParameters = visitor.Visit(this, GenericParameters.AsEnumerable());
+            Interfaces = Interfaces.Select(value => visitor.Visit(this, value)).ToList();
             MethodImpls = visitor.Visit(this, MethodImpls.AsEnumerable());
             CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
-            BaseType = visitor.Visit(this, BaseType);
-            NamespaceDefinition = visitor.Visit(this, NamespaceDefinition);
-            EnclosingType = visitor.Visit(this, EnclosingType);
-            Interfaces = Interfaces.Select(value => visitor.Visit(this, value)).ToList();
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4796,7 +4760,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -967212031;
+            int hash = 806757530;
             hash = ((hash << 13) - (hash >> 19)) ^ (NamespaceDefinition == null ? 0 : NamespaceDefinition.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (EnclosingType == null ? 0 : EnclosingType.GetHashCode());
@@ -4886,10 +4850,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            Scope = visitor.Visit(this, Scope);
             Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
             NestedTypes = visitor.Visit(this, NestedTypes.AsEnumerable());
             CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
-            Scope = visitor.Visit(this, Scope);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4909,7 +4873,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 690839467;
+            int hash = -1731231678;
             hash = ((hash << 13) - (hash >> 19)) ^ (Scope == null ? 0 : Scope.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (Name == null ? 0 : Name.GetHashCode());
             LeaveGetHashCode();
@@ -4985,7 +4949,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -1724439320;
+            int hash = -627925057;
             hash = ((hash << 13) - (hash >> 19)) ^ (GenericType == null ? 0 : GenericType.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -5045,9 +5009,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
+            ParentNamespaceOrType = visitor.Visit(this, ParentNamespaceOrType);
             TypeName = visitor.Visit(this, TypeName.AsSingleEnumerable()).FirstOrDefault();
             CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
-            ParentNamespaceOrType = visitor.Visit(this, ParentNamespaceOrType);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -5066,7 +5030,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = -594854621;
+            int hash = 1354557556;
             hash = ((hash << 13) - (hash >> 19)) ^ (ParentNamespaceOrType == null ? 0 : ParentNamespaceOrType.GetHashCode());
             hash = ((hash << 13) - (hash >> 19)) ^ (TypeName == null ? 0 : TypeName.GetHashCode());
             LeaveGetHashCode();
@@ -5143,7 +5107,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 263768524;
+            int hash = -968720472;
             hash = ((hash << 13) - (hash >> 19)) ^ (Signature == null ? 0 : Signature.GetHashCode());
             LeaveGetHashCode();
             _hash = hash;
@@ -5205,7 +5169,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -5222,7 +5185,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (_hash != 0)
                 return _hash;
             EnterGetHashCode();
-            int hash = 2086004915;
+            int hash = -67682604;
             hash = ((hash << 13) - (hash >> 19)) ^ Number.GetHashCode();
             LeaveGetHashCode();
             _hash = hash;

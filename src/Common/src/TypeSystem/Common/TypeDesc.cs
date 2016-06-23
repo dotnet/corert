@@ -340,6 +340,20 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a pointer, byref, array, or szarray type,
+        /// and can be used as a ParameterizedType.
+        /// </summary>
+        public bool IsParameterizedType
+        {
+            get
+            {
+                TypeFlags flags = GetTypeFlags(TypeFlags.CategoryMask);
+                Debug.Assert((flags >= TypeFlags.Array && flags <= TypeFlags.Pointer) == (this is ParameterizedType));
+                return (flags >= TypeFlags.Array && flags <= TypeFlags.Pointer);
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a class, an interface, a value type, or a
         /// generic instance of one of them.
         /// </summary>

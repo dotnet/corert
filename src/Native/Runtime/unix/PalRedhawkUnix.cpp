@@ -19,6 +19,7 @@
 #include "gcenv.structs.h"
 #include "gcenv.os.h"
 #include "holder.h"
+#include "HardwareExceptions.h"
 
 #include <unistd.h>
 #include <sched.h>
@@ -121,13 +122,8 @@ typedef union _LARGE_INTEGER {
 typedef void * LPSECURITY_ATTRIBUTES;
 typedef void* PCONTEXT;
 typedef void* PEXCEPTION_RECORD;
-typedef void* PEXCEPTION_POINTERS;
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(IntNative)-1)
-
-typedef Int32 (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
-    PEXCEPTION_POINTERS ExceptionInfo
-    );
 
 #define PAGE_NOACCESS           0x01
 #define PAGE_READWRITE          0x04
@@ -451,6 +447,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
         return false;
     }
 
+    if (!InitializeHardwareExceptionHandling())
+    {
+        return false;
+    }
+
     int status = pthread_key_create(&g_threadKey, TlsObjectDestructor);
     if (status != 0)
     {
@@ -724,12 +725,6 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     }
 
     return moduleHandle;
-}
-
-REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
-{
-    // UNIXTODO: Implement this function
-    return NULL;
 }
 
 bool QueryCacheSize()
@@ -1091,7 +1086,8 @@ extern "C" UInt32 GetEnvironmentVariableA(const char * name, char * buffer, UInt
 
 extern "C" UInt16 RtlCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3, UInt32* arg4)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // UNIXTODO: Implement this function
+    return 0;
 }
 
 extern "C" HANDLE GetProcessHeap()

@@ -16,6 +16,8 @@ Looking for something to work on? The [active issues](https://github.com/dotnet/
 
 You can discuss .NET OSS more generally in the [.NET Foundation forums](http://forums.dotnetfoundation.org).
 
+This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+
 ## Daily Builds
 Daily builds of CoreRT will be published to a package feed in near future.
 

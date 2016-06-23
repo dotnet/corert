@@ -10,7 +10,7 @@
 #include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "regdisplay.h"
-#include "ICodemanager.h"
+#include "ICodeManager.h"
 #include "CoffNativeCodeManager.h"
 #include "varint.h"
 

@@ -74,6 +74,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
+      <Link>TypeSystem\Common\ConstructedTypeRewritingHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>TypeSystem\Common\IAssemblyDesc.cs</Link>
     </Compile>
