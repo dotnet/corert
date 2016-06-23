@@ -22,25 +22,24 @@ namespace Internal.TypeSystem
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
         {
             InstantiatedMethod canonicalMethodResult = GetCachedCanonValue(kind);
-            if (canonicalMethodResult != null)
+            if (canonicalMethodResult == null)
             {
-                return canonicalMethodResult;
-            }
+                bool needsChange;
+                Instantiation canonInstantiation = CanonUtilites.ConvertInstantiationToCanonForm(Context, Instantiation, kind, out needsChange);
+                if (needsChange)
+                {
+                    MethodDesc openMethodOnCanonicalizedType = _methodDef.GetCanonMethodTarget(kind);
+                    canonicalMethodResult = Context.GetInstantiatedMethod(openMethodOnCanonicalizedType, canonInstantiation);
+                }
+                else
+                {
+                    canonicalMethodResult = this;
+                }
 
-            bool needsChange;
-            Instantiation canonInstantiation = CanonUtilites.ConvertInstantiationToCanonForm(Context, Instantiation, kind, out needsChange);
-            if (needsChange)
-            {
-                MethodDesc openMethodOnCanonicalizedType = _methodDef.GetCanonMethodTarget(kind);
-                canonicalMethodResult = Context.GetInstantiatedMethod(openMethodOnCanonicalizedType, canonInstantiation);
+                SetCachedCanonValue(kind, canonicalMethodResult);
             }
-            else
-            {
-                canonicalMethodResult = this;
-            }
-
-            SetCachedCanonValue(kind, canonicalMethodResult);
-            return GetCachedCanonValue(kind);
+            
+            return canonicalMethodResult;
         }
 
         InstantiatedMethod GetCachedCanonValue(CanonicalFormKind kind)
