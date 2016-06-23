@@ -662,9 +662,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\GCStress.cs" >
       <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\BinderIntrinsics.cs" >
-      <Link>Runtime.Base\src\System\Runtime\BinderIntrinsics.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\__Finalizer.cs" >
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
     </Compile>

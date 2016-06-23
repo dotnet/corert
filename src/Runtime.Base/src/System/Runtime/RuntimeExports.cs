@@ -178,9 +178,7 @@ namespace System.Runtime
 
                         ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
 
-                        Exception e = ptrUnboxToEEType->GetClasslibException(exID);
-
-                        BinderIntrinsics.TailCall_RhpThrowEx(e);
+                        throw ptrUnboxToEEType->GetClasslibException(exID);
                     }
                     InternalCalls.RhUnbox(o, pData - 1, ptrUnboxToEEType);
                 }
@@ -193,9 +191,7 @@ namespace System.Runtime
                 }
                 else
                 {
-                    Exception e = ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-
-                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
             }
         }
@@ -213,9 +209,7 @@ namespace System.Runtime
                 // We allow enums and their primtive type to be interchangable
                 if (obj.EEType->CorElementType != ptrUnboxToEEType->CorElementType)
                 {
-                    Exception e = ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-
-                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
             }
 
@@ -240,9 +234,7 @@ namespace System.Runtime
             {
                 if ((obj != null) && (obj.EEType != ptrUnboxToEEType->NullableType))
                 {
-                    Exception e = ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-
-                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
                 InternalCalls.RhUnbox(obj, pData - 1, ptrUnboxToEEType);
             }

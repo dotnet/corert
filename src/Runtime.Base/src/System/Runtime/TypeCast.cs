@@ -166,9 +166,7 @@ namespace System.Runtime
                 // Throw the invalid cast exception defined by the classlib, using the input EEType* 
                 // to find the correct classlib.
 
-                Exception e = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
-
-                BinderIntrinsics.TailCall_RhpThrowEx(e);
+                throw ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
             }
 
             return result;
@@ -188,9 +186,7 @@ namespace System.Runtime
             // Throw the invalid cast exception defined by the classlib, using the input object's EEType* 
             // to find the correct classlib.
 
-            Exception e = obj.EEType->GetClasslibException(ExceptionIDs.InvalidCast);
-
-            BinderIntrinsics.TailCall_RhpThrowEx(e);
+            throw obj.EEType->GetClasslibException(ExceptionIDs.InvalidCast);
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfArray")]
@@ -246,9 +242,7 @@ namespace System.Runtime
                 // Throw the invalid cast exception defined by the classlib, using the input EEType* 
                 // to find the correct classlib.
 
-                Exception e = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
-
-                BinderIntrinsics.TailCall_RhpThrowEx(e);
+                throw ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
             }
 
             return result;
@@ -712,7 +706,6 @@ namespace System.Runtime
             if (castError == null)
                 castError = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
 
-            BinderIntrinsics.TailCall_RhpThrowEx(castError);
             throw castError;
         }
 
@@ -738,9 +731,7 @@ namespace System.Runtime
             // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
             // to find the correct classlib.
 
-            Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-
-            BinderIntrinsics.TailCall_RhpThrowEx(e);
+            throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
         }
 
         [RuntimeExport("RhTypeCast_CheckVectorElemAddr")]
@@ -770,9 +761,7 @@ namespace System.Runtime
                 // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
                 // to find the correct classlib.
 
-                Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-
-                BinderIntrinsics.TailCall_RhpThrowEx(e);
+                throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
         }
 
@@ -810,9 +799,7 @@ namespace System.Runtime
                         // Throw the array type mismatch exception defined by the classlib, using the input array's 
                         // EEType* to find the correct classlib.
 
-                        Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-
-                        BinderIntrinsics.TailCall_RhpThrowEx(e);
+                        throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
                     }
                 }
 
@@ -845,9 +832,7 @@ namespace System.Runtime
                 // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
                 // to find the correct classlib.
 
-                Exception e = array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-
-                BinderIntrinsics.TailCall_RhpThrowEx(e);
+                throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
             fixed (void * pArray = &array.m_pEEType)
