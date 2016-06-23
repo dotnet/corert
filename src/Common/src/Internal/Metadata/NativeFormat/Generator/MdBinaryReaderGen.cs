@@ -30,7 +30,6 @@ class MdBinaryReaderGen : CsWriter
 
         OpenScope("namespace Internal.Metadata.NativeFormat");
 
-        WriteSummary("MdBinaryReader");
         OpenScope("internal static partial class MdBinaryReader");
 
         foreach (var primitiveType in SchemaDef.PrimitiveTypes)
@@ -50,10 +49,6 @@ class MdBinaryReaderGen : CsWriter
             EmitRead($"{typeName}Handle");
             EmitReadArray($"{typeName}Handle");
         }
-
-        EmitEmptyArray($"Handle");
-        foreach (var typeName in SchemaDef.HandleSchema)
-            EmitEmptyArray($"{typeName}Handle");
 
         CloseScope("MdBinaryReader");
         CloseScope("Internal.Metadata.NativeFormat");
@@ -101,11 +96,13 @@ class MdBinaryReaderGen : CsWriter
         OpenScope($"public static uint Read(this NativeReader reader, uint offset, out {typeName}[] values)");
         WriteLine("uint count;");
         WriteLine("offset = reader.DecodeUnsigned(offset, out count);");
+        WriteLine("#if !NETFX_45");
         WriteLine("if (count == 0)");
         WriteLine("{");
-        WriteLine($"    values = s_empty{typeName}Array;");
+        WriteLine($"    values = Array.Empty<{typeName}>();");
         WriteLine("}");
         WriteLine("else");
+        WriteLine("#endif");
         WriteLine("{");
         WriteLine($"    values = new {typeName}[count];");
         WriteLine("    for (uint i = 0; i < count; ++i)");
@@ -117,11 +114,5 @@ class MdBinaryReaderGen : CsWriter
         WriteLine("}");
         WriteLine("return offset;");
         CloseScope("Read");
-    }
-
-    private void EmitEmptyArray(string typeName)
-    {
-        WriteLineIfNeeded();
-        WriteLine($"private static {typeName}[] s_empty{typeName}Array = new {typeName}[0];");
     }
 }

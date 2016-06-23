@@ -31,7 +31,6 @@ class MdBinaryWriterGen : CsWriter
 
         OpenScope("namespace Internal.Metadata.NativeFormat.Writer");
 
-        WriteSummary("MdBinaryWriter");
         OpenScope("internal static partial class MdBinaryWriter");
 
         foreach (var primitiveType in SchemaDef.PrimitiveTypes)
