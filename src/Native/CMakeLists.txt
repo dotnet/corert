@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(CoreRT)
 
+# Include cmake functions
+include(functions.cmake)
+
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
