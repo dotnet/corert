@@ -64,17 +64,16 @@ namespace Internal.TypeSystem
             }
             else if (kind == CanonicalFormKind.Specific)
             {
-                if (typeToConvert is DefType)
+                if (typeToConvert == context.UniversalCanonType)
                 {
-                    if (typeToConvert == context.UniversalCanonType)
-                        return context.UniversalCanonType;
-
-                    DefType defTypeToConvert = (DefType)typeToConvert;
-
-                    if (!defTypeToConvert.IsValueType)
+                    return context.UniversalCanonType;
+                }
+                else if (typeToConvert.IsDefType)
+                {
+                    if (!typeToConvert.IsValueType)
                         return context.CanonType;
-                    else if (defTypeToConvert.HasInstantiation)
-                        return defTypeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    else if (typeToConvert.HasInstantiation)
+                        return typeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
                     else
                         return typeToConvert;
                 }
