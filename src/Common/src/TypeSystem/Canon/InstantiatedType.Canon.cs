@@ -22,12 +22,12 @@ namespace Internal.TypeSystem
 
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
-            bool needsChange = CanonUtilites.ConversionToCanonFormIsAChange(Context, Instantiation, kind);
+            bool needsChange;
+            Instantiation canonInstantiation = CanonUtilites.ConvertInstantiationToCanonForm(Context, Instantiation, kind, out needsChange);
             if (needsChange)
             {
                 MetadataType openType = (MetadataType)GetTypeDefinition();
-                Instantiation newInstantiation = CanonUtilites.ConvertInstantiationToCanonForm(Context, Instantiation, kind);
-                return Context.GetInstantiatedType(openType, newInstantiation);
+                return Context.GetInstantiatedType(openType, canonInstantiation);
             }
 
             return this;
