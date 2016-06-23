@@ -243,7 +243,7 @@ void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoun
 {
 }
 
-bool IsSuspendEEThread()
+bool IsGCThread()
 {
     return false;
 }
