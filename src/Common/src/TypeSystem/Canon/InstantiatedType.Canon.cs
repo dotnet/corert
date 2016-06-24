@@ -23,7 +23,7 @@ namespace Internal.TypeSystem
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
             bool needsChange;
-            Instantiation canonInstantiation = CanonUtilites.ConvertInstantiationToCanonForm(Context, Instantiation, kind, out needsChange);
+            Instantiation canonInstantiation = CanonUtilites.ConvertInstantiationToCanonForm(Instantiation, kind, out needsChange);
             if (needsChange)
             {
                 MetadataType openType = (MetadataType)GetTypeDefinition();
