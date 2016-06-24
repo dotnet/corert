@@ -159,7 +159,22 @@ namespace Internal.TypeSystem
             MethodDesc typicalFinalizer = _typeDef.GetFinalizer();
             if (typicalFinalizer == null)
                 return null;
-            return _typeDef.Context.GetMethodForInstantiatedType(typicalFinalizer, this);
+
+            MetadataType typeInHierarchy = this;
+            while (typicalFinalizer.OwningType.GetTypeDefinition() != typeInHierarchy.GetTypeDefinition())
+            {
+                typeInHierarchy = (MetadataType)typeInHierarchy.BaseType;
+            }
+
+            if (typeInHierarchy == typicalFinalizer.OwningType)
+            {
+                return typicalFinalizer;
+            }
+            else
+            {
+                Debug.Assert(typeInHierarchy is InstantiatedType);
+                return _typeDef.Context.GetMethodForInstantiatedType(typicalFinalizer.GetTypicalMethodDefinition(), (InstantiatedType)typeInHierarchy);
+            }
         }
 
         public override IEnumerable<FieldDesc> GetFields()

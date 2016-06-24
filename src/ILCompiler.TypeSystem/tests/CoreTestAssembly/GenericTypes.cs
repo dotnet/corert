@@ -8,23 +8,30 @@ namespace GenericTypes
     /// Generic class to be used for testing.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class GenericClass<T>
+    public abstract class GenericClass<T>
     {
         /// <summary>
         /// Purpose is to manipulate a method involving a generic parameter in its return type.
         /// </summary>
-        public virtual T Foo()
-        {
-            return default(T);
-        }
+        public abstract T Foo();
         /// <summary>
         /// Purpose is to manipulate a method involving a generic parameter in its parameter list.
         /// </summary>
         public void Bar(T a)
         {
         }
+
+        ~GenericClass()
+        { }
     }
 
+    public class DerivedGenericClass<T> : GenericClass<T>
+    {
+        public override sealed T Foo()
+        {
+            return default(T);
+        }
+    }
     /// <summary>
     /// Generic class with multiple parameters to be used for testing.
     /// </summary>
