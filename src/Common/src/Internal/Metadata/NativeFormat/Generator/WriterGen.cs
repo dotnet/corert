@@ -40,7 +40,6 @@ class WriterGen : CsWriter
     {
         bool isConstantStringValue = record.Name == "ConstantStringValue";
 
-        WriteSummary(record.Name);
         OpenScope($"public partial class {record.Name} : MetadataRecord");
 
         if ((record.Flags & RecordDefFlags.ReentrantEquals) != 0)

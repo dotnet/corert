@@ -24,9 +24,6 @@ using System.Linq;
 // IEquatable<XXXHandle>, and the handle structs similarly declare this interface to require that
 // the implementation be supplied by the reader.
 //
-// This script also generates IMetadataReader, which defines what the reader class itself must
-// implement.
-//
 
 class PublicGen : CsWriter
 {
@@ -50,10 +47,6 @@ class PublicGen : CsWriter
         OpenScope("namespace Internal.Metadata.NativeFormat");
 
         EmitEnums();
-        EmitRecords();
-
-        EmitOpaqueHandle();
-        EmitMetadataReader();
 
         CloseScope("Internal.Metadata.NativeFormat");
     }
@@ -87,7 +80,6 @@ class PublicGen : CsWriter
 
     private void EmitEnum(RecordDef record)
     {
-        WriteSummary(record.Name);
         if ((record.Flags & RecordDefFlags.Flags) != 0)
             WriteScopeAttribute("[Flags]");
         OpenScope($"public enum {record.Name} : {record.BaseTypeName}");
@@ -103,114 +95,5 @@ class PublicGen : CsWriter
         }
 
         CloseScope(record.Name);
-    }
-
-    private void EmitRecords()
-    {
-        foreach (var record in SchemaDef.RecordSchema)
-        {
-            EmitInterface(record);
-            EmitRecord(record);
-            EmitHandleInterface(record);
-            EmitHandle(record);
-        }
-    }
-
-    private void EmitInterface(RecordDef record)
-    {
-        string interfaceName = $"I{record.Name}";
-
-        WriteSummary(interfaceName);
-        OpenScope($"internal interface {interfaceName}");
-
-        foreach (var member in record.Members)
-        {
-            OpenScope($"{member.GetMemberType()} {member.Name}");
-            WriteLine("get;");
-            CloseScope(member.Name);
-        }
-
-        OpenScope($"{record.Name}Handle Handle");
-        WriteLine("get;");
-        CloseScope("Handle");
-
-        CloseScope(interfaceName);
-    }
-
-    private void EmitRecord(RecordDef record)
-    {
-        WriteSummary(record.Name);
-        OpenScope($"public partial struct {record.Name} : I{record.Name}");
-        CloseScope(record.Name);
-    }
-
-    private void EmitHandleInterface(RecordDef record)
-    {
-        string interfaceHandleName = $"I{record.Name}Handle";
-
-        WriteSummary(interfaceHandleName);
-        OpenScope($"internal interface {interfaceHandleName} : IEquatable<{record.Name}Handle>, IEquatable<Handle>, IEquatable<Object>");
-        WriteLine("Handle ToHandle(MetadataReader reader);");
-        WriteLine("int GetHashCode();");
-        CloseScope(interfaceHandleName);
-    }
-
-    private void EmitHandle(RecordDef record)
-    {
-        string handleName = $"{record.Name}Handle";
-
-        WriteSummary(handleName);
-        OpenScope($"public partial struct {handleName} : I{handleName}");
-        CloseScope(handleName);
-    }
-
-    private void EmitOpaqueHandle()
-    {
-        WriteSummary("IHandle");
-        OpenScope("internal interface IHandle : IEquatable<Handle>, IEquatable<Object>");
-
-        WriteLine("int GetHashCode();");
-
-        OpenScope("HandleType HandleType");
-        WriteLine("get;");
-        CloseScope("HandleType");
-
-        WriteLine();
-
-        foreach (var record in SchemaDef.RecordSchema)
-        {
-            WriteLine($"{record.Name}Handle To{record.Name}Handle(MetadataReader reader);");
-        }
-
-        CloseScope("IHandle");
-
-        WriteSummary("Handle");
-        OpenScope("public partial struct Handle : IHandle");
-        CloseScope("Handle");
-    }
-
-    private void EmitMetadataReader()
-    {
-        WriteSummary("IMetadataReader");
-        OpenScope("public interface IMetadataReader");
-
-        foreach (var record in SchemaDef.RecordSchema)
-        {
-            WriteLine($"{record.Name} Get{record.Name}({record.Name}Handle handle);");
-        }
-
-        OpenScope("IEnumerable<ScopeDefinitionHandle> ScopeDefinitions");
-        WriteLine("get;");
-        CloseScope("ScopeDefinitions");
-
-        OpenScope("Handle NullHandle");
-        WriteLine("get;");
-        CloseScope("NullHandle");
-
-        CloseScope("IMetadataReader");
-
-        WriteSummary("MetadataReader");
-        OpenScope("public partial class MetadataReader : IMetadataReader");
-        CloseScope("MetadataReader");
     }
 }

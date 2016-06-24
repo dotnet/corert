@@ -15,9 +15,6 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Metadata.NativeFormat
 {
-    /// <summary>
-    /// MdBinaryReader
-    /// </summary>
     internal static partial class MdBinaryReader
     {
         public static uint Read(this NativeReader reader, uint offset, out bool[] values)
@@ -334,11 +331,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyHandleArray;
+                values = Array.Empty<Handle>();
             }
             else
+            #endif
             {
                 values = new Handle[count];
                 for (uint i = 0; i < count; ++i)
@@ -364,11 +363,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyArraySignatureHandleArray;
+                values = Array.Empty<ArraySignatureHandle>();
             }
             else
+            #endif
             {
                 values = new ArraySignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -394,11 +395,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyByReferenceSignatureHandleArray;
+                values = Array.Empty<ByReferenceSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new ByReferenceSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -424,11 +427,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantBooleanArrayHandleArray;
+                values = Array.Empty<ConstantBooleanArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantBooleanArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -454,11 +459,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantBooleanValueHandleArray;
+                values = Array.Empty<ConstantBooleanValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantBooleanValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -484,11 +491,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantBoxedEnumValueHandleArray;
+                values = Array.Empty<ConstantBoxedEnumValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantBoxedEnumValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -514,11 +523,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantByteArrayHandleArray;
+                values = Array.Empty<ConstantByteArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantByteArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -544,11 +555,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantByteValueHandleArray;
+                values = Array.Empty<ConstantByteValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantByteValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -574,11 +587,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantCharArrayHandleArray;
+                values = Array.Empty<ConstantCharArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantCharArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -604,11 +619,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantCharValueHandleArray;
+                values = Array.Empty<ConstantCharValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantCharValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -634,11 +651,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantDoubleArrayHandleArray;
+                values = Array.Empty<ConstantDoubleArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantDoubleArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -664,11 +683,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantDoubleValueHandleArray;
+                values = Array.Empty<ConstantDoubleValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantDoubleValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -694,11 +715,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantHandleArrayHandleArray;
+                values = Array.Empty<ConstantHandleArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantHandleArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -724,11 +747,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantInt16ArrayHandleArray;
+                values = Array.Empty<ConstantInt16ArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantInt16ArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -754,11 +779,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantInt16ValueHandleArray;
+                values = Array.Empty<ConstantInt16ValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantInt16ValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -784,11 +811,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantInt32ArrayHandleArray;
+                values = Array.Empty<ConstantInt32ArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantInt32ArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -814,11 +843,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantInt32ValueHandleArray;
+                values = Array.Empty<ConstantInt32ValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantInt32ValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -844,11 +875,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantInt64ArrayHandleArray;
+                values = Array.Empty<ConstantInt64ArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantInt64ArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -874,11 +907,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantInt64ValueHandleArray;
+                values = Array.Empty<ConstantInt64ValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantInt64ValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -904,11 +939,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantReferenceValueHandleArray;
+                values = Array.Empty<ConstantReferenceValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantReferenceValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -934,11 +971,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantSByteArrayHandleArray;
+                values = Array.Empty<ConstantSByteArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantSByteArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -964,11 +1003,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantSByteValueHandleArray;
+                values = Array.Empty<ConstantSByteValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantSByteValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -994,11 +1035,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantSingleArrayHandleArray;
+                values = Array.Empty<ConstantSingleArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantSingleArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1024,11 +1067,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantSingleValueHandleArray;
+                values = Array.Empty<ConstantSingleValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantSingleValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1054,11 +1099,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantStringArrayHandleArray;
+                values = Array.Empty<ConstantStringArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantStringArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1084,11 +1131,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantStringValueHandleArray;
+                values = Array.Empty<ConstantStringValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantStringValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1114,11 +1163,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantUInt16ArrayHandleArray;
+                values = Array.Empty<ConstantUInt16ArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantUInt16ArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1144,11 +1195,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantUInt16ValueHandleArray;
+                values = Array.Empty<ConstantUInt16ValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantUInt16ValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1174,11 +1227,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantUInt32ArrayHandleArray;
+                values = Array.Empty<ConstantUInt32ArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantUInt32ArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1204,11 +1259,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantUInt32ValueHandleArray;
+                values = Array.Empty<ConstantUInt32ValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantUInt32ValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1234,11 +1291,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantUInt64ArrayHandleArray;
+                values = Array.Empty<ConstantUInt64ArrayHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantUInt64ArrayHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1264,11 +1323,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyConstantUInt64ValueHandleArray;
+                values = Array.Empty<ConstantUInt64ValueHandle>();
             }
             else
+            #endif
             {
                 values = new ConstantUInt64ValueHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1294,11 +1355,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyCustomAttributeHandleArray;
+                values = Array.Empty<CustomAttributeHandle>();
             }
             else
+            #endif
             {
                 values = new CustomAttributeHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1324,11 +1387,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyCustomModifierHandleArray;
+                values = Array.Empty<CustomModifierHandle>();
             }
             else
+            #endif
             {
                 values = new CustomModifierHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1354,11 +1419,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyEventHandleArray;
+                values = Array.Empty<EventHandle>();
             }
             else
+            #endif
             {
                 values = new EventHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1384,11 +1451,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyFieldHandleArray;
+                values = Array.Empty<FieldHandle>();
             }
             else
+            #endif
             {
                 values = new FieldHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1414,11 +1483,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyFieldSignatureHandleArray;
+                values = Array.Empty<FieldSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new FieldSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1444,11 +1515,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyFixedArgumentHandleArray;
+                values = Array.Empty<FixedArgumentHandle>();
             }
             else
+            #endif
             {
                 values = new FixedArgumentHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1474,11 +1547,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyGenericParameterHandleArray;
+                values = Array.Empty<GenericParameterHandle>();
             }
             else
+            #endif
             {
                 values = new GenericParameterHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1504,11 +1579,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyMemberReferenceHandleArray;
+                values = Array.Empty<MemberReferenceHandle>();
             }
             else
+            #endif
             {
                 values = new MemberReferenceHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1534,11 +1611,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyMethodHandleArray;
+                values = Array.Empty<MethodHandle>();
             }
             else
+            #endif
             {
                 values = new MethodHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1564,11 +1643,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyMethodImplHandleArray;
+                values = Array.Empty<MethodImplHandle>();
             }
             else
+            #endif
             {
                 values = new MethodImplHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1594,11 +1675,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyMethodInstantiationHandleArray;
+                values = Array.Empty<MethodInstantiationHandle>();
             }
             else
+            #endif
             {
                 values = new MethodInstantiationHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1624,11 +1707,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyMethodSemanticsHandleArray;
+                values = Array.Empty<MethodSemanticsHandle>();
             }
             else
+            #endif
             {
                 values = new MethodSemanticsHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1654,11 +1739,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyMethodSignatureHandleArray;
+                values = Array.Empty<MethodSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new MethodSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1684,11 +1771,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyMethodTypeVariableSignatureHandleArray;
+                values = Array.Empty<MethodTypeVariableSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new MethodTypeVariableSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1714,11 +1803,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyNamedArgumentHandleArray;
+                values = Array.Empty<NamedArgumentHandle>();
             }
             else
+            #endif
             {
                 values = new NamedArgumentHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1744,11 +1835,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyNamespaceDefinitionHandleArray;
+                values = Array.Empty<NamespaceDefinitionHandle>();
             }
             else
+            #endif
             {
                 values = new NamespaceDefinitionHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1774,11 +1867,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyNamespaceReferenceHandleArray;
+                values = Array.Empty<NamespaceReferenceHandle>();
             }
             else
+            #endif
             {
                 values = new NamespaceReferenceHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1804,11 +1899,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyParameterHandleArray;
+                values = Array.Empty<ParameterHandle>();
             }
             else
+            #endif
             {
                 values = new ParameterHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1834,11 +1931,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyParameterTypeSignatureHandleArray;
+                values = Array.Empty<ParameterTypeSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new ParameterTypeSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1864,11 +1963,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyPointerSignatureHandleArray;
+                values = Array.Empty<PointerSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new PointerSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1894,11 +1995,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyPropertyHandleArray;
+                values = Array.Empty<PropertyHandle>();
             }
             else
+            #endif
             {
                 values = new PropertyHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1924,11 +2027,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyPropertySignatureHandleArray;
+                values = Array.Empty<PropertySignatureHandle>();
             }
             else
+            #endif
             {
                 values = new PropertySignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1954,11 +2059,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyQualifiedFieldHandleArray;
+                values = Array.Empty<QualifiedFieldHandle>();
             }
             else
+            #endif
             {
                 values = new QualifiedFieldHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -1984,11 +2091,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyQualifiedMethodHandleArray;
+                values = Array.Empty<QualifiedMethodHandle>();
             }
             else
+            #endif
             {
                 values = new QualifiedMethodHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2014,11 +2123,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyReturnTypeSignatureHandleArray;
+                values = Array.Empty<ReturnTypeSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new ReturnTypeSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2044,11 +2155,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptySZArraySignatureHandleArray;
+                values = Array.Empty<SZArraySignatureHandle>();
             }
             else
+            #endif
             {
                 values = new SZArraySignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2074,11 +2187,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyScopeDefinitionHandleArray;
+                values = Array.Empty<ScopeDefinitionHandle>();
             }
             else
+            #endif
             {
                 values = new ScopeDefinitionHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2104,11 +2219,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyScopeReferenceHandleArray;
+                values = Array.Empty<ScopeReferenceHandle>();
             }
             else
+            #endif
             {
                 values = new ScopeReferenceHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2134,11 +2251,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyTypeDefinitionHandleArray;
+                values = Array.Empty<TypeDefinitionHandle>();
             }
             else
+            #endif
             {
                 values = new TypeDefinitionHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2164,11 +2283,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyTypeForwarderHandleArray;
+                values = Array.Empty<TypeForwarderHandle>();
             }
             else
+            #endif
             {
                 values = new TypeForwarderHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2194,11 +2315,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyTypeInstantiationSignatureHandleArray;
+                values = Array.Empty<TypeInstantiationSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new TypeInstantiationSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2224,11 +2347,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyTypeReferenceHandleArray;
+                values = Array.Empty<TypeReferenceHandle>();
             }
             else
+            #endif
             {
                 values = new TypeReferenceHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2254,11 +2379,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyTypeSpecificationHandleArray;
+                values = Array.Empty<TypeSpecificationHandle>();
             }
             else
+            #endif
             {
                 values = new TypeSpecificationHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2284,11 +2411,13 @@ namespace Internal.Metadata.NativeFormat
         {
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
             if (count == 0)
             {
-                values = s_emptyTypeVariableSignatureHandleArray;
+                values = Array.Empty<TypeVariableSignatureHandle>();
             }
             else
+            #endif
             {
                 values = new TypeVariableSignatureHandle[count];
                 for (uint i = 0; i < count; ++i)
@@ -2300,137 +2429,5 @@ namespace Internal.Metadata.NativeFormat
             }
             return offset;
         } // Read
-
-        private static Handle[] s_emptyHandleArray = new Handle[0];
-
-        private static ArraySignatureHandle[] s_emptyArraySignatureHandleArray = new ArraySignatureHandle[0];
-
-        private static ByReferenceSignatureHandle[] s_emptyByReferenceSignatureHandleArray = new ByReferenceSignatureHandle[0];
-
-        private static ConstantBooleanArrayHandle[] s_emptyConstantBooleanArrayHandleArray = new ConstantBooleanArrayHandle[0];
-
-        private static ConstantBooleanValueHandle[] s_emptyConstantBooleanValueHandleArray = new ConstantBooleanValueHandle[0];
-
-        private static ConstantBoxedEnumValueHandle[] s_emptyConstantBoxedEnumValueHandleArray = new ConstantBoxedEnumValueHandle[0];
-
-        private static ConstantByteArrayHandle[] s_emptyConstantByteArrayHandleArray = new ConstantByteArrayHandle[0];
-
-        private static ConstantByteValueHandle[] s_emptyConstantByteValueHandleArray = new ConstantByteValueHandle[0];
-
-        private static ConstantCharArrayHandle[] s_emptyConstantCharArrayHandleArray = new ConstantCharArrayHandle[0];
-
-        private static ConstantCharValueHandle[] s_emptyConstantCharValueHandleArray = new ConstantCharValueHandle[0];
-
-        private static ConstantDoubleArrayHandle[] s_emptyConstantDoubleArrayHandleArray = new ConstantDoubleArrayHandle[0];
-
-        private static ConstantDoubleValueHandle[] s_emptyConstantDoubleValueHandleArray = new ConstantDoubleValueHandle[0];
-
-        private static ConstantHandleArrayHandle[] s_emptyConstantHandleArrayHandleArray = new ConstantHandleArrayHandle[0];
-
-        private static ConstantInt16ArrayHandle[] s_emptyConstantInt16ArrayHandleArray = new ConstantInt16ArrayHandle[0];
-
-        private static ConstantInt16ValueHandle[] s_emptyConstantInt16ValueHandleArray = new ConstantInt16ValueHandle[0];
-
-        private static ConstantInt32ArrayHandle[] s_emptyConstantInt32ArrayHandleArray = new ConstantInt32ArrayHandle[0];
-
-        private static ConstantInt32ValueHandle[] s_emptyConstantInt32ValueHandleArray = new ConstantInt32ValueHandle[0];
-
-        private static ConstantInt64ArrayHandle[] s_emptyConstantInt64ArrayHandleArray = new ConstantInt64ArrayHandle[0];
-
-        private static ConstantInt64ValueHandle[] s_emptyConstantInt64ValueHandleArray = new ConstantInt64ValueHandle[0];
-
-        private static ConstantReferenceValueHandle[] s_emptyConstantReferenceValueHandleArray = new ConstantReferenceValueHandle[0];
-
-        private static ConstantSByteArrayHandle[] s_emptyConstantSByteArrayHandleArray = new ConstantSByteArrayHandle[0];
-
-        private static ConstantSByteValueHandle[] s_emptyConstantSByteValueHandleArray = new ConstantSByteValueHandle[0];
-
-        private static ConstantSingleArrayHandle[] s_emptyConstantSingleArrayHandleArray = new ConstantSingleArrayHandle[0];
-
-        private static ConstantSingleValueHandle[] s_emptyConstantSingleValueHandleArray = new ConstantSingleValueHandle[0];
-
-        private static ConstantStringArrayHandle[] s_emptyConstantStringArrayHandleArray = new ConstantStringArrayHandle[0];
-
-        private static ConstantStringValueHandle[] s_emptyConstantStringValueHandleArray = new ConstantStringValueHandle[0];
-
-        private static ConstantUInt16ArrayHandle[] s_emptyConstantUInt16ArrayHandleArray = new ConstantUInt16ArrayHandle[0];
-
-        private static ConstantUInt16ValueHandle[] s_emptyConstantUInt16ValueHandleArray = new ConstantUInt16ValueHandle[0];
-
-        private static ConstantUInt32ArrayHandle[] s_emptyConstantUInt32ArrayHandleArray = new ConstantUInt32ArrayHandle[0];
-
-        private static ConstantUInt32ValueHandle[] s_emptyConstantUInt32ValueHandleArray = new ConstantUInt32ValueHandle[0];
-
-        private static ConstantUInt64ArrayHandle[] s_emptyConstantUInt64ArrayHandleArray = new ConstantUInt64ArrayHandle[0];
-
-        private static ConstantUInt64ValueHandle[] s_emptyConstantUInt64ValueHandleArray = new ConstantUInt64ValueHandle[0];
-
-        private static CustomAttributeHandle[] s_emptyCustomAttributeHandleArray = new CustomAttributeHandle[0];
-
-        private static CustomModifierHandle[] s_emptyCustomModifierHandleArray = new CustomModifierHandle[0];
-
-        private static EventHandle[] s_emptyEventHandleArray = new EventHandle[0];
-
-        private static FieldHandle[] s_emptyFieldHandleArray = new FieldHandle[0];
-
-        private static FieldSignatureHandle[] s_emptyFieldSignatureHandleArray = new FieldSignatureHandle[0];
-
-        private static FixedArgumentHandle[] s_emptyFixedArgumentHandleArray = new FixedArgumentHandle[0];
-
-        private static GenericParameterHandle[] s_emptyGenericParameterHandleArray = new GenericParameterHandle[0];
-
-        private static MemberReferenceHandle[] s_emptyMemberReferenceHandleArray = new MemberReferenceHandle[0];
-
-        private static MethodHandle[] s_emptyMethodHandleArray = new MethodHandle[0];
-
-        private static MethodImplHandle[] s_emptyMethodImplHandleArray = new MethodImplHandle[0];
-
-        private static MethodInstantiationHandle[] s_emptyMethodInstantiationHandleArray = new MethodInstantiationHandle[0];
-
-        private static MethodSemanticsHandle[] s_emptyMethodSemanticsHandleArray = new MethodSemanticsHandle[0];
-
-        private static MethodSignatureHandle[] s_emptyMethodSignatureHandleArray = new MethodSignatureHandle[0];
-
-        private static MethodTypeVariableSignatureHandle[] s_emptyMethodTypeVariableSignatureHandleArray = new MethodTypeVariableSignatureHandle[0];
-
-        private static NamedArgumentHandle[] s_emptyNamedArgumentHandleArray = new NamedArgumentHandle[0];
-
-        private static NamespaceDefinitionHandle[] s_emptyNamespaceDefinitionHandleArray = new NamespaceDefinitionHandle[0];
-
-        private static NamespaceReferenceHandle[] s_emptyNamespaceReferenceHandleArray = new NamespaceReferenceHandle[0];
-
-        private static ParameterHandle[] s_emptyParameterHandleArray = new ParameterHandle[0];
-
-        private static ParameterTypeSignatureHandle[] s_emptyParameterTypeSignatureHandleArray = new ParameterTypeSignatureHandle[0];
-
-        private static PointerSignatureHandle[] s_emptyPointerSignatureHandleArray = new PointerSignatureHandle[0];
-
-        private static PropertyHandle[] s_emptyPropertyHandleArray = new PropertyHandle[0];
-
-        private static PropertySignatureHandle[] s_emptyPropertySignatureHandleArray = new PropertySignatureHandle[0];
-
-        private static QualifiedFieldHandle[] s_emptyQualifiedFieldHandleArray = new QualifiedFieldHandle[0];
-
-        private static QualifiedMethodHandle[] s_emptyQualifiedMethodHandleArray = new QualifiedMethodHandle[0];
-
-        private static ReturnTypeSignatureHandle[] s_emptyReturnTypeSignatureHandleArray = new ReturnTypeSignatureHandle[0];
-
-        private static SZArraySignatureHandle[] s_emptySZArraySignatureHandleArray = new SZArraySignatureHandle[0];
-
-        private static ScopeDefinitionHandle[] s_emptyScopeDefinitionHandleArray = new ScopeDefinitionHandle[0];
-
-        private static ScopeReferenceHandle[] s_emptyScopeReferenceHandleArray = new ScopeReferenceHandle[0];
-
-        private static TypeDefinitionHandle[] s_emptyTypeDefinitionHandleArray = new TypeDefinitionHandle[0];
-
-        private static TypeForwarderHandle[] s_emptyTypeForwarderHandleArray = new TypeForwarderHandle[0];
-
-        private static TypeInstantiationSignatureHandle[] s_emptyTypeInstantiationSignatureHandleArray = new TypeInstantiationSignatureHandle[0];
-
-        private static TypeReferenceHandle[] s_emptyTypeReferenceHandleArray = new TypeReferenceHandle[0];
-
-        private static TypeSpecificationHandle[] s_emptyTypeSpecificationHandleArray = new TypeSpecificationHandle[0];
-
-        private static TypeVariableSignatureHandle[] s_emptyTypeVariableSignatureHandleArray = new TypeVariableSignatureHandle[0];
     } // MdBinaryReader
 } // Internal.Metadata.NativeFormat

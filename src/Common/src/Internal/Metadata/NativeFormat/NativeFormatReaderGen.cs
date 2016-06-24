@@ -14,9 +14,6 @@ using System.Collections.Generic;
 
 namespace Internal.Metadata.NativeFormat
 {
-    /// <summary>
-    /// ArraySignature
-    /// </summary>
     public partial struct ArraySignature
     {
         internal MetadataReader _reader;
@@ -72,9 +69,6 @@ namespace Internal.Metadata.NativeFormat
         internal int[] _lowerBounds;
     } // ArraySignature
 
-    /// <summary>
-    /// ArraySignatureHandle
-    /// </summary>
     public partial struct ArraySignatureHandle
     {
         public override bool Equals(object obj)
@@ -158,9 +152,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ArraySignatureHandle
 
-    /// <summary>
-    /// ByReferenceSignature
-    /// </summary>
     public partial struct ByReferenceSignature
     {
         internal MetadataReader _reader;
@@ -186,9 +177,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // ByReferenceSignature
 
-    /// <summary>
-    /// ByReferenceSignatureHandle
-    /// </summary>
     public partial struct ByReferenceSignatureHandle
     {
         public override bool Equals(object obj)
@@ -272,9 +260,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ByReferenceSignatureHandle
 
-    /// <summary>
-    /// ConstantBooleanArray
-    /// </summary>
     public partial struct ConstantBooleanArray
     {
         internal MetadataReader _reader;
@@ -299,9 +284,6 @@ namespace Internal.Metadata.NativeFormat
         internal bool[] _value;
     } // ConstantBooleanArray
 
-    /// <summary>
-    /// ConstantBooleanArrayHandle
-    /// </summary>
     public partial struct ConstantBooleanArrayHandle
     {
         public override bool Equals(object obj)
@@ -385,9 +367,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantBooleanArrayHandle
 
-    /// <summary>
-    /// ConstantBooleanValue
-    /// </summary>
     public partial struct ConstantBooleanValue
     {
         internal MetadataReader _reader;
@@ -412,9 +391,6 @@ namespace Internal.Metadata.NativeFormat
         internal bool _value;
     } // ConstantBooleanValue
 
-    /// <summary>
-    /// ConstantBooleanValueHandle
-    /// </summary>
     public partial struct ConstantBooleanValueHandle
     {
         public override bool Equals(object obj)
@@ -498,9 +474,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantBooleanValueHandle
 
-    /// <summary>
-    /// ConstantBoxedEnumValue
-    /// </summary>
     public partial struct ConstantBoxedEnumValue
     {
         internal MetadataReader _reader;
@@ -537,9 +510,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // ConstantBoxedEnumValue
 
-    /// <summary>
-    /// ConstantBoxedEnumValueHandle
-    /// </summary>
     public partial struct ConstantBoxedEnumValueHandle
     {
         public override bool Equals(object obj)
@@ -623,9 +593,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantBoxedEnumValueHandle
 
-    /// <summary>
-    /// ConstantByteArray
-    /// </summary>
     public partial struct ConstantByteArray
     {
         internal MetadataReader _reader;
@@ -650,9 +617,6 @@ namespace Internal.Metadata.NativeFormat
         internal byte[] _value;
     } // ConstantByteArray
 
-    /// <summary>
-    /// ConstantByteArrayHandle
-    /// </summary>
     public partial struct ConstantByteArrayHandle
     {
         public override bool Equals(object obj)
@@ -736,9 +700,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantByteArrayHandle
 
-    /// <summary>
-    /// ConstantByteValue
-    /// </summary>
     public partial struct ConstantByteValue
     {
         internal MetadataReader _reader;
@@ -763,9 +724,6 @@ namespace Internal.Metadata.NativeFormat
         internal byte _value;
     } // ConstantByteValue
 
-    /// <summary>
-    /// ConstantByteValueHandle
-    /// </summary>
     public partial struct ConstantByteValueHandle
     {
         public override bool Equals(object obj)
@@ -849,9 +807,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantByteValueHandle
 
-    /// <summary>
-    /// ConstantCharArray
-    /// </summary>
     public partial struct ConstantCharArray
     {
         internal MetadataReader _reader;
@@ -876,9 +831,6 @@ namespace Internal.Metadata.NativeFormat
         internal char[] _value;
     } // ConstantCharArray
 
-    /// <summary>
-    /// ConstantCharArrayHandle
-    /// </summary>
     public partial struct ConstantCharArrayHandle
     {
         public override bool Equals(object obj)
@@ -962,9 +914,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantCharArrayHandle
 
-    /// <summary>
-    /// ConstantCharValue
-    /// </summary>
     public partial struct ConstantCharValue
     {
         internal MetadataReader _reader;
@@ -989,9 +938,6 @@ namespace Internal.Metadata.NativeFormat
         internal char _value;
     } // ConstantCharValue
 
-    /// <summary>
-    /// ConstantCharValueHandle
-    /// </summary>
     public partial struct ConstantCharValueHandle
     {
         public override bool Equals(object obj)
@@ -1075,9 +1021,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantCharValueHandle
 
-    /// <summary>
-    /// ConstantDoubleArray
-    /// </summary>
     public partial struct ConstantDoubleArray
     {
         internal MetadataReader _reader;
@@ -1102,9 +1045,6 @@ namespace Internal.Metadata.NativeFormat
         internal double[] _value;
     } // ConstantDoubleArray
 
-    /// <summary>
-    /// ConstantDoubleArrayHandle
-    /// </summary>
     public partial struct ConstantDoubleArrayHandle
     {
         public override bool Equals(object obj)
@@ -1188,9 +1128,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantDoubleArrayHandle
 
-    /// <summary>
-    /// ConstantDoubleValue
-    /// </summary>
     public partial struct ConstantDoubleValue
     {
         internal MetadataReader _reader;
@@ -1215,9 +1152,6 @@ namespace Internal.Metadata.NativeFormat
         internal double _value;
     } // ConstantDoubleValue
 
-    /// <summary>
-    /// ConstantDoubleValueHandle
-    /// </summary>
     public partial struct ConstantDoubleValueHandle
     {
         public override bool Equals(object obj)
@@ -1301,9 +1235,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantDoubleValueHandle
 
-    /// <summary>
-    /// ConstantHandleArray
-    /// </summary>
     public partial struct ConstantHandleArray
     {
         internal MetadataReader _reader;
@@ -1328,9 +1259,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle[] _value;
     } // ConstantHandleArray
 
-    /// <summary>
-    /// ConstantHandleArrayHandle
-    /// </summary>
     public partial struct ConstantHandleArrayHandle
     {
         public override bool Equals(object obj)
@@ -1414,9 +1342,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantHandleArrayHandle
 
-    /// <summary>
-    /// ConstantInt16Array
-    /// </summary>
     public partial struct ConstantInt16Array
     {
         internal MetadataReader _reader;
@@ -1441,9 +1366,6 @@ namespace Internal.Metadata.NativeFormat
         internal short[] _value;
     } // ConstantInt16Array
 
-    /// <summary>
-    /// ConstantInt16ArrayHandle
-    /// </summary>
     public partial struct ConstantInt16ArrayHandle
     {
         public override bool Equals(object obj)
@@ -1527,9 +1449,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt16ArrayHandle
 
-    /// <summary>
-    /// ConstantInt16Value
-    /// </summary>
     public partial struct ConstantInt16Value
     {
         internal MetadataReader _reader;
@@ -1554,9 +1473,6 @@ namespace Internal.Metadata.NativeFormat
         internal short _value;
     } // ConstantInt16Value
 
-    /// <summary>
-    /// ConstantInt16ValueHandle
-    /// </summary>
     public partial struct ConstantInt16ValueHandle
     {
         public override bool Equals(object obj)
@@ -1640,9 +1556,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt16ValueHandle
 
-    /// <summary>
-    /// ConstantInt32Array
-    /// </summary>
     public partial struct ConstantInt32Array
     {
         internal MetadataReader _reader;
@@ -1667,9 +1580,6 @@ namespace Internal.Metadata.NativeFormat
         internal int[] _value;
     } // ConstantInt32Array
 
-    /// <summary>
-    /// ConstantInt32ArrayHandle
-    /// </summary>
     public partial struct ConstantInt32ArrayHandle
     {
         public override bool Equals(object obj)
@@ -1753,9 +1663,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt32ArrayHandle
 
-    /// <summary>
-    /// ConstantInt32Value
-    /// </summary>
     public partial struct ConstantInt32Value
     {
         internal MetadataReader _reader;
@@ -1780,9 +1687,6 @@ namespace Internal.Metadata.NativeFormat
         internal int _value;
     } // ConstantInt32Value
 
-    /// <summary>
-    /// ConstantInt32ValueHandle
-    /// </summary>
     public partial struct ConstantInt32ValueHandle
     {
         public override bool Equals(object obj)
@@ -1866,9 +1770,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt32ValueHandle
 
-    /// <summary>
-    /// ConstantInt64Array
-    /// </summary>
     public partial struct ConstantInt64Array
     {
         internal MetadataReader _reader;
@@ -1893,9 +1794,6 @@ namespace Internal.Metadata.NativeFormat
         internal long[] _value;
     } // ConstantInt64Array
 
-    /// <summary>
-    /// ConstantInt64ArrayHandle
-    /// </summary>
     public partial struct ConstantInt64ArrayHandle
     {
         public override bool Equals(object obj)
@@ -1979,9 +1877,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt64ArrayHandle
 
-    /// <summary>
-    /// ConstantInt64Value
-    /// </summary>
     public partial struct ConstantInt64Value
     {
         internal MetadataReader _reader;
@@ -2006,9 +1901,6 @@ namespace Internal.Metadata.NativeFormat
         internal long _value;
     } // ConstantInt64Value
 
-    /// <summary>
-    /// ConstantInt64ValueHandle
-    /// </summary>
     public partial struct ConstantInt64ValueHandle
     {
         public override bool Equals(object obj)
@@ -2092,9 +1984,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantInt64ValueHandle
 
-    /// <summary>
-    /// ConstantReferenceValue
-    /// </summary>
     public partial struct ConstantReferenceValue
     {
         internal MetadataReader _reader;
@@ -2109,9 +1998,6 @@ namespace Internal.Metadata.NativeFormat
         } // Handle
     } // ConstantReferenceValue
 
-    /// <summary>
-    /// ConstantReferenceValueHandle
-    /// </summary>
     public partial struct ConstantReferenceValueHandle
     {
         public override bool Equals(object obj)
@@ -2195,9 +2081,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantReferenceValueHandle
 
-    /// <summary>
-    /// ConstantSByteArray
-    /// </summary>
     public partial struct ConstantSByteArray
     {
         internal MetadataReader _reader;
@@ -2222,9 +2105,6 @@ namespace Internal.Metadata.NativeFormat
         internal sbyte[] _value;
     } // ConstantSByteArray
 
-    /// <summary>
-    /// ConstantSByteArrayHandle
-    /// </summary>
     public partial struct ConstantSByteArrayHandle
     {
         public override bool Equals(object obj)
@@ -2308,9 +2188,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSByteArrayHandle
 
-    /// <summary>
-    /// ConstantSByteValue
-    /// </summary>
     public partial struct ConstantSByteValue
     {
         internal MetadataReader _reader;
@@ -2335,9 +2212,6 @@ namespace Internal.Metadata.NativeFormat
         internal sbyte _value;
     } // ConstantSByteValue
 
-    /// <summary>
-    /// ConstantSByteValueHandle
-    /// </summary>
     public partial struct ConstantSByteValueHandle
     {
         public override bool Equals(object obj)
@@ -2421,9 +2295,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSByteValueHandle
 
-    /// <summary>
-    /// ConstantSingleArray
-    /// </summary>
     public partial struct ConstantSingleArray
     {
         internal MetadataReader _reader;
@@ -2448,9 +2319,6 @@ namespace Internal.Metadata.NativeFormat
         internal float[] _value;
     } // ConstantSingleArray
 
-    /// <summary>
-    /// ConstantSingleArrayHandle
-    /// </summary>
     public partial struct ConstantSingleArrayHandle
     {
         public override bool Equals(object obj)
@@ -2534,9 +2402,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSingleArrayHandle
 
-    /// <summary>
-    /// ConstantSingleValue
-    /// </summary>
     public partial struct ConstantSingleValue
     {
         internal MetadataReader _reader;
@@ -2561,9 +2426,6 @@ namespace Internal.Metadata.NativeFormat
         internal float _value;
     } // ConstantSingleValue
 
-    /// <summary>
-    /// ConstantSingleValueHandle
-    /// </summary>
     public partial struct ConstantSingleValueHandle
     {
         public override bool Equals(object obj)
@@ -2647,9 +2509,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantSingleValueHandle
 
-    /// <summary>
-    /// ConstantStringArray
-    /// </summary>
     public partial struct ConstantStringArray
     {
         internal MetadataReader _reader;
@@ -2674,9 +2533,6 @@ namespace Internal.Metadata.NativeFormat
         internal string[] _value;
     } // ConstantStringArray
 
-    /// <summary>
-    /// ConstantStringArrayHandle
-    /// </summary>
     public partial struct ConstantStringArrayHandle
     {
         public override bool Equals(object obj)
@@ -2760,9 +2616,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantStringArrayHandle
 
-    /// <summary>
-    /// ConstantStringValue
-    /// </summary>
     public partial struct ConstantStringValue
     {
         internal MetadataReader _reader;
@@ -2787,9 +2640,6 @@ namespace Internal.Metadata.NativeFormat
         internal string _value;
     } // ConstantStringValue
 
-    /// <summary>
-    /// ConstantStringValueHandle
-    /// </summary>
     public partial struct ConstantStringValueHandle
     {
         public override bool Equals(object obj)
@@ -2873,9 +2723,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantStringValueHandle
 
-    /// <summary>
-    /// ConstantUInt16Array
-    /// </summary>
     public partial struct ConstantUInt16Array
     {
         internal MetadataReader _reader;
@@ -2900,9 +2747,6 @@ namespace Internal.Metadata.NativeFormat
         internal ushort[] _value;
     } // ConstantUInt16Array
 
-    /// <summary>
-    /// ConstantUInt16ArrayHandle
-    /// </summary>
     public partial struct ConstantUInt16ArrayHandle
     {
         public override bool Equals(object obj)
@@ -2986,9 +2830,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt16ArrayHandle
 
-    /// <summary>
-    /// ConstantUInt16Value
-    /// </summary>
     public partial struct ConstantUInt16Value
     {
         internal MetadataReader _reader;
@@ -3013,9 +2854,6 @@ namespace Internal.Metadata.NativeFormat
         internal ushort _value;
     } // ConstantUInt16Value
 
-    /// <summary>
-    /// ConstantUInt16ValueHandle
-    /// </summary>
     public partial struct ConstantUInt16ValueHandle
     {
         public override bool Equals(object obj)
@@ -3099,9 +2937,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt16ValueHandle
 
-    /// <summary>
-    /// ConstantUInt32Array
-    /// </summary>
     public partial struct ConstantUInt32Array
     {
         internal MetadataReader _reader;
@@ -3126,9 +2961,6 @@ namespace Internal.Metadata.NativeFormat
         internal uint[] _value;
     } // ConstantUInt32Array
 
-    /// <summary>
-    /// ConstantUInt32ArrayHandle
-    /// </summary>
     public partial struct ConstantUInt32ArrayHandle
     {
         public override bool Equals(object obj)
@@ -3212,9 +3044,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt32ArrayHandle
 
-    /// <summary>
-    /// ConstantUInt32Value
-    /// </summary>
     public partial struct ConstantUInt32Value
     {
         internal MetadataReader _reader;
@@ -3239,9 +3068,6 @@ namespace Internal.Metadata.NativeFormat
         internal uint _value;
     } // ConstantUInt32Value
 
-    /// <summary>
-    /// ConstantUInt32ValueHandle
-    /// </summary>
     public partial struct ConstantUInt32ValueHandle
     {
         public override bool Equals(object obj)
@@ -3325,9 +3151,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt32ValueHandle
 
-    /// <summary>
-    /// ConstantUInt64Array
-    /// </summary>
     public partial struct ConstantUInt64Array
     {
         internal MetadataReader _reader;
@@ -3352,9 +3175,6 @@ namespace Internal.Metadata.NativeFormat
         internal ulong[] _value;
     } // ConstantUInt64Array
 
-    /// <summary>
-    /// ConstantUInt64ArrayHandle
-    /// </summary>
     public partial struct ConstantUInt64ArrayHandle
     {
         public override bool Equals(object obj)
@@ -3438,9 +3258,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt64ArrayHandle
 
-    /// <summary>
-    /// ConstantUInt64Value
-    /// </summary>
     public partial struct ConstantUInt64Value
     {
         internal MetadataReader _reader;
@@ -3465,9 +3282,6 @@ namespace Internal.Metadata.NativeFormat
         internal ulong _value;
     } // ConstantUInt64Value
 
-    /// <summary>
-    /// ConstantUInt64ValueHandle
-    /// </summary>
     public partial struct ConstantUInt64ValueHandle
     {
         public override bool Equals(object obj)
@@ -3551,9 +3365,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ConstantUInt64ValueHandle
 
-    /// <summary>
-    /// CustomAttribute
-    /// </summary>
     public partial struct CustomAttribute
     {
         internal MetadataReader _reader;
@@ -3599,9 +3410,6 @@ namespace Internal.Metadata.NativeFormat
         internal NamedArgumentHandle[] _namedArguments;
     } // CustomAttribute
 
-    /// <summary>
-    /// CustomAttributeHandle
-    /// </summary>
     public partial struct CustomAttributeHandle
     {
         public override bool Equals(object obj)
@@ -3685,9 +3493,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // CustomAttributeHandle
 
-    /// <summary>
-    /// CustomModifier
-    /// </summary>
     public partial struct CustomModifier
     {
         internal MetadataReader _reader;
@@ -3723,9 +3528,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // CustomModifier
 
-    /// <summary>
-    /// CustomModifierHandle
-    /// </summary>
     public partial struct CustomModifierHandle
     {
         public override bool Equals(object obj)
@@ -3809,9 +3611,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // CustomModifierHandle
 
-    /// <summary>
-    /// Event
-    /// </summary>
     public partial struct Event
     {
         internal MetadataReader _reader;
@@ -3877,9 +3676,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // Event
 
-    /// <summary>
-    /// EventHandle
-    /// </summary>
     public partial struct EventHandle
     {
         public override bool Equals(object obj)
@@ -3963,9 +3759,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // EventHandle
 
-    /// <summary>
-    /// Field
-    /// </summary>
     public partial struct Field
     {
         internal MetadataReader _reader;
@@ -4041,9 +3834,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // Field
 
-    /// <summary>
-    /// FieldHandle
-    /// </summary>
     public partial struct FieldHandle
     {
         public override bool Equals(object obj)
@@ -4127,9 +3917,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // FieldHandle
 
-    /// <summary>
-    /// FieldSignature
-    /// </summary>
     public partial struct FieldSignature
     {
         internal MetadataReader _reader;
@@ -4165,9 +3952,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomModifierHandle[] _customModifiers;
     } // FieldSignature
 
-    /// <summary>
-    /// FieldSignatureHandle
-    /// </summary>
     public partial struct FieldSignatureHandle
     {
         public override bool Equals(object obj)
@@ -4251,9 +4035,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // FieldSignatureHandle
 
-    /// <summary>
-    /// FixedArgument
-    /// </summary>
     public partial struct FixedArgument
     {
         internal MetadataReader _reader;
@@ -4300,9 +4081,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _value;
     } // FixedArgument
 
-    /// <summary>
-    /// FixedArgumentHandle
-    /// </summary>
     public partial struct FixedArgumentHandle
     {
         public override bool Equals(object obj)
@@ -4386,9 +4164,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // FixedArgumentHandle
 
-    /// <summary>
-    /// GenericParameter
-    /// </summary>
     public partial struct GenericParameter
     {
         internal MetadataReader _reader;
@@ -4464,9 +4239,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // GenericParameter
 
-    /// <summary>
-    /// GenericParameterHandle
-    /// </summary>
     public partial struct GenericParameterHandle
     {
         public override bool Equals(object obj)
@@ -4550,9 +4322,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // GenericParameterHandle
 
-    /// <summary>
-    /// MemberReference
-    /// </summary>
     public partial struct MemberReference
     {
         internal MetadataReader _reader;
@@ -4609,9 +4378,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // MemberReference
 
-    /// <summary>
-    /// MemberReferenceHandle
-    /// </summary>
     public partial struct MemberReferenceHandle
     {
         public override bool Equals(object obj)
@@ -4695,9 +4461,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MemberReferenceHandle
 
-    /// <summary>
-    /// Method
-    /// </summary>
     public partial struct Method
     {
         internal MetadataReader _reader;
@@ -4782,9 +4545,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // Method
 
-    /// <summary>
-    /// MethodHandle
-    /// </summary>
     public partial struct MethodHandle
     {
         public override bool Equals(object obj)
@@ -4868,9 +4628,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodHandle
 
-    /// <summary>
-    /// MethodImpl
-    /// </summary>
     public partial struct MethodImpl
     {
         internal MetadataReader _reader;
@@ -4907,9 +4664,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _methodDeclaration;
     } // MethodImpl
 
-    /// <summary>
-    /// MethodImplHandle
-    /// </summary>
     public partial struct MethodImplHandle
     {
         public override bool Equals(object obj)
@@ -4993,9 +4747,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodImplHandle
 
-    /// <summary>
-    /// MethodInstantiation
-    /// </summary>
     public partial struct MethodInstantiation
     {
         internal MetadataReader _reader;
@@ -5042,9 +4793,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // MethodInstantiation
 
-    /// <summary>
-    /// MethodInstantiationHandle
-    /// </summary>
     public partial struct MethodInstantiationHandle
     {
         public override bool Equals(object obj)
@@ -5128,9 +4876,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodInstantiationHandle
 
-    /// <summary>
-    /// MethodSemantics
-    /// </summary>
     public partial struct MethodSemantics
     {
         internal MetadataReader _reader;
@@ -5165,9 +4910,6 @@ namespace Internal.Metadata.NativeFormat
         internal MethodHandle _method;
     } // MethodSemantics
 
-    /// <summary>
-    /// MethodSemanticsHandle
-    /// </summary>
     public partial struct MethodSemanticsHandle
     {
         public override bool Equals(object obj)
@@ -5251,9 +4993,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodSemanticsHandle
 
-    /// <summary>
-    /// MethodSignature
-    /// </summary>
     public partial struct MethodSignature
     {
         internal MetadataReader _reader;
@@ -5318,9 +5057,6 @@ namespace Internal.Metadata.NativeFormat
         internal ParameterTypeSignatureHandle[] _varArgParameters;
     } // MethodSignature
 
-    /// <summary>
-    /// MethodSignatureHandle
-    /// </summary>
     public partial struct MethodSignatureHandle
     {
         public override bool Equals(object obj)
@@ -5404,9 +5140,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodSignatureHandle
 
-    /// <summary>
-    /// MethodTypeVariableSignature
-    /// </summary>
     public partial struct MethodTypeVariableSignature
     {
         internal MetadataReader _reader;
@@ -5431,9 +5164,6 @@ namespace Internal.Metadata.NativeFormat
         internal int _number;
     } // MethodTypeVariableSignature
 
-    /// <summary>
-    /// MethodTypeVariableSignatureHandle
-    /// </summary>
     public partial struct MethodTypeVariableSignatureHandle
     {
         public override bool Equals(object obj)
@@ -5517,9 +5247,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // MethodTypeVariableSignatureHandle
 
-    /// <summary>
-    /// NamedArgument
-    /// </summary>
     public partial struct NamedArgument
     {
         internal MetadataReader _reader;
@@ -5564,9 +5291,6 @@ namespace Internal.Metadata.NativeFormat
         internal FixedArgumentHandle _value;
     } // NamedArgument
 
-    /// <summary>
-    /// NamedArgumentHandle
-    /// </summary>
     public partial struct NamedArgumentHandle
     {
         public override bool Equals(object obj)
@@ -5650,9 +5374,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // NamedArgumentHandle
 
-    /// <summary>
-    /// NamespaceDefinition
-    /// </summary>
     public partial struct NamespaceDefinition
     {
         internal MetadataReader _reader;
@@ -5718,9 +5439,6 @@ namespace Internal.Metadata.NativeFormat
         internal NamespaceDefinitionHandle[] _namespaceDefinitions;
     } // NamespaceDefinition
 
-    /// <summary>
-    /// NamespaceDefinitionHandle
-    /// </summary>
     public partial struct NamespaceDefinitionHandle
     {
         public override bool Equals(object obj)
@@ -5804,9 +5522,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // NamespaceDefinitionHandle
 
-    /// <summary>
-    /// NamespaceReference
-    /// </summary>
     public partial struct NamespaceReference
     {
         internal MetadataReader _reader;
@@ -5842,9 +5557,6 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringValueHandle _name;
     } // NamespaceReference
 
-    /// <summary>
-    /// NamespaceReferenceHandle
-    /// </summary>
     public partial struct NamespaceReferenceHandle
     {
         public override bool Equals(object obj)
@@ -5928,9 +5640,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // NamespaceReferenceHandle
 
-    /// <summary>
-    /// Parameter
-    /// </summary>
     public partial struct Parameter
     {
         internal MetadataReader _reader;
@@ -5996,9 +5705,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // Parameter
 
-    /// <summary>
-    /// ParameterHandle
-    /// </summary>
     public partial struct ParameterHandle
     {
         public override bool Equals(object obj)
@@ -6082,9 +5788,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ParameterHandle
 
-    /// <summary>
-    /// ParameterTypeSignature
-    /// </summary>
     public partial struct ParameterTypeSignature
     {
         internal MetadataReader _reader;
@@ -6120,9 +5823,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // ParameterTypeSignature
 
-    /// <summary>
-    /// ParameterTypeSignatureHandle
-    /// </summary>
     public partial struct ParameterTypeSignatureHandle
     {
         public override bool Equals(object obj)
@@ -6206,9 +5906,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ParameterTypeSignatureHandle
 
-    /// <summary>
-    /// PointerSignature
-    /// </summary>
     public partial struct PointerSignature
     {
         internal MetadataReader _reader;
@@ -6234,9 +5931,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // PointerSignature
 
-    /// <summary>
-    /// PointerSignatureHandle
-    /// </summary>
     public partial struct PointerSignatureHandle
     {
         public override bool Equals(object obj)
@@ -6320,9 +6014,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // PointerSignatureHandle
 
-    /// <summary>
-    /// Property
-    /// </summary>
     public partial struct Property
     {
         internal MetadataReader _reader;
@@ -6398,9 +6089,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // Property
 
-    /// <summary>
-    /// PropertyHandle
-    /// </summary>
     public partial struct PropertyHandle
     {
         public override bool Equals(object obj)
@@ -6484,9 +6172,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // PropertyHandle
 
-    /// <summary>
-    /// PropertySignature
-    /// </summary>
     public partial struct PropertySignature
     {
         internal MetadataReader _reader;
@@ -6542,9 +6227,6 @@ namespace Internal.Metadata.NativeFormat
         internal ParameterTypeSignatureHandle[] _parameters;
     } // PropertySignature
 
-    /// <summary>
-    /// PropertySignatureHandle
-    /// </summary>
     public partial struct PropertySignatureHandle
     {
         public override bool Equals(object obj)
@@ -6628,9 +6310,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // PropertySignatureHandle
 
-    /// <summary>
-    /// QualifiedField
-    /// </summary>
     public partial struct QualifiedField
     {
         internal MetadataReader _reader;
@@ -6665,9 +6344,6 @@ namespace Internal.Metadata.NativeFormat
         internal TypeDefinitionHandle _enclosingType;
     } // QualifiedField
 
-    /// <summary>
-    /// QualifiedFieldHandle
-    /// </summary>
     public partial struct QualifiedFieldHandle
     {
         public override bool Equals(object obj)
@@ -6751,9 +6427,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // QualifiedFieldHandle
 
-    /// <summary>
-    /// QualifiedMethod
-    /// </summary>
     public partial struct QualifiedMethod
     {
         internal MetadataReader _reader;
@@ -6788,9 +6461,6 @@ namespace Internal.Metadata.NativeFormat
         internal TypeDefinitionHandle _enclosingType;
     } // QualifiedMethod
 
-    /// <summary>
-    /// QualifiedMethodHandle
-    /// </summary>
     public partial struct QualifiedMethodHandle
     {
         public override bool Equals(object obj)
@@ -6874,9 +6544,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // QualifiedMethodHandle
 
-    /// <summary>
-    /// ReturnTypeSignature
-    /// </summary>
     public partial struct ReturnTypeSignature
     {
         internal MetadataReader _reader;
@@ -6912,9 +6579,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
     } // ReturnTypeSignature
 
-    /// <summary>
-    /// ReturnTypeSignatureHandle
-    /// </summary>
     public partial struct ReturnTypeSignatureHandle
     {
         public override bool Equals(object obj)
@@ -6998,9 +6662,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ReturnTypeSignatureHandle
 
-    /// <summary>
-    /// SZArraySignature
-    /// </summary>
     public partial struct SZArraySignature
     {
         internal MetadataReader _reader;
@@ -7026,9 +6687,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _elementType;
     } // SZArraySignature
 
-    /// <summary>
-    /// SZArraySignatureHandle
-    /// </summary>
     public partial struct SZArraySignatureHandle
     {
         public override bool Equals(object obj)
@@ -7112,9 +6770,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // SZArraySignatureHandle
 
-    /// <summary>
-    /// ScopeDefinition
-    /// </summary>
     public partial struct ScopeDefinition
     {
         internal MetadataReader _reader;
@@ -7239,9 +6894,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // ScopeDefinition
 
-    /// <summary>
-    /// ScopeDefinitionHandle
-    /// </summary>
     public partial struct ScopeDefinitionHandle
     {
         public override bool Equals(object obj)
@@ -7325,9 +6977,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ScopeDefinitionHandle
 
-    /// <summary>
-    /// ScopeReference
-    /// </summary>
     public partial struct ScopeReference
     {
         internal MetadataReader _reader;
@@ -7432,9 +7081,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // ScopeReference
 
-    /// <summary>
-    /// ScopeReferenceHandle
-    /// </summary>
     public partial struct ScopeReferenceHandle
     {
         public override bool Equals(object obj)
@@ -7518,9 +7164,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ScopeReferenceHandle
 
-    /// <summary>
-    /// TypeDefinition
-    /// </summary>
     public partial struct TypeDefinition
     {
         internal MetadataReader _reader;
@@ -7697,9 +7340,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // TypeDefinition
 
-    /// <summary>
-    /// TypeDefinitionHandle
-    /// </summary>
     public partial struct TypeDefinitionHandle
     {
         public override bool Equals(object obj)
@@ -7783,9 +7423,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeDefinitionHandle
 
-    /// <summary>
-    /// TypeForwarder
-    /// </summary>
     public partial struct TypeForwarder
     {
         internal MetadataReader _reader;
@@ -7840,9 +7477,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // TypeForwarder
 
-    /// <summary>
-    /// TypeForwarderHandle
-    /// </summary>
     public partial struct TypeForwarderHandle
     {
         public override bool Equals(object obj)
@@ -7926,9 +7560,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeForwarderHandle
 
-    /// <summary>
-    /// TypeInstantiationSignature
-    /// </summary>
     public partial struct TypeInstantiationSignature
     {
         internal MetadataReader _reader;
@@ -7965,9 +7596,6 @@ namespace Internal.Metadata.NativeFormat
         internal Handle[] _genericTypeArguments;
     } // TypeInstantiationSignature
 
-    /// <summary>
-    /// TypeInstantiationSignatureHandle
-    /// </summary>
     public partial struct TypeInstantiationSignatureHandle
     {
         public override bool Equals(object obj)
@@ -8051,9 +7679,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeInstantiationSignatureHandle
 
-    /// <summary>
-    /// TypeReference
-    /// </summary>
     public partial struct TypeReference
     {
         internal MetadataReader _reader;
@@ -8099,9 +7724,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // TypeReference
 
-    /// <summary>
-    /// TypeReferenceHandle
-    /// </summary>
     public partial struct TypeReferenceHandle
     {
         public override bool Equals(object obj)
@@ -8185,9 +7807,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeReferenceHandle
 
-    /// <summary>
-    /// TypeSpecification
-    /// </summary>
     public partial struct TypeSpecification
     {
         internal MetadataReader _reader;
@@ -8223,9 +7842,6 @@ namespace Internal.Metadata.NativeFormat
         internal CustomAttributeHandle[] _customAttributes;
     } // TypeSpecification
 
-    /// <summary>
-    /// TypeSpecificationHandle
-    /// </summary>
     public partial struct TypeSpecificationHandle
     {
         public override bool Equals(object obj)
@@ -8309,9 +7925,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeSpecificationHandle
 
-    /// <summary>
-    /// TypeVariableSignature
-    /// </summary>
     public partial struct TypeVariableSignature
     {
         internal MetadataReader _reader;
@@ -8336,9 +7949,6 @@ namespace Internal.Metadata.NativeFormat
         internal int _number;
     } // TypeVariableSignature
 
-    /// <summary>
-    /// TypeVariableSignatureHandle
-    /// </summary>
     public partial struct TypeVariableSignatureHandle
     {
         public override bool Equals(object obj)
@@ -8422,9 +8032,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // TypeVariableSignatureHandle
 
-    /// <summary>
-    /// Handle
-    /// </summary>
     public partial struct Handle
     {
         public ArraySignatureHandle ToArraySignatureHandle(MetadataReader reader)
@@ -8753,10 +8360,7 @@ namespace Internal.Metadata.NativeFormat
         } // ToTypeVariableSignatureHandle
     } // Handle
 
-    /// <summary>
-    /// MetadataReader
-    /// </summary>
-    public partial class MetadataReader : IMetadataReader
+    public partial class MetadataReader
     {
         public ArraySignature GetArraySignature(ArraySignatureHandle handle)
         {
