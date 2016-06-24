@@ -68,6 +68,46 @@ namespace TypeSystemTests
             Assert.Same(newType, t);
         }
 
+        [Fact]
+        public void TestMethodAttributes()
+        {
+            MetadataType tGen = _testModule.GetType("GenericTypes", "GenericClass`1");
+            MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
+            InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            MethodDesc fooInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Foo");
+            MethodDesc barInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Bar");
+            MethodDesc fooDerivedInstantiatedMethod = derivedGenOfInt.GetMethods().First(m => m.Name == "Foo");
+
+            Assert.False(barInstantiatedMethod.IsVirtual);
+            Assert.False(barInstantiatedMethod.IsNewSlot);
+            Assert.False(barInstantiatedMethod.IsFinal);
+            Assert.False(barInstantiatedMethod.IsAbstract);
+
+            Assert.True(fooInstantiatedMethod.IsVirtual);
+            Assert.True(fooInstantiatedMethod.IsNewSlot);
+            Assert.False(fooInstantiatedMethod.IsFinal);
+            Assert.True(fooInstantiatedMethod.IsAbstract);
+
+            Assert.True(fooDerivedInstantiatedMethod.IsVirtual);
+            Assert.False(fooDerivedInstantiatedMethod.IsNewSlot);
+            Assert.True(fooDerivedInstantiatedMethod.IsFinal);
+            Assert.False(fooDerivedInstantiatedMethod.IsAbstract);
+        }
+
+        [Fact]
+        public void TestFinalize()
+        {
+            MetadataType tGen = _testModule.GetType("GenericTypes", "GenericClass`1");
+            MetadataType tDerivedGen = _testModule.GetType("GenericTypes", "DerivedGenericClass`1");
+            InstantiatedType genOfInt = tGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            InstantiatedType derivedGenOfInt = tDerivedGen.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
+            MethodDesc finalizeInstantiatedMethod = genOfInt.GetMethods().First(m => m.Name == "Finalize");
+
+            Assert.Equal(finalizeInstantiatedMethod, genOfInt.GetFinalizer());
+            Assert.Equal(finalizeInstantiatedMethod, derivedGenOfInt.GetFinalizer());
+        }
+
         /// <summary>
         /// Testing lookup up of a method in an instantiated type.
         /// </summary>
