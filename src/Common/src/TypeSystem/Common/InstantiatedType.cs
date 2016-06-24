@@ -163,7 +163,7 @@ namespace Internal.TypeSystem
             MetadataType typeInHierarchy = this;
             while (typicalFinalizer.OwningType.GetTypeDefinition() != typeInHierarchy.GetTypeDefinition())
             {
-                typeInHierarchy = (MetadataType)typeInHierarchy.BaseType;
+                typeInHierarchy = typeInHierarchy.MetadataBaseType;
             }
 
             if (typeInHierarchy == typicalFinalizer.OwningType)
