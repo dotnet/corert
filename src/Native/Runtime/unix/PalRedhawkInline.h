@@ -45,9 +45,12 @@ FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ 
 }
 
 #if defined(_AMD64_)
-FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComparand)
+FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComparandAndResult)
 {
-    return __sync_val_compare_and_swap((__int128_t volatile*)pDst, *(__int128_t*)pComparand, ((__int128_t)iValueHigh << 64) + iValueLow);
+    __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (UInt64)pComparandAndResult[0];
+    __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (UInt64)iValueLow);
+    pComparandAndResult[0] = (Int64)iResult; pComparandAndResult[1] = (Int64)(iResult >> 64);
+    return iComparand == iResult;
 }
 #endif // _AMD64_
 
