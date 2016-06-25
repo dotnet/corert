@@ -16,7 +16,7 @@ namespace Internal.TypeSystem
         /// if possible under the policy of '<paramref name="kind"/>'
         /// </summary>
         /// <param name="changed">True if the returned instantiation is different from '<paramref name="instantiation"/>'.</param>
-        public static Instantiation ConvertInstantiationToCanonForm(TypeSystemContext context, Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        public static Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
             TypeDesc[] newInstantiation = null;
 
