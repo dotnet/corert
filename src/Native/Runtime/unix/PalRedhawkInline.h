@@ -34,20 +34,23 @@ FORCEINLINE Int64 PalInterlockedExchange64(_Inout_ _Interlocked_operand_ Int64 v
     return __sync_swap(pDst, iValue);
 }
 
-FORCEINLINE Int32 PalInterlockedCompareExchange(_Inout_ _Interlocked_operand_ Int32 volatile *pDst, Int32 iValue, Int32 iComperand)
+FORCEINLINE Int32 PalInterlockedCompareExchange(_Inout_ _Interlocked_operand_ Int32 volatile *pDst, Int32 iValue, Int32 iComparand)
 {
-    return __sync_val_compare_and_swap(pDst, iComperand, iValue);
+    return __sync_val_compare_and_swap(pDst, iComparand, iValue);
 }
 
-FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValue, Int64 iComperand)
+FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValue, Int64 iComparand)
 {
-    return __sync_val_compare_and_swap(pDst, iComperand, iValue);
+    return __sync_val_compare_and_swap(pDst, iComparand, iValue);
 }
 
 #if defined(_AMD64_)
-FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComperand)
+FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComparandAndResult)
 {
-    return __sync_val_compare_and_swap((__int128_t volatile*)pDst, *(__int128_t*)pComperand, ((__int128_t)iValueHigh << 64) + iValueLow);
+    __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (UInt64)pComparandAndResult[0];
+    __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (UInt64)iValueLow);
+    pComparandAndResult[0] = (Int64)iResult; pComparandAndResult[1] = (Int64)(iResult >> 64);
+    return iComparand == iResult;
 }
 #endif // _AMD64_
 
@@ -56,16 +59,16 @@ FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_
 #define PalInterlockedExchangePointer(_pDst, _pValue) \
     ((void *)PalInterlockedExchange64((Int64 volatile *)(_pDst), (Int64)(size_t)(_pValue)))
 
-#define PalInterlockedCompareExchangePointer(_pDst, _pValue, _pComperand) \
-    ((void *)PalInterlockedCompareExchange64((Int64 volatile *)(_pDst), (Int64)(size_t)(_pValue), (Int64)(size_t)(_pComperand)))
+#define PalInterlockedCompareExchangePointer(_pDst, _pValue, _pComparand) \
+    ((void *)PalInterlockedCompareExchange64((Int64 volatile *)(_pDst), (Int64)(size_t)(_pValue), (Int64)(size_t)(_pComparand)))
 
 #else // BIT64
 
 #define PalInterlockedExchangePointer(_pDst, _pValue) \
     ((void *)PalInterlockedExchange((Int32 volatile *)(_pDst), (Int32)(size_t)(_pValue)))
 
-#define PalInterlockedCompareExchangePointer(_pDst, _pValue, _pComperand) \
-    ((void *)PalInterlockedCompareExchange((Int32 volatile *)(_pDst), (Int32)(size_t)(_pValue), (Int32)(size_t)(_pComperand)))
+#define PalInterlockedCompareExchangePointer(_pDst, _pValue, _pComparand) \
+    ((void *)PalInterlockedCompareExchange((Int32 volatile *)(_pDst), (Int32)(size_t)(_pValue), (Int32)(size_t)(_pComparand)))
 
 #endif // BIT64
 
