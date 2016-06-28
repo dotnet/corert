@@ -11,7 +11,8 @@ namespace Internal.Runtime.CompilerHelpers
     /// <summary>
     /// Math helpers for generated code.
     /// </summary>
-    internal static class MathHelpers
+    [CLSCompliant(false)]
+    public static class MathHelpers
     {
 #if !BIT64
         //
@@ -40,7 +41,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeExport("LMulOvf")]
-        static private Int64 LMulOvf(Int64 i, Int64 j)
+        public static Int64 LMulOvf(Int64 i, Int64 j)
         {
             Int64 ret;
 
@@ -96,7 +97,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeExport("ULMulOvf")]
-        static private UInt64 ULMulOvf(UInt64 i, UInt64 j)
+        public static UInt64 ULMulOvf(UInt64 i, UInt64 j)
         {
             UInt64 ret;
 
@@ -136,7 +137,7 @@ namespace Internal.Runtime.CompilerHelpers
 #endif // BIT64
 
         [RuntimeExport("Dbl2IntOvf")]
-        private static int Dbl2IntOvf(double val)
+        public static int Dbl2IntOvf(double val)
         {
             const double two31 = 2147483648.0;
 
@@ -148,7 +149,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeExport("Dbl2LngOvf")]
-        private static long Dbl2LngOvf(double val)
+        public static long Dbl2LngOvf(double val)
         {
             const double two63  = 2147483648.0 * 4294967296.0;
 
@@ -161,7 +162,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeExport("Dbl2ULngOvf")]
-        private static ulong Dbl2ULngOvf(double val)
+        public static ulong Dbl2ULngOvf(double val)
         {
             const double two64  = 2.0* 2147483648.0 * 4294967296.0;
  
@@ -173,7 +174,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeExport("Flt2IntOvf")]
-        private static int Flt2IntOvf(float val)
+        public static int Flt2IntOvf(float val)
         {
             const double two31 = 2147483648.0;
 
@@ -185,7 +186,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeExport("Flt2LngOvf")]
-        private static long Flt2LngOvf(float val)
+        public static long Flt2LngOvf(float val)
         {
             const double two63 = 2147483648.0 * 4294967296.0;
 
