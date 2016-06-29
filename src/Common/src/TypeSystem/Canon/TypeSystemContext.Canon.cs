@@ -50,6 +50,10 @@ namespace Internal.TypeSystem
             get;
         }
 
+        /// <summary>
+        /// Returns true if and only if the '<paramref name="type"/>' is __Canon or __UniversalCanon
+        /// that matches the <paramref name="kind"/> parameter.
+        /// </summary>
         public bool IsCanonicalDefinitionType(TypeDesc type, CanonicalFormKind kind)
         {
             if (kind == CanonicalFormKind.Any)
