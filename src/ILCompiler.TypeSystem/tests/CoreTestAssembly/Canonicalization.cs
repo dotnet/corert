@@ -55,4 +55,12 @@ namespace Canonicalization
         {
         }
     }
+
+    class GenericReferenceTypeWithThreeParams<T, U, V>
+    {
+    }
+
+    class GenericStructTypeWithThreeParams<T, U, V>
+    {
+    }
 }

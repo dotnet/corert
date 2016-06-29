@@ -147,7 +147,7 @@ namespace Internal.TypeSystem
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected TypeFlags GetTypeFlags(TypeFlags mask)
+        protected internal TypeFlags GetTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = _typeFlags & mask;
             if (flags != 0)

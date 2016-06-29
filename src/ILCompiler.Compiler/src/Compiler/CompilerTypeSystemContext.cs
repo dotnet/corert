@@ -300,6 +300,16 @@ namespace ILCompiler
             return _virtualMethodEnumAlgorithm;
         }
 
+        protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        {
+            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+        }
+
+        protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        {
+            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+        }
+
         public MetadataStringDecoder GetMetadataStringDecoder()
         {
             if (_metadataStringDecoder == null)

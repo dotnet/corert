@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Contains utility functionality for canonicalization used by multiple types.
     /// </summary>
-    static class CanonUtilites
+    public static class StandardCanonicalizationAlgorithm
     {
         /// <summary>
         /// Returns a new instantiation that canonicalizes all types in <paramref name="instantiation"/>

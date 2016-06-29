@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Interlocked = System.Threading.Interlocked;
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -39,6 +42,46 @@ namespace Internal.TypeSystem
                 }
                 return _universalCanonType;
             }
+        }
+
+        /// <summary>
+        /// Returns true if and only if the '<paramref name="type"/>' is __Canon or __UniversalCanon
+        /// that matches the <paramref name="kind"/> parameter.
+        /// </summary>
+        public bool IsCanonicalDefinitionType(TypeDesc type, CanonicalFormKind kind)
+        {
+            if (kind == CanonicalFormKind.Any)
+            {
+                return type == CanonType || type == UniversalCanonType;
+            }
+            else if (kind == CanonicalFormKind.Specific)
+            {
+                return type == CanonType;
+            }
+            else
+            {
+                Debug.Assert(kind == CanonicalFormKind.Universal);
+                return type == UniversalCanonType;
+            }
+        }
+
+        /// <summary>
+        /// Converts the instantiation into a canonical form. Returns the canonical instantiation. The '<paramref name="changed"/>'
+        /// parameter indicates whether the returned canonical instantiation is different from the specific instantiation
+        /// passed as the input.
+        /// </summary>
+        protected internal virtual Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Converts a constituent of a constructed type to it's canonical form. Note this method is different
+        /// from <see cref="TypeDesc.ConvertToCanonForm(CanonicalFormKind)"/>.
+        /// </summary>
+        protected internal virtual TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        {
+            throw new NotSupportedException();
         }
     }
 }
