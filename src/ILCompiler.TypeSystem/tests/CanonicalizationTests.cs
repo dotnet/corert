@@ -263,5 +263,22 @@ namespace TypeSystemTests
                 arrayOfReferenceType.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Universal),
                 arrayOfStruct.GetMethod("Set", null).GetCanonMethodTarget(CanonicalFormKind.Universal));
         }
+
+        [Fact]
+        public void TestUpgradeToUniversalCanon()
+        {
+            _context.SetCanonicalizationAlgorithm(new RuntimeDeterminedCanonicalizationAlgorithm());
+
+            var gstOverUniversalCanon = _genericStructType.MakeInstantiatedType(_context.UniversalCanonType);
+            var grtOverRtRtStOverUniversal = _genericReferenceTypeWithThreeParams.MakeInstantiatedType(
+                _referenceType, _referenceType, gstOverUniversalCanon);
+            var grtOverRtRtStOverUniversalCanon = grtOverRtRtStOverUniversal.ConvertToCanonForm(CanonicalFormKind.Specific);
+
+            // Specific form gets upgraded to universal in the presence of universal canon.
+            // GenericReferenceTypeWithThreeParams<ReferenceType, ReferenceType, GenericStructType<__UniversalCanon>> is
+            // GenericReferenceTypeWithThreeParams<T__UniversalCanon, U__UniversalCanon, V__UniversalCanon>
+            Assert.Same(_context.UniversalCanonType, grtOverRtRtStOverUniversalCanon.Instantiation[0]);
+            Assert.Same(_context.UniversalCanonType, grtOverRtRtStOverUniversalCanon.Instantiation[2]);
+        }
     }
 }

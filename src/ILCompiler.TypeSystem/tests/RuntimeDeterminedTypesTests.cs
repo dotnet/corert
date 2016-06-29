@@ -153,5 +153,22 @@ namespace TypeSystemTests
 
             Assert.Same(grtOverRtStOtherRt, grtOverRtStRtSharedInstantiated);
         }
+
+        [Fact]
+        public void TestInstantiationOverStructOverCanon()
+        {
+            var stOverCanon = _genericStructType.MakeInstantiatedType(_context.CanonType);
+            var grtOverStOverCanon = _genericReferenceType.MakeInstantiatedType(
+                stOverCanon);
+            var grtOverStOverCanonShared = grtOverStOverCanon.ConvertToSharedRuntimeDeterminedForm();
+
+            // GenericReferenceType<GenericStructType<__Canon>> converts to
+            // GenericReferenceType<T__GenericStructType<__Canon>>
+            var typeArg = grtOverStOverCanonShared.Instantiation[0];
+            Assert.IsType<RuntimeDeterminedType>(typeArg);
+            var runtimeDeterminedType = (RuntimeDeterminedType)typeArg;
+            Assert.Same(stOverCanon, runtimeDeterminedType.CanonicalType);
+            Assert.Same(_genericReferenceType.Instantiation[0], runtimeDeterminedType.RuntimeDeterminedDetailsType);
+        }
     }
 }
