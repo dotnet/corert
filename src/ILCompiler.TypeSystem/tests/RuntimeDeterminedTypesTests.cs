@@ -142,8 +142,8 @@ namespace TypeSystemTests
             var grtOverRtStRtShared = grtOverRtStRt.ConvertToSharedRuntimeDeterminedForm();
 
             // GenericReferenceTypeWithThreeParams<T__Canon, StructType, V__Canon> substituted over
-            // an instantiation of <ReferenceType, StructType, ReferenceType> is 
-            // GenericReferenceTypeWithThreeParams<ReferenceType, StructType, ReferenceType>
+            // an instantiation of <ReferenceType, StructType, OtherReferenceType> is 
+            // GenericReferenceTypeWithThreeParams<ReferenceType, StructType, OtherReferenceType>
             var grtOverRtStRtSharedInstantiated = grtOverRtStRtShared.InstantiateSignature(
                 new Instantiation(_referenceType, _structType, _otherReferenceType),
                 Instantiation.Empty);
