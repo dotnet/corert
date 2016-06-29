@@ -25,7 +25,7 @@ namespace ILCompiler
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
         private MetadataVirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
         private DelegateVirtualMethodEnumerationAlgorithm _delegateVirtualMethodEnumAlgorithm = new DelegateVirtualMethodEnumerationAlgorithm();
-        
+
         private MetadataStringDecoder _metadataStringDecoder;
 
         private class ModuleData

@@ -92,7 +92,16 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            return _rawCanonType.GetTypeFlags(mask);
+            TypeFlags flags = 0;
+
+            if ((mask & TypeFlags.CategoryMask) != 0)
+            {
+                flags |= _rawCanonType.GetTypeFlags(mask);
+            }
+
+            // Might need to define the behavior if we ever hit this.
+            Debug.Assert((flags & mask) != 0);
+            return flags;
         }
 
         public override TypeDesc GetTypeDefinition()
