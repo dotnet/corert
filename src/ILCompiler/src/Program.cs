@@ -59,12 +59,28 @@ namespace ILCompiler
                 _options.TargetOS = TargetOS.OSX;
             else
                 throw new NotImplementedException();
+
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+            case Architecture.X86:
+                _options.TargetArchitecture = TargetArchitecture.X86;
+                break;
+            case Architecture.X64:
+                _options.TargetArchitecture = TargetArchitecture.X64;
+                break;
+            case Architecture.Arm:
+                _options.TargetArchitecture = TargetArchitecture.ARM;
+                break;
+            case Architecture.Arm64:
+                _options.TargetArchitecture = TargetArchitecture.ARM64;
+                break;
+            default:
+                throw new NotImplementedException();
+            }
 #else
             _options.TargetOS = TargetOS.Windows;
-#endif
-
             _options.TargetArchitecture = TargetArchitecture.X64;
-            _options.MultiFile = false;
+#endif
         }
 
         private ArgumentSyntax ParseCommandLine(string[] args)
@@ -102,14 +118,6 @@ namespace ILCompiler
             return argSyntax;
         }
 
-        private void SingleFileCompilation()
-        {
-            Compilation compilation = new Compilation(_options);
-            compilation.Log = _options.Verbose ? Console.Out : TextWriter.Null;
-
-            compilation.CompileSingleFile();
-        }
-
         private int Run(string[] args)
         {
             InitializeDefaultOptions();
@@ -127,9 +135,9 @@ namespace ILCompiler
             if (_options.OutputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
-            // For now, we can do single file compilation only
-            // TODO: Multifile
-            SingleFileCompilation();
+            Compilation compilation = new Compilation(_options);
+            compilation.Log = _options.Verbose ? Console.Out : TextWriter.Null;
+            compilation.Compile();
 
             return 0;
         }

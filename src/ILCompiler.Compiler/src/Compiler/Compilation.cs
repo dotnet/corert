@@ -135,7 +135,7 @@ namespace ILCompiler
 
         private CorInfoImpl _corInfo;
 
-        public void CompileSingleFile()
+        public void Compile()
         {
             NodeFactory.NameMangler = NameMangler;
 
