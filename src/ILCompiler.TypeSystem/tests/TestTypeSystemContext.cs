@@ -11,6 +11,12 @@ using System.IO;
 
 namespace TypeSystemTests
 {
+    public enum CanonicalizationMode
+    {
+        Standard,
+        RuntimeDetermined,
+    }
+
     class TestTypeSystemContext : MetadataTypeSystemContext
     {
         Dictionary<string, ModuleDesc> _modules = new Dictionary<string, ModuleDesc>(StringComparer.OrdinalIgnoreCase);
@@ -20,20 +26,8 @@ namespace TypeSystemTests
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         VirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
         VirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
-        CanonicalizationAlgorithm _canonicalizationAlgorithm;
 
-        public override CanonicalizationAlgorithm CanonicalizationAlgorithm
-        {
-            get
-            {
-                return _canonicalizationAlgorithm;
-            }
-        }
-
-        public void SetCanonicalizationAlgorithm(CanonicalizationAlgorithm value)
-        {
-            _canonicalizationAlgorithm = value;
-        }
+        public CanonicalizationMode CanonMode { get; set; } = CanonicalizationMode.RuntimeDetermined;
 
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown))
@@ -88,6 +82,22 @@ namespace TypeSystemTests
         public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
         {
             return _virtualMethodEnumAlgorithm;
+        }
+
+        protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        {
+            if (CanonMode == CanonicalizationMode.Standard)
+                return StandardCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+            else
+                return RuntimeDeterminedCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+        }
+
+        protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        {
+            if (CanonMode == CanonicalizationMode.Standard)
+                return StandardCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+            else
+                return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
         }
     }
 }

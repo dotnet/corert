@@ -25,7 +25,7 @@ namespace Internal.TypeSystem
             if (canonicalMethodResult == null)
             {
                 bool needsChange;
-                Instantiation canonInstantiation = Context.CanonicalizationAlgorithm.ConvertInstantiationToCanonForm(Instantiation, kind, out needsChange);
+                Instantiation canonInstantiation = Context.ConvertInstantiationToCanonForm(Instantiation, kind, out needsChange);
                 if (needsChange)
                 {
                     MethodDesc openMethodOnCanonicalizedType = _methodDef.GetCanonMethodTarget(kind);

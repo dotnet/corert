@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Interlocked = System.Threading.Interlocked;
 using Debug = System.Diagnostics.Debug;
 
@@ -43,14 +45,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets the algorithm to be used for converting types to their canonical form.
-        /// </summary>
-        public abstract CanonicalizationAlgorithm CanonicalizationAlgorithm
-        {
-            get;
-        }
-
-        /// <summary>
         /// Returns true if and only if the '<paramref name="type"/>' is __Canon or __UniversalCanon
         /// that matches the <paramref name="kind"/> parameter.
         /// </summary>
@@ -69,6 +63,25 @@ namespace Internal.TypeSystem
                 Debug.Assert(kind == CanonicalFormKind.Universal);
                 return type == UniversalCanonType;
             }
+        }
+
+        /// <summary>
+        /// Converts the instantiation into a canonical form. Returns the canonical instantiation. The '<paramref name="changed"/>'
+        /// parameter indicates whether the returned canonical instantiation is different from the specific instantiation
+        /// passed as the input.
+        /// </summary>
+        protected internal virtual Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        {
+            throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// Converts a constituent of a constructed type to it's canonical form. Note this method is different
+        /// from <see cref="TypeDesc.ConvertToCanonForm(CanonicalFormKind)"/>.
+        /// </summary>
+        protected internal virtual TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        {
+            throw new NotSupportedException();
         }
     }
 }

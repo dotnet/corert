@@ -43,11 +43,11 @@ namespace TypeSystemTests
         }
 
         [Theory]
-        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
-        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
-        public void TestGenericTypes(Type algorithmType)
+        [InlineData(CanonicalizationMode.Standard)]
+        [InlineData(CanonicalizationMode.RuntimeDetermined)]
+        public void TestGenericTypes(CanonicalizationMode algorithmType)
         {
-            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+            _context.CanonMode = algorithmType;
 
             // Canonical forms of reference type over two different reference types are equivalent
             var referenceOverReference = _genericReferenceType.MakeInstantiatedType(_referenceType);
@@ -110,11 +110,11 @@ namespace TypeSystemTests
         }
 
         [Theory]
-        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
-        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
-        public void TestGenericTypesNegative(Type algorithmType)
+        [InlineData(CanonicalizationMode.Standard)]
+        [InlineData(CanonicalizationMode.RuntimeDetermined)]
+        public void TestGenericTypesNegative(CanonicalizationMode algorithmType)
         {
-            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+            _context.CanonMode = algorithmType;
 
             // Two different types instantiated over the same type are not canonically equivalent
             var referenceOverReference = _genericReferenceType.MakeInstantiatedType(_referenceType);
@@ -143,11 +143,11 @@ namespace TypeSystemTests
         }
 
         [Theory]
-        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
-        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
-        public void TestArrayTypes(Type algorithmType)
+        [InlineData(CanonicalizationMode.Standard)]
+        [InlineData(CanonicalizationMode.RuntimeDetermined)]
+        public void TestArrayTypes(CanonicalizationMode algorithmType)
         {
-            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+            _context.CanonMode = algorithmType;
 
             // Generic type instantiated over an array has the same canonical form as generic type over any other reference type
             var genericStructOverArrayOfInt = _genericStructType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32).MakeArrayType());
@@ -189,11 +189,11 @@ namespace TypeSystemTests
         }
 
         [Theory]
-        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
-        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
-        public void TestMethodsOnGenericTypes(Type algorithmType)
+        [InlineData(CanonicalizationMode.Standard)]
+        [InlineData(CanonicalizationMode.RuntimeDetermined)]
+        public void TestMethodsOnGenericTypes(CanonicalizationMode algorithmType)
         {
-            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+            _context.CanonMode = algorithmType;
 
             var referenceOverReference = _genericReferenceType.MakeInstantiatedType(_referenceType);
             var referenceOverOtherReference = _genericReferenceType.MakeInstantiatedType(_otherReferenceType);
@@ -238,11 +238,11 @@ namespace TypeSystemTests
         }
 
         [Theory]
-        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
-        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
-        public void TestArrayMethods(Type algorithmType)
+        [InlineData(CanonicalizationMode.Standard)]
+        [InlineData(CanonicalizationMode.RuntimeDetermined)]
+        public void TestArrayMethods(CanonicalizationMode algorithmType)
         {
-            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+            _context.CanonMode = algorithmType;
 
             var arrayOfReferenceType = _referenceType.MakeArrayType(1);
             var arrayOfOtherReferenceType = _otherReferenceType.MakeArrayType(1);
@@ -267,8 +267,6 @@ namespace TypeSystemTests
         [Fact]
         public void TestUpgradeToUniversalCanon()
         {
-            _context.SetCanonicalizationAlgorithm(new RuntimeDeterminedCanonicalizationAlgorithm());
-
             var gstOverUniversalCanon = _genericStructType.MakeInstantiatedType(_context.UniversalCanonType);
             var grtOverRtRtStOverUniversal = _genericReferenceTypeWithThreeParams.MakeInstantiatedType(
                 _referenceType, _referenceType, gstOverUniversalCanon);

@@ -12,9 +12,9 @@ namespace Internal.TypeSystem
     /// (e.g. the ability to upgrade <see cref="CanonicalFormKind.Specific"/> to <see cref="CanonicalFormKind.Universal"/>
     /// if somewhere within the construction of the type we encounter a universal form).
     /// </summary>
-    public sealed class RuntimeDeterminedCanonicalizationAlgorithm : CanonicalizationAlgorithm
+    public static class RuntimeDeterminedCanonicalizationAlgorithm
     {
-        public override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        public static Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
             TypeDesc[] canonInstantiation = null;
 
@@ -63,7 +63,7 @@ namespace Internal.TypeSystem
             return instantiation;
         }
 
-        public override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        public static TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
             // Wrap the call to the version that potentially modifies the parameter. External
             // callers are not interested in that.

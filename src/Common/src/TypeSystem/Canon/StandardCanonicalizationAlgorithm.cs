@@ -9,14 +9,14 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Contains utility functionality for canonicalization used by multiple types.
     /// </summary>
-    public sealed class StandardCanonicalizationAlgorithm : CanonicalizationAlgorithm
+    public static class StandardCanonicalizationAlgorithm
     {
         /// <summary>
         /// Returns a new instantiation that canonicalizes all types in <paramref name="instantiation"/>
         /// if possible under the policy of '<paramref name="kind"/>'
         /// </summary>
         /// <param name="changed">True if the returned instantiation is different from '<paramref name="instantiation"/>'.</param>
-        public override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        public static Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
             TypeDesc[] newInstantiation = null;
 
@@ -55,7 +55,7 @@ namespace Internal.TypeSystem
         /// for simplicity. We can always change that rule in the futue and add support for the mixture, but
         /// for now we are keeping it simple.
         /// </summary>
-        public override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        public static TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
             TypeSystemContext context = typeToConvert.Context;
             if (kind == CanonicalFormKind.Universal)

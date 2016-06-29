@@ -27,8 +27,7 @@ namespace TypeSystemTests
             _context = new TestTypeSystemContext(TargetArchitecture.Unknown);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
-            _context.SetCanonicalizationAlgorithm(new RuntimeDeterminedCanonicalizationAlgorithm());
-
+            
             _testModule = systemModule;
 
             _referenceType = _testModule.GetType("Canonicalization", "ReferenceType");
