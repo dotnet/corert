@@ -231,8 +231,12 @@ namespace ILCompiler
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
             {
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
-                string methodName = method.ToString();
-                Log.WriteLine("Compiling " + methodName);
+
+                if (Log != TextWriter.Null)
+                {
+                    string methodName = method.ToString();
+                    Log.WriteLine("Compiling " + methodName);
+                }
 
                 var methodIL = GetMethodIL(method);
                 if (methodIL == null)
