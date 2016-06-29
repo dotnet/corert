@@ -319,41 +319,6 @@ namespace System.Runtime
 
         // EEType interrogation methods.
 
-        [RuntimeExport("RhGetRelatedParameterType")]
-        public static unsafe EETypePtr RhGetRelatedParameterType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return new EETypePtr((IntPtr)pEEType->RelatedParameterType);
-        }
-
-        [RuntimeExport("RhGetNonArrayBaseType")]
-        public static unsafe EETypePtr RhGetNonArrayBaseType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return new EETypePtr((IntPtr)pEEType->NonArrayBaseType);
-        }
-
-        [RuntimeExport("RhGetComponentSize")]
-        public static unsafe ushort RhGetComponentSize(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->ComponentSize;
-        }
-
-        [RuntimeExport("RhGetBaseSize")]
-        public static unsafe uint RhGetBaseSize(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->BaseSize;
-        }
-
-        [RuntimeExport("RhGetNumInterfaces")]
-        public static unsafe uint RhGetNumInterfaces(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return (uint)pEEType->NumInterfaces;
-        }
-
         [RuntimeExport("RhGetInterface")]
         public static unsafe EETypePtr RhGetInterface(EETypePtr ptrEEType, uint index)
         {
@@ -378,68 +343,12 @@ namespace System.Runtime
             pEEType->InterfaceMap[index].InterfaceType = pInterfaceEEType;
         }
 
-        [RuntimeExport("RhIsDynamicType")]
-        public static unsafe bool RhIsDynamicType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsDynamicType;
-        }
-
-        [RuntimeExport("RhHasCctor")]
-        public static unsafe bool RhHasCctor(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->HasCctor;
-        }
-
-        [RuntimeExport("RhIsValueType")]
-        public static unsafe bool RhIsValueType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsValueType;
-        }
-
-        [RuntimeExport("RhIsInterface")]
-        public static unsafe bool RhIsInterface(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsInterface;
-        }
-
-        [RuntimeExport("RhIsArray")]
-        public static unsafe bool RhIsArray(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsArray;
-        }
-
         [RuntimeExport("RhIsString")]
         public static unsafe bool RhIsString(EETypePtr ptrEEType)
         {
             EEType* pEEType = ptrEEType.ToPointer();
             // String is currently the only non-array type with a non-zero component size.
             return (pEEType->ComponentSize == sizeof(char)) && !pEEType->IsArray;
-        }
-
-        [RuntimeExport("RhIsNullable")]
-        public static unsafe bool RhIsNullable(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsNullable;
-        }
-
-        [RuntimeExport("RhGetNullableType")]
-        public static unsafe EETypePtr RhGetNullableType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return new EETypePtr((IntPtr)pEEType->NullableType);
-        }
-
-        [RuntimeExport("RhHasReferenceFields")]
-        public static unsafe bool RhHasReferenceFields(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->HasGCPointers;
         }
 
         [RuntimeExport("RhGetCorElementType")]
@@ -476,13 +385,6 @@ namespace System.Runtime
                 return RhEETypeClassification.UnmanagedPointer;
 
             return RhEETypeClassification.Regular;
-        }
-
-        [RuntimeExport("RhGetEETypeHash")]
-        public static unsafe uint RhGetEETypeHash(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->HashCode;
         }
 
         [RuntimeExport("RhGetCurrentThreadStackTrace")]

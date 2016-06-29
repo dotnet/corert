@@ -57,9 +57,6 @@
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
-      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs" >
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
@@ -71,6 +68,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
@@ -643,6 +641,15 @@
     <Compile Include="..\..\Common\src\System\__HResults.cs" >
       <Link>System\__HResults.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs" >
+      <Link>Internal\Runtime\EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
+      <Link>Internal\Runtime\EEType.Constants.cs</Link>
+    </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="CoverageSupport.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
@@ -694,12 +701,6 @@
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs" >
       <Link>Runtime.Base\src\RhBaseName.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs" >
-      <Link>Internal\Runtime\EEType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
-      <Link>Internal\Runtime\EEType.Constants.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">

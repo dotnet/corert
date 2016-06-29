@@ -89,7 +89,7 @@ namespace Internal.Runtime.Augments
         public static Object NewObject(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (RuntimeImports.RhIsNullable(eeType)
+            if (eeType.IsNullable
                 || eeType == EETypePtr.EETypePtrOf<String>()
                 || eeType == EETypePtr.EETypePtrOf<IntPtr>()
                 || eeType == EETypePtr.EETypePtrOf<UIntPtr>()
@@ -358,18 +358,18 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
-            EETypePtr elementType = RuntimeImports.RhGetRelatedParameterType(parameterTypeHandle.ToEETypePtr());
+            EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;
             return new RuntimeTypeHandle(elementType);
         }
 
         public static bool IsValueType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsValueType(CreateEETypePtr(type));
+            return type.ToEETypePtr().IsValueType;
         }
 
         public static bool IsInterface(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsInterface(CreateEETypePtr(type));
+            return type.ToEETypePtr().IsInterface;
         }
 
         public static unsafe object Box(RuntimeTypeHandle type, IntPtr address)
@@ -453,7 +453,7 @@ namespace Internal.Runtime.Augments
                 eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
                 return null;
 
-            uint numInterfaces = RuntimeImports.RhGetNumInterfaces(eeType);
+            uint numInterfaces = (uint)eeType.NumInterfaces;
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
             for (uint i = 0; i < numInterfaces; i++)
             {
@@ -497,7 +497,7 @@ namespace Internal.Runtime.Augments
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return (int)RuntimeImports.RhGetNumInterfaces(eeType);
+            return eeType.NumInterfaces;
         }
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
@@ -537,9 +537,7 @@ namespace Internal.Runtime.Augments
 
         public static int GetValueTypeSize(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            Debug.Assert(eeType.IsValueType);
-            return (int)RuntimeImports.RhGetValueTypeSize(eeType);
+            return (int)typeHandle.ToEETypePtr().ValueTypeSize;
         }
 
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
@@ -604,12 +602,12 @@ namespace Internal.Runtime.Augments
 
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhIsDynamicType(CreateEETypePtr(typeHandle));
+            return typeHandle.ToEETypePtr().IsDynamicType;
         }
 
         public static bool HasCctor(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhHasCctor(CreateEETypePtr(typeHandle));
+            return typeHandle.ToEETypePtr().HasCctor;
         }
 
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
@@ -679,12 +677,12 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         public static bool IsNullable(RuntimeTypeHandle declaringTypeHandle)
         {
-            return RuntimeImports.RhIsNullable(declaringTypeHandle.ToEETypePtr());
+            return declaringTypeHandle.ToEETypePtr().IsNullable;
         }
 
         public static RuntimeTypeHandle GetNullableType(RuntimeTypeHandle nullableType)
         {
-            EETypePtr theT = RuntimeImports.RhGetNullableType(nullableType.ToEETypePtr());
+            EETypePtr theT = nullableType.ToEETypePtr().NullableType;
             return new RuntimeTypeHandle(theT);
         }
 

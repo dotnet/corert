@@ -54,37 +54,6 @@ COOP_PINVOKE_HELPER(Boolean, RhYield, ())
     return PalSwitchToThread() ? Boolean_true : Boolean_false;
 }
 
-// Get the rarely used (optional) flags of an EEType. If they're not present 0 will be returned.
-COOP_PINVOKE_HELPER(UInt32, RhpGetEETypeRareFlags, (EEType * pEEType))
-{
-    return pEEType->get_RareFlags();
-}
-
-// For an ICastable type return a pointer to code that implements ICastable.IsInstanceOfInterface.
-COOP_PINVOKE_HELPER(UIntNative, RhpGetICastableIsInstanceOfInterfaceMethod, (EEType * pEEType))
-{
-    ASSERT(pEEType->IsICastable());
-    return (UIntNative)pEEType->get_ICastableIsInstanceOfInterfaceMethod();
-}
-
-// For an ICastable type return a pointer to code that implements ICastable.ICastableGetImplType.
-COOP_PINVOKE_HELPER(UIntNative, RhpGetICastableGetImplTypeMethod, (EEType * pEEType))
-{
-    ASSERT(pEEType->IsICastable());
-    return (UIntNative)pEEType->get_ICastableGetImplTypeMethod();
-}
-
-// Return the unboxed size of a value type.
-COOP_PINVOKE_HELPER(UInt32, RhGetValueTypeSize, (EEType * pEEType))
-{
-    ASSERT(pEEType->get_IsValueType());
-
-    // get_BaseSize returns the GC size including space for the sync block index field, the EEType* and
-    // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
-    // elements or fields of another type.
-    return pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + pEEType->get_ValueTypeFieldPadding());
-}
-
 // Return the DispatchMap pointer of a type
 COOP_PINVOKE_HELPER(DispatchMap*, RhGetDispatchMapForType, (EEType * pEEType))
 {
@@ -242,16 +211,6 @@ COOP_PINVOKE_HELPER(void *, GetClasslibCCtorCheck, (void * pReturnAddress))
     return pCallback;
 }
 
-COOP_PINVOKE_HELPER(UInt8, RhpGetNullableEETypeValueOffset, (EEType * pEEType))
-{
-    return pEEType->GetNullableValueOffset();
-}
-
-COOP_PINVOKE_HELPER(EEType *, RhpGetNullableEEType, (EEType * pEEType))
-{
-    return pEEType->GetNullableType();
-}
-
 COOP_PINVOKE_HELPER(Boolean, RhpHasDispatchMap, (EEType * pEEType))
 {
     return pEEType->HasDispatchMap();
@@ -265,11 +224,6 @@ COOP_PINVOKE_HELPER(DispatchMap *, RhpGetDispatchMap, (EEType * pEEType))
 COOP_PINVOKE_HELPER(EEType *, RhpGetArrayBaseType, (EEType * pEEType))
 {
     return pEEType->GetArrayBaseType();
-}
-
-COOP_PINVOKE_HELPER(PTR_Code, RhpGetSealedVirtualSlot, (EEType * pEEType, UInt16 slot))
-{
-    return pEEType->get_SealedVirtualSlot(slot);
 }
 
 // Obtain the address of a thread static field for the current thread given the enclosing type and a field cookie

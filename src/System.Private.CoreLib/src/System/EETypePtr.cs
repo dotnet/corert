@@ -19,24 +19,24 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using EEType = Internal.Runtime.EEType;
+
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct EETypePtr : IEquatable<EETypePtr>
+    internal unsafe struct EETypePtr : IEquatable<EETypePtr>
     {
-        private IntPtr _value;
+        private EEType* _value;
 
         public EETypePtr(IntPtr value)
         {
-            _value = value;
+            _value = (EEType*)value;
         }
 
-#if INPLACE_RUNTIME
-        internal unsafe Internal.Runtime.EEType* ToPointer()
+        internal EEType* ToPointer()
         {
-            return (Internal.Runtime.EEType*)(void*)_value;
+            return _value;
         }
-#endif
 
         public override bool Equals(Object obj)
         {
@@ -70,7 +70,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            return (int)Runtime.RuntimeImports.RhGetEETypeHash(this);
+            return (int)_value->HashCode;
         }
 
         // 
@@ -92,7 +92,7 @@ namespace System
         {
             get
             {
-                return _value;
+                return (IntPtr)_value;
             }
         }
 
@@ -100,7 +100,7 @@ namespace System
         {
             get
             {
-                return _value == default(IntPtr);
+                return _value == null;
             }
         }
 
@@ -108,7 +108,7 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhIsArray(this);
+                return _value->IsArray;
             }
         }
 
@@ -124,7 +124,7 @@ namespace System
         {
             get
             {
-                RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification(_value);
+                RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification((IntPtr)_value);
                 return classification == RuntimeImports.RhEETypeClassification.UnmanagedPointer;
             }
         }
@@ -133,7 +133,7 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhIsValueType(this);
+                return _value->IsValueType;
             }
         }
 
@@ -171,11 +171,51 @@ namespace System
             }
         }
 
+        internal bool IsDynamicType
+        {
+            get
+            {
+                return _value->IsDynamicType;
+            }
+        }
+
+        internal bool IsInterface
+        {
+            get
+            {
+                return _value->IsInterface;
+            }
+        }
+
+        internal bool IsNullable
+        {
+            get
+            {
+                return _value->IsNullable;
+            }
+        }
+
+        internal bool HasCctor
+        {
+            get
+            {
+                return _value->HasCctor;
+            }
+        }
+
+        internal EETypePtr NullableType
+        {
+            get
+            {
+                return new EETypePtr((IntPtr)_value->NullableType);
+            }
+        }
+
         internal EETypePtr ArrayElementType
         {
             get
             {
-                return RuntimeImports.RhGetRelatedParameterType(this);
+                return new EETypePtr((IntPtr)_value->RelatedParameterType);
             }
         }
 
@@ -198,6 +238,14 @@ namespace System
         }
 #endif
 
+        internal int NumInterfaces
+        {
+            get
+            {
+                return _value->NumInterfaces;
+            }
+        }
+
         internal EETypePtr BaseType
         {
             get
@@ -208,7 +256,7 @@ namespace System
                 if (IsPointer)
                     return new EETypePtr(default(IntPtr));
 
-                EETypePtr baseEEType = RuntimeImports.RhGetNonArrayBaseType(this);
+                EETypePtr baseEEType = new EETypePtr((IntPtr)_value->NonArrayBaseType);
 #if !REAL_MULTIDIM_ARRAYS
                 if (baseEEType == EETypePtr.EETypePtrOf<MDArrayRank2>() ||
                     baseEEType == EETypePtr.EETypePtrOf<MDArrayRank3>() ||
@@ -226,7 +274,7 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhGetComponentSize(this);
+                return _value->ComponentSize;
             }
         }
 
@@ -234,7 +282,7 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhGetBaseSize(this);
+                return _value->BaseSize;
             }
         }
 
@@ -243,7 +291,7 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhHasReferenceFields(this);
+                return _value->HasGCPointers;
             }
         }
 
@@ -251,8 +299,7 @@ namespace System
         {
             get
             {
-                Debug.Assert(IsValueType, "ValueTypeSize should only be used on value types");
-                return RuntimeImports.RhGetValueTypeSize(this);
+                return _value->ValueTypeSize;
             }
         }
 
