@@ -321,10 +321,6 @@ namespace System.Runtime
             int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, void* pGcStaticsDesc, void* pThreadStaticsDesc, int* pGenericVarianceFlags);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhAllocateMemory")]
-        internal static unsafe extern IntPtr RhAllocateMemory(int sizeInBytes);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetInterface")]
         internal static unsafe extern void RhSetInterface(EETypePtr pEEType, int index, EETypePtr pEETypeInterface);
 
