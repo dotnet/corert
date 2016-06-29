@@ -55,7 +55,7 @@ namespace System
             if (IsNull)
                 return 0;
 
-            return (int)RuntimeImports.RhGetEETypeHash(this.ToEETypePtr());
+            return this.ToEETypePtr().GetHashCode();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

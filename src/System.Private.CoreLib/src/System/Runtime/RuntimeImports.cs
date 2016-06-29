@@ -212,10 +212,6 @@ namespace System.Runtime
         internal static extern bool AreTypesAssignable(EETypePtr pSourceType, EETypePtr pTargetType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetEETypeHash")]
-        internal static extern uint RhGetEETypeHash(EETypePtr pType);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_CheckArrayStore")]
         internal static extern void RhCheckArrayStore(Object array, Object obj);
 
@@ -300,74 +296,16 @@ namespace System.Runtime
         internal static extern RhEETypeClassification RhGetEETypeClassification(IntPtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsValueType")]
-        internal static extern bool RhIsValueType(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsInterface")]
-        internal static extern bool RhIsInterface(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsArray")]
-        internal static extern bool RhIsArray(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhIsString")]
         internal static extern bool RhIsString(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhHasReferenceFields")]
-        internal static extern bool RhHasReferenceFields(EETypePtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCorElementType")]
         internal static extern RhCorElementType RhGetCorElementType(EETypePtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetValueTypeSize")]
-        internal static extern uint RhGetValueTypeSize(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsNullable")]
-        internal static extern bool RhIsNullable(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetNullableType")]
-        internal static extern EETypePtr RhGetNullableType(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGenericInstantiation")]
         internal static extern unsafe EETypePtr RhGetGenericInstantiation(EETypePtr pEEType, out int arity, out EETypePtr* ppInstantiation, out byte* varianceInfo);
-
-        //
-        // EEType Array Dissectors
-        //
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetRelatedParameterType")]
-        internal static extern EETypePtr RhGetRelatedParameterType(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetComponentSize")]
-        internal static extern ushort RhGetComponentSize(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetBaseSize")]
-        internal static extern uint RhGetBaseSize(EETypePtr pEEType);
-
-        //
-        // EEType Parent Hierarchy
-        //
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetNonArrayBaseType")]
-        internal static extern EETypePtr RhGetNonArrayBaseType(EETypePtr pEEType);
-
-
-        // Note: This reports the transitive closure, not just the directly implemented interfaces.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetNumInterfaces")]
-        internal static extern uint RhGetNumInterfaces(EETypePtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetInterface")]
@@ -417,14 +355,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadLocalStorageForDynamicType")]
         internal static extern IntPtr RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsDynamicType")]
-        internal static unsafe extern bool RhIsDynamicType(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhHasCctor")]
-        internal static unsafe extern bool RhHasCctor(EETypePtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
