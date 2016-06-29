@@ -25,6 +25,7 @@ namespace ILCompiler
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
         private MetadataVirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
         private DelegateVirtualMethodEnumerationAlgorithm _delegateVirtualMethodEnumAlgorithm = new DelegateVirtualMethodEnumerationAlgorithm();
+        private RuntimeDeterminedCanonicalizationAlgorithm _canonAlgorithm = new RuntimeDeterminedCanonicalizationAlgorithm();
 
         private MetadataStringDecoder _metadataStringDecoder;
 
@@ -131,6 +132,14 @@ namespace ILCompiler
         {
             get;
             set;
+        }
+
+        public override CanonicalizationAlgorithm CanonicalizationAlgorithm
+        {
+            get
+            {
+                return _canonAlgorithm;
+            }
         }
 
         public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)

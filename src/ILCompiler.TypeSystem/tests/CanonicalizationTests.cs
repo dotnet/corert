@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Xunit;
@@ -40,9 +42,13 @@ namespace TypeSystemTests
             _genericStructTypeWithThreeParams = _testModule.GetType("Canonicalization", "GenericStructTypeWithThreeParams`3");
         }
 
-        [Fact]
-        public void TestGenericTypes()
+        [Theory]
+        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
+        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
+        public void TestGenericTypes(Type algorithmType)
         {
+            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+
             // Canonical forms of reference type over two different reference types are equivalent
             var referenceOverReference = _genericReferenceType.MakeInstantiatedType(_referenceType);
             var referenceOverOtherReference = _genericReferenceType.MakeInstantiatedType(_otherReferenceType);
@@ -103,9 +109,13 @@ namespace TypeSystemTests
                 referenceOverReference.ConvertToCanonForm(CanonicalFormKind.Universal));
         }
 
-        [Fact]
-        public void TestGenericTypesNegative()
+        [Theory]
+        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
+        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
+        public void TestGenericTypesNegative(Type algorithmType)
         {
+            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+
             // Two different types instantiated over the same type are not canonically equivalent
             var referenceOverReference = _genericReferenceType.MakeInstantiatedType(_referenceType);
             var structOverReference = _genericStructType.MakeInstantiatedType(_referenceType);
@@ -132,9 +142,13 @@ namespace TypeSystemTests
                 threeParamReferenceOverS1R2S2.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
-        [Fact]
-        public void TestArrayTypes()
+        [Theory]
+        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
+        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
+        public void TestArrayTypes(Type algorithmType)
         {
+            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+
             // Generic type instantiated over an array has the same canonical form as generic type over any other reference type
             var genericStructOverArrayOfInt = _genericStructType.MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32).MakeArrayType());
             var genericStructOverReferenceType = _genericStructType.MakeInstantiatedType(_referenceType);
@@ -174,9 +188,13 @@ namespace TypeSystemTests
                 arrayOfStruct.ConvertToCanonForm(CanonicalFormKind.Universal));
         }
 
-        [Fact]
-        public void TestMethodsOnGenericTypes()
+        [Theory]
+        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
+        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
+        public void TestMethodsOnGenericTypes(Type algorithmType)
         {
+            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+
             var referenceOverReference = _genericReferenceType.MakeInstantiatedType(_referenceType);
             var referenceOverOtherReference = _genericReferenceType.MakeInstantiatedType(_otherReferenceType);
             Assert.NotSame(
@@ -219,9 +237,13 @@ namespace TypeSystemTests
                 referenceOverOtherReference.GetMethod("GenericMethod", null).MakeInstantiatedMethod(_structType).GetCanonMethodTarget(CanonicalFormKind.Universal));
         }
 
-        [Fact]
-        public void TestArrayMethods()
+        [Theory]
+        [InlineData(typeof(RuntimeDeterminedCanonicalizationAlgorithm))]
+        [InlineData(typeof(StandardCanonicalizationAlgorithm))]
+        public void TestArrayMethods(Type algorithmType)
         {
+            _context.SetCanonicalizationAlgorithm((CanonicalizationAlgorithm)Activator.CreateInstance(algorithmType));
+
             var arrayOfReferenceType = _referenceType.MakeArrayType(1);
             var arrayOfOtherReferenceType = _otherReferenceType.MakeArrayType(1);
 

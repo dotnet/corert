@@ -20,6 +20,20 @@ namespace TypeSystemTests
         ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         VirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
         VirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
+        CanonicalizationAlgorithm _canonicalizationAlgorithm;
+
+        public override CanonicalizationAlgorithm CanonicalizationAlgorithm
+        {
+            get
+            {
+                return _canonicalizationAlgorithm;
+            }
+        }
+
+        public void SetCanonicalizationAlgorithm(CanonicalizationAlgorithm value)
+        {
+            _canonicalizationAlgorithm = value;
+        }
 
         public TestTypeSystemContext(TargetArchitecture arch)
             : base(new TargetDetails(arch, TargetOS.Unknown))

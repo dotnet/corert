@@ -26,8 +26,14 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\ByRefType.Canon.cs">
       <Link>TypeSystem\Canon\ByRefType.Canon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonicalizationAlgorithm.cs">
+      <Link>TypeSystem\Canon\CanonicalizationAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs">
+      <Link>TypeSystem\Canon\StandardCanonicalizationAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\DefType.Canon.cs">
       <Link>TypeSystem\Canon\DefType.Canon.cs</Link>
@@ -317,8 +323,8 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\CanonUtilites.cs">
-      <Link>TypeSystem\RuntimeDetermined\CanonUtilites.cs</Link>
+    <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs">
+      <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedCanonicalizationAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\DefType.RuntimeDetermined.cs</Link>

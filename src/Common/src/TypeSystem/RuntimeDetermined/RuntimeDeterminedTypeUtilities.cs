@@ -24,7 +24,7 @@ namespace Internal.TypeSystem
                 for (int instantiationIndex = 0; instantiationIndex < instantiation.Length; instantiationIndex++)
                 {
                     TypeDesc typeToConvert = instantiation[instantiationIndex];
-                    TypeDesc canonForm = CanonUtilites.ConvertToCanon(typeToConvert, ref currentPolicy);
+                    TypeDesc canonForm = RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref currentPolicy);
                     TypeDesc runtimeDeterminedForm = typeToConvert;
 
                     Debug.Assert(canonForm is DefType);

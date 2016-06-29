@@ -42,6 +42,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the algorithm to be used for converting types to their canonical form.
+        /// </summary>
+        public abstract CanonicalizationAlgorithm CanonicalizationAlgorithm
+        {
+            get;
+        }
+
         public bool IsCanonicalDefinitionType(TypeDesc type, CanonicalFormKind kind)
         {
             if (kind == CanonicalFormKind.Any)

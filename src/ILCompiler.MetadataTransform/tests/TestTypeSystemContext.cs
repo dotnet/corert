@@ -18,6 +18,14 @@ namespace MetadataTransformTests
     {
         Dictionary<string, EcmaModule> _modules = new Dictionary<string, EcmaModule>(StringComparer.OrdinalIgnoreCase);
 
+        public override CanonicalizationAlgorithm CanonicalizationAlgorithm
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public EcmaModule GetModuleForSimpleName(string simpleName, bool throwIfNotFound = true)
         {
             EcmaModule module;

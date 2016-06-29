@@ -12,14 +12,9 @@ namespace Internal.TypeSystem
     /// (e.g. the ability to upgrade <see cref="CanonicalFormKind.Specific"/> to <see cref="CanonicalFormKind.Universal"/>
     /// if somewhere within the construction of the type we encounter a universal form).
     /// </summary>
-    static class CanonUtilites
+    public sealed class RuntimeDeterminedCanonicalizationAlgorithm : CanonicalizationAlgorithm
     {
-        /// <summary>
-        /// Returns a new instantiation that canonicalizes all types in <paramref name="instantiation"/>
-        /// if possible under the policy of '<paramref name="kind"/>'
-        /// </summary>
-        /// <param name="changed">True if the returned instantiation is different from '<paramref name="instantiation"/>'.</param>
-        public static Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        public override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
             TypeDesc[] canonInstantiation = null;
 
@@ -68,15 +63,7 @@ namespace Internal.TypeSystem
             return instantiation;
         }
 
-        /// <summary>
-        /// Helper API to convert a type to its canonical or universal canonical form.
-        /// Note that for now, there is no mixture between specific canonical and universal canonical forms,
-        /// meaning that the canonical form or Foo&lt;string, int&gt; can either be Foo&lt;__Canon, int&gt; or
-        /// Foo&lt;__UniversalCanon, __UniversalCanon&gt;. It cannot be Foo&lt;__Canon, __UniversalCanon&gt; (yet)
-        /// for simplicity. We can always change that rule in the futue and add support for the mixture, but
-        /// for now we are keeping it simple.
-        /// </summary>
-        public static TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        public override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
             // Wrap the call to the version that potentially modifies the parameter. External
             // callers are not interested in that.
