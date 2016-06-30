@@ -288,14 +288,6 @@ namespace System.Runtime
         //
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetEETypeClassification")]
-        internal static extern RhEETypeClassification RhGetEETypeClassification(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetEETypeClassification")]
-        internal static extern RhEETypeClassification RhGetEETypeClassification(IntPtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhIsString")]
         internal static extern bool RhIsString(EETypePtr pEEType);
 
@@ -718,16 +710,6 @@ namespace System.Runtime
             ELEMENT_TYPE_R8 = 0xd,
             ELEMENT_TYPE_I = 0x18,
             ELEMENT_TYPE_U = 0x19,
-        }
-
-        // Keep in sync with ProjectN\src\RH\src\rtm\System\Runtime\RuntimeExports.cs
-        internal enum RhEETypeClassification
-        {
-            Regular,                // Object, String, Int32
-            Array,                  // String[]
-            Generic,                // List<Int32>
-            GenericTypeDefinition,  // List<T>
-            UnmanagedPointer,       // void*
         }
 
         internal static RhCorElementTypeInfo GetRhCorElementTypeInfo(RuntimeImports.RhCorElementType elementType)

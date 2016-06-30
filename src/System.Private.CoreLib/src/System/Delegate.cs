@@ -59,7 +59,7 @@ namespace System
             // canonical delegates which use calling convention converter thunks to marshal arguments
             // for the delegate call. If we execute this version of GetThunk, we can at least assert
             // that the current delegate type is a generic type.
-            Debug.Assert(RuntimeImports.RhGetEETypeClassification(this.EETypePtr) == RuntimeImports.RhEETypeClassification.Generic);
+            Debug.Assert(this.EETypePtr.IsGeneric);
 #endif
             return TypeLoaderExports.GetDelegateThunk(this, whichThunk);
         }
@@ -698,8 +698,7 @@ namespace System
                 throw new InvalidOperationException();
             }
 
-            RuntimeImports.RhEETypeClassification delegateEETypeClassification = RuntimeImports.RhGetEETypeClassification(delegateEEType);
-            if (!(delegateEETypeClassification == RuntimeImports.RhEETypeClassification.Regular || delegateEETypeClassification == RuntimeImports.RhEETypeClassification.Generic))
+            if (!delegateEEType.IsDefType || delegateEEType.IsGenericTypeDefinition)
             {
                 throw new InvalidOperationException();
             }

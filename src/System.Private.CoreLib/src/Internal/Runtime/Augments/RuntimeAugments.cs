@@ -429,9 +429,7 @@ namespace Internal.Runtime.Augments
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
-            if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer)
             {
                 baseTypeHandle = default(RuntimeTypeHandle);
                 return false;
@@ -448,9 +446,7 @@ namespace Internal.Runtime.Augments
         public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
-            if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer)
                 return null;
 
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
@@ -582,12 +578,12 @@ namespace Internal.Runtime.Augments
 
         public static bool IsGenericType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.Generic;
+            return typeHandle.ToEETypePtr().IsGeneric;
         }
 
         public static bool IsArrayType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.Array;
+            return typeHandle.ToEETypePtr().IsArray;
         }
 
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
@@ -617,12 +613,12 @@ namespace Internal.Runtime.Augments
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.UnmanagedPointer;
+            return typeHandle.ToEETypePtr().IsPointer;
         }
 
         public static bool IsGenericTypeDefinition(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.GenericTypeDefinition;
+            return typeHandle.ToEETypePtr().IsGenericTypeDefinition;
         }
 
         //
@@ -630,18 +626,14 @@ namespace Internal.Runtime.Augments
         //
         public static bool CanPrimitiveWiden(RuntimeTypeHandle srcType, RuntimeTypeHandle dstType)
         {
-            RuntimeImports.RhEETypeClassification srcEETypeClassification = srcType.Classification;
-            RuntimeImports.RhEETypeClassification dstEETypeClassification = dstType.Classification;
-            if (srcEETypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                dstEETypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition)
-                return false;
-            if (srcEETypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer ||
-                dstEETypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
-                return false;
-
-
             EETypePtr srcEEType = srcType.ToEETypePtr();
             EETypePtr dstEEType = dstType.ToEETypePtr();
+
+            if (srcEEType.IsGenericTypeDefinition || dstEEType.IsGenericTypeDefinition)
+                return false;
+            if (srcEEType.IsPointer || dstEEType.IsPointer)
+                return false;
+
             if (!srcEEType.IsPrimitive)
                 return false;
             if (!dstEEType.IsPrimitive)

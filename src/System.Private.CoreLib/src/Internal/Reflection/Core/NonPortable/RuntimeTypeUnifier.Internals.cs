@@ -57,25 +57,14 @@ namespace Internal.Reflection.Core.NonPortable
 
             protected sealed override RuntimeType Factory(EETypePtr eeType)
             {
-                RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification(eeType);
-                switch (classification)
+                if (eeType.IsDefType)
                 {
-                    case RuntimeImports.RhEETypeClassification.Regular:
-                        return new RuntimeEENamedNonGenericType(eeType);
-                    case RuntimeImports.RhEETypeClassification.Array:
-#if REAL_MULTIDIM_ARRAYS
-                        if (!eeType.IsSzArray)
-                            return new RuntimeEEArrayType(eeType, eeType.ArrayRank);
-                        else
-                            return new RuntimeEEArrayType(eeType);
-#else
-                        return new RuntimeEEArrayType(eeType);
-#endif
-                    case RuntimeImports.RhEETypeClassification.UnmanagedPointer:
-                        return new RuntimeEEPointerType(eeType);
-                    case RuntimeImports.RhEETypeClassification.GenericTypeDefinition:
+                    if (eeType.IsGenericTypeDefinition)
+                    {
                         return new RuntimeEENamedGenericType(eeType);
-                    case RuntimeImports.RhEETypeClassification.Generic:
+                    }
+                    else if (eeType.IsGeneric)
+                    {
                         // Reflection blocked constructed generic types simply pretend to not be generic
                         // This is reasonable, as the behavior of reflection blocked types is supposed
                         // to be that they expose the minimal information about a type that is necessary
@@ -100,8 +89,30 @@ namespace Internal.Reflection.Core.NonPortable
                             return new RuntimeEEArrayType(eeType, rank: 4);
 #endif
                         return new RuntimeEEConstructedGenericType(eeType);
-                    default:
-                        throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);
+                    }
+                    else
+                    {
+                        return new RuntimeEENamedNonGenericType(eeType);
+                    }
+                }
+                else if (eeType.IsArray)
+                {
+#if REAL_MULTIDIM_ARRAYS
+                    if (!eeType.IsSzArray)
+                        return new RuntimeEEArrayType(eeType, eeType.ArrayRank);
+                    else
+                        return new RuntimeEEArrayType(eeType);
+#else
+                        return new RuntimeEEArrayType(eeType);
+#endif
+                }
+                else if (eeType.IsPointer)
+                {
+                    return new RuntimeEEPointerType(eeType);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);
                 }
             }
 
@@ -219,7 +230,7 @@ namespace Internal.Reflection.Core.NonPortable
 
                     if (RuntimeAugments.Callbacks.TryGetPointerTypeForTargetType(thElementType, out thForPointerType))
                     {
-                        Debug.Assert(thForPointerType.Classification == RuntimeImports.RhEETypeClassification.UnmanagedPointer);
+                        Debug.Assert(thForPointerType.ToEETypePtr().IsPointer);
                         return (RuntimePointerType)(RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(thForPointerType));
                     }
                 }
