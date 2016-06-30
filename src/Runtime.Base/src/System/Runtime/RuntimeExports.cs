@@ -319,30 +319,6 @@ namespace System.Runtime
 
         // EEType interrogation methods.
 
-        [RuntimeExport("RhGetInterface")]
-        public static unsafe EETypePtr RhGetInterface(EETypePtr ptrEEType, uint index)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-
-            // The convoluted pointer arithmetic into the interface map below (rather than a simply array
-            // dereference) is because C# will generate a 64-bit multiply for the lookup by default. This
-            // causes us a problem on x86 because it uses a helper that's mapped directly into the CRT via
-            // import magic and that technique doesn't work with the way we link this code into the runtime
-            // image. Since we don't need a 64-bit multiply here (the classlib is trusted code) we manually
-            // perform the calculation.
-            EEInterfaceInfo* pInfo = (EEInterfaceInfo*)((byte*)pEEType->InterfaceMap + (index * (uint)sizeof(EEInterfaceInfo)));
-
-            return new EETypePtr((IntPtr)pInfo->InterfaceType);
-        }
-
-        [RuntimeExport("RhSetInterface")]
-        public static unsafe void RhSetInterface(EETypePtr ptrEEType, int index, EETypePtr ptrInterfaceEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            EEType* pInterfaceEEType = ptrInterfaceEEType.ToPointer();
-            pEEType->InterfaceMap[index].InterfaceType = pInterfaceEEType;
-        }
-
         [RuntimeExport("RhIsString")]
         public static unsafe bool RhIsString(EETypePtr ptrEEType)
         {

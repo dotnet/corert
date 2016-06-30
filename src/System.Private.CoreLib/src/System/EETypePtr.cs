@@ -11,11 +11,8 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Runtime;
-using System.Threading;
 using System.Diagnostics;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -238,11 +235,11 @@ namespace System
         }
 #endif
 
-        internal int NumInterfaces
+        internal InterfaceCollection Interfaces
         {
             get
             {
-                return _value->NumInterfaces;
+                return new InterfaceCollection(_value);
             }
         }
 
@@ -330,6 +327,35 @@ namespace System
             // by optimizing typeof(!!0).TypeHandle into "ldtoken !!0", or by
             // completely replacing the body of this method.
             return typeof(T).TypeHandle.ToEETypePtr();
+        }
+
+        public struct InterfaceCollection
+        {
+            private EEType* _value;
+
+            internal InterfaceCollection(EEType* value)
+            {
+                _value = value;
+            }
+
+            public int Count
+            {
+                get
+                {
+                    return _value->NumInterfaces;
+                }
+            }
+
+            public EETypePtr this[int index]
+            {
+                get
+                {
+                    Debug.Assert((uint)index < _value->NumInterfaces);
+
+                    EEType* interfaceType = _value->InterfaceMap[index].InterfaceType;
+                    return new EETypePtr((IntPtr)interfaceType);
+                }
+            }
         }
     }
 }

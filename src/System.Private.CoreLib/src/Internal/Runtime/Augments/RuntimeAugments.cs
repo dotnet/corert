@@ -453,11 +453,10 @@ namespace Internal.Runtime.Augments
                 eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
                 return null;
 
-            uint numInterfaces = (uint)eeType.NumInterfaces;
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
-            for (uint i = 0; i < numInterfaces; i++)
+            for (int i = 0; i < eeType.Interfaces.Count; i++)
             {
-                EETypePtr ifcEEType = RuntimeImports.RhGetInterface(eeType, i);
+                EETypePtr ifcEEType = eeType.Interfaces[i];
                 RuntimeTypeHandle ifcrth = new RuntimeTypeHandle(ifcEEType);
                 if (Callbacks.IsReflectionBlocked(ifcrth))
                     continue;
@@ -496,22 +495,13 @@ namespace Internal.Runtime.Augments
 
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return eeType.NumInterfaces;
+            return typeHandle.ToEETypePtr().Interfaces.Count;
         }
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            EETypePtr eeInterface = RuntimeImports.RhGetInterface(eeType, (uint)index);
+            EETypePtr eeInterface = typeHandle.ToEETypePtr().Interfaces[index];
             return CreateRuntimeTypeHandle(eeInterface);
-        }
-
-        public static void SetInterface(RuntimeTypeHandle typeHandle, int index, RuntimeTypeHandle interfaceTypeHandle)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            EETypePtr eeInterface = CreateEETypePtr(interfaceTypeHandle);
-            RuntimeImports.RhSetInterface(eeType, index, eeInterface);
         }
 
         public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
