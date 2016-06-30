@@ -116,14 +116,6 @@ namespace System
 #endif
         }
 
-        internal RuntimeImports.RhEETypeClassification Classification
-        {
-            get
-            {
-                return RuntimeImports.RhGetEETypeClassification(this.ToEETypePtr());
-            }
-        }
-
         internal bool IsNull
         {
             get

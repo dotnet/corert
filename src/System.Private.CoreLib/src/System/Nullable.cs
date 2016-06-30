@@ -119,7 +119,7 @@ namespace System
             EETypePtr nullableEEType;
             if (nullableType.TryGetEEType(out nullableEEType))
             {
-                if (RuntimeImports.RhGetEETypeClassification(nullableEEType) == RuntimeImports.RhEETypeClassification.Generic)
+                if (nullableEEType.IsGeneric)
                 {
                     if (nullableEEType.IsNullable)
                     {

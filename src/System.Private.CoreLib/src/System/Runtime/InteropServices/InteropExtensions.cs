@@ -98,8 +98,8 @@ namespace System.Runtime.InteropServices
 
         public static bool IsGenericType(this RuntimeTypeHandle handle)
         {
-            return handle.Classification == RuntimeImports.RhEETypeClassification.Generic ||
-                   handle.Classification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition;
+            EETypePtr eeType = handle.ToEETypePtr();
+            return eeType.IsGeneric || eeType.IsGenericTypeDefinition;
         }
 
         public static TKey FindEquivalentKeyUnsafe<TKey, TValue>(

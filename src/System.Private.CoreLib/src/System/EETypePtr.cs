@@ -121,8 +121,7 @@ namespace System
         {
             get
             {
-                RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification((IntPtr)_value);
-                return classification == RuntimeImports.RhEETypeClassification.UnmanagedPointer;
+                return _value->IsPointerType;
             }
         }
 
@@ -157,14 +156,45 @@ namespace System
         {
             get
             {
-                RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification(this);
-
                 // Q: When is an enum type a constructed generic type?
                 // A: When it's nested inside a generic type.
-                if (!(classification == RuntimeImports.RhEETypeClassification.Regular || classification == RuntimeImports.RhEETypeClassification.Generic))
+                if (!(IsDefType))
                     return false;
                 EETypePtr baseType = this.BaseType;
                 return baseType == EETypePtr.EETypePtrOf<Enum>();
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a generic type definition (an uninstantiated generic type).
+        /// </summary>
+        internal bool IsGenericTypeDefinition
+        {
+            get
+            {
+                return _value->IsGenericTypeDefinition;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is an instantiated generic type.
+        /// </summary>
+        internal bool IsGeneric
+        {
+            get
+            {
+                return _value->IsGeneric;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
+        /// </summary>
+        internal bool IsDefType
+        {
+            get
+            {
+                return !_value->IsParameterizedType;
             }
         }
 

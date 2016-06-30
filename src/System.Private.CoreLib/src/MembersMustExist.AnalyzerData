@@ -120,8 +120,6 @@ internal static extern System.Runtime.RuntimeImports.RhCorElementType System.Run
 internal static extern long System.Runtime.RuntimeImports.RhGetCurrentObjSize()
 internal static extern int System.Runtime.RuntimeImports.RhGetCurrentThreadStackTrace(System.IntPtr[] outputBuffer)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetDispatchMapForType(System.EETypePtr pEEType)
-internal static extern System.Runtime.RuntimeImports.RhEETypeClassification System.Runtime.RuntimeImports.RhGetEETypeClassification(System.EETypePtr pEEType)
-internal static extern System.Runtime.RuntimeImports.RhEETypeClassification System.Runtime.RuntimeImports.RhGetEETypeClassification(System.IntPtr pEEType)
 internal static extern bool System.Runtime.RuntimeImports.RhGetExceptionsForCurrentThread(System.Exception[] outputArray, out int writtenCountOut)
 internal static extern int System.Runtime.RuntimeImports.RhGetGcCollectionCount(int generation, bool getSpecialGCCount)
 internal static extern int System.Runtime.RuntimeImports.RhGetGCDescSize(System.EETypePtr eeType)

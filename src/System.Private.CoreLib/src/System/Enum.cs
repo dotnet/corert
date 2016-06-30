@@ -792,8 +792,7 @@ namespace System
         {
             EETypePtr eeType = value.EETypePtr;
             // For now, this check is required to flush out pointers.
-            RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification(eeType);
-            if (classification != RuntimeImports.RhEETypeClassification.Regular)
+            if (!eeType.IsDefType)
             {
                 result = 0;
                 return false;

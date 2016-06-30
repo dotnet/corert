@@ -334,35 +334,6 @@ namespace System.Runtime
             return (byte)pEEType->CorElementType;
         }
 
-        public enum RhEETypeClassification
-        {
-            Regular,                // Object, String, Int32
-            Array,                  // String[]
-            Generic,                // List<Int32>
-            GenericTypeDefinition,  // List<T>
-            UnmanagedPointer,       // void*
-        }
-
-        [RuntimeExport("RhGetEETypeClassification")]
-        public static unsafe RhEETypeClassification RhGetEETypeClassification(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-
-            if (pEEType->IsArray)
-                return RhEETypeClassification.Array;
-
-            if (pEEType->IsGeneric)
-                return RhEETypeClassification.Generic;
-
-            if (pEEType->IsGenericTypeDefinition)
-                return RhEETypeClassification.GenericTypeDefinition;
-
-            if (pEEType->IsPointerType)
-                return RhEETypeClassification.UnmanagedPointer;
-
-            return RhEETypeClassification.Regular;
-        }
-
         [RuntimeExport("RhGetCurrentThreadStackTrace")]
         [MethodImpl(MethodImplOptions.NoInlining)] // Ensures that the RhGetCurrentThreadStackTrace frame is always present
         public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)
