@@ -308,10 +308,6 @@ namespace System.Runtime
         internal static extern unsafe EETypePtr RhGetGenericInstantiation(EETypePtr pEEType, out int arity, out EETypePtr* ppInstantiation, out byte* varianceInfo);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetInterface")]
-        internal static extern EETypePtr RhGetInterface(EETypePtr pEEType, uint index);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGCDescSize")]
         internal static extern int RhGetGCDescSize(EETypePtr eeType);
 
@@ -319,10 +315,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhCreateGenericInstanceDescForType2")]
         internal static unsafe extern bool RhCreateGenericInstanceDescForType2(EETypePtr pEEType, int arity, int nonGcStaticDataSize,
             int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, void* pGcStaticsDesc, void* pThreadStaticsDesc, int* pGenericVarianceFlags);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetInterface")]
-        internal static unsafe extern void RhSetInterface(EETypePtr pEEType, int index, EETypePtr pEETypeInterface);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetGenericInstantiation")]
