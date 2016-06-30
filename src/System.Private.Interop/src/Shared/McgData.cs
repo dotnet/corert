@@ -813,6 +813,9 @@ namespace System.Runtime.InteropServices
                     return SharedCCWList[(int)flag >> 4];
                 }
 
+                if (InterfaceData.CcwVtable == IntPtr.Zero)
+                    return IntPtr.Zero;
+                    
                 return CalliIntrinsics.Call__GetCcwVtable(InterfaceData.CcwVtable);
             }
         }

@@ -89,7 +89,7 @@ namespace Internal.Runtime.Augments
         public static Object NewObject(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (RuntimeImports.RhIsNullable(eeType)
+            if (eeType.IsNullable
                 || eeType == EETypePtr.EETypePtrOf<String>()
                 || eeType == EETypePtr.EETypePtrOf<IntPtr>()
                 || eeType == EETypePtr.EETypePtrOf<UIntPtr>()
@@ -358,18 +358,18 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
-            EETypePtr elementType = RuntimeImports.RhGetRelatedParameterType(parameterTypeHandle.ToEETypePtr());
+            EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;
             return new RuntimeTypeHandle(elementType);
         }
 
         public static bool IsValueType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsValueType(CreateEETypePtr(type));
+            return type.ToEETypePtr().IsValueType;
         }
 
         public static bool IsInterface(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsInterface(CreateEETypePtr(type));
+            return type.ToEETypePtr().IsInterface;
         }
 
         public static unsafe object Box(RuntimeTypeHandle type, IntPtr address)
@@ -429,9 +429,7 @@ namespace Internal.Runtime.Augments
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
-            if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer)
             {
                 baseTypeHandle = default(RuntimeTypeHandle);
                 return false;
@@ -448,16 +446,13 @@ namespace Internal.Runtime.Augments
         public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
-            if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer)
                 return null;
 
-            uint numInterfaces = RuntimeImports.RhGetNumInterfaces(eeType);
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
-            for (uint i = 0; i < numInterfaces; i++)
+            for (int i = 0; i < eeType.Interfaces.Count; i++)
             {
-                EETypePtr ifcEEType = RuntimeImports.RhGetInterface(eeType, i);
+                EETypePtr ifcEEType = eeType.Interfaces[i];
                 RuntimeTypeHandle ifcrth = new RuntimeTypeHandle(ifcEEType);
                 if (Callbacks.IsReflectionBlocked(ifcrth))
                     continue;
@@ -496,22 +491,13 @@ namespace Internal.Runtime.Augments
 
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return (int)RuntimeImports.RhGetNumInterfaces(eeType);
+            return typeHandle.ToEETypePtr().Interfaces.Count;
         }
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            EETypePtr eeInterface = RuntimeImports.RhGetInterface(eeType, (uint)index);
+            EETypePtr eeInterface = typeHandle.ToEETypePtr().Interfaces[index];
             return CreateRuntimeTypeHandle(eeInterface);
-        }
-
-        public static void SetInterface(RuntimeTypeHandle typeHandle, int index, RuntimeTypeHandle interfaceTypeHandle)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            EETypePtr eeInterface = CreateEETypePtr(interfaceTypeHandle);
-            RuntimeImports.RhSetInterface(eeType, index, eeInterface);
         }
 
         public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
@@ -537,9 +523,7 @@ namespace Internal.Runtime.Augments
 
         public static int GetValueTypeSize(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            Debug.Assert(eeType.IsValueType);
-            return (int)RuntimeImports.RhGetValueTypeSize(eeType);
+            return (int)typeHandle.ToEETypePtr().ValueTypeSize;
         }
 
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
@@ -594,22 +578,22 @@ namespace Internal.Runtime.Augments
 
         public static bool IsGenericType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.Generic;
+            return typeHandle.ToEETypePtr().IsGeneric;
         }
 
         public static bool IsArrayType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.Array;
+            return typeHandle.ToEETypePtr().IsArray;
         }
 
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhIsDynamicType(CreateEETypePtr(typeHandle));
+            return typeHandle.ToEETypePtr().IsDynamicType;
         }
 
         public static bool HasCctor(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhHasCctor(CreateEETypePtr(typeHandle));
+            return typeHandle.ToEETypePtr().HasCctor;
         }
 
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
@@ -629,12 +613,12 @@ namespace Internal.Runtime.Augments
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.UnmanagedPointer;
+            return typeHandle.ToEETypePtr().IsPointer;
         }
 
         public static bool IsGenericTypeDefinition(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.GenericTypeDefinition;
+            return typeHandle.ToEETypePtr().IsGenericTypeDefinition;
         }
 
         //
@@ -642,18 +626,14 @@ namespace Internal.Runtime.Augments
         //
         public static bool CanPrimitiveWiden(RuntimeTypeHandle srcType, RuntimeTypeHandle dstType)
         {
-            RuntimeImports.RhEETypeClassification srcEETypeClassification = srcType.Classification;
-            RuntimeImports.RhEETypeClassification dstEETypeClassification = dstType.Classification;
-            if (srcEETypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                dstEETypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition)
-                return false;
-            if (srcEETypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer ||
-                dstEETypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
-                return false;
-
-
             EETypePtr srcEEType = srcType.ToEETypePtr();
             EETypePtr dstEEType = dstType.ToEETypePtr();
+
+            if (srcEEType.IsGenericTypeDefinition || dstEEType.IsGenericTypeDefinition)
+                return false;
+            if (srcEEType.IsPointer || dstEEType.IsPointer)
+                return false;
+
             if (!srcEEType.IsPrimitive)
                 return false;
             if (!dstEEType.IsPrimitive)
@@ -679,12 +659,12 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         public static bool IsNullable(RuntimeTypeHandle declaringTypeHandle)
         {
-            return RuntimeImports.RhIsNullable(declaringTypeHandle.ToEETypePtr());
+            return declaringTypeHandle.ToEETypePtr().IsNullable;
         }
 
         public static RuntimeTypeHandle GetNullableType(RuntimeTypeHandle nullableType)
         {
-            EETypePtr theT = RuntimeImports.RhGetNullableType(nullableType.ToEETypePtr());
+            EETypePtr theT = nullableType.ToEETypePtr().NullableType;
             return new RuntimeTypeHandle(theT);
         }
 

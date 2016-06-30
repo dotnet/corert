@@ -53,7 +53,7 @@ namespace System
             if (srcObject == null)
             {
                 // null -> default(T) 
-                if (dstEEType.IsValueType && !RuntimeImports.RhIsNullable(dstEEType))
+                if (dstEEType.IsValueType && !dstEEType.IsNullable)
                     return Runtime.RuntimeImports.RhNewObject(dstEEType);
                 else
                     return null;
@@ -66,7 +66,7 @@ namespace System
                     return srcObject;
 
 
-                if (RuntimeImports.RhIsInterface(dstEEType))
+                if (dstEEType.IsInterface)
                 {
                     ICastable castable = srcObject as ICastable;
                     Exception castError;
@@ -376,7 +376,7 @@ namespace System
                 case DefaultParamTypeDefault:
                     if (thType.ToEETypePtr().IsValueType)
                     {
-                        if (RuntimeImports.RhIsNullable(thType.ToEETypePtr()))
+                        if (thType.ToEETypePtr().IsNullable)
                         {
                             return null;
                         }
@@ -787,7 +787,7 @@ namespace System
         {
             object finalObjectToReturn = boxedValuetype;
             EETypePtr eeType = type.ToEETypePtr();
-            bool nullable = RuntimeImports.RhIsNullable(eeType);
+            bool nullable = eeType.IsNullable;
 
             if (finalObjectToReturn == null || nullable || paramType == DynamicInvokeParamType.Ref)
             {
@@ -842,10 +842,10 @@ namespace System
             }
 
             RuntimeTypeHandle widenAndCompareType = type;
-            bool nullable = RuntimeImports.RhIsNullable(type.ToEETypePtr());
+            bool nullable = type.ToEETypePtr().IsNullable;
             if (nullable)
             {
-                widenAndCompareType = new RuntimeTypeHandle(RuntimeImports.RhGetNullableType(type.ToEETypePtr()));
+                widenAndCompareType = new RuntimeTypeHandle(type.ToEETypePtr().NullableType);
             }
 
             if (widenAndCompareType.ToEETypePtr().IsPrimitive || type.ToEETypePtr().IsEnum)

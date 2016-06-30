@@ -433,7 +433,7 @@ namespace System
 
             EETypePtr destinationElementEEType = destinationArray.ElementEEType;
             nuint destinationElementSize = destinationArray.ElementSize;
-            bool isNullable = RuntimeImports.RhIsNullable(destinationElementEEType);
+            bool isNullable = destinationElementEEType.IsNullable;
 
             fixed (IntPtr* pDestinationArray = &destinationArray.m_pEEType)
             {

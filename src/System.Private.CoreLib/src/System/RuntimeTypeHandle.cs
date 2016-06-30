@@ -55,7 +55,7 @@ namespace System
             if (IsNull)
                 return 0;
 
-            return (int)RuntimeImports.RhGetEETypeHash(this.ToEETypePtr());
+            return this.ToEETypePtr().GetHashCode();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -114,14 +114,6 @@ namespace System
 #else
             return new EETypePtr(_value);
 #endif
-        }
-
-        internal RuntimeImports.RhEETypeClassification Classification
-        {
-            get
-            {
-                return RuntimeImports.RhGetEETypeClassification(this.ToEETypePtr());
-            }
         }
 
         internal bool IsNull

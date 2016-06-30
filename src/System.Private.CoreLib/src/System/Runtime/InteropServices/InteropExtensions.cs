@@ -98,8 +98,8 @@ namespace System.Runtime.InteropServices
 
         public static bool IsGenericType(this RuntimeTypeHandle handle)
         {
-            return handle.Classification == RuntimeImports.RhEETypeClassification.Generic ||
-                   handle.Classification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition;
+            EETypePtr eeType = handle.ToEETypePtr();
+            return eeType.IsGeneric || eeType.IsGenericTypeDefinition;
         }
 
         public static TKey FindEquivalentKeyUnsafe<TKey, TValue>(
@@ -216,7 +216,7 @@ namespace System.Runtime.InteropServices
 
         public static bool IsInterface(this RuntimeTypeHandle handle)
         {
-            return RuntimeImports.RhIsInterface(handle.ToEETypePtr());
+            return handle.ToEETypePtr().IsInterface;
         }
 
         public static bool AreTypesAssignable(RuntimeTypeHandle sourceType, RuntimeTypeHandle targetType)
@@ -297,12 +297,12 @@ namespace System.Runtime.InteropServices
 
         public static bool IsArray(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsArray(type.ToEETypePtr());
+            return type.ToEETypePtr().IsArray;
         }
 
         public static RuntimeTypeHandle GetArrayElementType(RuntimeTypeHandle arrayType)
         {
-            return new RuntimeTypeHandle(RuntimeImports.RhGetRelatedParameterType(arrayType.ToEETypePtr()));
+            return new RuntimeTypeHandle(arrayType.ToEETypePtr().ArrayElementType);
         }
 
         public static RuntimeTypeHandle GetTypeHandle(this object target)

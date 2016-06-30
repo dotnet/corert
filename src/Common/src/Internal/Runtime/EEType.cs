@@ -48,11 +48,12 @@ namespace Internal.Runtime
 
                 return _interfaceType._pInterfaceEEType;
             }
-            // TODO: put the setter under TYPE_LOADER_IMPLEMENTATION when we get rid of RhSetInterface
+#if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 _interfaceType._pInterfaceEEType = value;
             }
+#endif
         }
     }
 

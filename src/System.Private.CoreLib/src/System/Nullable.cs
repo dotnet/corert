@@ -119,11 +119,11 @@ namespace System
             EETypePtr nullableEEType;
             if (nullableType.TryGetEEType(out nullableEEType))
             {
-                if (RuntimeImports.RhGetEETypeClassification(nullableEEType) == RuntimeImports.RhEETypeClassification.Generic)
+                if (nullableEEType.IsGeneric)
                 {
-                    if (RuntimeImports.RhIsNullable(nullableEEType))
+                    if (nullableEEType.IsNullable)
                     {
-                        EETypePtr underlyingEEType = RuntimeImports.RhGetNullableType(nullableEEType);
+                        EETypePtr underlyingEEType = nullableEEType.NullableType;
                         result = ReflectionCoreNonPortable.GetRuntimeTypeForEEType(underlyingEEType);
                     }
                 }
