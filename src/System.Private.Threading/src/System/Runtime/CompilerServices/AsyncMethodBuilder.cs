@@ -43,6 +43,11 @@ namespace System.Runtime.CompilerServices
         private Action m_moveNextAction;
         /// <summary>The synchronization context associated with this operation.</summary>
         private SynchronizationContext m_synchronizationContext;
+
+        //WARNING: We allow diagnostic tools to directly inspect this member (m_task). 
+        //See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        //Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        //Get in touch with the diagnostics team if you have questions.
         /// <summary>Task used for debugging and logging purposes only.  Lazily initialized.</summary>
         private Task m_task;
 
@@ -211,6 +216,11 @@ namespace System.Runtime.CompilerServices
         private readonly static Task<VoidTaskResult> s_cachedCompleted = AsyncTaskCache.CreateCacheableTask<VoidTaskResult>(default(VoidTaskResult));
 
         private Action m_moveNextAction;
+
+        // WARNING: We allow diagnostic tools to directly inspect this member (m_task). 
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
         private Task<VoidTaskResult> m_task;
 
         /// <summary>Initializes a new <see cref="AsyncTaskMethodBuilder"/>.</summary>
@@ -401,6 +411,10 @@ namespace System.Runtime.CompilerServices
 
         private Action m_moveNextAction;
 
+        // WARNING: We allow diagnostic tools to directly inspect this member (m_task).
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
         // WARNING: For performance reasons, the m_task field is lazily initialized.
         //          For correct results, the struct AsyncTaskMethodBuilder<TResult> must 
         //          always be used from the same location/copy, at least until m_task is 
