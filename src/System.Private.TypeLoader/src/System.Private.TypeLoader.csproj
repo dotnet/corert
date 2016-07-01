@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.TypeLoader</AssemblyName>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{F36495F7-8CF5-474D-A92D-40317AE2439C}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLSCompliant>false</CLSCompliant>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <!-- Setup the right references -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.TypeExtensions.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
+      <Link>MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs">
+      <Link>LowLevelDictionary.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\MetadataTable.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.Fakes.cs" />
+    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MetadataSignatureParsing.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
