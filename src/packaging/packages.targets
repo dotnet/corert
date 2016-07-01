@@ -62,6 +62,7 @@
             <ILCompilerSdkFilesManaged Include="System.Private.Reflection.Metadata" />
             <ILCompilerSdkFilesManaged Include="System.Private.StackTraceGenerator" />
             <ILCompilerSdkFilesManaged Include="System.Private.Threading" />
+            <ILCompilerSdkFilesManaged Include="System.Private.TypeLoader" />
 
             <ILCompilerSdkContentFiles Include="scripts/linkerscript" />
 
