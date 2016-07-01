@@ -232,7 +232,7 @@ namespace ILCompiler
             {
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
 
-                if (Log != TextWriter.Null)
+                if (_options.Verbose)
                 {
                     string methodName = method.ToString();
                     Log.WriteLine("Compiling " + methodName);
