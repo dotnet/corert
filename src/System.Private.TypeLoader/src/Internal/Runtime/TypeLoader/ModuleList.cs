@@ -1,5 +1,7 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 
 using System;
 using System.Collections.Generic;
@@ -63,7 +65,7 @@ namespace Internal.Runtime.TypeLoader
         /// Map of module handles to indices within the Modules array.
         /// </summary>
         public readonly LowLevelDictionary<IntPtr, int> HandleToModuleIndex;
-        
+
         internal ModuleMap(ModuleInfo[] modules)
         {
             Modules = modules;
@@ -85,13 +87,13 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module map to enumerate
         /// </summary>
-        readonly ModuleMap _moduleMap;
+        private readonly ModuleMap _moduleMap;
 
         /// <summary>
         /// Module handle that should be enumerated first, default(IntPtr) when not used.
         /// </summary>
-        readonly IntPtr _preferredModuleHandle;
-        
+        private readonly IntPtr _preferredModuleHandle;
+
         /// <summary>
         /// Store module map and preferred module to pass to the enumerator upon construction.
         /// </summary>
@@ -102,7 +104,7 @@ namespace Internal.Runtime.TypeLoader
             _moduleMap = moduleMap;
             _preferredModuleHandle = preferredModuleHandle;
         }
-        
+
         /// <summary>
         /// Construct the actual module info enumerator.
         /// </summary>
@@ -121,24 +123,24 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Array of modules to enumerate.
         /// </summary>
-        readonly ModuleInfo[] _modules;
+        private readonly ModuleInfo[] _modules;
 
         /// <summary>
         /// Preferred module index in the array, -1 when none (in such case the array is enumerated
         /// in its natural order).
         /// </summary>
-        int _preferredIndex;
+        private int _preferredIndex;
 
         /// <summary>
         /// Enumeration step index initially set to -1 (so that the first MoveNext increments it to 0).
         /// </summary>
-        int _iterationIndex;
+        private int _iterationIndex;
 
         /// <summary>
         /// Current _modules element that should be returned by Current (updated in MoveNext).
         /// </summary>
-        ModuleInfo _currentModule;
-        
+        private ModuleInfo _currentModule;
+
         /// <summary>
         /// Initialize the module enumerator state machine and locate the preferred module index.
         /// </summary>
@@ -150,7 +152,7 @@ namespace Internal.Runtime.TypeLoader
             _preferredIndex = -1;
             _iterationIndex = -1;
             _currentModule = null;
-            
+
             if (preferredModuleHandle != default(IntPtr) &&
                 !moduleMap.HandleToModuleIndex.TryGetValue(preferredModuleHandle, out _preferredIndex))
             {
@@ -182,7 +184,7 @@ namespace Internal.Runtime.TypeLoader
 
             return true;
         }
-        
+
         /// <summary>
         /// Look up the "current" module corresponding to the previous call to MoveNext.
         /// </summary>
@@ -209,13 +211,13 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module map to enumerate
         /// </summary>
-        readonly ModuleMap _moduleMap;
+        private readonly ModuleMap _moduleMap;
 
         /// <summary>
         /// Module handle that should be enumerated first, default(IntPtr) when not used.
         /// </summary>
-        readonly IntPtr _preferredModuleHandle;
-        
+        private readonly IntPtr _preferredModuleHandle;
+
         /// <summary>
         /// Store module map and preferred module to pass to the enumerator upon construction.
         /// </summary>
@@ -226,7 +228,7 @@ namespace Internal.Runtime.TypeLoader
             _moduleMap = moduleMap;
             _preferredModuleHandle = preferredModuleHandle;
         }
-        
+
         /// <summary>
         /// Create the actual module handle enumerator.
         /// </summary>
@@ -245,8 +247,8 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// The underlying ModuleInfoEnumerator handles enumeration internals
         /// </summary>
-        ModuleInfoEnumerator _moduleInfoEnumerator;
-        
+        private ModuleInfoEnumerator _moduleInfoEnumerator;
+
         /// <summary>
         /// Construct the underlying module info enumerator used to iterate the module map
         /// </summary>
@@ -256,7 +258,7 @@ namespace Internal.Runtime.TypeLoader
         {
             _moduleInfoEnumerator = new ModuleInfoEnumerator(moduleMap, preferredModuleHandle);
         }
-        
+
         /// <summary>
         /// Move to next element in the module map. Return true when an element is available,
         /// false when the enumeration is finished.
@@ -265,7 +267,7 @@ namespace Internal.Runtime.TypeLoader
         {
             return _moduleInfoEnumerator.MoveNext();
         }
-        
+
         /// <summary>
         /// Return current module handle.
         /// </summary>
@@ -285,13 +287,13 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Module map to enumerate
         /// </summary>
-        readonly ModuleMap _moduleMap;
+        private readonly ModuleMap _moduleMap;
 
         /// <summary>
         /// Module handle that should be enumerated first, default(IntPtr) when not used.
         /// </summary>
-        readonly IntPtr _preferredModuleHandle;
-        
+        private readonly IntPtr _preferredModuleHandle;
+
         /// <summary>
         /// Store module map and preferred module to pass to the enumerator upon construction.
         /// </summary>
@@ -302,7 +304,7 @@ namespace Internal.Runtime.TypeLoader
             _moduleMap = moduleMap;
             _preferredModuleHandle = preferredModuleHandle;
         }
-        
+
         /// <summary>
         /// Create the actual module handle enumerator.
         /// </summary>
@@ -321,8 +323,8 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// The underlying ModuleInfoEnumerator handles enumeration internals
         /// </summary>
-        ModuleInfoEnumerator _moduleInfoEnumerator;
-        
+        private ModuleInfoEnumerator _moduleInfoEnumerator;
+
         /// <summary>
         /// Construct the underlying module info enumerator used to iterate the module map
         /// </summary>
@@ -332,7 +334,7 @@ namespace Internal.Runtime.TypeLoader
         {
             _moduleInfoEnumerator = new ModuleInfoEnumerator(moduleMap, preferredModuleHandle);
         }
-        
+
         /// <summary>
         /// Move to next element in the module map. Return true when an element is available,
         /// false when the enumeration is finished.
@@ -348,7 +350,7 @@ namespace Internal.Runtime.TypeLoader
             }
             return false;
         }
-        
+
         /// <summary>
         /// Return current metadata reader.
         /// </summary>
@@ -369,17 +371,17 @@ namespace Internal.Runtime.TypeLoader
         /// to that consumers of this dictionary can look at the reference and  enumerate / process it without locking, fear that the contents of the dictionary change
         /// under its hands.
         /// </summary>
-        volatile ModuleMap _loadedModuleMap;
+        private volatile ModuleMap _loadedModuleMap;
 
         /// <summary>
         /// List of callbacks to execute when a module gets registered.
         /// </summary>
-        Action<ModuleInfo> _moduleRegistrationCallbacks;
+        private Action<ModuleInfo> _moduleRegistrationCallbacks;
 
         /// <summary>
         /// Lock used for serializing module registrations.
         /// </summary>
-        Lock _moduleRegistrationLock;
+        private Lock _moduleRegistrationLock;
 
         /// <summary>
         /// Register initially (eagerly) loaded modules.
@@ -395,7 +397,7 @@ namespace Internal.Runtime.TypeLoader
             IntPtr[] loadedModuleHandles = new IntPtr[loadedModuleCount];
             int loadedModuleCountUpdated = RuntimeAugments.GetLoadedModules(loadedModuleHandles);
             Debug.Assert(loadedModuleCount == loadedModuleCountUpdated);
-            
+
             foreach (IntPtr moduleHandle in loadedModuleHandles)
             {
                 RegisterModule(moduleHandle);
@@ -457,7 +459,7 @@ namespace Internal.Runtime.TypeLoader
 
                 // Atomically update the module map
                 _loadedModuleMap = new ModuleMap(updatedModules);
-                
+
                 if (_moduleRegistrationCallbacks != null)
                 {
                     _moduleRegistrationCallbacks(newModuleInfo);
@@ -529,7 +531,7 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(false);
             return IntPtr.Zero;
         }
-        
+
         /// <summary>
         /// Enumerate modules. Optionally specify a module that should be enumerated first
         /// - this is used as an optimization in cases when a certain binary module is more probable
@@ -540,7 +542,7 @@ namespace Internal.Runtime.TypeLoader
         {
             return new ModuleInfoEnumerable(Instance._loadedModuleMap, preferredModule);
         }
-        
+
         /// <summary>
         /// Enumerate metadata readers. Optionally specify a module that should be enumerated first
         /// - this is used as an optimization in cases when a certain binary module is more probable
@@ -551,7 +553,7 @@ namespace Internal.Runtime.TypeLoader
         {
             return new MetadataReaderEnumerable(Instance._loadedModuleMap, preferredModule);
         }
-        
+
         /// <summary>
         /// Enumerate module handles (simplified version for code that only needs the module addresses).
         /// </summary>

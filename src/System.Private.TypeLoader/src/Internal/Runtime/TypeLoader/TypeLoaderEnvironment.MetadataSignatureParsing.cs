@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 using System.Diagnostics;
 using System.Reflection;
@@ -26,38 +30,38 @@ namespace Internal.Runtime.TypeLoader
             return typeHandle;
         }
     }
-    
+
     public struct MethodSignatureComparer
     {
         /// <summary>
         /// Metadata reader corresponding to the method declaring type
         /// </summary>
-        readonly MetadataReader _metadataReader;
+        private readonly MetadataReader _metadataReader;
 
         /// <summary>
         /// Method handle
         /// </summary>
-        readonly MethodHandle _methodHandle;
-        
+        private readonly MethodHandle _methodHandle;
+
         /// <summary>
         /// Method instance obtained from the method handle
         /// </summary>
-        readonly Method _method;
-        
+        private readonly Method _method;
+
         /// <summary>
         /// Method signature
         /// </summary>
-        readonly MethodSignature _methodSignature;
+        private readonly MethodSignature _methodSignature;
 
         /// <summary>
         /// true = this is a static method
         /// </summary>
-        readonly bool _isStatic;
+        private readonly bool _isStatic;
 
         /// <summary>
         /// true = this is a generic method
         /// </summary>
-        readonly bool _isGeneric;
+        private readonly bool _isGeneric;
 
         /// <summary>
         /// Construct a comparer between NativeFormat metadata methods and native layouts
@@ -79,7 +83,7 @@ namespace Internal.Runtime.TypeLoader
             // Precalculate initial method attributes used in signature queries
             _isStatic = (_method.Flags & MethodAttributes.Static) != 0;
         }
-        
+
         public bool IsMatchingNativeLayoutMethodNameAndSignature(string name, IntPtr signature)
         {
             return _method.Name.StringEquals(name, _metadataReader) &&
@@ -150,7 +154,7 @@ namespace Internal.Runtime.TypeLoader
                     .GetTypeSpecification(_metadataReader)
                     .Signature;
             }
-            
+
             // startOffset lets us backtrack to the TypeSignatureKind for external types since the TypeLoader
             // expects to read it in.
             uint startOffset = parser.Offset;
@@ -179,7 +183,6 @@ namespace Internal.Runtime.TypeLoader
                                         .ToSZArraySignatureHandle(_metadataReader)
                                         .GetSZArraySignature(_metadataReader)
                                         .ElementType);
-
                                 }
                                 return false;
 
@@ -289,7 +292,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             return false;
                         }
-                        
+
                         TypeInstantiationSignature sig = typeHandle
                             .ToTypeInstantiationSignatureHandle(_metadataReader)
                             .GetTypeInstantiationSignature(_metadataReader);
@@ -329,7 +332,7 @@ namespace Internal.Runtime.TypeLoader
                                     return false;
                                 }
                                 break;
-                            
+
                             case HandleType.TypeReference:
                                 if (!TypeLoaderEnvironment.TryGetNamedTypeForTypeReference(
                                     _metadataReader, typeHandle.ToTypeReferenceHandle(_metadataReader), out type2))
@@ -337,7 +340,7 @@ namespace Internal.Runtime.TypeLoader
                                     return false;
                                 }
                                 break;
-                            
+
                             default:
                                 return false;
                         }

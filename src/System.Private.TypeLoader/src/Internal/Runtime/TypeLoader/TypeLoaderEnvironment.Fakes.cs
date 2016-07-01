@@ -286,7 +286,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        const uint RVAIsIndirect = 0x80000000u;
+        private const uint RVAIsIndirect = 0x80000000u;
 
         internal static unsafe RuntimeTypeHandle RvaToRuntimeTypeHandle(IntPtr moduleHandle, uint rva)
         {
@@ -298,7 +298,7 @@ namespace Internal.Runtime.TypeLoader
         }
     }
 
-    static class RuntimeTypeHandleEETypeExtensions
+    internal static class RuntimeTypeHandleEETypeExtensions
     {
         public static unsafe IntPtr ToIntPtr(this RuntimeTypeHandle rtth)
         {

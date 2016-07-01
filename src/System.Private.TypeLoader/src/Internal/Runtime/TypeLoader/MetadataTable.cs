@@ -1,5 +1,7 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 
 using System;
 using System.Collections.Generic;
@@ -18,15 +20,15 @@ namespace Internal.Runtime.TypeLoader
     internal unsafe struct MetadataTable : IEnumerable<IntPtr>
     {
         public readonly uint ElementCount;
-        int _elementSize;
-        byte* _blob;
+        private int _elementSize;
+        private byte* _blob;
 
         public struct Enumerator : IEnumerator<IntPtr>
         {
-            byte* _base;
-            byte* _current;
-            byte* _limit;
-            int _elementSize;
+            private byte* _base;
+            private byte* _current;
+            private byte* _limit;
+            private int _elementSize;
 
             internal Enumerator(ref MetadataTable table)
             {
@@ -58,7 +60,7 @@ namespace Internal.Runtime.TypeLoader
             public void Reset() { _current = _base - _elementSize; }
         }
 
-        MetadataTable(IntPtr moduleHandle, ReflectionMapBlob blobId, int elementSize)
+        private MetadataTable(IntPtr moduleHandle, ReflectionMapBlob blobId, int elementSize)
         {
             Debug.Assert(elementSize != 0);
 
@@ -87,7 +89,7 @@ namespace Internal.Runtime.TypeLoader
         {
             return new MetadataTable(moduleHandle, ReflectionMapBlob.TypeMap, sizeof(TypeMapEntry));
         }
-        
+
         /// <summary>
         /// Create metadata table for the CCtorContextMap blob on a given module.
         /// </summary>
@@ -122,13 +124,13 @@ namespace Internal.Runtime.TypeLoader
         }
     }
 
-    struct DynamicInvokeMapEntry
+    internal struct DynamicInvokeMapEntry
     {
         public const uint IsImportMethodFlag = 0x40000000;
         public const uint InstantiationDetailIndexMask = 0x3FFFFFFF;
     }
 
-    struct VirtualInvokeTableEntry
+    internal struct VirtualInvokeTableEntry
     {
         public const int GenericVirtualMethod = 1;
         public const int FlagsMask = 1;
@@ -149,19 +151,19 @@ namespace Internal.Runtime.TypeLoader
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct TypeMapEntry
+    internal struct TypeMapEntry
     {
         public IntPtr EEType;
         public int TypeDefinitionHandle;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct CctorContextEntry
+    internal struct CctorContextEntry
     {
         public uint EETypeRva;
         public uint CctorContextRva;
     }
-    
+
     [Flags]
     public enum FieldTableFlags : uint
     {
