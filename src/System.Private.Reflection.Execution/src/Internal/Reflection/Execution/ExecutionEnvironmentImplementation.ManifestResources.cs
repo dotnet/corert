@@ -78,7 +78,7 @@ namespace Internal.Reflection.Execution
         {
             get
             {
-                if (_extractedResourceDictionary == null)
+                if (s_extractedResourceDictionary == null)
                 {
                     // Lazily create the extracted resource dictionary. If two threads race here, we may construct two dictionaries
                     // and overwrite one - this is ok since the dictionaries are read-only once constructed and they contain the identical data.
@@ -126,9 +126,9 @@ namespace Internal.Reflection.Execution
                             }
                         }
                     }
-                    _extractedResourceDictionary = dict;
+                    s_extractedResourceDictionary = dict;
                 }
-                return _extractedResourceDictionary;
+                return s_extractedResourceDictionary;
             }
         }
 
@@ -154,7 +154,7 @@ namespace Internal.Reflection.Execution
         //
         // To get to the extract resource, we construct the local file path _Resources\<index>.rsrc.
         //
-        private static volatile LowLevelDictionary<String, LowLevelList<ResourceInfo>> _extractedResourceDictionary;
+        private static volatile LowLevelDictionary<String, LowLevelList<ResourceInfo>> s_extractedResourceDictionary;
 
         private struct ResourceInfo
         {

@@ -71,7 +71,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             else if (parentHandleType == HandleType.NamespaceReference)
             {
                 NamespaceReferenceHandle namespaceReferenceHandle = parentHandle.ToNamespaceReferenceHandle(reader);
-                for (; ;)
+                for (;;)
                 {
                     NamespaceReference namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
                     String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
@@ -144,7 +144,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             else
             {
                 NamespaceDefinitionHandle namespaceHandle = typeDefinition.NamespaceDefinition;
-                for (; ;)
+                for (;;)
                 {
                     NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
                     String namespacePart = namespaceDefinition.Name.GetStringOrNull(reader);

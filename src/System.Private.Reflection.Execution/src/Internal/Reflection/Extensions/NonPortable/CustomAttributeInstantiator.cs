@@ -80,7 +80,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 if (namedArgument.IsField)
                 {
                     // Field
-                    for (; ;)
+                    for (;;)
                     {
                         FieldInfo fieldInfo = walk.GetDeclaredField(name);
                         if (fieldInfo != null)
@@ -97,7 +97,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 else
                 {
                     // Property
-                    for (; ;)
+                    for (;;)
                     {
                         PropertyInfo propertyInfo = walk.GetDeclaredProperty(name);
                         if (propertyInfo != null)

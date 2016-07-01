@@ -22,7 +22,7 @@ namespace Internal.Reflection.Execution
     // This is not a general purpose type comparison facility. It is limited to what constraint validation needs.
     internal static partial class ConstraintValidator
     {
-        static bool ImplementsInterface(TypeInfo pObjType, TypeInfo pTargetType)
+        private static bool ImplementsInterface(TypeInfo pObjType, TypeInfo pTargetType)
         {
             Debug.Assert(!pTargetType.IsArray, "did not expect array type");
             Debug.Assert(pTargetType.IsInterface, "IsInstanceOfInterface called with non-interface EEType");
@@ -109,7 +109,7 @@ namespace Internal.Reflection.Execution
         }
 
         // Compare two types to see if they are compatible via generic variance.
-        static bool TypesAreCompatibleViaGenericVariance(TypeInfo pSourceType, TypeInfo pTargetType)
+        private static bool TypesAreCompatibleViaGenericVariance(TypeInfo pSourceType, TypeInfo pTargetType)
         {
             Type pTargetGenericType = pTargetType.GetGenericTypeDefinition();
             Type pSourceGenericType = pSourceType.GetGenericTypeDefinition();
@@ -135,7 +135,7 @@ namespace Internal.Reflection.Execution
         // implies their arities are the same as well). The fForceCovariance argument tells the method to
         // override the defined variance of each parameter and instead assume it is covariant. This is used to
         // implement covariant array interfaces.
-        static bool TypeParametersAreCompatible(Type[] pSourceInstantiation,
+        private static bool TypeParametersAreCompatible(Type[] pSourceInstantiation,
                                                         Type[] pTargetInstantiation,
                                                         Type[] pVarianceInfo,
                                                         bool fForceCovariance)
@@ -214,7 +214,7 @@ namespace Internal.Reflection.Execution
         // This routine assumes that the source type is boxed, i.e. a value type source is presumed to be
         // compatible with Object and ValueType and an enum source is additionally compatible with Enum.
         //
-        static bool AreTypesAssignable(TypeInfo pSourceType, TypeInfo pTargetType)
+        private static bool AreTypesAssignable(TypeInfo pSourceType, TypeInfo pTargetType)
         {
             // Special case: T can be cast to Nullable<T> (where T is a value type). Call this case out here
             // since this is only applicable if T is boxed, which is not true for any other callers of
@@ -234,7 +234,7 @@ namespace Internal.Reflection.Execution
         //                            compatible with Object, ValueType and Enum (if applicable)
         //  fAllowSizeEquivalence   : allow identically sized integral types and enums to be considered
         //                            equivalent (currently used only for array element types)
-        static bool AreTypesAssignableInternal(TypeInfo pSourceType, TypeInfo pTargetType, bool fBoxedSource, bool fAllowSizeEquivalence)
+        private static bool AreTypesAssignableInternal(TypeInfo pSourceType, TypeInfo pTargetType, bool fBoxedSource, bool fAllowSizeEquivalence)
         {
             //
             // Are the types identical?
@@ -377,11 +377,11 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        static bool IsDerived(TypeInfo pDerivedType, TypeInfo pBaseType)
+        private static bool IsDerived(TypeInfo pDerivedType, TypeInfo pBaseType)
         {
             Debug.Assert(!pBaseType.IsInterface, "did not expect interface type");
 
-            for (; ;)
+            for (;;)
             {
                 if (AreTypesEquivalentInternal(pDerivedType, pBaseType))
                     return true;
@@ -397,7 +397,7 @@ namespace Internal.Reflection.Execution
         // Method to compare two types pointers for type equality
         // We cannot just compare the pointers as there can be duplicate type instances
         // for cloned and constructed types.
-        static bool AreTypesEquivalentInternal(TypeInfo pType1, TypeInfo pType2)
+        private static bool AreTypesEquivalentInternal(TypeInfo pType1, TypeInfo pType2)
         {
             if (!pType1.IsInstantiatedTypeInfo() && !pType2.IsInstantiatedTypeInfo())
                 return pType1.Equals(pType2);
@@ -436,7 +436,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        static bool ArePrimitveTypesEquivalentSize(TypeInfo pType1, TypeInfo pType2)
+        private static bool ArePrimitveTypesEquivalentSize(TypeInfo pType1, TypeInfo pType2)
         {
             int normalizedType1 = NormalizedPrimitiveTypeSizeForIntegerTypes(pType1);
             if (normalizedType1 == 0)

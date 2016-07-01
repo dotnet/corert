@@ -210,4 +210,7 @@
   <data name="PlatformNotSupported_GetMethodInfoForStubDelegate" xml:space="preserve">
     <value>Obtaining a MethodInfo of a reflection-constructed delegate to a virtual method is not supported on this platform.</value>
   </data>
+  <data name="Argument_ImplementIComparable" xml:space="preserve">
+    <value>At least one object must implement IComparable.</value>
+  </data>
 </root>

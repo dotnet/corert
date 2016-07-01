@@ -24,11 +24,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
         }
 
+        [DebuggerGuidedStepThroughAttribute]
         public sealed override Object Invoke(Object thisObject, Object[] arguments)
         {
-            return RuntimeAugments.CallDynamicInvokeMethod(
+            object result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject, MethodInvokeInfo.LdFtnResult, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
                 invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: false);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
     }
 }

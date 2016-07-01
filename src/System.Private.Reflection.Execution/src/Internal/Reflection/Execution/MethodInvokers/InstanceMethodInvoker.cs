@@ -28,12 +28,15 @@ namespace Internal.Reflection.Execution.MethodInvokers
             _declaringTypeHandle = declaringTypeHandle;
         }
 
+        [DebuggerGuidedStepThroughAttribute]
         public sealed override Object Invoke(Object thisObject, Object[] arguments)
         {
             MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
-            return RuntimeAugments.CallDynamicInvokeMethod(
+            object result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject, MethodInvokeInfo.LdFtnResult, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
                 invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: true);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, Object target, bool isStatic, bool isVirtual, bool isOpen)

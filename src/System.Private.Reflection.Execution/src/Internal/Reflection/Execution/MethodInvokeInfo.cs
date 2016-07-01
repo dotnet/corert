@@ -7,7 +7,7 @@ using global::Internal.Runtime.CompilerServices;
 
 namespace Internal.Reflection.Execution
 {
-	internal sealed class MethodInvokeInfo
+    internal sealed class MethodInvokeInfo
     {
         public IntPtr LdFtnResult { get; set; }
         public IntPtr DynamicInvokeMethod { get; set; }
