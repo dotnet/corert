@@ -20,7 +20,7 @@ namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ValueTypeFieldAccessorForStaticFields : StaticFieldAccessor
     {
-        IntPtr _fieldAddress;
+        private IntPtr _fieldAddress;
 
         public ValueTypeFieldAccessorForStaticFields(IntPtr cctorContext, IntPtr fieldAddress, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, fieldTypeHandle)

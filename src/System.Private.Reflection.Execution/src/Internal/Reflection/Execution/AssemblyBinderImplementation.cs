@@ -13,6 +13,7 @@ using global::System.Reflection.Runtime.General;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Runtime.Augments;
+using global::Internal.Runtime.TypeLoader;
 using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
@@ -28,11 +29,50 @@ namespace Internal.Reflection.Execution
     //=============================================================================================================================
     internal sealed class AssemblyBinderImplementation : AssemblyBinder
     {
+        private sealed class AssemblyNameKey : IEquatable<AssemblyNameKey>
+        {
+            private string _assemblyNameAsString;
+            private AssemblyName _assemblyName;
+
+            public AssemblyNameKey(string assemblyNameString, AssemblyName assemblyName)
+            {
+                _assemblyNameAsString = assemblyNameString;
+                _assemblyName = assemblyName;
+            }
+
+            public override bool Equals(object other)
+            {
+                AssemblyNameKey otherKey = other as AssemblyNameKey;
+
+                if (otherKey == null)
+                    return false;
+                else
+                    return Equals(otherKey);
+            }
+
+            public bool Equals(AssemblyNameKey other)
+            {
+                return _assemblyNameAsString.Equals(other._assemblyNameAsString);
+            }
+
+            public override int GetHashCode()
+            {
+                return _assemblyNameAsString.GetHashCode();
+            }
+
+            public AssemblyName AssemblyName
+            {
+                get
+                {
+                    return _assemblyName;
+                }
+            }
+        }
+
         public AssemblyBinderImplementation(ExecutionEnvironmentImplementation executionEnvironment)
         {
             _executionEnvironment = executionEnvironment;
-            _readers = new LowLevelListWithIList<MetadataReader>();
-            _scopeGroups = new LowLevelDictionaryWithIEnumerable<string, ScopeDefinitionGroup>();
+            _scopeGroups = new KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[0];
         }
 
         /// <summary>
@@ -47,7 +87,7 @@ namespace Internal.Reflection.Execution
         /// </summary>
         public void InstallModuleRegistrationCallback()
         {
-            _executionEnvironment.AddModuleRegistrationCallback(RegisterModule);
+            ModuleList.AddModuleRegistrationCallback(RegisterModule);
         }
 
         public sealed override bool Bind(AssemblyName refName, out MetadataReader reader, out ScopeDefinitionHandle scopeDefinitionHandle, out IEnumerable<QScopeDefinition> overflowScopes, out Exception exception)
@@ -58,10 +98,29 @@ namespace Internal.Reflection.Execution
             exception = null;
             overflowScopes = null;
 
-            foreach (KeyValuePair<string, ScopeDefinitionGroup> group in ScopeGroups)
+            // At least one real-world app calls Type.GetType() for "char" using the assembly name "mscorlib". To accomodate this,
+            // we will adopt the desktop CLR rule that anything named "mscorlib" automatically binds to the core assembly.
+            bool useMscorlibNameCompareFunc = false;
+            AssemblyName compareRefName = refName;
+            if (refName.Name == "mscorlib")
             {
-                AssemblyName defName = new AssemblyName(group.Key);
-                if (AssemblyNameMatches(refName, defName))
+                useMscorlibNameCompareFunc = true;
+                compareRefName = new AssemblyName(ReflectionExecution.DefaultAssemblyNameForGetType);
+            }
+
+            foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> group in ScopeGroups)
+            {
+                bool nameMatches;
+                if (useMscorlibNameCompareFunc)
+                {
+                    nameMatches = MscorlibAssemblyNameMatches(compareRefName, group.Key.AssemblyName);
+                }
+                else
+                {
+                    nameMatches = AssemblyNameMatches(refName, group.Key.AssemblyName);
+                }
+
+                if (nameMatches)
                 {
                     if (foundMatch)
                     {
@@ -88,6 +147,27 @@ namespace Internal.Reflection.Execution
         }
 
         //
+        // Name match routine for mscorlib references
+        //
+        private bool MscorlibAssemblyNameMatches(AssemblyName coreAssemblyName, AssemblyName defName)
+        {
+            //
+            // The defName came from trusted metadata so it should be fully specified.
+            //
+            Debug.Assert(defName.Version != null);
+            Debug.Assert(defName.CultureName != null);
+
+            if (defName.Name != coreAssemblyName.Name)
+                return false;
+            byte[] defPkt = defName.GetPublicKeyToken();
+            if (defPkt == null)
+                return false;
+            if (!ArePktsEqual(defPkt, coreAssemblyName.GetPublicKeyToken()))
+                return false;
+            return true;
+        }
+
+        //
         // Encapsulates the assembly ref->def matching policy.
         //
         private bool AssemblyNameMatches(AssemblyName refName, AssemblyName defName)
@@ -97,21 +177,6 @@ namespace Internal.Reflection.Execution
             //
             Debug.Assert(defName.Version != null);
             Debug.Assert(defName.CultureName != null);
-
-            // At least one real-world app calls Type.GetType() for "char" using the assembly name "mscorlib". To accomodate this,
-            // we will adopt the desktop CLR rule that anything named "mscorlib" automatically binds to the core assembly.
-            if (refName.Name == "mscorlib")
-            {
-                AssemblyName coreAssemblyName = new AssemblyName(ReflectionExecution.DefaultAssemblyNameForGetType);
-                if (defName.Name != coreAssemblyName.Name)
-                    return false;
-                byte[] defPkt = defName.GetPublicKeyToken();
-                if (defPkt == null)
-                    return false;
-                if (!ArePktsEqual(defPkt, coreAssemblyName.GetPublicKeyToken()))
-                    return false;
-                return true;
-            }
 
             if (!(refName.Name.Equals(defName.Name, StringComparison.OrdinalIgnoreCase)))
                 return false;
@@ -162,44 +227,34 @@ namespace Internal.Reflection.Execution
         /// that this function may never be called concurrently so that we can assume that two threads
         /// never update the reader and scope list at the same time.
         /// </summary>
-        /// <param name="moduleHandle">Module handle to register</param>
-        private void RegisterModule(IntPtr moduleHandle)
+        /// <param name="moduleInfo">Module to register</param>
+        private void RegisterModule(ModuleInfo moduleInfo)
         {
-            MetadataReader newReader = _executionEnvironment.GetMetadataReaderForModule(moduleHandle);
-            if (newReader == null)
+            if (moduleInfo.MetadataReader == null)
             {
                 return;
             }
 
-            // Build new reader list
-            LowLevelListWithIList<MetadataReader> readers = new LowLevelListWithIList<MetadataReader>(_readers.Count + 1);
-            foreach (MetadataReader oldReader in _readers)
-            {
-                readers.Add(oldReader);
-            }
-            readers.Add(newReader);
-
-            LowLevelDictionaryWithIEnumerable<string, ScopeDefinitionGroup> scopeGroups = new LowLevelDictionaryWithIEnumerable<string, ScopeDefinitionGroup>();
-            foreach (KeyValuePair<string, ScopeDefinitionGroup> oldGroup in _scopeGroups)
+            LowLevelDictionaryWithIEnumerable<AssemblyNameKey, ScopeDefinitionGroup> scopeGroups = new LowLevelDictionaryWithIEnumerable<AssemblyNameKey, ScopeDefinitionGroup>();
+            foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> oldGroup in _scopeGroups)
             {
                 scopeGroups.Add(oldGroup.Key, oldGroup.Value);
             }
-            AddScopesFromReaderToGroups(scopeGroups, newReader);
+            AddScopesFromReaderToGroups(scopeGroups, moduleInfo.MetadataReader);
 
             // Update reader and scope list
-            _readers = readers;
-            _scopeGroups = scopeGroups;
-        }
-
-        private LowLevelListWithIList<MetadataReader> Readers
-        {
-            get
+            KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] scopeGroupsArray = new KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[scopeGroups.Count];
+            int i = 0;
+            foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> data in scopeGroups)
             {
-                return _readers;
+                scopeGroupsArray[i] = data;
+                i++;
             }
+
+            _scopeGroups = scopeGroupsArray;
         }
 
-        private LowLevelDictionaryWithIEnumerable<string, ScopeDefinitionGroup> ScopeGroups
+        private KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] ScopeGroups
         {
             get
             {
@@ -207,22 +262,23 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<string, ScopeDefinitionGroup> groups, MetadataReader reader)
+        private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<AssemblyNameKey, ScopeDefinitionGroup> groups, MetadataReader reader)
         {
             foreach (ScopeDefinitionHandle scopeDefinitionHandle in reader.ScopeDefinitions)
             {
                 AssemblyName defName = this.CreateAssemblyNameFromMetadata(reader, scopeDefinitionHandle);
                 string defFullName = defName.FullName;
+                AssemblyNameKey nameKey = new AssemblyNameKey(defFullName, defName);
 
                 ScopeDefinitionGroup scopeDefinitionGroup;
-                if (groups.TryGetValue(defFullName, out scopeDefinitionGroup))
+                if (groups.TryGetValue(nameKey, out scopeDefinitionGroup))
                 {
                     scopeDefinitionGroup.AddOverflowScope(new QScopeDefinition(reader, scopeDefinitionHandle));
                 }
                 else
                 {
                     scopeDefinitionGroup = new ScopeDefinitionGroup(new QScopeDefinition(reader, scopeDefinitionHandle));
-                    groups.Add(defFullName, scopeDefinitionGroup);
+                    groups.Add(nameKey, scopeDefinitionGroup);
                 }
             }
         }
@@ -239,8 +295,7 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
-        private volatile LowLevelListWithIList<MetadataReader> _readers;
-        private volatile LowLevelDictionaryWithIEnumerable<string, ScopeDefinitionGroup> _scopeGroups;
+        private volatile KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] _scopeGroups;
 
         private ExecutionEnvironmentImplementation _executionEnvironment;
 

@@ -11,7 +11,7 @@ namespace Internal.Reflection.Execution
 {
     internal static partial class ConstraintValidator
     {
-        static TypeInfo[] TypesToTypeInfos(Type[] types)
+        private static TypeInfo[] TypesToTypeInfos(Type[] types)
         {
             TypeInfo[] result = new TypeInfo[types.Length];
             for (int i = 0; i < types.Length; i++)
@@ -19,7 +19,7 @@ namespace Internal.Reflection.Execution
             return result;
         }
 
-        static bool SatisfiesConstraints(this TypeInfo genericVariable, SigTypeContext typeContextOfConstraintDeclarer, TypeInfo typeArg)
+        private static bool SatisfiesConstraints(this TypeInfo genericVariable, SigTypeContext typeContextOfConstraintDeclarer, TypeInfo typeArg)
         {
             GenericParameterAttributes specialConstraints = genericVariable.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
 
@@ -67,7 +67,7 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
-        static void EnsureSatisfiesClassConstraints(TypeInfo[] typeParameters, TypeInfo[] typeArguments, object definition, SigTypeContext typeContext)
+        private static void EnsureSatisfiesClassConstraints(TypeInfo[] typeParameters, TypeInfo[] typeArguments, object definition, SigTypeContext typeContext)
         {
             if (typeParameters.Length != typeArguments.Length)
             {

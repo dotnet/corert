@@ -136,6 +136,10 @@ namespace System.Threading.Tasks
     {
         internal static int s_taskIdCounter; //static counter used to generate unique task IDs
 
+        // WARNING: We allow diagnostic tools to directly inspect this member (m_taskId). 
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
         private volatile int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
         internal object m_action;    // The body of the task.  Might be Action<object>, Action<TState> or Action.  Or possibly a Func.
@@ -152,7 +156,10 @@ namespace System.Threading.Tasks
 
         internal readonly Task m_parent; // A task's parent, or null if parent-less.
 
-
+        // WARNING: We allow diagnostic tools to directly inspect this member (m_stateFlags). 
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
         internal volatile int m_stateFlags;
 
         private Task ParentForDebugger => m_parent; // Private property used by a debugger to access this Task's parent

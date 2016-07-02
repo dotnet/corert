@@ -30,50 +30,6 @@ namespace Internal.Reflection.Execution
             return reader.GetConstantStringValue(handle).Value;
         }
 
-        public static int AsInt(this TypeDefinitionHandle typeDefinitionHandle)
-        {
-            unsafe
-            {
-                return *(int*)&typeDefinitionHandle;
-            }
-        }
-
-        public static TypeDefinitionHandle AsTypeDefinitionHandle(this int i)
-        {
-            unsafe
-            {
-                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.TypeDefinition);
-                return *(TypeDefinitionHandle*)&i;
-            }
-        }
-
-        public static bool IsTypeDefinitionHandle(this int i)
-        {
-            return (HandleType)((uint)i >> 24) == HandleType.TypeDefinition;
-        }
-
-        public static int AsInt(this TypeReferenceHandle typeReferenceHandle)
-        {
-            unsafe
-            {
-                return *(int*)&typeReferenceHandle;
-            }
-        }
-
-        public static TypeReferenceHandle AsTypeReferenceHandle(this int i)
-        {
-            unsafe
-            {
-                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.TypeReference);
-                return *(TypeReferenceHandle*)&i;
-            }
-        }
-
-        public static bool IsTypeReferenceHandle(this int i)
-        {
-            return (HandleType)((uint)i >> 24) == HandleType.TypeReference;
-        }
-
         public static bool IsMethodHandle(this int i)
         {
             return (HandleType)((uint)i >> 24) == HandleType.Method;

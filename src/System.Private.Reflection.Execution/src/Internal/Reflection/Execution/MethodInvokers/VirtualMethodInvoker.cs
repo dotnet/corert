@@ -53,6 +53,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
+        [DebuggerGuidedStepThroughAttribute]
         public sealed override Object Invoke(Object thisObject, Object[] arguments)
         {
             MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
@@ -62,7 +63,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             Object result = RuntimeAugments.CallDynamicInvokeMethod(
                 thisObject, resolvedVirtual, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
                 invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: true);
-
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
 

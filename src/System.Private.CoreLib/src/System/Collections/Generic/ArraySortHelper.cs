@@ -309,10 +309,10 @@ namespace System.Collections.Generic
 
     internal class ArraySortHelper<TKey, TValue>
     {
-        // The following field is required for interop with the VS Debugger
-        // Prior to making any changes to this field, please reach out to the VS Debugger 
-        // team to make sure that your changes are not going to prevent the debugger
-        // from working.
+        // WARNING: We allow diagnostic tools to directly inspect this member (s_defaultArraySortHelper). 
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
         private static volatile ArraySortHelper<TKey, TValue> s_defaultArraySortHelper;
 
         public static ArraySortHelper<TKey, TValue> Default

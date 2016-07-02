@@ -18,7 +18,7 @@ namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ReferenceTypeFieldAccessorForStaticFields : StaticFieldAccessor
     {
-        IntPtr _fieldAddress;
+        private IntPtr _fieldAddress;
 
         public ReferenceTypeFieldAccessorForStaticFields(IntPtr cctorContext, IntPtr fieldAddress, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, fieldTypeHandle)
