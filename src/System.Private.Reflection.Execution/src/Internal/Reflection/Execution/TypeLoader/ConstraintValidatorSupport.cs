@@ -21,7 +21,7 @@ namespace Internal.Reflection.Execution
         // as necesary.
         //
 
-        struct SigTypeContext
+        private struct SigTypeContext
         {
             public readonly TypeInfo[] TypeInstantiation;
             public readonly TypeInfo[] MethodInstantiation;
@@ -33,9 +33,9 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        class InstantiatedType : ExtensibleType, IReflectableType
+        private class InstantiatedType : ExtensibleType, IReflectableType
         {
-            InstantiatedTypeInfo _typeInfo;
+            private InstantiatedTypeInfo _typeInfo;
 
             public InstantiatedType(InstantiatedTypeInfo typeInfo)
             {
@@ -93,12 +93,12 @@ namespace Internal.Reflection.Execution
             public override String Name { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
         }
 
-        class InstantiatedTypeInfo : ExtensibleTypeInfo
+        private class InstantiatedTypeInfo : ExtensibleTypeInfo
         {
-            TypeInfo _underlyingTypeInfo;
-            SigTypeContext _context;
+            private TypeInfo _underlyingTypeInfo;
+            private SigTypeContext _context;
 
-            InstantiatedType _type;
+            private InstantiatedType _type;
 
             public InstantiatedTypeInfo(TypeInfo underlyingTypeInfo, SigTypeContext context)
             {
@@ -217,7 +217,7 @@ namespace Internal.Reflection.Execution
             public sealed override String Name { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
         }
 
-        static TypeInfo Instantiate(this TypeInfo type, SigTypeContext context)
+        private static TypeInfo Instantiate(this TypeInfo type, SigTypeContext context)
         {
             if (type.IsGenericParameter)
             {
@@ -253,7 +253,7 @@ namespace Internal.Reflection.Execution
             return type;
         }
 
-        static bool IsInstantiatedTypeInfo(this TypeInfo type)
+        private static bool IsInstantiatedTypeInfo(this TypeInfo type)
         {
             return type is InstantiatedTypeInfo;
         }
@@ -262,12 +262,12 @@ namespace Internal.Reflection.Execution
         // Other helper methods to support constraint validation
         //
 
-        static bool IsNullable(this TypeInfo type)
+        private static bool IsNullable(this TypeInfo type)
         {
             return type.IsGenericType && CommonRuntimeTypes.Nullable.Equals(type.GetGenericTypeDefinition());
         }
 
-        static Type GetNullableType(this TypeInfo type)
+        private static Type GetNullableType(this TypeInfo type)
         {
             Debug.Assert(type.IsNullable());
 
@@ -277,27 +277,27 @@ namespace Internal.Reflection.Execution
             return arguments[0];
         }
 
-        static bool IsSystemObject(this TypeInfo type)
+        private static bool IsSystemObject(this TypeInfo type)
         {
             return CommonRuntimeTypes.Object.Equals(type.AsType());
         }
 
-        static bool IsSystemValueType(this TypeInfo type)
+        private static bool IsSystemValueType(this TypeInfo type)
         {
             return CommonRuntimeTypes.ValueType.Equals(type.AsType());
         }
 
-        static bool IsSystemArray(this TypeInfo type)
+        private static bool IsSystemArray(this TypeInfo type)
         {
             return CommonRuntimeTypes.Array.Equals(type.AsType());
         }
 
-        static bool IsSystemVoid(this TypeInfo type)
+        private static bool IsSystemVoid(this TypeInfo type)
         {
             return CommonRuntimeTypes.Void.Equals(type.AsType());
         }
 
-        static bool HasExplicitOrImplicitPublicDefaultConstructor(this TypeInfo type)
+        private static bool HasExplicitOrImplicitPublicDefaultConstructor(this TypeInfo type)
         {
             // Strip InstantiatedTypeInfo - DeclaredConstructors is not implemented on InstantiatedTypeInfo
             if (type is InstantiatedTypeInfo)
@@ -315,7 +315,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        unsafe static int NormalizedPrimitiveTypeSizeForIntegerTypes(this TypeInfo type)
+        private unsafe static int NormalizedPrimitiveTypeSizeForIntegerTypes(this TypeInfo type)
         {
             // Strip InstantiatedTypeInfo - IsEnum is not implemented on InstantiatedTypeInfo
             if (type is InstantiatedTypeInfo)

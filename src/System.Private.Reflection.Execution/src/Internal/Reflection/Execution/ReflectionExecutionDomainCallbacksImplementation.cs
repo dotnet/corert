@@ -9,8 +9,8 @@ using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
 
-using global::Internal.LowLevelLinq;
 using global::Internal.Runtime.Augments;
+using global::Internal.Runtime.TypeLoader;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
@@ -38,9 +38,9 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleHandle">Module handle to register</param>
         public sealed override void RegisterModule(IntPtr moduleHandle)
         {
-            _executionEnvironment.RegisterModule(moduleHandle);
+            ModuleList.Instance.RegisterModule(moduleHandle);
         }
-        
+
         public sealed override Object ActivatorCreateInstance(Type type, Object[] args)
         {
             if (type == null)
@@ -282,7 +282,7 @@ namespace Internal.Reflection.Execution
             else if (parentHandleType == HandleType.NamespaceReference)
             {
                 NamespaceReferenceHandle namespaceReferenceHandle = parentHandle.ToNamespaceReferenceHandle(reader);
-                for (; ;)
+                for (;;)
                 {
                     NamespaceReference namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
                     String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
@@ -306,12 +306,12 @@ namespace Internal.Reflection.Execution
 
         public override IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
         {
-            return _executionEnvironment.TryGetDefaultConstructorForType(runtimeTypeHandle);
+            return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
         }
 
         public override IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator)
         {
-            return _executionEnvironment.TryGetDefaultConstructorForTypeUsingLocator(canonEquivalentEntryLocator);
+            return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForTypeUsingLocator(canonEquivalentEntryLocator);
         }
 
         public sealed override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle)
@@ -322,14 +322,14 @@ namespace Internal.Reflection.Execution
         /// <summary>
         /// Compares FieldInfos, sorting by name.
         /// </summary>
-        class FieldInfoNameComparer : IComparer<FieldInfo>
+        private class FieldInfoNameComparer : IComparer<FieldInfo>
         {
-            static FieldInfoNameComparer _instance = new FieldInfoNameComparer();
+            private static FieldInfoNameComparer s_instance = new FieldInfoNameComparer();
             public static FieldInfoNameComparer Instance
             {
                 get
                 {
-                    return _instance;
+                    return s_instance;
                 }
             }
 

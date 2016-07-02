@@ -18,8 +18,8 @@ namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ReferenceTypeFieldAccessorForUniversalThreadStaticFields : StaticFieldAccessor
     {
-        int _fieldOffset;
-        RuntimeTypeHandle _declaringTypeHandle;
+        private int _fieldOffset;
+        private RuntimeTypeHandle _declaringTypeHandle;
 
         public ReferenceTypeFieldAccessorForUniversalThreadStaticFields(IntPtr cctorContext, RuntimeTypeHandle declaringTypeHandle, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, fieldTypeHandle)

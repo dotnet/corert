@@ -18,8 +18,8 @@ namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ReferenceTypeFieldAccessorForThreadStaticFields : StaticFieldAccessor
     {
-        IntPtr _cookie;
-        RuntimeTypeHandle _declaringTypeHandle;
+        private IntPtr _cookie;
+        private RuntimeTypeHandle _declaringTypeHandle;
 
         public ReferenceTypeFieldAccessorForThreadStaticFields(IntPtr cctorContext, RuntimeTypeHandle declaringTypeHandle, IntPtr cookie, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, fieldTypeHandle)

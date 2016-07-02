@@ -107,10 +107,10 @@ namespace System.Globalization
         // All of the following will be created on demand.
         //
 
-        // The following three fields are required for interop with the VS Debugger
-        // Prior to making any changes to these fields, please reach out to the VS Debugger 
-        // team to make sure that your changes are not going to prevent the debugger
-        // from working.
+        // WARNING: We allow diagnostic tools to directly inspect these three members (s_InvariantCultureInfo, s_DefaultThreadCurrentUICulture and s_DefaultThreadCurrentCulture)
+        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
+        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
+        // Get in touch with the diagnostics team if you have questions.
 
         //The Invariant culture;
         private static volatile CultureInfo s_InvariantCultureInfo;

@@ -24,6 +24,7 @@ namespace Internal.Runtime
         InvokeInstantiations                        = 16, // unused
         PointerTypeMap                              = 17,
         GenericVirtualMethodTable                   = 18,
+        InterfaceGenericVirtualMethodTable          = 19,
 
         // Reflection template types/methods blobs:
         TypeTemplateMap                             = 21,

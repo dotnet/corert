@@ -20,7 +20,7 @@ namespace Internal.Reflection.Execution.FieldAccessors
     {
         protected RuntimeTypeHandle FieldTypeHandle { get; private set; }
 
-        IntPtr _cctorContext;
+        private IntPtr _cctorContext;
 
         public StaticFieldAccessor(IntPtr cctorContext, RuntimeTypeHandle fieldTypeHandle)
         {

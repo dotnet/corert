@@ -18,7 +18,7 @@ namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal sealed class ValueTypeFieldAccessorForInstanceFields : InstanceFieldAccessor
     {
-        int _offset;
+        private int _offset;
 
         public ValueTypeFieldAccessorForInstanceFields(int offset, RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle fieldTypeHandle)
             : base(declaringTypeHandle, fieldTypeHandle)

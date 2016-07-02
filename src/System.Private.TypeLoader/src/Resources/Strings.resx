@@ -117,100 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
-    <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
-  </data>
-  <data name="Reflection_InsufficientMetadata_NoHelpAvailable" xml:space="preserve">
-    <value>This operation cannot be carried out because metadata for the following object was removed for performance reasons:\n\n  {0}\n\nNo further information is available. Rebuild in debug mode for better information.\n\n</value>
-  </data>
-  <data name="Reflection_InsufficientMetadata_EdbNeeded" xml:space="preserve">
-    <value>'{0}' is missing metadata. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=392859</value>
-  </data>
-  <data name="Arg_DlgtTargMeth" xml:space="preserve">
-    <value>Cannot bind to the target method because its signature is not compatible with that of the delegate type.</value>
-  </data>
-  <data name="Arg_EmptyArray" xml:space="preserve">
-    <value>Array may not be empty.</value>
-  </data>
-  <data name="MissingMember" xml:space="preserve">
-    <value>Member not found.</value>
-  </data>
-  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
-    <value>Ambiguous match found.</value>
-  </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
-  <data name="InvalidOperation_NoValue" xml:space="preserve">
-    <value>Nullable object must have a value.</value>
-  </data>
-  <data name="PlatformNotSupported_CantInvokeIntrinsic" xml:space="preserve">
-    <value>Late-bound invocation is not supported for compiler-intrinsic methods.</value>
-  </data>
-  <data name="PlatformNotSupported_VarArgs" xml:space="preserve">
-    <value>Methods using the vararg calling convention are not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_PointerArguments" xml:space="preserve">
-    <value>Passing or returning pointers through Invoke is not supported on this platform.</value>
-  </data>
-  <data name="RFLCT_Targ_ITargMismatch" xml:space="preserve">
-    <value>Object does not match target type.</value>
-  </data>
-  <data name="RFLCT_Targ_StatMethReqTarg" xml:space="preserve">
-    <value>Non-static method requires a target.</value>
-  </data>
-  <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
-    <value>Non-static field requires a target.</value>
-  </data>
-  <data name="LdToken_NoMetadata_1" xml:space="preserve">
-    <value>Prerelease Restriction: The following type member cannot be referenced from inside a Linq Expression:\n\n  </value>
-  </data>
-  <data name="LdToken_NoMetadata_2" xml:space="preserve">
-    <value>\n\nThe following may be used as a workaround:\n\n</value>
-  </data>
-  <data name="LdToken_NoMetadata_3" xml:space="preserve">
-    <value>  1. Make the member public or mark the member with the System.Reflection.Metadata.Controls.ReflectionInfo attribute specifying the argument ReflectionInfoOption.Include\n</value>
-  </data>
-  <data name="LdToken_NoMetadata_4" xml:space="preserve">
-    <value>  2. Enable Reflection for its declaring type with the System.Reflection.Consumption.EnableDynamicProgramming attribute.\n\n\n</value>
-  </data>
-  <data name="MissingConstructor_Name" xml:space="preserve">
-    <value>Constructor on type '{0}' not found.</value>
-  </data>
-  <data name="PlatformNotSupported_NoMultiDims" xml:space="preserve">
-    <value>Multidimensional arrays of rank {0} are not supported on this runtime.</value>
-  </data>
-  <data name="Object_NotInvokable" xml:space="preserve">
-    <value>This object cannot be invoked because it was metadata-enabled for browsing only: '{0}' For more information, please visit  http://go.microsoft.com/fwlink/?LinkID=616867</value>
-  </data>
-  <data name="MakeGenericMethod_NoMetadata" xml:space="preserve">
-    <value>MakeGenericMethod() cannot create this generic method instantiation because the instantiation was not metadata-enabled: '{0}' For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
-  </data>
-  <data name="PlatformNotSupported_CannotInvokeDelegateCtor" xml:space="preserve">
-    <value>Dynamic invocation of delegate constructors is not supported on this runtime.</value>
-  </data>
   <data name="Argument_AddingDuplicate" xml:space="preserve">
     <value>An item with the same key has already been added.</value>
-  </data>
-  <data name="Argument_GenericArgsCount" xml:space="preserve">
-    <value>The number of generic arguments provided doesn't equal the arity of the generic type definition.</value>
-  </data>
-  <data name="Argument_NeverValidGenericArgument" xml:space="preserve">
-    <value>The type '{0}' may not be used as a type argument.</value>
-  </data>
-  <data name="Argument_ConstraintFailed" xml:space="preserve">
-    <value>'{0}', on '{1}' violates the constraint of type '{2}'.</value>
-  </data>
-  <data name="NotSupported_OpenType" xml:space="preserve">
-    <value>Cannot create arrays of open type. </value>
-  </data>
-  <data name="PlatformNotSupported_PointerArray" xml:space="preserve">
-    <value>Arrays of pointer types are not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_GetMethodInfoForStubDelegate" xml:space="preserve">
-    <value>Obtaining a MethodInfo of a reflection-constructed delegate to a virtual method is not supported on this platform.</value>
-  </data>
-  <data name="Argument_ImplementIComparable" xml:space="preserve">
-    <value>At least one object must implement IComparable.</value>
   </data>
 </root>
