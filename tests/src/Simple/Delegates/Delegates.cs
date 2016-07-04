@@ -43,6 +43,12 @@ public class BringUpTests
             result = Fail;
         }
 
+        if (!TestDynamicInvoke())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
+
         return result;
     }
 
@@ -177,6 +183,100 @@ public class BringUpTests
         return true;
     }
 
+    public static bool TestDynamicInvoke()
+    {
+        Console.Write("Testing dynamic invoke...");
+
+        {
+            TestValueType t = new TestValueType { X = 123 };
+            Func<string, string> d = t.GiveX;
+            string result = (string)d.DynamicInvoke(new object[] { "MyPrefix" });
+            if (result != "MyPrefix123")
+                return false;
+        }
+
+        {
+            Func<int, TestValueType> d = TestValueType.MakeValueType;
+            TestValueType result = (TestValueType)d.DynamicInvoke(new object[] { 789 });
+            if (result.X != 789)
+                return false;
+        }
+
+        {
+            IFoo t = new ClassWithIFoo("Class");
+            Func<int, string> d = t.DoFoo;
+            if ((string)d.DynamicInvoke(new object[] { 987 }) != "Class987")
+                return false;
+        }
+
+        {
+            IFoo t = new StructWithIFoo("Struct");
+            Func<int, string> d = t.DoFoo;
+            if ((string)d.DynamicInvoke(new object[] { 654 }) != "Struct654")
+                return false;
+        }
+
+        {
+            Func<string, string, string> d = ExtensionClass.Combine;
+            if ((string)d.DynamicInvoke(new object[] { "Hello", "World" }) != "HelloWorld")
+                return false;
+        }
+
+        {
+            Func<string, string> d = "Hi".Combine;
+            if ((string)d.DynamicInvoke(new object[] { "There" }) != "HiThere")
+                return false;
+        }
+
+        {
+            Mutate<int> d = ClassWithByRefs.Mutate;
+            object[] args = new object[] { 8 };
+            d.DynamicInvoke(args);
+            if ((int)args[0] != 50)
+                return false;
+        }
+
+        {
+            Mutate<string> d = ClassWithByRefs.Mutate;
+            object[] args = new object[] { "Hello" };
+            d.DynamicInvoke(args);
+            if ((string)args[0] != "HelloMutated")
+                return false;
+        }
+
+        unsafe
+        {
+            GetAndReturnPointerDelegate d = ClassWithPointers.GetAndReturnPointer;
+            if ((IntPtr)d.DynamicInvoke(new object[] { (IntPtr)8 }) != (IntPtr)50)
+                return false;
+        }
+
+#if false
+        // This is hitting an EH bug around throw/rethrow from a catch block (pass is not set properly)
+        unsafe
+        {
+            PassPointerByRefDelegate d = ClassWithPointers.PassPointerByRef;
+            var args = new object[] { (IntPtr)8 };
+
+            bool caught = false;
+            try
+            {
+                d.DynamicInvoke(args);
+            }
+            catch (ArgumentException)
+            {
+                caught = true;
+            }
+
+            if (!caught)
+                return false;
+        }
+#endif
+
+        Console.WriteLine("OK");
+        return true;
+    }
+
     struct TestValueType
     {
         public int X;
@@ -287,5 +387,36 @@ static class ExtensionClass
     public static string Combine(this string s1, string s2)
     {
         return s1 + s2;
+    }
+}
+
+unsafe delegate IntPtr GetAndReturnPointerDelegate(void* ptr);
+unsafe delegate void PassPointerByRefDelegate(ref void* ptr);
+
+unsafe static class ClassWithPointers
+{
+    public static IntPtr GetAndReturnPointer(void* ptr)
+    {
+        return (IntPtr)((byte*)ptr + 42);
+    }
+
+    public static void PassPointerByRef(ref void* ptr)
+    {
+        ptr = (byte*)ptr + 42;
+    }
+}
+
+delegate void Mutate<T>(ref T x);
+
+class ClassWithByRefs
+{
+    public static void Mutate(ref int x)
+    {
+        x += 42;
+    }
+
+    public static void Mutate(ref string x)
+    {
+        x += "Mutated";
     }
 }
