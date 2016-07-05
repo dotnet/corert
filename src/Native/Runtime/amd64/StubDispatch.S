@@ -18,14 +18,14 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // Load the EEType from the object instance in rdi.
         mov     rax, [rdi]
 
-        CurrentOffset = 0
+        CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
 
         // For each entry in the cache, see if its EEType type matches the EEType in rax.
         // If so, call the second cache entry.  If not, skip the InterfaceDispatchCacheEntry.
         .rept \entries
-            cmp     rax, [r11 + OFFSETOF__InterfaceDispatchCache__m_rgEntries + CurrentOffset]
+            cmp     rax, [r11 + CurrentOffset]
             jne     0f
-            jmp     [r11 + OFFSETOF__InterfaceDispatchCache__m_rgEntries + CurrentOffset + 8]
+            jmp     [r11 + CurrentOffset + 8]
         0:
             CurrentOffset = CurrentOffset + 16
         .endr

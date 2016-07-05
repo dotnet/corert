@@ -169,7 +169,7 @@ public:
     int     GetGCtraceFac  ()               const { return 0; }
     int     GetGCprnLvl    ()               const { return 0; }
     bool    IsGCBreakOnOOMEnabled()         const { return false; }
-#ifdef CORERT
+#ifdef USE_PORTABLE_HELPERS
     // CORERT-TODO: remove this
     //              https://github.com/dotnet/corert/issues/913
     int     GetGCgen0size  ()               const { return 100 * 1024 * 1024; }

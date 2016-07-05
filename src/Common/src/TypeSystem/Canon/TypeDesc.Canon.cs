@@ -72,8 +72,27 @@ namespace Internal.TypeSystem
         protected abstract TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind);
 
         /// <summary>
-        /// Returns true if this type matches the discovery policy or if it's parameterized over one that does
+        /// Returns true if this type matches the discovery policy or if it's parameterized over one that does.
+        /// See also <see cref="IsCanonicalType"/>.
         /// </summary>
         public abstract bool IsCanonicalSubtype(CanonicalFormKind policy);
+
+        /// <summary>
+        /// Gets a value indicating whether this type is considered to be canonical type.
+        /// Note this will only return true if this is type is the actual __Canon/__UniversalCanon type,
+        /// or a struct instantiated over one of those. See also <see cref="IsCanonicalSubtype(CanonicalFormKind)"/>.
+        /// </summary>
+        public bool IsCanonicalType
+        {
+            get
+            {
+                if (Context.IsCanonicalDefinitionType(this, CanonicalFormKind.Any))
+                    return true;
+                else if (this.IsValueType)
+                    return this.IsCanonicalSubtype(CanonicalFormKind.Any);
+                else
+                    return false;
+            }
+        }
     }
 }

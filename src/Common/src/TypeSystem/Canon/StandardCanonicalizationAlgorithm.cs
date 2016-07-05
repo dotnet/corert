@@ -7,41 +7,44 @@ using Debug = System.Diagnostics.Debug;
 namespace Internal.TypeSystem
 {
     /// <summary>
-    /// Contains utility functionality for canonicalization used by multiple types
+    /// Contains utility functionality for canonicalization used by multiple types.
     /// </summary>
-    class CanonUtilites
+    public static class StandardCanonicalizationAlgorithm
     {
         /// <summary>
-        /// Returns true if canonicalizing this instantiation produces a different instantiation
-        /// </summary>
-        /// <param name="kind">Canonicalization policy to apply</param>
-        public static bool ConversionToCanonFormIsAChange(TypeSystemContext context, Instantiation instantiation, CanonicalFormKind kind)
-        {
-            foreach (TypeDesc type in instantiation)
-            {
-                TypeDesc potentialCanonType = ConvertToCanon(type, kind);
-                if (type != potentialCanonType)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Returns a new instantiation that canonicalizes all types in <paramref name="instantiation"/>
-        /// if possible under the policy of <paramref name="kind"/>
+        /// if possible under the policy of '<paramref name="kind"/>'
         /// </summary>
-        public static Instantiation ConvertInstantiationToCanonForm(TypeSystemContext context, Instantiation instantiation, CanonicalFormKind kind)
+        /// <param name="changed">True if the returned instantiation is different from '<paramref name="instantiation"/>'.</param>
+        public static Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
-            TypeDesc[] newInstantiation = new TypeDesc[instantiation.Length];
+            TypeDesc[] newInstantiation = null;
 
             for (int i = 0; i < instantiation.Length; i++)
             {
-                newInstantiation[i] = ConvertToCanon(instantiation[i], kind);
+                TypeDesc typeToConvert = instantiation[i];
+                TypeDesc convertedType = ConvertToCanon(typeToConvert, kind);
+
+                if (typeToConvert != convertedType || newInstantiation != null)
+                {
+                    if (newInstantiation == null)
+                    {
+                        newInstantiation = new TypeDesc[instantiation.Length];
+                        for (int j = 0; j < i; j++)
+                            newInstantiation[j] = instantiation[j];
+                    }
+
+                    newInstantiation[i] = convertedType;
+                }
             }
 
-            return new Instantiation(newInstantiation);
+            changed = newInstantiation != null;
+            if (changed)
+            {
+                return new Instantiation(newInstantiation);
+            }
+
+            return instantiation;
         }
 
         /// <summary>
@@ -61,17 +64,16 @@ namespace Internal.TypeSystem
             }
             else if (kind == CanonicalFormKind.Specific)
             {
-                if (typeToConvert is DefType)
+                if (typeToConvert == context.UniversalCanonType)
                 {
-                    if (typeToConvert == context.UniversalCanonType)
-                        return context.UniversalCanonType;
-
-                    DefType defTypeToConvert = (DefType)typeToConvert;
-
-                    if (!defTypeToConvert.IsValueType)
+                    return context.UniversalCanonType;
+                }
+                else if (typeToConvert.IsDefType)
+                {
+                    if (!typeToConvert.IsValueType)
                         return context.CanonType;
-                    else if (defTypeToConvert.HasInstantiation)
-                        return defTypeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    else if (typeToConvert.HasInstantiation)
+                        return typeToConvert.ConvertToCanonForm(CanonicalFormKind.Specific);
                     else
                         return typeToConvert;
                 }

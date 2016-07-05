@@ -23,7 +23,7 @@ namespace ILCompiler
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
-        private MetadataVirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new MetadataVirtualMethodEnumerationAlgorithm();
+        private CachingVirtualMethodEnumerationAlgorithm _virtualMethodEnumAlgorithm = new CachingVirtualMethodEnumerationAlgorithm();
         private DelegateVirtualMethodEnumerationAlgorithm _delegateVirtualMethodEnumAlgorithm = new DelegateVirtualMethodEnumerationAlgorithm();
 
         private MetadataStringDecoder _metadataStringDecoder;
@@ -298,6 +298,16 @@ namespace ILCompiler
                 return _delegateVirtualMethodEnumAlgorithm;
 
             return _virtualMethodEnumAlgorithm;
+        }
+
+        protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
+        {
+            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+        }
+
+        protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
+        {
+            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
         }
 
         public MetadataStringDecoder GetMetadataStringDecoder()

@@ -43,6 +43,8 @@
 
 #include "GCMemoryHelpers.h"
 
+#include "holder.h"
+
 GPTR_IMPL(EEType, g_pFreeObjectEEType);
 
 #define USE_CLR_CACHE_SIZE_BEHAVIOR
@@ -1019,12 +1021,6 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
 }
 
-// does not acquire thread store lock
-void GCToEEInterface::AttachCurrentThread()
-{
-    ThreadStore::AttachCurrentThread(false);
-}
-
 void GCToEEInterface::SetGCSpecial(Thread * pThread)
 {
     pThread->SetGCSpecial(true);
@@ -1064,6 +1060,62 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 #endif
 }
 
+#ifndef DACCESS_COMPILE
+
+// Context passed to the above.
+struct GCBackgroundThreadContext
+{
+    GCBackgroundThreadFunction m_pRealStartRoutine;
+    void *                     m_pRealContext;
+    Thread **                  m_pThread;
+};
+
+// Helper used to wrap the start routine of background GC threads so we can do things like initialize the
+// Redhawk thread state which requires running in the new thread's context.
+static uint32_t WINAPI BackgroundGCThreadStub(void * pContext)
+{
+    GCBackgroundThreadContext * pStartContext = (GCBackgroundThreadContext*)pContext;
+
+    // Initialize the Thread for this thread. The false being passed indicates that the thread store lock
+    // should not be acquired as part of this operation. This is necessary because this thread is created in
+    // the context of a garbage collection and the lock is already held by the GC.
+    ASSERT(GCHeap::GetGCHeap()->IsGCInProgress());
+    ThreadStore::AttachCurrentThread();
+
+    // Inform the GC which Thread* we are.
+    *pStartContext->m_pThread = GetThread();
+
+    GCBackgroundThreadFunction realStartRoutine = pStartContext->m_pRealStartRoutine;
+    void* realContext = pStartContext->m_pRealContext;
+
+    delete pStartContext;
+
+    // Run the real start procedure and capture its return code on exit.
+    return realStartRoutine(realContext);
+}
+
+bool GCToEEInterface::CreateBackgroundThread(Thread** thread, GCBackgroundThreadFunction threadStart, void* arg)
+{
+    NewHolder<GCBackgroundThreadContext> context = new (nothrow) GCBackgroundThreadContext();
+    context->m_pThread = thread;
+    context->m_pRealStartRoutine = threadStart;
+    context->m_pRealContext = arg;
+
+    if (context == NULL)
+    {
+        return false;
+    }
+
+    bool success = PalStartBackgroundGCThread(BackgroundGCThreadStub, &context);
+    if (success)
+    {
+        context.SuppressRelease();
+    }
+
+    return success;
+}
+
+#endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
 // size, but thread.cpp doesn't generally need to include the GC environment headers for any other reason.
@@ -1268,7 +1320,7 @@ void StompWriteBarrierResize(bool /* isRuntimeSuspended */, bool /*bReqUpperBoun
 {
 }
 
-bool IsSuspendEEThread()
+bool IsGCThread()
 {
     return false;
 }

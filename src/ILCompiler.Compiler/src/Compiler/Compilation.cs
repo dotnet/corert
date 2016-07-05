@@ -135,7 +135,7 @@ namespace ILCompiler
 
         private CorInfoImpl _corInfo;
 
-        public void CompileSingleFile()
+        public void Compile()
         {
             NodeFactory.NameMangler = NameMangler;
 
@@ -231,8 +231,12 @@ namespace ILCompiler
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
             {
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
-                string methodName = method.ToString();
-                Log.WriteLine("Compiling " + methodName);
+
+                if (_options.Verbose)
+                {
+                    string methodName = method.ToString();
+                    Log.WriteLine("Compiling " + methodName);
+                }
 
                 var methodIL = GetMethodIL(method);
                 if (methodIL == null)

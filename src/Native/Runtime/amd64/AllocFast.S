@@ -142,7 +142,7 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         movzx       eax, word ptr [rbx + OFFSETOF__EEType__m_usComponentSize]
         mul         r12
-        mov         edx, [rdi + OFFSETOF__EEType__m_uBaseSize]
+        mov         edx, [rbx + OFFSETOF__EEType__m_uBaseSize]
         add         rax, rdx
         add         rax, 7
         and         rax, -8

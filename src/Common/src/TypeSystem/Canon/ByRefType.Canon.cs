@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
     {
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
-            TypeDesc paramTypeConverted = CanonUtilites.ConvertToCanon(ParameterType, kind);
+            TypeDesc paramTypeConverted = Context.ConvertToCanon(ParameterType, kind);
             if (paramTypeConverted != ParameterType)
                 return Context.GetByRefType(paramTypeConverted);
 
