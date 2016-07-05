@@ -828,6 +828,15 @@ namespace System.Runtime.InteropServices
 
             return default(RuntimeTypeHandle);
         }
+
+        internal static IntPtr GetDelegateInvokeStub(this RuntimeTypeHandle winrtDelegateType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(winrtDelegateType);
+            if (interfaceInfo != null)
+                return interfaceInfo.DelegateInvokeStub;
+
+            return default(IntPtr);
+        }
         #endregion
 
         #region "Class Data"
