@@ -90,6 +90,9 @@ int EEConfig::GetGCconcurrent()
 static RhConfig g_sRhConfig;
 RhConfig * g_pRhConfig = &g_sRhConfig;
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+DWORD g_dwHandles = 0;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_ETW
 //
