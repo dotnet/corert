@@ -218,6 +218,11 @@ public:
         UNREFERENCED_PARAMETER(max_gen);
     }
     void VerifySyncTableEntry() {}
+
+    DWORD GetActiveCount()
+    {
+        return 0;
+    }
 };
 
 #endif // VERIFY_HEAP
@@ -233,3 +238,9 @@ typedef DPTR(GCHeap) PTR_GCHeap;
 typedef DPTR(uint32_t) PTR_uint32_t;
 
 enum CLRDataEnumMemoryFlags : int;
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+// Note this is not updated in a thread safe way so the value may not be accurate. We get
+// it accurately in full GCs if the handle count is requested.
+extern DWORD g_dwHandles;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
