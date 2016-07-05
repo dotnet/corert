@@ -99,5 +99,13 @@ namespace TypeSystemTests
             else
                 return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
         }
+
+        protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
+        {
+            if (CanonMode == CanonicalizationMode.Standard)
+                return StandardCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+            else
+                return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref kind);
+        }
     }
 }
