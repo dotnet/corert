@@ -1057,6 +1057,8 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 #endif
 }
 
+#ifndef DACCESS_COMPILE
+
 // Context passed to the above.
 struct GCBackgroundThreadContext
 {
@@ -1109,6 +1111,8 @@ bool GCToEEInterface::CreateBackgroundThread(Thread** thread, GCBackgroundThread
 
     return success;
 }
+
+#endif // !DACCESS_COMPILE
 
 // NOTE: this method is not in thread.cpp because it needs access to the layout of alloc_context for DAC to know the 
 // size, but thread.cpp doesn't generally need to include the GC environment headers for any other reason.
