@@ -2138,6 +2138,18 @@ namespace Internal.JitInterface
 
             MethodDesc targetMethod = methodAfterConstraintResolution;
 
+            // TODO: Support Generics
+            if (targetMethod.HasInstantiation)
+            {
+                pResult.contextHandle = contextFromMethod(targetMethod);
+            }
+            else
+            {
+                pResult.contextHandle = contextFromType(targetMethod.OwningType);
+            }
+
+            pResult._exactContextNeedsRuntimeLookup = 0;
+
             //
             // Determine whether to perform direct call
             //
@@ -2168,54 +2180,22 @@ namespace Internal.JitInterface
                 }
             }
 
-            pResult.hMethod = ObjectToHandle(targetMethod);
-            pResult.methodFlags = getMethodAttribsInternal(targetMethod);
-
-            pResult.classFlags = getClassAttribsInternal(targetMethod.OwningType);
-
-            Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.sig);
-
-            // Get the required verification information in case it is needed by the verifier later
-            if (pResult.hMethod != pResolvedToken.hMethod)
-            {
-                pResult.verMethodFlags = getMethodAttribsInternal(targetMethod);
-                Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.verSig);
-            }
-            else
-            {
-                pResult.verMethodFlags = pResult.methodFlags;
-                pResult.verSig = pResult.sig;
-            }
-
-            pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
-
-            // TODO: Support Generics
-            if (targetMethod.HasInstantiation)
-            {
-                pResult.contextHandle = contextFromMethod(targetMethod);
-            }
-            else
-            {
-                pResult.contextHandle = contextFromType(targetMethod.OwningType);
-            }
-
-            pResult._exactContextNeedsRuntimeLookup = 0;
-
             pResult.codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
 
             if (directCall)
             {
+                MethodDesc directMethod = targetMethod;
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
                     // Calling a string constructor doesn't call the actual constructor.
-                    targetMethod = targetMethod.GetStringInitializer();
+                    directMethod = targetMethod.GetStringInitializer();
                 }
 
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                 pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(targetMethod));
+                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(directMethod));
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
@@ -2246,6 +2226,31 @@ namespace Internal.JitInterface
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
                 // TODO: Optimize this
                 pResult.nullInstanceCheck = true;
+            }
+
+            pResult.hMethod = ObjectToHandle(targetMethod);
+
+            pResult.accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
+
+            // We're pretty much done at this point.  Let's grab the rest of the information that the jit is going to
+            // need.
+            pResult.classFlags = getClassAttribsInternal(targetMethod.OwningType);
+
+            pResult.methodFlags = getMethodAttribsInternal(targetMethod);
+            Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.sig);
+
+            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
+            {
+                if (pResult.hMethod != pResolvedToken.hMethod)
+                {
+                    pResult.verMethodFlags = getMethodAttribsInternal(targetMethod);
+                    Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.verSig);
+                }
+                else
+                {
+                    pResult.verMethodFlags = pResult.methodFlags;
+                    pResult.verSig = pResult.sig;
+                }
             }
 
             // TODO: Generics
