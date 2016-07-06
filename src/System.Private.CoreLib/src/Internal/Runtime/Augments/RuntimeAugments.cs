@@ -824,7 +824,7 @@ namespace Internal.Runtime.Augments
 
         public static int GetCorElementType(RuntimeTypeHandle type)
         {
-            return (int)RuntimeImports.RhGetCorElementType(type.ToEETypePtr());
+            return (int)type.ToEETypePtr().CorElementType;
         }
 
         // Move memory which may be on the heap which may have object references in it.

@@ -317,23 +317,6 @@ namespace System.Runtime
                 returnAddress);
         }
 
-        // EEType interrogation methods.
-
-        [RuntimeExport("RhIsString")]
-        public static unsafe bool RhIsString(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            // String is currently the only non-array type with a non-zero component size.
-            return (pEEType->ComponentSize == sizeof(char)) && !pEEType->IsArray;
-        }
-
-        [RuntimeExport("RhGetCorElementType")]
-        public static unsafe byte RhGetCorElementType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return (byte)pEEType->CorElementType;
-        }
-
         [RuntimeExport("RhGetCurrentThreadStackTrace")]
         [MethodImpl(MethodImplOptions.NoInlining)] // Ensures that the RhGetCurrentThreadStackTrace frame is always present
         public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)
