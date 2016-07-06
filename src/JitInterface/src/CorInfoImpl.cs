@@ -874,18 +874,11 @@ namespace Internal.JitInterface
 
         private uint getClassAttribsInternal(TypeDesc type)
         {
+            // TODO: Support for verification (CORINFO_FLG_GENERIC_TYPE_VARIABLE)
             // TODO: This method needs to implement:
             //       1. Shared instantiation: IsCanonicalSubtype, IsRuntimeDeterminedSubtype: CORINFO_FLG_SHAREDINST
 
             CorInfoFlag result = (CorInfoFlag)0;
-
-            if (type.IsSignatureVariable)
-            {
-                result |= CorInfoFlag.CORINFO_FLG_GENERIC_TYPE_VARIABLE;
-
-                // Generic variables simply return "variable" and nothing else.
-                return (uint)result;
-            }
 
             // The array flag is used to identify the faked-up methods on
             // array types, i.e. .ctor, Get, Set and Address
