@@ -13,7 +13,7 @@ set __BuildOS=Windows_NT
 set __VSVersion=vs2015
 
 :: Set the various build properties here so that CMake and MSBuild can pick them up
-set "__ProjectDir=%~dp0"
+set "__ProjectDir=%~dp0%"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__SourceDir=%__ProjectDir%\src"
