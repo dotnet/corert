@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 namespace Internal.TypeSystem
 {
     partial class TypeSystemContext
@@ -52,6 +54,11 @@ namespace Internal.TypeSystem
         public RuntimeDeterminedType GetRuntimeDeterminedType(DefType plainCanonType, GenericParameterDesc detailsType)
         {
             return _runtimeDeterminedTypes.GetOrCreateValue(new RuntimeDeterminedTypeKey(plainCanonType, detailsType));
+        }
+
+        protected internal virtual TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
+        {
+            throw new NotSupportedException();
         }
     }
 }

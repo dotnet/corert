@@ -24,14 +24,15 @@ namespace Internal.TypeSystem
                 for (int instantiationIndex = 0; instantiationIndex < instantiation.Length; instantiationIndex++)
                 {
                     TypeDesc typeToConvert = instantiation[instantiationIndex];
-                    TypeDesc canonForm = RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref currentPolicy);
+                    TypeSystemContext context = typeToConvert.Context;
+                    TypeDesc canonForm = context.ConvertToCanon(typeToConvert, ref currentPolicy);
                     TypeDesc runtimeDeterminedForm = typeToConvert;
 
-                    Debug.Assert(canonForm is DefType);
                     Debug.Assert(openInstantiation[instantiationIndex] is GenericParameterDesc);
 
                     if ((typeToConvert != canonForm) || typeToConvert.IsCanonicalType)
                     {
+                        Debug.Assert(canonForm is DefType);
                         if (sharedInstantiation == null)
                         {
                             sharedInstantiation = new TypeDesc[instantiation.Length];
@@ -39,7 +40,6 @@ namespace Internal.TypeSystem
                                 sharedInstantiation[i] = instantiation[i];
                         }
 
-                        TypeSystemContext context = typeToConvert.Context;
                         runtimeDeterminedForm = context.GetRuntimeDeterminedType(
                             (DefType)canonForm, (GenericParameterDesc)openInstantiation[instantiationIndex]);
                     }
