@@ -1080,7 +1080,7 @@ static uint32_t WINAPI BackgroundGCThreadStub(void * pContext)
     // should not be acquired as part of this operation. This is necessary because this thread is created in
     // the context of a garbage collection and the lock is already held by the GC.
     ASSERT(GCHeap::GetGCHeap()->IsGCInProgress());
-    ThreadStore::AttachCurrentThread();
+    ThreadStore::AttachCurrentThread(false);
 
     // Inform the GC which Thread* we are.
     *pStartContext->m_pThread = GetThread();
@@ -1097,16 +1097,16 @@ static uint32_t WINAPI BackgroundGCThreadStub(void * pContext)
 bool GCToEEInterface::CreateBackgroundThread(Thread** thread, GCBackgroundThreadFunction threadStart, void* arg)
 {
     NewHolder<GCBackgroundThreadContext> context = new (nothrow) GCBackgroundThreadContext();
-    context->m_pThread = thread;
-    context->m_pRealStartRoutine = threadStart;
-    context->m_pRealContext = arg;
-
     if (context == NULL)
     {
         return false;
     }
 
-    bool success = PalStartBackgroundGCThread(BackgroundGCThreadStub, &context);
+    context->m_pThread = thread;
+    context->m_pRealStartRoutine = threadStart;
+    context->m_pRealContext = arg;
+
+    bool success = PalStartBackgroundGCThread(BackgroundGCThreadStub, context.GetValue());
     if (success)
     {
         context.SuppressRelease();
