@@ -164,15 +164,15 @@ namespace Internal.JitInterface
                 var result = JitCompileMethod(out exception, 
                         _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
                         ref methodInfo, (uint)CorJitFlag.CORJIT_FLG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
-                if (result != CorJitResult.CORJIT_OK)
-                {
-                    throw new Exception("JIT Failed");
-                }
                 if (exception != IntPtr.Zero)
                 {
                     char* szMessage = GetExceptionMessage(exception);
                     string message = szMessage != null ? new string(szMessage) : "JIT Exception";
                     throw new Exception(message);
+                }
+                if (result != CorJitResult.CORJIT_OK)
+                {
+                    throw new Exception("JIT Failed");
                 }
 
                 PublishCode();
