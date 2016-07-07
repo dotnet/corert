@@ -66,6 +66,10 @@ namespace Internal.IL
             {
                 return EETypePtrOfIntrinsic.EmitIL(method);
             }
+            else if (owningType.Name == "InvokeUtils" && owningType.Namespace == "System")
+            {
+                return InvokeUtilsIntrinsics.EmitIL(method);
+            }
 
             return null;
         }
