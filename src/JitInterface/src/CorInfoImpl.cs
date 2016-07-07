@@ -1864,75 +1864,75 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getAddrModuleDomainID"); }
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
         {
-            JitHelperId id;
+            ReadyToRunHelper id;
 
             switch (ftnNum)
             {
-                case CorInfoHelpFunc.CORINFO_HELP_THROW: id = JitHelperId.Throw; break;
-                case CorInfoHelpFunc.CORINFO_HELP_RETHROW: id = JitHelperId.Rethrow; break;
-                case CorInfoHelpFunc.CORINFO_HELP_OVERFLOW: id = JitHelperId.Overflow; break;
-                case CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL: id = JitHelperId.RngChkFail; break;
-                case CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST: id = JitHelperId.FailFast; break;
-                case CorInfoHelpFunc.CORINFO_HELP_THROWNULLREF: id = JitHelperId.ThrowNullRef; break;
-                case CorInfoHelpFunc.CORINFO_HELP_THROWDIVZERO: id = JitHelperId.ThrowDivZero; break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROW: id = ReadyToRunHelper.Throw; break;
+                case CorInfoHelpFunc.CORINFO_HELP_RETHROW: id = ReadyToRunHelper.Rethrow; break;
+                case CorInfoHelpFunc.CORINFO_HELP_OVERFLOW: id = ReadyToRunHelper.Overflow; break;
+                case CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL: id = ReadyToRunHelper.RngChkFail; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST: id = ReadyToRunHelper.FailFast; break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWNULLREF: id = ReadyToRunHelper.ThrowNullRef; break;
+                case CorInfoHelpFunc.CORINFO_HELP_THROWDIVZERO: id = ReadyToRunHelper.ThrowDivZero; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF: id = JitHelperId.WriteBarrier; break;
-                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF: id = JitHelperId.CheckedWriteBarrier; break;
-                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF: id = JitHelperId.ByRefWriteBarrier; break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF: id = ReadyToRunHelper.WriteBarrier; break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF: id = ReadyToRunHelper.CheckedWriteBarrier; break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF: id = ReadyToRunHelper.ByRefWriteBarrier; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST: id = JitHelperId.Stelem_Ref; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF: id = JitHelperId.Ldelema_Ref; break;
+                case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST: id = ReadyToRunHelper.Stelem_Ref; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF: id = ReadyToRunHelper.Ldelema_Ref; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_MEMSET: id = JitHelperId.MemSet; break;
-                case CorInfoHelpFunc.CORINFO_HELP_MEMCPY: id = JitHelperId.MemCpy; break;
+                case CorInfoHelpFunc.CORINFO_HELP_MEMSET: id = ReadyToRunHelper.MemSet; break;
+                case CorInfoHelpFunc.CORINFO_HELP_MEMCPY: id = ReadyToRunHelper.MemCpy; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE: id = JitHelperId.GetRuntimeTypeHandle; break;
-                case CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD: id = JitHelperId.GetRuntimeMethodHandle; break;
-                case CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD: id = JitHelperId.GetRuntimeFieldHandle; break;
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE: id = ReadyToRunHelper.GetRuntimeTypeHandle; break;
+                case CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD: id = ReadyToRunHelper.GetRuntimeMethodHandle; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD: id = ReadyToRunHelper.GetRuntimeFieldHandle; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_BOX: id = JitHelperId.Box; break;
-                case CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE: id = JitHelperId.Box_Nullable; break;
-                case CorInfoHelpFunc.CORINFO_HELP_UNBOX: id = JitHelperId.Unbox; break;
-                case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE: id = JitHelperId.Unbox_Nullable; break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG: id = JitHelperId.NewMultiDimArr_NonVarArg; break;
+                case CorInfoHelpFunc.CORINFO_HELP_BOX: id = ReadyToRunHelper.Box; break;
+                case CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE: id = ReadyToRunHelper.Box_Nullable; break;
+                case CorInfoHelpFunc.CORINFO_HELP_UNBOX: id = ReadyToRunHelper.Unbox; break;
+                case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE: id = ReadyToRunHelper.Unbox_Nullable; break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG: id = ReadyToRunHelper.NewMultiDimArr_NonVarArg; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_LMUL: id = JitHelperId.LMul; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LMUL_OVF: id = JitHelperId.LMulOfv; break;
-                case CorInfoHelpFunc.CORINFO_HELP_ULMUL_OVF: id = JitHelperId.ULMulOvf; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LDIV: id = JitHelperId.LDiv; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LMOD: id = JitHelperId.LMod; break;
-                case CorInfoHelpFunc.CORINFO_HELP_ULDIV: id = JitHelperId.ULDiv; break;
-                case CorInfoHelpFunc.CORINFO_HELP_ULMOD: id = JitHelperId.ULMod; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LLSH: id = JitHelperId.LLsh; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LRSH: id = JitHelperId.LRsh; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LRSZ: id = JitHelperId.LRsz; break;
-                case CorInfoHelpFunc.CORINFO_HELP_LNG2DBL: id = JitHelperId.Lng2Dbl; break;
-                case CorInfoHelpFunc.CORINFO_HELP_ULNG2DBL: id = JitHelperId.ULng2Dbl; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LMUL: id = ReadyToRunHelper.LMul; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LMUL_OVF: id = ReadyToRunHelper.LMulOfv; break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULMUL_OVF: id = ReadyToRunHelper.ULMulOvf; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LDIV: id = ReadyToRunHelper.LDiv; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LMOD: id = ReadyToRunHelper.LMod; break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULDIV: id = ReadyToRunHelper.ULDiv; break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULMOD: id = ReadyToRunHelper.ULMod; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LLSH: id = ReadyToRunHelper.LLsh; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LRSH: id = ReadyToRunHelper.LRsh; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LRSZ: id = ReadyToRunHelper.LRsz; break;
+                case CorInfoHelpFunc.CORINFO_HELP_LNG2DBL: id = ReadyToRunHelper.Lng2Dbl; break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULNG2DBL: id = ReadyToRunHelper.ULng2Dbl; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DIV: id = JitHelperId.Div; break;
-                case CorInfoHelpFunc.CORINFO_HELP_MOD: id = JitHelperId.Mod; break;
-                case CorInfoHelpFunc.CORINFO_HELP_UDIV: id = JitHelperId.UDiv; break;
-                case CorInfoHelpFunc.CORINFO_HELP_UMOD: id = JitHelperId.UMod; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DIV: id = ReadyToRunHelper.Div; break;
+                case CorInfoHelpFunc.CORINFO_HELP_MOD: id = ReadyToRunHelper.Mod; break;
+                case CorInfoHelpFunc.CORINFO_HELP_UDIV: id = ReadyToRunHelper.UDiv; break;
+                case CorInfoHelpFunc.CORINFO_HELP_UMOD: id = ReadyToRunHelper.UMod; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT: id = JitHelperId.Dbl2Int; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF: id = JitHelperId.Dbl2IntOvf; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG: id = JitHelperId.Dbl2Lng; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF: id = JitHelperId.Dbl2LngOvf; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT: id = JitHelperId.Dbl2UInt; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF: id = JitHelperId.Dbl2UIntOvf; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG: id = JitHelperId.Dbl2ULng; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_OVF: id = JitHelperId.Dbl2ULngOvf; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT: id = ReadyToRunHelper.Dbl2Int; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2INT_OVF: id = ReadyToRunHelper.Dbl2IntOvf; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG: id = ReadyToRunHelper.Dbl2Lng; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2LNG_OVF: id = ReadyToRunHelper.Dbl2LngOvf; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT: id = ReadyToRunHelper.Dbl2UInt; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2UINT_OVF: id = ReadyToRunHelper.Dbl2UIntOvf; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG: id = ReadyToRunHelper.Dbl2ULng; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_OVF: id = ReadyToRunHelper.Dbl2ULngOvf; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_FLTREM: id = JitHelperId.FltRem; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLREM: id = JitHelperId.DblRem; break;
-                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = JitHelperId.FltRound; break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = JitHelperId.DblRound; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTREM: id = ReadyToRunHelper.FltRem; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLREM: id = ReadyToRunHelper.DblRem; break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND: id = ReadyToRunHelper.FltRound; break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND: id = ReadyToRunHelper.DblRound; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN: id = JitHelperId.PInvokeBegin; break;
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END: id = JitHelperId.PInvokeEnd; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN: id = ReadyToRunHelper.PInvokeBegin; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END: id = ReadyToRunHelper.PInvokeEnd; break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: id = JitHelperId.ReversePInvokeEnter; break;
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT: id = JitHelperId.ReversePInvokeExit; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER: id = ReadyToRunHelper.ReversePInvokeEnter; break;
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT: id = ReadyToRunHelper.ReversePInvokeExit; break;
 
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
