@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+//#define SHARED_GENERICS_SUPPORTED
+
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -302,17 +304,30 @@ namespace ILCompiler
 
         protected override Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind, out bool changed)
         {
+#if SHARED_GENERICS_SUPPORTED
             return RuntimeDeterminedCanonicalizationAlgorithm.ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+#else
+            changed = false;
+            return instantiation;
+#endif
         }
 
         protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
+#if SHARED_GENERICS_SUPPORTED
             return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+#else
+            return typeToConvert;
+#endif
         }
 
         protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
         {
+#if SHARED_GENERICS_SUPPORTED
             return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref kind);
+#else
+            return typeToConvert;
+#endif
         }
 
         public MetadataStringDecoder GetMetadataStringDecoder()

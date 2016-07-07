@@ -92,6 +92,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
+                Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     return new EETypeNode(type, false);
@@ -104,6 +106,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
+                Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     return new EETypeNode(type, true);
@@ -404,6 +408,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
+            if (!_cppCodeGen)
+            {
+                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            }
+
             if (unboxingStub)
             {
                 return _unboxingStubs.GetOrAdd(method);

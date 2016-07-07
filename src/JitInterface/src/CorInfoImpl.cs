@@ -457,6 +457,22 @@ namespace Internal.JitInterface
             sig.token = 0; // Not used by the JIT
         }
 
+        private bool ContextIsShared(CORINFO_CONTEXT_STRUCT* context)
+        {
+            MethodDesc method = methodFromContext(context);
+            if (method != null)
+            {
+                return method.IsCanonicalMethod(CanonicalFormKind.Any);
+            }
+            else
+            {
+                // Type contexts are non-shared and are used for inlining of
+                // non-generic methods in generic classes
+                Debug.Assert(false);
+                return false;
+            }
+        }
+
         private CorInfoType asCorInfoType(TypeDesc type)
         {
             if (type.IsEnum)
@@ -900,6 +916,9 @@ namespace Internal.JitInterface
                 //    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
             }
 
+            if (type.IsSharedInstantiationType())
+                result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
+
             if (type.HasVariance)
                 result |= CorInfoFlag.CORINFO_FLG_VARIANCE;
 
@@ -1079,8 +1098,17 @@ namespace Internal.JitInterface
         [return: MarshalAs(UnmanagedType.Bool)]
         private bool checkMethodModifier(CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, [MarshalAs(UnmanagedType.Bool)]bool fOptional)
         { throw new NotImplementedException("checkMethodModifier"); }
+
         private CorInfoHelpFunc getNewHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle)
-        { throw new NotImplementedException("getNewHelper"); }
+        {
+            TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            // If this is not a shared type, we should be using the ready to run helper.
+            Debug.Assert(type.IsSharedInstantiationType());
+
+            return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
+        }
+
         private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
         { throw new NotImplementedException("getNewArrHelper"); }
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.I1)]bool fThrowing)
@@ -1123,6 +1151,8 @@ namespace Internal.JitInterface
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
                         Debug.Assert(type.IsDefType);
+                        if (type.IsSharedInstantiationType())
+                            return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
@@ -1131,6 +1161,8 @@ namespace Internal.JitInterface
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
                         Debug.Assert(type.IsSzArray);
+                        if (type.IsSharedInstantiationType())
+                            return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
                     }
@@ -1138,6 +1170,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
+                        if (type.IsSharedInstantiationType())
+                            return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
                     }
@@ -1145,6 +1179,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
+                        if (type.IsSharedInstantiationType())
+                            return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
@@ -1152,10 +1188,33 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
+                        if (type.IsSharedInstantiationType())
+                            return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
                     }
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+                    {
+                        Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
+
+                        var type = HandleToObject(pResolvedToken.hClass);
+                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM)
+                        {
+                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
+                        }
+                        else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
+                        {
+                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
+                        }
+                        else
+                        {
+                            Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM);
+                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
+                        }
+
+                        break;
+                    }
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
@@ -1996,6 +2055,7 @@ namespace Internal.JitInterface
             fixed (CORINFO_GENERICHANDLE_RESULT* tmp = &pResult)
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_GENERICHANDLE_RESULT>());
 #endif
+            bool runtimeLookup;
 
             if (!fEmbedParent && pResolvedToken.hMethod != null)
             {
@@ -2003,18 +2063,23 @@ namespace Internal.JitInterface
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
+                FieldDesc fd = HandleToObject(pResolvedToken.hField);
+                TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hField;
 
-                // fRuntimeLookup = th.IsSharedByGenericInstantiations() && pFD->IsStatic();
-
-                // TODO: shared generics
-                // If the target is not shared then we've already got our result and
-                // can simply do a static look up
-                pResult.lookup.lookupKind.needsRuntimeLookup = false;
-
-                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)pResult.compileTimeHandle;
-                pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+                runtimeLookup = fd.IsStatic && td.IsSharedInstantiationType();
+                
+                if (!runtimeLookup)
+                {
+                    // TODO: Handle should actually point to a dependency node (we don't have one yet)
+                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)pResult.compileTimeHandle;
+                }
+                else
+                {
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle;
+                }
             }
             else
             {
@@ -2023,28 +2088,50 @@ namespace Internal.JitInterface
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
 
-                // TODO? If we're embedding a method handle for a method that points to a sub-class of the actual
-                //       class, we might need to embed the actual declaring type in compileTimeHandle.  
+                runtimeLookup = td.IsSharedInstantiationType();
 
-                // TODO: shared generics
-                // IsSharedByGenericInstantiations would not work here. The runtime lookup is required
-                // even for standalone generic variables that show up as __Canon here.
-                //fRuntimeLookup = th.IsCanonicalSubtype();
+                if (!runtimeLookup)
+                {
+                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj)
+                        pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ConstructedTypeSymbol(td));
+                    else
+                        pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
+                }
+                else
+                {
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle;
+                }
+            }
 
+            Debug.Assert(pResult.compileTimeHandle != null);
+
+            if (runtimeLookup)
+            {
+                pResult.lookup.lookupKind.needsRuntimeLookup = true;
+                pResult.lookup.runtimeLookup.signature = null;
+                pResult.lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+
+                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+                if (contextMethod.RequiresInstMethodDescArg())
+                {
+                    pResult.lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
+                }
+                else
+                {
+                    if (contextMethod.RequiresInstMethodTableArg())
+                        pResult.lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
+                    else
+                        pResult.lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+                }
+            }
+            else
+            {
                 // If the target is not shared then we've already got our result and
                 // can simply do a static look up
                 pResult.lookup.lookupKind.needsRuntimeLookup = false;
 
-                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj)
-                {
-                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ConstructedTypeSymbol(td));
-                }
-                else
-                    pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.NecessaryTypeSymbol(td));
                 pResult.lookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
             }
-
-            Debug.Assert(pResult.compileTimeHandle != null);
         }
 
         private void getLocationOfThisType(out CORINFO_LOOKUP_KIND result, CORINFO_METHOD_STRUCT_* context)
@@ -2150,19 +2237,24 @@ namespace Internal.JitInterface
                 }
             }
 
+            //
+            // Initialize callee context used for inlining and instantiation arguments
+            //
+
             MethodDesc targetMethod = methodAfterConstraintResolution;
 
-            // TODO: Support Generics
             if (targetMethod.HasInstantiation)
             {
                 pResult.contextHandle = contextFromMethod(targetMethod);
+                pResult.exactContextNeedsRuntimeLookup = targetMethod.IsCanonicalMethod(CanonicalFormKind.Any);
             }
             else
             {
-                pResult.contextHandle = contextFromType(targetMethod.OwningType);
-            }
+                // TODO: There was an "if (!exactType.IsTypeDesc())" on the CoreCLR side here
 
-            pResult._exactContextNeedsRuntimeLookup = 0;
+                pResult.contextHandle = contextFromType(exactType);
+                pResult.exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+            }
 
             //
             // Determine whether to perform direct call
@@ -2198,6 +2290,10 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
+                bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
+
+                Debug.Assert(allowInstParam || !targetMethod.RequiresInstArg(), "Need an instantiating stub");
+                
                 MethodDesc directMethod = targetMethod;
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
@@ -2231,6 +2327,8 @@ namespace Internal.JitInterface
                 // call that should not be inlined.
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
+
+                Debug.Assert(!pResult.exactContextNeedsRuntimeLookup, "TODO");
 
                 var readyToRunHelper = targetMethod.OwningType.IsInterface ? ReadyToRunHelperId.InterfaceDispatch : ReadyToRunHelperId.VirtualCall;
 
