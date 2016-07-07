@@ -10,6 +10,9 @@ namespace Internal.TypeSystem
         {
             get
             {
+                if (IsGenericDefinition)
+                    return false;
+
                 foreach (TypeDesc type in Instantiation)
                 {
                     if (type.IsRuntimeDeterminedSubtype)
