@@ -353,6 +353,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\TypeSystemContext.RuntimeDetermined.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>Common\System\FormattingHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
