@@ -1055,10 +1055,12 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static IntPtr DelegateToComInterface(Delegate del, RuntimeTypeHandle typeHnd, IntPtr stubFunctionAddr)
+        public static IntPtr DelegateToComInterface(Delegate del, RuntimeTypeHandle typeHnd)
         {
             if (del == null)
                 return default(IntPtr);
+
+            IntPtr stubFunctionAddr = typeHnd.GetDelegateInvokeStub();
 
             object targetObj;
 
@@ -1076,7 +1078,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Delegate ComInterfaceToDelegate(IntPtr pComItf, RuntimeTypeHandle typeHnd, IntPtr stubFunctionAddr)
+        public static Delegate ComInterfaceToDelegate(IntPtr pComItf, RuntimeTypeHandle typeHnd)
         {
             if (pComItf == default(IntPtr))
                 return null;
@@ -1092,6 +1094,8 @@ namespace System.Runtime.InteropServices
             if (del == null)
             {
                 Debug.Assert(obj is __ComObject);
+                IntPtr stubFunctionAddr = typeHnd.GetDelegateInvokeStub();
+
                 del = InteropExtensions.CreateDelegate(
                     typeHnd,
                     stubFunctionAddr,

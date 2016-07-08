@@ -137,7 +137,8 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhIsString(this);
+                // String is currently the only non-array type with a non-zero component size.
+                return (_value->ComponentSize == sizeof(char)) && !_value->IsArray;
             }
         }
 
@@ -334,7 +335,9 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhGetCorElementType(this);
+                Debug.Assert((int)Internal.Runtime.CorElementType.ELEMENT_TYPE_I1 == (int)RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1);
+                Debug.Assert((int)Internal.Runtime.CorElementType.ELEMENT_TYPE_R8 == (int)RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8);
+                return (RuntimeImports.RhCorElementType)_value->CorElementType;
             }
         }
 
