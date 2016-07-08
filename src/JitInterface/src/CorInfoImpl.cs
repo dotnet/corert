@@ -393,10 +393,41 @@ namespace Internal.JitInterface
             methodInfo.options = methodIL.IsInitLocals ? CorInfoOptions.CORINFO_OPT_INIT_LOCALS : (CorInfoOptions)0;
             methodInfo.regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
 
-            Get_CORINFO_SIG_INFO(method.Signature, out methodInfo.args);
+            Get_CORINFO_SIG_INFO(method, out methodInfo.args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), out methodInfo.locals);
 
             return methodIL;
+        }
+
+        private void Get_CORINFO_SIG_INFO(MethodDesc method, out CORINFO_SIG_INFO sig)
+        {
+            Get_CORINFO_SIG_INFO(method.Signature, out sig);
+
+            Instantiation typeInstantiation = method.OwningType.Instantiation;
+            if (typeInstantiation.Length > 0)
+            {
+                var instHandles = new IntPtr[typeInstantiation.Length];
+                for (int i = 0; i < typeInstantiation.Length; i++)
+                    instHandles[i] = (IntPtr)ObjectToHandle(typeInstantiation[i]);
+                sig.sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(instHandles);
+                sig.sigInst.classInstCount = (uint)typeInstantiation.Length;
+            }
+
+            Instantiation methodInstantiation = method.Instantiation;
+            if (methodInstantiation.Length > 0)
+            {
+                var instHandles = new IntPtr[methodInstantiation.Length];
+                for (int i = 0; i < methodInstantiation.Length; i++)
+                    instHandles[i] = (IntPtr)ObjectToHandle(methodInstantiation[i]);
+                sig.sigInst.methInst = (CORINFO_CLASS_STRUCT_**)GetPin(instHandles);
+                sig.sigInst.methInstCount = (uint)methodInstantiation.Length;
+            }
+
+            // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
+            if (method.RequiresInstArg())
+            {
+                sig.callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
+            }
         }
 
         private void Get_CORINFO_SIG_INFO(MethodSignature signature, out CORINFO_SIG_INFO sig)
@@ -416,7 +447,6 @@ namespace Internal.JitInterface
 
             sig.args = (CORINFO_ARG_LIST_STRUCT_*)0; // CORINFO_ARG_LIST_STRUCT_ is argument index
 
-            // TODO: Shared generic
             sig.sigInst.classInst = null;
             sig.sigInst.classInstCount = 0;
             sig.sigInst.methInst = null;
@@ -426,12 +456,6 @@ namespace Internal.JitInterface
             sig.cbSig = 0; // Not used by the JIT
             sig.scope = null; // Not used by the JIT
             sig.token = 0; // Not used by the JIT
-
-            // TODO: Shared generic
-            // if (ftn->RequiresInstArg())
-            // {
-            //     sig.callConv = (CorInfoCallConv)(sig.callConv | CORINFO_CALLCONV_PARAMTYPE);
-            // }
         }
 
         private void Get_CORINFO_SIG_INFO(LocalVariableDefinition[] locals, out CORINFO_SIG_INFO sig)
@@ -582,9 +606,8 @@ namespace Internal.JitInterface
             if (method.IsFinal || (owningMetadataType != null && owningMetadataType.IsSealed))
                 result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
-            // TODO: Generics
-            // if (pMD->IsSharedByGenericInstantiations())
-            //     result |= CORINFO_FLG_SHAREDINST;
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
             {
@@ -634,7 +657,7 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
-            Get_CORINFO_SIG_INFO(method.Signature, out *sig);
+            Get_CORINFO_SIG_INFO(method, out *sig);
         }
 
         [return: MarshalAs(UnmanagedType.I1)]
@@ -823,7 +846,7 @@ namespace Internal.JitInterface
         private void findCallSiteSig(CORINFO_MODULE_STRUCT_* module, uint methTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)).Signature, out *sig);
+            Get_CORINFO_SIG_INFO(((MethodDesc)methodIL.GetObject((int)methTOK)), out *sig);
         }
 
         private CORINFO_CLASS_STRUCT_* getTokenTypeAsHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
@@ -891,9 +914,7 @@ namespace Internal.JitInterface
         private uint getClassAttribsInternal(TypeDesc type)
         {
             // TODO: Support for verification (CORINFO_FLG_GENERIC_TYPE_VARIABLE)
-            // TODO: This method needs to implement:
-            //       1. Shared instantiation: IsCanonicalSubtype, IsRuntimeDeterminedSubtype: CORINFO_FLG_SHAREDINST
-
+            
             CorInfoFlag result = (CorInfoFlag)0;
 
             // The array flag is used to identify the faked-up methods on
@@ -1110,9 +1131,22 @@ namespace Internal.JitInterface
         }
 
         private CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_STRUCT_* arrayCls)
-        { throw new NotImplementedException("getNewArrHelper"); }
+        {
+            TypeDesc type = HandleToObject(arrayCls);
+
+            Debug.Assert(type.IsSzArray);
+            Debug.Assert(type.IsSharedInstantiationType());
+
+            // TODO
+            return CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST;
+        }
+
         private CorInfoHelpFunc getCastingHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.I1)]bool fThrowing)
-        { throw new NotImplementedException("getCastingHelper"); }
+        {
+            // TODO
+            return CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST;
+        }
+
         private CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_STRUCT_* clsHnd)
         { throw new NotImplementedException("getSharedCCtorHelper"); }
         private CorInfoHelpFunc getSecurityPrologHelper(CORINFO_METHOD_STRUCT_* ftn)
@@ -2059,7 +2093,19 @@ namespace Internal.JitInterface
 
             if (!fEmbedParent && pResolvedToken.hMethod != null)
             {
-                throw new NotImplementedException("embedGenericHandle");
+                MethodDesc md = HandleToObject(pResolvedToken.hMethod);
+                TypeDesc td = HandleToObject(pResolvedToken.hClass);
+
+                pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD;
+
+                Debug.Assert(md.OwningType == td);
+
+                pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
+
+                // TODO: wrong
+                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(md));
+
+                runtimeLookup = false;
             }
             else if (!fEmbedParent && pResolvedToken.hField != null)
             {
@@ -2137,10 +2183,27 @@ namespace Internal.JitInterface
         private void getLocationOfThisType(out CORINFO_LOOKUP_KIND result, CORINFO_METHOD_STRUCT_* context)
         {
             result = new CORINFO_LOOKUP_KIND();
-            result.needsRuntimeLookup = false;
-            result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+            MethodDesc method = HandleToObject(context);
 
-            // TODO: shared generics
+            if (method.IsCanonicalMethod(CanonicalFormKind.Any))
+            {
+                result.needsRuntimeLookup = true;
+
+                // If we've got a vtable extra argument, go through that
+                if (method.RequiresInstMethodTableArg())
+                    result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
+                // If we've got an object, go through its vtable
+                else if (method.AcquiresInstMethodTableFromThis())
+                    result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+                // Otherwise go through the method-desc argument
+                else
+                    result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
+            }
+            else
+            {
+                result.needsRuntimeLookup = false;
+                result.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+            }
         }
 
         private void* getPInvokeUnmanagedTarget(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
@@ -2328,7 +2391,7 @@ namespace Internal.JitInterface
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                Debug.Assert(!pResult.exactContextNeedsRuntimeLookup, "TODO");
+                //Debug.Assert(!pResult.exactContextNeedsRuntimeLookup, "TODO");
 
                 var readyToRunHelper = targetMethod.OwningType.IsInterface ? ReadyToRunHelperId.InterfaceDispatch : ReadyToRunHelperId.VirtualCall;
 
@@ -2349,14 +2412,14 @@ namespace Internal.JitInterface
             pResult.classFlags = getClassAttribsInternal(targetMethod.OwningType);
 
             pResult.methodFlags = getMethodAttribsInternal(targetMethod);
-            Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.sig);
+            Get_CORINFO_SIG_INFO(targetMethod, out pResult.sig);
 
             if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
             {
                 if (pResult.hMethod != pResolvedToken.hMethod)
                 {
                     pResult.verMethodFlags = getMethodAttribsInternal(targetMethod);
-                    Get_CORINFO_SIG_INFO(targetMethod.Signature, out pResult.verSig);
+                    Get_CORINFO_SIG_INFO(targetMethod, out pResult.verSig);
                 }
                 else
                 {

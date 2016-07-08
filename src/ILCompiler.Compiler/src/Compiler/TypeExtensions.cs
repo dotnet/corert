@@ -65,6 +65,14 @@ namespace ILCompiler
                 (method.Signature.IsStatic || method.OwningType.IsValueType);
         }
 
+        public static bool AcquiresInstMethodTableFromThis(this MethodDesc method)
+        {
+            return method.IsCanonicalMethod(CanonicalFormKind.Any) &&
+                !method.HasInstantiation &&
+                !method.Signature.IsStatic &&
+                !method.OwningType.IsValueType;
+        }
+
         public static bool IsSharedInstantiationType(this TypeDesc type)
         {
             return type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsRuntimeDeterminedSubtype;

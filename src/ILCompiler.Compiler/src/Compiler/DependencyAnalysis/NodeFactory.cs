@@ -92,7 +92,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
-                Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+                //Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+                //Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                 if (_compilationModuleGroup.ContainsType(type))
                 {
@@ -106,7 +107,8 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
-                Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+                //Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+                //Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
                 if (_compilationModuleGroup.ContainsType(type))
                 {
