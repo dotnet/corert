@@ -74,7 +74,7 @@ namespace Internal.TypeSystem
 
         public override string ToString()
         {
-            return "!" + Index.ToString();
+            return "!" + Index.ToStringInvariant();
         }
     }
 
@@ -112,7 +112,7 @@ namespace Internal.TypeSystem
 
         public override string ToString()
         {
-            return "!!" + Index.ToString();
+            return "!!" + Index.ToStringInvariant();
         }
     }
 }

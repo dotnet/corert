@@ -81,7 +81,7 @@ namespace Internal.NativeFormat
             }
             else
             {
-                hashCode = ComputeNameHashCode("System.MDArrayRank" + rank.ToString() + "`1");
+                hashCode = ComputeNameHashCode("System.MDArrayRank" + rank.ToStringInvariant() + "`1");
             }
 
             hashCode = (hashCode + _rotl(hashCode, 13)) ^ elementTypeHashCode;
