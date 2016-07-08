@@ -465,7 +465,7 @@ namespace System.Text
                             SR.Format(SR.MissingEncodingNameResource, this.CodePage));
                     }
 
-                    if (_encodingName.StartsWith("Globalization_cp_"))
+                    if (_encodingName.StartsWith("Globalization_cp_", StringComparison.Ordinal))
                     {
                         // On ProjectN, resource strings are stripped from retail builds and replaced by
                         // their identifier names. Since this property is meant to be a localized string,
