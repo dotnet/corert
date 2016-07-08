@@ -204,6 +204,10 @@ namespace Internal.Runtime
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
         ETF_DynamicDispatchMap,
+#if CORERT
+        ETF_GenericDefinition,
+        ETF_GenericComposition,
+#endif
     }
 
     enum CorElementType
@@ -249,5 +253,14 @@ namespace Internal.Runtime
         OFT_NullableValueOffset,
 
         OFT_Count // Number of field types we support
+    }
+
+    // Keep this synchronized with GenericVarianceType in rhbinder.h.
+    enum GenericVariance : byte
+    {
+        NonVariant = 0,
+        Covariant = 1,
+        Contravariant = 2,
+        ArrayCovariant = 0x20,
     }
 }

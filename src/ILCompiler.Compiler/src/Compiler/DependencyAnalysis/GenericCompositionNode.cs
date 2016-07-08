@@ -8,6 +8,7 @@ using System.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using GenericVariance = Internal.Runtime.GenericVariance;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -15,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Describes how a generic type instance is composed - the number of generic arguments, their types,
     /// and variance information.
     /// </summary>
-    public class GenericCompositionNode : ObjectNode, ISymbolNode
+    internal class GenericCompositionNode : ObjectNode, ISymbolNode
     {
         private GenericCompositionDetails _details;
 
@@ -37,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis
                     sb.Append('_');
                     sb.Append(NodeFactory.NameMangler.GetMangledTypeName(_details.Instantiation[i]));
 
-                    hasVariance |= _details.Variance[i] != GenericVariance.None;
+                    hasVariance |= _details.Variance[i] != 0;
                 }
 
                 if (hasVariance)
@@ -104,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis
             bool hasVariance = false;
             foreach (var argVariance in _details.Variance)
             {
-                if (argVariance != GenericVariance.None)
+                if (argVariance != 0)
                 {
                     hasVariance = true;
                     break;
@@ -126,7 +127,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    public struct GenericCompositionDetails : IEquatable<GenericCompositionDetails>
+    internal struct GenericCompositionDetails : IEquatable<GenericCompositionDetails>
     {
         public readonly Instantiation Instantiation;
 
@@ -136,13 +137,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!genericTypeInstance.IsTypeDefinition);
 
+            Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Contravariant == (byte)GenericVariance.Contravariant);
+            Debug.Assert((byte)Internal.TypeSystem.GenericVariance.Covariant == (byte)GenericVariance.Covariant);
+
             Instantiation = genericTypeInstance.Instantiation;
 
             Variance = new GenericVariance[Instantiation.Length];
             int i = 0;
             foreach (GenericParameterDesc param in genericTypeInstance.GetTypeDefinition().Instantiation)
             {
-                Variance[i++] = param.Variance;
+                Variance[i++] = (GenericVariance)param.Variance;
             }
         }
 

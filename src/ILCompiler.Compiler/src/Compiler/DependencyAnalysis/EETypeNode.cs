@@ -8,7 +8,9 @@ using Internal.Runtime;
 using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
+
 using Debug = System.Diagnostics.Debug;
+using GenericVariance = Internal.Runtime.GenericVariance;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -561,7 +563,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
                 {
                     // Generic array enumerators use special variance rules recognized by the runtime
-                    details = new GenericCompositionDetails(_type.Instantiation, new[] { (GenericVariance)0x20 });
+                    details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
                 }
                 else
                     details = new GenericCompositionDetails(_type);
