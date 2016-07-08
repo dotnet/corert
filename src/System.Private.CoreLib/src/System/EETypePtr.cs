@@ -188,6 +188,24 @@ namespace System
             }
         }
 
+#if CORERT
+        internal GenericArgumentCollection Instantiation
+        {
+            get
+            {
+                return new GenericArgumentCollection(_value->GenericArity, _value->GenericArguments);
+            }
+        }
+
+        internal EETypePtr GenericDefinition
+        {
+            get
+            {
+                return new EETypePtr((IntPtr)_value->GenericDefinition);
+            }
+        }
+#endif
+
         /// <summary>
         /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
         /// </summary>
@@ -390,5 +408,36 @@ namespace System
                 }
             }
         }
+
+#if CORERT
+        public struct GenericArgumentCollection
+        {
+            private EEType** _arguments;
+            private uint _argumentCount;
+
+            internal GenericArgumentCollection(uint argumentCount, EEType** arguments)
+            {
+                _argumentCount = argumentCount;
+                _arguments = arguments;
+            }
+
+            public int Length
+            {
+                get
+                {
+                    return (int)_argumentCount;
+                }
+            }
+
+            public EETypePtr this[int index]
+            {
+                get
+                {
+                    Debug.Assert((uint)index < _argumentCount);
+                    return new EETypePtr((IntPtr)_arguments[index]);
+                }
+            }
+        }
+#endif
     }
 }
