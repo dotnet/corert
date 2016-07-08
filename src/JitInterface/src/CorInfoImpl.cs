@@ -2002,6 +2002,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX: id = ReadyToRunHelper.Unbox; break;
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE: id = ReadyToRunHelper.Unbox_Nullable; break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG: id = ReadyToRunHelper.NewMultiDimArr_NonVarArg; break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWFAST: id = ReadyToRunHelper.NewObject; break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL: id = ReadyToRunHelper.LMul; break;
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL_OVF: id = ReadyToRunHelper.LMulOfv; break;
@@ -2124,7 +2125,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.FieldHandle;
                 }
             }
             else
@@ -2145,7 +2146,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle;
+                    pResult.lookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunFixupKind.TypeHandle;
                 }
             }
 
