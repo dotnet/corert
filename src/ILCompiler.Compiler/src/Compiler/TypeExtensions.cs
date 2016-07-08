@@ -72,10 +72,5 @@ namespace ILCompiler
                 !method.Signature.IsStatic &&
                 !method.OwningType.IsValueType;
         }
-
-        public static bool IsSharedInstantiationType(this TypeDesc type)
-        {
-            return type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsRuntimeDeterminedSubtype;
-        }
     }
 }

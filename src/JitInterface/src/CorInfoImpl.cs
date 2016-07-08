@@ -937,7 +937,7 @@ namespace Internal.JitInterface
                 //    result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
             }
 
-            if (type.IsSharedInstantiationType())
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (type.HasVariance)
@@ -1125,7 +1125,7 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
             // If this is not a shared type, we should be using the ready to run helper.
-            Debug.Assert(type.IsSharedInstantiationType());
+            Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
             return CorInfoHelpFunc.CORINFO_HELP_NEWFAST;
         }
@@ -1135,7 +1135,7 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(arrayCls);
 
             Debug.Assert(type.IsSzArray);
-            Debug.Assert(type.IsSharedInstantiationType());
+            Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
             // TODO
             return CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST;
@@ -1185,7 +1185,7 @@ namespace Internal.JitInterface
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
                         Debug.Assert(type.IsDefType);
-                        if (type.IsSharedInstantiationType())
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
@@ -1195,7 +1195,7 @@ namespace Internal.JitInterface
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
                         Debug.Assert(type.IsSzArray);
-                        if (type.IsSharedInstantiationType())
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
@@ -1204,7 +1204,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsSharedInstantiationType())
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
@@ -1213,7 +1213,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsSharedInstantiationType())
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
@@ -1222,7 +1222,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
                     {
                         var type = HandleToObject(pResolvedToken.hClass);
-                        if (type.IsSharedInstantiationType())
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false; // Requires runtime lookup.
 
                         pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.GetNonGCStaticBase, type));
@@ -2116,7 +2116,7 @@ namespace Internal.JitInterface
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hField;
 
-                runtimeLookup = fd.IsStatic && td.IsSharedInstantiationType();
+                runtimeLookup = fd.IsStatic && td.IsCanonicalSubtype(CanonicalFormKind.Any);
                 
                 if (!runtimeLookup)
                 {
@@ -2135,7 +2135,7 @@ namespace Internal.JitInterface
                 pResult.handleType = CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS;
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)pResolvedToken.hClass;
 
-                runtimeLookup = td.IsSharedInstantiationType();
+                runtimeLookup = td.IsCanonicalSubtype(CanonicalFormKind.Any);
 
                 if (!runtimeLookup)
                 {
