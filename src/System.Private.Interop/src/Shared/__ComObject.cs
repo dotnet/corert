@@ -1214,6 +1214,12 @@ namespace System
 
             try
             {
+                if (InteropEventProvider.IsEnabled())
+                    InteropEventProvider.Log.TaskRCWQueryInterface(
+                        (long)InteropExtensions.GetObjectID(this), (long)ContextCookie.pCookie,
+                        intfGuid,
+                        interfaceType.GetRawValue().ToInt64());
+
                 if (pComPtr == default(IntPtr))
                 {
                     if (InteropEventProvider.IsEnabled())

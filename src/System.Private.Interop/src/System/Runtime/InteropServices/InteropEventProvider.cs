@@ -62,6 +62,8 @@ namespace System.Runtime.InteropServices
         private const int TASKRCWREFCOUNTDEC_ID = 13;
         /// <summary>The query interface failure. Details at TaskRCWQueryInterfaceFailure.</summary>
         private const int TASKRCWQUERYINTERFACEFAILURE_ID = 14;
+        /// <summary>The query interface. Details at TaskRCWQueryInterface.</summary>
+        private const int TASKRCWQUERYINTERFACE_ID = 15;
         #endregion TaskID
         #region TaskRCWCreation
         /// <summary>
@@ -225,6 +227,41 @@ namespace System.Runtime.InteropServices
             }
         }
         #endregion TaskRCWQueryInterfaceFailure
+        #region TaskRCWQueryInterface
+        /// <summary>
+        /// Fired when a RCW Interface address is queried for the first time
+        /// </summary>
+        /// <scenarios>
+        /// </scenarios>
+        /// <param name="objectID">Base address that unique identify the RCW.</param>
+        /// <param name="context">RCW context.</param>
+        /// <param name="interfaceIId">Queried interface IID.</param>
+        /// <param name="typeRawValue">Raw value of the type.</param>
+        /// <remarks>Not used</remarks>
+        [Event(TASKRCWQUERYINTERFACE_ID, Message = "RCW Queried Interface for the first time", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
+        public void TaskRCWQueryInterface(long objectID, long context, Guid interfaceIId, long typeRawValue)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.Interop))
+            {
+                unsafe
+                {
+                    EventData* eventPayload = stackalloc EventData[4];
+
+                    eventPayload[0].Size = sizeof(long);
+                    eventPayload[0].DataPointer = ((IntPtr)(&objectID));
+                    eventPayload[1].Size = sizeof(long);
+                    eventPayload[1].DataPointer = ((IntPtr)(&context));
+                    eventPayload[2].Size = sizeof(Guid);
+                    eventPayload[2].DataPointer = ((IntPtr)(&interfaceIId));
+                    eventPayload[3].Size = sizeof(long);
+                    eventPayload[3].DataPointer = ((IntPtr)(&typeRawValue));
+
+                    WriteEventCore(TASKRCWQUERYINTERFACE_ID, 4, eventPayload);
+                }
+            }
+        }
+        #endregion TaskRCWQueryInterface
+
         #endregion RCWProvider
 
         #region CCWProvider
@@ -241,6 +278,8 @@ namespace System.Runtime.InteropServices
         private const int TASKCCWQUERYRUNTIMECLASSNAME_ID = 24;
         /// <summary>An interface was queried whit error. Details at TaskCCWQueryInterfaceFailure.</summary>
         private const int TASKCCWQUERYINTERFACEFAILURE_ID = 30;
+        /// <summary>An interface was queried for the first time. Details at TaskCCWQueryInterface.</summary>
+        private const int TASKCCWQUERYINTERFACE_ID = 31;
         /// <summary>Resolve was queried with error. Details at TaskCCWResolveFailure.</summary>
         private const int TASKCCWRESOLVEFAILURE_ID = 33;
         #endregion TaskID
@@ -254,9 +293,9 @@ namespace System.Runtime.InteropServices
         /// </scenarios>
         /// <param name="objectID">Base address that unique identify the CCW.</param>
         /// <param name="targetObjectID">Base address that unique identify the target object in CCW.</param>
-        /// <param name="targetObjectIDType">Raw value for the type of the target Object.</param>
+        /// <param name="typeRawValue">Raw value for the type of the target Object.</param>
         [Event(TASKCCWCREATION_ID, Message = "New CCW created", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
-        public void TaskCCWCreation(long objectID, long targetObjectID, long targetObjectIDType)
+        public void TaskCCWCreation(long objectID, long targetObjectID, long typeRawValue)
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.Interop))
             {
@@ -269,7 +308,7 @@ namespace System.Runtime.InteropServices
                     eventPayload[1].Size = sizeof(long);
                     eventPayload[1].DataPointer = ((IntPtr)(&targetObjectID));
                     eventPayload[2].Size = sizeof(long);
-                    eventPayload[2].DataPointer = ((IntPtr)(&targetObjectIDType));
+                    eventPayload[2].DataPointer = ((IntPtr)(&typeRawValue));
 
                     WriteEventCore(TASKCCWCREATION_ID, 3, eventPayload);
                 }
@@ -420,6 +459,31 @@ namespace System.Runtime.InteropServices
             }
         }
         #endregion TaskCCWQueryInterfaceFailure
+        #region TaskCCWQueryInterface
+        /// <summary>
+        /// Fired when a CCW Interface address is queried for the first time
+        /// </summary>
+        /// <param name="objectID">Base address that unique identify the CCW.</param>
+        /// <param name="typeRawValue">Raw value of the type.</param>
+        [Event(TASKCCWQUERYINTERFACE_ID, Message = "CCW first queried interface", Level = EventLevel.Verbose, Keywords = Keywords.Interop)]
+        public void TaskCCWQueryInterface(long objectID, long typeRawValue)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.Interop))
+            {
+                unsafe
+                {
+                    EventData* eventPayload = stackalloc EventData[2];
+
+                    eventPayload[0].Size = sizeof(long);
+                    eventPayload[0].DataPointer = ((IntPtr)(&objectID));
+                    eventPayload[1].Size = sizeof(long);
+                    eventPayload[1].DataPointer = ((IntPtr)(&typeRawValue));
+
+                    WriteEventCore(TASKCCWQUERYINTERFACE_ID, 2, eventPayload);
+                }
+            }
+        }
+        #endregion TaskCCWQueryInterface
         #region TaskCCWResolveFailure
         /// <summary>
         /// Fired when a CCW interface resolve is queried and for any reason it was rejected.

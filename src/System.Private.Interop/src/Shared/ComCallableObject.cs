@@ -116,6 +116,9 @@ namespace System.Runtime.InteropServices
 #endif
             }
 
+            if (InteropEventProvider.IsEnabled())
+                InteropEventProvider.Log.TaskCCWQueryInterface((long)managedCCW.NativeCCW, typeHandle.GetRawValue().ToInt64());
+
             pCcw->m_pVtable = vt.ToPointer();
             pCcw->m_pNativeCCW = managedCCW.NativeCCW;
             pCcw->m_interfaceType = typeHandle;
