@@ -93,5 +93,13 @@ namespace Internal.IL
         /// Gets a list of exception regions this method body defines.
         /// </summary>
         public abstract ILExceptionRegion[] GetExceptionRegions();
+
+        /// <summary>
+        /// Gets the open (uninstantiated) version of the <see cref="MethodIL"/>.
+        /// </summary>
+        public virtual MethodIL GetMethodILDefinition()
+        {
+            return this;
+        }
     }
 }
