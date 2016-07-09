@@ -84,6 +84,10 @@ namespace Internal.TypeSystem
                     kind = CanonicalFormKind.Universal;
                     return context.UniversalCanonType;
                 }
+                else if (typeToConvert.IsSignatureVariable)
+                {
+                    return typeToConvert;
+                }
                 else if (typeToConvert.IsDefType)
                 {
                     if (!typeToConvert.IsValueType)
