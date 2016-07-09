@@ -29,14 +29,13 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
         private Object _keepAlive; // Keeps delegates for the callbacks alive
 
+        private JitHost _host;
+
         [DllImport("clrjit")]
         private extern static IntPtr jitStartup(IntPtr host);
 
         [DllImport("clrjit")]
         private extern static IntPtr getJit();
-
-        [DllImport("jitinterface")]
-        private extern static IntPtr GetJitHost();
 
         //
         // Per-method initialization and state
@@ -83,7 +82,9 @@ namespace Internal.JitInterface
             //
             _compilation = compilation;
 
-            jitStartup(GetJitHost());
+            _host = new JitHost();
+
+            jitStartup(_host.UnmanagedInstance);
 
             _jit = getJit();
             if (_jit == IntPtr.Zero)
