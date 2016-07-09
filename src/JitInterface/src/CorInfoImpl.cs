@@ -110,6 +110,8 @@ namespace Internal.JitInterface
 
         private MethodCodeNode _methodCodeNode;
 
+        private MethodIL _runtimeDeterminedMethodIL; // MethodIL for the RuntimeDetermined version of the method
+
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
@@ -122,6 +124,18 @@ namespace Internal.JitInterface
                 MethodIL methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
                 _methodScope = methodInfo.scope;
+
+                if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    MethodDesc runtimeDeterminedMethod = MethodBeingCompiled.GetSharedRuntimeFormMethodTarget();
+                    _runtimeDeterminedMethodIL = new InstantiatedMethodIL(
+                        runtimeDeterminedMethod,
+                        methodIL.GetMethodILDefinition());
+                }
+                else
+                {
+                    _runtimeDeterminedMethodIL = null;
+                }
 
                 try
                 {
@@ -234,6 +248,9 @@ namespace Internal.JitInterface
 
                             var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
+
+                            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any), "TODO: Catch with T");
+
                             var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
 
                             RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
@@ -1547,7 +1564,10 @@ namespace Internal.JitInterface
 
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
-                        pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                        if (!field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                            pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType));
+                        else
+                            pResult.fieldLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
                         pResult.fieldLookup.accessType = InfoAccessType.IAT_VALUE;
                     }
                 }
@@ -2378,8 +2398,13 @@ namespace Internal.JitInterface
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
+                if (!targetMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    pResult.codePointerOrStubLookup.constLookup.addr =
+                        (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
+                }
+                else
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
                 // TODO: Optimize this
@@ -2396,8 +2421,11 @@ namespace Internal.JitInterface
 
                 var readyToRunHelper = targetMethod.OwningType.IsInterface ? ReadyToRunHelperId.InterfaceDispatch : ReadyToRunHelperId.VirtualCall;
 
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(readyToRunHelper, targetMethod));
+                if (!targetMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                    pResult.codePointerOrStubLookup.constLookup.addr =
+                        (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunHelper(readyToRunHelper, targetMethod));
+                else
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
 
                 // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
                 // TODO: Optimize this
