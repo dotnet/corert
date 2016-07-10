@@ -68,9 +68,9 @@ namespace Internal.JitInterface
             Marshal.FreeCoTaskMem(block);
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Unicode)]
-        delegate int __getIntConfigValue(IntPtr _this, string name, int defaultValue);
-        private int getIntConfigValue(IntPtr _this, string name, int defaultValue)
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        delegate int __getIntConfigValue(IntPtr _this, IntPtr name, int defaultValue);
+        private int getIntConfigValue(IntPtr _this, IntPtr name, int defaultValue)
         {
             return defaultValue;
         }
@@ -83,9 +83,9 @@ namespace Internal.JitInterface
             return resultHandle;
         }
 
-        [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Unicode)]
-        delegate IntPtr __getStringConfigValue(IntPtr _this, string name);
-        private IntPtr getStringConfigValue(IntPtr _this, string name)
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        delegate IntPtr __getStringConfigValue(IntPtr _this, IntPtr name);
+        private IntPtr getStringConfigValue(IntPtr _this, IntPtr name)
         {
             // Use GetPinnedStringHandle to pin the result string.
             return IntPtr.Zero;
