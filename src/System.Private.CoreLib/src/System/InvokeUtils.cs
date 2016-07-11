@@ -236,6 +236,10 @@ namespace System
         private const int DefaultParamTypeDecimal = 11;
         private const int DefaultParamTypeDateTime = 12;
         private const int DefaultParamTypeNoneButOptional = 13;
+        private const int DefaultParamTypeUI1 = 14;
+        private const int DefaultParamTypeUI2 = 15;
+        private const int DefaultParamTypeUI4 = 16;
+        private const int DefaultParamTypeUI8 = 17;
 
         private struct StringDataParser
         {
@@ -258,6 +262,12 @@ namespace System
 
                 char curVal = _str[_offset++];
 
+                // Special encoding for MinInt is 0x0001 (which would normally mean -0).
+                if (curVal == 0x0001)
+                {
+                    return Int64.MinValue;
+                }
+
                 // High bit is used to indicate an extended value
                 // Low bit is sign bit
                 // The middle 14 bits are used to hold 14 bits of the actual long value.
@@ -265,10 +275,6 @@ namespace System
                 returnValue = (long)(curVal & (char)0x7FFE);
                 returnValue = returnValue >> 1;
                 bool isNegative = ((curVal & (char)1)) == 1;
-                if ((returnValue == 0) && isNegative)
-                {
-                    return Int64.MinValue;
-                }
                 int additionalCharCount = 0;
                 int bitsAcquired = 14;
                 // For additional characters, the first 3 additional characters hold 15 bits of data
@@ -396,12 +402,20 @@ namespace System
                     return (char)dataParser.GetInt();
                 case DefaultParamTypeI1:
                     return (sbyte)dataParser.GetInt();
+                case DefaultParamTypeUI1:
+                    return (byte)dataParser.GetInt();
                 case DefaultParamTypeI2:
                     return (short)dataParser.GetInt();
+                case DefaultParamTypeUI2:
+                    return (ushort)dataParser.GetInt();
                 case DefaultParamTypeI4:
                     return dataParser.GetInt();
+                case DefaultParamTypeUI4:
+                    return checked((uint)dataParser.GetLong());
                 case DefaultParamTypeI8:
                     return dataParser.GetLong();
+                case DefaultParamTypeUI8:
+                    return (ulong)dataParser.GetLong();
                 case DefaultParamTypeR4:
                     return dataParser.GetFloat();
                 case DefaultParamTypeR8:
