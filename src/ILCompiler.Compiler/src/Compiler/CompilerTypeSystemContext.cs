@@ -322,7 +322,7 @@ namespace ILCompiler
             return _metadataStringDecoder;
         }
 
-        public override bool ComputeHasGCStaticsBase(FieldDesc field)
+        protected override bool ComputeHasGCStaticBase(FieldDesc field)
         {
             Debug.Assert(field.IsStatic);
 
@@ -331,7 +331,6 @@ namespace ILCompiler
                 return ((DefType)fieldType).ContainsGCPointers;
             else
                 return fieldType.IsGCPointer;
-
         }
 
         //

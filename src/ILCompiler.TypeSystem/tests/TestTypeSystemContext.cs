@@ -109,7 +109,7 @@ namespace TypeSystemTests
                 return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref kind);
         }
 
-        public override bool ComputeHasGCStaticsBase(FieldDesc field)
+        protected override bool ComputeHasGCStaticBase(FieldDesc field)
         {
             Debug.Assert(field.IsStatic);
 

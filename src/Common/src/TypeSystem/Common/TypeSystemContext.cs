@@ -690,7 +690,7 @@ namespace Internal.TypeSystem
 
         // Abstraction to allow different runtimes to have different policy about which fields are 
         // in the GC static region, and which are not
-        public virtual bool ComputeHasGCStaticsBase(FieldDesc field)
+        protected internal virtual bool ComputeHasGCStaticBase(FieldDesc field)
         {
             // Type system contexts that support this need to override this.
             throw new NotSupportedException();

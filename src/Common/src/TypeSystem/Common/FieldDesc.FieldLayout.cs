@@ -44,7 +44,7 @@ namespace Internal.TypeSystem
             {
                 Debug.Assert(IsStatic);
 
-                return Context.ComputeHasGCStaticsBase(this);
+                return Context.ComputeHasGCStaticBase(this);
             }
         }
 
