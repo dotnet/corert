@@ -322,6 +322,18 @@ namespace ILCompiler
             return _metadataStringDecoder;
         }
 
+        public override bool ComputeHasGCStaticsBase(FieldDesc field)
+        {
+            Debug.Assert(field.IsStatic);
+
+            TypeDesc fieldType = field.FieldType;
+            if (fieldType.IsValueType)
+                return ((DefType)fieldType).ContainsGCPointers;
+            else
+                return fieldType.IsGCPointer;
+
+        }
+
         //
         // Symbols
         //
