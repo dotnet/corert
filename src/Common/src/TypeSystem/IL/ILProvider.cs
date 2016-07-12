@@ -62,7 +62,7 @@ namespace Internal.IL
                 return InterlockedIntrinsic.EmitIL(method);
             }
             else
-            if (methodName == "EETypePtrOf" && owningType.Name == "EETypePtr" && owningType.Namespace == "System")
+            if ((methodName == "EETypePtrOf" || methodName == "ConstructedEETypePtrOf") && owningType.Name == "EETypePtr" && owningType.Namespace == "System")
             {
                 return EETypePtrOfIntrinsic.EmitIL(method);
             }

@@ -71,6 +71,11 @@ namespace ILCompiler
 
         public void AddWellKnownTypes()
         {
+            // NOTE: this method is going away once RyuJit can generate proper code for EETypePtr.ConstructedEETypePtr.
+            //       https://github.com/dotnet/corert/issues/1314
+            //       DO NOT ADD NEW CODE TO THIS METHOD. There should be no such thing as "well known always rooted types".
+            //       Everything should fall out from the dependency graph.
+
             var stringType = _typeSystemContext.GetWellKnownType(WellKnownType.String);
 
             if (ContainsType(stringType))
