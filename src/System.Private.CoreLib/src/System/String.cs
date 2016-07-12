@@ -84,7 +84,7 @@ namespace System
     [ComVisible(true)]
     [StructLayout(LayoutKind.Sequential)]
     [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-    public sealed class String : IComparable, IEnumerable, IEnumerable<char>, IComparable<String>, IEquatable<String>, IConvertible
+    public sealed class String : IComparable, IEnumerable, IEnumerable<char>, IComparable<String>, IEquatable<String>, IConvertible, ICloneable
     {
 #if BIT64
         private const int POINTER_SIZE = 8;
@@ -328,6 +328,11 @@ namespace System
                 return String.Empty;
             else
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
+        }
+
+        public object Clone()
+        {
+            return this;
         }
 
         private const int TrimHead = 0;

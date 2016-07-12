@@ -18,7 +18,7 @@ namespace System
     // sequential layout directive so that Bartok matches it.
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
-    public abstract class Delegate
+    public abstract class Delegate : ICloneable
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
         // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
@@ -673,6 +673,11 @@ namespace System
                 // Closed instance delegates place a value in m_firstParameter, and we've ruled out all other types of delegates
                 return m_firstParameter;
             }
+        }
+
+        public virtual object Clone()
+        {
+            return MemberwiseClone();
         }
 
         internal bool IsOpenStatic

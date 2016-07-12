@@ -15,7 +15,7 @@ namespace System
     // specified component.
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public sealed class Version : IComparable, IComparable<Version>, IEquatable<Version>
+    public sealed class Version : IComparable, IComparable<Version>, IEquatable<Version>, ICloneable
     {
         // AssemblyName depends on the order staying the same
         private int _Major;
@@ -82,6 +82,11 @@ namespace System
             _Minor = v.Minor;
             _Build = v.Build;
             _Revision = v.Revision;
+        }
+
+        public object Clone()
+        {
+            return new Version(_Major, _Minor, _Build, _Revision);
         }
 
         // Properties for setting and getting version numbers

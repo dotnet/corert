@@ -78,7 +78,7 @@ namespace System.Text
     //
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Encoding // : ICloneable
+    public abstract class Encoding : ICloneable
     {
         private static volatile Encoding s_unicodeEncoding;
         private static volatile Encoding s_bigEndianUnicode;
