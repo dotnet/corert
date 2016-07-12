@@ -209,6 +209,7 @@
     <Compile Include="System\Globalization\FormatProvider.TimeSpanFormat.cs" />
     <Compile Include="System\Globalization\FormatProvider.TimeSpanParse.cs" />
     <Compile Include="System\Globalization\UmAlQuraCalendar.cs" />
+    <Compile Include="System\ICloneable.cs" />
     <Compile Include="System\InvokeUtils.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="System\IO\FileLoadException.cs" />

@@ -15,7 +15,7 @@ using global::Internal.Reflection.Augments;
 
 namespace System.Reflection
 {
-    public sealed class AssemblyName
+    public sealed class AssemblyName : ICloneable
     {
         private String _Name;                  // Name
         private byte[] _PublicKey;
@@ -36,6 +36,18 @@ namespace System.Reflection
             if (assemblyName == null)
                 throw new ArgumentNullException("assemblyName");
             ReflectionAugments.ReflectionCoreCallbacks.InitializeAssemblyName(this, assemblyName);
+        }
+
+        public object Clone()
+        {
+            var n = new AssemblyName();
+            n._Name = _Name;
+            n._PublicKey = (byte[])_PublicKey?.Clone();
+            n._PublicKeyToken = (byte[])_PublicKeyToken?.Clone();
+            n._CultureName = _CultureName;
+            n._Version = (Version)_Version?.Clone();
+            n._Flags = _Flags;
+            return n;
         }
 
         public ProcessorArchitecture ProcessorArchitecture

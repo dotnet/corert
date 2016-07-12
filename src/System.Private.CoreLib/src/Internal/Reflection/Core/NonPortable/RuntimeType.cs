@@ -26,11 +26,16 @@ namespace Internal.Reflection.Core.NonPortable
     //
 
     [DebuggerDisplay("{_debugName}")]
-    public abstract class RuntimeType : ExtensibleType, IEquatable<RuntimeType>
+    public abstract class RuntimeType : ExtensibleType, IEquatable<RuntimeType>, ICloneable
     {
         protected RuntimeType()
             : base()
         {
+        }
+
+        public object Clone()
+        {
+            return this;
         }
 
         //=====================================================================================================================
