@@ -236,7 +236,7 @@ namespace Internal.JitInterface
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
                             var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
 
-                            RelocType rel = (_compilation.Options.TargetOS == TargetOS.Windows) ?
+                            RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
                                 RelocType.IMAGE_REL_BASED_ABSOLUTE :
                                 RelocType.IMAGE_REL_BASED_REL32;
 
@@ -1780,7 +1780,7 @@ namespace Internal.JitInterface
 
             pEEInfoOut.osPageSize = new UIntPtr(0x1000);
 
-            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.Options.TargetOS == TargetOS.Windows) ?
+            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORERT_ABI;

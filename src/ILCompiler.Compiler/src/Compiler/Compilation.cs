@@ -19,17 +19,7 @@ namespace ILCompiler
 {
     public class CompilationOptions
     {
-        public IReadOnlyDictionary<string, string> InputFilePaths;
-        public IReadOnlyDictionary<string, string> ReferenceFilePaths;
-
         public string OutputFilePath;
-
-        public string SystemModuleName;
-
-        public TargetOS TargetOS;
-        public TargetArchitecture TargetArchitecture;
-
-        public bool MultiFile;
 
         public bool IsCppCodeGen;
         public bool NoLineNumbers;
@@ -52,28 +42,16 @@ namespace ILCompiler
         private ILCompiler.CppCodeGen.CppWriter _cppWriter = null;
         private CompilationModuleGroup _compilationModuleGroup;
 
-        public Compilation(CompilationOptions options)
+        public Compilation(CompilationOptions options, CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup)
         {
             _options = options;
-
-            _typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(options.TargetArchitecture, options.TargetOS));
-            _typeSystemContext.InputFilePaths = options.InputFilePaths;
-            _typeSystemContext.ReferenceFilePaths = options.ReferenceFilePaths;
-
-            _typeSystemContext.SetSystemModule(_typeSystemContext.GetModuleForSimpleName(options.SystemModuleName));
 
             _nameMangler = new NameMangler(this);
 
             _typeInitManager = new TypeInitialization();
 
-            if (options.MultiFile)
-            {
-                _compilationModuleGroup = new MultiFileCompilationModuleGroup(_typeSystemContext);
-            }
-            else
-            {
-                _compilationModuleGroup = new SingleFileCompilationModuleGroup(_typeSystemContext);
-            }
+            _typeSystemContext = context;
+            _compilationModuleGroup = compilationGroup;
         }
 
         public CompilerTypeSystemContext TypeSystemContext
