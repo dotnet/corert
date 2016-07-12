@@ -86,6 +86,7 @@
     <Compile Include="Internal\Runtime\Augments\DesktopSupportCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
+    <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
