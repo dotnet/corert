@@ -38,7 +38,7 @@ namespace ILCompiler
         public bool Verbose;
     }
     
-    public partial class Compilation : ICompilationRootProvider
+    public partial class Compilation
     {
         private readonly CompilerTypeSystemContext _typeSystemContext;
         private readonly CompilationOptions _options;
@@ -68,11 +68,11 @@ namespace ILCompiler
 
             if (options.MultiFile)
             {
-                _compilationModuleGroup = new MultiFileCompilationModuleGroup(_typeSystemContext, this);
+                _compilationModuleGroup = new MultiFileCompilationModuleGroup(_typeSystemContext);
             }
             else
             {
-                _compilationModuleGroup = new SingleFileCompilationModuleGroup(_typeSystemContext, this);
+                _compilationModuleGroup = new SingleFileCompilationModuleGroup(_typeSystemContext);
             }
         }
 
@@ -163,19 +163,6 @@ namespace ILCompiler
 
             _nodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            _compilationModuleGroup.AddWellKnownTypes();
-            _compilationModuleGroup.AddCompilationRoots();
-
-            if (!_options.IsCppCodeGen && !_options.MultiFile)
-            {
-                // TODO: build a general purpose way to hook up pieces that would be part of the core library
-                //       if factoring of the core library respected how things are, versus how they would be in
-                //       a magic world (future customers of this mechanism will be interop and serialization).
-                var refExec = _typeSystemContext.GetModuleForSimpleName("System.Private.Reflection.Execution");
-                var exec = refExec.GetKnownType("Internal.Reflection.Execution", "ReflectionExecution");
-                AddCompilationRoot(exec.GetStaticConstructor(), "Reflection execution");
-            }
-
             if (_options.IsCppCodeGen)
             {
                 _cppWriter = new CppCodeGen.CppWriter(this);
@@ -207,25 +194,6 @@ namespace ILCompiler
             }
         }
         
-        #region ICompilationRootProvider implementation
-
-        public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
-        {
-            var methodEntryPoint = _nodeFactory.MethodEntrypoint(method);
-
-            _dependencyGraph.AddRoot(methodEntryPoint, reason);
-
-            if (exportName != null)
-                _nodeFactory.NodeAliases.Add(methodEntryPoint, exportName);
-        }
-
-        public void AddCompilationRoot(TypeDesc type, string reason)
-        {
-            _dependencyGraph.AddRoot(_nodeFactory.ConstructedTypeSymbol(type), reason);
-        }
-        
-        #endregion
-
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
