@@ -420,26 +420,6 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, out sig);
 
-            Instantiation typeInstantiation = method.OwningType.Instantiation;
-            if (typeInstantiation.Length > 0)
-            {
-                var instHandles = new IntPtr[typeInstantiation.Length];
-                for (int i = 0; i < typeInstantiation.Length; i++)
-                    instHandles[i] = (IntPtr)ObjectToHandle(typeInstantiation[i]);
-                sig.sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(instHandles);
-                sig.sigInst.classInstCount = (uint)typeInstantiation.Length;
-            }
-
-            Instantiation methodInstantiation = method.Instantiation;
-            if (methodInstantiation.Length > 0)
-            {
-                var instHandles = new IntPtr[methodInstantiation.Length];
-                for (int i = 0; i < methodInstantiation.Length; i++)
-                    instHandles[i] = (IntPtr)ObjectToHandle(methodInstantiation[i]);
-                sig.sigInst.methInst = (CORINFO_CLASS_STRUCT_**)GetPin(instHandles);
-                sig.sigInst.methInstCount = (uint)methodInstantiation.Length;
-            }
-
             // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
             if (method.RequiresInstArg())
             {
@@ -464,10 +444,10 @@ namespace Internal.JitInterface
 
             sig.args = (CORINFO_ARG_LIST_STRUCT_*)0; // CORINFO_ARG_LIST_STRUCT_ is argument index
 
-            sig.sigInst.classInst = null;
-            sig.sigInst.classInstCount = 0;
-            sig.sigInst.methInst = null;
-            sig.sigInst.methInstCount = 0;
+            sig.sigInst.classInst = (CORINFO_CLASS_STRUCT_**)0xDEADC0DE; // Not used by the JIT
+            sig.sigInst.classInstCount = 0xDEADC0DE; // Not used by the JIT
+            sig.sigInst.methInst = (CORINFO_CLASS_STRUCT_**)0xDEADC0DE; // Not used by the JIT
+            sig.sigInst.methInstCount = (uint)signature.GenericParameterCount;
 
             sig.pSig = (byte*)ObjectToHandle(signature);
             sig.cbSig = 0; // Not used by the JIT
