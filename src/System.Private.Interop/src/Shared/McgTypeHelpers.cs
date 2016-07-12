@@ -643,7 +643,7 @@ namespace System.Runtime.InteropServices
                         // Concat all missing Type Names into one message
                         for (int i = 0; i < missTypeNames.Count; i++)
                         {
-                            msg += String.Format(SR.ComTypeMarshalling_MissingInteropData, missTypeNames[i]);
+                            msg += SR.Format(SR.ComTypeMarshalling_MissingInteropData, missTypeNames[i]);
                             if (i != missTypeNames.Count - 1)
                                 msg += Environment.NewLine;
                         }
@@ -653,7 +653,7 @@ namespace System.Runtime.InteropServices
 
                 // case 3: We can get type name but not McgTypeInfo, maybe another case similar to case 2
                 // definitely is a bug.
-                msg = String.Format(SR.ComTypeMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
+                msg = SR.Format(SR.ComTypeMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
             }
             catch (MissingMetadataException ex)
             {

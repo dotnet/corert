@@ -1264,7 +1264,7 @@ namespace System
             {
                 // If this is a WinRT secenario and the failure is E_NOINTERFACE then display the standard
                 // InvalidCastException as most developers are not interested in IID's or HRESULTS
-                return new InvalidCastException(String.Format(SR.InvalidCast_WinRT, comObjectDisplayName, interfaceDisplayName));
+                return new InvalidCastException(SR.Format(SR.InvalidCast_WinRT, comObjectDisplayName, interfaceDisplayName));
             }
             else
             {
@@ -1279,7 +1279,7 @@ namespace System
                     errorMessage = String.Format("{0} ({1} 0x{2:X})", errorMessage, SR.Excep_FromHResult, hr);
                 }
 
-                return new InvalidCastException(String.Format(
+                return new InvalidCastException(SR.Format(
                     SR.InvalidCast_Com,
                     comObjectDisplayName,
                     interfaceDisplayName,
@@ -1290,7 +1290,7 @@ namespace System
             string errorMessage = String.Format("({0} 0x{1:X})", SR.Excep_FromHResult, hr);
             string interfaceDisplayName = interfaceType.GetDisplayName();
 
-            return new InvalidCastException(String.Format(
+            return new InvalidCastException(SR.Format(
                    SR.InvalidCast_Com,
                    "__ComObject",
                    interfaceDisplayName,
