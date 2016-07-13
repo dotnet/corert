@@ -9,7 +9,7 @@ namespace ILCompiler
     /// <summary>
     /// Provides a means to root types / methods at the compiler driver layer
     /// </summary>
-    public interface ICompilationRootProvider
+    public interface IRootingServiceProvider
     {
         void AddCompilationRoot(MethodDesc method, string reason, string exportName = null);
         void AddCompilationRoot(TypeDesc type, string reason);

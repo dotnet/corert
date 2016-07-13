@@ -57,7 +57,7 @@ namespace ILCompiler
         /// </summary>
         public abstract bool ShouldProduceFullType(TypeDesc type);
 
-        public virtual void AddCompilationRoots(ICompilationRootProvider rootProvider)
+        public virtual void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             foreach (var inputFile in _typeSystemContext.InputFilePaths)
             {
@@ -73,7 +73,7 @@ namespace ILCompiler
             AddReflectionInitializationCode(rootProvider);
         }
 
-        private void AddWellKnownTypes(ICompilationRootProvider rootProvider)
+        private void AddWellKnownTypes(IRootingServiceProvider rootProvider)
         {
             var stringType = _typeSystemContext.GetWellKnownType(WellKnownType.String);
 
@@ -83,7 +83,7 @@ namespace ILCompiler
             }
         }
 
-        private void AddReflectionInitializationCode(ICompilationRootProvider rootProvider)
+        private void AddReflectionInitializationCode(IRootingServiceProvider rootProvider)
         {
             // System.Private.Reflection.Execution needs to establish a communication channel with System.Private.CoreLib
             // at process startup. This is done through an eager constructor that calls into CoreLib and passes it
@@ -109,7 +109,7 @@ namespace ILCompiler
             }
         }
 
-        protected void AddCompilationRootsForExports(EcmaModule module, ICompilationRootProvider rootProvider)
+        protected void AddCompilationRootsForExports(EcmaModule module, IRootingServiceProvider rootProvider)
         {
             foreach (var type in module.GetAllTypes())
             {
@@ -134,7 +134,7 @@ namespace ILCompiler
             }
         }
 
-        private void AddMainMethodCompilationRoot(EcmaModule module, ICompilationRootProvider rootProvider)
+        private void AddMainMethodCompilationRoot(EcmaModule module, IRootingServiceProvider rootProvider)
         {
             if (StartupCodeMain != null)
                 throw new Exception("Multiple entrypoint modules");

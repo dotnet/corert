@@ -56,7 +56,7 @@ namespace ILCompiler
             }
         }
 
-        public override void AddCompilationRoots(ICompilationRootProvider rootProvider)
+        public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             base.AddCompilationRoots(rootProvider);
             
@@ -69,7 +69,7 @@ namespace ILCompiler
             }
         }
 
-        private void AddCompilationRootsForMultifileLibrary(EcmaModule module, ICompilationRootProvider rootProvider)
+        private void AddCompilationRootsForMultifileLibrary(EcmaModule module, IRootingServiceProvider rootProvider)
         {
             foreach (TypeDesc type in module.GetAllTypes())
             {
@@ -136,7 +136,7 @@ namespace ILCompiler
             return false;
         }
 
-        private void RootMethods(TypeDesc type, string reason, ICompilationRootProvider rootProvider)
+        private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
         {
             foreach (MethodDesc method in type.GetMethods())
             {

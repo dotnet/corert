@@ -23,7 +23,7 @@ namespace ILCompiler
             return true;
         }
 
-        public override void AddCompilationRoots(ICompilationRootProvider rootProvider)
+        public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             base.AddCompilationRoots(rootProvider);
 

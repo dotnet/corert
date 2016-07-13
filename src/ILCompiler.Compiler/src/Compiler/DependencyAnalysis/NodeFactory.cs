@@ -620,15 +620,15 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
             MetadataManager.AttachToDependencyGraph(graph);
 
-            _compilationModuleGroup.AddCompilationRoots(new RootProvider(graph, this));
+            _compilationModuleGroup.AddCompilationRoots(new RootingServiceProvider(graph, this));
         }
 
-        private class RootProvider : ICompilationRootProvider
+        private class RootingServiceProvider : IRootingServiceProvider
         {
             private DependencyAnalyzerBase<NodeFactory> _graph;
             private NodeFactory _factory;
 
-            public RootProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
             {
                 _graph = graph;
                 _factory = factory;
