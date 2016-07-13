@@ -71,9 +71,11 @@ namespace ILCompiler.Metadata
                 {
                     record.CustomAttributes = HandleCustomAttributes(ecmaField.Module, customAttributes);
                 }
-            }
 
-            // TODO: Offset
+                int offset = fieldDef.GetOffset();
+                if (offset >= 0)
+                    record.Offset = (uint)offset;
+            }
         }
 
         private MemberReference HandleFieldReference(Cts.FieldDesc field)

@@ -822,6 +822,18 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
+    public partial class MethodInstantiation
+    {
+        public override string ToString()
+        {
+            return Method.ToString()
+                + "(Arguments: "
+                + "<"
+                + String.Join(", ", this.GenericTypeArguments.Select(ga => ga.ToString()))
+                + ">";
+        }
+    }
+
     public partial class ParameterTypeSignature
     {
         public override string ToString()
@@ -902,7 +914,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return Parent.ToString() + "." + Name.Value;
+            return Parent.ToString() + "." + Name.Value + " (Signature: " + Signature.ToString() + ")";
         }
     }
 
@@ -921,6 +933,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             return ToString(" ");
         }
+
         public string ToString(string name)
         {
             return String.Join(" ", new string[] {
