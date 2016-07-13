@@ -8,7 +8,9 @@ using Internal.Runtime;
 using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
+
 using Debug = System.Diagnostics.Debug;
+using GenericVariance = Internal.Runtime.GenericVariance;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,7 +22,8 @@ namespace ILCompiler.DependencyAnalysis
     /// Field Size      | Contents
     /// ----------------+-----------------------------------
     /// UInt16          | Component Size. For arrays this is the element type size, for strings it is 2 (.NET uses 
-    ///                 | UTF16 character encoding), and 0 for all other types.
+    ///                 | UTF16 character encoding), for generic type definitions it is the number of generic parameters,
+    ///                 | and 0 for all other types.
     ///                 |
     /// UInt16          | EETypeKind (Normal, Array, Pointer type). Flags for: IsValueType, IsCrossModule, HasPointers,
     ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum CorElementType to
@@ -348,6 +351,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 objData.EmitShort(2);
             }
+            else if (_type.IsGenericDefinition)
+            {
+                objData.EmitShort((short)_type.Instantiation.Length);
+            }
             else
             {
                 objData.EmitShort(0);
@@ -561,7 +568,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
                 {
                     // Generic array enumerators use special variance rules recognized by the runtime
-                    details = new GenericCompositionDetails(_type.Instantiation, new[] { (GenericVariance)0x20 });
+                    details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
                 }
                 else
                     details = new GenericCompositionDetails(_type);

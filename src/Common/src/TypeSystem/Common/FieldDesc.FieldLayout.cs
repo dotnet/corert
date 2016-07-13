@@ -38,17 +38,13 @@ namespace Internal.TypeSystem
         /// For static fields, represents whether or not the field is held in the GC or non GC statics region
         /// Does not apply to thread static fields.
         /// </summary>
-        public virtual bool HasGCStaticBase
+        public bool HasGCStaticBase
         {
             get
             {
                 Debug.Assert(IsStatic);
 
-                TypeDesc fieldType = FieldType;
-                if (fieldType.IsValueType)
-                    return ((DefType)fieldType).ContainsGCPointers;
-                else
-                    return fieldType.IsGCPointer;
+                return Context.ComputeHasGCStaticBase(this);
             }
         }
 

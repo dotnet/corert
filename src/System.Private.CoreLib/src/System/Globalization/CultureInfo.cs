@@ -39,7 +39,7 @@ using Internal.Runtime.Augments;
 
 namespace System.Globalization
 {
-    public partial class CultureInfo : IFormatProvider
+    public partial class CultureInfo : IFormatProvider, ICloneable
     {
         //--------------------------------------------------------------------//
         //                        Internal Information                        //

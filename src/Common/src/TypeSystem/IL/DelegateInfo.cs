@@ -96,12 +96,14 @@ namespace Internal.IL
         private MethodDesc _openStaticThunk;
         private MethodDesc _multicastThunk;
         private MethodDesc _closedStaticThunk;
+        private MethodDesc _invokeThunk;
 
         internal DelegateThunkCollection(DelegateInfo owningDelegate)
         {
             _openStaticThunk = new DelegateInvokeOpenStaticThunk(owningDelegate);
             _multicastThunk = new DelegateInvokeMulticastThunk(owningDelegate);
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
+            _invokeThunk = new DelegateDynamicInvokeThunk(owningDelegate);
         }
 
         public MethodDesc this[DelegateThunkKind kind]
@@ -116,6 +118,8 @@ namespace Internal.IL
                         return _multicastThunk;
                     case DelegateThunkKind.ClosedStaticThunk:
                         return _closedStaticThunk;
+                    case DelegateThunkKind.DelegateInvokeThunk:
+                        return _invokeThunk;
                     default:
                         return null;
                 }

@@ -366,6 +366,65 @@ namespace Internal.Runtime
             }
         }
 
+#if CORERT
+        internal EEType* GenericDefinition
+        {
+            get
+            {
+                Debug.Assert(IsGeneric);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericDefinition);
+                fixed (EEType* pThis = &this)
+                {
+                    return *(EEType**)((byte*)pThis + cbOffset);
+                }
+            }
+        }
+
+        internal uint GenericArity
+        {
+            get
+            {
+                Debug.Assert(IsGeneric);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
+                fixed (EEType* pThis = &this)
+                {
+                    // Number of generic arguments is the first DWORD of the composition stream.
+                    return **(UInt32**)((byte*)pThis + cbOffset);
+                }
+            }
+        }
+
+        internal EEType** GenericArguments
+        {
+            get
+            {
+                Debug.Assert(IsGeneric);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
+                fixed (EEType* pThis = &this)
+                {
+                    // Generic arguments follow after a (padded) DWORD specifying their count
+                    // in the generic composition stream.
+                    return ((*(EEType***)((byte*)pThis + cbOffset)) + 1);
+                }
+            }
+        }
+
+        internal GenericVariance* GenericVariance
+        {
+            get
+            {
+                Debug.Assert(IsGeneric);
+                Debug.Assert(HasGenericVariance);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
+                fixed (EEType* pThis = &this)
+                {
+                    // Variance info follows immediatelly after the generic arguments
+                    return (GenericVariance*)(GenericArguments + GenericArity);
+                }
+            }
+        }
+#endif // CORERT
+
         internal bool IsPointerType
         {
             get
@@ -1055,6 +1114,24 @@ namespace Internal.Runtime
             }
             if ((RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
+
+#if CORERT
+            if (eField == EETypeField.ETF_GenericDefinition)
+            {
+                Debug.Assert(IsGeneric);
+                return cbOffset;
+            }
+            if (IsGeneric)
+                cbOffset += (UInt32)IntPtr.Size;
+
+            if (eField == EETypeField.ETF_GenericComposition)
+            {
+                Debug.Assert(IsGeneric);
+                return cbOffset;
+            }
+            if (IsGeneric)
+                cbOffset += (UInt32)IntPtr.Size;
+#endif
 
             if (eField == EETypeField.ETF_DynamicTemplateType)
             {

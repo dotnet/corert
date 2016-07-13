@@ -385,7 +385,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
 
-        public ISymbolNode GenericComposition(GenericCompositionDetails details)
+        internal ISymbolNode GenericComposition(GenericCompositionDetails details)
         {
             return _genericCompositions.GetOrAdd(details);
         }

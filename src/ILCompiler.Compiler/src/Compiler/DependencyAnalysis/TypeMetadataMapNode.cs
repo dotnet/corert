@@ -79,13 +79,13 @@ namespace ILCompiler.DependencyAnalysis
                 if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
                     continue;
 
+                // We are looking for any EEType - constructed or not, it has to be in the mapping
+                // table so that we can map it to metadata.
                 var node = factory.ConstructedTypeSymbol(mappingEntry.Entity) as EETypeNode;
                 if (!node.Marked)
                 {
-                    // Generic type definition EETypes are never constructed, but need to be
-                    // present in the mapping table.
-                    if (mappingEntry.Entity.IsGenericDefinition)
-                        node = factory.NecessaryTypeSymbol(mappingEntry.Entity) as EETypeNode;
+                    // This might have been a typeof() expression.
+                    node = factory.NecessaryTypeSymbol(mappingEntry.Entity) as EETypeNode;
                 }
 
                 if (node.Marked)

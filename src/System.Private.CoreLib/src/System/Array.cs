@@ -24,7 +24,7 @@ namespace System
 {
     // Note that we make a T[] (single-dimensional w/ zero as the lower bound) implement both 
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
-    public abstract class Array : ICollection, IEnumerable, IList, IStructuralComparable, IStructuralEquatable
+    public abstract class Array : ICollection, IEnumerable, IList, IStructuralComparable, IStructuralEquatable, ICloneable
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
         // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
@@ -2668,7 +2668,7 @@ namespace System
             }
         }
 
-        private sealed class SZArrayEnumerator : IEnumerator
+        private sealed class SZArrayEnumerator : IEnumerator, ICloneable
         {
             private Array _array;
             private int _index;
@@ -2704,6 +2704,11 @@ namespace System
             public void Reset()
             {
                 _index = -1;
+            }
+
+            public object Clone()
+            {
+                return MemberwiseClone();
             }
         }
     }
@@ -2861,7 +2866,7 @@ namespace System
             throw new NotSupportedException();
         }
 
-        private sealed class ArrayEnumerator : ArrayEnumeratorBase, IEnumerator<T>
+        private sealed class ArrayEnumerator : ArrayEnumeratorBase, IEnumerator<T>, ICloneable
         {
             private T[] _array;
 
@@ -2895,6 +2900,11 @@ namespace System
             void IEnumerator.Reset()
             {
                 _index = -1;
+            }
+
+            public object Clone()
+            {
+                return MemberwiseClone();
             }
         }
     }

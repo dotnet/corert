@@ -78,7 +78,7 @@ namespace System.Text
     //
 
     [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Encoding // : ICloneable
+    public abstract class Encoding : ICloneable
     {
         private static volatile Encoding s_unicodeEncoding;
         private static volatile Encoding s_bigEndianUnicode;
@@ -465,7 +465,7 @@ namespace System.Text
                             SR.Format(SR.MissingEncodingNameResource, this.CodePage));
                     }
 
-                    if (_encodingName.StartsWith("Globalization_cp_"))
+                    if (_encodingName.StartsWith("Globalization_cp_", StringComparison.Ordinal))
                     {
                         // On ProjectN, resource strings are stripped from retail builds and replaced by
                         // their identifier names. Since this property is meant to be a localized string,
