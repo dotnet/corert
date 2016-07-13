@@ -8,9 +8,9 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    class SingleFileCompilationModuleGroup : CompilationModuleGroup
+    public class SingleFileCompilationModuleGroup : CompilationModuleGroup
     {
-        public SingleFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext, ICompilationRootProvider rootProvider) : base(typeSystemContext, rootProvider)
+        public SingleFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext) : base(typeSystemContext)
         { }
 
         public override bool ContainsType(TypeDesc type)
@@ -23,11 +23,11 @@ namespace ILCompiler
             return true;
         }
 
-        public override void AddCompilationRoots()
+        public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            base.AddCompilationRoots();
+            base.AddCompilationRoots(rootProvider);
 
-            AddCompilationRootsForExports((EcmaModule)_typeSystemContext.SystemModule);
+            AddCompilationRootsForExports((EcmaModule)_typeSystemContext.SystemModule, rootProvider);
         }
 
         public override bool IsSingleFileCompilation

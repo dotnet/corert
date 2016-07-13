@@ -22,6 +22,11 @@ namespace ILCompiler
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        private TargetArchitecture _targetArchitecture;
+        private TargetOS _targetOS;
+        private string _systemModuleName = "System.Private.CoreLib";
+        private bool _multiFile;
+
         private bool _help;
 
         private Program()
@@ -43,43 +48,38 @@ namespace ILCompiler
         {
             _options = new CompilationOptions();
 
-            _options.InputFilePaths = _inputFilePaths;
-            _options.ReferenceFilePaths = _referenceFilePaths;
-
-            _options.SystemModuleName = "System.Private.CoreLib";
-
 #if FXCORE
             // We could offer this as a command line option, but then we also need to
             // load a different RyuJIT, so this is a future nice to have...
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                _options.TargetOS = TargetOS.Windows;
+                _targetOS = TargetOS.Windows;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                _options.TargetOS = TargetOS.Linux;
+                _targetOS = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                _options.TargetOS = TargetOS.OSX;
+                _targetOS = TargetOS.OSX;
             else
                 throw new NotImplementedException();
 
             switch (RuntimeInformation.ProcessArchitecture)
             {
             case Architecture.X86:
-                _options.TargetArchitecture = TargetArchitecture.X86;
+                _targetArchitecture = TargetArchitecture.X86;
                 break;
             case Architecture.X64:
-                _options.TargetArchitecture = TargetArchitecture.X64;
+                _targetArchitecture = TargetArchitecture.X64;
                 break;
             case Architecture.Arm:
-                _options.TargetArchitecture = TargetArchitecture.ARM;
+                _targetArchitecture = TargetArchitecture.ARM;
                 break;
             case Architecture.Arm64:
-                _options.TargetArchitecture = TargetArchitecture.ARM64;
+                _targetArchitecture = TargetArchitecture.ARM64;
                 break;
             default:
                 throw new NotImplementedException();
             }
 #else
-            _options.TargetOS = TargetOS.Windows;
-            _options.TargetArchitecture = TargetArchitecture.X64;
+            _targetOS = TargetOS.Windows;
+            _targetArchitecture = TargetArchitecture.X64;
 #endif
         }
 
@@ -105,8 +105,8 @@ namespace ILCompiler
                 syntax.DefineOption("dgmllog", ref _options.DgmlLog, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _options.FullLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("verbose", ref _options.Verbose, "Enable verbose logging");
-                syntax.DefineOption("systemmodule", ref _options.SystemModuleName, "System module name (default: System.Private.CoreLib)");
-                syntax.DefineOption("multifile", ref _options.MultiFile, "Compile only input files (do not compile referenced assemblies)");
+                syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
+                syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
             foreach (var input in inputFiles)
@@ -129,13 +129,41 @@ namespace ILCompiler
                 return 1;
             }
 
-            if (_options.InputFilePaths.Count == 0)
+            if (_inputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
 
             if (_options.OutputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
-            Compilation compilation = new Compilation(_options);
+            //
+            // Initialize type system context
+            //
+
+            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS));
+            typeSystemContext.InputFilePaths = _inputFilePaths;
+            typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
+
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
+
+            //
+            // Initialize compilation group
+            //
+
+            CompilationModuleGroup compilationGroup;
+            if (_multiFile)
+            {
+                compilationGroup = new MultiFileCompilationModuleGroup(typeSystemContext);
+            }
+            else
+            {
+                compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
+            }
+
+            //
+            // Compile
+            //
+
+            Compilation compilation = new Compilation(_options, typeSystemContext, compilationGroup);
             compilation.Log = _options.Verbose ? Console.Out : TextWriter.Null;
             compilation.Compile();
 

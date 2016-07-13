@@ -384,6 +384,20 @@ namespace ILCompiler.CppCodeGen
             if (methodIL == null)
                 return;
 
+            // TODO: Remove this code once CppCodegen is able to generate code for the reflection startup path.
+            //       The startup path runs before any user code is executed.
+            //       For now we replace the startup path with a simple "ret". Reflection won't work, but
+            //       programs not using reflection will.
+            if (method.Name == ".cctor")
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null &&
+                    owningType.Name == "ReflectionExecution" && owningType.Namespace == "Internal.Reflection.Execution")
+                {
+                    methodIL = new Internal.IL.Stubs.ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                }
+            }
+
             try
             {
                 var ilImporter = new ILImporter(_compilation, this, method, methodIL);
