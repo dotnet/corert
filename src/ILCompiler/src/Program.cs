@@ -27,6 +27,10 @@ namespace ILCompiler
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
 
+        private string _singleMethodTypeName;
+        private string _singleMethodName;
+        private IReadOnlyList<string> _singleMethodGenericArgs;
+
         private bool _help;
 
         private Program()
@@ -107,6 +111,11 @@ namespace ILCompiler
                 syntax.DefineOption("verbose", ref _options.Verbose, "Enable verbose logging");
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
+
+                syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
+                syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
+                syntax.DefineOptionList("singlemethodgenericarg", ref _singleMethodGenericArgs, "Single method compilation: generic arguments to the method");
+
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
             foreach (var input in inputFiles)
@@ -149,8 +158,15 @@ namespace ILCompiler
             // Initialize compilation group
             //
 
+            // Single method mode?
+            MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
+
             CompilationModuleGroup compilationGroup;
-            if (_multiFile)
+            if (singleMethod != null)
+            {
+                compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, singleMethod);
+            }
+            else if (_multiFile)
             {
                 compilationGroup = new MultiFileCompilationModuleGroup(typeSystemContext);
             }
@@ -168,6 +184,48 @@ namespace ILCompiler
             compilation.Compile();
 
             return 0;
+        }
+
+        private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
+        {
+            TypeDesc foundType = context.SystemModule.GetTypeByCustomAttributeTypeName(typeName);
+            if (foundType == null)
+                throw new CommandLineException($"Type '{typeName}' not found");
+
+            return foundType;
+        }
+
+        private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
+        {
+            if (_singleMethodName == null && _singleMethodTypeName == null && _singleMethodGenericArgs == null)
+                return null;
+
+            if (_singleMethodName == null || _singleMethodTypeName == null)
+                throw new CommandLineException("Both method name and type name are required parameters for single method mode");
+
+            TypeDesc owningType = FindType(context, _singleMethodTypeName);
+
+            // TODO: allow specifying signature to distinguish overloads
+            MethodDesc method = owningType.GetMethod(_singleMethodName, null);
+            if (method == null)
+                throw new CommandLineException($"Method '{_singleMethodName}' not found in '{_singleMethodTypeName}'");
+
+            if (method.HasInstantiation != (_singleMethodGenericArgs != null) ||
+                (method.HasInstantiation && (method.Instantiation.Length != _singleMethodGenericArgs.Count)))
+            {
+                throw new CommandLineException(
+                    $"Expected {method.Instantiation.Length} generic arguments for method '{_singleMethodName}' on type '{_singleMethodTypeName}'");
+            }
+
+            if (method.HasInstantiation)
+            {
+                List<TypeDesc> genericArguments = new List<TypeDesc>();
+                foreach (var argString in _singleMethodGenericArgs)
+                    genericArguments.Add(FindType(context, argString));
+                method = method.MakeInstantiatedMethod(genericArguments.ToArray());
+            }
+
+            return method;
         }
 
         private static int Main(string[] args)
