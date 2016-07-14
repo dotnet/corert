@@ -15,7 +15,6 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace System.Runtime.InteropServices
 {
-#if ENABLE_WINRT
     // Shared CCW Design (fyuan, 6/26/2013)
 
     // Normal CCW is implemented by constructing a native virtual function table with specific functions for each interface using MCG generated code.
@@ -320,6 +319,7 @@ namespace System.Runtime.InteropServices
         }
     }
 
+#if ENABLE_MIN_WINRT
 
     /// <summary>
     /// Shared CCW for IVector<T> over IList<T> where T is a reference type marshalled to COM interface
@@ -1409,6 +1409,7 @@ namespace System.Runtime.InteropServices
         };
     }
 
+
     /// <summary>
     /// Shared CCW for IIterator<T> over IIterator<T> where T is a reference type marshalled to COM interface
     /// </summary>
@@ -1560,8 +1561,6 @@ namespace System.Runtime.InteropServices
             return hr;
         }
     }
-
-#if !RHTESTCL && !CORECLR
 
     /// <summary>
     /// Shared CCW for IIterator<T> over IIterator<T> where T is a blittable struct
@@ -1763,17 +1762,13 @@ namespace System.Runtime.InteropServices
         }
     }
 #endif
-#else
-    class Toolbox { }
-#endif // ENABLE_WINRT
+
     public static class SpinWaitExtensions
     {
         public static void Yield()
         {
 #if CORECLR
             System.Threading.Thread.Sleep(0);
-#elif RHTESTCL
-            // nop
 #else
             System.Threading.SpinWait.Yield();
 #endif
