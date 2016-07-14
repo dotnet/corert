@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
 using Internal.Reflection.Core.NonPortable;
+using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -219,223 +220,49 @@ namespace System
         [ThreadStatic]
         private static int s_curIndex;
         [ThreadStatic]
-        private static string s_defaultValueString;
+        private static object s_defaultParametersContext;
 
-        // Default parameter support
-        private const int DefaultParamTypeNone = 0;
-        private const int DefaultParamTypeBool = 1;
-        private const int DefaultParamTypeChar = 2;
-        private const int DefaultParamTypeI1 = 3;
-        private const int DefaultParamTypeI2 = 4;
-        private const int DefaultParamTypeI4 = 5;
-        private const int DefaultParamTypeI8 = 6;
-        private const int DefaultParamTypeR4 = 7;
-        private const int DefaultParamTypeR8 = 8;
-        private const int DefaultParamTypeString = 9;
-        private const int DefaultParamTypeDefault = 10;
-        private const int DefaultParamTypeDecimal = 11;
-        private const int DefaultParamTypeDateTime = 12;
-        private const int DefaultParamTypeNoneButOptional = 13;
-        private const int DefaultParamTypeUI1 = 14;
-        private const int DefaultParamTypeUI2 = 15;
-        private const int DefaultParamTypeUI4 = 16;
-        private const int DefaultParamTypeUI8 = 17;
-
-        private struct StringDataParser
+        private static object GetDefaultValue(RuntimeTypeHandle thType, int argIndex)
         {
-            private string _str;
-            private int _offset;
-            public StringDataParser(string str)
-            {
-                _str = str;
-                _offset = 0;
-            }
-
-            public void SetOffset(int offset)
-            {
-                _offset = offset;
-            }
-
-            public long GetLong()
-            {
-                long returnValue;
-
-                char curVal = _str[_offset++];
-
-                // Special encoding for MinInt is 0x0001 (which would normally mean -0).
-                if (curVal == 0x0001)
-                {
-                    return Int64.MinValue;
-                }
-
-                // High bit is used to indicate an extended value
-                // Low bit is sign bit
-                // The middle 14 bits are used to hold 14 bits of the actual long value.
-                // A sign bit approach is used so that a negative number can be represented with 1 char value.
-                returnValue = (long)(curVal & (char)0x7FFE);
-                returnValue = returnValue >> 1;
-                bool isNegative = ((curVal & (char)1)) == 1;
-                int additionalCharCount = 0;
-                int bitsAcquired = 14;
-                // For additional characters, the first 3 additional characters hold 15 bits of data
-                // and the last character may hold 5 bits of data.
-                while ((curVal & (char)0x8000) != 0)
-                {
-                    additionalCharCount++;
-                    curVal = _str[_offset++];
-                    long grabValue = (long)(curVal & (char)0x7FFF);
-                    grabValue <<= bitsAcquired;
-                    bitsAcquired += 15;
-                    returnValue |= grabValue;
-                }
-
-                if (isNegative)
-                    returnValue = -returnValue;
-
-                return returnValue;
-            }
-
-            public int GetInt()
-            {
-                return checked((int)GetLong());
-            }
-
-            public unsafe float GetFloat()
-            {
-                int inputLocation = checked((int)GetLong());
-                float result = 0;
-                byte* inputPtr = (byte*)&inputLocation;
-                byte* outputPtr = (byte*)&result;
-                for (int i = 0; i < 4; i++)
-                {
-                    outputPtr[i] = inputPtr[i];
-                }
-
-                return result;
-            }
-
-            public unsafe double GetDouble()
-            {
-                long inputLocation = GetLong();
-                double result = 0;
-                byte* inputPtr = (byte*)&inputLocation;
-                byte* outputPtr = (byte*)&result;
-                for (int i = 0; i < 8; i++)
-                {
-                    outputPtr[i] = inputPtr[i];
-                }
-
-                return result;
-            }
-
-            public unsafe string GetString()
-            {
-                fixed (char* strData = _str)
-                {
-                    int length = (int)GetLong();
-                    char c = _str[_offset]; // Check for index out of range concerns.
-                    string strRet = new string(strData, _offset, length);
-                    _offset += length;
-
-                    return strRet;
-                }
-            }
-
-            public void Skip(int count)
-            {
-                _offset += count;
-            }
-        }
-
-        private static unsafe object GetDefaultValue(RuntimeTypeHandle thType, int argIndex)
-        {
-            // Group index of 0 indicates there are no default parameters
-            if (s_defaultValueString == null)
+            object defaultParametersContext = s_defaultParametersContext;
+            if (defaultParametersContext == null)
             {
                 throw new ArgumentException(SR.Arg_DefaultValueMissingException);
             }
-            StringDataParser dataParser = new StringDataParser(s_defaultValueString);
 
-            // Skip to current argument
-            int curArgIndex = 0;
-            while (curArgIndex != argIndex)
+            object defaultValue;
+            bool hasDefaultValue;
+            Delegate delegateInstance = defaultParametersContext as Delegate;
+            if (delegateInstance != null)
             {
-                int skip = dataParser.GetInt();
-                dataParser.Skip(skip);
-                curArgIndex++;
+                hasDefaultValue = delegateInstance.TryGetDefaultParameterValue(thType, argIndex, out defaultValue);
+            }
+            else
+            {
+                hasDefaultValue = RuntimeAugments.Callbacks.TryGetDefaultParameterValue(defaultParametersContext, thType, argIndex, out defaultValue);
             }
 
-            // Discard size of current argument
-            int sizeOfCurrentArg = dataParser.GetInt();
-
-            int defaultValueType = dataParser.GetInt();
-
-            switch (defaultValueType)
+            if (!hasDefaultValue)
             {
-                case DefaultParamTypeNone:
-                default:
-                    throw new ArgumentException(SR.Arg_DefaultValueMissingException);
-
-                case DefaultParamTypeString:
-                    return dataParser.GetString();
-
-                case DefaultParamTypeDefault:
-                    if (thType.ToEETypePtr().IsValueType)
-                    {
-                        if (thType.ToEETypePtr().IsNullable)
-                        {
-                            return null;
-                        }
-                        else
-                        {
-                            return RuntimeImports.RhNewObject(thType.ToEETypePtr());
-                        }
-                    }
-                    else
-                    {
-                        return null;
-                    }
-
-                case DefaultParamTypeBool:
-                    return (dataParser.GetInt() == 1);
-                case DefaultParamTypeChar:
-                    return (char)dataParser.GetInt();
-                case DefaultParamTypeI1:
-                    return (sbyte)dataParser.GetInt();
-                case DefaultParamTypeUI1:
-                    return (byte)dataParser.GetInt();
-                case DefaultParamTypeI2:
-                    return (short)dataParser.GetInt();
-                case DefaultParamTypeUI2:
-                    return (ushort)dataParser.GetInt();
-                case DefaultParamTypeI4:
-                    return dataParser.GetInt();
-                case DefaultParamTypeUI4:
-                    return checked((uint)dataParser.GetLong());
-                case DefaultParamTypeI8:
-                    return dataParser.GetLong();
-                case DefaultParamTypeUI8:
-                    return (ulong)dataParser.GetLong();
-                case DefaultParamTypeR4:
-                    return dataParser.GetFloat();
-                case DefaultParamTypeR8:
-                    return dataParser.GetDouble();
-                case DefaultParamTypeDecimal:
-                    int[] decimalBits = new int[4];
-                    decimalBits[0] = dataParser.GetInt();
-                    decimalBits[1] = dataParser.GetInt();
-                    decimalBits[2] = dataParser.GetInt();
-                    decimalBits[3] = dataParser.GetInt();
-                    return new Decimal(decimalBits);
-                case DefaultParamTypeDateTime:
-                    return new DateTime(dataParser.GetLong());
-                case DefaultParamTypeNoneButOptional:
-                    return System.Reflection.Missing.Value;
+                throw new ArgumentException(SR.Arg_DefaultValueMissingException);
             }
+
+            // Note that we might return null even for value types which cannot have null value here.
+            // This case is handled in the CheckArgument method which is called after this one on the returned parameter value.
+            return defaultValue;
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        internal static object CallDynamicInvokeMethod(object thisPtr, IntPtr methodToCall, object thisPtrDynamicInvokeMethod, IntPtr dynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperGenericDictionary, string defaultValueString, object[] parameters, bool invokeMethodHelperIsThisCall = true, bool methodToCallIsThisCall = true)
+        internal static object CallDynamicInvokeMethod(
+            object thisPtr,
+            IntPtr methodToCall,
+            object thisPtrDynamicInvokeMethod,
+            IntPtr dynamicInvokeHelperMethod,
+            IntPtr dynamicInvokeHelperGenericDictionary,
+            object defaultParametersContext,
+            object[] parameters,
+            bool invokeMethodHelperIsThisCall = true,
+            bool methodToCallIsThisCall = true)
         {
             bool fDontWrapInTargetInvocationException = false;
             bool parametersNeedCopyBack = false;
@@ -445,7 +272,7 @@ namespace System
             object[] parametersOld = s_parameters;
             object[] nullableCopyBackObjectsOld = s_nullableCopyBackObjects;
             int curIndexOld = s_curIndex;
-            string defaultValueStringOld = s_defaultValueString;
+            object defaultParametersContextOld = s_defaultParametersContext;
 
             try
             {
@@ -464,7 +291,7 @@ namespace System
 
                 s_nullableCopyBackObjects = null;
                 s_curIndex = 0;
-                s_defaultValueString = defaultValueString;
+                s_defaultParametersContext = defaultParametersContext;
 
                 try
                 {
@@ -536,7 +363,7 @@ namespace System
                 s_parameters = parametersOld;
                 s_nullableCopyBackObjects = nullableCopyBackObjectsOld;
                 s_curIndex = curIndexOld;
-                s_defaultValueString = defaultValueStringOld;
+                s_defaultParametersContext = defaultParametersContextOld;
             }
         }
 

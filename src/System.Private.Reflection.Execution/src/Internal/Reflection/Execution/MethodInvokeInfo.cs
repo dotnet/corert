@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using global::System;
-using global::Internal.Runtime.CompilerServices;
+using global::System.Reflection;
 
 namespace Internal.Reflection.Execution
 {
@@ -12,7 +12,7 @@ namespace Internal.Reflection.Execution
         public IntPtr LdFtnResult { get; set; }
         public IntPtr DynamicInvokeMethod { get; set; }
         public IntPtr DynamicInvokeGenericDictionary { get; set; }
-        public string DefaultValueString { get; set; }
+        public MethodBase MethodInfo { get; set; }
         public IntPtr VirtualResolveData { get; set; }
     }
 }

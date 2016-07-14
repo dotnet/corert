@@ -28,8 +28,15 @@ namespace Internal.Reflection.Execution.MethodInvokers
         public sealed override Object Invoke(Object thisObject, Object[] arguments)
         {
             object result = RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject, MethodInvokeInfo.LdFtnResult, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
-                invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: false);
+                thisObject,
+                MethodInvokeInfo.LdFtnResult,
+                null /*thisPtrDynamicInvokeMethod*/,
+                MethodInvokeInfo.DynamicInvokeMethod,
+                MethodInvokeInfo.DynamicInvokeGenericDictionary,
+                MethodInvokeInfo.MethodInfo,
+                arguments,
+                invokeMethodHelperIsThisCall: false,
+                methodToCallIsThisCall: false);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

@@ -310,9 +310,27 @@ namespace Internal.Runtime.Augments
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public static object CallDynamicInvokeMethod(object thisPtr, IntPtr methodToCall, object thisPtrDynamicInvokeMethod, IntPtr dynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperGenericDictionary, string defaultValueString, object[] parameters, bool invokeMethodHelperIsThisCall, bool methodToCallIsThisCall)
+        public static object CallDynamicInvokeMethod(
+            object thisPtr,
+            IntPtr methodToCall,
+            object thisPtrDynamicInvokeMethod,
+            IntPtr dynamicInvokeHelperMethod,
+            IntPtr dynamicInvokeHelperGenericDictionary,
+            object defaultParametersContext,
+            object[] parameters,
+            bool invokeMethodHelperIsThisCall,
+            bool methodToCallIsThisCall)
         {
-            object result = InvokeUtils.CallDynamicInvokeMethod(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, defaultValueString, parameters, invokeMethodHelperIsThisCall, methodToCallIsThisCall);
+            object result = InvokeUtils.CallDynamicInvokeMethod(
+                thisPtr,
+                methodToCall,
+                thisPtrDynamicInvokeMethod,
+                dynamicInvokeHelperMethod,
+                dynamicInvokeHelperGenericDictionary,
+                defaultParametersContext,
+                parameters,
+                invokeMethodHelperIsThisCall,
+                methodToCallIsThisCall);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

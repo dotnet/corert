@@ -923,7 +923,7 @@ namespace Internal.Reflection.Execution
                 LdFtnResult = methodInvokeMetadata.MethodEntryPoint,
                 DynamicInvokeMethod = dynamicInvokeMethod,
                 DynamicInvokeGenericDictionary = dynamicInvokeMethodGenericDictionary,
-                DefaultValueString = methodInvokeMetadata.DefaultValueString,
+                MethodInfo = methodInfo,
                 VirtualResolveData = resolver,
             };
             return methodInvokeInfo;
