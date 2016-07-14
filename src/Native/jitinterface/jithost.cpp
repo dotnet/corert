@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 
+#include <string.h>
+
 #include "dllexport.h"
 
 class JitHost
@@ -31,6 +33,9 @@ public:
         const wchar_t* name
         )
     {
+        //if (wcscmp(name, L"NgenDisasm") == 0 || wcscmp(name, L"NgenDump") == 0)
+        //    return L"*";
+
         return nullptr;
     }
 
