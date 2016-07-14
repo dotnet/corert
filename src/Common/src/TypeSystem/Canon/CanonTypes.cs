@@ -100,6 +100,11 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.Class;
             }
 
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= TypeFlags.HasGenericVarianceComputed;
+            }
+
             Debug.Assert((flags & mask) != 0);
             return flags;
         }
