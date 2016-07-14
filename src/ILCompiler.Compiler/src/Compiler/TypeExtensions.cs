@@ -23,7 +23,7 @@ namespace ILCompiler
             return true;
         }
 
-        static public MetadataType GetClosestMetadataType(this TypeDesc type)
+        static public DefType GetClosestDefType(this TypeDesc type)
         {
             if (type.IsSzArray && !((ArrayType)type).ElementType.IsPointer)
             {
@@ -32,11 +32,11 @@ namespace ILCompiler
             }
             else if (type.IsArray)
             {
-                return (MetadataType)type.Context.GetWellKnownType(WellKnownType.Array);
+                return type.Context.GetWellKnownType(WellKnownType.Array);
             }
 
-            Debug.Assert(type is MetadataType);
-            return (MetadataType)type;
+            Debug.Assert(type is DefType);
+            return (DefType)type;
         }
     }
 }

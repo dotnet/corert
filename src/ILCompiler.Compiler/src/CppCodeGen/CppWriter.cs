@@ -918,7 +918,7 @@ namespace ILCompiler.CppCodeGen
             for (int i = 0; i < virtualSlots.Count; i++)
             {
                 MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = implType.GetClosestMetadataType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 sb.AppendLine();
                 if (implMethod.IsAbstract)
