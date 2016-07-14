@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Internal.Runtime.CompilerServices;
-using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -18,7 +17,7 @@ namespace System
     // sequential layout directive so that Bartok matches it.
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
-    public abstract class Delegate : ICloneable
+    public abstract partial class Delegate : ICloneable
     {
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
         // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
@@ -284,17 +283,7 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-
-                // The LoadDefaultValueString() has the following contract
-                // If it returns false, the delegate invoke does not have default values.
-                // If it returns true, then the s_DefaultValueString variable is set to 
-                // describe the default values for this invoke.
-                string defaultValueString = null;
-                if (LoadDefaultValueString())
-                {
-                    defaultValueString = s_DefaultValueString;
-                }
-                return System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, defaultValueString, args);
+                return System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args);
             }
         }
 

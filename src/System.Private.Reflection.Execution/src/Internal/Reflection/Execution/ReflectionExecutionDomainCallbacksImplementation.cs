@@ -417,6 +417,46 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
+        /// <summary>
+        /// Retrieves the default value for a parameter of a method.
+        /// </summary>
+        /// <param name="defaultParametersContext">The default parameters context used to invoke the method,
+        /// this should identify the method in question. This is passed to the RuntimeAugments.CallDynamicInvokeMethod.</param>
+        /// <param name="thType">The type of the parameter to retrieve.</param>
+        /// <param name="argIndex">The index of the parameter on the method to retrieve.</param>
+        /// <param name="defaultValue">The default value of the parameter if available.</param>
+        /// <returns>true if the default parameter value is available, otherwise false.</returns>
+        public sealed override bool TryGetDefaultParameterValue(object defaultParametersContext, RuntimeTypeHandle thType, int argIndex, out object defaultValue)
+        {
+            defaultValue = null;
+
+            MethodBase methodInfo = defaultParametersContext as MethodBase;
+            if (methodInfo == null)
+            {
+                return false;
+            }
+
+            ParameterInfo parameterInfo = methodInfo.GetParameters()[argIndex];
+            if (!parameterInfo.HasDefaultValue)
+            {
+                // If the parameter is optional, with no default value and we're asked for its default value,
+                // it means the caller specified Missing.Value as the value for the parameter. In this case the behavior
+                // is defined as passing in the Missing.Value, regardless of the parameter type.
+                // If Missing.Value is convertible to the parameter type, it will just work, otherwise we will fail
+                // due to type mismatch.
+                if (parameterInfo.IsOptional)
+                {
+                    defaultValue = Missing.Value;
+                    return true;
+                }
+
+                return false;
+            }
+
+            defaultValue = parameterInfo.DefaultValue;
+            return true;
+        }
+
         private ExecutionDomain _executionDomain;
         private ExecutionEnvironmentImplementation _executionEnvironment;
     }
