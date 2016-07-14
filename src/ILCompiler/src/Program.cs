@@ -31,7 +31,6 @@ namespace ILCompiler
         private string _singleMethodName;
         private IReadOnlyList<string> _singleMethodGenericArgs;
 
-
         private bool _help;
 
         private Program()
@@ -191,9 +190,8 @@ namespace ILCompiler
         {
             TypeDesc foundType = context.SystemModule.GetTypeByCustomAttributeTypeName(typeName);
             if (foundType == null)
-            {
                 throw new CommandLineException($"Type '{typeName}' not found");
-            }
+
             return foundType;
         }
 
@@ -210,9 +208,7 @@ namespace ILCompiler
             // TODO: allow specifying signature to distinguish overloads
             MethodDesc method = owningType.GetMethod(_singleMethodName, null);
             if (method == null)
-            {
                 throw new CommandLineException($"Method '{_singleMethodName}' not found in '{_singleMethodTypeName}'");
-            }
 
             if (method.HasInstantiation != (_singleMethodGenericArgs != null) ||
                 (method.HasInstantiation && (method.Instantiation.Length != _singleMethodGenericArgs.Count)))
