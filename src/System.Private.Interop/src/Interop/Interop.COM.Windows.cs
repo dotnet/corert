@@ -73,33 +73,7 @@ namespace System.Runtime.InteropServices
         static internal void VariantClear(IntPtr pObject)
         {
             //Nop
-        }
-
-        static internal unsafe int CoGetMarshalSizeMax(out ulong pulSize, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
-        {
-            throw new PlatformNotSupportedException("CoGetMarshalSizeMax");
-        }       
-
-        static internal unsafe int CoGetObjectContext(ref Guid iid, out IntPtr ppv)
-        {
-            throw new PlatformNotSupportedException("CoGetObjectContext");
-        }
-               
-        static internal unsafe int CoMarshalInterface(IntPtr pStream, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
-        {
-            throw new PlatformNotSupportedException("CoMarshalInterface");
-        }
-
-        static internal unsafe int CoUnmarshalInterface(IntPtr pStream, ref Guid iid, out IntPtr ppv)
-        {
-            throw new PlatformNotSupportedException("CoUnmarshalInterface");
-        }
-        
-        static internal int CoReleaseMarshalData(IntPtr pStream)
-        {
-            // Nop in CoreCLR
-            return 0;
-        }
+        }     
 
 #else
         [DllImport(Libraries.CORE_COM)]
@@ -109,18 +83,12 @@ namespace System.Runtime.InteropServices
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
         public extern static unsafe void CoTaskMemFree(void* pv);
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        public static extern unsafe int CoGetContextToken(IntPtr* ppToken);
+               
 
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
         static internal extern IntPtr CoTaskMemRealloc(IntPtr pv, IntPtr size);
 
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern int CoGetObjectContext(Guid* iid, void* ppv);
 
 
         [DllImport(Libraries.CORE_COM)]
@@ -133,30 +101,7 @@ namespace System.Runtime.InteropServices
             int count,
             IntPtr results
         );
-
-
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern int CoCreateFreeThreadedMarshaler(void* pOuter, void** ppunkMarshal);
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        private extern unsafe static int CoMarshalInterface(IntPtr pStream, Guid* iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags);
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        private static unsafe extern int CoUnmarshalInterface(IntPtr pStream, Guid* iid, void** ppv);
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        private static unsafe extern int CoGetMarshalSizeMax(ulong* pulSize, Guid* iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags);
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern int CoReleaseMarshalData(IntPtr pStream);
-
+        
 
         [DllImport(Libraries.CORE_COM_AUT)]
         [McgGeneratedNativeCallCodeAttribute]
@@ -190,68 +135,8 @@ namespace System.Runtime.InteropServices
         [DllImport(Libraries.CORE_COM_AUT)]
         [McgGeneratedNativeCallCodeAttribute]
         static internal extern void VariantClear(IntPtr pObject);
+        
 
-        static internal unsafe int CoGetObjectContext(ref Guid iid, out IntPtr ppv)
-        {
-            fixed (void* unsafe_ppv = &ppv)
-            {
-                fixed (Guid* unsafe_iid = &iid)
-                {
-                    return CoGetObjectContext(unsafe_iid, (void**)unsafe_ppv);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Marshal IUnknown * into IStream*
-        /// </summary>
-        /// <returns>HResult</returns>
-        static internal unsafe int CoMarshalInterface(IntPtr pStream, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
-        {
-            fixed (Guid* unsafe_iid = &iid)
-            {
-                return CoMarshalInterface(pStream, unsafe_iid, pUnk, dwDestContext, pvDestContext, mshlflags);
-            }
-        }
-
-        /// <summary>
-        /// Marshal IStream* into IUnknown*
-        /// </summary>
-        /// <returns>HResult</returns>
-        static internal unsafe int CoUnmarshalInterface(IntPtr pStream, ref Guid iid, out IntPtr ppv)
-        {
-            fixed (Guid* unsafe_iid = &iid)
-            {
-                fixed (void* unsafe_ppv = &ppv)
-                {
-                    return CoUnmarshalInterface(pStream, unsafe_iid, (void**)unsafe_ppv);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns an upper bound on the number of bytes needed to marshal the specified interface pointer to the specified object.
-        /// </summary>
-        /// <returns>HResult</returns>
-        static internal unsafe int CoGetMarshalSizeMax(out ulong pulSize, ref Guid iid, IntPtr pUnk, Interop.COM.MSHCTX dwDestContext, IntPtr pvDestContext, Interop.COM.MSHLFLAGS mshlflags)
-        {
-            fixed (ulong* unsafe_pulSize = &pulSize)
-            {
-                fixed (Guid* unsafe_iid = &iid)
-                {
-                    return CoGetMarshalSizeMax(unsafe_pulSize, unsafe_iid, pUnk, dwDestContext, pvDestContext, mshlflags);
-                }
-            }
-        }
-
-        public static unsafe int CoGetContextToken(out IntPtr ppToken)
-        {
-            ppToken = IntPtr.Zero;
-            fixed (IntPtr* unsafePpToken = &ppToken)
-            {
-                return CoGetContextToken(unsafePpToken);
-            }
-        }
 
         public static unsafe void SafeCoTaskMemFree(void* pv)
         {

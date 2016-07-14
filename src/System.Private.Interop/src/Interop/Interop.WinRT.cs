@@ -28,24 +28,13 @@ namespace System.Runtime.InteropServices
                                                             void* hstring);
 
 
-        [DllImport(Libraries.CORE_WINRT_STRING)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern unsafe int WindowsCreateStringReference(char* sourceString,
-                                                                       uint length,
-                                                                       HSTRING_HEADER* phstringHeader,
-                                                                       void* hstring);
 
 
         [DllImport(Libraries.CORE_WINRT_STRING)]
         [McgGeneratedNativeCallCodeAttribute]
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static extern unsafe void WindowsDeleteString(void* hstring);
-
-        [DllImport(Libraries.CORE_WINRT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static extern unsafe int RoGetActivationFactory(void* hstring_typeName, Guid* iid, void* ppv);
+        
 
         [DllImport(Libraries.CORE_WINRT_STRING)]
         [McgGeneratedNativeCallCodeAttribute]
@@ -79,35 +68,5 @@ namespace System.Runtime.InteropServices
         [DllImport(Libraries.CORE_WINRT_ERROR1, PreserveSig = true)]
         [McgGeneratedNativeCallCodeAttribute]
         internal static extern int RoReportUnhandledError(IntPtr pRestrictedErrorInfo);
-
-        static internal unsafe void RoGetActivationFactory(string className, ref Guid iid, out IntPtr ppv)
-        {
-            fixed (char* unsafe_className = className)
-            {
-                void* hstring_typeName = null;
-
-                HSTRING_HEADER hstringHeader;
-                int hr =
-                    WindowsCreateStringReference(
-                        unsafe_className,(uint) className.Length, &hstringHeader, &hstring_typeName);
-
-                if (hr < 0)
-                    throw Marshal.GetExceptionForHR(hr);
-
-                fixed (Guid* unsafe_iid = &iid)
-                {
-                    fixed (void* unsafe_ppv = &ppv)
-                    {
-                        hr = ExternalInterop.RoGetActivationFactory(
-                            hstring_typeName,
-                            unsafe_iid,
-                            unsafe_ppv);
-
-                        if (hr < 0)
-                            throw Marshal.GetExceptionForHR(hr);
-                    }
-                }
-            }
-        }
     }
 }

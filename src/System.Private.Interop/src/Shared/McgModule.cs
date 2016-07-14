@@ -263,7 +263,7 @@ namespace System.Runtime.InteropServices
 
         int ClassDataLookup_GetTableSize()
         {
-            return m_classData.Length;
+            return m_classData == null ? 0 : m_classData.Length;
         }
 
         int BoxingDataLookup(RuntimeTypeHandle typeHandle)

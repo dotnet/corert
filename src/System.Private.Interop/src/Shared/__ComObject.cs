@@ -1996,8 +1996,7 @@ namespace System.Runtime.InteropServices
             [MethodImpl(MethodImplOptions.NoInlining)]
             get
             {
-#if ENABLE_WINRT
-
+#if ENABLE_MIN_WINRT
                 IntPtr pCookie;
                 int hr = ExternalInterop.CoGetContextToken(out pCookie);
                 if (hr < 0)
@@ -2520,7 +2519,7 @@ namespace System.Runtime.InteropServices
             m_cookie = cookie;
             m_pObjectContext = IntPtr.Zero;
 
-#if !CORECLR
+#if ENABLE_MIN_WINRT
             int hr = ExternalInterop.CoGetObjectContext(ref Interop.COM.IID_IUnknown, out m_pObjectContext);
             if (hr < 0)
             {
@@ -3405,7 +3404,7 @@ namespace System.Runtime.InteropServices
         }
     }
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
     /// <summary>
     /// WinRT factory cache item caching the context + factory RCW
     /// </summary>
