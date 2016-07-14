@@ -857,7 +857,7 @@ namespace Internal.IL
                     constrained = _constrained;
 
                     bool forceUseRuntimeLookup;
-                    MethodDesc directMethod = constrained.GetClosestMetadataType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
+                    MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup);
                     if (directMethod == null || forceUseRuntimeLookup)
                         throw new NotImplementedException();
 
