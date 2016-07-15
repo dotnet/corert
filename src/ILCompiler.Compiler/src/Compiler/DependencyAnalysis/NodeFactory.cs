@@ -184,6 +184,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
 
+            _readyToRunGenericHelpers = new NodeCache<Tuple<GenericContextKind, ReadyToRunFixupKind, Object>, ReadyToRunGenericLookupHelperNode>((Tuple<GenericContextKind, ReadyToRunFixupKind, Object> helper) =>
+            {
+                return new ReadyToRunGenericLookupHelperNode(helper.Item1, helper.Item2, helper.Item3);
+            });
+
             _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
             {
                 return new StringDataNode(data);
@@ -504,6 +509,13 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
         {
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
+        }
+
+        private NodeCache<Tuple<GenericContextKind, ReadyToRunFixupKind, Object>, ReadyToRunGenericLookupHelperNode> _readyToRunGenericHelpers;
+
+        public ISymbolNode ReadyToRunGenericHelper(GenericContextKind context, ReadyToRunFixupKind fixupKind, object target)
+        {
+            return _readyToRunGenericHelpers.GetOrAdd(new Tuple<GenericContextKind, ReadyToRunFixupKind, Object>(context, fixupKind, target));
         }
 
         private NodeCache<string, StringDataNode> _stringDataNodes;

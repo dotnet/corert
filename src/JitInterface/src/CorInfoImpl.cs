@@ -110,8 +110,6 @@ namespace Internal.JitInterface
 
         private MethodCodeNode _methodCodeNode;
 
-        private MethodIL _runtimeDeterminedMethodIL; // MethodIL for the RuntimeDetermined version of the method
-
         private CORINFO_MODULE_STRUCT_* _methodScope; // Needed to resolve CORINFO_EH_CLAUSE tokens
 
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode)
@@ -124,18 +122,6 @@ namespace Internal.JitInterface
                 MethodIL methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, out methodInfo);
 
                 _methodScope = methodInfo.scope;
-
-                if (MethodBeingCompiled.IsCanonicalMethod(CanonicalFormKind.Any))
-                {
-                    MethodDesc runtimeDeterminedMethod = MethodBeingCompiled.GetSharedRuntimeFormMethodTarget();
-                    _runtimeDeterminedMethodIL = new InstantiatedMethodIL(
-                        runtimeDeterminedMethod,
-                        methodIL.GetMethodILDefinition());
-                }
-                else
-                {
-                    _runtimeDeterminedMethodIL = null;
-                }
 
                 try
                 {
@@ -791,6 +777,29 @@ namespace Internal.JitInterface
             }
         }
 
+        private object GetRuntimeDeterminedObjectForToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
+        {
+            // Since RyuJIT operates on canonical types (as opposed to runtime determined ones), but the
+            // dependency analysis operates on runtime determined ones, we convert the resolved token
+            // to the runtime determined form (e.g. Foo<__Canon> becomes Foo<T__Canon>).
+
+            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+
+            if (methodIL.OwningMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+            {
+                // TODO: make this more efficient
+                MethodIL methodILUninstantiated = methodIL.GetMethodILDefinition();
+                MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                var runtimeDeterminedMethodIL = new InstantiatedMethodIL(sharedMethod, methodILUninstantiated);
+                return runtimeDeterminedMethodIL.GetObject((int)pResolvedToken.token);
+            }
+            else
+            {
+                Debug.Assert(false, "Can't delete this");
+                return methodIL.GetObject((int)pResolvedToken.token);
+            }
+        }
+
         private void resolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
@@ -1229,23 +1238,27 @@ namespace Internal.JitInterface
                     {
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
-                        var type = HandleToObject(pResolvedToken.hClass);
+                        ReadyToRunFixupKind fixupKind = (ReadyToRunFixupKind)pGenericLookupKind.runtimeLookupFlags;
+                        GenericContextKind genericContext;
+
                         if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM)
                         {
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
+                            genericContext = GenericContextKind.MethodDictionary;
                         }
                         else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
                         {
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
+                            genericContext = GenericContextKind.ThisObj;
                         }
                         else
                         {
                             Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM);
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
+                            genericContext = GenericContextKind.TypeDictionary;
                         }
 
-                        break;
+                        object target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericHelper(genericContext, fixupKind, target));
                     }
+                    break;
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
