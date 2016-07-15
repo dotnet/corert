@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__module_manager_indirection";
+                return NodeFactory.CompilationUnitPrefix + "__module_manager_indirection";
             }
         }
 
