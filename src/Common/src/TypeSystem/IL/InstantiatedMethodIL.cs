@@ -17,17 +17,17 @@ namespace Internal.IL
         private Instantiation _typeInstantiation;
         private Instantiation _methodInstantiation;
 
-        public InstantiatedMethodIL(MethodDesc owningMethod, MethodIL methodIL, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        public InstantiatedMethodIL(MethodDesc owningMethod, MethodIL methodIL)
         {
-            Debug.Assert(!(methodIL is InstantiatedMethodIL));
+            Debug.Assert(methodIL.GetMethodILDefinition() == methodIL);
             Debug.Assert(owningMethod.HasInstantiation || owningMethod.OwningType.HasInstantiation);
             Debug.Assert(owningMethod.GetTypicalMethodDefinition() == methodIL.OwningMethod);
             
             _methodIL = methodIL;
             _method = owningMethod;
 
-            _typeInstantiation = typeInstantiation;
-            _methodInstantiation = methodInstantiation;
+            _typeInstantiation = owningMethod.OwningType.Instantiation;
+            _methodInstantiation = owningMethod.Instantiation;
         }
 
         public override MethodDesc OwningMethod
@@ -120,6 +120,11 @@ namespace Internal.IL
 
 
             return o;
+        }
+
+        public override MethodIL GetMethodILDefinition()
+        {
+            return _methodIL;
         }
     }
 }
