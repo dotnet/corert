@@ -16,7 +16,10 @@ namespace System.Runtime.InteropServices
         internal static RuntimeTypeHandle IMarshal = typeof(System.Runtime.InteropServices.__com_IMarshal).TypeHandle;
         internal static RuntimeTypeHandle IDispatch = typeof(System.Runtime.InteropServices.__com_IDispatch).TypeHandle;
         internal static RuntimeTypeHandle IInspectable = typeof(System.Runtime.InteropServices.__com_IInspectable).TypeHandle;
+
+#if ENABLE_MIN_WINRT
         internal static RuntimeTypeHandle IActivationFactoryInternal = typeof(System.Runtime.InteropServices.WindowsRuntime.IActivationFactoryInternal).TypeHandle;
+#endif
 
 #if ENABLE_WINRT
         internal static RuntimeTypeHandle ICustomPropertyProvider = typeof(System.Runtime.InteropServices.__com_ICustomPropertyProvider).TypeHandle;
@@ -91,6 +94,7 @@ namespace System.Runtime.InteropServices
             Flags = McgInterfaceFlags.isInternal | McgInterfaceFlags.isIInspectable,
         };
 
+#if ENABLE_MIN_WINRT
         // IActivationFactoryInternal
         static internal McgInterfaceData s_IActivationFactoryInternal = new McgInterfaceData
         {
@@ -99,8 +103,9 @@ namespace System.Runtime.InteropServices
             CcwVtable = __vtable_IActivationFactoryInternal.GetVtableFuncPtr(),
             Flags = McgInterfaceFlags.isInternal,
         };
+#endif 
+
 #if ENABLE_WINRT
- 
         // ICustomPropertyProvider
         static internal McgInterfaceData s_ICustomPropertyProvider = new McgInterfaceData
         {
@@ -206,7 +211,10 @@ namespace System.Runtime.InteropServices
                 s_IWeakReference,
 #endif
                 s_ICCW,
+#if ENABLE_MIN_WINRT
                 s_IActivationFactoryInternal,
+#endif
+
 #if ENABLE_WINRT
                 s_IJupiterObject,
                 s_IStringable,
