@@ -661,7 +661,7 @@
     <InPlaceRuntime>true</InPlaceRuntime>
   </PropertyGroup>
   <PropertyGroup Condition="'$(InPlaceRuntime)' == 'true'">
-    <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
+    <DefineConstants>INPLACE_RUNTIME;LEGACY_INTERFACE_DISPATCH;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs" >

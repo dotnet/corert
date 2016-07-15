@@ -32,11 +32,14 @@
 #pragma warning(disable:4061)
 
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
+
+#ifdef LEGACY_INTERFACE_DISPATCH
 // When we use a thunk to call out to managed code from the runtime the following label is the instruction
 // immediately following the thunk's call instruction. As such it can be used to identify when such a callout
 // has occured as we are walking the stack.
 EXTERN_C void * ReturnFromManagedCallout2;
 GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromManagedCallout2Addr, &ReturnFromManagedCallout2);
+#endif // LEGACY_INTERFACE_DISPATCH
 
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C void * ReturnFromUniversalTransition;
@@ -1017,6 +1020,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
+#ifdef LEGACY_INTERFACE_DISPATCH
 // If our control PC indicates that we're in one of the thunks we use to make managed callouts from the
 // runtime we need to adjust the frame state to that of the managed method that previously called into the
 // runtime (i.e. skip the intervening unmanaged frames).
@@ -1076,6 +1080,7 @@ void StackFrameIterator::UnwindManagedCalloutThunk()
     m_pConservativeStackRangeLowerBound = pLowerBound;
 #endif // defined(USE_PORTABLE_HELPERS)
 }
+#endif // LEGACY_INTERFACE_DISPATCH
 
 bool StackFrameIterator::IsValid()
 {
@@ -1322,6 +1327,7 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
             UnwindUniversalTransitionThunk();
             ASSERT(m_pConservativeStackRangeLowerBound != NULL);
         }
+#ifdef LEGACY_INTERFACE_DISPATCH
         else if (category == InManagedCalloutThunk)
         {
             // Exception propagation across managed callouts is illegal (i.e., it violates the
@@ -1332,6 +1338,7 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
             UnwindManagedCalloutThunk();
             ASSERT(m_pConservativeStackRangeLowerBound != NULL);
         }
+#endif // LEGACY_INTERFACE_DISPATCH
         else
         {
             FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("Unexpected thunk encountered when unwinding a non-EH thunk sequence.");
@@ -1490,7 +1497,9 @@ bool StackFrameIterator::IsNonEHThunk(ReturnAddressCategory category)
     {
         default:
             return false;
+#ifdef LEGACY_INTERFACE_DISPATCH
         case InManagedCalloutThunk:
+#endif // LEGACY_INTERFACE_DISPATCH
         case InUniversalTransitionThunk:
         case InCallDescrThunk:
             return true;
@@ -1605,10 +1614,12 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InFuncletInvokeThunk;
     }
 
+#ifdef LEGACY_INTERFACE_DISPATCH
     if (EQUALS_CODE_ADDRESS(returnAddress, ReturnFromManagedCallout2))
     {
         return InManagedCalloutThunk;
     }
+#endif // LEGACY_INTERFACE_DISPATCH
 
     return InManagedCode;
 #endif // defined(USE_PORTABLE_HELPERS)

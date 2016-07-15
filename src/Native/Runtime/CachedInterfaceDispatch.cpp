@@ -533,6 +533,7 @@ COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell
     *slot = pCell->GetSlotNumber();
 }
 
+#ifdef LEGACY_INTERFACE_DISPATCH
 EXTERN_C PTR_Code FASTCALL RhpCidResolve(Object* pObject, InterfaceDispatchCell* pCell);
 
 // Given an object instance, look up the method on the type of that object that implements the interface
@@ -546,4 +547,6 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpResolveInterfaceMethodCacheMiss, (Object * pObj
     CID_COUNTER_INC(CacheMisses);
     return (PTR_Code)ManagedCallout2((UIntTarget)pObject, (UIntTarget)pCell, reinterpret_cast<void*>(RhpCidResolve), pTransitionFrame);
 }
+#endif // LEGACY_INTERFACE_DISPATCH
+
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
