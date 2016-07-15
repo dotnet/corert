@@ -6,35 +6,16 @@ using System;
 using System.Runtime;
 
 using Internal.Runtime;
-using Internal.Runtime.Augments;
 
 namespace System.Runtime
 {
     internal unsafe static class CachedInterfaceDispatch
     {
-#if !LEGACY_INTERFACE_DISPATCH
-        [RuntimeExport("RhpCidResolve")]
-        unsafe private static IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
-        {
-            IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
-            IntPtr thisPointerAsIntPtr = *(IntPtr*)locationOfThisPointer;
-            object pObject = RuntimeAugments.ConvertIntPtrToObjectReference(thisPointerAsIntPtr);
-            return RhpCidResolve_Worker(pObject, pCell);
-        }
-#else // LEGACY_INTERFACE_DISPATCH
         [RuntimeExport("RhpCidResolve")]
         private static IntPtr RhpCidResolve(object pObject, IntPtr pCell)
         {
-            return RhpCidResolve_Worker(pObject, pCell);
-        }
-#endif // LEGACY_INTERFACE_DISPATCH
-
-        private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
-        {
-#if LEGACY_INTERFACE_DISPATCH
             try
             {
-#endif // LEGACY_INTERFACE_DISPATCH
                 EEType* pInterfaceType;
                 ushort slot;
                 InternalCalls.RhpGetDispatchCellInfo(pCell, &pInterfaceType, &slot);
@@ -43,14 +24,12 @@ namespace System.Runtime
                 {
                     return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.EEType);
                 }
-#if LEGACY_INTERFACE_DISPATCH
             }
             catch
             {
                 // Exceptions are not permitted to escape from runtime->managed callbacks
                 EH.FallbackFailFast(RhFailFastReason.InternalError, null);
             }
-#endif // LEGACY_INTERFACE_DISPATCH
 
             // "Valid method implementation was not found."
             EH.FallbackFailFast(RhFailFastReason.InternalError, null);
@@ -76,7 +55,7 @@ namespace System.Runtime
                 return pTargetCode;
 
             // Otherwise call the version of this method that knows how to resolve the method manually.
-            return RhpCidResolve_Worker(pObject, pCell);
+            return RhpCidResolve(pObject, pCell);
         }
 
         [RuntimeExport("RhResolveDispatch")]
