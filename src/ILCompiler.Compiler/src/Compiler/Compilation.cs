@@ -46,7 +46,7 @@ namespace ILCompiler
         {
             _options = options;
 
-            _nameMangler = new NameMangler(this);
+            _nameMangler = new NameMangler(options.IsCppCodeGen);
 
             _typeInitManager = new TypeInitialization();
 
@@ -84,14 +84,6 @@ namespace ILCompiler
             set;
         }
 
-        internal bool IsCppCodeGen
-        {
-            get
-            {
-                return _options.IsCppCodeGen;
-            }
-        }
-
         internal CompilationOptions Options
         {
             get
@@ -116,6 +108,18 @@ namespace ILCompiler
         public void Compile()
         {
             NodeFactory.NameMangler = NameMangler;
+
+            string systemModuleName = ((IAssemblyDesc)_typeSystemContext.SystemModule).GetName().Name;
+
+            // TODO: just something to get Runtime.Base compiled
+            if (systemModuleName != "System.Private.CoreLib")
+            {
+                NodeFactory.CompilationUnitPrefix = systemModuleName.Replace(".", "_");
+            }
+            else
+            {
+                NodeFactory.CompilationUnitPrefix = NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(Options.OutputFilePath));
+            }
 
             _nodeFactory = new NodeFactory(_typeSystemContext, _typeInitManager, _compilationModuleGroup, _options.IsCppCodeGen);
 

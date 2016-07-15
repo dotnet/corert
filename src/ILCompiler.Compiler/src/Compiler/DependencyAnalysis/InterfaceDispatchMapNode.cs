@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
                     throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
                 }
                     
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__InterfaceDispatchMap_" + _dispatchMapTableIndex;
+                return NodeFactory.CompilationUnitPrefix + "__InterfaceDispatchMap_" + _dispatchMapTableIndex;
             }
         }
         

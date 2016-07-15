@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__embedded_metadata";
+                return NodeFactory.CompilationUnitPrefix + "__embedded_metadata";
             }
         }
 

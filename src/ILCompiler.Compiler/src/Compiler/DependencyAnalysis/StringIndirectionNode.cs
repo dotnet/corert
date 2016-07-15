@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str" + Offset.ToStringInvariant();
+                return NodeFactory.CompilationUnitPrefix + "__str" + Offset.ToStringInvariant();
             }
         }
 

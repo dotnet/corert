@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__type_to_metadata_map";
+                return NodeFactory.CompilationUnitPrefix + "__type_to_metadata_map";
             }
         }
 

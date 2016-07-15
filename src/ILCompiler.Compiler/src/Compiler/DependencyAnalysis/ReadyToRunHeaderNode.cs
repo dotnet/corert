@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__ReadyToRunHeader";
+                return NodeFactory.CompilationUnitPrefix + "__ReadyToRunHeader";
             }
         }
 

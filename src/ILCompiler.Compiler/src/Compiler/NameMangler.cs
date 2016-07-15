@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -21,11 +19,11 @@ namespace ILCompiler
     //
     public class NameMangler
     {
-        private readonly Compilation _compilation;
+        private readonly bool _mangleForCplusPlus;
 
-        public NameMangler(Compilation compilation)
+        public NameMangler(bool mangleForCplusPlus)
         {
-            _compilation = compilation;
+            _mangleForCplusPlus = mangleForCplusPlus;
         }
 
         //
@@ -63,7 +61,7 @@ namespace ILCompiler
                     sb = new StringBuilder(s, 0, i, s.Length);
 
                 // For CppCodeGen, replace "." (C# namespace separator) with "::" (C++ namespace separator)
-                if (typeName && c == '.' && _compilation.IsCppCodeGen)
+                if (typeName && c == '.' && _mangleForCplusPlus)
                 {
                     sb.Append("::");
                     continue;
@@ -144,7 +142,7 @@ namespace ILCompiler
 
                         name = SanitizeName(name, true);
 
-                        if (_compilation.IsCppCodeGen)
+                        if (_mangleForCplusPlus)
                         {
                             // Always generate a fully qualified name
                             name = "::" + prependAssemblyName + "::" + name;
@@ -195,7 +193,7 @@ namespace ILCompiler
                         for (int i = 0; i < inst.Length; i++)
                         {
                             string instArgName = GetMangledTypeName(inst[i]);
-                            if (_compilation.IsCppCodeGen)
+                            if (_mangleForCplusPlus)
                                 instArgName = instArgName.Replace("::", "_");
                             mangledName += "__" + instArgName;
                         }
@@ -230,7 +228,7 @@ namespace ILCompiler
         private string ComputeMangledMethodName(MethodDesc method)
         {
             string prependTypeName = null;
-            if (!_compilation.IsCppCodeGen)
+            if (!_mangleForCplusPlus)
                 prependTypeName = GetMangledTypeName(method.OwningType);
 
             if (method is EcmaMethod)
@@ -270,7 +268,7 @@ namespace ILCompiler
                 for (int i = 0; i < inst.Length; i++)
                 {
                     string instArgName = GetMangledTypeName(inst[i]);
-                    if (_compilation.IsCppCodeGen)
+                    if (_mangleForCplusPlus)
                         instArgName = instArgName.Replace("::", "_");
                     mangledName += "__" + instArgName;
                 }
@@ -306,7 +304,7 @@ namespace ILCompiler
         private string ComputeMangledFieldName(FieldDesc field)
         {
             string prependTypeName = null;
-            if (!_compilation.IsCppCodeGen)
+            if (!_mangleForCplusPlus)
                 prependTypeName = GetMangledTypeName(field.OwningType);
 
             if (field is EcmaField)
@@ -346,33 +344,6 @@ namespace ILCompiler
             }
 
             return mangledName;
-        }
-
-        private string _compilationUnitPrefix;
-
-        /// <summary>
-        /// Prefix to prepend to compilation unit global symbols to make them disambiguated between different .obj files.
-        /// </summary>
-        public string CompilationUnitPrefix
-        {
-            get
-            {
-                if (_compilationUnitPrefix == null)
-                {
-                    string systemModuleName = ((EcmaAssembly)_compilation.TypeSystemContext.SystemModule).GetName().Name;
-
-                    // TODO: just something to get Runtime.Base compiled
-                    if (systemModuleName != "System.Private.CoreLib")
-                    {
-                        _compilationUnitPrefix = systemModuleName.Replace(".", "_");
-                    }
-                    else
-                    {
-                        _compilationUnitPrefix = SanitizeName(Path.GetFileNameWithoutExtension(_compilation.Options.OutputFilePath));
-                    }
-                }
-                return _compilationUnitPrefix;
-            }
         }
     }
 }
