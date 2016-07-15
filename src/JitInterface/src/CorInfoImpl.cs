@@ -1793,7 +1793,20 @@ namespace Internal.JitInterface
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
-        { throw new NotImplementedException("getMethodDefFromMethod"); }
+        {
+            MethodDesc method = HandleToObject(hMethod);
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+
+            // Need to cast down to EcmaMethod. Do not use this as a precedent that casting to Ecma*
+            // within the JitInterface is fine. We might want to consider moving this to Compilation.
+            TypeSystem.Ecma.EcmaMethod ecmaMethodDefinition = methodDefinition as TypeSystem.Ecma.EcmaMethod;
+            if (ecmaMethodDefinition != null)
+            {
+                return (mdToken)System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(ecmaMethodDefinition.Handle);
+            }
+
+            return 0;
+        }
 
         private static byte[] StringToUTF8(string s)
         {
