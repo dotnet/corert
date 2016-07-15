@@ -165,6 +165,7 @@
   <ItemGroup>
     <Compile Include="Interop\Interop.String.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.cs" />
+    <Compile Include="Interop\Interop.WinRT.Basic.cs" />
     <Compile Include="Interop\Interop.Localization.Windows.cs" />
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
     <Compile Include="Interop\Interop.COM.Windows.cs" />
