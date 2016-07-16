@@ -105,7 +105,6 @@ else()
 
 endif()
 
-# when we remove LEGACY_INTERFACE_DISPATCH, remove ManagedCalloutThunk.asm
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
@@ -131,7 +130,6 @@ add_definitions(-DVERIFY_HEAP)
 add_definitions(-DCORERT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
-add_definitions(-DLEGACY_INTERFACE_DISPATCH)
 
 if(WIN32)
   # There is a problem with undefined symbol g_pConfig, windows don't care since it is in template method, but clang does 

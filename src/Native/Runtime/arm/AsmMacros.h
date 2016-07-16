@@ -49,6 +49,13 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
 
 __tls_array     equ 0x2C    ;; offsetof(TEB, ThreadLocalStoragePointer)
 
+
+;;
+;; Offset from FP (r7) where the managed callout thunk (ManagedCallout2 and possibly others in the future)
+;; store a pointer to a transition frame.
+;;
+MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -4
+
 ;;
 ;; MACROS
 ;;
