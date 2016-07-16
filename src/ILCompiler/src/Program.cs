@@ -92,6 +92,7 @@ namespace ILCompiler
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
+            bool waitForDebugger = false;
             AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
@@ -111,6 +112,7 @@ namespace ILCompiler
                 syntax.DefineOption("verbose", ref _options.Verbose, "Enable verbose logging");
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
+                syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -118,6 +120,11 @@ namespace ILCompiler
 
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
+            if (waitForDebugger)
+            {
+                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
+                Console.ReadLine();
+            }
             foreach (var input in inputFiles)
                 Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
 
