@@ -184,9 +184,14 @@ namespace ILCompiler.DependencyAnalysis
 
             _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
 
-            _readyToRunGenericHelpers = new NodeCache<Tuple<GenericContextKind, ReadyToRunFixupKind, Object>, ReadyToRunGenericLookupHelperNode>((Tuple<GenericContextKind, ReadyToRunFixupKind, Object> helper) =>
+            _readyToRunLookupFromDictionaryHelpers = new NodeCache<Tuple<object, ReadyToRunFixupKind, object>, ReadyToRunGenericLookupHelperNode>((Tuple<object, ReadyToRunFixupKind, object> helper) =>
             {
-                return new ReadyToRunGenericLookupHelperNode(helper.Item1, helper.Item2, helper.Item3);
+                return new ReadyToRunGenericLookupHelperNode(helper.Item1, GenericContextKind.Dictionary, helper.Item2, helper.Item3);
+            });
+
+            _readyToRunLookupFromThisObjHelpers = new NodeCache<Tuple<TypeDesc, ReadyToRunFixupKind, object>, ReadyToRunGenericLookupHelperNode>((Tuple<TypeDesc, ReadyToRunFixupKind, object> helper) =>
+            {
+                return new ReadyToRunGenericLookupHelperNode(helper.Item1, GenericContextKind.ThisObj, helper.Item2, helper.Item3);
             });
 
             _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
@@ -511,11 +516,18 @@ namespace ILCompiler.DependencyAnalysis
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
         }
 
-        private NodeCache<Tuple<GenericContextKind, ReadyToRunFixupKind, Object>, ReadyToRunGenericLookupHelperNode> _readyToRunGenericHelpers;
+        private NodeCache<Tuple<object, ReadyToRunFixupKind, Object>, ReadyToRunGenericLookupHelperNode> _readyToRunLookupFromDictionaryHelpers;
 
-        public ISymbolNode ReadyToRunGenericHelper(GenericContextKind context, ReadyToRunFixupKind fixupKind, object target)
+        public ISymbolNode ReadyToRunGenericLookupFromDictionaryHelper(object context, ReadyToRunFixupKind fixupKind, object target)
         {
-            return _readyToRunGenericHelpers.GetOrAdd(new Tuple<GenericContextKind, ReadyToRunFixupKind, Object>(context, fixupKind, target));
+            return _readyToRunLookupFromDictionaryHelpers.GetOrAdd(new Tuple<object, ReadyToRunFixupKind, Object>(context, fixupKind, target));
+        }
+
+        private NodeCache<Tuple<TypeDesc, ReadyToRunFixupKind, Object>, ReadyToRunGenericLookupHelperNode> _readyToRunLookupFromThisObjHelpers;
+
+        public ISymbolNode ReadyToRunGenericLookupFromThisObjHelper(TypeDesc context, ReadyToRunFixupKind fixupKind, object target)
+        {
+            return _readyToRunLookupFromThisObjHelpers.GetOrAdd(new Tuple<TypeDesc, ReadyToRunFixupKind, Object>(context, fixupKind, target));
         }
 
         private NodeCache<string, StringDataNode> _stringDataNodes;

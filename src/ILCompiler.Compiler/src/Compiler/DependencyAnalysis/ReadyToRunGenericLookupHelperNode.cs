@@ -4,25 +4,33 @@
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public enum GenericContextKind
     {
+        Dictionary,
         ThisObj,
-        TypeDictionary,
-        MethodDictionary,
     }
 
     public partial class ReadyToRunGenericLookupHelperNode : AssemblyStubNode
     {
         private object _target;
-        GenericContextKind _context;
-        ReadyToRunFixupKind _fixupKind;
+        private object _context;
+        private ReadyToRunFixupKind _fixupKind;
+        private GenericContextKind _contextKind;
 
-        public ReadyToRunGenericLookupHelperNode(GenericContextKind context, ReadyToRunFixupKind fixupKind, object target)
+        public ReadyToRunGenericLookupHelperNode(object context, GenericContextKind contextKind, ReadyToRunFixupKind fixupKind, object target)
         {
-            _target = target;
+            Debug.Assert((context is TypeDesc && ((TypeDesc)context).HasInstantiation)
+                || (context is MethodDesc && ((MethodDesc)context).HasInstantiation));
+
+            Debug.Assert(contextKind != GenericContextKind.ThisObj || context is TypeDesc);
+
             _context = context;
+            _contextKind = contextKind;
+            _target = target;
             _fixupKind = fixupKind;
         }
 
@@ -36,13 +44,48 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 string mangledTargetName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
-                return string.Concat("__GenericLookup_", _context.ToString(), "_", _fixupKind.ToString(), "_", mangledTargetName);
+
+                string mangledContextName;
+                if (_context is MethodDesc)
+                    mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_context);
+                else
+                    mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_context);
+
+                string prefix = _contextKind == GenericContextKind.Dictionary ?
+                    "__GenericLookupFromDict_" : "__GenericLookupFromThis_";
+
+                return string.Concat(prefix, mangledContextName, "_", _fixupKind.ToString(), "_", mangledTargetName);
             }
         }
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
         {
             return true;
+        }
+    }
+
+    public static class ReadyToRunTargetLocator
+    {
+        /// <summary>
+        /// When codegen requests a ready to run generic lookup helper, the token that triggered the
+        /// need for the fixup might refer to something that is not a valid target for the fixup
+        /// (e.g. a <see cref="MethodDesc"/> for a <see cref="ReadyToRunFixupKind.TypeHandle"/> fixup).
+        /// This helper resolves the target to the thing that's applicable.
+        /// </summary>
+        public static object GetTargetForFixup(object resolvedToken, ReadyToRunFixupKind fixupKind)
+        {
+            // TODO: Handle other transformations
+
+            if (resolvedToken is MethodDesc)
+            {
+                switch (fixupKind)
+                {
+                    case ReadyToRunFixupKind.TypeHandle:
+                        return ((MethodDesc)resolvedToken).OwningType;
+                }
+            }
+
+            return resolvedToken;
         }
     }
 }

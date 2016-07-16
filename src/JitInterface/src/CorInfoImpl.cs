@@ -1239,24 +1239,28 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunFixupKind fixupKind = (ReadyToRunFixupKind)pGenericLookupKind.runtimeLookupFlags;
-                        GenericContextKind genericContext;
 
-                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM)
+                        object target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        target = ReadyToRunTargetLocator.GetTargetForFixup(target, fixupKind);
+                        if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
                         {
-                            genericContext = GenericContextKind.MethodDictionary;
-                        }
-                        else if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
-                        {
-                            genericContext = GenericContextKind.ThisObj;
+                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromThisObjHelper(MethodBeingCompiled.OwningType, fixupKind, target));
                         }
                         else
                         {
-                            Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM);
-                            genericContext = GenericContextKind.TypeDictionary;
-                        }
+                            object contextSource;
+                            if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
+                            {
+                                contextSource = MethodBeingCompiled.OwningType;
+                            }
+                            else
+                            {
+                                Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
+                                contextSource = MethodBeingCompiled;
+                            }
 
-                        object target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericHelper(genericContext, fixupKind, target));
+                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromDictionaryHelper(contextSource, fixupKind, target));
+                        }
                     }
                     break;
                 default:
