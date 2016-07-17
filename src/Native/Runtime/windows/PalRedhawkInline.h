@@ -165,3 +165,5 @@ FORCEINLINE void PalYieldProcessor()
 #else
 #error Unsupported architecture
 #endif
+
+#define PalDebugBreak() __debugbreak()

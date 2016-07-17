@@ -87,3 +87,5 @@ FORCEINLINE void PalMemoryBarrier()
 {
     __sync_synchronize();
 }
+
+#define PalDebugBreak() __debugbreak()

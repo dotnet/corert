@@ -1284,11 +1284,6 @@ bool PalQueryProcessorTopology()
     return !fError;
 }
 
-void PalDebugBreak()
-{
-    __debugbreak();
-}
-
 #ifdef RUNTIME_SERVICES_ONLY
 // Functions called by the GC to obtain our cached values for number of logical processors and cache size.
 REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetLogicalCpuCount()

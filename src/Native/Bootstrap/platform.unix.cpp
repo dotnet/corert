@@ -36,6 +36,16 @@ extern "C"
 
 extern "C"
 {
+    uint32_t GetLastError()
+    {
+        return 1;
+    }
+
+    uint32_t WaitForMultipleObjectsEx(uint32_t, void*, uint32_t, uint32_t, uint32_t)
+    {
+        throw "WaitForMultipleObjectsEx";
+    }
+
     void CoCreateGuid()
     {
         throw "CoCreateGuid";

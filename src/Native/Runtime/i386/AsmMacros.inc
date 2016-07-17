@@ -154,7 +154,7 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
 ;; CONSTANTS -- SYMBOLS
 ;;
 
-PALDEBUGBREAK                               equ ?PalDebugBreak@@YGXXZ
+RhDebugBreak                                equ @RhDebugBreak@0
 RhpGcAlloc                                  equ @RhpGcAlloc@16
 G_LOWEST_ADDRESS                            equ _g_lowest_address
 G_HIGHEST_ADDRESS                           equ _g_highest_address
@@ -176,7 +176,7 @@ endif ;; FEATURE_GC_STRESS
 ;; IMPORTS
 ;;
 EXTERN RhpGcAlloc                               : PROC
-EXTERN PALDEBUGBREAK                            : PROC
+EXTERN RhDebugBreak                             : PROC
 EXTERN RhpWaitForSuspend2                       : PROC
 EXTERN RhpWaitForGC2                            : PROC
 EXTERN RhpReversePInvokeAttachOrTrapThread2     : PROC

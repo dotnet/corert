@@ -365,8 +365,6 @@ MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -8
 ;; CONSTANTS -- SYMBOLS
 ;;
 
-PALDEBUGBREAK                               equ ?PalDebugBreak@@YAXXZ
-
 ifdef FEATURE_GC_STRESS
 REDHAWKGCINTERFACE__STRESSGC                equ ?StressGc@RedhawkGCInterface@@SAXXZ
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SAXPEAUPAL_LIMITED_CONTEXT@@@Z
@@ -378,7 +376,7 @@ endif ;; FEATURE_GC_STRESS
 
 EXTERN RhpGcAlloc                               : PROC
 EXTERN RhpValidateExInfoPop                     : PROC
-EXTERN PALDEBUGBREAK                            : PROC
+EXTERN RhDebugBreak                             : PROC
 EXTERN RhpWaitForSuspend2                       : PROC
 EXTERN RhpWaitForGC2                            : PROC
 EXTERN RhpReversePInvokeAttachOrTrapThread2     : PROC
