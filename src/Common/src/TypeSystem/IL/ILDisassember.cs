@@ -75,6 +75,21 @@ namespace Internal.IL
             AppendOwningType(sb, method.OwningType);
             sb.Append("::");
             sb.Append(method.Name);
+
+            if (method.HasInstantiation)
+            {
+                sb.Append('<');
+
+                for (int i = 0; i < method.Instantiation.Length; i++)
+                {
+                    if (i != 0)
+                        sb.Append(", ");
+                    _typeNameFormatter.AppendNameWithValueClassPrefix(sb, method.Instantiation[i]);
+                }
+
+                sb.Append('>');
+            }
+
             sb.Append('(');
             AppendSignatureArgumentList(sb, signature);
             sb.Append(')');
