@@ -41,6 +41,11 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
+COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
+{
+    PalDebugBreak();
+}
+
 // Busy spin for the given number of iterations.
 COOP_PINVOKE_HELPER(void, RhSpinWait, (Int32 iterations))
 {

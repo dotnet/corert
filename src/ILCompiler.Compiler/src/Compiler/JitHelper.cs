@@ -46,6 +46,10 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowDivideByZeroException");
                     break;
 
+                case ReadyToRunHelper.DebugBreak:
+                    mangledName = "RhDebugBreak";
+                    break;
+
                 case ReadyToRunHelper.WriteBarrier:
                     mangledName = "RhpAssignRef";
                     break;

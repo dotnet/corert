@@ -553,7 +553,7 @@ DREG_SZ equ     (SIZEOF__PAL_LIMITED_CONTEXT - (OFFSETOF__PAL_LIMITED_CONTEXT__L
         ldr         r1, [r1]
         cbnz        r1, %0
 
-        bl          $PALDEBUGBREAK
+        bl          RhDebugBreak
 0
 #endif ;; _DEBUG
 

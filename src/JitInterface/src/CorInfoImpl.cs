@@ -1883,6 +1883,7 @@ namespace Internal.JitInterface
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW: id = ReadyToRunHelper.Throw; break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW: id = ReadyToRunHelper.Rethrow; break;
+                case CorInfoHelpFunc.CORINFO_HELP_USER_BREAKPOINT: id = ReadyToRunHelper.DebugBreak; break;
                 case CorInfoHelpFunc.CORINFO_HELP_OVERFLOW: id = ReadyToRunHelper.Overflow; break;
                 case CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL: id = ReadyToRunHelper.RngChkFail; break;
                 case CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST: id = ReadyToRunHelper.FailFast; break;
