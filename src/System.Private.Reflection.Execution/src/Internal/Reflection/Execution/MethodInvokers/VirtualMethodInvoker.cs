@@ -61,8 +61,15 @@ namespace Internal.Reflection.Execution.MethodInvokers
             IntPtr resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
 
             Object result = RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject, resolvedVirtual, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
-                invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: true);
+                thisObject,
+                resolvedVirtual,
+                null /*thisPtrDynamicInvokeMethod*/,
+                MethodInvokeInfo.DynamicInvokeMethod,
+                MethodInvokeInfo.DynamicInvokeGenericDictionary,
+                MethodInvokeInfo.MethodInfo,
+                arguments,
+                invokeMethodHelperIsThisCall: false,
+                methodToCallIsThisCall: true);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

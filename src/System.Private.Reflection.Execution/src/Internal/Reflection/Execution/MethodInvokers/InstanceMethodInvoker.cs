@@ -33,8 +33,15 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
             MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
             object result = RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject, MethodInvokeInfo.LdFtnResult, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
-                invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: true);
+                thisObject,
+                MethodInvokeInfo.LdFtnResult,
+                null /*thisPtrDynamicInvokeMethod*/,
+                MethodInvokeInfo.DynamicInvokeMethod,
+                MethodInvokeInfo.DynamicInvokeGenericDictionary,
+                MethodInvokeInfo.MethodInfo,
+                arguments,
+                invokeMethodHelperIsThisCall: false, 
+                methodToCallIsThisCall: true);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
