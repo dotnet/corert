@@ -45,96 +45,80 @@ namespace Internal.IL
             }
         }
 
-        public string FormatType(TypeDesc type)
+        public void AppendType(StringBuilder sb, TypeDesc type, bool forceValueClassPrefix = true)
         {
             // Types referenced from the IL show as instantiated over generic parameter.
             // E.g. "initobj !0" becomes "initobj !T"
             TypeDesc typeInContext = type.InstantiateSignature(
                 _methodIL.OwningMethod.OwningType.Instantiation, _methodIL.OwningMethod.Instantiation);
-            if (typeInContext.HasInstantiation)
-                return this.TypeNameFormatter.FormatNameWithValueClassPrefix(typeInContext);
-            return this.TypeNameFormatter.FormatName(typeInContext);
+            if (typeInContext.HasInstantiation || forceValueClassPrefix)
+                this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, typeInContext);
+            else
+                this.TypeNameFormatter.AppendName(sb, typeInContext);
         }
 
-        private string FormatOwningType(TypeDesc type)
+        private void AppendOwningType(StringBuilder sb, TypeDesc type)
         {
             // Special case primitive types: we don't want to use short names here
             if (type.IsPrimitive || type.IsString || type.IsObject)
-            {
-                MetadataType mdType = (MetadataType)type;
-                return String.Concat(mdType.Namespace, ".", mdType.Name);
-            }
-            return FormatType(type);
+                _typeNameFormatter.AppendNameForNamespaceTypeWithoutAliases(sb, (MetadataType)type);
+            else
+                AppendType(sb, type, false);
         }
 
-        private string FormatMethodSignature(MethodDesc method)
+        private void AppendMethodSignature(StringBuilder sb, MethodDesc method)
         {
-            StringBuilder sb = new StringBuilder();
-
             MethodSignature signature = method.Signature;
 
-            FormatSignaturePrefix(signature, sb);
+            AppendSignaturePrefix(sb, signature);
             sb.Append(' ');
-            sb.Append(FormatOwningType(method.OwningType));
+            AppendOwningType(sb, method.OwningType);
             sb.Append("::");
             sb.Append(method.Name);
             sb.Append('(');
-            FormatSignatureArgumentList(signature, sb);
+            AppendSignatureArgumentList(sb, signature);
             sb.Append(')');
-
-            return sb.ToString();
         }
 
-        private string FormatMethodSignature(MethodSignature signature)
+        private void AppendMethodSignature(StringBuilder sb, MethodSignature signature)
         {
-            StringBuilder sb = new StringBuilder();
-
-            FormatSignaturePrefix(signature, sb);
+            AppendSignaturePrefix(sb, signature);
             sb.Append('(');
-            FormatSignatureArgumentList(signature, sb);
+            AppendSignatureArgumentList(sb, signature);
             sb.Append(')');
-
-            return sb.ToString();
         }
 
-        private void FormatSignaturePrefix(MethodSignature signature, StringBuilder sb)
+        private void AppendSignaturePrefix(StringBuilder sb, MethodSignature signature)
         {
             if (!signature.IsStatic)
                 sb.Append("instance ");
 
-            sb.Append(this.TypeNameFormatter.FormatNameWithValueClassPrefix(signature.ReturnType));
+            this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, signature.ReturnType);
         }
 
-        private void FormatSignatureArgumentList(MethodSignature signature, StringBuilder sb)
+        private void AppendSignatureArgumentList(StringBuilder sb, MethodSignature signature)
         {
             for (int i = 0; i < signature.Length; i++)
             {
                 if (i != 0)
                     sb.Append(", ");
 
-                sb.Append(this.TypeNameFormatter.FormatNameWithValueClassPrefix(signature[i]));
+                this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, signature[i]);
             }
         }
 
-        private string FormatFieldSignature(FieldDesc field)
+        private void AppendFieldSignature(StringBuilder sb, FieldDesc field)
         {
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append(this.TypeNameFormatter.FormatNameWithValueClassPrefix(field.FieldType));
+            this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, field.FieldType);
             sb.Append(' ');
-            sb.Append(FormatOwningType(field.OwningType));
+            AppendOwningType(sb, field.OwningType);
             sb.Append("::");
             sb.Append(field.Name);
-
-            return sb.ToString();
         }
 
-        private string FormatStringLiteral(string s)
+        private void AppendStringLiteral(StringBuilder sb, string s)
         {
-            StringBuilder sb = new StringBuilder(s.Length + 2);
-
             sb.Append('"');
-
             for (int i = 0; i < s.Length; i++)
             {
                 if (s[i] == '\\')
@@ -149,25 +133,23 @@ namespace Internal.IL
                     sb.Append(s[i]);
             }
             sb.Append('"');
-
-            return sb.ToString();
         }
 
-        private string FormatToken(int token)
+        private void AppendToken(StringBuilder sb, int token)
         {
             object obj = _methodIL.GetObject(token);
             if (obj is MethodDesc)
-                return FormatMethodSignature((MethodDesc)obj);
+                AppendMethodSignature(sb, (MethodDesc)obj);
             else if (obj is FieldDesc)
-                return FormatFieldSignature((FieldDesc)obj);
+                AppendFieldSignature(sb, (FieldDesc)obj);
             else if (obj is MethodSignature)
-                return FormatMethodSignature((MethodSignature)obj);
+                AppendMethodSignature(sb, (MethodSignature)obj);
             else if (obj is TypeDesc)
-                return FormatType((TypeDesc)obj);
+                AppendType(sb, (TypeDesc)obj, false);
             else
             {
                 Debug.Assert(obj is string, "NYI: " + obj.GetType());
-                return FormatStringLiteral((string)obj);
+                AppendStringLiteral(sb, (string)obj);
             }
         }
         #endregion
@@ -216,9 +198,18 @@ namespace Internal.IL
             return *(double*)(&value);
         }
 
-        public static string FormatOffset(int offset)
+        public static void AppendOffset(StringBuilder sb, int offset)
         {
-            return "IL_" + offset.ToString("X4");
+            sb.Append("IL_");
+            sb.AppendFormat("{0:X4}", offset);
+        }
+
+        private static void PadForInstructionArgument(StringBuilder sb)
+        {
+            if (sb.Length < 22)
+                sb.Append(' ', 22 - sb.Length);
+            else
+                sb.Append(' ');
         }
 
         public bool HasNextInstruction
@@ -239,7 +230,9 @@ namespace Internal.IL
 
         public string GetNextInstruction()
         {
-            string opCodeName = FormatOffset(_currentOffset) + ": ";
+            StringBuilder decodedInstruction = new StringBuilder();
+            AppendOffset(decodedInstruction, _currentOffset);
+            decodedInstruction.Append(": ");
 
         again:
 
@@ -249,7 +242,7 @@ namespace Internal.IL
                 opCode = (ILOpcode)(0x100 + ReadILByte());
             }
 
-            opCodeName += opCode.ToString().Replace("_", ".");
+            decodedInstruction.Append(opCode.ToString().Replace("_", "."));
 
             switch (opCode)
             {
@@ -260,10 +253,14 @@ namespace Internal.IL
                 case ILOpcode.ldloca_s:
                 case ILOpcode.stloc_s:
                 case ILOpcode.ldc_i4_s:
-                    return opCodeName + " " + ReadILByte();
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILByte());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.unaligned:
-                    opCodeName += " " + ReadILByte() + " ";
+                    decodedInstruction.Append(' ');
+                    decodedInstruction.Append(ReadILByte());
+                    decodedInstruction.Append(' ');
                     goto again;
 
                 case ILOpcode.ldarg:
@@ -272,19 +269,29 @@ namespace Internal.IL
                 case ILOpcode.ldloc:
                 case ILOpcode.ldloca:
                 case ILOpcode.stloc:
-                    return opCodeName + " " + ReadILUInt16();
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILUInt16());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_i4:
-                    return opCodeName + " " + ReadILUInt32();
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILUInt32());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_r4:
-                    return opCodeName + " " + ReadILFloat();
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILFloat());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_i8:
-                    return opCodeName + " " + ReadILUInt64();
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILUInt64());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_r8:
-                    return opCodeName + " " + ReadILDouble();
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILDouble());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.jmp:
                 case ILOpcode.call:
@@ -318,7 +325,9 @@ namespace Internal.IL
                 case ILOpcode.initobj:
                 case ILOpcode.constrained:
                 case ILOpcode.sizeof_:
-                    return opCodeName + " " + FormatToken(ReadILToken());
+                    PadForInstructionArgument(decodedInstruction);
+                    AppendToken(decodedInstruction, ReadILToken());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.br_s:
                 case ILOpcode.leave_s:
@@ -334,7 +343,9 @@ namespace Internal.IL
                 case ILOpcode.bgt_un_s:
                 case ILOpcode.ble_un_s:
                 case ILOpcode.blt_un_s:
-                    return opCodeName + " " + FormatOffset((sbyte)ReadILByte() + _currentOffset);
+                    PadForInstructionArgument(decodedInstruction);
+                    AppendOffset(decodedInstruction, (sbyte)ReadILByte() + _currentOffset);
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.br:
                 case ILOpcode.leave:
@@ -350,26 +361,28 @@ namespace Internal.IL
                 case ILOpcode.bgt_un:
                 case ILOpcode.ble_un:
                 case ILOpcode.blt_un:
-                    return opCodeName + " " + FormatOffset((int)ReadILUInt32() + _currentOffset);
+                    PadForInstructionArgument(decodedInstruction);
+                    AppendOffset(decodedInstruction, (int)ReadILUInt32() + _currentOffset);
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.switch_:
                     {
-                        opCodeName = "switch (";
+                        decodedInstruction.Append("switch (");
                         uint count = ReadILUInt32();
                         int jmpBase = _currentOffset + (int)(4 * count);
                         for (uint i = 0; i < count; i++)
                         {
                             if (i != 0)
-                                opCodeName += ", ";
+                                decodedInstruction.Append(", ");
                             int delta = (int)ReadILUInt32();
-                            opCodeName += FormatOffset(jmpBase + delta);
+                            AppendOffset(decodedInstruction, jmpBase + delta);
                         }
-                        opCodeName += ")";
-                        return opCodeName;
+                        decodedInstruction.Append(")");
+                        return decodedInstruction.ToString();
                     }
 
                 default:
-                    return opCodeName;
+                    return decodedInstruction.ToString();
             }
         }
         #endregion
@@ -384,7 +397,7 @@ namespace Internal.IL
                 _thisModule = thisModule;
             }
 
-            public string FormatNameWithValueClassPrefix(TypeDesc type)
+            public void AppendNameWithValueClassPrefix(StringBuilder sb, TypeDesc type)
             {
                 if (!type.IsSignatureVariable
                     && type.IsDefType
@@ -393,90 +406,136 @@ namespace Internal.IL
                     && !type.IsString)
                 {
                     string prefix = type.IsValueType ? "valuetype " : "class ";
-                    return String.Concat(prefix, FormatName(type));
+                    sb.Append(prefix);
+                    AppendName(sb, type);
                 }
-
-                return FormatName(type);
+                else
+                {
+                    AppendName(sb, type);
+                }
             }
 
-            public override string FormatName(PointerType type)
-                => String.Concat(FormatNameWithValueClassPrefix(type.ParameterType), "*");
-
-            public override string FormatName(SignatureMethodVariable type)
-                => String.Concat("!!", type.Index.ToStringInvariant());
-
-            public override string FormatName(SignatureTypeVariable type)
-                => String.Concat("!", type.Index.ToStringInvariant());
-
-            public override string FormatName(GenericParameterDesc type)
+            public override void AppendName(StringBuilder sb, PointerType type)
             {
-                if (type.Kind == GenericParameterKind.Type)
-                    return "!" + type.ToString(); // TODO: should we require a Name property for this?
-                return "!!" + type.ToString();
+                AppendNameWithValueClassPrefix(sb, type.ParameterType);
+                sb.Append('*');
             }
 
-            public override string FormatName(InstantiatedType type)
+            public override void AppendName(StringBuilder sb, SignatureMethodVariable type)
             {
-                StringBuilder sb = new StringBuilder();
+                sb.Append("!!");
+                sb.Append(type.Index.ToStringInvariant());
+            }
 
-                sb.Append(FormatName(type.GetTypeDefinition()));
+            public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
+            {
+                sb.Append("!");
+                sb.Append(type.Index.ToStringInvariant());
+            }
+
+            public override void AppendName(StringBuilder sb, GenericParameterDesc type)
+            {
+                string prefix = type.Kind == GenericParameterKind.Type ? "!" : "!!";
+                sb.Append(prefix);
+                sb.Append(type.ToString()); // TODO: should we require a Name property for this?
+            }
+
+            public override void AppendName(StringBuilder sb, InstantiatedType type)
+            {
+                AppendName(sb, type.GetTypeDefinition());
                 sb.Append('<');
 
-                foreach (var arg in type.Instantiation)
-                    sb.Append(FormatNameWithValueClassPrefix(arg));
+                for (int i = 0; i < type.Instantiation.Length; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    AppendNameWithValueClassPrefix(sb, type.Instantiation[i]);
+                }   
 
                 sb.Append('>');
-
-                return sb.ToString();
             }
 
-            public override string FormatName(ByRefType type)
-                => String.Concat(FormatNameWithValueClassPrefix(type.ParameterType), "&");
+            public override void AppendName(StringBuilder sb, ByRefType type)
+            {
+                AppendNameWithValueClassPrefix(sb, type.ParameterType);
+                sb.Append('&');
+            }
 
-            public override string FormatName(ArrayType type)
-                => String.Concat(FormatNameWithValueClassPrefix(type.ElementType), "[", new String(',', type.Rank - 1), "]");
+            public override void AppendName(StringBuilder sb, ArrayType type)
+            {
+                AppendNameWithValueClassPrefix(sb, type.ElementType);
+                sb.Append('[');
+                sb.Append(',', type.Rank - 1);
+                sb.Append(']');
+            }
 
-            protected override string FormatNameForNamespaceType(MetadataType type)
+            protected override void AppendNameForNamespaceType(StringBuilder sb, MetadataType type)
             {
                 switch (type.Category)
                 {
                     case TypeFlags.Void:
-                        return "void";
+                        sb.Append("void");
+                        return;
                     case TypeFlags.Boolean:
-                        return "bool";
+                        sb.Append("bool");
+                        return;
                     case TypeFlags.Char:
-                        return "char";
+                        sb.Append("char");
+                        return;
                     case TypeFlags.SByte:
-                        return "int8";
+                        sb.Append("int8");
+                        return;
                     case TypeFlags.Byte:
-                        return "uint8";
+                        sb.Append("uint8");
+                        return;
                     case TypeFlags.Int16:
-                        return "int16";
+                        sb.Append("int16");
+                        return;
                     case TypeFlags.UInt16:
-                        return "uint16";
+                        sb.Append("uint16");
+                        return;
                     case TypeFlags.Int32:
-                        return "int32";
+                        sb.Append("int32");
+                        return;
                     case TypeFlags.UInt32:
-                        return "uint32";
+                        sb.Append("uint32");
+                        return;
                     case TypeFlags.Int64:
-                        return "int64";
+                        sb.Append("int64");
+                        return;
                     case TypeFlags.UInt64:
-                        return "uint64";
+                        sb.Append("uint64");
+                        return;
                     case TypeFlags.IntPtr:
-                        return "native int";
+                        sb.Append("native int");
+                        return;
                     case TypeFlags.UIntPtr:
-                        return "native uint";
+                        sb.Append("native uint");
+                        return;
                     case TypeFlags.Single:
-                        return "float32";
+                        sb.Append("float32");
+                        return;
                     case TypeFlags.Double:
-                        return "float64";
+                        sb.Append("float64");
+                        return;
                 }
 
                 if (type.IsString)
-                    return "string";
-                if (type.IsObject)
-                    return "object";
+                {
+                    sb.Append("string");
+                    return;
+                }
 
+                if (type.IsObject)
+                {
+                    sb.Append("object");
+                    return;
+                }
+
+                AppendNameForNamespaceTypeWithoutAliases(sb, type);
+            }
+            public void AppendNameForNamespaceTypeWithoutAliases(StringBuilder sb, MetadataType type)
+            {
                 string ns = type.Namespace;
 
                 ModuleDesc owningModule = type.Module;
@@ -484,16 +543,25 @@ namespace Internal.IL
                 {
                     Debug.Assert(owningModule is IAssemblyDesc);
                     string owningModuleName = ((IAssemblyDesc)owningModule).GetName().Name;
-                    return ns.Length > 0 ?
-                        String.Concat("[", owningModuleName, "]", ns, ".", type.Name) :
-                        String.Concat("[", owningModuleName, "]", type.Name);
+                    sb.Append('[');
+                    sb.Append(owningModuleName);
+                    sb.Append(']');
                 }
 
-                return ns.Length > 0 ? String.Concat(ns, ".", type.Name) : type.Name;
+                if (ns.Length > 0)
+                {
+                    sb.Append(ns);
+                    sb.Append('.');
+                }
+                sb.Append(type.Name);
             }
 
-            protected override string FormatNameForNestedType(MetadataType containingType, MetadataType nestedType)
-                => String.Concat(FormatName(containingType), "/", nestedType.Name);
+            protected override void AppendNameForNestedType(StringBuilder sb, MetadataType nestedType, MetadataType containingType)
+            {
+                AppendName(sb, containingType);
+                sb.Append('/');
+                sb.Append(nestedType.Name);
+            }
         }
         #endregion
     }

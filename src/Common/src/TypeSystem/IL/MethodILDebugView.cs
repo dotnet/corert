@@ -50,7 +50,7 @@ namespace Internal.IL
                             sb.AppendLine(",");
                             sb.Append(' ', 4);
                         }
-                        sb.Append(disasm.FormatType(locals[i].Type));
+                        disasm.AppendType(sb, locals[i].Type);
                         sb.Append(" ");
                         if (locals[i].IsPinned)
                             sb.Append("pinned ");
