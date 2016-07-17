@@ -1133,8 +1133,9 @@ bool IsGCSpecialThread()
 #ifdef FEATURE_PREMORTEM_FINALIZATION
 GPTR_IMPL(Thread, g_pFinalizerThread);
 GPTR_IMPL(Thread, g_pGcThread);
-CLREventStatic* hEventFinalizer = nullptr;
-CLREventStatic* hEventFinalizerDone = nullptr;
+
+CLREventStatic g_FinalizerEvent;
+CLREventStatic g_FinalizerDoneEvent;
 
 #ifndef DACCESS_COMPILE
 // Finalizer method implemented by redhawkm.
@@ -1217,16 +1218,14 @@ bool StartFinalizerThread()
 
 bool FinalizerThread::Initialize()
 {
-    // Allocate the events the GC expects the finalizer thread to have. The hEventFinalizer event is signalled
+    // Allocate the events the GC expects the finalizer thread to have. The g_FinalizerEvent event is signalled
     // by the GC whenever it completes a collection where it found otherwise unreachable finalizable objects.
-    // The hEventFinalizerDone event is set by the finalizer thread every time it wakes up and drains the
-    // queue of finalizable objects. It's mainly used by GC.WaitForPendingFinalizers(). The
-    // hEventFinalizerToShutDown and hEventShutDownToFinalizer are used to synchronize the main thread and the
-    // finalizer during the optional final finalization pass at shutdown.
-    hEventFinalizerDone = new (nothrow) CLREventStatic();
-    hEventFinalizerDone->CreateManualEvent(FALSE);
-    hEventFinalizer = new (nothrow) CLREventStatic();
-    hEventFinalizer->CreateAutoEvent(FALSE);
+    // The g_FinalizerDoneEvent is set by the finalizer thread every time it wakes up and drains the
+    // queue of finalizable objects. It's mainly used by GC.WaitForPendingFinalizers().
+    if (!g_FinalizerEvent.CreateAutoEventNoThrow(false))
+        return false;
+    if (!g_FinalizerDoneEvent.CreateManualEventNoThrow(false))
+        return false;
 
     // Create the finalizer thread itself.
     if (!StartFinalizerThread())
@@ -1243,12 +1242,12 @@ void FinalizerThread::SetFinalizerThread(Thread * pThread)
 void FinalizerThread::EnableFinalization()
 {
     // Signal to finalizer thread that there are objects to finalize
-    hEventFinalizer->Set();
+    g_FinalizerEvent.Set();
 }
 
 void FinalizerThread::SignalFinalizationDone(bool /*fFinalizer*/)
 {
-    hEventFinalizerDone->Set();
+    g_FinalizerDoneEvent.Set();
 }
 
 bool FinalizerThread::HaveExtraWorkForFinalizer()
@@ -1263,7 +1262,7 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
 
 HANDLE FinalizerThread::GetFinalizerEvent()
 {
-    return hEventFinalizer->GetOSEvent();
+    return g_FinalizerEvent.GetOSEvent();
 }
 
 void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
@@ -1273,7 +1272,7 @@ void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
     {
         // Clear any current indication that a finalization pass is finished and wake the finalizer thread up
         // (if there's no work to do it'll set the done event immediately).
-        hEventFinalizerDone->Reset();
+        g_FinalizerDoneEvent.Reset();
         EnableFinalization();
 
 #ifdef APP_LOCAL_RUNTIME
@@ -1283,7 +1282,7 @@ void FinalizerThread::Wait(DWORD timeout, bool allowReentrantWait)
 #endif
 
         // Wait for the finalizer thread to get back to us.
-        hEventFinalizerDone->Wait(timeout, false, allowReentrantWait);
+        g_FinalizerDoneEvent.Wait(timeout, false, allowReentrantWait);
     }
 }
 #endif // !DACCESS_COMPILE
