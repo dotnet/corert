@@ -61,7 +61,6 @@ void GCHeap::UpdatePreGCCounters()
     GetPerfCounters().m_GC.cbAlloc += allocation_0;
     GetPerfCounters().m_GC.cbAlloc += allocation_3;
     GetPerfCounters().m_GC.cbLargeAlloc += allocation_3;
-    GetPerfCounters().m_GC.cPinnedObj = 0;
 
 #ifdef _PREFAST_
     // prefix complains about us dereferencing hp in wks build even though we only access static members
