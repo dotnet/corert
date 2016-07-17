@@ -28,28 +28,32 @@
 // interception). 
 //
 
-void CLREventStatic::CreateManualEvent(bool bInitialState) 
+bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState) 
 { 
     m_hEvent = PalCreateEventW(NULL, TRUE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
-void CLREventStatic::CreateAutoEvent(bool bInitialState) 
+bool CLREventStatic::CreateAutoEventNoThrow(bool bInitialState)
 { 
     m_hEvent = PalCreateEventW(NULL, FALSE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
-void CLREventStatic::CreateOSManualEvent(bool bInitialState) 
+bool CLREventStatic::CreateOSManualEventNoThrow(bool bInitialState)
 { 
     m_hEvent = PalCreateEventW(NULL, TRUE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
-void CLREventStatic::CreateOSAutoEvent (bool bInitialState) 
+bool CLREventStatic::CreateOSAutoEventNoThrow(bool bInitialState)
 { 
     m_hEvent = PalCreateEventW(NULL, FALSE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
 void CLREventStatic::CloseEvent() 
