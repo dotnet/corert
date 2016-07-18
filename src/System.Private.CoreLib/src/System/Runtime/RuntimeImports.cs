@@ -288,18 +288,6 @@ namespace System.Runtime
         //
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsString")]
-        internal static extern bool RhIsString(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetCorElementType")]
-        internal static extern RhCorElementType RhGetCorElementType(EETypePtr pEEType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetGenericInstantiation")]
-        internal static extern unsafe EETypePtr RhGetGenericInstantiation(EETypePtr pEEType, out int arity, out EETypePtr* ppInstantiation, out byte* varianceInfo);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGCDescSize")]
         internal static extern int RhGetGCDescSize(EETypePtr eeType);
 

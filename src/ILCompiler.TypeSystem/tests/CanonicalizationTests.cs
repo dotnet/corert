@@ -107,6 +107,16 @@ namespace TypeSystemTests
             Assert.Same(
                 referenceOverGenericStructOverReference.ConvertToCanonForm(CanonicalFormKind.Universal),
                 referenceOverReference.ConvertToCanonForm(CanonicalFormKind.Universal));
+
+            // Canon of a type instantiated over a signature variable is the same type when just canonicalizing as specific,
+            // but the universal canon form when performing universal canonicalization.
+            var genericStructOverSignatureVariable = _genericStructType.MakeInstantiatedType(_context.GetSignatureVariable(0, false));
+            Assert.Same(
+                genericStructOverSignatureVariable,
+                genericStructOverSignatureVariable.ConvertToCanonForm(CanonicalFormKind.Specific));
+            Assert.NotSame(
+                genericStructOverSignatureVariable,
+                genericStructOverSignatureVariable.ConvertToCanonForm(CanonicalFormKind.Universal));
         }
 
         [Theory]

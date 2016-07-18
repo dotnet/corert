@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__Module";
+                return NodeFactory.CompilationUnitPrefix + "__Module";
             }
         }
 

@@ -99,6 +99,11 @@ namespace Internal.TypeSystem
                 flags |= _rawCanonType.GetTypeFlags(mask);
             }
 
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= _rawCanonType.GetTypeFlags(mask);
+            }
+
             // Might need to define the behavior if we ever hit this.
             Debug.Assert((flags & mask) != 0);
             return flags;

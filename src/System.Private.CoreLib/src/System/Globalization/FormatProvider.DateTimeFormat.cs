@@ -656,7 +656,7 @@ namespace System.Globalization
                                 }
                                 else
                                 {
-                                    String fmtPattern = "D" + tokenLen;
+                                    String fmtPattern = "D" + tokenLen.ToString();
                                     result.Append(year.ToString(fmtPattern, CultureInfo.InvariantCulture));
                                 }
                             }

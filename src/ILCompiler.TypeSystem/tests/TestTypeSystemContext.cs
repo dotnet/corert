@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.TypeSystem;
 using System.Reflection.PortableExecutable;
@@ -98,6 +99,26 @@ namespace TypeSystemTests
                 return StandardCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
             else
                 return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+        }
+
+        protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
+        {
+            if (CanonMode == CanonicalizationMode.Standard)
+                return StandardCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
+            else
+                return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref kind);
+        }
+
+        protected override bool ComputeHasGCStaticBase(FieldDesc field)
+        {
+            Debug.Assert(field.IsStatic);
+
+            TypeDesc fieldType = field.FieldType;
+            if (fieldType.IsValueType)
+                return ((DefType)fieldType).ContainsGCPointers;
+            else
+                return fieldType.IsGCPointer;
+
         }
     }
 }

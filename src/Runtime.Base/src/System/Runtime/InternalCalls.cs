@@ -336,13 +336,4 @@ namespace System.Runtime
         [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
         internal extern static long PalGetTickCount64();
     }
-
-    // Keep this synchronized with GenericVarianceType in rhbinder.h.
-    public enum GenericVariance : byte
-    {
-        NonVariant = 0,
-        Covariant = 1,
-        Contravariant = 2,
-        ArrayCovariant = 0x20,
-    }
 }

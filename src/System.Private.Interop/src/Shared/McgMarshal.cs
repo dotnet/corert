@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices
             return obj.IsOfType(handle);
         }
 
-#if ENABLE_WINRT
+#if  ENABLE_MIN_WINRT
         public static unsafe void SetExceptionErrorCode(Exception exception, int errorCode)
         {
             InteropExtensions.SetExceptionErrorCode(exception, errorCode);
@@ -634,31 +634,7 @@ namespace System.Runtime.InteropServices
 #endif
 
 #if ENABLE_WINRT
-        /// <summary>
-        /// Creates a temporary HSTRING on the staack
-        /// NOTE: pchPinnedSourceString must be pinned before calling this function, making sure the pointer
-        /// is valid during the entire interop call
-        /// </summary>
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static unsafe void StringToHStringReference(
-            char *pchPinnedSourceString,
-            string sourceString,
-            HSTRING_HEADER* pHeader,
-            HSTRING* phString)
-        {
-            if (sourceString == null)
-                throw new ArgumentNullException("sourceString", SR.Null_HString);
-
-            int hr = ExternalInterop.WindowsCreateStringReference(
-                pchPinnedSourceString,
-                (uint)sourceString.Length,
-                pHeader,
-                (void**)phString);
-
-            if (hr < 0)
-                throw Marshal.GetExceptionForHR(hr);
-        }
-
+       
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static unsafe HSTRING StringToHString(string sourceString)
         {
@@ -697,33 +673,6 @@ namespace System.Runtime.InteropServices
 
                 return hr;
             }
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        internal static unsafe string HStringToString(IntPtr hString)
-        {
-            HSTRING hstring = new HSTRING(hString);
-            return HStringToString(hstring);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static unsafe string HStringToString(HSTRING pHString)
-        {
-            if (pHString.handle == IntPtr.Zero)
-            {
-                return String.Empty;
-            }
-
-            uint length = 0;
-            char* pchBuffer = ExternalInterop.WindowsGetStringRawBuffer(pHString.handle.ToPointer(), &length);
-
-            return new string(pchBuffer, 0, (int)length);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static unsafe void FreeHString(IntPtr pHString)
-        {
-            ExternalInterop.WindowsDeleteString(pHString.ToPointer());
         }
 #endif //ENABLE_WINRT
 
@@ -829,7 +778,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe __ComObject GetActivationFactory(string className, RuntimeTypeHandle factoryIntf)
         {
-#if  ENABLE_WINRT
+#if  ENABLE_MIN_WINRT
             return FactoryCache.Get().GetActivationFactory(className, factoryIntf);
 #else
             throw new PlatformNotSupportedException("GetActivationFactory");
@@ -871,7 +820,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle interfaceType,
             RuntimeTypeHandle classTypeInSignature)
         {
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
             if (interfaceType.Equals(typeof(object).TypeHandle))
             {
                 return McgMarshal.IInspectableToObject(pComItf);
@@ -882,7 +831,7 @@ namespace System.Runtime.InteropServices
                 return McgMarshal.HStringToString(pComItf);
             }
 
-            if (interfaceType.IsClass())
+            if (interfaceType.IsComClass())
             {
                 RuntimeTypeHandle defaultInterface = interfaceType.GetDefaultInterface();
                 Debug.Assert(!defaultInterface.IsNull());
@@ -1007,7 +956,7 @@ namespace System.Runtime.InteropServices
             object obj,
             RuntimeTypeHandle typeHnd)
         {
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
             if (typeHnd.Equals(typeof(object).TypeHandle))
             {
                 return McgMarshal.ObjectToIInspectable(obj);
@@ -1018,7 +967,7 @@ namespace System.Runtime.InteropServices
                 return McgMarshal.StringToHString((string)obj).handle;
             }
 
-            if (typeHnd.IsClass())
+            if (typeHnd.IsComClass())
             {
                 Debug.Assert(obj == null || obj is __ComObject);
                 ///
@@ -1036,7 +985,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ObjectToIInspectable(Object obj)
         {
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
             return ObjectToComInterface(obj, InternalTypes.IInspectable);
 #else
             throw new PlatformNotSupportedException("ObjectToIInspectable");
@@ -1055,10 +1004,12 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static IntPtr DelegateToComInterface(Delegate del, RuntimeTypeHandle typeHnd, IntPtr stubFunctionAddr)
+        public static IntPtr DelegateToComInterface(Delegate del, RuntimeTypeHandle typeHnd)
         {
             if (del == null)
                 return default(IntPtr);
+
+            IntPtr stubFunctionAddr = typeHnd.GetDelegateInvokeStub();
 
             object targetObj;
 
@@ -1076,7 +1027,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Delegate ComInterfaceToDelegate(IntPtr pComItf, RuntimeTypeHandle typeHnd, IntPtr stubFunctionAddr)
+        public static Delegate ComInterfaceToDelegate(IntPtr pComItf, RuntimeTypeHandle typeHnd)
         {
             if (pComItf == default(IntPtr))
                 return null;
@@ -1092,6 +1043,8 @@ namespace System.Runtime.InteropServices
             if (del == null)
             {
                 Debug.Assert(obj is __ComObject);
+                IntPtr stubFunctionAddr = typeHnd.GetDelegateInvokeStub();
+
                 del = InteropExtensions.CreateDelegate(
                     typeHnd,
                     stubFunctionAddr,
@@ -1141,15 +1094,12 @@ namespace System.Runtime.InteropServices
             return dst;
         }
 
-#if ENABLE_WINRT
-#if !RHTESTCL
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-#endif
         /// <summary>
         /// Get outer IInspectable for managed object deriving from native scenario
         /// At this point the inner is not created yet - you need the outer first and pass it to the factory
         /// to create the inner
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static IntPtr GetOuterIInspectableForManagedObject(__ComObject managedObject)
         {
@@ -1183,7 +1133,6 @@ namespace System.Runtime.InteropServices
                     ccw.Release();
             }
         }
-#endif
 
         [CLSCompliant(false)]
         public static unsafe IntPtr ManagedObjectToComInterface(Object obj, RuntimeTypeHandle interfaceType)
@@ -1335,7 +1284,7 @@ namespace System.Runtime.InteropServices
         }
 
         #region Shared templates
-#if ENABLE_WINRT
+#if  ENABLE_MIN_WINRT
         public static void CleanupNative<T>(IntPtr pObject)
         {
             if (typeof(T) == typeof(string))
@@ -1350,7 +1299,7 @@ namespace System.Runtime.InteropServices
 #endif
         #endregion
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static unsafe IntPtr ActivateInstance(string typeName)
         {

@@ -137,7 +137,8 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhIsString(this);
+                // String is currently the only non-array type with a non-zero component size.
+                return (_value->ComponentSize == sizeof(char)) && !_value->IsArray && !_value->IsGenericTypeDefinition;
             }
         }
 
@@ -186,6 +187,24 @@ namespace System
                 return _value->IsGeneric;
             }
         }
+
+#if CORERT
+        internal GenericArgumentCollection Instantiation
+        {
+            get
+            {
+                return new GenericArgumentCollection(_value->GenericArity, _value->GenericArguments);
+            }
+        }
+
+        internal EETypePtr GenericDefinition
+        {
+            get
+            {
+                return new EETypePtr((IntPtr)_value->GenericDefinition);
+            }
+        }
+#endif
 
         /// <summary>
         /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
@@ -334,7 +353,9 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhGetCorElementType(this);
+                Debug.Assert((int)Internal.Runtime.CorElementType.ELEMENT_TYPE_I1 == (int)RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1);
+                Debug.Assert((int)Internal.Runtime.CorElementType.ELEMENT_TYPE_R8 == (int)RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8);
+                return (RuntimeImports.RhCorElementType)_value->CorElementType;
             }
         }
 
@@ -387,5 +408,36 @@ namespace System
                 }
             }
         }
+
+#if CORERT
+        public struct GenericArgumentCollection
+        {
+            private EEType** _arguments;
+            private uint _argumentCount;
+
+            internal GenericArgumentCollection(uint argumentCount, EEType** arguments)
+            {
+                _argumentCount = argumentCount;
+                _arguments = arguments;
+            }
+
+            public int Length
+            {
+                get
+                {
+                    return (int)_argumentCount;
+                }
+            }
+
+            public EETypePtr this[int index]
+            {
+                get
+                {
+                    Debug.Assert((uint)index < _argumentCount);
+                    return new EETypePtr((IntPtr)_arguments[index]);
+                }
+            }
+        }
+#endif
     }
 }

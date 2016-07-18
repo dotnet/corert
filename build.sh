@@ -190,6 +190,7 @@ case $OSName in
         __BuildOS=OSX
         __ToolNugetRuntimeId=osx.10.10-x64
         __TestNugetRuntimeId=osx.10.10-x64
+        ulimit -n 2048
         ;;
 
     FreeBSD)

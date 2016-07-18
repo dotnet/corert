@@ -1371,7 +1371,7 @@ namespace System.Runtime.InteropServices
         }
     }
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
     unsafe struct __com_IActivationFactoryInternal
     {
 #pragma warning disable 649 // Field 'blah' is never assigned to, and will always have its default value null
@@ -1445,7 +1445,7 @@ namespace System.Runtime.InteropServices
             }
         }
     }
-#endif
+#endif // ENABLE_MIN_WINRT
 
 
     unsafe struct __com_IManagedActivationFactory

@@ -90,8 +90,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             var slots = new ArrayBuilder<MethodDesc>();
 
-            MetadataType mdType = _type.GetClosestMetadataType();
-            foreach (var method in mdType.GetAllVirtualMethods())
+            DefType defType = _type.GetClosestDefType();
+            foreach (var method in defType.GetAllVirtualMethods())
             {
                 slots.Add(method);
             }

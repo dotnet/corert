@@ -221,7 +221,6 @@ $Name
 ;; CONSTANTS -- SYMBOLS
 ;;
 
-        SETALIAS PALDEBUGBREAK, ?PalDebugBreak@@YAXXZ
         SETALIAS G_LOWEST_ADDRESS, g_lowest_address
         SETALIAS G_HIGHEST_ADDRESS, g_highest_address
         SETALIAS G_EPHEMERAL_LOW, g_ephemeral_low
@@ -236,7 +235,7 @@ $Name
 ;; IMPORTS
 ;;
         EXTERN RhpGcAlloc
-        EXTERN $PALDEBUGBREAK
+        EXTERN RhDebugBreak
         EXTERN RhpWaitForSuspend2
         EXTERN RhpWaitForGC2
         EXTERN RhpReversePInvokeAttachOrTrapThread2

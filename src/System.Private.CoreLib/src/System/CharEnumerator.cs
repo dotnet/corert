@@ -17,7 +17,7 @@ using System.Collections.Generic;
 
 namespace System
 {
-    internal sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable
+    internal sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable, ICloneable
     {
         private String _str;
         private int _index;
@@ -29,9 +29,10 @@ namespace System
             _index = -1;
         }
 
-        //public Object Clone() {
-        //    return MemberwiseClone();
-        //}
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
 
         public bool MoveNext()
         {

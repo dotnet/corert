@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
                     throw new InvalidOperationException("MangledName called before String Id was initialized.");
                 }
 
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToStringInvariant();
+                return NodeFactory.CompilationUnitPrefix + "__str_table_entry_" + _id.Value.ToStringInvariant();
             }
         }
 

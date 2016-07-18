@@ -59,6 +59,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CreateInstanceIntrinsic.cs">
       <Link>IL\Stubs\CreateInstanceIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\InvokeUtilsIntrinsics.cs">
+      <Link>IL\Stubs\InvokeUtilsIntrinsics.cs</Link>
+    </Compile>
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
@@ -119,14 +122,16 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
-    <Compile Include="Compiler\ICompilationRootProvider.cs" />
+    <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\JitHelper.cs" />
     <Compile Include="Compiler\MemoryHelper.cs" />
     <Compile Include="Compiler\MetadataGeneration.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
     <Compile Include="Compiler\MultiFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NameMangler.cs" />
+    <Compile Include="Compiler\ReadyToRun.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
+    <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\TypeInitialization.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />

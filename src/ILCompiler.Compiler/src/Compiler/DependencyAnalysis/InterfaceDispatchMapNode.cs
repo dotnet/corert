@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
                     throw new InvalidOperationException("MangledName called before InterfaceDispatchMap index was initialized.");
                 }
                     
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__InterfaceDispatchMap_" + _dispatchMapTableIndex;
+                return NodeFactory.CompilationUnitPrefix + "__InterfaceDispatchMap_" + _dispatchMapTableIndex;
             }
         }
         
@@ -95,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];
-                    var implMethod = _type.GetClosestMetadataType().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
+                    var implMethod = _type.GetClosestDefType().ResolveInterfaceMethodToVirtualMethodOnType(declMethod);
 
                     // Interface methods first implemented by a base type in the hierarchy will return null for the implMethod (runtime interface
                     // dispatch will walk the inheritance chain).

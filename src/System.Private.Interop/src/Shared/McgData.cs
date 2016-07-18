@@ -145,6 +145,7 @@ namespace System.Runtime.InteropServices
         //  Optional fields(CcwVtable)
         //  TODO fyuan define larger McgInterfaceData for merging interop code (shared CCW, default eventhandler)
         public IntPtr CcwVtable;                 //  1 pointer, around 20-40% usage
+        public IntPtr DelegateInvokeStub;       // only used for RCW delegate
     }
 
     [CLSCompliant(false)]
@@ -853,6 +854,11 @@ namespace System.Runtime.InteropServices
         internal bool HasDynamicAdapterClass
         {
             get { return !DynamicAdapterClassType.IsNull(); }
+        }
+
+        internal IntPtr DelegateInvokeStub
+        {
+            get { return InterfaceData.DelegateInvokeStub; }
         }
     }
 

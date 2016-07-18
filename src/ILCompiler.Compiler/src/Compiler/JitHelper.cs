@@ -3,230 +3,142 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using Internal.TypeSystem;
-
 using Internal.IL;
 using Internal.Runtime;
 
 namespace ILCompiler
 {
-    public enum JitHelperId
-    {
-        //
-        // Keep in sync with https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
-        //
-
-        // Exception handling helpers
-        Throw = 0x20,
-        Rethrow                     = 0x21,
-        Overflow                    = 0x22,
-        RngChkFail                  = 0x23,
-        FailFast                    = 0x24,
-        ThrowNullRef                = 0x25,
-        ThrowDivZero                = 0x26,
-
-        // Write barriers
-        WriteBarrier                = 0x30,
-        CheckedWriteBarrier         = 0x31,
-        ByRefWriteBarrier           = 0x32,
-
-        // Array helpers
-        Stelem_Ref                  = 0x38,
-        Ldelema_Ref                 = 0x39,
-
-        MemSet                      = 0x40,
-        MemCpy                      = 0x41,
-
-        // Get string handle lazily
-        GetString                   = 0x50,
-
-        // Reflection helpers
-        GetRuntimeTypeHandle        = 0x54,
-        GetRuntimeMethodHandle      = 0x55,
-        GetRuntimeFieldHandle       = 0x56,
-
-        Box                         = 0x58,
-        Box_Nullable                = 0x59,
-        Unbox                       = 0x5A,
-        Unbox_Nullable              = 0x5B,
-        NewMultiDimArr              = 0x5C,
-        NewMultiDimArr_NonVarArg    = 0x5D,
-
-        // Long mul/div/shift ops
-        LMul                        = 0xC0,
-        LMulOfv                     = 0xC1,
-        ULMulOvf                    = 0xC2,
-        LDiv                        = 0xC3,
-        LMod                        = 0xC4,
-        ULDiv                       = 0xC5,
-        ULMod                       = 0xC6,
-        LLsh                        = 0xC7,
-        LRsh                        = 0xC8,
-        LRsz                        = 0xC9,
-        Lng2Dbl                     = 0xCA,
-        ULng2Dbl                    = 0xCB,
-
-        // 32-bit division helpers
-        Div                         = 0xCC,
-        Mod                         = 0xCD,
-        UDiv                        = 0xCE,
-        UMod                        = 0xCF,
-
-        // Floating point conversions
-        Dbl2Int                     = 0xD0,
-        Dbl2IntOvf                  = 0xD1,
-        Dbl2Lng                     = 0xD2,
-        Dbl2LngOvf                  = 0xD3,
-        Dbl2UInt                    = 0xD4,
-        Dbl2UIntOvf                 = 0xD5,
-        Dbl2ULng                    = 0xD6,
-        Dbl2ULngOvf                 = 0xD7,
-
-        // Floating point ops
-        DblRem                      = 0xE0,
-        FltRem                      = 0xE1,
-        DblRound                    = 0xE2,
-        FltRound                    = 0xE3,
-
-        // P/Invoke support
-        PInvokeBegin                = 0xF0,
-        PInvokeEnd                  = 0xF1,
-
-        // P/Invoke support
-        ReversePInvokeEnter         = 0xF2,
-        ReversePInvokeExit          = 0xF3,
-    }
-
     internal class JitHelper
     {
         /// <summary>
         /// Returns JIT helper entrypoint. JIT helpers can be either implemented by entrypoint with given mangled name or 
         /// by a method in class library.
         /// </summary>
-        static public void GetEntryPoint(TypeSystemContext context, JitHelperId id, out string mangledName, out MethodDesc methodDesc)
+        static public void GetEntryPoint(TypeSystemContext context, ReadyToRunHelper id, out string mangledName, out MethodDesc methodDesc)
         {
             mangledName = null;
             methodDesc = null;
 
             switch (id)
             {
-                case JitHelperId.Throw:
+                case ReadyToRunHelper.Throw:
                     mangledName = "RhpThrowEx";
                     break;
-                case JitHelperId.Rethrow:
+                case ReadyToRunHelper.Rethrow:
                     mangledName = "RhRethrow";
                     break;
 
-                case JitHelperId.Overflow:
+                case ReadyToRunHelper.Overflow:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowOverflowException");
                     break;
-                case JitHelperId.RngChkFail:
+                case ReadyToRunHelper.RngChkFail:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
                     break;
-                case JitHelperId.FailFast:
+                case ReadyToRunHelper.FailFast:
                     mangledName = "__fail_fast"; // TODO: Report stack buffer overrun
                     break;
-                case JitHelperId.ThrowNullRef:
+                case ReadyToRunHelper.ThrowNullRef:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNullReferenceException");
                     break;
-                case JitHelperId.ThrowDivZero:
+                case ReadyToRunHelper.ThrowDivZero:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowDivideByZeroException");
                     break;
 
-                case JitHelperId.WriteBarrier:
+                case ReadyToRunHelper.DebugBreak:
+                    mangledName = "RhDebugBreak";
+                    break;
+
+                case ReadyToRunHelper.WriteBarrier:
                     mangledName = "RhpAssignRef";
                     break;
-                case JitHelperId.CheckedWriteBarrier:
+                case ReadyToRunHelper.CheckedWriteBarrier:
                     mangledName = "RhpCheckedAssignRef";
                     break;
-                case JitHelperId.ByRefWriteBarrier:
+                case ReadyToRunHelper.ByRefWriteBarrier:
                     mangledName = "RhpByRefAssignRef";
                     break;
 
-                case JitHelperId.Box:
-                case JitHelperId.Box_Nullable:
+                case ReadyToRunHelper.Box:
+                case ReadyToRunHelper.Box_Nullable:
                     mangledName = "RhBox";
                     break;
-                case JitHelperId.Unbox:
+                case ReadyToRunHelper.Unbox:
                     mangledName = "RhUnbox2";
                     break;
-                case JitHelperId.Unbox_Nullable:
+                case ReadyToRunHelper.Unbox_Nullable:
                     mangledName = "RhUnboxNullable";
                     break;
 
-                case JitHelperId.NewMultiDimArr_NonVarArg:
+                case ReadyToRunHelper.NewMultiDimArr_NonVarArg:
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
                     break;
 
-                case JitHelperId.Stelem_Ref:
+                case ReadyToRunHelper.Stelem_Ref:
                     mangledName = "RhpStelemRef";
                     break;
-                case JitHelperId.Ldelema_Ref:
+                case ReadyToRunHelper.Ldelema_Ref:
                     mangledName = "RhpLdelemaRef";
                     break;
 
-                case JitHelperId.MemCpy:
+                case ReadyToRunHelper.MemCpy:
                     mangledName = "memcpy"; // TODO: Null reference handling
                     break;
-                case JitHelperId.MemSet:
+                case ReadyToRunHelper.MemSet:
                     mangledName = "memset"; // TODO: Null reference handling
                     break;
 
-                case JitHelperId.GetRuntimeTypeHandle:
+                case ReadyToRunHelper.GetRuntimeTypeHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                     break;
-                case JitHelperId.GetRuntimeMethodHandle: // TODO: Reflection
-                case JitHelperId.GetRuntimeFieldHandle: // TODO: Reflection
+                case ReadyToRunHelper.GetRuntimeMethodHandle: // TODO: Reflection
+                case ReadyToRunHelper.GetRuntimeFieldHandle: // TODO: Reflection
                     mangledName = "__fail_fast";
                     break;
 
-                case JitHelperId.Lng2Dbl:
+                case ReadyToRunHelper.Lng2Dbl:
                     mangledName = "RhpLng2Dbl";
                     break;
-                case JitHelperId.ULng2Dbl:
+                case ReadyToRunHelper.ULng2Dbl:
                     mangledName = "RhpULng2Dbl";
                     break;
 
-                case JitHelperId.Dbl2Lng:
+                case ReadyToRunHelper.Dbl2Lng:
                     mangledName = "RhpDbl2Lng";
                     break;
-                case JitHelperId.Dbl2ULng:
+                case ReadyToRunHelper.Dbl2ULng:
                     mangledName = "RhpDbl2ULng";
                     break;
 
-                case JitHelperId.Dbl2IntOvf:
+                case ReadyToRunHelper.Dbl2IntOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
                     break;
-                case JitHelperId.Dbl2LngOvf:
+                case ReadyToRunHelper.Dbl2LngOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
                     break;
-                case JitHelperId.Dbl2ULngOvf:
+                case ReadyToRunHelper.Dbl2ULngOvf:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2ULngOvf");
                     break;
 
-                case JitHelperId.DblRem:
+                case ReadyToRunHelper.DblRem:
                     mangledName = "RhpDblRem";
                     break;
-                case JitHelperId.FltRem:
+                case ReadyToRunHelper.FltRem:
                     mangledName = "RhpFltRem";
                     break;
 
-                case JitHelperId.PInvokeBegin:
+                case ReadyToRunHelper.PInvokeBegin:
                     mangledName = "RhpPInvoke";
                     break;
-                case JitHelperId.PInvokeEnd:
+                case ReadyToRunHelper.PInvokeEnd:
                     mangledName = "RhpPInvokeReturn";
                     break;
 
-                case JitHelperId.ReversePInvokeEnter:
+                case ReadyToRunHelper.ReversePInvokeEnter:
                     mangledName = "RhpReversePInvoke2";
                     break;
-                case JitHelperId.ReversePInvokeExit:
+                case ReadyToRunHelper.ReversePInvokeExit:
                     mangledName = "RhpReversePInvokeReturn2";
                     break;
 

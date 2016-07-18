@@ -15,14 +15,18 @@ namespace System.Runtime.InteropServices
         internal static RuntimeTypeHandle ICCW = typeof(System.Runtime.InteropServices.__com_ICCW).TypeHandle;
         internal static RuntimeTypeHandle IMarshal = typeof(System.Runtime.InteropServices.__com_IMarshal).TypeHandle;
         internal static RuntimeTypeHandle IDispatch = typeof(System.Runtime.InteropServices.__com_IDispatch).TypeHandle;
-#if ENABLE_WINRT
         internal static RuntimeTypeHandle IInspectable = typeof(System.Runtime.InteropServices.__com_IInspectable).TypeHandle;
+
+#if ENABLE_MIN_WINRT
+        internal static RuntimeTypeHandle IActivationFactoryInternal = typeof(System.Runtime.InteropServices.WindowsRuntime.IActivationFactoryInternal).TypeHandle;
+#endif
+
+#if ENABLE_WINRT
         internal static RuntimeTypeHandle ICustomPropertyProvider = typeof(System.Runtime.InteropServices.__com_ICustomPropertyProvider).TypeHandle;
         internal static RuntimeTypeHandle IWeakReferenceSource = typeof(System.Runtime.InteropServices.__com_IWeakReferenceSource).TypeHandle;
         internal static RuntimeTypeHandle IWeakReference = typeof(System.Runtime.InteropServices.__com_IWeakReference).TypeHandle;
         internal static RuntimeTypeHandle IJupiterObject = typeof(System.Runtime.InteropServices.__com_IJupiterObject).TypeHandle;
-        internal static RuntimeTypeHandle IStringable = typeof(System.Runtime.InteropServices.__com_IStringable).TypeHandle;
-        internal static RuntimeTypeHandle IActivationFactoryInternal = typeof(System.Runtime.InteropServices.WindowsRuntime.IActivationFactoryInternal).TypeHandle;
+        internal static RuntimeTypeHandle IStringable = typeof(System.Runtime.InteropServices.__com_IStringable).TypeHandle;        
         internal static RuntimeTypeHandle IManagedActivationFactory = typeof(System.Runtime.InteropServices.WindowsRuntime.IManagedActivationFactory).TypeHandle;
         internal static RuntimeTypeHandle IRestrictedErrorInfo = typeof(System.Runtime.InteropServices.ExceptionHelpers.__com_IRestrictedErrorInfo).TypeHandle;
         internal static RuntimeTypeHandle HSTRING = typeof(System.Runtime.InteropServices.HSTRING).TypeHandle;
@@ -72,7 +76,6 @@ namespace System.Runtime.InteropServices
                 }
 #endif
         }
-
         // IUnknown
         static internal McgInterfaceData s_IUnknown = new McgInterfaceData
         {
@@ -81,7 +84,7 @@ namespace System.Runtime.InteropServices
             CcwVtable = __vtable_IUnknown.GetVtableFuncPtr(),
             Flags = McgInterfaceFlags.isInternal,
         };
-#if ENABLE_WINRT
+
         // IInspectable
         static internal McgInterfaceData s_IInspectable = new McgInterfaceData
         {
@@ -91,6 +94,18 @@ namespace System.Runtime.InteropServices
             Flags = McgInterfaceFlags.isInternal | McgInterfaceFlags.isIInspectable,
         };
 
+#if ENABLE_MIN_WINRT
+        // IActivationFactoryInternal
+        static internal McgInterfaceData s_IActivationFactoryInternal = new McgInterfaceData
+        {
+            ItfType = InternalTypes.IActivationFactoryInternal,
+            ItfGuid = Interop.COM.IID_IActivationFactoryInternal,
+            CcwVtable = __vtable_IActivationFactoryInternal.GetVtableFuncPtr(),
+            Flags = McgInterfaceFlags.isInternal,
+        };
+#endif 
+
+#if ENABLE_WINRT
         // ICustomPropertyProvider
         static internal McgInterfaceData s_ICustomPropertyProvider = new McgInterfaceData
         {
@@ -125,7 +140,7 @@ namespace System.Runtime.InteropServices
             ItfGuid = Interop.COM.IID_ICCW,
             CcwVtable = __vtable_ICCW.GetVtableFuncPtr(),
             Flags = McgInterfaceFlags.isInternal,
-        };
+        };    
 
 #if ENABLE_WINRT
         // IJupiterObject
@@ -142,15 +157,6 @@ namespace System.Runtime.InteropServices
             ItfType = InternalTypes.IStringable,
             ItfGuid = Interop.COM.IID_IStringable,
             CcwVtable = __vtable_IStringable.GetVtableFuncPtr(),
-            Flags = McgInterfaceFlags.isInternal,
-        };
-
-        // IActivationFactoryInternal
-        static internal McgInterfaceData s_IActivationFactoryInternal = new McgInterfaceData
-        {
-            ItfType = InternalTypes.IActivationFactoryInternal,
-            ItfGuid = Interop.COM.IID_IActivationFactoryInternal,
-            CcwVtable = __vtable_IActivationFactoryInternal.GetVtableFuncPtr(),
             Flags = McgInterfaceFlags.isInternal,
         };
 
@@ -198,17 +204,20 @@ namespace System.Runtime.InteropServices
 
         static readonly McgInterfaceData[] s_interfaceData = new McgInterfaceData[] {
                 s_IUnknown,
-#if ENABLE_WINRT
                 s_IInspectable,
+#if ENABLE_WINRT
                 s_ICustomPropertyProvider,
                 s_IWeakReferenceSource,
                 s_IWeakReference,
 #endif
                 s_ICCW,
+#if ENABLE_MIN_WINRT
+                s_IActivationFactoryInternal,
+#endif
+
 #if ENABLE_WINRT
                 s_IJupiterObject,
                 s_IStringable,
-                s_IActivationFactoryInternal,
                 s_IManagedActivationFactory,
                 s_IRestrictedErrorInfo,
 #endif

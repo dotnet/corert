@@ -396,11 +396,6 @@ namespace Internal.Runtime.TypeLoader
         public IntPtr DictionaryComponent;
 
         /// <summary>
-        /// Default value
-        /// </summary>
-        public string DefaultValueString;
-
-        /// <summary>
         /// Dynamic invoke cookie
         /// </summary>
         public uint DynamicInvokeCookie;

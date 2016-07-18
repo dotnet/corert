@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Debug = System.Diagnostics.Debug;
+using GenericVariance = Internal.Runtime.GenericVariance;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -21,7 +22,8 @@ namespace ILCompiler.DependencyAnalysis
     /// Field Size      | Contents
     /// ----------------+-----------------------------------
     /// UInt16          | Component Size. For arrays this is the element type size, for strings it is 2 (.NET uses 
-    ///                 | UTF16 character encoding), and 0 for all other types.
+    ///                 | UTF16 character encoding), for generic type definitions it is the number of generic parameters,
+    ///                 | and 0 for all other types.
     ///                 |
     /// UInt16          | EETypeKind (Normal, Array, Pointer type). Flags for: IsValueType, IsCrossModule, HasPointers,
     ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum CorElementType to
@@ -263,14 +265,14 @@ namespace ILCompiler.DependencyAnalysis
                     // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
                     // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
                     // For now, we will not try to optimize this and we will pretend all interface methods are necessary.
-                    MetadataType mdType = _type.GetClosestMetadataType();
-                    foreach (var implementedInterface in mdType.RuntimeInterfaces)
+                    DefType defType = _type.GetClosestDefType();
+                    foreach (var implementedInterface in defType.RuntimeInterfaces)
                     {
                         if (implementedInterface.HasVariance)
                         {
                             foreach (var interfaceMethod in implementedInterface.GetAllVirtualMethods())
                             {
-                                MethodDesc implMethod = mdType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                                MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                                 if (implMethod != null)
                                 {
                                     dependencyList.Add(factory.VirtualMethodUse(interfaceMethod), "Variant interface method");
@@ -306,7 +308,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Since the vtable is dependency driven, generate conditional static dependencies for
                 // all possible vtable entries
-                if (_type.GetClosestMetadataType().GetAllVirtualMethods().GetEnumerator().MoveNext())
+                if (_type.GetClosestDefType().GetAllVirtualMethods().GetEnumerator().MoveNext())
                 {
                     return true;
                 }
@@ -322,32 +324,32 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            MetadataType mdType = _type.GetClosestMetadataType();
+            DefType defType = _type.GetClosestDefType();
 
-            foreach (MethodDesc decl in mdType.EnumAllVirtualSlots())
+            foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
             {
-                MethodDesc impl = mdType.FindVirtualFunctionTargetMethodOnObjectType(decl);
-                if (impl.OwningType == mdType && !impl.IsAbstract)
+                MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                if (impl.OwningType == defType && !impl.IsAbstract)
                 {
                     yield return new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(factory.MethodEntrypoint(impl, _type.IsValueType), factory.VirtualMethodUse(decl), "Virtual method");
                 }
             }
 
             Debug.Assert(
-                _type == mdType ||
-                ((System.Collections.IStructuralEquatable)mdType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
+                _type == defType ||
+                ((System.Collections.IStructuralEquatable)defType.RuntimeInterfaces).Equals(_type.RuntimeInterfaces,
                 EqualityComparer<DefType>.Default));
 
             // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
             // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
             // possible for any IFoo object to actually be an instance of T.
-            foreach (DefType interfaceType in mdType.RuntimeInterfaces)
+            foreach (DefType interfaceType in defType.RuntimeInterfaces)
             {
                 Debug.Assert(interfaceType.IsInterface);
 
                 foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
                 {
-                    MethodDesc implMethod = mdType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                    MethodDesc implMethod = defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
                         yield return new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.ReadyToRunHelper(ReadyToRunHelperId.InterfaceDispatch, interfaceMethod), "Interface method");
@@ -404,6 +406,10 @@ namespace ILCompiler.DependencyAnalysis
             else if (_type.IsString)
             {
                 objData.EmitShort(2);
+            }
+            else if (_type.IsGenericDefinition)
+            {
+                objData.EmitShort((short)_type.Instantiation.Length);
             }
             else
             {
@@ -534,7 +540,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!_type.IsGenericDefinition);
 
             int virtualSlotCount = 0;
-            TypeDesc currentTypeSlice = _type.GetClosestMetadataType();
+            TypeDesc currentTypeSlice = _type.GetClosestDefType();
 
             while (currentTypeSlice != null)
             {
@@ -548,7 +554,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType)
         {
-            declType = declType.GetClosestMetadataType();
+            declType = declType.GetClosestDefType();
 
             var baseType = declType.BaseType;
             if (baseType != null)
@@ -559,7 +565,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int i = 0; i < virtualSlots.Count; i++)
             {
                 MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = implType.GetClosestMetadataType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
                 if (declMethod.HasInstantiation)
                 {
@@ -618,7 +624,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
                 {
                     // Generic array enumerators use special variance rules recognized by the runtime
-                    details = new GenericCompositionDetails(_type.Instantiation, new[] { (GenericVariance)0x20 });
+                    details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
                 }
                 else
                     details = new GenericCompositionDetails(_type);

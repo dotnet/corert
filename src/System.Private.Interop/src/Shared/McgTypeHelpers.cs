@@ -643,7 +643,7 @@ namespace System.Runtime.InteropServices
                         // Concat all missing Type Names into one message
                         for (int i = 0; i < missTypeNames.Count; i++)
                         {
-                            msg += String.Format(SR.ComTypeMarshalling_MissingInteropData, missTypeNames[i]);
+                            msg += SR.Format(SR.ComTypeMarshalling_MissingInteropData, missTypeNames[i]);
                             if (i != missTypeNames.Count - 1)
                                 msg += Environment.NewLine;
                         }
@@ -653,7 +653,7 @@ namespace System.Runtime.InteropServices
 
                 // case 3: We can get type name but not McgTypeInfo, maybe another case similar to case 2
                 // definitely is a bug.
-                msg = String.Format(SR.ComTypeMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
+                msg = SR.Format(SR.ComTypeMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
             }
             catch (MissingMetadataException ex)
             {
@@ -691,16 +691,17 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        internal static bool IsClass(this RuntimeTypeHandle handle)
+        internal static bool IsComClass(this RuntimeTypeHandle handle)
         {
-#if ENABLE_WINRT
-            return  !InteropExtensions.IsInterface(handle) && 
-                    !handle.IsValueType() && 
-                    !InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
+#if CORECLR        
+            return InteropExtensions.IsClass(handle);        
 #else
-            return false;
+            return !InteropExtensions.IsInterface(handle) &&
+                    !handle.IsValueType() &&
+                    !InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
 #endif
         }
+
 
         internal static bool IsIJupiterObject(this RuntimeTypeHandle interfaceType)
         {
@@ -713,7 +714,7 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsIInspectable(this RuntimeTypeHandle interfaceType)
         {
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
             return interfaceType.Equals(InternalTypes.IInspectable);
 #else
             return false;
@@ -750,7 +751,7 @@ namespace System.Runtime.InteropServices
                 return interfaceInfo.HasDynamicAdapterClass;
             }
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
            throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(interfaceType));
 #else
             Environment.FailFast("HasDynamicAdapterClass.");
@@ -827,6 +828,15 @@ namespace System.Runtime.InteropServices
                return interfaceInfo.DispatchClassType;
 
             return default(RuntimeTypeHandle);
+        }
+
+        internal static IntPtr GetDelegateInvokeStub(this RuntimeTypeHandle winrtDelegateType)
+        {
+            McgInterfaceInfo interfaceInfo = McgModuleManager.GetInterfaceInfoByHandle(winrtDelegateType);
+            if (interfaceInfo != null)
+                return interfaceInfo.DelegateInvokeStub;
+
+            return default(IntPtr);
         }
         #endregion
 

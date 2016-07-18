@@ -81,6 +81,12 @@ public class ReflectionTest
             return Fail;
         }
 
+        // This type only has a limited EEType (without a vtable) because it's not constructed.
+        if (typeof(UnallocatedType).FullName != "UnallocatedType")
+        {
+            return Fail;
+        }
+
         if (typeof(int) != typeof(int))
         {
             Console.WriteLine("Bad compare");
@@ -103,3 +109,5 @@ public class ReflectionTest
         return Fail;
     }
 }
+
+class UnallocatedType { }

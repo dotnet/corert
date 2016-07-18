@@ -56,6 +56,11 @@ namespace Internal.IL
                 return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
             }
             else
+            if (methodName == "DebugBreak" && owningType.Name == "Debug" && owningType.Namespace == "System.Diagnostics")
+            {
+                return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.break_, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+            }
+            else
             if ((methodName == "CompareExchange" || methodName == "Exchange") && method.HasInstantiation && owningType.Name == "Interlocked" && owningType.Namespace == "System.Threading")
             {
                 // TODO: Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
@@ -65,6 +70,10 @@ namespace Internal.IL
             if (methodName == "EETypePtrOf" && owningType.Name == "EETypePtr" && owningType.Namespace == "System")
             {
                 return EETypePtrOfIntrinsic.EmitIL(method);
+            }
+            else if (owningType.Name == "InvokeUtils" && owningType.Namespace == "System")
+            {
+                return InvokeUtilsIntrinsics.EmitIL(method);
             }
 
             return null;
@@ -136,7 +145,7 @@ namespace Internal.IL
                 var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
                 if (methodDefinitionIL == null)
                     return null;
-                return new InstantiatedMethodIL(method, methodDefinitionIL, method.OwningType.Instantiation, method.Instantiation);
+                return new InstantiatedMethodIL(method, methodDefinitionIL);
             }
             else
             if (method is ILStubMethod)

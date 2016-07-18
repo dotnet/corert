@@ -310,11 +310,27 @@ namespace ILCompiler
             return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, kind);
         }
 
+        protected override TypeDesc ConvertToCanon(TypeDesc typeToConvert, ref CanonicalFormKind kind)
+        {
+            return RuntimeDeterminedCanonicalizationAlgorithm.ConvertToCanon(typeToConvert, ref kind);
+        }
+
         public MetadataStringDecoder GetMetadataStringDecoder()
         {
             if (_metadataStringDecoder == null)
                 _metadataStringDecoder = new CachingMetadataStringDecoder(0x10000); // TODO: Tune the size
             return _metadataStringDecoder;
+        }
+
+        protected override bool ComputeHasGCStaticBase(FieldDesc field)
+        {
+            Debug.Assert(field.IsStatic);
+
+            TypeDesc fieldType = field.FieldType;
+            if (fieldType.IsValueType)
+                return ((DefType)fieldType).ContainsGCPointers;
+            else
+                return fieldType.IsGCPointer;
         }
 
         //

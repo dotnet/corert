@@ -310,9 +310,27 @@ namespace Internal.Runtime.Augments
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public static object CallDynamicInvokeMethod(object thisPtr, IntPtr methodToCall, object thisPtrDynamicInvokeMethod, IntPtr dynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperGenericDictionary, string defaultValueString, object[] parameters, bool invokeMethodHelperIsThisCall, bool methodToCallIsThisCall)
+        public static object CallDynamicInvokeMethod(
+            object thisPtr,
+            IntPtr methodToCall,
+            object thisPtrDynamicInvokeMethod,
+            IntPtr dynamicInvokeHelperMethod,
+            IntPtr dynamicInvokeHelperGenericDictionary,
+            object defaultParametersContext,
+            object[] parameters,
+            bool invokeMethodHelperIsThisCall,
+            bool methodToCallIsThisCall)
         {
-            object result = InvokeUtils.CallDynamicInvokeMethod(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, defaultValueString, parameters, invokeMethodHelperIsThisCall, methodToCallIsThisCall);
+            object result = InvokeUtils.CallDynamicInvokeMethod(
+                thisPtr,
+                methodToCall,
+                thisPtrDynamicInvokeMethod,
+                dynamicInvokeHelperMethod,
+                dynamicInvokeHelperGenericDictionary,
+                defaultParametersContext,
+                parameters,
+                invokeMethodHelperIsThisCall,
+                methodToCallIsThisCall);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -558,23 +576,23 @@ namespace Internal.Runtime.Augments
             }
         }
 
+#if CORERT
         public unsafe static RuntimeTypeHandle GetGenericInstantiation(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
         {
-            Debug.Assert(IsGenericType(typeHandle));
+            EETypePtr eeType = typeHandle.ToEETypePtr();
 
-            int arity;
-            EETypePtr* pInstantiation;
-            byte* pVarianceInfo;
-            EETypePtr eeTypeDefinition = RuntimeImports.RhGetGenericInstantiation(typeHandle.ToEETypePtr(), out arity, out pInstantiation, out pVarianceInfo);
+            Debug.Assert(eeType.IsGeneric);
 
-            genericTypeArgumentHandles = new RuntimeTypeHandle[arity];
-            for (int i = 0; i < arity; i++)
+            var instantiation = eeType.Instantiation;
+            genericTypeArgumentHandles = new RuntimeTypeHandle[instantiation.Length];
+            for (int i = 0; i < instantiation.Length; i++)
             {
-                genericTypeArgumentHandles[i] = new RuntimeTypeHandle(pInstantiation[i]);
+                genericTypeArgumentHandles[i] = new RuntimeTypeHandle(instantiation[i]);
             }
 
-            return new RuntimeTypeHandle(eeTypeDefinition);
+            return new RuntimeTypeHandle(eeType.GenericDefinition);
         }
+#endif
 
         public static bool IsGenericType(RuntimeTypeHandle typeHandle)
         {
@@ -824,7 +842,7 @@ namespace Internal.Runtime.Augments
 
         public static int GetCorElementType(RuntimeTypeHandle type)
         {
-            return (int)RuntimeImports.RhGetCorElementType(type.ToEETypePtr());
+            return (int)type.ToEETypePtr().CorElementType;
         }
 
         // Move memory which may be on the heap which may have object references in it.

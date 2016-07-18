@@ -112,7 +112,7 @@ ifdef _DEBUG
         and         eax, DEFAULT_PROBE_SAVE_FLAGS
         cmp         eax, DEFAULT_PROBE_SAVE_FLAGS ; make sure we have at least the flags to match what the macro pushes
         je          @F
-        call        PALDEBUGBREAK
+        call        RhDebugBreak
 @@:
 endif ;; _DEBUG
         push        edx                     ; Thread *
@@ -504,7 +504,7 @@ ifdef _DEBUG
         cmp         [RhpTrapThreads], 0
         jne         @F
 
-        call        PALDEBUGBREAK
+        call        RhDebugBreak
 @@:
 endif ;; _DEBUG
 

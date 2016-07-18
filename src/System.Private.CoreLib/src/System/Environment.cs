@@ -105,7 +105,6 @@ namespace System
             }
         }
 
-#if CORERT
         private static string[] s_commandLineArgs;
 
         internal static void SetCommandLineArgs(string[] args)
@@ -115,9 +114,8 @@ namespace System
 
         public static string[] GetCommandLineArgs()
         {
-            return (string[])s_commandLineArgs.Clone();
+            return (string[])s_commandLineArgs?.Clone();
         }
-#endif
 
         public static String StackTrace
         {
