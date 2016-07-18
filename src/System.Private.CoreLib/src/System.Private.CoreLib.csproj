@@ -93,23 +93,7 @@
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceConnector.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Core\NonPortable\BlockedRuntimeTypeNameGenerator.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\ConstructedGenericTypeKey.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RawRuntimeTypeHandleKey.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeArrayType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEEArrayType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeInspectionOnlyArrayType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeByRefType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimePointerType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEEPointerType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeInspectionOnlyPointerType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEENamedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEENamedNonGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEENamedType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeConstructedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEEConstructedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeInspectionOnlyConstructedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeHasElementType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.Internals.cs" />

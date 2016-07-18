@@ -42,6 +42,7 @@ namespace Internal.Reflection.Core.Execution
         public abstract bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle);
         public abstract IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle);
         public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
+        public abstract string GetLastResortString(RuntimeTypeHandle typeHandle);
 
         //==============================================================================================
         // Default Value support.

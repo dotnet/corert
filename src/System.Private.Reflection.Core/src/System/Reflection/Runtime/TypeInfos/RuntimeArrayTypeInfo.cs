@@ -22,13 +22,14 @@ namespace System.Reflection.Runtime.TypeInfos
     //
     // The runtime's implementation of TypeInfo's for array types. 
     //
-
     internal sealed partial class RuntimeArrayTypeInfo : RuntimeHasElementTypeInfo
     {
-        private RuntimeArrayTypeInfo(RuntimeType hasElementType)
-            : base(hasElementType)
+        private RuntimeArrayTypeInfo(UnificationKey key, bool multiDim, int rank)
+            : base(key)
         {
-            Debug.Assert(hasElementType.IsArray);
+            Debug.Assert(multiDim || rank == 1);
+            _multiDim = multiDim;
+            _rank = rank;
         }
 
         public sealed override TypeAttributes Attributes
@@ -36,6 +37,19 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+            }
+        }
+
+        public sealed override int GetArrayRank()
+        {
+            return _rank;
+        }
+
+        internal sealed override bool InternalIsMultiDimArray
+        {
+            get
+            {
+                return _multiDim;
             }
         }
 
@@ -74,7 +88,7 @@ namespace System.Reflection.Runtime.TypeInfos
                                 RuntimeType vectorType;
                                 if (multiDim)
                                 {
-                                    vectorType = ReflectionCoreNonPortable.GetArrayType(arrayType.InternalRuntimeElementType);
+                                    vectorType = arrayType.InternalRuntimeElementType.GetArrayType();
                                 }
                                 else
                                 {
@@ -228,7 +242,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 {
                     RuntimeType[] addressParametersAndReturn = new RuntimeType[rank + 1];
-                    addressParametersAndReturn[0] = ReflectionCoreNonPortable.GetByRefType(elementType);
+                    addressParametersAndReturn[0] = elementType.GetByRefType();
                     for (int i = 0; i < rank; i++)
                         addressParametersAndReturn[i + 1] = indexType;
                     yield return RuntimeSyntheticMethodInfo.GetRuntimeSyntheticMethodInfo(
@@ -283,6 +297,24 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        protected sealed override bool IsArrayImpl()
+        {
+            return true;
+        }
+
+        protected sealed override string Suffix
+        {
+            get
+            {
+                if (!_multiDim)
+                    return "[]";
+                else if (_rank == 1)
+                    return "[*]";
+                else
+                    return "[" + new string(',', _rank - 1) + "]";
+            }
+        }
+
         //
         // Arrays don't have a true typedef behind them but for the purpose of reporting base classes and interfaces, we can create a pretender.
         //
@@ -292,7 +324,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 Debug.Assert(this.ReflectionDomain == ReflectionCoreExecution.ExecutionDomain, "User Reflectable Domains not yet implemented.");
                 RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
-                RuntimeType projectionRuntimeTypeForArrays = ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(projectionTypeHandleForArrays);
+                RuntimeType projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle().RuntimeType;
                 return projectionRuntimeTypeForArrays.GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
             }
         }
@@ -314,5 +346,8 @@ namespace System.Reflection.Runtime.TypeInfos
             }
             return jaggedArray;
         }
+
+        private readonly int _rank;
+        private readonly bool _multiDim;
     }
 }

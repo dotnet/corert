@@ -77,7 +77,7 @@ namespace System.Reflection.Runtime.Assemblies
                     IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: false);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, typeDefinitionHandle);
+                        yield return typeDefinitionHandle.GetNamedType(reader);
                 }
             }
         }

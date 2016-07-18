@@ -321,9 +321,6 @@
   <data name="Arg_NotGenericParameter" xml:space="preserve">
     <value>Method may only be called on a Type for which Type.IsGenericParameter is true.</value>
   </data>
-  <data name="Arg_NotGenericTypeDefinition" xml:space="preserve">
-    <value>{0} is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which Type.IsGenericTypeDefinition is true.</value>
-  </data>
   <data name="Arg_NotImplementedException" xml:space="preserve">
     <value>The method or operation is not implemented.</value>
   </data>
@@ -492,9 +489,6 @@
   <data name="Argument_FallbackBufferNotEmpty" xml:space="preserve">
     <value>Cannot change fallback when buffer is not empty. Previous Convert() call left data in the fallback buffer.</value>
   </data>
-  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
-    <value>Must be an array type.</value>
-  </data>
   <data name="Argument_ImplementIComparable" xml:space="preserve">
     <value>At least one object must implement IComparable.</value>
   </data>
@@ -635,12 +629,6 @@
   </data>
   <data name="ArgumentException_TupleLastArgumentNotATuple" xml:space="preserve">
     <value>The last element of an eight element tuple must be a Tuple.</value>
-  </data>
-  <data name="ArgumentException_InvalidTypeArgument" xml:space="preserve">
-    <value>The type '{0}' may not be used as a type argument.</value>
-  </data>
-  <data name="ArgumentException_InvalidArrayElementType" xml:space="preserve">
-    <value>The type '{0}' may not be used as an array element type.</value>
   </data>
   <data name="ArgumentNull_Array" xml:space="preserve">
     <value>Array cannot be null.</value>
@@ -981,9 +969,6 @@
   <data name="InvalidOperation_Monitor_UseConditionDirectly" xml:space="preserve">
     <value>TBD</value>
   </data>
-  <data name="InvalidOperation_NotGenericType" xml:space="preserve">
-    <value>This operation is only valid on generic types.</value>
-  </data>
   <data name="InvalidOperation_NoValue" xml:space="preserve">
     <value>Nullable object must have a value.</value>
   </data>
@@ -1199,15 +1184,6 @@
   </data>
   <data name="Overflow_UInt64" xml:space="preserve">
     <value>Value was either too large or too small for a UInt64.</value>
-  </data>
-  <data name="PlatformNotSupported_MakeGenericType" xml:space="preserve">
-    <value>MakeGenericType can only accept Type objects created by the runtime.</value>
-  </data>
-  <data name="PlatformNotSupported_NoTypeHandleForByRef" xml:space="preserve">
-    <value>TypeHandles are not supported for types that return true for IsByRef.</value>
-  </data>
-  <data name="PlatformNotSupported_NoTypeHandleForOpenTypes" xml:space="preserve">
-    <value>TypeHandles are not supported for types that return true for ContainsGenericParameters.</value>
   </data>
   <data name="PlatformNotSupported_MakePointerType" xml:space="preserve">
     <value>MakePointerType() is not supported on this platform.</value>

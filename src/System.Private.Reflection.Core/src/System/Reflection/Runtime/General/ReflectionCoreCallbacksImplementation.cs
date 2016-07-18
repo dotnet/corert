@@ -83,8 +83,8 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveMethodHandle,
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(declaringTypeHandle),
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(actualDeclaringTypeHandle)));
+                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
             }
 
             MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
@@ -126,8 +126,8 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveFieldHandle,
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(declaringTypeHandle),
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(actualDeclaringTypeHandle)));
+                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
             }
 
             FieldInfo fieldInfo = GetFieldInfo(declaringTypeHandle, fieldHandle);
@@ -152,7 +152,7 @@ namespace System.Reflection.Runtime.General
 
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
-            RuntimeType declaringType = ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(declaringTypeHandle);
+            RuntimeType declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle().RuntimeType;
             RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;

@@ -13,6 +13,7 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core.NonPortable;
+using global::Internal.Reflection.Tracing;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -29,9 +30,10 @@ namespace System.Reflection.Runtime.TypeInfos
     // 
     internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeInfo
     {
-        private RuntimeBlockedTypeInfo(RuntimeType runtimeType)
+        private RuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
-            _asType = runtimeType;
+            _typeHandle = typeHandle;
+            _isGenericTypeDefinition = isGenericTypeDefinition;
         }
 
         public sealed override Assembly Assembly
@@ -50,10 +52,22 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool ContainsGenericParameters
+        {
+            get
+            {
+                return _isGenericTypeDefinition;
+            }
+        }
+
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes
         {
             get
             {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_CustomAttributes(this);
+#endif
                 return Empty<CustomAttributeData>.Enumerable;
             }
         }
@@ -66,22 +80,16 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool Equals(Object obj)
+        public sealed override string FullName
         {
-            if (Object.ReferenceEquals(this, obj))
-                return true;
-
-            RuntimeBlockedTypeInfo other = obj as RuntimeBlockedTypeInfo;
-            if (other == null)
-                return false;
-            if (!(this._asType.Equals(other._asType)))
-                return false;
-            return true;
-        }
-
-        public sealed override int GetHashCode()
-        {
-            return _asType.GetHashCode();
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_FullName(this);
+#endif
+                return GeneratedName;
+            }
         }
 
         public sealed override Guid GUID
@@ -92,20 +100,34 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsGenericType
-        {
-            get
-            {
-                return _asType.IsConstructedGenericType || this.IsGenericTypeDefinition;
-            }
-        }
-
         public sealed override bool IsGenericTypeDefinition
         {
             get
             {
-                return _asType.InternalIsGenericTypeDefinition;
+                return _isGenericTypeDefinition;
             }
+        }
+
+        public sealed override string Namespace
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_Namespace(this);
+#endif
+                return null;  // Reflection-blocked framework types report themselves as existing in the "root" namespace.
+            }
+        }
+
+        public sealed override string ToString()
+        {
+            return _typeHandle.LastResortString();
+        }
+
+        protected sealed override int InternalGetHashCode()
+        {
+            return _typeHandle.GetHashCode();
         }
 
         //
@@ -138,11 +160,32 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override RuntimeType RuntimeType
+        internal sealed override Type InternalDeclaringType
         {
             get
             {
-                return _asType;
+                return null;
+            }
+        }
+
+        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        {
+            return GeneratedName;
+        }
+
+        internal sealed override string InternalFullNameOfAssembly
+        {
+            get
+            {
+                return GeneratedName;
+            }
+        }
+
+        internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
+        {
+            get
+            {
+                return _typeHandle;
             }
         }
 
@@ -180,7 +223,17 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        private RuntimeType _asType;
+        private string GeneratedName
+        {
+            get
+            {
+                return _lazyGeneratedName ?? (_lazyGeneratedName = BlockedRuntimeTypeNameGenerator.GetNameForBlockedRuntimeType(_typeHandle));
+            }
+        }
+
+        private readonly RuntimeTypeHandle _typeHandle;
+        private readonly bool _isGenericTypeDefinition;
+        private volatile string _lazyGeneratedName;
     }
 }
 

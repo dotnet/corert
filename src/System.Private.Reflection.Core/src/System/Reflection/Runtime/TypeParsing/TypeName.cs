@@ -391,7 +391,7 @@ namespace System.Reflection.Runtime.TypeParsing
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetArrayType(elementType);
+            result = elementType.GetArrayType();
             return null;
         }
     }
@@ -419,7 +419,7 @@ namespace System.Reflection.Runtime.TypeParsing
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetMultiDimArrayType(elementType, _rank);
+            result = elementType.GetMultiDimArrayType(_rank);
             return null;
         }
 
@@ -448,7 +448,7 @@ namespace System.Reflection.Runtime.TypeParsing
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetByRefType(elementType);
+            result = elementType.GetByRefType();
             return null;
         }
     }
@@ -475,7 +475,7 @@ namespace System.Reflection.Runtime.TypeParsing
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetPointerType(elementType);
+            result = elementType.GetPointerType();
             return null;
         }
     }
@@ -529,7 +529,7 @@ namespace System.Reflection.Runtime.TypeParsing
                     return typeLoadException;
                 genericTypeArguments.Add(genericTypeArgument);
             }
-            result = ReflectionCoreNonPortable.GetConstructedGenericType(genericType, genericTypeArguments.ToArray());
+            result = genericType.GetConstructedGenericType(genericTypeArguments.ToArray());
             return null;
         }
     }
