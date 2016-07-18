@@ -236,7 +236,7 @@ namespace Internal.JitInterface
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
                             var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
 
-                            RelocType rel = (_compilation.Options.TargetOS == TargetOS.Windows) ?
+                            RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
                                 RelocType.IMAGE_REL_BASED_ABSOLUTE :
                                 RelocType.IMAGE_REL_BASED_REL32;
 
@@ -1780,7 +1780,7 @@ namespace Internal.JitInterface
 
             pEEInfoOut.osPageSize = new UIntPtr(0x1000);
 
-            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.Options.TargetOS == TargetOS.Windows) ?
+            pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORERT_ABI;
@@ -1793,7 +1793,20 @@ namespace Internal.JitInterface
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
-        { throw new NotImplementedException("getMethodDefFromMethod"); }
+        {
+            MethodDesc method = HandleToObject(hMethod);
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+
+            // Need to cast down to EcmaMethod. Do not use this as a precedent that casting to Ecma*
+            // within the JitInterface is fine. We might want to consider moving this to Compilation.
+            TypeSystem.Ecma.EcmaMethod ecmaMethodDefinition = methodDefinition as TypeSystem.Ecma.EcmaMethod;
+            if (ecmaMethodDefinition != null)
+            {
+                return (mdToken)System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(ecmaMethodDefinition.Handle);
+            }
+
+            return 0;
+        }
 
         private static byte[] StringToUTF8(string s)
         {
@@ -1870,6 +1883,7 @@ namespace Internal.JitInterface
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW: id = ReadyToRunHelper.Throw; break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW: id = ReadyToRunHelper.Rethrow; break;
+                case CorInfoHelpFunc.CORINFO_HELP_USER_BREAKPOINT: id = ReadyToRunHelper.DebugBreak; break;
                 case CorInfoHelpFunc.CORINFO_HELP_OVERFLOW: id = ReadyToRunHelper.Overflow; break;
                 case CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL: id = ReadyToRunHelper.RngChkFail; break;
                 case CorInfoHelpFunc.CORINFO_HELP_FAIL_FAST: id = ReadyToRunHelper.FailFast; break;
@@ -2110,7 +2124,7 @@ namespace Internal.JitInterface
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                MethodDesc directMethod = constrainedType.GetClosestMetadataType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
                 if (directMethod != null)
                 {
                     // Either

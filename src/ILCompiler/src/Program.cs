@@ -22,6 +22,15 @@ namespace ILCompiler
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        private TargetArchitecture _targetArchitecture;
+        private TargetOS _targetOS;
+        private string _systemModuleName = "System.Private.CoreLib";
+        private bool _multiFile;
+
+        private string _singleMethodTypeName;
+        private string _singleMethodName;
+        private IReadOnlyList<string> _singleMethodGenericArgs;
+
         private bool _help;
 
         private Program()
@@ -43,43 +52,38 @@ namespace ILCompiler
         {
             _options = new CompilationOptions();
 
-            _options.InputFilePaths = _inputFilePaths;
-            _options.ReferenceFilePaths = _referenceFilePaths;
-
-            _options.SystemModuleName = "System.Private.CoreLib";
-
 #if FXCORE
             // We could offer this as a command line option, but then we also need to
             // load a different RyuJIT, so this is a future nice to have...
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                _options.TargetOS = TargetOS.Windows;
+                _targetOS = TargetOS.Windows;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                _options.TargetOS = TargetOS.Linux;
+                _targetOS = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                _options.TargetOS = TargetOS.OSX;
+                _targetOS = TargetOS.OSX;
             else
                 throw new NotImplementedException();
 
             switch (RuntimeInformation.ProcessArchitecture)
             {
             case Architecture.X86:
-                _options.TargetArchitecture = TargetArchitecture.X86;
+                _targetArchitecture = TargetArchitecture.X86;
                 break;
             case Architecture.X64:
-                _options.TargetArchitecture = TargetArchitecture.X64;
+                _targetArchitecture = TargetArchitecture.X64;
                 break;
             case Architecture.Arm:
-                _options.TargetArchitecture = TargetArchitecture.ARM;
+                _targetArchitecture = TargetArchitecture.ARM;
                 break;
             case Architecture.Arm64:
-                _options.TargetArchitecture = TargetArchitecture.ARM64;
+                _targetArchitecture = TargetArchitecture.ARM64;
                 break;
             default:
                 throw new NotImplementedException();
             }
 #else
-            _options.TargetOS = TargetOS.Windows;
-            _options.TargetArchitecture = TargetArchitecture.X64;
+            _targetOS = TargetOS.Windows;
+            _targetArchitecture = TargetArchitecture.X64;
 #endif
         }
 
@@ -88,6 +92,7 @@ namespace ILCompiler
             IReadOnlyList<string> inputFiles = Array.Empty<string>();
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
 
+            bool waitForDebugger = false;
             AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
@@ -105,10 +110,21 @@ namespace ILCompiler
                 syntax.DefineOption("dgmllog", ref _options.DgmlLog, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _options.FullLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("verbose", ref _options.Verbose, "Enable verbose logging");
-                syntax.DefineOption("systemmodule", ref _options.SystemModuleName, "System module name (default: System.Private.CoreLib)");
-                syntax.DefineOption("multifile", ref _options.MultiFile, "Compile only input files (do not compile referenced assemblies)");
+                syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
+                syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
+                syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
+
+                syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
+                syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
+                syntax.DefineOptionList("singlemethodgenericarg", ref _singleMethodGenericArgs, "Single method compilation: generic arguments to the method");
+
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
+            if (waitForDebugger)
+            {
+                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
+                Console.ReadLine();
+            }
             foreach (var input in inputFiles)
                 Helpers.AppendExpandedPaths(_inputFilePaths, input, true);
 
@@ -129,17 +145,94 @@ namespace ILCompiler
                 return 1;
             }
 
-            if (_options.InputFilePaths.Count == 0)
+            if (_inputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
 
             if (_options.OutputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
-            Compilation compilation = new Compilation(_options);
+            //
+            // Initialize type system context
+            //
+
+            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS));
+            typeSystemContext.InputFilePaths = _inputFilePaths;
+            typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
+
+            typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(_systemModuleName));
+
+            //
+            // Initialize compilation group
+            //
+
+            // Single method mode?
+            MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
+
+            CompilationModuleGroup compilationGroup;
+            if (singleMethod != null)
+            {
+                compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, singleMethod);
+            }
+            else if (_multiFile)
+            {
+                compilationGroup = new MultiFileCompilationModuleGroup(typeSystemContext);
+            }
+            else
+            {
+                compilationGroup = new SingleFileCompilationModuleGroup(typeSystemContext);
+            }
+
+            //
+            // Compile
+            //
+
+            Compilation compilation = new Compilation(_options, typeSystemContext, compilationGroup);
             compilation.Log = _options.Verbose ? Console.Out : TextWriter.Null;
             compilation.Compile();
 
             return 0;
+        }
+
+        private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
+        {
+            TypeDesc foundType = context.SystemModule.GetTypeByCustomAttributeTypeName(typeName);
+            if (foundType == null)
+                throw new CommandLineException($"Type '{typeName}' not found");
+
+            return foundType;
+        }
+
+        private MethodDesc CheckAndParseSingleMethodModeArguments(CompilerTypeSystemContext context)
+        {
+            if (_singleMethodName == null && _singleMethodTypeName == null && _singleMethodGenericArgs == null)
+                return null;
+
+            if (_singleMethodName == null || _singleMethodTypeName == null)
+                throw new CommandLineException("Both method name and type name are required parameters for single method mode");
+
+            TypeDesc owningType = FindType(context, _singleMethodTypeName);
+
+            // TODO: allow specifying signature to distinguish overloads
+            MethodDesc method = owningType.GetMethod(_singleMethodName, null);
+            if (method == null)
+                throw new CommandLineException($"Method '{_singleMethodName}' not found in '{_singleMethodTypeName}'");
+
+            if (method.HasInstantiation != (_singleMethodGenericArgs != null) ||
+                (method.HasInstantiation && (method.Instantiation.Length != _singleMethodGenericArgs.Count)))
+            {
+                throw new CommandLineException(
+                    $"Expected {method.Instantiation.Length} generic arguments for method '{_singleMethodName}' on type '{_singleMethodTypeName}'");
+            }
+
+            if (method.HasInstantiation)
+            {
+                List<TypeDesc> genericArguments = new List<TypeDesc>();
+                foreach (var argString in _singleMethodGenericArgs)
+                    genericArguments.Add(FindType(context, argString));
+                method = method.MakeInstantiatedMethod(genericArguments.ToArray());
+            }
+
+            return method;
         }
 
         private static int Main(string[] args)

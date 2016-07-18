@@ -1254,11 +1254,6 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
     return strlen(dl.dli_fname);
 }
 
-void PalDebugBreak()
-{
-    __debugbreak();
-}
-
 GCSystemInfo g_SystemInfo;
 
 // Initialize the g_SystemInfo
@@ -1383,36 +1378,6 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 #endif
 }
 
-extern "C" UInt32_BOOL WriteFile(
-    HANDLE hFile,
-    const void* lpBuffer,
-    uint32_t nNumberOfBytesToWrite,
-    uint32_t * lpNumberOfBytesWritten,
-    void* lpOverlapped)
-{
-    // TODO: Reimplement callers using CRT
-    return UInt32_FALSE;
-}
-
-extern "C" void YieldProcessor()
-{
-}
-
-extern "C" void DebugBreak()
-{
-    PalDebugBreak();
-}
-
-extern "C" uint32_t GetLastError()
-{
-    return 1;
-}
-
-extern "C" UInt32 WaitForMultipleObjectsEx(UInt32, HANDLE *, UInt32_BOOL, UInt32, UInt32_BOOL)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
 // Initialize the interface implementation
 bool GCToOSInterface::Initialize()
 {
@@ -1492,8 +1457,7 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
 //  switchCount - number of times the YieldThread was called in a loop
 void GCToOSInterface::YieldThread(uint32_t switchCount)
 {
-    // UNIXTODO: handle the switchCount
-    YieldProcessor();
+    PalSwitchToThread();
 }
 
 // Reserve virtual memory range.
@@ -1765,7 +1729,6 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
     LARGE_INTEGER ts;
     if (!::QueryPerformanceCounter(&ts))
     {
-        DebugBreak();
         ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
         abort();
     }
@@ -1781,7 +1744,6 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
     LARGE_INTEGER frequency;
     if (!::QueryPerformanceFrequency(&frequency))
     {
-        DebugBreak();
         ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
         abort();
     }

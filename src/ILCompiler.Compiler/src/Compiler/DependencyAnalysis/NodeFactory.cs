@@ -566,26 +566,26 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
-            NameMangler.CompilationUnitPrefix + "__GCStaticRegionStart", 
-            NameMangler.CompilationUnitPrefix + "__GCStaticRegionEnd", 
+            CompilationUnitPrefix + "__GCStaticRegionStart", 
+            CompilationUnitPrefix + "__GCStaticRegionEnd", 
             null);
         public ArrayOfEmbeddedDataNode ThreadStaticsRegion = new ArrayOfEmbeddedDataNode(
-            NameMangler.CompilationUnitPrefix + "__ThreadStaticRegionStart",
-            NameMangler.CompilationUnitPrefix + "__ThreadStaticRegionEnd", 
+            CompilationUnitPrefix + "__ThreadStaticRegionStart",
+            CompilationUnitPrefix + "__ThreadStaticRegionEnd", 
             null);
         public ArrayOfEmbeddedDataNode StringTable = new ArrayOfEmbeddedDataNode(
-            NameMangler.CompilationUnitPrefix + "__StringTableStart",
-            NameMangler.CompilationUnitPrefix + "__StringTableEnd", 
+            CompilationUnitPrefix + "__StringTableStart",
+            CompilationUnitPrefix + "__StringTableEnd", 
             null);
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
-            NameMangler.CompilationUnitPrefix + "__EagerCctorStart",
-            NameMangler.CompilationUnitPrefix + "__EagerCctorEnd",
+            CompilationUnitPrefix + "__EagerCctorStart",
+            CompilationUnitPrefix + "__EagerCctorEnd",
             new EagerConstructorComparer());
 
         public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
-            NameMangler.CompilationUnitPrefix + "__DispatchMapTableStart",
-            NameMangler.CompilationUnitPrefix + "__DispatchMapTableEnd",
+            CompilationUnitPrefix + "__DispatchMapTableStart",
+            CompilationUnitPrefix + "__DispatchMapTableEnd",
             null);
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
@@ -595,6 +595,7 @@ namespace ILCompiler.DependencyAnalysis
         internal ModuleManagerIndirectionNode ModuleManagerIndirection = new ModuleManagerIndirectionNode();
 
         public static NameMangler NameMangler;
+        public static string CompilationUnitPrefix;
 
         public void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
         {
@@ -619,6 +620,35 @@ namespace ILCompiler.DependencyAnalysis
 
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader);
             MetadataManager.AttachToDependencyGraph(graph);
+
+            _compilationModuleGroup.AddCompilationRoots(new RootingServiceProvider(graph, this));
+        }
+
+        private class RootingServiceProvider : IRootingServiceProvider
+        {
+            private DependencyAnalyzerBase<NodeFactory> _graph;
+            private NodeFactory _factory;
+
+            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
+            {
+                _graph = graph;
+                _factory = factory;
+            }
+
+            public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
+            {
+                var methodEntryPoint = _factory.MethodEntrypoint(method);
+
+                _graph.AddRoot(methodEntryPoint, reason);
+
+                if (exportName != null)
+                    _factory.NodeAliases.Add(methodEntryPoint, exportName);
+            }
+
+            public void AddCompilationRoot(TypeDesc type, string reason)
+            {
+                _graph.AddRoot(_factory.ConstructedTypeSymbol(type), reason);
+            }
         }
     }
 

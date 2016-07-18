@@ -128,8 +128,6 @@ inline void FATAL_GC_ERROR()
 //#define TRACE_GC          //debug trace gc operation
 //#define SIMPLE_DPRINTF
 
-//#define CATCH_GC          //catches exception during GC
-
 //#define TIME_GC           //time allocation and garbage collection
 //#define TIME_WRITE_WATCH  //time GetWriteWatch and ResetWriteWatch calls
 //#define COUNT_CYCLES  //Use cycle counter for timing
@@ -155,8 +153,6 @@ inline void FATAL_GC_ERROR()
 #define BEGIN_TIMING_CYCLES(x)
 #define END_TIMING_CYCLES(x)
 #endif //SYNCHRONIZATION_STATS || STAGE_STATS
-
-#define NO_CATCH_HANDLERS  //to debug gc1, remove the catch handlers
 
 /* End of optional features */
 
@@ -2891,6 +2887,9 @@ public:
     int gc_policy;  //sweep, compact, expand
 
 #ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED
+    bool gc_thread_no_affinitize_p;
+
     PER_HEAP_ISOLATED
     CLREvent gc_start_event;
 

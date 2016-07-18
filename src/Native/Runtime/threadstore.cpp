@@ -84,7 +84,8 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-    pNewThreadStore->m_SuspendCompleteEvent.CreateManualEvent(TRUE);
+    if (!pNewThreadStore->m_SuspendCompleteEvent.CreateManualEventNoThrow(true))
+        return NULL;
 
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
 

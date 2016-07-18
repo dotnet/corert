@@ -75,6 +75,8 @@ namespace ILCompiler
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
 
+        DebugBreak                  = 0x2F,
+
         // Write barriers
         WriteBarrier                = 0x30,
         CheckedWriteBarrier         = 0x31,

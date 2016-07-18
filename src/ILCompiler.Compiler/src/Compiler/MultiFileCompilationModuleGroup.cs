@@ -8,11 +8,11 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    class MultiFileCompilationModuleGroup : CompilationModuleGroup
+    public class MultiFileCompilationModuleGroup : CompilationModuleGroup
     {
         private HashSet<EcmaModule> _compilationModuleSet;
 
-        public MultiFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext, ICompilationRootProvider rootProvider) : base(typeSystemContext, rootProvider)
+        public MultiFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext) : base(typeSystemContext)
         { }
 
         public override bool ContainsType(TypeDesc type)
@@ -56,20 +56,20 @@ namespace ILCompiler
             }
         }
 
-        public override void AddCompilationRoots()
+        public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            base.AddCompilationRoots();
+            base.AddCompilationRoots(rootProvider);
             
             if (BuildingLibrary)
             {
                 foreach (var module in InputModules)
                 {
-                    AddCompilationRootsForMultifileLibrary(module);
+                    AddCompilationRootsForMultifileLibrary(module, rootProvider);
                 }
             }
         }
 
-        private void AddCompilationRootsForMultifileLibrary(EcmaModule module)
+        private void AddCompilationRootsForMultifileLibrary(EcmaModule module, IRootingServiceProvider rootProvider)
         {
             foreach (TypeDesc type in module.GetAllTypes())
             {
@@ -77,8 +77,8 @@ namespace ILCompiler
                 if (type.IsDelegate || type.ContainsGenericVariables)
                     continue;
 
-                _rootProvider.AddCompilationRoot(type, "Library module type");
-                RootMethods(type, "Library module method");
+                rootProvider.AddCompilationRoot(type, "Library module type");
+                RootMethods(type, "Library module method", rootProvider);
             }
         }
 
@@ -136,7 +136,7 @@ namespace ILCompiler
             return false;
         }
 
-        private void RootMethods(TypeDesc type, string reason)
+        private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
         {
             foreach (MethodDesc method in type.GetMethods())
             {
@@ -147,7 +147,7 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     continue;
 
-                _rootProvider.AddCompilationRoot(method, reason);
+                rootProvider.AddCompilationRoot(method, reason);
             }
         }
 

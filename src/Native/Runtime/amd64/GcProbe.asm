@@ -486,7 +486,7 @@ ifdef _DEBUG
         cmp         [RhpTrapThreads], 0
         jne         @F
 
-        call        PALDEBUGBREAK
+        call        RhDebugBreak
 @@:
 endif ;; _DEBUG
 
