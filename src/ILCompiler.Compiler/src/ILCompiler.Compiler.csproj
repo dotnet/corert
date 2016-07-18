@@ -68,6 +68,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternEETypeSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericCompositionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IPrintableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SingleArgumentJumpThunk.cs" />

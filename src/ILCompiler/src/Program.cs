@@ -48,6 +48,7 @@ namespace ILCompiler
 
             _options.SystemModuleName = "System.Private.CoreLib";
 
+
 #if FXCORE
             // We could offer this as a command line option, but then we also need to
             // load a different RyuJIT, so this is a future nice to have...
@@ -107,6 +108,7 @@ namespace ILCompiler
                 syntax.DefineOption("verbose", ref _options.Verbose, "Enable verbose logging");
                 syntax.DefineOption("systemmodule", ref _options.SystemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _options.MultiFile, "Compile only input files (do not compile referenced assemblies)");
+                syntax.DefineOption("nodelog", ref _options.NodeLog, "Save detailed log of generated nodes");
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
             foreach (var input in inputFiles)
