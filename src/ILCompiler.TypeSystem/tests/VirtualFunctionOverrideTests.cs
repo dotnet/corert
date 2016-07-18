@@ -129,5 +129,20 @@ namespace TypeSystemTests
 
             Assert.Equal(myGetHashCodeMethod, foundOverride);
         }
+
+        [Fact]
+        public void TestFindBaseUnificationGroup()
+        {
+            var algo = new MetadataVirtualMethodAlgorithm();
+            var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
+            MetadataType myDerived2Type = ilModule.GetType("VirtualFunctionOverride", "MyDerived2");
+            Assert.NotNull(myDerived2Type);
+            MethodDesc method = myDerived2Type.GetMethod("get_foo", null);
+            Assert.NotNull(method);
+
+            MethodDesc virtualMethod = algo.FindVirtualFunctionTargetMethodOnObjectType(method, myDerived2Type);
+            Assert.NotNull(virtualMethod);
+            Assert.Equal(method, virtualMethod);
+        }
     }
 }

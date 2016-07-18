@@ -395,22 +395,22 @@ namespace Internal.TypeSystem
             // have seperated themselves from the group
 
             // Start with removing methods that seperated themselves from the group via name/sig matches
-            MethodDescHashtable seperatedMethods = null;
+            MethodDescHashtable separatedMethods = null;
 
             foreach (MethodDesc memberMethod in unificationGroup)
             {
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType);
                 if (nameSigMatchMemberMethod != null)
                 {
-                    if (seperatedMethods == null)
-                        seperatedMethods = new MethodDescHashtable();
-                    seperatedMethods.AddOrGetExisting(memberMethod);
+                    if (separatedMethods == null)
+                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods.AddOrGetExisting(memberMethod);
                 }
             }
 
-            if (seperatedMethods != null)
+            if (separatedMethods != null)
             {
-                foreach (MethodDesc seperatedMethod in MethodDescHashtable.Enumerator.Get(seperatedMethods))
+                foreach (MethodDesc seperatedMethod in MethodDescHashtable.Enumerator.Get(separatedMethods))
                 {
                     unificationGroup.RemoveFromGroup(seperatedMethod);
                 }
@@ -425,7 +425,10 @@ namespace Internal.TypeSystem
                 if (unificationGroup.IsInGroup(declSlot) && !unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
                 {
                     unificationGroup.RemoveFromGroup(declSlot);
-                    seperatedMethods.AddOrGetExisting(declSlot);
+
+                    if (separatedMethods == null)
+                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods.AddOrGetExisting(declSlot);
                     continue;
                 }
                 if (!unificationGroup.IsInGroupOrIsDefiningSlot(declSlot) && unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
@@ -439,14 +442,14 @@ namespace Internal.TypeSystem
 
                     // Add all members from the decl's unification group except for ones that have been seperated by name/sig matches
                     // or previously processed methodimpls. NOTE: This implies that method impls are order dependent.
-                    if (!seperatedMethods.Contains(addDeclGroup.DefiningMethod))
+                    if (separatedMethods == null || !separatedMethods.Contains(addDeclGroup.DefiningMethod))
                     {
                         unificationGroup.AddToGroup(addDeclGroup.DefiningMethod);
                     }
 
                     foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup)
                     {
-                        if (!seperatedMethods.Contains(addDeclGroupMemberMethod))
+                        if (separatedMethods == null || !separatedMethods.Contains(addDeclGroupMemberMethod))
                         {
                             unificationGroup.AddToGroup(addDeclGroupMemberMethod);
                         }
