@@ -6,6 +6,8 @@ using Internal.TypeSystem;
 using System;
 using System.Text;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.IL
 {
     internal sealed class MethodILDebugView
@@ -21,12 +23,12 @@ namespace Internal.IL
         {
             get
             {
-                byte[] ilBytes = _methodIL.GetILBytes() ?? Array.Empty<byte>();
+                ILDisassember disasm = new ILDisassember(_methodIL);
 
                 StringBuilder sb = new StringBuilder();
 
                 sb.Append("// Code size: ");
-                sb.Append(ilBytes.Length);
+                sb.Append(disasm.CodeSize);
                 sb.AppendLine();
                 sb.Append(".maxstack ");
                 sb.Append(_methodIL.MaxStack);
@@ -48,7 +50,7 @@ namespace Internal.IL
                             sb.AppendLine(",");
                             sb.Append(' ', 4);
                         }
-                        sb.Append(locals[i].Type.ToString());
+                        disasm.AppendType(sb, locals[i].Type);
                         sb.Append(" ");
                         if (locals[i].IsPinned)
                             sb.Append("pinned ");
@@ -59,15 +61,9 @@ namespace Internal.IL
                 }
                 sb.AppendLine();
 
-                int offset = 0;
-
-                Func<int, string> resolver = token => _methodIL.GetObject(token).ToString();
-
-                while (offset < ilBytes.Length)
+                while (disasm.HasNextInstruction)
                 {
-                    sb.Append(ILDisassember.FormatOffset(offset));
-                    sb.Append(": ");
-                    sb.AppendLine(ILDisassember.Disassemble(resolver, ilBytes, ref offset));
+                    sb.AppendLine(disasm.GetNextInstruction());
                 }
 
                 return sb.ToString();

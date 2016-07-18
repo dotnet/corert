@@ -40,6 +40,7 @@
     <Compile Include="GenericTypeAndMethodTests.cs" />
     <Compile Include="CastingTests.cs" />
     <Compile Include="HashcodeTests.cs" />
+    <Compile Include="ILDisassemblerTests.cs" />
     <Compile Include="InterfacesTests.cs" />
     <Compile Include="RuntimeDeterminedTypesTests.cs" />
     <Compile Include="SyntheticVirtualOverrideTests.cs" />
