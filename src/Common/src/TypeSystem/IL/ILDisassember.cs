@@ -11,6 +11,17 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
+    // Known shortcomings:
+    // - Escaping identifier names is missing (special characters and ILASM identifier names)
+    // - Array bounds in signatures missing
+    // - Custom modifiers and PINNED constraint not decoded in signatures
+    // - Calling conventions in signatures not decoded
+    // - Vararg signatures
+    // - Floating point numbers are not represented in roundtrippable format
+
+    /// <summary>
+    /// Helper struct to disassemble IL instructions into a textual representation.
+    /// </summary>
     public struct ILDisassember
     {
         private byte[] _ilBytes;
@@ -68,7 +79,9 @@ namespace Internal.IL
 
         private void AppendMethodSignature(StringBuilder sb, MethodDesc method)
         {
-            MethodSignature signature = method.Signature;
+            // If this is an instantiated generic method, the formatted signature should
+            // be uninstantiated (e.g. "void Foo::Bar<int>(!!0 param)", not "void Foo::Bar<int>(int param)")
+            MethodSignature signature = method.GetMethodDefinition().Signature;
 
             AppendSignaturePrefix(sb, signature);
             sb.Append(' ');
@@ -247,7 +260,7 @@ namespace Internal.IL
         {
             StringBuilder decodedInstruction = new StringBuilder();
             AppendOffset(decodedInstruction, _currentOffset);
-            decodedInstruction.Append(": ");
+            decodedInstruction.Append(":  ");
 
         again:
 
@@ -257,7 +270,13 @@ namespace Internal.IL
                 opCode = (ILOpcode)(0x100 + ReadILByte());
             }
 
-            decodedInstruction.Append(opCode.ToString().Replace("_", "."));
+            // Quick and dirty way to get the opcode name is to convert the enum value to string.
+            // We need some adjustments though.
+            string opCodeString = opCode.ToString().Replace("_", ".");
+            if (opCodeString.EndsWith("."))
+                opCodeString = opCodeString.Substring(0, opCodeString.Length - 1);
+
+            decodedInstruction.Append(opCodeString);
 
             switch (opCode)
             {
@@ -382,6 +401,7 @@ namespace Internal.IL
 
                 case ILOpcode.switch_:
                     {
+                        decodedInstruction.Clear();
                         decodedInstruction.Append("switch (");
                         uint count = ReadILUInt32();
                         int jmpBase = _currentOffset + (int)(4 * count);
