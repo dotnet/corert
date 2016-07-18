@@ -2120,8 +2120,7 @@ namespace Internal.JitInterface
 
                 pResult.compileTimeHandle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(md);
 
-                // TODO: wrong
-                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(md));
+                pResult.lookup.constLookup.handle = (CORINFO_GENERIC_STRUCT_*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__fail_fast"));
 
                 runtimeLookup = false;
             }
