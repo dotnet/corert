@@ -35,17 +35,28 @@ namespace Internal.Runtime.Augments
         public abstract Type GetType(String typeName, bool throwOnError, bool ignoreCase);
 
         // Access to reflection mapping tables.
-        public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle);
 
-        public abstract bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle);
+        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
+        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
+        [Obsolete]
+        public virtual bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle) { throw NotImplemented.ByDesign; }
+        [Obsolete]
+        public virtual bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle) { throw NotImplemented.ByDesign; }
 
-        public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
-        public abstract bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle);
+        [Obsolete]
+        public virtual bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle) { throw NotImplemented.ByDesign; }
+        [Obsolete]
+        public virtual bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle) { throw NotImplemented.ByDesign; }
 
-        public abstract bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles);
-        public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
+        [Obsolete]
+        public virtual bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle) { throw NotImplemented.ByDesign; }
+        [Obsolete]
+        public virtual bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle) { throw NotImplemented.ByDesign; }
+
+        [Obsolete]
+        public virtual bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles) { throw NotImplemented.ByDesign; }
+        [Obsolete]
+        public virtual bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle) { throw NotImplemented.ByDesign; }
 
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator);
@@ -56,15 +67,39 @@ namespace Internal.Runtime.Augments
 
         public abstract bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name);
 
+        //=======================================================================================
+        // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
+        // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
+        //
+        // TODO https://github.com/dotnet/corefx/issues/9805: These declarations should be made
+        // "abstract", not "virtual" - to do this, I have to update (or eliminate) the Corelib contract which
+        // lies outside the GitHub-mapped space.
+        //=======================================================================================
+        public virtual Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition) { throw NotImplemented.ByDesign; }
+        public virtual Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle) { throw NotImplemented.ByDesign; }
+        public virtual Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank) { throw NotImplemented.ByDesign; }
+        public virtual Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle) { throw NotImplemented.ByDesign; }
+        public virtual Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle) { throw NotImplemented.ByDesign; }
+
         // Generic Virtual Method Support
         public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref IntPtr methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
 
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
-        public abstract Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank);
-        public abstract Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments);
 
-        public abstract Type CreateShadowRuntimeInspectionOnlyNamedTypeIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
+        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
+        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
+        [Obsolete]
+        public virtual Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank) { throw NotImplemented.ByDesign; }
+        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
+        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
+        [Obsolete]
+        public virtual Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments) { throw NotImplemented.ByDesign; }
+
+        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
+        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
+        [Obsolete]
+        public virtual Type CreateShadowRuntimeInspectionOnlyNamedTypeIfAvailable(RuntimeTypeHandle runtimeTypeHandle) { throw NotImplemented.ByDesign; }
         public abstract EnumInfo GetEnumInfoIfAvailable(Type enumType);
         public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress);

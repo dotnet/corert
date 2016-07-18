@@ -111,46 +111,6 @@ namespace Internal.Reflection.Execution
             return _executionDomain.GetType(typeName, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
         }
 
-        public sealed override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
-        {
-            return _executionEnvironment.TryGetArrayTypeForElementType(elementTypeHandle, out arrayTypeHandle);
-        }
-
-        public sealed override bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
-        {
-            return _executionEnvironment.TryGetArrayTypeElementType(arrayTypeHandle, out elementTypeHandle);
-        }
-
-        public sealed override bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle)
-        {
-            return _executionEnvironment.TryGetMultiDimArrayTypeForElementType(elementTypeHandle, rank, out arrayTypeHandle);
-        }
-
-        public sealed override bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle)
-        {
-            return _executionEnvironment.TryGetMultiDimArrayTypeElementType(arrayTypeHandle, rank, out elementTypeHandle);
-        }
-
-        public sealed override bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
-        {
-            return _executionEnvironment.TryGetPointerTypeForTargetType(targetTypeHandle, out pointerTypeHandle);
-        }
-
-        public sealed override bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
-        {
-            return _executionEnvironment.TryGetPointerTypeTargetType(pointerTypeHandle, out targetTypeHandle);
-        }
-
-        public sealed override bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
-        {
-            return _executionEnvironment.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles);
-        }
-
-        public sealed override bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return _executionEnvironment.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
-        }
-
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)
         {
             return _executionEnvironment.IsReflectionBlocked(typeHandle);
@@ -161,24 +121,41 @@ namespace Internal.Reflection.Execution
             return _executionEnvironment.TryGetMetadataNameForRuntimeTypeHandle(rtth, out name);
         }
 
+        //=======================================================================================
+        // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
+        // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
+        //=======================================================================================
+        public sealed override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
+        {
+            return _executionDomain.GetNamedTypeForHandle(typeHandle, isGenericTypeDefinition);
+        }
+
+        public sealed override Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return _executionDomain.GetArrayTypeForHandle(typeHandle);
+        }
+
+        public sealed override Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
+        {
+            return _executionDomain.GetMdArrayTypeForHandle(typeHandle, rank);
+        }
+
+        public sealed override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return _executionDomain.GetPointerTypeForHandle(typeHandle);
+        }
+
+        public sealed override Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return _executionDomain.GetConstructedGenericTypeForHandle(typeHandle);
+        }
+
+        //=======================================================================================
+        // MissingMetadataException support.
+        //=======================================================================================
         public sealed override Exception CreateMissingMetadataException(Type pertainant)
         {
             return _executionDomain.CreateMissingMetadataException(pertainant);
-        }
-
-        public sealed override Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
-        {
-            return MissingMetadataExceptionCreator.CreateMissingArrayTypeException(elementType, isMultiDim, rank);
-        }
-
-        public sealed override Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
-        {
-            return MissingMetadataExceptionCreator.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
-        }
-
-        public sealed override Type CreateShadowRuntimeInspectionOnlyNamedTypeIfAvailable(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return _executionDomain.CreateShadowRuntimeInspectionOnlyNamedTypeIfAvailable(runtimeTypeHandle);
         }
 
         public sealed override EnumInfo GetEnumInfoIfAvailable(Type enumType)

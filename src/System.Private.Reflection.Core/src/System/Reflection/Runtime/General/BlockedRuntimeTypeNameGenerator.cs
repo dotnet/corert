@@ -7,7 +7,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 
-namespace Internal.Reflection.Core.NonPortable
+namespace System.Reflection.Runtime.General
 {
     //
     // This class dispenses randomized strings (that serve as both the fake name and fake assembly container) for
@@ -18,15 +18,15 @@ namespace Internal.Reflection.Core.NonPortable
     //
     internal static class BlockedRuntimeTypeNameGenerator
     {
-        public static String GetNameForBlockedRuntimeType(RuntimeType type)
+        public static string GetNameForBlockedRuntimeType(RuntimeTypeHandle typeHandle)
         {
-            String name = s_blockedNameTable.GetOrAdd(type);
+            string name = s_blockedNameTable.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
             return name;
         }
 
-        private sealed class BlockedRuntimeTypeNameTable : ConcurrentUnifier<RuntimeType, String>
+        private sealed class BlockedRuntimeTypeNameTable : ConcurrentUnifier<RuntimeTypeHandleKey, string>
         {
-            protected override String Factory(RuntimeType key)
+            protected override string Factory(RuntimeTypeHandleKey key)
             {
                 uint count = s_counter++;
                 return "$BlockedFromReflection_" + count.ToString() + "_" + Guid.NewGuid().ToString().Substring(0, 8);
@@ -35,7 +35,7 @@ namespace Internal.Reflection.Core.NonPortable
             private static uint s_counter;
         }
 
-        private static BlockedRuntimeTypeNameTable s_blockedNameTable = new BlockedRuntimeTypeNameTable();
+        private static readonly BlockedRuntimeTypeNameTable s_blockedNameTable = new BlockedRuntimeTypeNameTable();
     }
 }
 

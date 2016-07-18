@@ -5,7 +5,9 @@
 using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
+using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.TypeInfos;
+using global::System.Runtime.CompilerServices;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
@@ -15,9 +17,10 @@ namespace System.Reflection.Runtime.General
 {
     internal static class RuntimeTypeExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetRuntimeTypeInfo(this RuntimeType runtimeType)
         {
-            return RuntimeTypeInfo.GetRuntimeTypeInfo(runtimeType);
+            return ((RuntimeTypeTemporary)runtimeType).GetTypeInfo();
         }
 
         public static RUNTIMETYPEINFO GetRuntimeTypeInfo<RUNTIMETYPEINFO>(this Type type)

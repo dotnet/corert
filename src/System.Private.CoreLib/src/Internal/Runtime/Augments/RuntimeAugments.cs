@@ -951,6 +951,11 @@ namespace Internal.Runtime.Augments
                 RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
             }
         }
+
+        public static string GetLastResortString(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.LastResortToString;
+        }
     }
 }
 

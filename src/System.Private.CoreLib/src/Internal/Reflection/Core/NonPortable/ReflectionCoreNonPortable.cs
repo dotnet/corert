@@ -26,37 +26,45 @@ namespace Internal.Reflection.Core.NonPortable
 {
     public static class ReflectionCoreNonPortable
     {
+        // TODO https://github.com/dotnet/corefx/issues/9805: Get rid of the [Obsolete] members entirely once we clear these out of the Corelib.Reflection contract.
+
+        [Obsolete("Use the TypeUnifier extensions in S.P.R.Core instead.")]
         public static RuntimeType GetArrayType(RuntimeType elementType)
         {
-            return RuntimeTypeUnifier.GetArrayType(elementType);
+            throw NotImplemented.ByDesign;
         }
 
+        [Obsolete("Use the TypeUnifier extensions in S.P.R.Core instead.")]
         public static RuntimeType GetMultiDimArrayType(RuntimeType elementType, int rank)
         {
-            return RuntimeTypeUnifier.GetMultiDimArrayType(elementType, rank);
+            throw NotImplemented.ByDesign;
         }
 
+        [Obsolete("Use the TypeUnifier extensions in S.P.R.Core instead.")]
         public static RuntimeType GetByRefType(RuntimeType targetType)
         {
-            return RuntimeTypeUnifier.GetByRefType(targetType);
+            throw NotImplemented.ByDesign;
         }
 
+        [Obsolete("Use the TypeUnifier extensions in S.P.R.Core instead.")]
         public static RuntimeType GetConstructedGenericType(RuntimeType genericTypeDefinition, RuntimeType[] genericTypeArguments)
         {
-            return RuntimeTypeUnifier.GetConstructedGenericType(genericTypeDefinition, genericTypeArguments);
+            throw NotImplemented.ByDesign;
         }
 
+        [Obsolete("Use the TypeUnifier extensions in S.P.R.Core instead.")]
         public static RuntimeType GetPointerType(RuntimeType targetType)
         {
-            return RuntimeTypeUnifier.GetPointerType(targetType);
+            throw NotImplemented.ByDesign;
         }
 
         public static RuntimeType GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
         {
-            return RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(runtimeTypeHandle);
+            // TODO https://github.com/dotnet/corefx/issues/9805: Change the return type to "Type" and get rid of the cast as soon we have the opportunity to rev the contracts.
+            return (RuntimeType)RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(runtimeTypeHandle);
         }
 
-        internal static RuntimeType GetRuntimeTypeForEEType(EETypePtr eeType)
+        internal static Type GetRuntimeTypeForEEType(EETypePtr eeType)
         {
             return RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(new RuntimeTypeHandle(eeType));
         }

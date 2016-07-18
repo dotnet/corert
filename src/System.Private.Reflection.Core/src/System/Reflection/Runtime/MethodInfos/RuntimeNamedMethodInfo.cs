@@ -230,7 +230,7 @@ namespace System.Reflection.Runtime.MethodInfos
                         RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
                         owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(MethodHandle, genericTypeDefinition, genericTypeDefinition);
                     }
-                    RuntimeType genericParameterType = RuntimeTypeUnifierEx.GetRuntimeGenericParameterTypeForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
+                    RuntimeType genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle).RuntimeType;
                     genericTypeParameters.Add(genericParameterType);
                 }
                 return genericTypeParameters.ToArray();

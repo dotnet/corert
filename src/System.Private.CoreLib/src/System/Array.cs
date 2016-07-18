@@ -175,9 +175,9 @@ namespace System
             try
             {
                 if (multiDim)
-                    return ReflectionCoreNonPortable.GetMultiDimArrayType(runtimeElementType, rank);
+                    return runtimeElementType.MakeArrayType(rank);
                 else
-                    return ReflectionCoreNonPortable.GetArrayType(runtimeElementType);
+                    return runtimeElementType.MakeArrayType();
             }
             catch
             {

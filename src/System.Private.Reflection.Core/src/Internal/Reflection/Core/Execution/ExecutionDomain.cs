@@ -107,7 +107,7 @@ namespace Internal.Reflection.Core.Execution
         //
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            RuntimeType declaringType = ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(declaringTypeHandle);
+            RuntimeType declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle().RuntimeType;
             RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
@@ -127,7 +127,7 @@ namespace Internal.Reflection.Core.Execution
                     RuntimeType[] genericTypeArguments = new RuntimeType[genericMethodTypeArgumentHandles.Length];
                     for (int i = 0; i < genericMethodTypeArgumentHandles.Length; i++)
                     {
-                        genericTypeArguments[i] = ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(genericMethodTypeArgumentHandles[i]);
+                        genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle().RuntimeType;
                     }
                     return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(runtimeNamedMethodInfo, genericTypeArguments);
                 }
@@ -146,20 +146,72 @@ namespace Internal.Reflection.Core.Execution
         }
 
         //=======================================================================================
-        // Flotsam and jetsam.
+        // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
+        // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
         //=======================================================================================
-        //
-        // ShadowTypes are a trick to make Types based on RuntimeTypeHandles "light up" on Project N when metadata and reflection are present.
-        // This is exposed on the execution domain only as it makes no sense for LMR types.
-        //
-        public Type CreateShadowRuntimeInspectionOnlyNamedTypeIfAvailable(RuntimeTypeHandle runtimeTypeHandle)
+        public Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
-            MetadataReader metadataReader;
+            MetadataReader reader;
             TypeDefinitionHandle typeDefinitionHandle;
+            if (ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out reader, out typeDefinitionHandle))
+            {
+                return typeDefinitionHandle.GetNamedType(reader, typeHandle).AsType();
+            }
+            else
+            {
+                if (ExecutionEnvironment.IsReflectionBlocked(typeHandle))
+                {
+                    return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                }
+                else
+                {
+                    return RuntimeNoMetadataNamedTypeInfo.GetRuntimeNoMetadataNamedTypeInfo(typeHandle, isGenericTypeDefinition).AsType();
+                }
+            }
+        }
 
-            if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out metadataReader, out typeDefinitionHandle))
-                return null;
-            return new ShadowRuntimeInspectionOnlyNamedType(metadataReader, typeDefinitionHandle);
+        public Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            RuntimeTypeHandle elementTypeHandle;
+            if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
+                throw CreateMissingMetadataException((Type)null);
+
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle).AsType();
+        }
+
+        public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
+        {
+            RuntimeTypeHandle elementTypeHandle;
+            if (!ExecutionEnvironment.TryGetMultiDimArrayTypeElementType(typeHandle, rank, out elementTypeHandle))
+                throw CreateMissingMetadataException((Type)null);
+
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle).AsType();
+        }
+
+        public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            RuntimeTypeHandle targetTypeHandle;
+            if (!ExecutionEnvironment.TryGetPointerTypeTargetType(typeHandle, out targetTypeHandle))
+                throw CreateMissingMetadataException((Type)null);
+
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle).AsType();
+        }
+
+        public Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            RuntimeTypeHandle genericTypeDefinitionHandle;
+            RuntimeTypeHandle[] genericTypeArgumentHandles;
+            if (!ExecutionEnvironment.TryGetConstructedGenericTypeComponents(typeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
+                throw CreateMissingMetadataException((Type)null);
+
+            RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
+            int count = genericTypeArgumentHandles.Length;
+            RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[count];
+            for (int i = 0; i < count; i++)
+            {
+                genericTypeArguments[i] = genericTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
+            }
+            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle).AsType();
         }
 
         internal ExecutionEnvironment ExecutionEnvironment { get; private set; }

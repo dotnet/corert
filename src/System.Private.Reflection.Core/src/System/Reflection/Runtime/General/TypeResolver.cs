@@ -54,7 +54,7 @@ namespace System.Reflection.Runtime.General
         //
         internal static RuntimeType ResolveTypeDefinition(this ReflectionDomain reflectionDomain, MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle)
         {
-            return RuntimeTypeUnifierEx.GetNamedType(reader, typeDefinitionHandle);
+            return typeDefinitionHandle.GetNamedType(reader).RuntimeType;
         }
 
         //
@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.General
                         RuntimeType elementType = reflectionDomain.TryResolve(reader, sig.ElementType, typeContext, ref exception);
                         if (elementType == null)
                             return null;
-                        return ReflectionCoreNonPortable.GetMultiDimArrayType(elementType, rank);
+                        return elementType.GetMultiDimArrayType(rank);
                     }
 
                 case HandleType.ByReferenceSignature:
@@ -83,7 +83,7 @@ namespace System.Reflection.Runtime.General
                         RuntimeType targetType = reflectionDomain.TryResolve(reader, sig.Type, typeContext, ref exception);
                         if (targetType == null)
                             return null;
-                        return ReflectionCoreNonPortable.GetByRefType(targetType);
+                        return targetType.GetByRefType();
                     }
 
                 case HandleType.MethodTypeVariableSignature:
@@ -98,7 +98,7 @@ namespace System.Reflection.Runtime.General
                         RuntimeType targetType = reflectionDomain.TryResolve(reader, sig.Type, typeContext, ref exception);
                         if (targetType == null)
                             return null;
-                        return ReflectionCoreNonPortable.GetPointerType(targetType);
+                        return targetType.GetPointerType();
                     }
 
                 case HandleType.SZArraySignature:
@@ -107,7 +107,7 @@ namespace System.Reflection.Runtime.General
                         RuntimeType elementType = reflectionDomain.TryResolve(reader, sig.ElementType, typeContext, ref exception);
                         if (elementType == null)
                             return null;
-                        return ReflectionCoreNonPortable.GetArrayType(elementType);
+                        return elementType.GetArrayType();
                     }
 
                 case HandleType.TypeDefinition:
@@ -129,7 +129,7 @@ namespace System.Reflection.Runtime.General
                                 return null;
                             genericTypeArguments.Add(genericTypeArgument);
                         }
-                        return ReflectionCoreNonPortable.GetConstructedGenericType(genericTypeDefinition, genericTypeArguments.ToArray());
+                        return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments.ToArray());
                     }
 
                 case HandleType.TypeReference:
@@ -159,7 +159,7 @@ namespace System.Reflection.Runtime.General
                 {
                     RuntimeTypeHandle resolvedRuntimeTypeHandle;
                     if (executionDomain.ExecutionEnvironment.TryGetNamedTypeForTypeReference(reader, typeReferenceHandle, out resolvedRuntimeTypeHandle))
-                        return ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(resolvedRuntimeTypeHandle);
+                        return resolvedRuntimeTypeHandle.GetTypeForRuntimeTypeHandle().RuntimeType;
                 }
             }
 
@@ -173,7 +173,7 @@ namespace System.Reflection.Runtime.General
 
             if (parentType == HandleType.TypeDefinition)
             {
-                outerTypeInfo = RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, parent.ToTypeDefinitionHandle(reader));
+                outerTypeInfo = parent.ToTypeDefinitionHandle(reader).GetNamedType(reader);
             }
             else if (parentType == HandleType.TypeReference)
             {

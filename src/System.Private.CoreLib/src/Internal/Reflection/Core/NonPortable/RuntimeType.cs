@@ -18,11 +18,15 @@ using Internal.Reflection.Tracing;
 namespace Internal.Reflection.Core.NonPortable
 {
     //
-    // Base type for all RuntimeType classes implemented by the runtime. The actual implementation class can live either in System.Private.CoreLib or
-    // System.Reflection.Runtime.
+    // TODO https://github.com/dotnet/corefx/issues/9805:
     //
-    // Mostly, this sets many of the "flavor-specific" properties to return the desktop-compatible "error case" result. 
-    // This minimizes the number of methods the subclasses must override.
+    //   With Type and TypeInfo being merged back into the same object, RuntimeType is being phased out in favor of RuntimeTypeInfo.
+    //   This phaseout will happen slowly since RuntimeType is a widely used exchange type inside Corelib and Reflection.Core.
+    //
+    // TODO https://github.com/dotnet/corefx/issues/9805:
+    //
+    //   Most of these methods should made abstract or removed, but this requires coordination with the contracts and apicompat.
+    //   Since this is now a relic class, we might not bother with that.
     //
 
     [DebuggerDisplay("{_debugName}")]
@@ -38,26 +42,6 @@ namespace Internal.Reflection.Core.NonPortable
             return this;
         }
 
-        //=====================================================================================================================
-        // Equals/GetHashCode() - Important!
-        //
-        //    RuntimeType objects are currently unified and stored as weak references. Because of this, it's sufficient for Equals()
-        //    to do an instance equality check, but GetHashCode() must return a hash code based on semantic identity. 
-        //
-        //    Ideally, we'd override Equals() and seal it but FxCop would likely complain
-        //    if our derived types overrode GetHashCode() without overriding Equals(). Thus, all derived types that
-        //    override GetHashCode() must override Equals() to keep FxCop happy but should implemented as:
-        //
-        //           public sealed override bool Equals(Object obj)
-        //           {
-        //               return InternalIsEqual(obj);
-        //           }
-        //
-        //    so that the assumption of unification is encapsulated in one place.
-        //
-        //    We could also have sealed both overrides here and had our GetHashCode() do a call to a virtual "InternalGetHashCode".
-        //    But that would impose a double virtual dispatch on the perf-critical GetHashCode() method.
-        //=====================================================================================================================
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
 
@@ -67,235 +51,105 @@ namespace Internal.Reflection.Core.NonPortable
             return Object.ReferenceEquals(this, runtimeType);
         }
 
-        public sealed override String AssemblyQualifiedName
+        public override String AssemblyQualifiedName
         {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Type_AssemblyQualifiedName(this);
-#endif
-
-                String fullName = FullName;
-                if (fullName == null)   // Some Types (such as generic parameters) return null for FullName by design.
-                    return null;
-                String assemblyName = InternalFullNameOfAssembly;
-                return fullName + ", " + assemblyName;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
-        //
-        // Left unsealed as nested and generic parameter types must override this.
-        //
         public override Type DeclaringType
         {
-            get { return null; }
+            get { throw NotImplemented.ByDesign; }
         }
 
-        //
-        // Left unsealed as this is only correct for named types. Other type flavors must override this.
-        //
         public override String FullName
         {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Type_FullName(this);
-#endif
-
-                Debug.Assert(!IsConstructedGenericType);
-                Debug.Assert(!IsGenericParameter);
-                Debug.Assert(!HasElementType);
-
-                String name = Name;
-
-                Type declaringType = this.DeclaringType;
-                if (declaringType != null)
-                {
-                    String declaringTypeFullName = declaringType.FullName;
-                    return declaringTypeFullName + "+" + name;
-                }
-
-                String ns = Namespace;
-                if (ns == null)
-                    return name;
-                return ns + "." + name;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
-        //
-        // Left unsealed as generic parameter types must override this.
-        //
         public override int GenericParameterPosition
         {
-            get
-            {
-                Debug.Assert(!IsGenericParameter);
-                throw new InvalidOperationException(SR.Arg_NotGenericParameter);
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
-        public sealed override Type[] GenericTypeArguments
+        public override Type[] GenericTypeArguments
         {
-            get
-            {
-                RuntimeType[] genericTypeArguments = this.InternalRuntimeGenericTypeArguments;
-                if (genericTypeArguments.Length == 0)
-                    return Array.Empty<Type>();
-                Type[] result = new Type[genericTypeArguments.Length];
-                for (int i = 0; i < genericTypeArguments.Length; i++)
-                    result[i] = genericTypeArguments[i];
-                return result;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
-        //
-        // This group of predicates is left unsealed since most type flavors return true for at least one of them.
-        //
-        public override bool IsArray { get { return false; } }
-        public override bool IsByRef { get { return false; } }
-        public override bool IsConstructedGenericType { get { return false; } }
-        public override bool IsGenericParameter { get { return false; } }
-        public override bool IsPointer { get { return false; } }
+        public override bool IsArray
+        {
+            get { throw NotImplemented.ByDesign; }
+        }
 
-        //
-        // Left unsealed as array types must override this.
-        //
+        public override bool IsByRef
+        {
+            get { throw NotImplemented.ByDesign; }
+        }
+        public override bool IsConstructedGenericType
+        {
+            get { throw NotImplemented.ByDesign; }
+        }
+
+        public override bool IsGenericParameter
+        {
+            get { throw NotImplemented.ByDesign; }
+        }
+
+        public override bool IsPointer
+        {
+            get { throw NotImplemented.ByDesign; }
+        }
+
         public override int GetArrayRank()
         {
-            Debug.Assert(!IsArray);
-            throw new ArgumentException(SR.Argument_HasToBeArrayClass);
+            throw NotImplemented.ByDesign;
         }
 
-        public sealed override Type GetElementType()
+        public override Type GetElementType()
         {
-            return InternalRuntimeElementType;
+            throw NotImplemented.ByDesign;
         }
 
-        //
-        // Left unsealed as IsGenericType types must override this.
-        //
         public override Type GetGenericTypeDefinition()
         {
-            Debug.Assert(!IsConstructedGenericType);
-            throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+            throw NotImplemented.ByDesign;
         }
 
-        public sealed override Type MakeArrayType()
+        public override Type MakeArrayType()
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Type_MakeArrayType(this);
-#endif
-
-            // Do not implement this as a call to MakeArrayType(1) - they are not interchangable. MakeArrayType() returns a
-            // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
-            // in the ECMA model and in CLR Reflection.
-            return ReflectionCoreNonPortable.GetArrayType(this);
+            throw NotImplemented.ByDesign;
         }
 
-        public sealed override Type MakeArrayType(int rank)
+        public override Type MakeArrayType(int rank)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Type_MakeArrayType(this);
-#endif
-
-            if (rank <= 0)
-                throw new IndexOutOfRangeException();
-            return ReflectionCoreNonPortable.GetMultiDimArrayType(this, rank);
+            throw NotImplemented.ByDesign;
         }
 
-        public sealed override Type MakeByRefType()
+        public override Type MakeByRefType()
         {
-            return ReflectionCoreNonPortable.GetByRefType(this);
+            throw NotImplemented.ByDesign;
         }
 
-        public sealed override Type MakeGenericType(params Type[] instantiation)
+        public override Type MakeGenericType(params Type[] instantiation)
         {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Type_MakeGenericType(this, instantiation);
-#endif
-
-            if (instantiation == null)
-                throw new ArgumentNullException("instantiation");
-
-            if (!(this.InternalIsGenericTypeDefinition))
-                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
-
-            // We intentionally don't validate the number of arguments or their suitability to the generic type's constraints.
-            // In a pay-for-play world, this can cause needless MissingMetadataExceptions. There is no harm in creating
-            // the Type object for an inconsistent generic type - no EEType will ever match it so any attempt to "invoke" it
-            // will throw an exception.
-            RuntimeType[] genericTypeArguments = new RuntimeType[instantiation.Length];
-            for (int i = 0; i < instantiation.Length; i++)
-            {
-                genericTypeArguments[i] = instantiation[i] as RuntimeType;
-                if (genericTypeArguments[i] == null)
-                {
-                    if (instantiation[i] == null)
-                        throw new ArgumentNullException();
-                    else
-                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_MakeGenericType); // "PlatformNotSupported" because on desktop, passing in a foreign type is allowed and creates a RefEmit.TypeBuilder
-                }
-            }
-            return ReflectionCoreNonPortable.GetConstructedGenericType(this, genericTypeArguments);
+            throw NotImplemented.ByDesign;
         }
 
-        public sealed override Type MakePointerType()
+        public override Type MakePointerType()
         {
-            return ReflectionCoreNonPortable.GetPointerType(this);
+            throw NotImplemented.ByDesign;
         }
 
-        public sealed override String Name
+        public override String Name
         {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Type_Name(this);
-#endif
-
-                RuntimeType rootCauseForFailure = null;
-                String name = this.InternalGetNameIfAvailable(ref rootCauseForFailure);
-                if (name == null)
-                    throw RuntimeAugments.Callbacks.CreateMissingMetadataException(rootCauseForFailure);
-                return name;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
-        //
-        // Left unsealed so that invokable types can override. NOTE! If you override this, you must also override
-        // InternalTryGetTypeHandle().
-        //
         public override RuntimeTypeHandle TypeHandle
         {
-            get
-            {
-                if (this.IsByRef)
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_NoTypeHandleForByRef);
-
-                // If a constructed type doesn't have an type handle, it's either because the reducer tossed it (in which case,
-                // we would thrown a MissingMetadataException when attempting to construct the type) or because one of
-                // component types contains open type parameters. Since we eliminated the first case, it must be the second.
-                // Throwing PlatformNotSupported since the desktop does, in fact, create type handles for open types.
-                if (this.HasElementType || this.IsConstructedGenericType || this.IsGenericParameter)
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_NoTypeHandleForOpenTypes);
-
-                // If got here, this is a "plain old type" that has metadata but no type handle. We can get here if the only
-                // representation of the type is in the native metadata and there's no EEType at the runtime side.
-                // If you squint hard, this is a missing metadata situation - the metadata is missing on the runtime side - and
-                // the action for the user to take is the same: go mess with RD.XML.
-                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(this);
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
-        //
-        // The default Type.ToString() assumes that it's safe to call Type.Name - which is not true in the world of optin metadata.
-        // Block this here to make sure each subclass provides a safe implementation.
-        //
         public abstract override String ToString();
 
         //
@@ -312,8 +166,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public virtual bool InternalTryGetTypeHandle(out RuntimeTypeHandle typeHandle)
         {
-            typeHandle = default(RuntimeTypeHandle);
-            return false;
+            throw NotImplemented.ByDesign;
         }
 
         //
@@ -321,10 +174,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public virtual bool InternalIsGenericTypeDefinition
         {
-            get
-            {
-                return false;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
         //
@@ -332,10 +182,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public virtual RuntimeType InternalRuntimeElementType
         {
-            get
-            {
-                return null;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
         //
@@ -343,11 +190,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public virtual RuntimeType[] InternalRuntimeGenericTypeArguments
         {
-            get
-            {
-                Debug.Assert(!IsConstructedGenericType);
-                return Array.Empty<RuntimeType>();
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
         //
@@ -360,15 +203,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public RUNTIMETYPEINFO InternalGetLatchedRuntimeTypeInfo<RUNTIMETYPEINFO>(Func<RuntimeType, RUNTIMETYPEINFO> factory) where RUNTIMETYPEINFO : class
         {
-            if (_lazyRuntimeTypeInfo == null)
-            {
-                // Note that it's possible for Type to not have a TypeInfo, in which case, _lazyRuntimeTypeInfo remains null 
-                // and this "one-time" initialization will in fact run every time. The assumption is that it's better to throw
-                // the null case under the bus in exchange for not introducing an extra indirection for the cases where
-                // a TypeInfo actually exists.
-                _lazyRuntimeTypeInfo = factory(this);
-            }
-            return RuntimeHelpers.UncheckedCast<RUNTIMETYPEINFO>(_lazyRuntimeTypeInfo);
+            throw NotImplemented.ByDesign;
         }
 
         //
@@ -381,10 +216,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public virtual bool InternalViolatesTypeIdentityRules
         {
-            get
-            {
-                return false;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
         //
@@ -396,8 +228,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public bool InternalIsEqual(Object obj)
         {
-            Debug.Assert(!(this.InternalViolatesTypeIdentityRules || (obj is RuntimeType && ((RuntimeType)obj).InternalViolatesTypeIdentityRules)), "A shadow type escaped into the wild!");
-            return Object.ReferenceEquals(this, obj);
+            throw NotImplemented.ByDesign;
         }
 
         //
@@ -427,10 +258,7 @@ namespace Internal.Reflection.Core.NonPortable
         //
         public virtual bool InternalIsMultiDimArray
         {
-            get
-            {
-                return false;
-            }
+            get { throw NotImplemented.ByDesign; }
         }
 
         //
@@ -473,8 +301,6 @@ namespace Internal.Reflection.Core.NonPortable
             }
             return;
         }
-
-        private volatile Object _lazyRuntimeTypeInfo;  // This is actually a RuntimeTypeInfo.
 
         private String _debugName;
     }

@@ -67,6 +67,11 @@ namespace Internal.Reflection.Execution
             return new SyntheticMethodInvoker(thisType, parameterTypes, options, invoker);
         }
 
+        public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
+        {
+            return RuntimeAugments.GetLastResortString(typeHandle);
+        }
+
         //==============================================================================================
         // Default Value support.
         //==============================================================================================
