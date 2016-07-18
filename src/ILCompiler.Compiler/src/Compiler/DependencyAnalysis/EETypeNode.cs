@@ -196,17 +196,21 @@ namespace ILCompiler.DependencyAnalysis
             return objData.ToObjectData();
         }
 
+        /// <summary>
+        /// Returns a formatted data string to be written to a log file
+        /// </summary>
+        /// <param name="factory">A node factory created during compilation</param>
         public string GetFormattedData(NodeFactory factory)
         {
-            ObjectData nodeData = this.GetData(factory, false);
             TypeDesc currentType = _type;
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(currentType).Slots;
 
             StringBuilder formattedString = new StringBuilder();
-            formattedString.AppendLine("<----Node---->");
-            formattedString.AppendLine();
-            formattedString.Append(this.GetName());
-            formattedString.AppendLine();
+            formattedString.AppendLine("<" + this.GetType().Name + ">");
+            formattedString.AppendLine("\t<Name>");
+            formattedString.Append("\t");
+            formattedString.AppendLine(this.GetName());
+            formattedString.AppendLine("\t</Name>");
 
             UInt16 flags;
             try
@@ -217,37 +221,44 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags = 0;
             }
-            formattedString.AppendLine("--Flags--");
-            formattedString.AppendLine();
+            formattedString.AppendLine("\t<Flags>");
             var flagsSet = ComputeFlagsSet(flags);
-            formattedString.Append("0x");
-            formattedString.Append(flags.ToStringInvariant("x4"));
+            formattedString.AppendLine("\t<BitValue>");
+            formattedString.AppendLine("\t\t0x" + flags.ToStringInvariant("x4"));
+            formattedString.AppendLine("\t</BitValue>");
             foreach (EETypeFlags flag in flagsSet)
             {
-                formattedString.Append(flag.ToString());
-                formattedString.Append(" ");
-            }
-            formattedString.AppendLine();
-            formattedString.AppendLine("---------");
-            formattedString.AppendLine("--Methods--");
-            formattedString.AppendLine();
-            for (int i = 0; i < virtualSlots.Count; i++)
-            {
-                MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = _type.GetClosestMetadataType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
-                string staticDescription = implMethod.Signature.IsStatic ? " static" : string.Empty;
-                formattedString.Append("Name: ");
-                formattedString.Append(implMethod.Name);
-                formattedString.Append(" ");
-                formattedString.Append(staticDescription);
-                formattedString.Append(" Return Type: ");
-                formattedString.Append(implMethod.Signature.ReturnType);
-                formattedString.Append(" | ");
-                formattedString.AppendLine();
+                formattedString.AppendLine("\t<Flag>");
+                formattedString.Append("\t");
+                formattedString.AppendLine(flag.ToString());
+                formattedString.AppendLine("\t</Flag>");
 
             }
-            formattedString.AppendLine("----------");
-            formattedString.AppendLine("<------------>");
+            formattedString.AppendLine();
+            formattedString.AppendLine("\t</Flags>");
+            formattedString.AppendLine("\t<Methods>");
+            
+            // Iterate through type methods
+            for (int i = 0; i < virtualSlots.Count; i++)
+            {
+                formattedString.AppendLine("\t\t<Method>");
+                MethodDesc declMethod = virtualSlots[i];
+                MethodDesc implMethod = _type.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                string staticDescription = implMethod.Signature.IsStatic ? " static" : string.Empty;
+                formattedString.Append("\t\t\t<Name>");
+                formattedString.Append(implMethod.Name);
+                formattedString.Append("</Name>");
+                formattedString.Append(staticDescription);
+                formattedString.AppendLine();
+                formattedString.Append("\t\t\t<Returns>");
+                formattedString.Append(implMethod.Signature.ReturnType);
+                formattedString.Append("</Returns>");
+                formattedString.AppendLine();
+                formattedString.AppendLine("\t\t</Method>");
+
+            }
+            formattedString.AppendLine("\t</Methods>");
+            formattedString.AppendLine("</" + this.GetType().Name + ">");
             return formattedString.ToString();
 
         }
