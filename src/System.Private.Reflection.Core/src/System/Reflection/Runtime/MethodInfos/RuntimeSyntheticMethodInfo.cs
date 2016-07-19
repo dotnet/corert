@@ -22,7 +22,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo
     {
-        private RuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeType declaringType, RuntimeType[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        private RuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
             _syntheticMethodId = syntheticMethodId;
             _name = name;
@@ -117,7 +117,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return RuntimeMethodCommon.ComputeToString(this, Array.Empty<RuntimeType>(), GetRuntimeParametersAndReturn(this));
+            return RuntimeMethodCommon.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), GetRuntimeParametersAndReturn(this));
         }
 
         protected sealed override MethodInvoker UncachedMethodInvoker
@@ -135,15 +135,15 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeType[] RuntimeGenericArgumentsOrParameters
+        internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
         {
             get
             {
-                return Array.Empty<RuntimeType>();
+                return Array.Empty<RuntimeTypeInfo>();
             }
         }
 
-        internal sealed override RuntimeType RuntimeDeclaringType
+        internal sealed override RuntimeTypeInfo RuntimeDeclaringType
         {
             get
             {
@@ -178,8 +178,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private String _name;
         private SyntheticMethodId _syntheticMethodId;
-        private RuntimeType _declaringType;
-        private RuntimeType[] _runtimeParameterTypesAndReturn;
+        private RuntimeTypeInfo _declaringType;
+        private RuntimeTypeInfo[] _runtimeParameterTypesAndReturn;
         private InvokerOptions _options;
         private Func<Object, Object[], Object> _invoker;
     }

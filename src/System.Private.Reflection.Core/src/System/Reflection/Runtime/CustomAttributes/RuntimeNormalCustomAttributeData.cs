@@ -40,7 +40,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 Type lazyAttributeType = _lazyAttributeType;
                 if (lazyAttributeType == null)
                 {
-                    lazyAttributeType = _lazyAttributeType = _reflectionDomain.Resolve(_reader, _customAttribute.GetAttributeTypeHandle(_reader), new TypeContext(null, null));
+                    lazyAttributeType = _lazyAttributeType = _reflectionDomain.Resolve(_reader, _customAttribute.GetAttributeTypeHandle(_reader), new TypeContext(null, null)).CastToType();
                 }
                 return lazyAttributeType;
             }
@@ -99,7 +99,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                             }
                             Handle typeHandle = lazyCtorTypeHandles[index];
                             Exception exception = null;
-                            RuntimeType argumentType = _reflectionDomain.TryResolve(_reader, typeHandle, new TypeContext(null, null), ref exception);
+                            RuntimeTypeInfo argumentType = _reflectionDomain.TryResolve(_reader, typeHandle, new TypeContext(null, null), ref exception);
                             if (argumentType == null)
                             {
                                 if (throwIfMissingMetadata)
@@ -163,10 +163,10 @@ namespace System.Reflection.Runtime.CustomAttributes
         //
         // If throwIfMissingMetadata is false, returns default(CustomAttributeTypedArgument) rather than throwing a MissingMetadataException.
         //
-        private CustomAttributeTypedArgument ParseFixedArgument(MetadataReader reader, FixedArgumentHandle fixedArgumentHandle, bool throwIfMissingMetadata, Func<RuntimeType> getTypeFromConstructor)
+        private CustomAttributeTypedArgument ParseFixedArgument(MetadataReader reader, FixedArgumentHandle fixedArgumentHandle, bool throwIfMissingMetadata, Func<RuntimeTypeInfo> getTypeFromConstructor)
         {
             FixedArgument fixedArgument = fixedArgumentHandle.GetFixedArgument(reader);
-            RuntimeType argumentType = null;
+            RuntimeTypeInfo argumentType = null;
             if (fixedArgument.Type.IsNull(reader))
             {
                 argumentType = getTypeFromConstructor();
@@ -198,7 +198,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 else
                     return default(CustomAttributeTypedArgument);
             }
-            return WrapInCustomAttributeTypedArgument(value, argumentType);
+            return WrapInCustomAttributeTypedArgument(value, argumentType.CastToType());
         }
 
         //

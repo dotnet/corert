@@ -598,7 +598,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo
     {
-        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeType declaringType, RuntimeType[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
             return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypesAndReturn, options, invoker);
         }
@@ -622,7 +622,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeConstructedGenericMethodInfo : RuntimeMethodInfo
     {
-        internal static RuntimeMethodInfo GetRuntimeConstructedGenericMethodInfo(RuntimeNamedMethodInfo genericMethodDefinition, RuntimeType[] genericTypeArguments)
+        internal static RuntimeMethodInfo GetRuntimeConstructedGenericMethodInfo(RuntimeNamedMethodInfo genericMethodDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
             return new RuntimeConstructedGenericMethodInfo(genericMethodDefinition, genericTypeArguments).WithDebugName();
         }
@@ -633,7 +633,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo
     {
-        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeType declaringType, RuntimeType[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
             return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypesAndReturn, options, invoker).WithDebugName();
         }
@@ -708,7 +708,7 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticParameterInfo : RuntimeParameterInfo
     {
-        internal static RuntimeSyntheticParameterInfo GetRuntimeSyntheticParameterInfo(MemberInfo member, int position, RuntimeType parameterType)
+        internal static RuntimeSyntheticParameterInfo GetRuntimeSyntheticParameterInfo(MemberInfo member, int position, RuntimeTypeInfo parameterType)
         {
             return new RuntimeSyntheticParameterInfo(member, position, parameterType);
         }
@@ -742,7 +742,7 @@ namespace System.Reflection.Runtime.TypeParsing
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class NamespaceTypeName : NamedTypeName
     {
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = _runtimeNamespaceTypeByNameDispenser.GetOrAdd(new NamespaceTypeNameKey(reflectionDomain, currentAssembly, this));
             if (result != null)
@@ -753,12 +753,12 @@ namespace System.Reflection.Runtime.TypeParsing
             return TryResolveCaseInsensitive(reflectionDomain, currentAssembly, out result);
         }
 
-        private static Dispenser<NamespaceTypeNameKey, RuntimeType> _runtimeNamespaceTypeByNameDispenser =
-            DispenserFactory.CreateDispenserV<NamespaceTypeNameKey, RuntimeType>(
+        private static Dispenser<NamespaceTypeNameKey, RuntimeTypeInfo> _runtimeNamespaceTypeByNameDispenser =
+            DispenserFactory.CreateDispenserV<NamespaceTypeNameKey, RuntimeTypeInfo>(
                 DispenserScenario.AssemblyAndNamespaceTypeName_Type,
                 delegate (NamespaceTypeNameKey key)
                 {
-                    RuntimeType result;
+                    RuntimeTypeInfo result;
                     Exception typeLoadException = key.NamespaceTypeName.UncachedTryResolveCaseSensitive(key.ReflectionDomain, key.RuntimeAssembly, out result);
                     if (typeLoadException != null)
                         return null;

@@ -58,17 +58,17 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                bool multiDim = this.RuntimeType.InternalIsMultiDimArray;
-                int rank = this.RuntimeType.GetArrayRank();
+                bool multiDim = this.InternalIsMultiDimArray;
+                int rank = this.GetArrayRank();
 
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
-                RuntimeType arrayType = this.RuntimeType;
-                RuntimeType countType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
-                RuntimeType voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
+                RuntimeTypeInfo arrayType = this;
+                RuntimeTypeInfo countType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>();
 
                 {
-                    RuntimeType[] ctorParametersAndReturn = new RuntimeType[rank + 1];
+                    RuntimeTypeInfo[] ctorParametersAndReturn = new RuntimeTypeInfo[rank + 1];
                     ctorParametersAndReturn[0] = voidType;
                     for (int i = 0; i < rank; i++)
                         ctorParametersAndReturn[i + 1] = countType;
@@ -86,7 +86,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                                 int count = (int)(args[0]);
 
-                                RuntimeType vectorType;
+                                RuntimeTypeInfo vectorType;
                                 if (multiDim)
                                 {
                                     vectorType = arrayType.InternalRuntimeElementType.GetArrayType();
@@ -126,10 +126,10 @@ namespace System.Reflection.Runtime.TypeInfos
                     //
 
                     int parameterCount = 2;
-                    RuntimeType elementType = this.RuntimeType.InternalRuntimeElementType;
+                    RuntimeTypeInfo elementType = this.InternalRuntimeElementType;
                     while (elementType.IsArray && elementType.GetArrayRank() == 1)
                     {
-                        RuntimeType[] ctorParametersAndReturn = new RuntimeType[parameterCount + 1];
+                        RuntimeTypeInfo[] ctorParametersAndReturn = new RuntimeTypeInfo[parameterCount + 1];
                         ctorParametersAndReturn[0] = voidType;
                         for (int i = 0; i < parameterCount; i++)
                             ctorParametersAndReturn[i + 1] = countType;
@@ -156,7 +156,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 if (multiDim)
                 {
-                    RuntimeType[] ctorParametersAndReturn = new RuntimeType[rank * 2 + 1];
+                    RuntimeTypeInfo[] ctorParametersAndReturn = new RuntimeTypeInfo[rank * 2 + 1];
                     ctorParametersAndReturn[0] = voidType;
                     for (int i = 0; i < rank * 2; i++)
                         ctorParametersAndReturn[i + 1] = countType;
@@ -185,17 +185,17 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                int rank = this.RuntimeType.GetArrayRank();
+                int rank = this.GetArrayRank();
 
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
-                RuntimeType indexType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
-                RuntimeType arrayType = this.RuntimeType;
-                RuntimeType elementType = arrayType.InternalRuntimeElementType;
-                RuntimeType voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
+                RuntimeTypeInfo indexType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                RuntimeTypeInfo arrayType = this;
+                RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
+                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>();
 
                 {
-                    RuntimeType[] getParametersAndReturn = new RuntimeType[rank + 1];
+                    RuntimeTypeInfo[] getParametersAndReturn = new RuntimeTypeInfo[rank + 1];
                     getParametersAndReturn[0] = elementType;
                     for (int i = 0; i < rank; i++)
                         getParametersAndReturn[i + 1] = indexType;
@@ -217,7 +217,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
 
                 {
-                    RuntimeType[] setParametersAndReturn = new RuntimeType[rank + 2];
+                    RuntimeTypeInfo[] setParametersAndReturn = new RuntimeTypeInfo[rank + 2];
                     setParametersAndReturn[0] = voidType;
                     for (int i = 0; i < rank; i++)
                         setParametersAndReturn[i + 1] = indexType;
@@ -242,7 +242,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
 
                 {
-                    RuntimeType[] addressParametersAndReturn = new RuntimeType[rank + 1];
+                    RuntimeTypeInfo[] addressParametersAndReturn = new RuntimeTypeInfo[rank + 1];
                     addressParametersAndReturn[0] = elementType.GetByRefType();
                     for (int i = 0; i < rank; i++)
                         addressParametersAndReturn[i + 1] = indexType;
@@ -280,7 +280,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                if (this.RuntimeType.InternalIsMultiDimArray)
+                if (this.InternalIsMultiDimArray)
                     return Array.Empty<QTypeDefRefOrSpec>();
                 else
                     return TypeDefInfoProjectionForArrays.TypeRefDefOrSpecsForDirectlyImplementedInterfaces;
@@ -294,7 +294,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return new TypeContext(new RuntimeType[] { this.RuntimeType.InternalRuntimeElementType }, null);
+                return new TypeContext(new RuntimeTypeInfo[] { this.InternalRuntimeElementType }, null);
             }
         }
 
@@ -325,7 +325,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 Debug.Assert(this.ReflectionDomain == ReflectionCoreExecution.ExecutionDomain, "User Reflectable Domains not yet implemented.");
                 RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
-                RuntimeType projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle().RuntimeType;
+                RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle();
                 return projectionRuntimeTypeForArrays.GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
             }
         }
@@ -333,7 +333,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Helper for jagged array constructors.
         //
-        private Array CreateJaggedArray(RuntimeType arrayType, int[] lengths, int index)
+        private Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
         {
             int length = lengths[index];
             Array jaggedArray = ReflectionCoreExecution.ExecutionEnvironment.NewArray(arrayType.TypeHandle, length);

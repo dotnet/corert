@@ -153,7 +153,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override RuntimeType[] RuntimeGenericTypeParameters
+        internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
             get
             {

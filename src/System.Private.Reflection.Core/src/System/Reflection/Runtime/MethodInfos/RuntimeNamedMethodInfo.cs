@@ -114,7 +114,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw new ArgumentNullException("typeArguments");
             if (GenericTypeParameters.Length == 0)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
-            RuntimeType[] genericTypeArguments = new RuntimeType[typeArguments.Length];
+            RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
             for (int i = 0; i < typeArguments.Length; i++)
             {
                 if (typeArguments[i] == null)
@@ -123,7 +123,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (!typeArguments[i].IsRuntimeImplemented())
                     throw new ArgumentException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]), "typeArguments[" + i + "]"); // Not a runtime type.
 
-                genericTypeArguments[i] = typeArguments[i].GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
+                genericTypeArguments[i] = typeArguments[i].GetRuntimeTypeInfo<RuntimeTypeInfo>();
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
@@ -187,7 +187,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeType[] RuntimeGenericArgumentsOrParameters
+        internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
         {
             get
             {
@@ -200,7 +200,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.GetRuntimeParametersAndReturn(contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
         }
 
-        internal sealed override RuntimeType RuntimeDeclaringType
+        internal sealed override RuntimeTypeInfo RuntimeDeclaringType
         {
             get
             {
@@ -216,11 +216,11 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        private RuntimeType[] GenericTypeParameters
+        private RuntimeTypeInfo[] GenericTypeParameters
         {
             get
             {
-                LowLevelList<RuntimeType> genericTypeParameters = new LowLevelList<RuntimeType>();
+                LowLevelList<RuntimeTypeInfo> genericTypeParameters = new LowLevelList<RuntimeTypeInfo>();
                 Method method = _common.MethodHandle.GetMethod(_common.Reader);
                 foreach (GenericParameterHandle genericParameterHandle in method.GenericParameters)
                 {
@@ -231,7 +231,7 @@ namespace System.Reflection.Runtime.MethodInfos
                         RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
                         owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(MethodHandle, genericTypeDefinition, genericTypeDefinition);
                     }
-                    RuntimeType genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle).RuntimeType;
+                    RuntimeTypeInfo genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
                     genericTypeParameters.Add(genericParameterType);
                 }
                 return genericTypeParameters.ToArray();
@@ -242,7 +242,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_common.Reader, _common.DeclaringType, _common.MethodHandle, Array.Empty<RuntimeType>(), this);
+                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_common.Reader, _common.DeclaringType, _common.MethodHandle, Array.Empty<RuntimeTypeInfo>(), this);
             }
         }
 

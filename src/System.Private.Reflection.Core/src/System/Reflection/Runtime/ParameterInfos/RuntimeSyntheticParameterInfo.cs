@@ -22,7 +22,7 @@ namespace System.Reflection.Runtime.ParameterInfos
     // This class is used for the "Get/Set" methods on array types.
     internal sealed partial class RuntimeSyntheticParameterInfo : RuntimeParameterInfo
     {
-        private RuntimeSyntheticParameterInfo(MemberInfo memberInfo, int position, RuntimeType parameterType)
+        private RuntimeSyntheticParameterInfo(MemberInfo memberInfo, int position, RuntimeTypeInfo parameterType)
             : base(memberInfo, position)
         {
             _parameterType = parameterType;
@@ -72,7 +72,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _parameterType;
+                return _parameterType.CastToType();
             }
         }
 
@@ -84,7 +84,7 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        private RuntimeType _parameterType;
+        private RuntimeTypeInfo _parameterType;
     }
 }
 

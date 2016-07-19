@@ -68,8 +68,8 @@ namespace Internal.Reflection.Core.NonPortable
         internal abstract string InternalFullNameOfAssembly { get; }
         internal abstract bool InternalTryGetTypeHandle(out RuntimeTypeHandle typeHandle);
         internal abstract bool InternalIsGenericTypeDefinition { get; }
-        internal abstract RuntimeType InternalRuntimeElementType { get; }
-        internal abstract RuntimeType[] InternalRuntimeGenericTypeArguments { get; }
+        internal abstract RuntimeTypeInfo InternalRuntimeElementType { get; }
+        internal abstract RuntimeTypeInfo[] InternalRuntimeGenericTypeArguments { get; }
 
         internal string InternalNameIfAvailable
         {

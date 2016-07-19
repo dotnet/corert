@@ -202,7 +202,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 if (!GetAccessor(MethodSemanticsAttributes.Getter, out getterMethodHandle))
                     throw new ArgumentException();
                 MethodAttributes getterMethodAttributes = getterMethodHandle.GetMethod(_reader).Flags;
-                _lazyGetterInvoker = ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_reader, _contextTypeInfo.RuntimeType, getterMethodHandle, Array.Empty<RuntimeType>(), this);
+                _lazyGetterInvoker = ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_reader, _contextTypeInfo, getterMethodHandle, Array.Empty<RuntimeTypeInfo>(), this);
             }
             if (index == null)
                 index = Array.Empty<Object>();
@@ -241,7 +241,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
                 Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-                return _contextTypeInfo.ReflectionDomain.Resolve(_reader, typeHandle, typeContext);
+                return _contextTypeInfo.ReflectionDomain.Resolve(_reader, typeHandle, typeContext).CastToType();
             }
         }
 
@@ -271,7 +271,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 if (!GetAccessor(MethodSemanticsAttributes.Setter, out setterMethodHandle))
                     throw new ArgumentException();
                 MethodAttributes setterMethodAttributes = setterMethodHandle.GetMethod(_reader).Flags;
-                _lazySetterInvoker = ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_reader, _contextTypeInfo.RuntimeType, setterMethodHandle, Array.Empty<RuntimeType>(), this);
+                _lazySetterInvoker = ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_reader, _contextTypeInfo, setterMethodHandle, Array.Empty<RuntimeTypeInfo>(), this);
             }
             Object[] arguments;
             if (index == null)

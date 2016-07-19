@@ -122,7 +122,7 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         // Non-public methods
         //==============================================================================================
-        internal MethodInvoker GetMethodInvoker(MetadataReader reader, RuntimeType declaringType, MethodHandle methodHandle, RuntimeType[] genericMethodTypeArguments, MemberInfo exceptionPertainant)
+        internal MethodInvoker GetMethodInvoker(MetadataReader reader, RuntimeTypeInfo declaringType, MethodHandle methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant)
         {
             if (declaringType.InternalIsOpen)
                 return new OpenMethodInvoker();
