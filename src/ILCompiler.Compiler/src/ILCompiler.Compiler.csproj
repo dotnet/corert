@@ -132,7 +132,7 @@
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
-    <Compile Include="Compiler\TypeInitialization.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VirtualMethodEnumeration.cs" />
     <Compile Include="CppCodeGen\EvaluationStack.cs" />

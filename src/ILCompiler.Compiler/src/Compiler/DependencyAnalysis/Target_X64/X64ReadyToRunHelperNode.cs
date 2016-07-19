@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        bool hasLazyStaticConstructor = factory.TypeInitializationManager.HasLazyStaticConstructor(target);
+                        bool hasLazyStaticConstructor = factory.TypeSystemContext.HasLazyStaticConstructor(target);
                         encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target), hasLazyStaticConstructor ? NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target) : 0);
 
                         if (!hasLazyStaticConstructor)
@@ -108,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
 
-                        if (!factory.TypeInitializationManager.HasLazyStaticConstructor(target))
+                        if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             encoder.EmitRET();
                         }
