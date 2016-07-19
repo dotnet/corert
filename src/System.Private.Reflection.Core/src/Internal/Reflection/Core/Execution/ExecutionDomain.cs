@@ -82,10 +82,10 @@ namespace Internal.Reflection.Core.Execution
                         continue;   // A default assembly such as "System.Runtime" might not "exist" in an app that opts heavily out of pay-for-play metadata. Just go on to the next one.
                 }
 
-                RuntimeType result;
+                RuntimeTypeInfo result;
                 Exception typeLoadException = assemblyQualifiedTypeName.TryResolve(this, defaultAssembly, ignoreCase, out result);
                 if (typeLoadException == null)
-                    return result;
+                    return result.CastToType();
                 lastTypeLoadException = typeLoadException;
             }
 
@@ -107,7 +107,7 @@ namespace Internal.Reflection.Core.Execution
         //
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            RuntimeType declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle().RuntimeType;
+            RuntimeTypeInfo declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
@@ -124,10 +124,10 @@ namespace Internal.Reflection.Core.Execution
                 }
                 else
                 {
-                    RuntimeType[] genericTypeArguments = new RuntimeType[genericMethodTypeArgumentHandles.Length];
+                    RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[genericMethodTypeArgumentHandles.Length];
                     for (int i = 0; i < genericMethodTypeArgumentHandles.Length; i++)
                     {
-                        genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle().RuntimeType;
+                        genericTypeArguments[i] = genericMethodTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
                     }
                     return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(runtimeNamedMethodInfo, genericTypeArguments);
                 }
@@ -142,7 +142,7 @@ namespace Internal.Reflection.Core.Execution
             if (!attributeType.IsRuntimeImplemented())
                 throw new InvalidOperationException();
             RuntimeTypeInfo runtimeAttributeType = attributeType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
-            return new RuntimePseudoCustomAttributeData(runtimeAttributeType.RuntimeType, constructorArguments, namedArguments);
+            return new RuntimePseudoCustomAttributeData(runtimeAttributeType, constructorArguments, namedArguments);
         }
 
         //=======================================================================================

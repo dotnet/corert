@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this.RuntimeType);
+                return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this.CastToType());
             }
         }
 
@@ -96,7 +96,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         return Type.GetTypeFromHandle(baseTypeHandle);
                 }
 
-                Type baseType = BaseTypeWithoutTheGenericParameterQuirk;
+                Type baseType = BaseTypeWithoutTheGenericParameterQuirk.CastToType();
                 if (baseType != null && baseType.IsGenericParameter)
                 {
                     // Desktop quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
@@ -257,7 +257,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 return true;
 
             // TODO https://github.com/dotnet/corefx/issues/9805: This makes Equals() act as if Type and TypeInfo are already the same instance. This extra check will go away once they actually are the same instance.
-            if (object.ReferenceEquals(this, _legacyAsType))
+            if (obj is RuntimeType && object.ReferenceEquals(_legacyAsType, obj))
                 return true;
 
             return false;
@@ -403,13 +403,13 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!done)
                 {
                     TypeContext typeContext = this.TypeContext;
-                    Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
+                    Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk.CastToType();
                     if (baseType != null)
                         result.AddRange(baseType.GetTypeInfo().ImplementedInterfaces);
                     ReflectionDomain reflectionDomain = this.ReflectionDomain;
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
-                        Type ifc = reflectionDomain.Resolve(directlyImplementedInterface.Reader, directlyImplementedInterface.Handle, typeContext);
+                        Type ifc = reflectionDomain.Resolve(directlyImplementedInterface.Reader, directlyImplementedInterface.Handle, typeContext).CastToType();
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);
@@ -565,7 +565,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type GetElementType()
         {
-            return InternalRuntimeElementType;
+            return InternalRuntimeElementType.CastToType();
         }
 
         //
@@ -751,17 +751,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        //
-        // The non-public version of AsType().
-        //
-        internal RuntimeType RuntimeType
-        {
-            get
-            {
-                return _legacyAsType;
-            }
-        }
-
         internal ReflectionDomain ReflectionDomain
         {
             get
@@ -919,7 +908,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Left unsealed as HasElement types must override this.
         //
-        internal virtual RuntimeType InternalRuntimeElementType
+        internal virtual RuntimeTypeInfo InternalRuntimeElementType
         {
             get
             {
@@ -931,12 +920,12 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Left unsealed as constructed generic types must override this.
         //
-        internal virtual RuntimeType[] InternalRuntimeGenericTypeArguments
+        internal virtual RuntimeTypeInfo[] InternalRuntimeGenericTypeArguments
         {
             get
             {
                 Debug.Assert(!IsConstructedGenericType);
-                return Array.Empty<RuntimeType>();
+                return Array.Empty<RuntimeTypeInfo>();
             }
         }
 
@@ -945,12 +934,12 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // The non-public version of TypeInfo.GenericTypeParameters (does not array-copy.)
         //
-        internal virtual RuntimeType[] RuntimeGenericTypeParameters
+        internal virtual RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
             get
             {
                 Debug.Assert(!(this is RuntimeNamedTypeInfo));
-                return Array.Empty<RuntimeType>();
+                return Array.Empty<RuntimeTypeInfo>();
             }
         }
 
@@ -1057,13 +1046,13 @@ namespace System.Reflection.Runtime.TypeInfos
         // To implement this with the least amount of code smell, we'll implement the idealized version of BaseType here
         // and make the special-case adjustment in the public version of BaseType.
         //
-        private RuntimeType BaseTypeWithoutTheGenericParameterQuirk
+        private RuntimeTypeInfo BaseTypeWithoutTheGenericParameterQuirk
         {
             get
             {
                 QTypeDefRefOrSpec baseTypeDefRefOrSpec = TypeRefDefOrSpecForBaseType;
                 MetadataReader reader = baseTypeDefRefOrSpec.Reader;
-                RuntimeType baseType = null;
+                RuntimeTypeInfo baseType = null;
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 if (reader != null)
                 {

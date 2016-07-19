@@ -97,47 +97,5 @@ namespace System.Reflection.Runtime.General
         {
             return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
         }
-
-        //======================================================================================================
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once RuntimeType is gone, these will be gone too.
-        //
-        // This group takes its arguments in the form of RuntimeType rather than RuntimeTypeInfo. These are here
-        // to simplify interfacing to RuntimeType-based code.
-        //======================================================================================================
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeType GetArrayType(this RuntimeType elementType)
-        {
-            return elementType.GetRuntimeTypeInfo<RuntimeTypeInfo>().GetArrayType().RuntimeType;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeType GetMultiDimArrayType(this RuntimeType elementType, int rank)
-        {
-            return elementType.GetRuntimeTypeInfo<RuntimeTypeInfo>().GetMultiDimArrayType(rank).RuntimeType;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeType GetByRefType(this RuntimeType targetType)
-        {
-            return targetType.GetRuntimeTypeInfo<RuntimeTypeInfo>().GetByRefType().RuntimeType;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeType GetConstructedGenericType(this RuntimeType genericTypeDefinition, RuntimeType[] genericTypeArguments)
-        {
-            int count = genericTypeArguments.Length;
-            RuntimeTypeInfo[] genericTypeArgumentInfos = new RuntimeTypeInfo[count];
-            for (int i = 0; i < count; i++)
-            {
-                genericTypeArgumentInfos[i] = genericTypeArguments[i].GetRuntimeTypeInfo<RuntimeTypeInfo>();
-            }
-            return genericTypeDefinition.GetRuntimeTypeInfo<RuntimeTypeInfo>().GetConstructedGenericType(genericTypeArgumentInfos).RuntimeType;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeType GetPointerType(this RuntimeType targetType)
-        {
-            return targetType.GetRuntimeTypeInfo<RuntimeTypeInfo>().GetPointerType().RuntimeType;
-        }
     }
 }

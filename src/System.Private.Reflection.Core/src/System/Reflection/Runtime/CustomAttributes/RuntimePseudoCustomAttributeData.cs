@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     //
     internal sealed class RuntimePseudoCustomAttributeData : RuntimeCustomAttributeData
     {
-        public RuntimePseudoCustomAttributeData(RuntimeType attributeType, IList<CustomAttributeTypedArgument> constructorArguments, IList<CustomAttributeNamedArgument> namedArguments)
+        public RuntimePseudoCustomAttributeData(RuntimeTypeInfo attributeType, IList<CustomAttributeTypedArgument> constructorArguments, IList<CustomAttributeNamedArgument> namedArguments)
         {
             _attributeType = attributeType;
             if (constructorArguments == null)
@@ -39,7 +39,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-                return _attributeType;
+                return _attributeType.CastToType();
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.CustomAttributes
 
         // Equals/GetHashCode no need to override (they just implement reference equality but desktop never unified these things.)
 
-        private RuntimeType _attributeType;
+        private RuntimeTypeInfo _attributeType;
         private ReadOnlyCollection<CustomAttributeTypedArgument> _constructorArguments;
         private ReadOnlyCollection<CustomAttributeNamedArgument> _namedArguments;
     }

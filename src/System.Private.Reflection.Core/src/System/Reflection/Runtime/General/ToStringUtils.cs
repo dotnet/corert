@@ -37,7 +37,7 @@ namespace System.Reflection.Runtime.General
                 // (non-error exceptions are very annoying when debugging.)
 
                 Exception exception = null;
-                RuntimeType runtimeType = reflectionDomain.TryResolve(reader, typeDefRefOrSpecHandle, typeContext, ref exception);
+                RuntimeTypeInfo runtimeType = reflectionDomain.TryResolve(reader, typeDefRefOrSpecHandle, typeContext, ref exception);
                 if (runtimeType == null)
                     return UnavailableType;
 
@@ -57,7 +57,7 @@ namespace System.Reflection.Runtime.General
         //
         // The Project N version takes a raw metadata handle rather than a completed type so that it remains robust in the face of missing metadata.
         //
-        public static String FormatTypeName(this RuntimeType runtimeType)
+        public static String FormatTypeName(this RuntimeTypeInfo runtimeType)
         {
             try
             {
@@ -68,7 +68,7 @@ namespace System.Reflection.Runtime.General
 
                 // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
                 // ToString() which contains namespace.
-                RuntimeType rootElementType = runtimeType;
+                RuntimeTypeInfo rootElementType = runtimeType;
                 while (rootElementType.HasElementType)
                     rootElementType = rootElementType.InternalRuntimeElementType;
                 if (rootElementType.IsNested)

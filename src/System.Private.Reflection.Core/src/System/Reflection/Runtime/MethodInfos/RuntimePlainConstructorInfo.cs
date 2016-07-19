@@ -86,7 +86,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_DeclaringType(this);
 #endif
 
-                return _common.DeclaringType;
+                return _common.DeclaringType.CastToType();
             }
         }
 
@@ -145,14 +145,14 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return _common.ComputeToString(this, Array.Empty<RuntimeType>());
+            return _common.ComputeToString(this, Array.Empty<RuntimeTypeInfo>());
         }
 
         protected sealed override RuntimeParameterInfo[] RuntimeParametersAndReturn
         {
             get
             {
-                return _common.GetRuntimeParametersAndReturn(this, Array.Empty<RuntimeType>());
+                return _common.GetRuntimeParametersAndReturn(this, Array.Empty<RuntimeTypeInfo>());
             }
         }
 
@@ -166,7 +166,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
 
-                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_common.Reader, _common.DeclaringType, _common.MethodHandle, Array.Empty<RuntimeType>(), this);
+                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_common.Reader, _common.DeclaringType, _common.MethodHandle, Array.Empty<RuntimeTypeInfo>(), this);
             }
         }
 
