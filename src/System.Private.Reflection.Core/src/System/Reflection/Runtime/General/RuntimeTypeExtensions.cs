@@ -36,7 +36,7 @@ namespace System.Reflection.Runtime.General
             return (RUNTIMETYPEINFO)type;
         }
 
-        public static ReflectionDomain GetReflectionDomain(this RuntimeType runtimeType)
+        public static ReflectionDomain GetReflectionDomain(this RuntimeTypeInfo runtimeType)
         {
             return ReflectionCoreExecution.ExecutionDomain; //@todo: User Reflection Domains not yet supported.
         }

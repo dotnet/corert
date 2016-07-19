@@ -156,7 +156,7 @@ namespace System.Reflection.Runtime.General
 
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
-            RuntimeType declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle().RuntimeType;
+            RuntimeTypeInfo declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;

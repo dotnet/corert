@@ -22,7 +22,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed partial class RuntimeConstructedGenericMethodInfo : RuntimeMethodInfo
     {
-        private RuntimeConstructedGenericMethodInfo(RuntimeNamedMethodInfo genericMethodDefinition, RuntimeType[] genericTypeArguments)
+        private RuntimeConstructedGenericMethodInfo(RuntimeNamedMethodInfo genericMethodDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
             _genericMethodDefinition = genericMethodDefinition;
             _genericTypeArguments = genericTypeArguments;
@@ -134,7 +134,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeType RuntimeDeclaringType
+        internal sealed override RuntimeTypeInfo RuntimeDeclaringType
         {
             get
             {
@@ -142,7 +142,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeType[] RuntimeGenericArgumentsOrParameters
+        internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
         {
             get
             {
@@ -164,7 +164,7 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         private RuntimeNamedMethodInfo _genericMethodDefinition;
-        private RuntimeType[] _genericTypeArguments;
+        private RuntimeTypeInfo[] _genericTypeArguments;
     }
 }
 

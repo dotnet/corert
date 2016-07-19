@@ -278,13 +278,13 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                RuntimeType declaringType = null;
+                RuntimeTypeInfo declaringType = null;
                 TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
                 if (!enclosingTypeDefHandle.IsNull(_reader))
                 {
                     declaringType = ReflectionDomain.ResolveTypeDefinition(_reader, enclosingTypeDefHandle);
                 }
-                return declaringType;
+                return declaringType.CastToType();
             }
         }
 
@@ -314,15 +314,15 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override RuntimeType[] RuntimeGenericTypeParameters
+        internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {
             get
             {
-                LowLevelList<RuntimeType> genericTypeParameters = new LowLevelList<RuntimeType>();
+                LowLevelList<RuntimeTypeInfo> genericTypeParameters = new LowLevelList<RuntimeTypeInfo>();
 
                 foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
                 {
-                    RuntimeType genericParameterType = RuntimeGenericParameterTypeInfoForTypes.GetRuntimeGenericParameterTypeInfoForTypes(this, genericParameterHandle).RuntimeType;
+                    RuntimeTypeInfo genericParameterType = RuntimeGenericParameterTypeInfoForTypes.GetRuntimeGenericParameterTypeInfoForTypes(this, genericParameterHandle);
                     genericTypeParameters.Add(genericParameterType);
                 }
 

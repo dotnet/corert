@@ -96,7 +96,7 @@ namespace System.Reflection.Runtime.Assemblies
                     IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return reflectionDomain.ResolveTypeDefinition(reader, typeDefinitionHandle);
+                        yield return reflectionDomain.ResolveTypeDefinition(reader, typeDefinitionHandle).CastToType();
                 }
             }
         }
@@ -212,7 +212,7 @@ namespace System.Reflection.Runtime.Assemblies
                 return null;
             }
 
-            RuntimeType result;
+            RuntimeTypeInfo result;
             Exception typeLoadException = assemblyQualifiedTypeName.TypeName.TryResolve(this.ReflectionDomain, this, ignoreCase, out result);
             if (typeLoadException != null)
             {
@@ -220,7 +220,7 @@ namespace System.Reflection.Runtime.Assemblies
                     throw typeLoadException;
                 return null;
             }
-            return result;
+            return result.CastToType();
         }
 
         internal QScopeDefinition Scope { get; private set; }

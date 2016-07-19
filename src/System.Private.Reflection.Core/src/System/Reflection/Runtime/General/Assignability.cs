@@ -192,7 +192,7 @@ namespace System.Reflection.Runtime.General
             if (typeInfo.GetArrayRank() != 1)
                 return false;
 
-            if (((RuntimeTypeInfo)typeInfo).RuntimeType.InternalIsMultiDimArray)
+            if (((RuntimeTypeInfo)typeInfo).InternalIsMultiDimArray)
                 return false;
 
             return true;

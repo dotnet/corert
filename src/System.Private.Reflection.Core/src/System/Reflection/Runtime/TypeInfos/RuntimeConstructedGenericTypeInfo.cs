@@ -262,21 +262,11 @@ namespace System.Reflection.Runtime.TypeInfos
             return GenericTypeDefinitionTypeInfo.InternalGetNameIfAvailable(ref rootCauseForFailure);
         }
 
-        internal sealed override RuntimeType[] InternalRuntimeGenericTypeArguments
+        internal sealed override RuntimeTypeInfo[] InternalRuntimeGenericTypeArguments
         {
             get
             {
-                // TODO https://github.com/dotnet/corefx/issues/9805: This is actually supposed to be a non-copying
-                // helper, and that's what it will become when we switch over to returning RuntimeTypeInfo[].
-
-                RuntimeTypeInfo[] genericTypeArguments = _key.GenericTypeArguments;
-                int count = genericTypeArguments.Length;
-                RuntimeType[] marshaledGenericTypeArguments = new RuntimeType[count];
-                for (int i = 0; i < count; i++)
-                {
-                    marshaledGenericTypeArguments[i] = genericTypeArguments[i].RuntimeType;
-                }
-                return marshaledGenericTypeArguments;
+                return _key.GenericTypeArguments;
             }
         }
 
@@ -318,7 +308,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return new TypeContext(this.RuntimeType.InternalRuntimeGenericTypeArguments, null);
+                return new TypeContext(this.InternalRuntimeGenericTypeArguments, null);
             }
         }
 

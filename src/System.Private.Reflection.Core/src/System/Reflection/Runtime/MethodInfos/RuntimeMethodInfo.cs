@@ -97,7 +97,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_DeclaringType(this);
 #endif
 
-                return this.RuntimeDeclaringType;
+                return this.RuntimeDeclaringType.CastToType();
             }
         }
 
@@ -210,7 +210,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return this.RuntimeDeclaringType;
+                return this.RuntimeDeclaringType.CastToType();
             }
         }
 
@@ -222,7 +222,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal abstract RuntimeType RuntimeDeclaringType
+        internal abstract RuntimeTypeInfo RuntimeDeclaringType
         {
             get;
         }
@@ -237,7 +237,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         // The non-public version of MethodInfo.GetGenericArguments() (does not array-copy and has a more truthful name.)
         //
-        internal abstract RuntimeType[] RuntimeGenericArgumentsOrParameters { get; }
+        internal abstract RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get; }
 
         //
         // The non-public version of MethodInfo.GetParameters() (does not array-copy.) 

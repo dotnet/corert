@@ -147,11 +147,11 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override RuntimeType InternalRuntimeElementType
+        internal sealed override RuntimeTypeInfo InternalRuntimeElementType
         {
             get
             {
-                return _key.ElementType.RuntimeType;
+                return _key.ElementType;
             }
         }
 
