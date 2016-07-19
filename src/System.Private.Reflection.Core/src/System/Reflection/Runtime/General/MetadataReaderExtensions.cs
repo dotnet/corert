@@ -356,7 +356,8 @@ namespace System.Reflection.Runtime.General
                 case HandleType.TypeSpecification:
                     {
                         Exception exception = null;
-                        value = reflectionDomain.TryResolve(reader, handle, new TypeContext(null, null), ref exception);
+                        Type type = reflectionDomain.TryResolve(reader, handle, new TypeContext(null, null), ref exception);
+                        value = type;
                         return (value == null) ? exception : null;
                     }
                 case HandleType.ConstantReferenceValue:

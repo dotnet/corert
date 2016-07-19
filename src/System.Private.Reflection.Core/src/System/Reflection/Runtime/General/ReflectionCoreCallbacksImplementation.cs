@@ -28,14 +28,18 @@ namespace System.Reflection.Runtime.General
 
         public sealed override TypeInfo GetTypeInfo(Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType != null)
-                return runtimeType.GetRuntimeTypeInfo();
             IReflectableType reflectableType = type as IReflectableType;
             if (reflectableType != null)
                 return reflectableType.GetTypeInfo();
 
-            throw runtimeType.GetReflectionDomain().CreateMissingMetadataException(type);
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            // This is bizarre but compatible with the desktop which casts "type" to IReflectableType without checking and
+            // thus, throws an InvalidCastException.
+            object ignore = (IReflectableType)type;
+            Debug.Fail("Did not expect to get here.");
+            throw new InvalidOperationException();
         }
 
         public sealed override Assembly Load(AssemblyName refName)
@@ -83,8 +87,8 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveMethodHandle,
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(declaringTypeHandle),
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(actualDeclaringTypeHandle)));
+                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
             }
 
             MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
@@ -126,8 +130,8 @@ namespace System.Reflection.Runtime.General
                     throw new ArgumentException(SR.Argument_InvalidHandle);
                 if (!actualDeclaringTypeHandle.Equals(declaringTypeHandle))
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveFieldHandle,
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(declaringTypeHandle),
-                        ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(actualDeclaringTypeHandle)));
+                        declaringTypeHandle.GetTypeForRuntimeTypeHandle(),
+                        actualDeclaringTypeHandle.GetTypeForRuntimeTypeHandle()));
             }
 
             FieldInfo fieldInfo = GetFieldInfo(declaringTypeHandle, fieldHandle);
@@ -152,8 +156,8 @@ namespace System.Reflection.Runtime.General
 
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
-            RuntimeType declaringType = ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(declaringTypeHandle);
-            RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo();
+            RuntimeType declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle().RuntimeType;
+            RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
             return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo);

@@ -23,10 +23,6 @@ namespace System.Reflection.Runtime.Dispensers
         //   Keys are compared using Object.ReferenceEquals. 
         //
         public static readonly DispenserAlgorithm ReuseAsLongAsKeyIsAlive = new DispenserAlgorithm();
-
-
-        // ONLY usable for Dispenser<RuntimeType,RuntimeTypeInfo> - RuntimeType object stores its RuntimeTypeInfo.
-        public static readonly DispenserAlgorithm LatchesTypeInfoInsideType = new DispenserAlgorithm();
     }
 }
 

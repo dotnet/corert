@@ -145,13 +145,12 @@ namespace System
 
         internal bool TryGetEEType(out EETypePtr eeType)
         {
-            eeType = default(EETypePtr);
-            RuntimeType runtimeType = this as RuntimeType;
-            if (runtimeType == null)
+            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
+            if (typeHandle.IsNull)
+            {
+                eeType = default(EETypePtr);
                 return false;
-            RuntimeTypeHandle typeHandle;
-            if (!runtimeType.InternalTryGetTypeHandle(out typeHandle))
-                return false;
+            }
             eeType = typeHandle.ToEETypePtr();
             return true;
         }

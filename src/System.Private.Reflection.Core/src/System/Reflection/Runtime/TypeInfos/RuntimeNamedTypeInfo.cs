@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using global::System;
+using global::System.Text;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Collections.Concurrent;
 using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.Assemblies;
 using global::System.Reflection.Runtime.CustomAttributes;
 
@@ -28,11 +30,12 @@ namespace System.Reflection.Runtime.TypeInfos
     //
     internal sealed partial class RuntimeNamedTypeInfo : RuntimeTypeInfo, IEquatable<RuntimeNamedTypeInfo>
     {
-        private RuntimeNamedTypeInfo(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle)
+        private RuntimeNamedTypeInfo(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle, RuntimeTypeHandle typeHandle)
         {
             _reader = reader;
             _typeDefinitionHandle = typeDefinitionHandle;
             _typeDefinition = _typeDefinitionHandle.GetTypeDefinition(reader);
+            _typeHandle = typeHandle;
         }
 
         public sealed override Assembly Assembly
@@ -56,6 +59,14 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 TypeAttributes attr = _typeDefinition.Flags;
                 return attr;
+            }
+        }
+
+        public sealed override bool ContainsGenericParameters
+        {
+            get
+            {
+                return IsGenericTypeDefinition;
             }
         }
 
@@ -93,36 +104,16 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 foreach (TypeDefinitionHandle nestedTypeHandle in _typeDefinition.NestedTypes)
                 {
-                    yield return RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(_reader, nestedTypeHandle);
+                    yield return nestedTypeHandle.GetNamedType(_reader);
                 }
             }
         }
 
-        public sealed override bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj))
-                return true;
-
-            RuntimeNamedTypeInfo other = obj as RuntimeNamedTypeInfo;
-            if (!Equals(other))
-                return false;
-            return true;
-        }
-
         public bool Equals(RuntimeNamedTypeInfo other)
         {
-            if (other == null)
-                return false;
-            if (this._reader != other._reader)
-                return false;
-            if (!(this._typeDefinitionHandle.Equals(other._typeDefinitionHandle)))
-                return false;
-            return true;
-        }
-
-        public sealed override int GetHashCode()
-        {
-            return _typeDefinitionHandle.GetHashCode();
+            // RuntimeTypeInfo.Equals(object) is the one that encapsulates our unification strategy so defer to him.
+            object otherAsObject = other;
+            return base.Equals(otherAsObject);
         }
 
         public sealed override Guid GUID
@@ -178,12 +169,87 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsGenericType
+        public sealed override string Namespace
         {
             get
             {
-                return _typeDefinition.GenericParameters.GetEnumerator().MoveNext();
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_Namespace(this);
+#endif
+
+                return EscapeIdentifier(NamespaceChain.NameSpace);
             }
+        }
+
+        public sealed override string FullName
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_FullName(this);
+#endif
+
+                Debug.Assert(!IsConstructedGenericType);
+                Debug.Assert(!IsGenericParameter);
+                Debug.Assert(!HasElementType);
+
+                string name = Name;
+
+                Type declaringType = this.DeclaringType;
+                if (declaringType != null)
+                {
+                    string declaringTypeFullName = declaringType.FullName;
+                    return declaringTypeFullName + "+" + name;
+                }
+
+                string ns = Namespace;
+                if (ns == null)
+                    return name;
+                return ns + "." + name;
+            }
+        }
+
+        public sealed override Type GetGenericTypeDefinition()
+        {
+            if (_typeDefinition.GenericParameters.GetEnumerator().MoveNext())
+                return this.AsType();
+            return base.GetGenericTypeDefinition();
+        }
+
+        public sealed override string ToString()
+        {
+            StringBuilder sb = null;
+
+            foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
+            {
+                if (sb == null)
+                {
+                    sb = new StringBuilder(FullName);
+                    sb.Append('[');
+                }
+                else
+                {
+                    sb.Append(',');
+                }
+
+                sb.Append(genericParameterHandle.GetGenericParameter(_reader).Name.GetString(_reader));
+            }
+
+            if (sb == null)
+            {
+                return FullName;
+            }
+            else
+            {
+                return sb.Append(']').ToString();
+            }
+        }
+
+        protected sealed override int InternalGetHashCode()
+        {
+            return _typeDefinitionHandle.GetHashCode();
         }
 
         //
@@ -208,6 +274,46 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        internal sealed override Type InternalDeclaringType
+        {
+            get
+            {
+                RuntimeType declaringType = null;
+                TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
+                if (!enclosingTypeDefHandle.IsNull(_reader))
+                {
+                    declaringType = ReflectionDomain.ResolveTypeDefinition(_reader, enclosingTypeDefHandle);
+                }
+                return declaringType;
+            }
+        }
+
+        internal sealed override string InternalFullNameOfAssembly
+        {
+            get
+            {
+                NamespaceChain namespaceChain = NamespaceChain;
+                ScopeDefinitionHandle scopeDefinitionHandle = namespaceChain.DefiningScope;
+                return scopeDefinitionHandle.ToRuntimeAssemblyName(_reader).FullName;
+            }
+        }
+
+        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        {
+            ConstantStringValueHandle nameHandle = _typeDefinition.Name;
+            string name = nameHandle.GetString(_reader);
+
+            return EscapeIdentifier(name);
+        }
+
+        internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
+        {
+            get
+            {
+                return _typeHandle;
+            }
+        }
+
         internal sealed override RuntimeType[] RuntimeGenericTypeParameters
         {
             get
@@ -216,23 +322,11 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
                 {
-                    RuntimeType genericParameterType = RuntimeTypeUnifierEx.GetRuntimeGenericParameterTypeForTypes(this, genericParameterHandle);
+                    RuntimeType genericParameterType = RuntimeGenericParameterTypeInfoForTypes.GetRuntimeGenericParameterTypeInfoForTypes(this, genericParameterHandle).RuntimeType;
                     genericTypeParameters.Add(genericParameterType);
                 }
 
                 return genericTypeParameters.ToArray();
-            }
-        }
-
-        internal sealed override RuntimeType RuntimeType
-        {
-            get
-            {
-                if (_lazyType == null)
-                {
-                    _lazyType = this.ReflectionDomain.ResolveTypeDefinition(_reader, _typeDefinitionHandle);
-                }
-                return _lazyType;
             }
         }
 
@@ -336,9 +430,10 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        private MetadataReader _reader;
-        private TypeDefinitionHandle _typeDefinitionHandle;
-        private TypeDefinition _typeDefinition;
+        private readonly MetadataReader _reader;
+        private readonly TypeDefinitionHandle _typeDefinitionHandle;
+        private readonly TypeDefinition _typeDefinition;
+        private readonly RuntimeTypeHandle _typeHandle;
 
         private NamespaceChain NamespaceChain
         {
@@ -352,8 +447,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private volatile NamespaceChain _lazyNamespaceChain;
 
-        private volatile RuntimeType _lazyType;
-
         private static NamedTypeToGuidTable _namedTypeToGuidTable = new NamedTypeToGuidTable();
         private sealed class NamedTypeToGuidTable : ConcurrentUnifier<RuntimeNamedTypeInfo, Tuple<Guid>>
         {
@@ -361,6 +454,27 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 return new Tuple<Guid>(Guid.NewGuid());
             }
+        }
+
+        private static char[] charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
+        // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.
+        // Current link is http://msdn.microsoft.com/en-us/library/yfsftwz6(v=vs.110).aspx
+        private static string EscapeIdentifier(string identifier)
+        {
+            // Some characters in a type name need to be escaped
+            if (identifier != null && identifier.IndexOfAny(charsToEscape) != -1)
+            {
+                StringBuilder sbEscapedName = new StringBuilder(identifier);
+                sbEscapedName.Replace("\\", "\\\\");
+                sbEscapedName.Replace("+", "\\+");
+                sbEscapedName.Replace("[", "\\[");
+                sbEscapedName.Replace("]", "\\]");
+                sbEscapedName.Replace("*", "\\*");
+                sbEscapedName.Replace("&", "\\&");
+                sbEscapedName.Replace(",", "\\,");
+                identifier = sbEscapedName.ToString();
+            }
+            return identifier;
         }
     }
 }

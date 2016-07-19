@@ -34,19 +34,6 @@ namespace Internal.Runtime.Augments
         public abstract Object ActivatorCreateInstance(Type type, Object[] args);
         public abstract Type GetType(String typeName, bool throwOnError, bool ignoreCase);
 
-        // Access to reflection mapping tables.
-        public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle);
-
-        public abstract bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle);
-        public abstract bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle);
-
-        public abstract bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle);
-        public abstract bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle);
-
-        public abstract bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles);
-        public abstract bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle);
-
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator);
 
@@ -56,15 +43,22 @@ namespace Internal.Runtime.Augments
 
         public abstract bool TryGetMetadataNameForRuntimeTypeHandle(RuntimeTypeHandle rtth, out string name);
 
+        //=======================================================================================
+        // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
+        // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
+        //=======================================================================================
+        public abstract Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition);
+        public abstract Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle);
+        public abstract Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank);
+        public abstract Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle);
+        public abstract Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle);
+
         // Generic Virtual Method Support
         public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref IntPtr methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
 
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
-        public abstract Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank);
-        public abstract Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments);
 
-        public abstract Type CreateShadowRuntimeInspectionOnlyNamedTypeIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract EnumInfo GetEnumInfoIfAvailable(Type enumType);
         public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress);
@@ -81,5 +75,8 @@ namespace Internal.Runtime.Augments
         /// <param name="defaultValue">The default value of the parameter if available.</param>
         /// <returns>true if the default parameter value is available, otherwise false.</returns>
         public abstract bool TryGetDefaultParameterValue(object defaultParametersContext, RuntimeTypeHandle thType, int argIndex, out object defaultValue);
+
+        public abstract RuntimeTypeHandle GetTypeHandleIfAvailable(Type type);
+        public abstract bool SupportsReflection(Type type);
     }
 }

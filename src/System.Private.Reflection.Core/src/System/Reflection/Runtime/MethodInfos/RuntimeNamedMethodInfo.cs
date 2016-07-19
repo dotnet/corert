@@ -120,9 +120,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (typeArguments[i] == null)
                     throw new ArgumentNullException();
 
-                genericTypeArguments[i] = typeArguments[i] as RuntimeType;
-                if (genericTypeArguments[i] == null)
+                if (!typeArguments[i].IsRuntimeImplemented())
                     throw new ArgumentException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]), "typeArguments[" + i + "]"); // Not a runtime type.
+
+                genericTypeArguments[i] = typeArguments[i].GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
@@ -230,7 +231,7 @@ namespace System.Reflection.Runtime.MethodInfos
                         RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
                         owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(MethodHandle, genericTypeDefinition, genericTypeDefinition);
                     }
-                    RuntimeType genericParameterType = RuntimeTypeUnifierEx.GetRuntimeGenericParameterTypeForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
+                    RuntimeType genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle).RuntimeType;
                     genericTypeParameters.Add(genericParameterType);
                 }
                 return genericTypeParameters.ToArray();

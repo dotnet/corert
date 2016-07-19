@@ -6,46 +6,60 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Collections.Concurrent;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 
+using global::Internal.Reflection.Tracing;
 using global::Internal.Reflection.Core.NonPortable;
 
-using global::Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
     // The runtime's implementation of TypeInfo's for the "HasElement" subclass of types. 
     //
-    // For now, only Array has its own base class below this - that's the only with that implements anything differently.
-    //
-    internal partial class RuntimeHasElementTypeInfo : RuntimeTypeInfo
+    internal abstract partial class RuntimeHasElementTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeHasElementTypeInfo.UnificationKey>
     {
-        protected RuntimeHasElementTypeInfo(RuntimeType hasElementType)
+        protected RuntimeHasElementTypeInfo(UnificationKey key)
             : base()
         {
-            Debug.Assert(hasElementType.HasElementType);
-            _asType = hasElementType;
+            _key = key;
         }
 
-        public sealed override bool Equals(Object obj)
+        //
+        // Implements IKeyedItem.PrepareKey.
+        // 
+        // This method is the keyed item's chance to do any lazy evaluation needed to produce the key quickly. 
+        // Concurrent unifiers are guaranteed to invoke this method at least once and wait for it
+        // to complete before invoking the Key property. The unifier lock is NOT held across the call.
+        //
+        // PrepareKey() must be idempodent and thread-safe. It may be invoked multiple times and concurrently.
+        //
+        public void PrepareKey()
         {
-            RuntimeHasElementTypeInfo other = obj as RuntimeHasElementTypeInfo;
-            if (other == null)
-                return false;
-            return _asType.Equals(other._asType);
         }
 
-        public sealed override int GetHashCode()
+        //
+        // Implements IKeyedItem.Key.
+        // 
+        // Produce the key. This is a high-traffic property and is called while the hash table's lock is held. Thus, it should
+        // return a precomputed stored value and refrain from invoking other methods. If the keyed item wishes to
+        // do lazy evaluation of the key, it should do so in the PrepareKey() method.
+        //
+        public UnificationKey Key
         {
-            return _asType.GetHashCode();
+            get
+            {
+                return _key;
+            }
         }
 
         public sealed override Assembly Assembly
         {
             get
             {
-                return ElementTypeInfo.Assembly;
+                return _key.ElementType.Assembly;
             }
         }
 
@@ -61,29 +75,97 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override RuntimeType RuntimeType
+        public sealed override bool ContainsGenericParameters
         {
             get
             {
-                return _asType;
+                return _key.ElementType.ContainsGenericParameters;
             }
         }
 
-        private RuntimeType _asType;
-
-        private RuntimeTypeInfo ElementTypeInfo
+        public sealed override string FullName
         {
             get
             {
-                if (_elementTypeInfo == null)
-                {
-                    _elementTypeInfo = _asType.InternalRuntimeElementType.GetRuntimeTypeInfo();
-                }
-                return _elementTypeInfo;
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_FullName(this);
+#endif
+                string elementFullName = _key.ElementType.FullName;
+                if (elementFullName == null)
+                    return null;
+                return elementFullName + Suffix;
             }
         }
 
-        private volatile RuntimeTypeInfo _elementTypeInfo;
+        public sealed override string Namespace
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_Namespace(this);
+#endif
+                return _key.ElementType.Namespace;
+            }
+        }
+
+        public sealed override string ToString()
+        {
+            return _key.ElementType.ToString() + Suffix;
+        }
+
+        protected sealed override int InternalGetHashCode()
+        {
+            return _key.ElementType.GetHashCode();
+        }
+
+        internal sealed override Type InternalDeclaringType
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        {
+            string elementTypeName = _key.ElementType.InternalGetNameIfAvailable(ref rootCauseForFailure);
+            if (elementTypeName == null)
+            {
+                rootCauseForFailure = _key.ElementType.AsType();
+                return null;
+            }
+            return elementTypeName + Suffix;
+        }
+
+        internal sealed override string InternalFullNameOfAssembly
+        {
+            get
+            {
+                return _key.ElementType.InternalFullNameOfAssembly;
+            }
+        }
+
+        internal sealed override RuntimeType InternalRuntimeElementType
+        {
+            get
+            {
+                return _key.ElementType.RuntimeType;
+            }
+        }
+
+        internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
+        {
+            get
+            {
+                return _key.TypeHandle;
+            }
+        }
+
+        protected abstract string Suffix { get; }
+
+        private readonly UnificationKey _key;
     }
 }
 

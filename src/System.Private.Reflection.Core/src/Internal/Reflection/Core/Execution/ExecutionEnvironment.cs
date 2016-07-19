@@ -7,6 +7,7 @@ using global::System.IO;
 using global::System.Reflection;
 using global::System.Collections.Generic;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 using global::Internal.Metadata.NativeFormat;
 
 using global::Internal.Reflection.Core.NonPortable;
@@ -42,6 +43,7 @@ namespace Internal.Reflection.Core.Execution
         public abstract bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle);
         public abstract IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle);
         public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
+        public abstract string GetLastResortString(RuntimeTypeHandle typeHandle);
 
         //==============================================================================================
         // Default Value support.

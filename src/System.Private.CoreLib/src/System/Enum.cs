@@ -761,9 +761,7 @@ namespace System
             if (!runtimeTypeHandle.ToEETypePtr().IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
-            // We know this cast will succeed as we already checked for the existence of a RuntimeTypeHandle.
-            RuntimeType runtimeEnumType = (RuntimeType)enumType;
-            return s_enumInfoCache.GetOrAdd(runtimeEnumType);
+            return s_enumInfoCache.GetOrAdd(new TypeUnificationKey(enumType));
         }
 
         //
@@ -877,8 +875,7 @@ namespace System
             if (enumType == null)
                 throw new ArgumentNullException("enumType");
 
-            RuntimeType runtimeEnumType = enumType as RuntimeType;
-            if (runtimeEnumType == null)
+            if (!enumType.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Arg_MustBeType, "enumType");
 
             if (value == null)
@@ -902,7 +899,7 @@ namespace System
                 return false;
             }
 
-            EETypePtr enumEEType = runtimeEnumType.TypeHandle.ToEETypePtr();
+            EETypePtr enumEEType = enumType.TypeHandle.ToEETypePtr();
             if (!enumEEType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
@@ -910,9 +907,9 @@ namespace System
                 return true;
 
             // Parse as string. Now (and only now) do we look for metadata information.
-            EnumInfo enumInfo = RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(runtimeEnumType);
+            EnumInfo enumInfo = RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(enumType);
             if (enumInfo == null)
-                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(runtimeEnumType);
+                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(enumType);
             ulong v = 0;
 
             // Port note: The docs are silent on how multiple matches are resolved when doing case-insensitive parses.
@@ -1124,11 +1121,11 @@ namespace System
         }
 
 
-        private sealed class EnumInfoUnifier : ConcurrentUnifierW<RuntimeType, EnumInfo>
+        private sealed class EnumInfoUnifier : ConcurrentUnifierW<TypeUnificationKey, EnumInfo>
         {
-            protected override EnumInfo Factory(RuntimeType key)
+            protected override EnumInfo Factory(TypeUnificationKey key)
             {
-                return RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(key);
+                return RuntimeAugments.Callbacks.GetEnumInfoIfAvailable(key.Type);
             }
         }
 

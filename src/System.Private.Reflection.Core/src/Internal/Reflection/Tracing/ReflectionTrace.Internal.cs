@@ -145,10 +145,10 @@ namespace Internal.Reflection.Tracing
 
         private static String NonQualifiedTypeName(this Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
+            if (!type.IsRuntimeImplemented())
                 return null;
 
+            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (runtimeType.HasElementType)
             {
                 String elementTypeName = runtimeType.InternalRuntimeElementType.NonQualifiedTypeName();
@@ -230,13 +230,16 @@ namespace Internal.Reflection.Tracing
 
         private static String AssemblyQualifiedTypeName(this Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
+            if (!type.IsRuntimeImplemented())
+                return null;
+
+            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (runtimeType == null)
                 return null;
-            String nonqualifiedTypeName = runtimeType.NonQualifiedTypeName();
+            String nonqualifiedTypeName = runtimeType.RuntimeType.NonQualifiedTypeName();
             if (nonqualifiedTypeName == null)
                 return null;
-            String assemblyName = runtimeType.ContainingAssemblyName();
+            String assemblyName = runtimeType.RuntimeType.ContainingAssemblyName();
             if (assemblyName == null)
                 return assemblyName;
             return nonqualifiedTypeName + ", " + assemblyName;
@@ -244,10 +247,10 @@ namespace Internal.Reflection.Tracing
 
         private static String ContainingAssemblyName(this Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
+            if (!type.IsRuntimeImplemented())
                 return null;
-            RuntimeTypeInfo runtimeTypeInfo = runtimeType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+
+            RuntimeTypeInfo runtimeTypeInfo = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (runtimeTypeInfo is RuntimeNoMetadataNamedTypeInfo)
                 return null;
             return runtimeTypeInfo.Assembly.NameString();
