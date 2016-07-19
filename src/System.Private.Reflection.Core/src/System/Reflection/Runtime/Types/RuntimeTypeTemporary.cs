@@ -26,6 +26,8 @@ namespace System.Reflection.Runtime.Types
             _typeInfo = typeInfo;
         }
 
+        public sealed override TypeInfo GetTypeInfo() => _typeInfo;
+
         //
         // RuntimeTypeInfo's are unified using weak pointers so they use object.ReferenceEquals() for equality, and
         // a type-specific hash code (to maintain a stable hash code across weak destructions and rebirths.)
@@ -68,17 +70,17 @@ namespace System.Reflection.Runtime.Types
         public sealed override RuntimeTypeHandle TypeHandle => _typeInfo.TypeHandle;
         public sealed override string ToString() => _typeInfo.ToString();
 
-        public sealed override string InternalFullNameOfAssembly => _typeInfo.InternalFullNameOfAssembly;
-        public sealed override bool InternalTryGetTypeHandle(out RuntimeTypeHandle typeHandle)
+        internal sealed override string InternalFullNameOfAssembly => _typeInfo.InternalFullNameOfAssembly;
+        internal sealed override bool InternalTryGetTypeHandle(out RuntimeTypeHandle typeHandle)
         {
             typeHandle = _typeInfo.InternalTypeHandleIfAvailable;
             return !typeHandle.IsNull();
         }
 
-        public sealed override bool InternalIsGenericTypeDefinition => _typeInfo.IsGenericTypeDefinition;
-        public sealed override RuntimeType InternalRuntimeElementType => (RuntimeType)(_typeInfo.GetElementType());
+        internal sealed override bool InternalIsGenericTypeDefinition => _typeInfo.IsGenericTypeDefinition;
+        internal sealed override RuntimeType InternalRuntimeElementType => (RuntimeType)(_typeInfo.GetElementType());
 
-        public sealed override RuntimeType[] InternalRuntimeGenericTypeArguments
+        internal sealed override RuntimeType[] InternalRuntimeGenericTypeArguments
         {
             get
             {
@@ -93,9 +95,7 @@ namespace System.Reflection.Runtime.Types
             }
         }
 
-        public sealed override bool InternalViolatesTypeIdentityRules => false;
-
-        public sealed override string InternalGetNameIfAvailable(ref RuntimeType rootCauseForFailure)
+        internal sealed override string InternalGetNameIfAvailable(ref RuntimeType rootCauseForFailure)
         {
             Type rootCauseForFailureAsType = null;
             string name = _typeInfo.InternalGetNameIfAvailable(ref rootCauseForFailureAsType);
@@ -103,7 +103,7 @@ namespace System.Reflection.Runtime.Types
             return name;
         }
 
-        public sealed override bool InternalIsMultiDimArray
+        internal sealed override bool InternalIsMultiDimArray
         {
             get
             {
@@ -111,9 +111,7 @@ namespace System.Reflection.Runtime.Types
             }
         }
 
-        public sealed override bool InternalIsOpen => _typeInfo.ContainsGenericParameters;
-
-        internal RuntimeTypeInfo GetTypeInfo() => _typeInfo;
+        internal sealed override bool InternalIsOpen => _typeInfo.ContainsGenericParameters;
 
         private readonly RuntimeTypeInfo _typeInfo;
     }

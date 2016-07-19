@@ -34,30 +34,6 @@ namespace Internal.Runtime.Augments
         public abstract Object ActivatorCreateInstance(Type type, Object[] args);
         public abstract Type GetType(String typeName, bool throwOnError, bool ignoreCase);
 
-        // Access to reflection mapping tables.
-
-        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
-        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
-        [Obsolete]
-        public virtual bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle) { throw NotImplemented.ByDesign; }
-        [Obsolete]
-        public virtual bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle) { throw NotImplemented.ByDesign; }
-
-        [Obsolete]
-        public virtual bool TryGetMultiDimArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, int rank, out RuntimeTypeHandle arrayTypeHandle) { throw NotImplemented.ByDesign; }
-        [Obsolete]
-        public virtual bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle) { throw NotImplemented.ByDesign; }
-
-        [Obsolete]
-        public virtual bool TryGetPointerTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle pointerTypeHandle) { throw NotImplemented.ByDesign; }
-        [Obsolete]
-        public virtual bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle) { throw NotImplemented.ByDesign; }
-
-        [Obsolete]
-        public virtual bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles) { throw NotImplemented.ByDesign; }
-        [Obsolete]
-        public virtual bool TryGetConstructedGenericTypeForComponents(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles, out RuntimeTypeHandle runtimeTypeHandle) { throw NotImplemented.ByDesign; }
-
         public abstract IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract IntPtr TryGetDefaultConstructorForTypeUsingLocator(object canonEquivalentEntryLocator);
 
@@ -70,16 +46,12 @@ namespace Internal.Runtime.Augments
         //=======================================================================================
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
         // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
-        //
-        // TODO https://github.com/dotnet/corefx/issues/9805: These declarations should be made
-        // "abstract", not "virtual" - to do this, I have to update (or eliminate) the Corelib contract which
-        // lies outside the GitHub-mapped space.
         //=======================================================================================
-        public virtual Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition) { throw NotImplemented.ByDesign; }
-        public virtual Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle) { throw NotImplemented.ByDesign; }
-        public virtual Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank) { throw NotImplemented.ByDesign; }
-        public virtual Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle) { throw NotImplemented.ByDesign; }
-        public virtual Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle) { throw NotImplemented.ByDesign; }
+        public abstract Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition);
+        public abstract Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle);
+        public abstract Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank);
+        public abstract Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle);
+        public abstract Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle);
 
         // Generic Virtual Method Support
         public abstract bool TryGetGenericVirtualTargetForTypeAndSlot(RuntimeTypeHandle targetHandle, ref RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, ref string methodName, ref IntPtr methodSignature, out IntPtr methodPointer, out IntPtr dictionaryPointer, out bool slotUpdated);
@@ -87,19 +59,6 @@ namespace Internal.Runtime.Augments
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
-        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
-        [Obsolete]
-        public virtual Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank) { throw NotImplemented.ByDesign; }
-        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
-        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
-        [Obsolete]
-        public virtual Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments) { throw NotImplemented.ByDesign; }
-
-        // TODO https://github.com/dotnet/corefx/issues/9805: Cannot remove these from the contracts at this time because the contract files
-        // live outside the GitHub-mapped space. Will cleanup in a separate commit.
-        [Obsolete]
-        public virtual Type CreateShadowRuntimeInspectionOnlyNamedTypeIfAvailable(RuntimeTypeHandle runtimeTypeHandle) { throw NotImplemented.ByDesign; }
         public abstract EnumInfo GetEnumInfoIfAvailable(Type enumType);
         public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress);
@@ -116,5 +75,8 @@ namespace Internal.Runtime.Augments
         /// <param name="defaultValue">The default value of the parameter if available.</param>
         /// <returns>true if the default parameter value is available, otherwise false.</returns>
         public abstract bool TryGetDefaultParameterValue(object defaultParametersContext, RuntimeTypeHandle thType, int argIndex, out object defaultValue);
+
+        public abstract RuntimeTypeHandle GetTypeHandleIfAvailable(Type type);
+        public abstract bool SupportsReflection(Type type);
     }
 }

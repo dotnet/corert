@@ -57,7 +57,6 @@
     <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatAlwaysReuses.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsKeyIsAlive.cs" />
     <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsValueIsAlive.cs" />
-    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatLatchesTypeInfosInsideTypes.cs" />
     <Compile Include="System\Reflection\Runtime\EventInfos\RuntimeEventInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\LiteralFieldAccessor.cs" />
@@ -132,6 +131,9 @@
     <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\InvokerOptions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeType.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />

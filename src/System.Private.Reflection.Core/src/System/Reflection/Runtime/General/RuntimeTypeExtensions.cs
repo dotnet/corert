@@ -20,7 +20,7 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetRuntimeTypeInfo(this RuntimeType runtimeType)
         {
-            return ((RuntimeTypeTemporary)runtimeType).GetTypeInfo();
+            return (RuntimeTypeInfo)(runtimeType.GetTypeInfo());
         }
 
         public static RUNTIMETYPEINFO GetRuntimeTypeInfo<RUNTIMETYPEINFO>(this Type type)

@@ -58,7 +58,8 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetTypeForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
         {
-            return ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(typeHandle).GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            Type type = Type.GetTypeFromHandle(typeHandle);
+            return type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
         }
 
         //======================================================================================================
