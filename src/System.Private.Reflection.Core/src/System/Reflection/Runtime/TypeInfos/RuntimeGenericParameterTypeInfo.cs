@@ -79,13 +79,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type[] GetGenericParameterConstraints()
         {
-            TypeInfo[] constraintInfos = ConstraintInfos;
-            if (constraintInfos.Length == 0)
-                return Array.Empty<Type>();
-            Type[] result = new Type[constraintInfos.Length];
-            for (int i = 0; i < constraintInfos.Length; i++)
-                result[i] = constraintInfos[i].AsType();
-            return result;
+            return ConstraintInfos.CloneTypeArray();
         }
 
         public sealed override string FullName

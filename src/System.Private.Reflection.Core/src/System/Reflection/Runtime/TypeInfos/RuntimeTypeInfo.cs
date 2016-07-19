@@ -41,7 +41,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //     shows up as build error.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeTypeInfo : ExtensibleTypeInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeTypeInfo : ExtensibleTypeInfo, ITraceableTypeMember, ICloneable, IRuntimeImplementedType
     {
         protected RuntimeTypeInfo()
         {
@@ -67,7 +67,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type AsType()
         {
-            return this.RuntimeType;
+            return _legacyAsType;
         }
 
         public sealed override bool IsCOMObject
@@ -253,12 +253,25 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         public sealed override bool Equals(object obj)
         {
-            return object.ReferenceEquals(this, obj);
+            if (object.ReferenceEquals(this, obj))
+                return true;
+
+            // TODO https://github.com/dotnet/corefx/issues/9805: This makes Equals() act as if Type and TypeInfo are already the same instance. This extra check will go away once they actually are the same instance.
+            if (object.ReferenceEquals(this, _legacyAsType))
+                return true;
+
+            return false;
         }
 
         public sealed override int GetHashCode()
         {
             return InternalGetHashCode();
+        }
+
+        // TODO https://github.com/dotnet/corefx/issues/9805: This simplifies the conversion to a RuntimeTypeInfo-centric source-base. Once that's done, this can be gotten rid of.
+        public TypeInfo GetTypeInfo()
+        {
+            return this;
         }
 
         public abstract override string FullName { get; }
@@ -287,15 +300,11 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        //
-        // Left unsealed as constructed generic types must override this.
-        //
-        public override Type[] GenericTypeArguments
+        public sealed override Type[] GenericTypeArguments
         {
             get
             {
-                Debug.Assert(!IsConstructedGenericType);
-                return Array.Empty<Type>();
+                return InternalRuntimeGenericTypeArguments.CloneTypeArray();
             }
         }
 
@@ -420,11 +429,11 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override bool IsAssignableFrom(TypeInfo typeInfo)
         {
             RuntimeTypeInfo toTypeInfo = this;
-            RuntimeTypeInfo fromTypeInfo = typeInfo as RuntimeTypeInfo;
 
-            if (fromTypeInfo == null)
+            if (typeInfo == null || !typeInfo.CastToType().IsRuntimeImplemented())
                 return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
 
+            RuntimeTypeInfo fromTypeInfo = typeInfo.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (toTypeInfo.ReflectionDomain != fromTypeInfo.ReflectionDomain)
                 return false;
 
@@ -541,13 +550,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                RuntimeType[] genericTypeParameters = RuntimeGenericTypeParameters;
-                if (genericTypeParameters.Length == 0)
-                    return Array.Empty<Type>();
-                Type[] result = new Type[genericTypeParameters.Length];
-                for (int i = 0; i < genericTypeParameters.Length; i++)
-                    result[i] = genericTypeParameters[i];
-                return result;
+                return RuntimeGenericTypeParameters.CloneTypeArray();
             }
         }
 
@@ -560,13 +563,9 @@ namespace System.Reflection.Runtime.TypeInfos
             throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         }
 
-        //
-        // Left unsealed as HasElement types must override this.
-        //
-        public override Type GetElementType()
+        public sealed override Type GetElementType()
         {
-            Debug.Assert(!HasElementType);
-            return null;
+            return InternalRuntimeElementType;
         }
 
         //
@@ -896,6 +895,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
         internal abstract string InternalGetNameIfAvailable(ref Type rootCauseForFailure);
 
+        // TODO https://github.com/dotnet/corefx/issues/9805: This was inserted to help facilitate the RuntimeType->RuntimeTypeInfo switchover. Otherwise, it's pretty useless - remove it.
+        internal bool InternalIsOpen => ContainsGenericParameters;
+
         // Left unsealed so that multidim arrays can override.
         internal virtual bool InternalIsMultiDimArray
         {
@@ -911,6 +913,30 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 Type ignore = null;
                 return InternalGetNameIfAvailable(ref ignore);
+            }
+        }
+
+        //
+        // Left unsealed as HasElement types must override this.
+        //
+        internal virtual RuntimeType InternalRuntimeElementType
+        {
+            get
+            {
+                Debug.Assert(!HasElementType);
+                return null;
+            }
+        }
+
+        //
+        // Left unsealed as constructed generic types must override this.
+        //
+        internal virtual RuntimeType[] InternalRuntimeGenericTypeArguments
+        {
+            get
+            {
+                Debug.Assert(!IsConstructedGenericType);
+                return Array.Empty<RuntimeType>();
             }
         }
 
@@ -1094,6 +1120,11 @@ namespace System.Reflection.Runtime.TypeInfos
             IsValueType = 0x00000002,
             IsEnum = 0x00000004,
             IsPrimitive = 0x00000008,
+        }
+
+        object ICloneable.Clone()
+        {
+            return this;
         }
 
         //

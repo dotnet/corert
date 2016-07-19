@@ -191,7 +191,7 @@ namespace System.Reflection.Runtime.General
                     exception = reflectionDomain.CreateMissingMetadataException(outerTypeInfo, name);
                     return null;
                 }
-                return (RuntimeType)(resolvedTypeInfo.AsType());
+                return resolvedTypeInfo.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
             }
 
 

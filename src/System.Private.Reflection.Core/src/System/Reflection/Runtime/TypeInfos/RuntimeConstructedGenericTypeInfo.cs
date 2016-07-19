@@ -9,6 +9,7 @@ using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Collections.Concurrent;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 
 using global::Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Tracing;
@@ -98,14 +99,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
                 fullName.Append(']');
                 return fullName.ToString();
-            }
-        }
-
-        public sealed override Type[] GenericTypeArguments
-        {
-            get
-            {
-                return _key.GenericTypeArguments.CloneTypeArray();
             }
         }
 
@@ -267,6 +260,24 @@ namespace System.Reflection.Runtime.TypeInfos
         internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             return GenericTypeDefinitionTypeInfo.InternalGetNameIfAvailable(ref rootCauseForFailure);
+        }
+
+        internal sealed override RuntimeType[] InternalRuntimeGenericTypeArguments
+        {
+            get
+            {
+                // TODO https://github.com/dotnet/corefx/issues/9805: This is actually supposed to be a non-copying
+                // helper, and that's what it will become when we switch over to returning RuntimeTypeInfo[].
+
+                RuntimeTypeInfo[] genericTypeArguments = _key.GenericTypeArguments;
+                int count = genericTypeArguments.Length;
+                RuntimeType[] marshaledGenericTypeArguments = new RuntimeType[count];
+                for (int i = 0; i < count; i++)
+                {
+                    marshaledGenericTypeArguments[i] = genericTypeArguments[i].RuntimeType;
+                }
+                return marshaledGenericTypeArguments;
+            }
         }
 
         internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable

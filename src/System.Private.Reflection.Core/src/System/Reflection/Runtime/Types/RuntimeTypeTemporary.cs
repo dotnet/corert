@@ -35,7 +35,18 @@ namespace System.Reflection.Runtime.Types
         // RuntimeTypeTemporaries are created and destroyed at the same time as the associated RuntimeTypeInfo object
         // so they can use the same strategy: object.ReferenceEquals() for equality, and reuse the typeinfo's hash code.
         //
-        public sealed override bool Equals(object obj) => object.ReferenceEquals(this, obj);
+        public sealed override bool Equals(object obj)
+        {
+            if (object.ReferenceEquals(this, obj))
+                return true;
+
+            // TODO https://github.com/dotnet/corefx/issues/9805: This makes Equals() act as if Type and TypeInfo are already the same instance. This extra check will go away once they actually are the same instance.
+            if (object.ReferenceEquals(this, _typeInfo))
+                return true;
+
+            return false;
+        }
+
         public sealed override int GetHashCode() => _typeInfo.GetHashCode();
 
         public sealed override string AssemblyQualifiedName => _typeInfo.AssemblyQualifiedName;
@@ -78,30 +89,9 @@ namespace System.Reflection.Runtime.Types
         }
 
         internal sealed override bool InternalIsGenericTypeDefinition => _typeInfo.IsGenericTypeDefinition;
-        internal sealed override RuntimeType InternalRuntimeElementType => (RuntimeType)(_typeInfo.GetElementType());
-
-        internal sealed override RuntimeType[] InternalRuntimeGenericTypeArguments
-        {
-            get
-            {
-                Type[] genericTypeArguments = _typeInfo.GenericTypeArguments;
-                int count = genericTypeArguments.Length;
-                RuntimeType[] runtimeGenericTypeArguments = new RuntimeType[count];
-                for (int i = 0; i < count; i++)
-                {
-                    runtimeGenericTypeArguments[i] = (RuntimeType)(genericTypeArguments[i]);
-                }
-                return runtimeGenericTypeArguments;
-            }
-        }
-
-        internal sealed override string InternalGetNameIfAvailable(ref RuntimeType rootCauseForFailure)
-        {
-            Type rootCauseForFailureAsType = null;
-            string name = _typeInfo.InternalGetNameIfAvailable(ref rootCauseForFailureAsType);
-            rootCauseForFailure = rootCauseForFailureAsType as RuntimeType;
-            return name;
-        }
+        internal sealed override RuntimeType InternalRuntimeElementType => _typeInfo.InternalRuntimeElementType;
+        internal sealed override RuntimeType[] InternalRuntimeGenericTypeArguments => _typeInfo.InternalRuntimeGenericTypeArguments;
+        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure) => _typeInfo.InternalGetNameIfAvailable(ref rootCauseForFailure);
 
         internal sealed override bool InternalIsMultiDimArray
         {

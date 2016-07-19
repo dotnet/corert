@@ -7,6 +7,7 @@ using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.MethodInfos;
 
 using global::Internal.Reflection.Core;
@@ -63,8 +64,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
                 RuntimeType arrayType = this.RuntimeType;
-                RuntimeType countType = foundationTypes.SystemInt32.AsConfirmedRuntimeType();
-                RuntimeType voidType = foundationTypes.SystemVoid.AsConfirmedRuntimeType();
+                RuntimeType countType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
+                RuntimeType voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
 
                 {
                     RuntimeType[] ctorParametersAndReturn = new RuntimeType[rank + 1];
@@ -188,10 +189,10 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
-                RuntimeType indexType = foundationTypes.SystemInt32.AsConfirmedRuntimeType();
+                RuntimeType indexType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
                 RuntimeType arrayType = this.RuntimeType;
                 RuntimeType elementType = arrayType.InternalRuntimeElementType;
-                RuntimeType voidType = foundationTypes.SystemVoid.AsConfirmedRuntimeType();
+                RuntimeType voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>().RuntimeType;
 
                 {
                     RuntimeType[] getParametersAndReturn = new RuntimeType[rank + 1];
