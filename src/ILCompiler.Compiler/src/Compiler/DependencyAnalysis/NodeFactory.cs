@@ -21,13 +21,12 @@ namespace ILCompiler.DependencyAnalysis
         private bool _cppCodeGen;
         private CompilationModuleGroup _compilationModuleGroup;
 
-        public NodeFactory(CompilerTypeSystemContext context, TypeInitialization typeInitManager, CompilationModuleGroup compilationModuleGroup, bool cppCodeGen)
+        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, bool cppCodeGen)
         {
             _target = context.Target;
             _context = context;
             _cppCodeGen = cppCodeGen;
             _compilationModuleGroup = compilationModuleGroup;
-            TypeInitializationManager = typeInitManager;
             CreateNodeCaches();
 
             MetadataManager = new MetadataGeneration();
@@ -49,9 +48,12 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public TypeInitialization TypeInitializationManager
+        public CompilerTypeSystemContext TypeSystemContext
         {
-            get; private set;
+            get
+            {
+                return _context;
+            }
         }
 
         public MetadataGeneration MetadataManager
@@ -247,7 +249,7 @@ namespace ILCompiler.DependencyAnalysis
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
             {
                 Debug.Assert(method.IsStaticConstructor);
-                Debug.Assert(TypeInitializationManager.HasEagerStaticConstructor((MetadataType)method.OwningType));
+                Debug.Assert(TypeSystemContext.HasEagerStaticConstructor((MetadataType)method.OwningType));
                 return EagerCctorTable.NewNode(MethodEntrypoint(method));
             });
             
