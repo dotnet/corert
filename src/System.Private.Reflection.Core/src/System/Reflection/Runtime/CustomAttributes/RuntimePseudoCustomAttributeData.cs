@@ -9,6 +9,7 @@ using global::System.Collections.Generic;
 using global::System.Collections.ObjectModel;
 using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;

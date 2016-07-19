@@ -8,6 +8,7 @@ using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Collections.Concurrent;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 
 using global::Internal.Reflection.Tracing;
 using global::Internal.Reflection.Core.NonPortable;
@@ -82,11 +83,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override Type GetElementType()
-        {
-            return _key.ElementType.AsType();
-        }
-
         public sealed override string FullName
         {
             get
@@ -148,6 +144,14 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return _key.ElementType.InternalFullNameOfAssembly;
+            }
+        }
+
+        internal sealed override RuntimeType InternalRuntimeElementType
+        {
+            get
+            {
+                return _key.ElementType.RuntimeType;
             }
         }
 

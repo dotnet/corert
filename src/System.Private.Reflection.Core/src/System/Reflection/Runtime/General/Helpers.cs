@@ -43,8 +43,7 @@ namespace System.Reflection.Runtime.General
 
         public static bool IsRuntimeImplemented(this Type type)
         {
-            // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo and Type are the same instance, this will change to "type is RuntimeTypeInfo".
-            return type is RuntimeType;
+            return type is IRuntimeImplementedType;
         }
 
         public static RuntimeTypeInfo[] ToRuntimeTypeInfoArray(this Type[] types)
@@ -61,6 +60,13 @@ namespace System.Reflection.Runtime.General
         public static string LastResortString(this RuntimeTypeHandle typeHandle)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetLastResortString(typeHandle);
+        }
+
+        // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo derives from Type, this helper becomes a NOP and will go away entirely.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Type CastToType(this TypeInfo typeInfo)
+        {
+            return typeInfo == null ? null : typeInfo.AsType();
         }
     }
 }

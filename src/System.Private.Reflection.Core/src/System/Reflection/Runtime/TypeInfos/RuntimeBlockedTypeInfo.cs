@@ -8,6 +8,7 @@ using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.Assemblies;
 using global::System.Reflection.Runtime.CustomAttributes;
 

@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Extensibility;
 
@@ -73,12 +75,12 @@ namespace Internal.Reflection.Core.NonPortable
         {
             get
             {
-                RuntimeType ignore = null;
+                Type ignore = null;
                 return InternalGetNameIfAvailable(ref ignore);
             }
         }
 
-        internal abstract string InternalGetNameIfAvailable(ref RuntimeType rootCauseForFailure);
+        internal abstract string InternalGetNameIfAvailable(ref Type rootCauseForFailure);
 
         internal abstract bool InternalIsMultiDimArray { get; }
         internal abstract bool InternalIsOpen { get; }

@@ -108,7 +108,7 @@ namespace Internal.Reflection.Core.Execution
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             RuntimeType declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle().RuntimeType;
-            RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo();
+            RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
             if (methodHandle.IsConstructor(reader))
@@ -139,10 +139,10 @@ namespace Internal.Reflection.Core.Execution
         //
         public CustomAttributeData GetCustomAttributeData(Type attributeType, IList<CustomAttributeTypedArgument> constructorArguments, IList<CustomAttributeNamedArgument> namedArguments)
         {
-            RuntimeType runtimeAttributeType = attributeType as RuntimeType;
-            if (runtimeAttributeType == null)
+            if (!attributeType.IsRuntimeImplemented())
                 throw new InvalidOperationException();
-            return new RuntimePseudoCustomAttributeData(runtimeAttributeType, constructorArguments, namedArguments);
+            RuntimeTypeInfo runtimeAttributeType = attributeType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            return new RuntimePseudoCustomAttributeData(runtimeAttributeType.RuntimeType, constructorArguments, namedArguments);
         }
 
         //=======================================================================================
@@ -219,21 +219,21 @@ namespace Internal.Reflection.Core.Execution
         //=======================================================================================
         public RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
+            if (!type.IsRuntimeImplemented())
+                return default(RuntimeTypeHandle);
+
+            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (runtimeType == null)
                 return default(RuntimeTypeHandle);
-            RuntimeTypeHandle runtimeTypeHandle;
-            if (!runtimeType.InternalTryGetTypeHandle(out runtimeTypeHandle))
-                return default(RuntimeTypeHandle);
-            return runtimeTypeHandle;
+            return runtimeType.InternalTypeHandleIfAvailable;
         }
 
         public bool SupportsReflection(Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
+            if (!type.IsRuntimeImplemented())
                 return false;
 
+            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (null == runtimeType.InternalNameIfAvailable)
                 return false;
 

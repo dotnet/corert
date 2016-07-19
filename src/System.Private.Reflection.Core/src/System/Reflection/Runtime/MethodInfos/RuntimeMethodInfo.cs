@@ -7,6 +7,7 @@ using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Runtime.CompilerServices;
+using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.ParameterInfos;
 
@@ -104,13 +105,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Type[] GetGenericArguments()
         {
-            RuntimeType[] genericArgumentsOrParameters = this.RuntimeGenericArgumentsOrParameters;
-            if (genericArgumentsOrParameters.Length == 0)
-                return Array.Empty<Type>();
-            Type[] result = new Type[genericArgumentsOrParameters.Length];
-            for (int i = 0; i < genericArgumentsOrParameters.Length; i++)
-                result[i] = genericArgumentsOrParameters[i];
-            return result;
+            return RuntimeGenericArgumentsOrParameters.CloneTypeArray();
         }
 
         public abstract override MethodInfo GetGenericMethodDefinition();
