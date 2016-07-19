@@ -19,10 +19,6 @@ namespace System.Reflection.Runtime.Dispensers
 #else
             switch (scenario)
             {
-                // Type.GetTypeInfo() for Runtime types.
-                case DispenserScenario.Type_TypeInfo:
-                    return DispenserAlgorithm.LatchesTypeInfoInsideType;
-
                 // Metadata typedef handle to RuntimeTypeInfo
                 case DispenserScenario.TypeDef_TypeInfo:
                     return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;

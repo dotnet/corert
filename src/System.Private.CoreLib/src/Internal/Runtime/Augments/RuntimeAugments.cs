@@ -362,18 +362,6 @@ namespace Internal.Runtime.Augments
         }
 #endif
 
-        public static RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
-        {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
-                return default(RuntimeTypeHandle);
-            RuntimeTypeHandle runtimeTypeHandle;
-            if (!runtimeType.InternalTryGetTypeHandle(out runtimeTypeHandle))
-                return default(RuntimeTypeHandle);
-            return runtimeTypeHandle;
-        }
-
-
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
             EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;
@@ -793,27 +781,6 @@ namespace Internal.Runtime.Augments
                     return callbacks;
                 throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
             }
-        }
-
-        internal static RuntimeTypeHandle[] ToTypeHandleArray(this RuntimeType[] runtimeTypes)
-        {
-            RuntimeTypeHandle[] runtimeTypeHandles = new RuntimeTypeHandle[runtimeTypes.Length];
-            for (int i = 0; i < runtimeTypes.Length; i++)
-                runtimeTypeHandles[i] = runtimeTypes[i].TypeHandle;
-            return runtimeTypeHandles;
-        }
-
-        internal static RuntimeType ToRuntimeType(this RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(runtimeTypeHandle);
-        }
-
-        internal static RuntimeType[] ToRuntimeTypeArray(this RuntimeTypeHandle[] runtimeTypeHandles)
-        {
-            RuntimeType[] runtimeTypes = new RuntimeType[runtimeTypeHandles.Length];
-            for (int i = 0; i < runtimeTypes.Length; i++)
-                runtimeTypes[i] = runtimeTypeHandles[i].ToRuntimeType();
-            return runtimeTypes;
         }
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;

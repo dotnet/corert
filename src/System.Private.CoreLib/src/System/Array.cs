@@ -166,25 +166,15 @@ namespace System
 
         private static Type GetArrayTypeFromElementType(Type elementType, bool multiDim, int rank)
         {
-            RuntimeType runtimeElementType = elementType as RuntimeType;
-            if (runtimeElementType == null)
+            if (!elementType.IsRuntimeImplemented())
                 throw new InvalidOperationException(SR.InvalidOperation_ArrayCreateInstance_NotARuntimeType);
-            if (runtimeElementType.Equals(typeof(void)))
+            if (elementType.Equals(typeof(void)))
                 throw new NotSupportedException(SR.NotSupported_VoidArray);
 
-            try
-            {
-                if (multiDim)
-                    return runtimeElementType.MakeArrayType(rank);
-                else
-                    return runtimeElementType.MakeArrayType();
-            }
-            catch
-            {
-                if (runtimeElementType.InternalIsOpen)
-                    throw new NotSupportedException(SR.NotSupported_OpenType);
-                throw;
-            }
+            if (multiDim)
+                return elementType.MakeArrayType(rank);
+            else
+                return elementType.MakeArrayType();
         }
 
 

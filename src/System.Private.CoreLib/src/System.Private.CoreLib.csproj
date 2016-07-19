@@ -93,8 +93,8 @@
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceConnector.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplementedType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RawRuntimeTypeHandleKey.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.Internals.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
@@ -436,6 +436,7 @@
     <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\Tuple.cs" />
     <Compile Include="System\Type.cs" />
+    <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeAccessException.cs" />
     <Compile Include="System\TypeCode.cs" />
     <Compile Include="System\TypeInitializationException.cs" />

@@ -214,6 +214,45 @@ namespace Internal.Reflection.Core.Execution
             return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle).AsType();
         }
 
+        //=======================================================================================
+        // Miscellaneous.
+        //=======================================================================================
+        public RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
+        {
+            RuntimeType runtimeType = type as RuntimeType;
+            if (runtimeType == null)
+                return default(RuntimeTypeHandle);
+            RuntimeTypeHandle runtimeTypeHandle;
+            if (!runtimeType.InternalTryGetTypeHandle(out runtimeTypeHandle))
+                return default(RuntimeTypeHandle);
+            return runtimeTypeHandle;
+        }
+
+        public bool SupportsReflection(Type type)
+        {
+            RuntimeType runtimeType = type as RuntimeType;
+            if (runtimeType == null)
+                return false;
+
+            if (null == runtimeType.InternalNameIfAvailable)
+                return false;
+
+            if (ExecutionEnvironment.IsReflectionBlocked(type.TypeHandle))
+            {
+                // The type is an internal framework type and is blocked from reflection
+                return false;
+            }
+
+            if (runtimeType.InternalFullNameOfAssembly == Internal.Runtime.Augments.RuntimeAugments.HiddenScopeAssemblyName)
+            {
+                // The type is an internal framework type but is reflectable for internal class library use
+                // where we make the type appear in a hidden assembly
+                return false;
+            }
+
+            return true;
+        }
+
         internal ExecutionEnvironment ExecutionEnvironment { get; private set; }
     }
 }

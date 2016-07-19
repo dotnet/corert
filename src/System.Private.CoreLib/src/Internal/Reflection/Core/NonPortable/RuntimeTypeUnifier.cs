@@ -44,18 +44,7 @@ namespace Internal.Reflection.Core.NonPortable
         public static Type GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
         {
             Type type = RuntimeTypeHandleToTypeCache.Table.GetOrAdd(new RawRuntimeTypeHandleKey(runtimeTypeHandle));
-
-            // TODO https://github.com/dotnet/corefx/issues/9805: This cast will go away once we make Type and TypeInfo the same object instance (in which case,
-            // the need for RuntimeType to maintain its own DebugName goes away.)
-            return ((RuntimeType)type).WithDebugName();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static RuntimeType WithDebugName(this RuntimeType runtimeType)
-        {
-            if (runtimeType != null)
-                runtimeType.EstablishDebugName();
-            return runtimeType;
+            return type;
         }
     }
 }

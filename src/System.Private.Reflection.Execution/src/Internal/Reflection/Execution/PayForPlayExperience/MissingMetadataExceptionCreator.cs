@@ -168,7 +168,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 
         internal static String ToDisplayStringIfAvailable(this Type type, List<int> genericParameterOffsets)
         {
-            RuntimeTypeHandle runtimeTypeHandle = RuntimeAugments.GetTypeHandleIfAvailable(type);
+            RuntimeTypeHandle runtimeTypeHandle = ReflectionCoreExecution.ExecutionDomain.GetTypeHandleIfAvailable(type);
             bool hasRuntimeTypeHandle = !runtimeTypeHandle.Equals(default(RuntimeTypeHandle));
 
             if (type.HasElementType)

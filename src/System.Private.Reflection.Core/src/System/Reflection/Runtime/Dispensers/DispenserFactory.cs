@@ -51,8 +51,6 @@ namespace System.Reflection.Runtime.Dispensers
                 return new DispenserThatAlwaysReuses<K, V>(factory);
             else if (algorithm == DispenserAlgorithm.ReuseAsLongAsValueIsAlive)
                 return new DispenserThatReusesAsLongAsValueIsAlive<K, V>(factory);
-            else if (algorithm == DispenserAlgorithm.LatchesTypeInfoInsideType)
-                return (Dispenser<K, V>)(Object)(new DispenserThatLatchesTypeInfosInsideTypes((Func<RuntimeType, RuntimeTypeInfo>)(Object)factory));
 
             throw new Exception();
         }

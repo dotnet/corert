@@ -434,6 +434,16 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
+        public sealed override RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
+        {
+            return _executionDomain.GetTypeHandleIfAvailable(type);
+        }
+
+        public sealed override bool SupportsReflection(Type type)
+        {
+            return _executionDomain.SupportsReflection(type);
+        }
+
         private ExecutionDomain _executionDomain;
         private ExecutionEnvironmentImplementation _executionEnvironment;
     }
