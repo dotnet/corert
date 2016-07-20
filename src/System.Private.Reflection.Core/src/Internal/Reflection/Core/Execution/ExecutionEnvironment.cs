@@ -124,11 +124,11 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         internal MethodInvoker GetMethodInvoker(MetadataReader reader, RuntimeTypeInfo declaringType, MethodHandle methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant)
         {
-            if (declaringType.InternalIsOpen)
+            if (declaringType.ContainsGenericParameters)
                 return new OpenMethodInvoker();
             for (int i = 0; i < genericMethodTypeArguments.Length; i++)
             {
-                if (genericMethodTypeArguments[i].InternalIsOpen)
+                if (genericMethodTypeArguments[i].ContainsGenericParameters)
                     return new OpenMethodInvoker();
             }
 
