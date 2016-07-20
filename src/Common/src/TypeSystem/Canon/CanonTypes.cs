@@ -207,8 +207,9 @@ namespace Internal.TypeSystem
 
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
-                // Behavior for this is undefined.
-                throw new NotSupportedException();
+                // Universally canonical type is reported as a variable-sized struct.
+                // It's the closest logical thing and avoids special casing around it.
+                flags |= TypeFlags.ValueType;
             }
 
             Debug.Assert((flags & mask) != 0);
