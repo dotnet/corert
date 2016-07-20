@@ -102,7 +102,6 @@ namespace ILCompiler
             string mangledName;
             if (_mangledTypeNames.TryGetValue(type, out mangledName))
                 return mangledName;
-
             return ComputeMangledTypeName(type);
         }
 
