@@ -44,44 +44,38 @@ namespace Internal.TypeSystem
                     AppendName(sb, (GenericParameterDesc)type);
                     return;
                 default:
-                    if (type.GetType() == typeof(InstantiatedType))
-                        AppendName(sb, (InstantiatedType)type);
-                    else if (type is MetadataType)
-                        AppendName(sb, (MetadataType)type);
-                    else
-                    {
-                        Debug.Assert(type is NoMetadata.NoMetadataType);
-                        AppendName(sb, (NoMetadata.NoMetadataType)type);
-                    }
+                    Debug.Assert(type.IsDefType);
+                    AppendName(sb, (DefType)type);
                     return;
             }
         }
 
-        public void AppendName(StringBuilder sb, MetadataType type)
+        public void AppendName(StringBuilder sb, DefType type)
         {
-            MetadataType containingType = type.ContainingType;
-            if (containingType != null)
-                AppendNameForNestedType(sb, type, containingType);
+            if (!type.IsTypeDefinition)
+            {
+                AppendNameForInstantiatedType(sb, type);
+            }
             else
-                AppendNameForNamespaceType(sb, type);
-        }
-
-        public virtual void AppendName(StringBuilder sb, NoMetadata.NoMetadataType type)
-        {
-            // Name formatters that can deal with NoMetadata types need to override.
-            throw new NotSupportedException();
+            {
+                DefType containingType = type.ContainingType;
+                if (containingType != null)
+                    AppendNameForNestedType(sb, type, containingType);
+                else
+                    AppendNameForNamespaceType(sb, type);
+            }
         }
 
         public abstract void AppendName(StringBuilder sb, ArrayType type);
         public abstract void AppendName(StringBuilder sb, ByRefType type);
         public abstract void AppendName(StringBuilder sb, PointerType type);
-        public abstract void AppendName(StringBuilder sb, InstantiatedType type);
         public abstract void AppendName(StringBuilder sb, GenericParameterDesc type);
         public abstract void AppendName(StringBuilder sb, SignatureMethodVariable type);
         public abstract void AppendName(StringBuilder sb, SignatureTypeVariable type);
 
-        protected abstract void AppendNameForNestedType(StringBuilder sb, MetadataType nestedType, MetadataType containingType);
-        protected abstract void AppendNameForNamespaceType(StringBuilder sb, MetadataType type);
+        protected abstract void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType);
+        protected abstract void AppendNameForNamespaceType(StringBuilder sb, DefType type);
+        protected abstract void AppendNameForInstantiatedType(StringBuilder sb, DefType type);
 
         #region Convenience methods
 
@@ -92,14 +86,7 @@ namespace Internal.TypeSystem
             return sb.ToString();
         }
 
-        public string FormatName(MetadataType type)
-        {
-            StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
-            return sb.ToString();
-        }
-
-        public string FormatName(NoMetadata.NoMetadataType type)
+        public string FormatName(DefType type)
         {
             StringBuilder sb = new StringBuilder();
             AppendName(sb, type);
@@ -130,7 +117,7 @@ namespace Internal.TypeSystem
         public string FormatName(InstantiatedType type)
         {
             StringBuilder sb = new StringBuilder();
-            AppendName(sb, type);
+            AppendNameForInstantiatedType(sb, type);
             return sb.ToString();
         }
 

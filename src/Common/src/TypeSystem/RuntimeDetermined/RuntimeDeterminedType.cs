@@ -90,6 +90,22 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override string Name
+        {
+            get
+            {
+                return _rawCanonType.Name;
+            }
+        }
+
+        public override string Namespace
+        {
+            get
+            {
+                return String.Concat(_runtimeDeterminedDetailsType.Name, "_", _rawCanonType.Namespace);
+            }
+        }
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;

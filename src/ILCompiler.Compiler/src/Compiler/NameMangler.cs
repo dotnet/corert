@@ -133,7 +133,7 @@ namespace ILCompiler
                         string name = t.GetFullName();
 
                         // Include encapsulating type
-                        MetadataType containingType = t.ContainingType;
+                        DefType containingType = t.ContainingType;
                         while (containingType != null)
                         {
                             name = containingType.GetFullName() + "_" + name;
@@ -200,7 +200,7 @@ namespace ILCompiler
                     }
                     else
                     {
-                        mangledName = SanitizeName(((MetadataType)type).GetFullName(), true);
+                        mangledName = SanitizeName(((DefType)type).GetFullName(), true);
                     }
                     break;
             }

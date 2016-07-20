@@ -409,7 +409,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MetadataType ContainingType
+        public override DefType ContainingType
         {
             get
             {
@@ -417,7 +417,7 @@ namespace Internal.TypeSystem.Ecma
                     return null;
 
                 var handle = _typeDefinition.GetDeclaringType();
-                return (MetadataType)_module.GetType(handle);
+                return (DefType)_module.GetType(handle);
             }
         }
 

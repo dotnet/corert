@@ -166,7 +166,7 @@ namespace ILCompiler.Metadata
             // references to their definition records (we are avoiding emitting references
             // to things that have a definition within the same blob to save space).
 
-            Cts.MetadataType containingType = entity.ContainingType;
+            Cts.MetadataType containingType = (Cts.MetadataType)entity.ContainingType;
             MetadataRecord parentRecord = HandleType(containingType);
             TypeReference parentReferenceRecord = parentRecord as TypeReference;
             
@@ -218,14 +218,15 @@ namespace ILCompiler.Metadata
         {
             Debug.Assert(entity.IsTypeDefinition);
 
-            if (entity.ContainingType != null)
+            Cts.MetadataType containingType = (Cts.MetadataType)entity.ContainingType;
+            if (containingType != null)
             {
-                var enclosingType = (TypeDefinition)HandleType(entity.ContainingType);
+                var enclosingType = (TypeDefinition)HandleType(containingType);
                 record.EnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
 
                 var namespaceDefinition =
-                    HandleNamespaceDefinition(_policy.GetModuleOfType(entity.ContainingType), entity.ContainingType.Namespace);
+                    HandleNamespaceDefinition(_policy.GetModuleOfType(containingType), entity.ContainingType.Namespace);
                 record.NamespaceDefinition = namespaceDefinition;
             }
             else
