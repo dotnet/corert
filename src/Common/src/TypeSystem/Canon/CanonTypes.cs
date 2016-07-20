@@ -57,9 +57,27 @@ namespace Internal.TypeSystem
     /// </summary>
     internal sealed partial class CanonType : CanonBaseType
     {
-        public const string FullName = "System.__Canon";
+        private const string _Namespace = "System";
+        private const string _Name = "__Canon";
+        public const string FullName = _Namespace + "." + _Name;
 
         private int _hashcode;
+
+        public override string Namespace
+        {
+            get
+            {
+                return _Namespace;
+            }
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return _Name;
+            }
+        }
 
         public CanonType(TypeSystemContext context)
             : base(context)
@@ -130,9 +148,27 @@ namespace Internal.TypeSystem
     /// </summary>
     internal sealed partial class UniversalCanonType : CanonBaseType
     {
-        public const string FullName = "System.__UniversalCanon";
+        private const string _Namespace = "System";
+        private const string _Name = "__UniversalCanon";
+        public const string FullName = _Namespace + "." + _Name;
 
         private int _hashcode;
+
+        public override string Namespace
+        {
+            get
+            {
+                return _Namespace;
+            }
+        }
+
+        public override string Name
+        {
+            get
+            {
+                return _Name;
+            }
+        }
 
         public UniversalCanonType(TypeSystemContext context)
             : base(context)

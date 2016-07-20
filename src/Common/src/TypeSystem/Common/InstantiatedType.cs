@@ -320,7 +320,7 @@ namespace Internal.TypeSystem
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
-        public override MetadataType ContainingType
+        public override DefType ContainingType
         {
             get
             {

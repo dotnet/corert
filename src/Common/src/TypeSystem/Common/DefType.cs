@@ -10,5 +10,37 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class DefType : TypeDesc
     {
+        /// <summary>
+        /// Gets the namespace of the type.
+        /// </summary>
+        public virtual string Namespace
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the type as represented in the metadata.
+        /// </summary>
+        public virtual string Name
+        {
+            get
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the containing type of this type or null if the type is not nested.
+        /// </summary>
+        public virtual DefType ContainingType
+        {
+            get
+            {
+                return null;
+            }
+        }
     }
 }
