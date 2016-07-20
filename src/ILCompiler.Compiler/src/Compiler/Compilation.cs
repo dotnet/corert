@@ -270,5 +270,15 @@ namespace ILCompiler
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
         }
+
+        public ISymbolNode GetMethodGenericDictionary(MethodDesc method)
+        {
+            return _nodeFactory.MethodGenericDictionary(method);
+        }
+
+        public ISymbolNode GetTypeGenericDictionary(TypeDesc type)
+        {
+            return _nodeFactory.TypeGenericDictionary(type);
+        }
     }
 }

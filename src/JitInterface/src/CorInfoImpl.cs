@@ -2373,7 +2373,10 @@ namespace Internal.JitInterface
                 bool allowInstParam = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ALLOWINSTPARAM) != 0;
 
                 Debug.Assert(allowInstParam || !targetMethod.RequiresInstArg(), "Need an instantiating stub");
-                
+
+                MethodDesc concreteMethod = targetMethod;
+                targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
                 MethodDesc directMethod = targetMethod;
                 if (targetMethod.IsConstructor && targetMethod.OwningType.IsString)
                 {
@@ -2386,6 +2389,17 @@ namespace Internal.JitInterface
 
                 pResult.codePointerOrStubLookup.constLookup.addr =
                     (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(directMethod));
+
+                if (targetMethod.RequiresInstMethodDescArg())
+                {
+                    pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
+                    pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetMethodGenericDictionary(concreteMethod));
+                }
+                else if (targetMethod.RequiresInstMethodTableArg())
+                {
+                    pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
+                    pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetTypeGenericDictionary(concreteMethod.OwningType));
+                }
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
             }
@@ -2452,9 +2466,6 @@ namespace Internal.JitInterface
                     pResult.verSig = pResult.sig;
                 }
             }
-
-            // TODO: Generics
-            // pResult.instParamLookup
         }
 
         [return: MarshalAs(UnmanagedType.Bool)]

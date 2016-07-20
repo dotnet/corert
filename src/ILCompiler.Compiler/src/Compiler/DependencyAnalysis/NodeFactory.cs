@@ -247,6 +247,26 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     return new LazilyBuiltVTableSliceNode(type);
             });
+
+            _methodGenericDictionaries = new NodeCache<MethodDesc, GenericDictionary>(method =>
+            {
+                return new GenericDictionary(method);
+            });
+
+            _methodDictionaryLayouts = new NodeCache<MethodDesc, DictionaryLayout>(method =>
+            {
+                return new DictionaryLayout(method);
+            });
+
+            _typeGenericDictionaries = new NodeCache<TypeDesc, GenericDictionary>(type =>
+            {
+                return new GenericDictionary(type);
+            });
+
+            _typeDictionaryLayouts = new NodeCache<TypeDesc, DictionaryLayout>(type =>
+            {
+                return new DictionaryLayout(type);
+            });
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
@@ -415,15 +435,36 @@ namespace ILCompiler.DependencyAnalysis
             return _vTableNodes.GetOrAdd(type);
         }
 
+        private NodeCache<MethodDesc, GenericDictionary> _methodGenericDictionaries;
+        internal GenericDictionary MethodGenericDictionary(MethodDesc method)
+        {
+            return _methodGenericDictionaries.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, DictionaryLayout> _methodDictionaryLayouts;
+        internal DictionaryLayout MethodDictionaryLayout(MethodDesc method)
+        {
+            return _methodDictionaryLayouts.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, GenericDictionary> _typeGenericDictionaries;
+        internal GenericDictionary TypeGenericDictionary(TypeDesc type)
+        {
+            return _typeGenericDictionaries.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, DictionaryLayout> _typeDictionaryLayouts;
+        internal DictionaryLayout TypeDictionaryLayout(TypeDesc type)
+        {
+            return _typeDictionaryLayouts.GetOrAdd(type);
+        }
+
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
 
         public IMethodNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {
-            if (!_cppCodeGen)
-            {
-                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            }
+            //Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
 
             if (unboxingStub)
             {
