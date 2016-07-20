@@ -231,7 +231,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 for (int i = 0; i < constraints.Length; i++)
                 {
-                    constraintInfos[i] = reflectionDomain.Resolve(constraints[i].Reader, constraints[i].Handle, TypeContext).GetTypeInfo();
+                    constraintInfos[i] = reflectionDomain.Resolve(constraints[i].Reader, constraints[i].Handle, TypeContext);
                 }
                 return constraintInfos;
             }

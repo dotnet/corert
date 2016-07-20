@@ -268,12 +268,6 @@ namespace System.Reflection.Runtime.TypeInfos
             return InternalGetHashCode();
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: This simplifies the conversion to a RuntimeTypeInfo-centric source-base. Once that's done, this can be gotten rid of.
-        public TypeInfo GetTypeInfo()
-        {
-            return this;
-        }
-
         public abstract override string FullName { get; }
 
         //
@@ -883,9 +877,6 @@ namespace System.Reflection.Runtime.TypeInfos
         internal abstract string InternalFullNameOfAssembly { get; }
 
         internal abstract string InternalGetNameIfAvailable(ref Type rootCauseForFailure);
-
-        // TODO https://github.com/dotnet/corefx/issues/9805: This was inserted to help facilitate the RuntimeType->RuntimeTypeInfo switchover. Otherwise, it's pretty useless - remove it.
-        internal bool InternalIsOpen => ContainsGenericParameters;
 
         // Left unsealed so that multidim arrays can override.
         internal virtual bool InternalIsMultiDimArray

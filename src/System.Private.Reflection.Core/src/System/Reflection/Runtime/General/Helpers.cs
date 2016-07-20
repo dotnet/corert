@@ -21,11 +21,19 @@ namespace System.Reflection.Runtime.General
             return h.Equals(default(RuntimeTypeHandle));
         }
 
+        // Clones a Type[] array for the purpose of returning it from an api.
         public static Type[] CloneTypeArray(this Type[] types)
         {
-            if (types.Length == 0)
-                return Array.Empty<Type>();
-            return (Type[])(types.Clone());
+            int count = types.Length;
+            if (count == 0)
+                return Array.Empty<Type>();  // Ok not to clone empty arrays - those are immutable.
+
+            Type[] clonedTypes = new Type[count];
+            for (int i = 0; i < count; i++)
+            {
+                clonedTypes[i] = types[i];
+            }
+            return clonedTypes;
         }
 
         // TODO https://github.com/dotnet/corefx/issues/9805: This overload can and should be deleted once TypeInfo derives from Type again.

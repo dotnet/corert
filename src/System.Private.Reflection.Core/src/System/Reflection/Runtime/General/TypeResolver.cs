@@ -180,7 +180,7 @@ namespace System.Reflection.Runtime.General
                 RuntimeTypeInfo outerType = reflectionDomain.TryResolveTypeReference(reader, parent.ToTypeReferenceHandle(reader), ref exception);
                 if (outerType == null)
                     return null;
-                outerTypeInfo = outerType.GetTypeInfo();   // Since we got to outerType via a metadata reference, we're assured GetTypeInfo() won't throw a MissingMetadataException.
+                outerTypeInfo = outerType;   // Since we got to outerType via a metadata reference, we're assured GetTypeInfo() won't throw a MissingMetadataException.
             }
             if (outerTypeInfo != null)
             {
