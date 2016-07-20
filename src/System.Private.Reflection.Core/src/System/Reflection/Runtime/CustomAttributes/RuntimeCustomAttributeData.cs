@@ -9,6 +9,7 @@ using global::System.Collections.Generic;
 using global::System.Collections.ObjectModel;
 using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;
@@ -115,7 +116,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             if (argumentType == null)
                 return cat.ToString();
 
-            FoundationTypes foundationTypes = argumentType.AsConfirmedRuntimeType().GetReflectionDomain().FoundationTypes;
+            FoundationTypes foundationTypes = argumentType.GetRuntimeTypeInfo<RuntimeTypeInfo>().ReflectionDomain.FoundationTypes;
             Object value = cat.Value;
             TypeInfo argumentTypeInfo = argumentType.GetTypeInfo();
             if (argumentTypeInfo.IsEnum)

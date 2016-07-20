@@ -6,6 +6,7 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.ParameterInfos;
 
@@ -21,7 +22,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo
     {
-        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeType declaringType, RuntimeType[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypesAndReturn, InvokerOptions options, Func<Object, Object[], Object> invoker)
         {
             _syntheticMethodId = syntheticMethodId;
             _declaringType = declaringType;
@@ -58,7 +59,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _declaringType;
+                return _declaringType.CastToType();
             }
         }
 
@@ -106,7 +107,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return RuntimeMethodCommon.ComputeToString(this, Array.Empty<RuntimeType>(), RuntimeParametersAndReturn);
+            return RuntimeMethodCommon.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParametersAndReturn);
         }
 
         protected sealed override RuntimeParameterInfo[] RuntimeParametersAndReturn
@@ -145,8 +146,8 @@ namespace System.Reflection.Runtime.MethodInfos
         private volatile RuntimeParameterInfo[] _lazyRuntimeParametersAndReturn;
 
         private SyntheticMethodId _syntheticMethodId;
-        private RuntimeType _declaringType;
-        private RuntimeType[] _runtimeParameterTypesAndReturn;
+        private RuntimeTypeInfo _declaringType;
+        private RuntimeTypeInfo[] _runtimeParameterTypesAndReturn;
         private InvokerOptions _options;
         private Func<Object, Object[], Object> _invoker;
     }

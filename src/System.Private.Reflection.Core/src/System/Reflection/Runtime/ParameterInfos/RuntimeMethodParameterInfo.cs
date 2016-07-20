@@ -34,7 +34,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _reflectionDomain.Resolve(this.Reader, _typeHandle, _typeContext);
+                return _reflectionDomain.Resolve(this.Reader, _typeHandle, _typeContext).CastToType();
             }
         }
 

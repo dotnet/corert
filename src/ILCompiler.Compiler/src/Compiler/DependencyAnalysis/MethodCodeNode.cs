@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
             DependencyList dependencies = null;
 
             TypeDesc owningType = _method.OwningType;
-            if (factory.TypeInitializationManager.HasEagerStaticConstructor(owningType))
+            if (factory.TypeSystemContext.HasEagerStaticConstructor(owningType))
             {
                 if (dependencies == null)
                     dependencies = new DependencyList();

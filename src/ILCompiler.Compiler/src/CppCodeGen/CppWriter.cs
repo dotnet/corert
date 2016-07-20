@@ -400,6 +400,10 @@ namespace ILCompiler.CppCodeGen
 
             try
             {
+                // TODO: hacky special-case
+                if (method.Name == "_ecvt_s")
+                    throw new NotImplementedException();
+
                 var ilImporter = new ILImporter(_compilation, this, method, methodIL);
 
                 CompilerTypeSystemContext typeSystemContext = _compilation.TypeSystemContext;

@@ -33,8 +33,7 @@ namespace ILCompiler
     {
         private readonly CompilerTypeSystemContext _typeSystemContext;
         private readonly CompilationOptions _options;
-        private readonly TypeInitialization _typeInitManager;
-
+        
         private NodeFactory _nodeFactory;
         private DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
 
@@ -48,8 +47,6 @@ namespace ILCompiler
             _options = options;
 
             _nameMangler = new NameMangler(options.IsCppCodeGen);
-
-            _typeInitManager = new TypeInitialization();
 
             _typeSystemContext = context;
             _compilationModuleGroup = compilationGroup;
@@ -122,7 +119,7 @@ namespace ILCompiler
                 NodeFactory.CompilationUnitPrefix = NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(Options.OutputFilePath));
             }
 
-            _nodeFactory = new NodeFactory(_typeSystemContext, _typeInitManager, _compilationModuleGroup, _options.IsCppCodeGen);
+            _nodeFactory = new NodeFactory(_typeSystemContext, _compilationModuleGroup, _options.IsCppCodeGen);
 
             // Choose which dependency graph implementation to use based on the amount of logging requested.
             if (_options.DgmlLog == null)
@@ -277,7 +274,7 @@ namespace ILCompiler
 
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
-            return _typeInitManager.HasLazyStaticConstructor(type);
+            return _typeSystemContext.HasLazyStaticConstructor(type);
         }
 
         public MethodDebugInformation GetDebugInfo(MethodIL methodIL)

@@ -3,14 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using global::System;
+using global::System.Text;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Collections.Concurrent;
 using global::System.Reflection.Runtime.General;
+using global::System.Reflection.Runtime.TypeInfos;
 
 using global::Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Tracing;
 using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -18,14 +22,41 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent constructed generic types.
     // 
     //
-    internal sealed partial class RuntimeConstructedGenericTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeConstructedGenericTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeConstructedGenericTypeInfo.UnificationKey>
     {
-        private RuntimeConstructedGenericTypeInfo(RuntimeType genericConstructedGenericType)
-            : base()
+        private RuntimeConstructedGenericTypeInfo(UnificationKey key)
         {
-            Debug.Assert(genericConstructedGenericType.IsConstructedGenericType);
-            _asType = genericConstructedGenericType;
+            _key = key;
         }
+
+        //
+        // Implements IKeyedItem.PrepareKey.
+        // 
+        // This method is the keyed item's chance to do any lazy evaluation needed to produce the key quickly. 
+        // Concurrent unifiers are guaranteed to invoke this method at least once and wait for it
+        // to complete before invoking the Key property. The unifier lock is NOT held across the call.
+        //
+        // PrepareKey() must be idempodent and thread-safe. It may be invoked multiple times and concurrently.
+        //
+        public void PrepareKey()
+        {
+        }
+
+        //
+        // Implements IKeyedItem.Key.
+        // 
+        // Produce the key. This is a high-traffic property and is called while the hash table's lock is held. Thus, it should
+        // return a precomputed stored value and refrain from invoking other methods. If the keyed item wishes to
+        // do lazy evaluation of the key, it should do so in the PrepareKey() method.
+        //
+        public UnificationKey Key
+        {
+            get
+            {
+                return _key;
+            }
+        }
+
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes
         {
@@ -40,17 +71,40 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool Equals(Object obj)
+        public sealed override string FullName
         {
-            RuntimeConstructedGenericTypeInfo other = obj as RuntimeConstructedGenericTypeInfo;
-            if (other == null)
-                return false;
-            return _asType.Equals(other._asType);
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_FullName(this);
+#endif
+                // Desktop quirk: open constructions don't have "fullNames".
+                if (ContainsGenericParameters)
+                    return null;
+
+                StringBuilder fullName = new StringBuilder();
+                fullName.Append(GenericTypeDefinitionTypeInfo.FullName);
+                fullName.Append('[');
+
+                RuntimeTypeInfo[] genericTypeArguments = _key.GenericTypeArguments;
+                for (int i = 0; i < genericTypeArguments.Length; i++)
+                {
+                    if (i != 0)
+                        fullName.Append(',');
+
+                    fullName.Append('[');
+                    fullName.Append(genericTypeArguments[i].AssemblyQualifiedName);
+                    fullName.Append(']');
+                }
+                fullName.Append(']');
+                return fullName.ToString();
+            }
         }
 
-        public sealed override int GetHashCode()
+        public sealed override Type GetGenericTypeDefinition()
         {
-            return _asType.GetHashCode();
+            return GenericTypeDefinitionTypeInfo.AsType();
         }
 
         public sealed override Guid GUID
@@ -58,14 +112,6 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return GenericTypeDefinitionTypeInfo.GUID;
-            }
-        }
-
-        public sealed override bool IsGenericType
-        {
-            get
-            {
-                return true;
             }
         }
 
@@ -85,12 +131,85 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool ContainsGenericParameters
+        {
+            get
+            {
+                foreach (RuntimeTypeInfo typeArgument in _key.GenericTypeArguments)
+                {
+                    if (typeArgument.ContainsGenericParameters)
+                        return true;
+                }
+                return false;
+            }
+        }
+
         public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
         {
             get
             {
                 return GenericTypeDefinitionTypeInfo.DeclaredNestedTypes;
             }
+        }
+
+        public sealed override bool IsConstructedGenericType
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        public sealed override string Namespace
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_Namespace(this);
+#endif
+                return GenericTypeDefinitionTypeInfo.Namespace;
+            }
+        }
+
+        public sealed override string ToString()
+        {
+            // Get the FullName of the generic type definition in a pay-for-play safe way.
+            RuntimeTypeInfo genericTypeDefinition = GenericTypeDefinitionTypeInfo;
+            string genericTypeDefinitionString = null;
+            if (genericTypeDefinition.InternalNameIfAvailable != null)   // Want to avoid "cry-wolf" exceptions: if we can't even get the simple name, don't bother getting the FullName.
+            {
+                // Given our current pay for play policy, it should now be safe to attempt getting the FullName. (But guard with a try-catch in case this assumption is wrong.)
+                try
+                {
+                    genericTypeDefinitionString = genericTypeDefinition.FullName;
+                }
+                catch (Exception)
+                {
+                }
+            }
+            // If all else fails, use the ToString() - it won't match the legacy CLR but with no metadata, we can't match it anyway.
+            if (genericTypeDefinitionString == null)
+                genericTypeDefinitionString = genericTypeDefinition.ToString();
+
+            // Now, append the generic type arguments.
+            StringBuilder sb = new StringBuilder();
+            sb.Append(genericTypeDefinitionString);
+            sb.Append('[');
+            RuntimeTypeInfo[] genericTypeArguments = _key.GenericTypeArguments;
+            for (int i = 0; i < genericTypeArguments.Length; i++)
+            {
+                if (i != 0)
+                    sb.Append(',');
+                sb.Append(genericTypeArguments[i].ToString());
+            }
+            sb.Append(']');
+            return sb.ToString();
+        }
+
+        protected sealed override int InternalGetHashCode()
+        {
+            return _key.GetHashCode();
         }
 
         //
@@ -119,11 +238,43 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override RuntimeType RuntimeType
+        internal sealed override Type InternalDeclaringType
         {
             get
             {
-                return _asType;
+                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+                if ((!typeHandle.IsNull()) && ReflectionCoreExecution.ExecutionEnvironment.IsReflectionBlocked(typeHandle))
+                    return null;
+                return GenericTypeDefinitionTypeInfo.InternalDeclaringType;
+            }
+        }
+
+        internal sealed override string InternalFullNameOfAssembly
+        {
+            get
+            {
+                return GenericTypeDefinitionTypeInfo.InternalFullNameOfAssembly;
+            }
+        }
+
+        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        {
+            return GenericTypeDefinitionTypeInfo.InternalGetNameIfAvailable(ref rootCauseForFailure);
+        }
+
+        internal sealed override RuntimeTypeInfo[] InternalRuntimeGenericTypeArguments
+        {
+            get
+            {
+                return _key.GenericTypeArguments;
+            }
+        }
+
+        internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
+        {
+            get
+            {
+                return _key.TypeHandle;
             }
         }
 
@@ -157,7 +308,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return new TypeContext(this.RuntimeType.InternalRuntimeGenericTypeArguments, null);
+                return new TypeContext(this.InternalRuntimeGenericTypeArguments, null);
             }
         }
 
@@ -165,11 +316,11 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return GetGenericTypeDefinition().GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                return _key.GenericTypeDefinition;
             }
         }
 
-        private RuntimeType _asType;
+        private readonly UnificationKey _key;
     }
 }
 

@@ -57,7 +57,7 @@
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs" >
+    <Compile Include="..\..\Common\src\Internal\Runtime\ModuleHeaders.cs">
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\LowLevelUTF8Encoding.cs" />
@@ -88,30 +88,13 @@
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionTraceConnector.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Reflection\Core\NonPortable\BlockedRuntimeTypeNameGenerator.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\ConstructedGenericTypeKey.cs" />
+    <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplementedType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RawRuntimeTypeHandleKey.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeArrayType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEEArrayType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeInspectionOnlyArrayType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeByRefType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimePointerType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEEPointerType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeInspectionOnlyPointerType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEENamedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEENamedNonGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEENamedType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeConstructedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeEEConstructedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeInspectionOnlyConstructedGenericType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeHasElementType.cs" />
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.Internals.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
@@ -130,7 +113,6 @@
     <Compile Include="Internal\Reflection\CoreRT\RuntimeType.cs" />
     <Compile Include="Internal\Reflection\CoreRT\ReflectionCoreNonPortable.cs" />
   </ItemGroup-->
-
   <ItemGroup>
     <Compile Include="Internal\Reflection\Extensibility\ExtensibleType.cs" />
     <Compile Include="Internal\Runtime\Augments\WinRTInterop.cs" />
@@ -381,7 +363,7 @@
     <Compile Include="System\String.cs" />
     <Compile Include="System\StringComparer.cs" />
     <Compile Include="System\Array.cs" />
-    <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'"/>
+    <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\IDisposable.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Delegate.DefaultParameters.cs" />
@@ -454,6 +436,7 @@
     <Compile Include="System\TimeZoneInfo.cs" />
     <Compile Include="System\Tuple.cs" />
     <Compile Include="System\Type.cs" />
+    <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeAccessException.cs" />
     <Compile Include="System\TypeCode.cs" />
     <Compile Include="System\TypeInitializationException.cs" />
@@ -488,79 +471,65 @@
   </ItemGroup>
   <!-- Windows is default build -->
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-      <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
-      <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
-      <Compile Include="System\Globalization\CultureData.Windows.cs" />
-      <Compile Include="System\Globalization\TextInfo.Windows.cs" />
-      <Compile Include="System\Globalization\CalendarData.Windows.cs" />
-      <Compile Include="System\DateTime.Windows.cs" />
-      <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
-      <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs">
-        <Link>Interop\Windows\Interop.BOOL.cs</Link>
-      </Compile>
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs" >
-        <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
-      </Compile>
-      
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.DateTime.cs" >
-        <Link>Interop\Windows\mincore\Interop.DateTime.cs</Link>
-      </Compile>
-
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs" >
-        <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
-      </Compile>
-
-      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
-      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs" >
-        <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
-      </Compile>      
-
-      <Compile Include="System\Environment.Windows.cs" />
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs" >
-        <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
-      </Compile>
-
-      <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.UWP.cs" />
-
-      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
-      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs" >
-        <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
-      </Compile>
-
-      <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs" >
-        <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
-      </Compile>
-      
+    <Compile Include="System\Globalization\CultureInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CompareInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CultureData.Windows.cs" />
+    <Compile Include="System\Globalization\TextInfo.Windows.cs" />
+    <Compile Include="System\Globalization\CalendarData.Windows.cs" />
+    <Compile Include="System\DateTime.Windows.cs" />
+    <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Windows.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.BOOL.cs">
+      <Link>Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Globalization.cs">
+      <Link>Interop\Windows\mincore\Interop.Globalization.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.DateTime.cs">
+      <Link>Interop\Windows\mincore\Interop.DateTime.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
+      <Link>Interop\Windows\mincore\Interop.MemAllocFree.cs</Link>
+    </Compile>
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\CommandLine.Windows.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.CommandLine.cs">
+      <Link>Interop\Windows\mincore\Interop.CommandLine.cs</Link>
+    </Compile>
+    <Compile Include="System\Environment.Windows.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetTickCount64.cs">
+      <Link>Interop\Windows\mincore\Interop.GetTickCount64.cs</Link>
+    </Compile>
+    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Environment.UWP.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="System\Environment.Win32.cs" />
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.Environment.cs">
+      <Link>Interop\Windows\mincore\Interop.Environment.cs</Link>
+    </Compile>
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
+      <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-      <!-- CORERT-TODO: Port to Unix -->
-      <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs" >
-        <Link>Interop\Windows\Interop.Libraries.cs</Link>
-      </Compile>
-      
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs" >
-        <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
-      </Compile>
-      
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs" >
-        <Link>Interop\Windows\mincore\Interop.VirtualQuery.cs</Link>
-      </Compile>
-      
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs" >
-        <Link>Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
-      </Compile>
-      
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs" >
-        <Link>Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs</Link>
-      </Compile>
-      
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs" >
-        <Link>Interop\Windows\mincore\Interop.TimeZone.cs</Link>
-      </Compile>
-      
-      <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs" >
-          <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
-      </Compile>
+    <!-- CORERT-TODO: Port to Unix -->
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.Errors.cs">
+      <Link>Interop\Windows\mincore\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs">
+      <Link>Interop\Windows\mincore\Interop.VirtualQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
+      <Link>Interop\Windows\mincore\Interop.SYSTEM_INFO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
+      <Link>Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.TimeZone.cs">
+      <Link>Interop\Windows\mincore\Interop.TimeZone.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs">
+      <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="System\Globalization\CultureInfo.Dummy.cs" />
@@ -571,87 +540,87 @@
     <Compile Include="System\DateTime.Unix.cs" />
     <Compile Include="System\Globalization\FormatProvider.FormatAndParse.Unix.cs" />
     <Compile Include="System\Environment.Unix.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs" >
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DateTime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs" >
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs" >
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.GetTickCount64.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs" >
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Environment.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs" >
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs" >
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.FormatProvider.FormatAndParse.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs" >
+    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.DynamicLoad.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Collections\LowLevelComparer.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\LowLevelComparer.cs">
       <Link>System\Collections\LowLevelComparer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs">
       <Link>System\Collections\HashHelpers.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelComparer.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelComparer.cs">
       <Link>System\Collections\Generic\LowLevelComparer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifier.cs">
       <Link>System\Collections\Concurrent\ConcurrentUnifier.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs">
       <Link>System\Collections\Concurrent\ConcurrentUnifierW.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs">
       <Link>System\Collections\Concurrent\ConcurrentUnifierWKeyed.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Concurrent\IKeyedItem.cs" >
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\IKeyedItem.cs">
       <Link>System\Collections\Concurrent\IKeyedItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Diagnostics\Debug.cs" >
+    <Compile Include="..\..\Common\src\System\Diagnostics\Debug.cs">
       <Link>System\Diagnostics\Debug.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Globalization\FormatProvider.Number.cs" >
+    <Compile Include="..\..\Common\src\System\Globalization\FormatProvider.Number.cs">
       <Link>System\Globalization\FormatProvider.Number.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" >
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs" >
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs" >
+    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
       <Link>System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs" >
+    <Compile Include="..\..\Common\src\System\CommonRuntimeTypes.cs">
       <Link>System\CommonRuntimeTypes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\__HResults.cs" >
+    <Compile Include="..\..\Common\src\System\__HResults.cs">
       <Link>System\__HResults.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs" >
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs">
       <Link>Internal\Runtime\EEType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
       <Link>Internal\Runtime\EEType.Constants.cs</Link>
     </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="CoverageSupport.cs" />
@@ -664,46 +633,46 @@
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs">
       <Link>Runtime.Base\src\System\Runtime\CachedInterfaceDispatch.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\DispatchResolve.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\DispatchResolve.cs">
       <Link>Runtime.Base\src\System\Runtime\DispatchResolve.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\GCStress.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\GCStress.cs">
       <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\__Finalizer.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\__Finalizer.cs">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CalliIntrinsics.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CalliIntrinsics.cs">
       <Link>Runtime.Base\src\System\Runtime\CalliIntrinsics.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\EEType.Runtime.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\EEType.Runtime.cs">
       <Link>Runtime.Base\src\System\Runtime\EEType.Runtime.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.cs">
       <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InternalCalls.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InternalCalls.cs">
       <Link>Runtime.Base\src\System\Runtime\InternalCalls.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExports.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExports.cs">
       <Link>Runtime.Base\src\System\Runtime\RuntimeExports.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.cs">
       <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs">
       <Link>Runtime.Base\src\System\Runtime\CompilerServices\ManuallyManagedAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs" >
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs">
       <Link>Runtime.Base\src\System\Runtime\InteropServices\UnsafeGCHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs" >
+    <Compile Include="..\..\Runtime.Base\src\RhBaseName.cs">
       <Link>Runtime.Base\src\RhBaseName.cs</Link>
     </Compile>
   </ItemGroup>

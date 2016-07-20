@@ -145,13 +145,13 @@ namespace Internal.Reflection.Tracing
 
         private static String NonQualifiedTypeName(this Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
+            if (!type.IsRuntimeImplemented())
                 return null;
 
+            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (runtimeType.HasElementType)
             {
-                String elementTypeName = runtimeType.InternalRuntimeElementType.NonQualifiedTypeName();
+                String elementTypeName = runtimeType.InternalRuntimeElementType.CastToType().NonQualifiedTypeName();
                 if (elementTypeName == null)
                     return null;
                 String suffix;
@@ -185,9 +185,9 @@ namespace Internal.Reflection.Tracing
                 sb.Append(genericTypeDefinitionTypeName);
                 sb.Append("[");
                 String sep = "";
-                foreach (RuntimeType ga in runtimeType.InternalRuntimeGenericTypeArguments)
+                foreach (RuntimeTypeInfo ga in runtimeType.InternalRuntimeGenericTypeArguments)
                 {
-                    String gaTypeName = ga.AssemblyQualifiedTypeName();
+                    String gaTypeName = ga.CastToType().AssemblyQualifiedTypeName();
                     if (gaTypeName == null)
                         return null;
                     sb.Append(sep + "[" + gaTypeName + "]");
@@ -230,13 +230,16 @@ namespace Internal.Reflection.Tracing
 
         private static String AssemblyQualifiedTypeName(this Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
+            if (!type.IsRuntimeImplemented())
+                return null;
+
+            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (runtimeType == null)
                 return null;
-            String nonqualifiedTypeName = runtimeType.NonQualifiedTypeName();
+            String nonqualifiedTypeName = runtimeType.CastToType().NonQualifiedTypeName();
             if (nonqualifiedTypeName == null)
                 return null;
-            String assemblyName = runtimeType.ContainingAssemblyName();
+            String assemblyName = runtimeType.CastToType().ContainingAssemblyName();
             if (assemblyName == null)
                 return assemblyName;
             return nonqualifiedTypeName + ", " + assemblyName;
@@ -244,10 +247,10 @@ namespace Internal.Reflection.Tracing
 
         private static String ContainingAssemblyName(this Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
+            if (!type.IsRuntimeImplemented())
                 return null;
-            RuntimeTypeInfo runtimeTypeInfo = runtimeType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+
+            RuntimeTypeInfo runtimeTypeInfo = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             if (runtimeTypeInfo is RuntimeNoMetadataNamedTypeInfo)
                 return null;
             return runtimeTypeInfo.Assembly.NameString();

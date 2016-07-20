@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _definingTypeInfo.ReflectionDomain.Resolve(_reader, _event.Type, _contextTypeInfo.TypeContext);
+                return _definingTypeInfo.ReflectionDomain.Resolve(_reader, _event.Type, _contextTypeInfo.TypeContext).CastToType();
             }
         }
 

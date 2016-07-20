@@ -104,7 +104,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return this.FieldRuntimeType;
+                return this.FieldRuntimeType.CastToType();
             }
         }
 
@@ -231,7 +231,7 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
-        private RuntimeType FieldRuntimeType
+        private RuntimeTypeInfo FieldRuntimeType
         {
             get
             {

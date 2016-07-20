@@ -431,7 +431,7 @@ namespace Internal.IL.Stubs
                 {
                     Interlocked.CompareExchange(ref _helperParamIn, new DynamicInvokeParamHelperMethod(_delegateInfo.Type, 0), null);
                 }
-                return _helperParamIn;
+                return _helperParamIn.InstantiateAsOpen();
             }
         }
 
@@ -443,7 +443,7 @@ namespace Internal.IL.Stubs
                 {
                     Interlocked.CompareExchange(ref _helperParamRef, new DynamicInvokeParamHelperMethod(_delegateInfo.Type, 1), null);
                 }
-                return _helperParamRef;
+                return _helperParamRef.InstantiateAsOpen();
             }
         }
 

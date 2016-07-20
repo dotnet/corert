@@ -69,6 +69,15 @@ namespace Internal.Reflection.Core
             return this.ReflectionDomainSetup.CreateNonInvokabilityException(pertainant);
         }
 
+        public Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
+        {
+            return ReflectionDomainSetup.CreateMissingArrayTypeException(elementType, isMultiDim, rank);
+        }
+
+        public Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
+        {
+            return ReflectionDomainSetup.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
+        }
 
         // This private constructor exists as a temporary measure so that we can create Execution domains without enabling the
         // general ReflectionDomain case.

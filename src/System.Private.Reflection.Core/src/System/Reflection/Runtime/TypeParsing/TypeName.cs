@@ -25,7 +25,7 @@ namespace System.Reflection.Runtime.TypeParsing
     //
     internal abstract class TypeName
     {
-        public abstract Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result);
+        public abstract Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result);
         public abstract override String ToString();
     }
 
@@ -55,7 +55,7 @@ namespace System.Reflection.Runtime.TypeParsing
             return TypeName.ToString() + ((AssemblyName == null) ? "" : ", " + AssemblyName.FullName);
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = null;
             if (AssemblyName == null)
@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.TypeParsing
             return true;
         }
 
-        private Exception UncachedTryResolveCaseSensitive(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, out RuntimeType result)
+        private Exception UncachedTryResolveCaseSensitive(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, out RuntimeTypeInfo result)
         {
             result = null;
 
@@ -193,7 +193,7 @@ namespace System.Reflection.Runtime.TypeParsing
             }
         }
 
-        private Exception TryResolveCaseInsensitive(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, out RuntimeType result)
+        private Exception TryResolveCaseInsensitive(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, out RuntimeTypeInfo result)
         {
             String fullName = this.ToString().ToLower();
 
@@ -314,17 +314,17 @@ namespace System.Reflection.Runtime.TypeParsing
             return DeclaringType + "+" + Name;
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = null;
-            RuntimeType declaringType;
+            RuntimeTypeInfo declaringType;
             Exception typeLoadException = DeclaringType.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out declaringType);
             if (typeLoadException != null)
                 return typeLoadException;
             TypeInfo nestedTypeInfo = FindDeclaredNestedType(declaringType.GetTypeInfo(), Name, ignoreCase);
             if (nestedTypeInfo == null)
                 return new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, declaringType.FullName + "+" + Name, currentAssembly.FullName));
-            result = (RuntimeType)(nestedTypeInfo.AsType());
+            result = nestedTypeInfo.GetRuntimeTypeInfo<RuntimeTypeInfo>();
             return null;
         }
 
@@ -384,14 +384,14 @@ namespace System.Reflection.Runtime.TypeParsing
             return ElementTypeName + "[]";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = null;
-            RuntimeType elementType;
+            RuntimeTypeInfo elementType;
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetArrayType(elementType);
+            result = elementType.GetArrayType();
             return null;
         }
     }
@@ -412,14 +412,14 @@ namespace System.Reflection.Runtime.TypeParsing
             return ElementTypeName + "[" + (_rank == 1 ? "*" : new String(',', _rank - 1)) + "]";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = null;
-            RuntimeType elementType;
+            RuntimeTypeInfo elementType;
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetMultiDimArrayType(elementType, _rank);
+            result = elementType.GetMultiDimArrayType(_rank);
             return null;
         }
 
@@ -441,14 +441,14 @@ namespace System.Reflection.Runtime.TypeParsing
             return ElementTypeName + "&";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = null;
-            RuntimeType elementType;
+            RuntimeTypeInfo elementType;
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetByRefType(elementType);
+            result = elementType.GetByRefType();
             return null;
         }
     }
@@ -468,14 +468,14 @@ namespace System.Reflection.Runtime.TypeParsing
             return ElementTypeName + "*";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = null;
-            RuntimeType elementType;
+            RuntimeTypeInfo elementType;
             Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
             if (typeLoadException != null)
                 return typeLoadException;
-            result = ReflectionCoreNonPortable.GetPointerType(elementType);
+            result = elementType.GetPointerType();
             return null;
         }
     }
@@ -513,23 +513,23 @@ namespace System.Reflection.Runtime.TypeParsing
             return s;
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
             result = null;
-            RuntimeType genericType;
+            RuntimeTypeInfo genericType;
             Exception typeLoadException = GenericType.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out genericType);
             if (typeLoadException != null)
                 return typeLoadException;
-            LowLevelList<RuntimeType> genericTypeArguments = new LowLevelList<RuntimeType>();
+            LowLevelList<RuntimeTypeInfo> genericTypeArguments = new LowLevelList<RuntimeTypeInfo>();
             foreach (TypeName genericTypeArgumentName in GenericArguments)
             {
-                RuntimeType genericTypeArgument;
+                RuntimeTypeInfo genericTypeArgument;
                 typeLoadException = genericTypeArgumentName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out genericTypeArgument);
                 if (typeLoadException != null)
                     return typeLoadException;
                 genericTypeArguments.Add(genericTypeArgument);
             }
-            result = ReflectionCoreNonPortable.GetConstructedGenericType(genericType, genericTypeArguments.ToArray());
+            result = genericType.GetConstructedGenericType(genericTypeArguments.ToArray());
             return null;
         }
     }

@@ -7,6 +7,7 @@ using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Runtime.CompilerServices;
+using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.ParameterInfos;
 
@@ -96,7 +97,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_DeclaringType(this);
 #endif
 
-                return this.RuntimeDeclaringType;
+                return this.RuntimeDeclaringType.CastToType();
             }
         }
 
@@ -104,13 +105,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Type[] GetGenericArguments()
         {
-            RuntimeType[] genericArgumentsOrParameters = this.RuntimeGenericArgumentsOrParameters;
-            if (genericArgumentsOrParameters.Length == 0)
-                return Array.Empty<Type>();
-            Type[] result = new Type[genericArgumentsOrParameters.Length];
-            for (int i = 0; i < genericArgumentsOrParameters.Length; i++)
-                result[i] = genericArgumentsOrParameters[i];
-            return result;
+            return RuntimeGenericArgumentsOrParameters.CloneTypeArray();
         }
 
         public abstract override MethodInfo GetGenericMethodDefinition();
@@ -215,7 +210,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return this.RuntimeDeclaringType;
+                return this.RuntimeDeclaringType.CastToType();
             }
         }
 
@@ -227,7 +222,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal abstract RuntimeType RuntimeDeclaringType
+        internal abstract RuntimeTypeInfo RuntimeDeclaringType
         {
             get;
         }
@@ -242,7 +237,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         // The non-public version of MethodInfo.GetGenericArguments() (does not array-copy and has a more truthful name.)
         //
-        internal abstract RuntimeType[] RuntimeGenericArgumentsOrParameters { get; }
+        internal abstract RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get; }
 
         //
         // The non-public version of MethodInfo.GetParameters() (does not array-copy.) 

@@ -73,14 +73,14 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         // Compute the ToString() value in a pay-to-play-safe way.
-        public String ComputeToString(MethodBase contextMethod, RuntimeType[] methodTypeArguments)
+        public String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
         {
             RuntimeParameterInfo[] runtimeParametersAndReturn = this.GetRuntimeParametersAndReturn(contextMethod, methodTypeArguments);
             return ComputeToString(contextMethod, methodTypeArguments, runtimeParametersAndReturn);
         }
 
 
-        public static String ComputeToString(MethodBase contextMethod, RuntimeType[] methodTypeArguments, RuntimeParameterInfo[] runtimeParametersAndReturn)
+        public static String ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] runtimeParametersAndReturn)
         {
             StringBuilder sb = new StringBuilder(30);
             sb.Append(runtimeParametersAndReturn[0].ParameterTypeString);
@@ -90,7 +90,7 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 String sep = "";
                 sb.Append('[');
-                foreach (RuntimeType methodTypeArgument in methodTypeArguments)
+                foreach (RuntimeTypeInfo methodTypeArgument in methodTypeArguments)
                 {
                     sb.Append(sep);
                     sep = ",";
@@ -153,11 +153,11 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public RuntimeType DeclaringType
+        public RuntimeTypeInfo DeclaringType
         {
             get
             {
-                return _contextTypeInfo.RuntimeType;
+                return _contextTypeInfo;
             }
         }
 
@@ -195,7 +195,7 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         // Does not array-copy.
         //
-        public RuntimeMethodParameterInfo[] GetRuntimeParametersAndReturn(MethodBase contextMethod, RuntimeType[] methodTypeArguments)
+        public RuntimeMethodParameterInfo[] GetRuntimeParametersAndReturn(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
         {
             MetadataReader reader = _reader;
             TypeContext typeContext = contextMethod.DeclaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>().TypeContext;

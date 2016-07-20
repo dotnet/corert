@@ -6,6 +6,7 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
+using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.ParameterInfos;
 
@@ -21,7 +22,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     internal sealed partial class RuntimeConstructedGenericMethodInfo : RuntimeMethodInfo
     {
-        private RuntimeConstructedGenericMethodInfo(RuntimeNamedMethodInfo genericMethodDefinition, RuntimeType[] genericTypeArguments)
+        private RuntimeConstructedGenericMethodInfo(RuntimeNamedMethodInfo genericMethodDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
             _genericMethodDefinition = genericMethodDefinition;
             _genericTypeArguments = genericTypeArguments;
@@ -133,7 +134,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeType RuntimeDeclaringType
+        internal sealed override RuntimeTypeInfo RuntimeDeclaringType
         {
             get
             {
@@ -141,7 +142,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal sealed override RuntimeType[] RuntimeGenericArgumentsOrParameters
+        internal sealed override RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters
         {
             get
             {
@@ -163,7 +164,7 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         private RuntimeNamedMethodInfo _genericMethodDefinition;
-        private RuntimeType[] _genericTypeArguments;
+        private RuntimeTypeInfo[] _genericTypeArguments;
     }
 }
 

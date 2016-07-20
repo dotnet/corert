@@ -664,7 +664,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsNullableFlag;
             }
 
-            if (factory.TypeInitializationManager.HasLazyStaticConstructor(_type))
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
             {
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }

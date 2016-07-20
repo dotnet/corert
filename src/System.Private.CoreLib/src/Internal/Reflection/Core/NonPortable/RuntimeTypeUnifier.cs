@@ -39,62 +39,12 @@ namespace Internal.Reflection.Core.NonPortable
     internal static partial class RuntimeTypeUnifier
     {
         //
-        // Retrieves the unified Type object for an "array of elementType."
-        //
-        public static RuntimeType GetArrayType(RuntimeType elementType)
-        {
-            return TypeTableForArrayTypes.Table.GetOrAdd(elementType).WithDebugName();
-        }
-
-        //
-        // Retrieves the unified Type object for a multidimensional "array of elementType."
-        //
-        public static RuntimeType GetMultiDimArrayType(RuntimeType elementType, int rank)
-        {
-            TypeTableForMultiDimArrayTypes table = TypeTableForMultiDimArrayTypesTable.Table.GetOrAdd(rank);
-            return table.GetOrAdd(elementType).WithDebugName();
-        }
-
-        //
-        // Retrieves the unified Type object for an "byref of targetType."
-        //
-        public static RuntimeType GetByRefType(RuntimeType targetType)
-        {
-            return TypeTableForByRefTypes.Table.GetOrAdd(targetType).WithDebugName();
-        }
-
-        //
-        // Retrieves the unified Type object for an "pointer of targetType."
-        //
-        public static RuntimeType GetPointerType(RuntimeType targetType)
-        {
-            return TypeTableForPointerTypes.Table.GetOrAdd(targetType).WithDebugName();
-        }
-
-        //
         // Retrieves the unified Type object for given RuntimeTypeHandle (this is basically the Type.GetTypeFromHandle() api without the input validation.)
         //
-        public static RuntimeType GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
+        public static Type GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
         {
-            return RuntimeTypeHandleToRuntimeTypeCache.Table.GetOrAdd(new RawRuntimeTypeHandleKey(runtimeTypeHandle)).WithDebugName();
-        }
-
-        //
-        // Retrieves the unified Type object for a constructed generic type.
-        //
-        public static RuntimeType GetConstructedGenericType(RuntimeType genericTypeDefinition, RuntimeType[] genericTypeArguments)
-        {
-            ConstructedGenericTypeKey key = new ConstructedGenericTypeKey(genericTypeDefinition, genericTypeArguments);
-            RuntimeType result = TypeTableForConstructedGenericTypes.Table.GetOrAdd(key).WithDebugName();
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static RuntimeType WithDebugName(this RuntimeType runtimeType)
-        {
-            if (runtimeType != null)
-                runtimeType.EstablishDebugName();
-            return runtimeType;
+            Type type = RuntimeTypeHandleToTypeCache.Table.GetOrAdd(new RawRuntimeTypeHandleKey(runtimeTypeHandle));
+            return type;
         }
     }
 }
