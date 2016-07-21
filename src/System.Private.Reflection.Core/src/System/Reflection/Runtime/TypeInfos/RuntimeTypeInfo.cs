@@ -8,7 +8,6 @@ using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Runtime.CompilerServices;
 using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.MethodInfos;
 using global::System.Reflection.Runtime.FieldInfos;
 using global::System.Reflection.Runtime.PropertyInfos;
@@ -17,11 +16,15 @@ using global::System.Reflection.Runtime.EventInfos;
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 using global::Internal.Reflection.Extensibility;
 using global::Internal.Reflection.Tracing;
 
 using global::Internal.Metadata.NativeFormat;
+
+using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
+using RuntimeType = Internal.Reflection.Core.NonPortable.RuntimeType;
+using RuntimeTypeTemporary = System.Reflection.Runtime.Types.RuntimeTypeTemporary;
+
 
 namespace System.Reflection.Runtime.TypeInfos
 {

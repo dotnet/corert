@@ -7,8 +7,8 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using Internal.Reflection.Core.NonPortable;
 
+using RuntimeType = Internal.Reflection.Core.NonPortable.RuntimeType;
 
 namespace System.Reflection.Runtime.Types
 {

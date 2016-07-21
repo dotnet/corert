@@ -8,14 +8,12 @@ using global::System.Diagnostics;
 using global::System.Collections;
 using global::System.Collections.Generic;
 using global::System.Collections.ObjectModel;
-using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 using global::Internal.Reflection.Extensibility;
 using global::Internal.Metadata.NativeFormat;
 

@@ -11,7 +11,6 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 

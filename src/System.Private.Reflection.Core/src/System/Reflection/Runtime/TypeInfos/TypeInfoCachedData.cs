@@ -6,15 +6,12 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.Dispensers;
 using global::System.Reflection.Runtime.FieldInfos;
 using global::System.Reflection.Runtime.EventInfos;
 using global::System.Reflection.Runtime.MethodInfos;
 using global::System.Reflection.Runtime.PropertyInfos;
-
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 

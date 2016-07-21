@@ -13,7 +13,6 @@ using global::System.Reflection.Runtime.TypeParsing;
 
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Runtime.Augments;
 

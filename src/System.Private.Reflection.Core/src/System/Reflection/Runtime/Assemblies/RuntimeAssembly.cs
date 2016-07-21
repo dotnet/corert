@@ -16,7 +16,6 @@ using global::System.Collections.Generic;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 using global::Internal.Reflection.Extensibility;
 using global::Internal.Metadata.NativeFormat;
 
