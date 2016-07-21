@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
 using Internal.NativeFormat;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -61,10 +64,17 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            // We might be able to compute the type flags for some masks, but for some this will always throw (e.g.
-            // Category and GenericVariance should always throw). If you hit an exception, it means you need a
-            // special case for IsSignatureVariable.
-            throw new NotImplementedException();
+            TypeFlags flags = 0;
+
+            if ((mask & TypeFlags.CategoryMask) != 0)
+            {
+                flags |= TypeFlags.SignatureTypeVariable;
+            }
+
+            // Not all masks are valid to ask on signature variables. If you hit this assert, you might
+            // need to special case, or you have a bug.
+            Debug.Assert((flags & mask) != 0);
+            return flags;
         }
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
@@ -99,10 +109,17 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            // We might be able to compute the type flags for some masks, but for some this will always throw (e.g.
-            // Category and GenericVariance should always throw). If you hit an exception, it means you need a
-            // special case for IsSignatureVariable.
-            throw new NotImplementedException();
+            TypeFlags flags = 0;
+
+            if ((mask & TypeFlags.CategoryMask) != 0)
+            {
+                flags |= TypeFlags.SignatureMethodVariable;
+            }
+
+            // Not all masks are valid to ask on signature variables. If you hit this assert, you might
+            // need to special case, or you have a bug.
+            Debug.Assert((flags & mask) != 0);
+            return flags;
         }
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)

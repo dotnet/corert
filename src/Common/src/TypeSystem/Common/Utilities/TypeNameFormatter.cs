@@ -16,18 +16,6 @@ namespace Internal.TypeSystem
     {
         public void AppendName(StringBuilder sb, TypeDesc type)
         {
-            if (type.GetType() == typeof(SignatureTypeVariable))
-            {
-                AppendName(sb, (SignatureTypeVariable)type);
-                return;
-            }
-
-            if (type.GetType() == typeof(SignatureMethodVariable))
-            {
-                AppendName(sb, (SignatureMethodVariable)type);
-                return;
-            }
-
             switch (type.Category)
             {
                 case TypeFlags.Array:
@@ -42,6 +30,12 @@ namespace Internal.TypeSystem
                     return;
                 case TypeFlags.GenericParameter:
                     AppendName(sb, (GenericParameterDesc)type);
+                    return;
+                case TypeFlags.SignatureTypeVariable:
+                    AppendName(sb, (SignatureTypeVariable)type);
+                    return;
+                case TypeFlags.SignatureMethodVariable:
+                    AppendName(sb, (SignatureMethodVariable)type);
                     return;
                 default:
                     Debug.Assert(type.IsDefType);
