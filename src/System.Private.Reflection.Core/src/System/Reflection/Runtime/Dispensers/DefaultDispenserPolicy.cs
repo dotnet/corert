@@ -19,26 +19,6 @@ namespace System.Reflection.Runtime.Dispensers
 #else
             switch (scenario)
             {
-                // Metadata typedef handle to RuntimeTypeInfo
-                case DispenserScenario.TypeDef_TypeInfo:
-                    return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;
-
-                // TypeInfo + Name to EventInfo
-                case DispenserScenario.TypeInfoAndName_EventInfo:
-                    return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;
-
-                // TypeInfo + Name to FieldInfo
-                case DispenserScenario.TypeInfoAndName_FieldInfo:
-                    return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;
-
-                // TypeInfo + Name to MethodInfo
-                case DispenserScenario.TypeInfoAndName_MethodInfo:
-                    return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;
-
-                // TypeInfo + Name to PropertyInfo
-                case DispenserScenario.TypeInfoAndName_PropertyInfo:
-                    return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;
-
                 // Assembly + NamespaceTypeName to Type
                 case DispenserScenario.AssemblyAndNamespaceTypeName_Type:
                     return DispenserAlgorithm.ReuseAsLongAsValueIsAlive;

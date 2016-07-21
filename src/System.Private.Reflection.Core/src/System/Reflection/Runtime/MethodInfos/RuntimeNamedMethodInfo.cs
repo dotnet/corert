@@ -123,7 +123,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (!typeArguments[i].IsRuntimeImplemented())
                     throw new ArgumentException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]), "typeArguments[" + i + "]"); // Not a runtime type.
 
-                genericTypeArguments[i] = typeArguments[i].GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                genericTypeArguments[i] = typeArguments[i].CastToRuntimeTypeInfo();
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
@@ -228,7 +228,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     if (DeclaringType.IsConstructedGenericType)
                     {
                         // Desktop compat: Constructed generic types and their generic type definitions share the same Type objects for method generic parameters. 
-                        RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
+                        RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToRuntimeNamedTypeInfo();
                         owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(MethodHandle, genericTypeDefinition, genericTypeDefinition);
                     }
                     RuntimeTypeInfo genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);

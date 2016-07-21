@@ -26,9 +26,6 @@
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <DefineConstants>CORERT;REAL_MULTIDIM_ARRAYS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
-    <DefineConstants>ENABLE_REFLECTION_TRACE;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
     <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
@@ -88,10 +85,6 @@
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
-    <Compile Include="Internal\Runtime\Augments\ReflectionTraceCallbacks.cs" />
-    <Compile Include="Internal\Runtime\Augments\ReflectionTraceConnector.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplementedType.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RawRuntimeTypeHandleKey.cs" />
@@ -100,11 +93,6 @@
     <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
     <Compile Include="Internal\Reflection\MetadataTransformedAttribute.cs" />
     <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
-    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
-    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.Events.cs" />
-    <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Internal.cs" />
   </ItemGroup>
   <!--ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs" >

@@ -69,7 +69,6 @@
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeNamespaceInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\General\RuntimeTypeExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
     <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />

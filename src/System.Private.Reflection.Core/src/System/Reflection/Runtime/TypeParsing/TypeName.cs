@@ -324,7 +324,7 @@ namespace System.Reflection.Runtime.TypeParsing
             TypeInfo nestedTypeInfo = FindDeclaredNestedType(declaringType, Name, ignoreCase);
             if (nestedTypeInfo == null)
                 return new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, declaringType.FullName + "+" + Name, currentAssembly.FullName));
-            result = nestedTypeInfo.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            result = nestedTypeInfo.CastToRuntimeTypeInfo();
             return null;
         }
 

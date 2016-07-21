@@ -176,7 +176,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     return constraints[i];
                 }
 
-                RuntimeNamedTypeInfo objectTypeInfo = this.ReflectionDomain.FoundationTypes.SystemObject.GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
+                RuntimeNamedTypeInfo objectTypeInfo = this.ReflectionDomain.FoundationTypes.SystemObject.CastToRuntimeNamedTypeInfo();
                 return new QTypeDefRefOrSpec(objectTypeInfo.Reader, objectTypeInfo.TypeDefinitionHandle);
             }
         }
