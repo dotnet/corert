@@ -222,7 +222,7 @@ namespace Internal.IL.Stubs
             ILLocalVariable delegateToCallLocal = emitter.NewLocal(SystemDelegateType);
 
             ILLocalVariable returnValueLocal = 0;
-            if (Signature.ReturnType.IsSignatureVariable || !Signature.ReturnType.IsVoid)
+            if (!Signature.ReturnType.IsVoid)
             {
                 returnValueLocal = emitter.NewLocal(Signature.ReturnType);
             }
@@ -543,7 +543,7 @@ namespace Internal.IL.Stubs
 
             callSiteSetupStream.Emit(ILOpcode.calli, emitter.NewToken(targetMethodSig));
 
-            if (!delegateSignature.ReturnType.IsSignatureVariable && delegateSignature.ReturnType.IsVoid)
+            if (delegateSignature.ReturnType.IsVoid)
             {
                 callSiteSetupStream.Emit(ILOpcode.ldnull);
             }
