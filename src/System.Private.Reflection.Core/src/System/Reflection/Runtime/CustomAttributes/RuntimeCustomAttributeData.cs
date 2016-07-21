@@ -116,7 +116,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             if (argumentType == null)
                 return cat.ToString();
 
-            FoundationTypes foundationTypes = argumentType.GetRuntimeTypeInfo<RuntimeTypeInfo>().ReflectionDomain.FoundationTypes;
+            FoundationTypes foundationTypes = argumentType.CastToRuntimeTypeInfo().ReflectionDomain.FoundationTypes;
             Object value = cat.Value;
             TypeInfo argumentTypeInfo = argumentType.GetTypeInfo();
             if (argumentTypeInfo.IsEnum)

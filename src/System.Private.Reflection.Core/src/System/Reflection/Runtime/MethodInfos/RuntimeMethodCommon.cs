@@ -198,7 +198,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public RuntimeMethodParameterInfo[] GetRuntimeParametersAndReturn(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
         {
             MetadataReader reader = _reader;
-            TypeContext typeContext = contextMethod.DeclaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>().TypeContext;
+            TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
             ReflectionDomain reflectionDomain = _definingTypeInfo.ReflectionDomain;
             MethodSignature methodSignature = this.MethodSignature;

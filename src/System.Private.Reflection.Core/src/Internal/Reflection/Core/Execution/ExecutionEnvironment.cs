@@ -141,7 +141,7 @@ namespace Internal.Reflection.Core.Execution
             }
             MethodInvoker methodInvoker = TryGetMethodInvoker(reader, typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodInvoker == null)
-                throw declaringType.GetReflectionDomain().CreateNonInvokabilityException(exceptionPertainant);
+                throw declaringType.ReflectionDomain.CreateNonInvokabilityException(exceptionPertainant);
             return methodInvoker;
         }
     }

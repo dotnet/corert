@@ -107,8 +107,7 @@ namespace Internal.Reflection.Core.Execution
         //
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            RuntimeTypeInfo declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
-            RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
             if (methodHandle.IsConstructor(reader))
@@ -141,7 +140,7 @@ namespace Internal.Reflection.Core.Execution
         {
             if (!attributeType.IsRuntimeImplemented())
                 throw new InvalidOperationException();
-            RuntimeTypeInfo runtimeAttributeType = attributeType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeAttributeType = attributeType.CastToRuntimeTypeInfo();
             return new RuntimePseudoCustomAttributeData(runtimeAttributeType, constructorArguments, namedArguments);
         }
 
@@ -222,7 +221,7 @@ namespace Internal.Reflection.Core.Execution
             if (!type.IsRuntimeImplemented())
                 return default(RuntimeTypeHandle);
 
-            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType == null)
                 return default(RuntimeTypeHandle);
             return runtimeType.InternalTypeHandleIfAvailable;
@@ -233,7 +232,7 @@ namespace Internal.Reflection.Core.Execution
             if (!type.IsRuntimeImplemented())
                 return false;
 
-            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (null == runtimeType.InternalNameIfAvailable)
                 return false;
 

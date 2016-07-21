@@ -427,7 +427,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (typeInfo == null || !typeInfo.CastToType().IsRuntimeImplemented())
                 return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
 
-            RuntimeTypeInfo fromTypeInfo = typeInfo.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo fromTypeInfo = typeInfo.CastToRuntimeTypeInfo();
             if (toTypeInfo.ReflectionDomain != fromTypeInfo.ReflectionDomain)
                 return false;
 

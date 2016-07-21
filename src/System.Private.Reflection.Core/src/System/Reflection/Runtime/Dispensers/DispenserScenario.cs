@@ -12,21 +12,6 @@ namespace System.Reflection.Runtime.Dispensers
     //
     internal enum DispenserScenario
     {
-        // Metadata typedef handle to RuntimeTypeInfo
-        TypeDef_TypeInfo,
-
-        // TypeInfo + Name to EventInfo
-        TypeInfoAndName_EventInfo,
-
-        // TypeInfo + Name to FieldInfo
-        TypeInfoAndName_FieldInfo,
-
-        // TypeInfo + Name to MethodInfo
-        TypeInfoAndName_MethodInfo,
-
-        // TypeInfo + Name to PropertyInfo
-        TypeInfoAndName_PropertyInfo,
-
         // Assembly + NamespaceTypeName to Type
         AssemblyAndNamespaceTypeName_Type,
 

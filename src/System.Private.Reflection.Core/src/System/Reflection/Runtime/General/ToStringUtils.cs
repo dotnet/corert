@@ -64,7 +64,7 @@ namespace System.Reflection.Runtime.General
                 // Though we wrap this in a try-catch as a failsafe, this code must still strive to avoid triggering MissingMetadata exceptions
                 // (non-error exceptions are very annoying when debugging.)
 
-                ReflectionDomain reflectionDomain = runtimeType.GetReflectionDomain();
+                ReflectionDomain reflectionDomain = runtimeType.ReflectionDomain;
 
                 // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
                 // ToString() which contains namespace.

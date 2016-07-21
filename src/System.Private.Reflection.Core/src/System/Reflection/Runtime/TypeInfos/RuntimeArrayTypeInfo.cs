@@ -64,8 +64,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
                 RuntimeTypeInfo arrayType = this;
-                RuntimeTypeInfo countType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>();
-                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                RuntimeTypeInfo countType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
+                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.CastToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] ctorParametersAndReturn = new RuntimeTypeInfo[rank + 1];
@@ -189,10 +189,10 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
-                RuntimeTypeInfo indexType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                RuntimeTypeInfo indexType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
                 RuntimeTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
-                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.CastToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] getParametersAndReturn = new RuntimeTypeInfo[rank + 1];
@@ -319,14 +319,14 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Arrays don't have a true typedef behind them but for the purpose of reporting base classes and interfaces, we can create a pretender.
         //
-        private RuntimeNamedTypeInfo TypeDefInfoProjectionForArrays
+        private RuntimeTypeInfo TypeDefInfoProjectionForArrays
         {
             get
             {
                 Debug.Assert(this.ReflectionDomain == ReflectionCoreExecution.ExecutionDomain, "User Reflectable Domains not yet implemented.");
                 RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
                 RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle();
-                return projectionRuntimeTypeForArrays.GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
+                return projectionRuntimeTypeForArrays;
             }
         }
 

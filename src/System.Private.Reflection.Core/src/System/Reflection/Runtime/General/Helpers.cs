@@ -60,7 +60,7 @@ namespace System.Reflection.Runtime.General
             RuntimeTypeInfo[] typeInfos = new RuntimeTypeInfo[count];
             for (int i = 0; i < count; i++)
             {
-                typeInfos[i] = types[i].GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                typeInfos[i] = types[i].CastToRuntimeTypeInfo();
             }
             return typeInfos;
         }
@@ -68,6 +68,34 @@ namespace System.Reflection.Runtime.General
         public static string LastResortString(this RuntimeTypeHandle typeHandle)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetLastResortString(typeHandle);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RuntimeNamedTypeInfo CastToRuntimeNamedTypeInfo(this Type type)
+        {
+            Debug.Assert(type != null);
+            TypeInfo typeInfo = type.GetTypeInfo();
+            Debug.Assert(typeInfo is RuntimeNamedTypeInfo);
+            return (RuntimeNamedTypeInfo)typeInfo;
+        }
+
+        // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo and Type are the same instance, this implementation should just cast and not call GetTypeInfo().
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RuntimeTypeInfo CastToRuntimeTypeInfo(this Type type)
+        {
+            Debug.Assert(type != null);
+            TypeInfo typeInfo = type.GetTypeInfo();
+            Debug.Assert(typeInfo is RuntimeTypeInfo);
+            return (RuntimeTypeInfo)typeInfo;
+        }
+
+        // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo and Type are the same instance, this overload should away.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RuntimeTypeInfo CastToRuntimeTypeInfo(this TypeInfo type)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(type is RuntimeTypeInfo);
+            return (RuntimeTypeInfo)type;
         }
 
         // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo derives from Type, this helper becomes a NOP and will go away entirely.
