@@ -10,8 +10,6 @@ using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core.NonPortable;
-
 using OpenMethodInvoker = global::System.Reflection.Runtime.MethodInfos.OpenMethodInvoker;
 
 namespace Internal.Reflection.Core.Execution

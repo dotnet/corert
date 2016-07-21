@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 
-using Internal.Reflection.Core.NonPortable;
+using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.General

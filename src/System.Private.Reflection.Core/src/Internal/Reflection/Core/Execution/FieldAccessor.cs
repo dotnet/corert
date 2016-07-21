@@ -6,8 +6,6 @@ using global::System;
 using global::System.Collections.Generic;
 using global::Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core.NonPortable;
-
 namespace Internal.Reflection.Core.Execution
 {
     //

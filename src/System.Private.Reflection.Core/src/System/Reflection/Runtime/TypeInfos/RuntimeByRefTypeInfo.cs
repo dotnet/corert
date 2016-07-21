@@ -7,7 +7,6 @@ using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Reflection.Runtime.General;
-using global::Internal.Reflection.Core.NonPortable;
 
 namespace System.Reflection.Runtime.TypeInfos
 {

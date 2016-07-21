@@ -9,7 +9,6 @@ using global::System.Collections.Generic;
 using global::System.Reflection.Runtime.General;
 
 using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 

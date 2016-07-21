@@ -14,7 +14,6 @@ using global::System.Reflection.Runtime.MethodInfos;
 
 using global::Internal.Reflection.Augments;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 

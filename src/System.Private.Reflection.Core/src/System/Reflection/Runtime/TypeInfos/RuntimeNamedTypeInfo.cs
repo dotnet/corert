@@ -8,7 +8,6 @@ using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Collections.Concurrent;
-using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.Assemblies;
@@ -16,7 +15,6 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Reflection.Tracing;
 

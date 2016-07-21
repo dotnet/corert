@@ -10,8 +10,6 @@ using global::System.Reflection.Runtime.PropertyInfos;
 
 using global::Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core.NonPortable;
-
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //

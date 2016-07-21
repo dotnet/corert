@@ -6,8 +6,6 @@ using global::System;
 using global::System.Diagnostics;
 using global::System.Reflection.Runtime.TypeInfos;
 
-using global::Internal.Reflection.Core.NonPortable;
-
 namespace System.Reflection.Runtime.Dispensers
 {
     //

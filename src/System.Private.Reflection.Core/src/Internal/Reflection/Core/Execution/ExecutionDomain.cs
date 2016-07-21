@@ -6,7 +6,6 @@ using global::System;
 using global::System.Reflection;
 using global::System.Collections.Generic;
 using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.Assemblies;
 using global::System.Reflection.Runtime.MethodInfos;
@@ -16,7 +15,6 @@ using global::Internal.Metadata.NativeFormat;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 
 namespace Internal.Reflection.Core.Execution
 {

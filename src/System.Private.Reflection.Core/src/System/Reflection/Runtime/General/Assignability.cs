@@ -5,7 +5,6 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
-using System.Reflection.Runtime.Types;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core;

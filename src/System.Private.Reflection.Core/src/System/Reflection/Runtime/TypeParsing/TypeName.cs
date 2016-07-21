@@ -15,7 +15,8 @@ using global::System.Reflection.Runtime.Assemblies;
 using global::Internal.Metadata.NativeFormat;
 
 using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
+
+using ReflectionCoreNonPortable = Internal.Reflection.Core.NonPortable.ReflectionCoreNonPortable;
 
 namespace System.Reflection.Runtime.TypeParsing
 {

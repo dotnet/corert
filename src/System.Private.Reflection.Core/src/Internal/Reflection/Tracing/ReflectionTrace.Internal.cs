@@ -15,8 +15,6 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core.NonPortable;
-
 namespace Internal.Reflection.Tracing
 {
     public static partial class ReflectionTrace
