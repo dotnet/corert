@@ -540,7 +540,7 @@ namespace ILCompiler.CppCodeGen
             }
 
             _emittedTypes = new HashSet<TypeDesc>();
-            foreach (var t in _cppSignatureNames.Keys)
+            foreach (var t in _cppSignatureNames.Keys.ToList())
             {
                 if (t.IsByRef || t.IsPointer)
                     continue;
@@ -1152,15 +1152,14 @@ namespace ILCompiler.CppCodeGen
             CppGenerationBuffer methodTables = new CppGenerationBuffer();
             foreach (var node in nodes)
             {
-
-                if (node.Marked && node is EETypeNode)
+               
+                if (node is EETypeNode)
                 {
                     if (((ObjectNode)node).ShouldSkipEmittingObjectNode(factory))
                         continue;
 
                     EETypeNode typeNode = (EETypeNode)node;
                     TypeDesc nodeType = typeNode.Type;
-
                     if (_emittedTypes == null)
                     {
                         _emittedTypes = new HashSet<TypeDesc>();
@@ -1261,7 +1260,11 @@ namespace ILCompiler.CppCodeGen
                         {
                             foreach (var m in methodList)
                             {
-                                OutputMethod(typeDefinitions, m);
+                                if (factory.MethodEntrypoint(m) as CppMethodCodeNode == null)
+                                    continue;
+
+                                if (((CppMethodCodeNode) factory.MethodEntrypoint(m)).Marked)
+                                    OutputMethod(typeDefinitions, m);
                             }
                         }
                     }
@@ -1293,7 +1296,7 @@ namespace ILCompiler.CppCodeGen
             var sb = new CppGenerationBuffer();
             BuildMethodLists(nodes);
 
-            //ExpandTypes();
+            ExpandTypes();
 
             Out.WriteLine("#include \"common.h\"");
             Out.WriteLine("#include \"CppCodeGen.h\"");
@@ -1321,8 +1324,9 @@ namespace ILCompiler.CppCodeGen
             //Out.Write(sb.ToString());
             //sb.Clear();
 
-            //foreach (var t in _cppSignatureNames.Keys)
+            //foreach (var t in _cppSignatureNames.Keys.ToList())
             //{
+
             //    // TODO: Enable once the dependencies are tracked for arrays
             //    // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
             //    if (!t.IsPointer && !t.IsByRef)

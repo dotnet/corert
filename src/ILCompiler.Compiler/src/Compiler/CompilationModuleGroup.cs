@@ -81,6 +81,10 @@ namespace ILCompiler
             {
                 rootProvider.AddCompilationRoot(stringType, "String type is always generated");
             }
+
+            var coreLib = _typeSystemContext.GetModuleForSimpleName("System.Private.Corelib");
+            var eeTypeType = coreLib.GetKnownType("Internal.Runtime", "EEType");
+            rootProvider.AddCompilationRoot(eeTypeType, "EEType is always generated");
         }
 
         private void AddReflectionInitializationCode(IRootingServiceProvider rootProvider)
