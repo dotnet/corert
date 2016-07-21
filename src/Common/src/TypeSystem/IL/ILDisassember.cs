@@ -571,8 +571,7 @@ namespace Internal.IL
             }
             public void AppendNameForNamespaceTypeWithoutAliases(StringBuilder sb, DefType type)
             {
-                Debug.Assert(type is MetadataType);
-                ModuleDesc owningModule = ((MetadataType)type).Module;
+                ModuleDesc owningModule = (type as MetadataType)?.Module;
                 if (owningModule != null && owningModule != _thisModule)
                 {
                     Debug.Assert(owningModule is IAssemblyDesc);
