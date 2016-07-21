@@ -2390,15 +2390,25 @@ namespace Internal.JitInterface
                 pResult.codePointerOrStubLookup.constLookup.addr =
                     (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(directMethod));
 
-                if (targetMethod.RequiresInstMethodDescArg())
+                if (pResult.exactContextNeedsRuntimeLookup)
                 {
-                    pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
-                    pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetMethodGenericDictionary(concreteMethod));
+                    // Nothing to do... The generic handle lookup gets embedded in to the codegen
+                    // during the jitting of the call.
+                    // (Note: The generic lookup in R2R is performed by a call to a helper at runtime, not by
+                    // codegen emitted at crossgen time)
                 }
-                else if (targetMethod.RequiresInstMethodTableArg())
+                else
                 {
-                    pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
-                    pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetTypeGenericDictionary(concreteMethod.OwningType));
+                    if (targetMethod.RequiresInstMethodDescArg())
+                    {
+                        pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
+                        pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetMethodGenericDictionary(concreteMethod));
+                    }
+                    else if (targetMethod.RequiresInstMethodTableArg())
+                    {
+                        pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
+                        pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetTypeGenericDictionary(concreteMethod.OwningType));
+                    }
                 }
 
                 pResult.nullInstanceCheck = resolvedCallVirt;
