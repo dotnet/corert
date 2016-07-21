@@ -179,7 +179,7 @@ namespace ILCompiler
 
         static public string GetCastingHelperNameForType(TypeDesc type, bool throwing)
         {
-            if (type.IsSzArray)
+            if (type.IsArray)
                 return throwing ? "RhTypeCast_CheckCastArray" : "RhTypeCast_IsInstanceOfArray";
 
             if (type.IsInterface)
