@@ -93,14 +93,10 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _property.CustomAttributes))
+                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes))
                     yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
+                    yield return cad;
             }
         }
 
@@ -142,9 +138,6 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetConstantValue(this);
 #endif
-
-            if (!(_definingTypeInfo.ReflectionDomain is ExecutionDomain))
-                throw new NotSupportedException(); // Cannot instantiate a boxed enum on a non-execution domain.
 
             Object defaultValue;
             if (!ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
@@ -240,7 +233,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
                 Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-                return _contextTypeInfo.ReflectionDomain.Resolve(_reader, typeHandle, typeContext).CastToType();
+                return typeHandle.Resolve(_reader, typeContext).CastToType();
             }
         }
 
@@ -293,10 +286,9 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             StringBuilder sb = new StringBuilder(30);
 
-            ReflectionDomain reflectionDomain = _contextTypeInfo.ReflectionDomain;
             TypeContext typeContext = _contextTypeInfo.TypeContext;
             Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-            sb.Append(typeHandle.FormatTypeName(_reader, typeContext, reflectionDomain));
+            sb.Append(typeHandle.FormatTypeName(_reader, typeContext));
             sb.Append(' ');
             sb.Append(this.Name);
             ParameterInfo[] indexParameters = this.GetIndexParameters();

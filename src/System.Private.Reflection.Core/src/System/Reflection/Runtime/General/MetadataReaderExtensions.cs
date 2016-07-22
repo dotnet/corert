@@ -193,15 +193,12 @@ namespace System.Reflection.Runtime.General
             return nameHandle.StringEquals(ConstructorInfo.ConstructorName, reader) || nameHandle.StringEquals(ConstructorInfo.TypeConstructorName, reader);
         }
 
-        private static Exception ParseBoxedEnumConstantValue(this ConstantBoxedEnumValueHandle handle, ReflectionDomain reflectionDomain, MetadataReader reader, out Object value)
+        private static Exception ParseBoxedEnumConstantValue(this ConstantBoxedEnumValueHandle handle, MetadataReader reader, out Object value)
         {
-            if (!(reflectionDomain is Internal.Reflection.Core.Execution.ExecutionDomain))
-                throw new PlatformNotSupportedException(); // Cannot work because boxing enums won't work in non-execution domains.
-
             ConstantBoxedEnumValue record = handle.GetConstantBoxedEnumValue(reader);
 
             Exception exception = null;
-            Type enumType = reflectionDomain.TryResolve(reader, record.Type, new TypeContext(null, null), ref exception).CastToType();
+            Type enumType = record.Type.TryResolve(reader, new TypeContext(null, null), ref exception).CastToType();
             if (enumType == null)
             {
                 value = null;
@@ -297,16 +294,16 @@ namespace System.Reflection.Runtime.General
 
         }
 
-        public static Object ParseConstantValue(this Handle handle, ReflectionDomain reflectionDomain, MetadataReader reader)
+        public static Object ParseConstantValue(this Handle handle, MetadataReader reader)
         {
             Object value;
-            Exception exception = handle.TryParseConstantValue(reflectionDomain, reader, out value);
+            Exception exception = handle.TryParseConstantValue(reader, out value);
             if (exception != null)
                 throw exception;
             return value;
         }
 
-        public static Exception TryParseConstantValue(this Handle handle, ReflectionDomain reflectionDomain, MetadataReader reader, out Object value)
+        public static Exception TryParseConstantValue(this Handle handle, MetadataReader reader, out Object value)
         {
             HandleType handleType = handle.HandleType;
             switch (handleType)
@@ -355,7 +352,7 @@ namespace System.Reflection.Runtime.General
                 case HandleType.TypeSpecification:
                     {
                         Exception exception = null;
-                        Type type = reflectionDomain.TryResolve(reader, handle, new TypeContext(null, null), ref exception).CastToType();
+                        Type type = handle.TryResolve(reader, new TypeContext(null, null), ref exception).CastToType();
                         value = type;
                         return (value == null) ? exception : null;
                     }
@@ -364,12 +361,12 @@ namespace System.Reflection.Runtime.General
                     return null;
                 case HandleType.ConstantBoxedEnumValue:
                     {
-                        return handle.ToConstantBoxedEnumValueHandle(reader).ParseBoxedEnumConstantValue(reflectionDomain, reader, out value);
+                        return handle.ToConstantBoxedEnumValueHandle(reader).ParseBoxedEnumConstantValue(reader, out value);
                     }
                 default:
                     {
                         Exception exception;
-                        value = handle.TryParseConstantArray(reflectionDomain, reader, out exception);
+                        value = handle.TryParseConstantArray(reader, out exception);
                         if (value == null)
                             return exception;
                         return null;
@@ -377,7 +374,7 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public static IEnumerable TryParseConstantArray(this Handle handle, ReflectionDomain reflectionDomain, MetadataReader reader, out Exception exception)
+        public static IEnumerable TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
         {
             exception = null;
 
@@ -429,7 +426,7 @@ namespace System.Reflection.Runtime.General
                         object[] elements = new object[constantHandles.Length];
                         for (int i = 0; i < constantHandles.Length; i++)
                         {
-                            exception = constantHandles[i].TryParseConstantValue(reflectionDomain, reader, out elements[i]);
+                            exception = constantHandles[i].TryParseConstantValue(reader, out elements[i]);
                             if (exception != null)
                                 return null;
                         }

@@ -11,6 +11,7 @@ using global::System.Reflection.Runtime.MethodInfos;
 using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.Reflection.Core;
+using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Reflection.Tracing;
 
@@ -61,7 +62,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
 #endif
 
-                return RuntimeCustomAttributeData.GetCustomAttributes(ReflectionDomain, Reader, _genericParameter.CustomAttributes);
+                return RuntimeCustomAttributeData.GetCustomAttributes(Reader, _genericParameter.CustomAttributes);
             }
         }
 
@@ -174,7 +175,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     return constraints[i];
                 }
 
-                RuntimeNamedTypeInfo objectTypeInfo = this.ReflectionDomain.FoundationTypes.SystemObject.CastToRuntimeNamedTypeInfo();
+                RuntimeNamedTypeInfo objectTypeInfo = ReflectionCoreExecution.ExecutionDomain.FoundationTypes.SystemObject.CastToRuntimeNamedTypeInfo();
                 return new QTypeDefRefOrSpec(objectTypeInfo.Reader, objectTypeInfo.TypeDefinitionHandle);
             }
         }
@@ -226,10 +227,9 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (constraints.Length == 0)
                     return Array.Empty<TypeInfo>();
                 TypeInfo[] constraintInfos = new TypeInfo[constraints.Length];
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 for (int i = 0; i < constraints.Length; i++)
                 {
-                    constraintInfos[i] = reflectionDomain.Resolve(constraints[i].Reader, constraints[i].Handle, TypeContext);
+                    constraintInfos[i] = constraints[i].Handle.Resolve(constraints[i].Reader, TypeContext);
                 }
                 return constraintInfos;
             }

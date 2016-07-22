@@ -65,16 +65,11 @@ namespace System.Reflection.Runtime.FieldInfos
                     ReflectionTrace.FieldInfo_CustomAttributes(this);
 #endif
 
-                ReflectionDomain reflectionDomain = _definingTypeInfo.ReflectionDomain;
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(reflectionDomain, _reader, _field.CustomAttributes);
+                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
+                    yield return cad;
             }
         }
 
@@ -154,7 +149,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             TypeContext typeContext = _contextTypeInfo.TypeContext;
             Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-            return typeHandle.FormatTypeName(_reader, typeContext, _definingTypeInfo.ReflectionDomain) + " " + this.Name;
+            return typeHandle.FormatTypeName(_reader, typeContext) + " " + this.Name;
         }
 
         public sealed override bool Equals(Object obj)
@@ -201,8 +196,6 @@ namespace System.Reflection.Runtime.FieldInfos
                 {
                     if (this.IsLiteral)
                     {
-                        if (!(_definingTypeInfo.ReflectionDomain is ExecutionDomain))
-                            throw new NotSupportedException(); // Cannot instantiate a boxed enum on a non-execution domain.
                         // Legacy: ECMA335 does not require that the metadata literal match the type of the field that declares it.
                         // For desktop compat, we return the metadata literal as is and do not attempt to convert or validate against the Field type.
 
@@ -223,7 +216,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     {
                         _lazyFieldAccessor = fieldAccessor = ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
                         if (fieldAccessor == null)
-                            throw this._definingTypeInfo.ReflectionDomain.CreateNonInvokabilityException(this);
+                            throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(this);
                     }
                 }
                 return fieldAccessor;
@@ -236,7 +229,7 @@ namespace System.Reflection.Runtime.FieldInfos
             {
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
                 Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-                return _definingTypeInfo.ReflectionDomain.Resolve(_reader, typeHandle, typeContext);
+                return typeHandle.Resolve(_reader, typeContext);
             }
         }
 

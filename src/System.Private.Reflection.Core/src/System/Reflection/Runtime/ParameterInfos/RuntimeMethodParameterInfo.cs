@@ -20,10 +20,9 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal abstract class RuntimeMethodParameterInfo : RuntimeParameterInfo
     {
-        protected RuntimeMethodParameterInfo(MethodBase member, int position, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+        protected RuntimeMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
             : base(member, position)
         {
-            _reflectionDomain = reflectionDomain;
             Reader = reader;
             _typeHandle = typeHandle;
             _typeContext = typeContext;
@@ -33,7 +32,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _reflectionDomain.Resolve(this.Reader, _typeHandle, _typeContext).CastToType();
+                return _typeHandle.Resolve(this.Reader, _typeContext).CastToType();
             }
         }
 
@@ -41,14 +40,13 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _typeHandle.FormatTypeName(this.Reader, _typeContext, _reflectionDomain);
+                return _typeHandle.FormatTypeName(this.Reader, _typeContext);
             }
         }
 
         protected MetadataReader Reader { get; private set; }
 
 
-        private ReflectionDomain _reflectionDomain;
         private Handle _typeHandle;
         private TypeContext _typeContext;
     }

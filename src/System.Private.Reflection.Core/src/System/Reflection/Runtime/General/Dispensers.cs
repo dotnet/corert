@@ -37,18 +37,17 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeAssembly : ExtensibleAssembly
     {
-        internal static RuntimeAssembly GetRuntimeAssembly(ReflectionDomain reflectionDomain, RuntimeAssemblyName assemblyRefName)
+        internal static RuntimeAssembly GetRuntimeAssembly(RuntimeAssemblyName assemblyRefName)
         {
             RuntimeAssembly result;
-            Exception assemblyLoadException = TryGetRuntimeAssembly(reflectionDomain, assemblyRefName, out result);
+            Exception assemblyLoadException = TryGetRuntimeAssembly(assemblyRefName, out result);
             if (assemblyLoadException != null)
                 throw assemblyLoadException;
             return result;
         }
 
-        internal static Exception TryGetRuntimeAssembly(ReflectionDomain reflectionDomain, RuntimeAssemblyName assemblyRefName, out RuntimeAssembly result)
+        internal static Exception TryGetRuntimeAssembly(RuntimeAssemblyName assemblyRefName, out RuntimeAssembly result)
         {
-            Debug.Assert(reflectionDomain == ReflectionCoreExecution.ExecutionDomain, "User Reflection Domains not yet implemented.");
             result = _assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
             if (result != null)
                 return null;
@@ -61,8 +60,7 @@ namespace System.Reflection.Runtime.Assemblies
                 DispenserScenario.AssemblyRefName_Assembly,
                 delegate (RuntimeAssemblyName assemblyRefName)
                 {
-                    ReflectionDomain reflectionDomain = ReflectionCoreExecution.ExecutionDomain; //@todo: Need to use the correct reflection domain!
-                    AssemblyBinder binder = reflectionDomain.ReflectionDomainSetup.AssemblyBinder;
+                    AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
                     AssemblyName convertedAssemblyRefName = assemblyRefName.ToAssemblyName();
                     MetadataReader reader;
                     ScopeDefinitionHandle scope;
@@ -70,12 +68,12 @@ namespace System.Reflection.Runtime.Assemblies
                     IEnumerable<QScopeDefinition> overflowScopes;
                     if (!binder.Bind(convertedAssemblyRefName, out reader, out scope, out overflowScopes, out exception))
                         return null;
-                    return GetRuntimeAssembly(reader, scope, overflowScopes, reflectionDomain);
+                    return GetRuntimeAssembly(reader, scope, overflowScopes);
                 }
         );
 
 
-        private static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflows, ReflectionDomain reflectionDomain)
+        private static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflows)
         {
             return _scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope, overflows));
         }
@@ -268,9 +266,9 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
         {
-            return new RuntimeThinMethodParameterInfo(member, position, reflectionDomain, reader, typeHandle, typeContext);
+            return new RuntimeThinMethodParameterInfo(member, position, reader, typeHandle, typeContext);
         }
     }
 
@@ -279,9 +277,9 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static RuntimeFatMethodParameterInfo GetRuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+        internal static RuntimeFatMethodParameterInfo GetRuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
         {
-            return new RuntimeFatMethodParameterInfo(member, methodHandle, position, parameterHandle, reflectionDomain, reader, typeHandle, typeContext);
+            return new RuntimeFatMethodParameterInfo(member, methodHandle, position, parameterHandle, reader, typeHandle, typeContext);
         }
     }
 
@@ -315,15 +313,15 @@ namespace System.Reflection.Runtime.CustomAttributes
     //-----------------------------------------------------------------------------------------------------------
     internal abstract partial class RuntimeCustomAttributeData : ExtensibleCustomAttributeData
     {
-        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(ReflectionDomain reflectionDomain, MetadataReader reader, IEnumerable<CustomAttributeHandle> customAttributeHandles)
+        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, IEnumerable<CustomAttributeHandle> customAttributeHandles)
         {
             foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
-                yield return GetCustomAttributeData(reflectionDomain, reader, customAttributeHandle);
+                yield return GetCustomAttributeData(reader, customAttributeHandle);
         }
 
-        private static CustomAttributeData GetCustomAttributeData(ReflectionDomain reflectionDomain, MetadataReader reader, CustomAttributeHandle customAttributeHandle)
+        private static CustomAttributeData GetCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
         {
-            return new RuntimeNormalCustomAttributeData(reflectionDomain, reader, customAttributeHandle);
+            return new RuntimeNormalCustomAttributeData(reader, customAttributeHandle);
         }
     }
 }
@@ -335,15 +333,15 @@ namespace System.Reflection.Runtime.TypeParsing
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class NamespaceTypeName : NamedTypeName
     {
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
+        public sealed override Exception TryResolve(RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
-            result = _runtimeNamespaceTypeByNameDispenser.GetOrAdd(new NamespaceTypeNameKey(reflectionDomain, currentAssembly, this));
+            result = _runtimeNamespaceTypeByNameDispenser.GetOrAdd(new NamespaceTypeNameKey(currentAssembly, this));
             if (result != null)
                 return null;
             if (!ignoreCase)
                 return new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, this.ToString(), currentAssembly.FullName));
 
-            return TryResolveCaseInsensitive(reflectionDomain, currentAssembly, out result);
+            return TryResolveCaseInsensitive(currentAssembly, out result);
         }
 
         private static Dispenser<NamespaceTypeNameKey, RuntimeTypeInfo> _runtimeNamespaceTypeByNameDispenser =
@@ -352,7 +350,7 @@ namespace System.Reflection.Runtime.TypeParsing
                 delegate (NamespaceTypeNameKey key)
                 {
                     RuntimeTypeInfo result;
-                    Exception typeLoadException = key.NamespaceTypeName.UncachedTryResolveCaseSensitive(key.ReflectionDomain, key.RuntimeAssembly, out result);
+                    Exception typeLoadException = key.NamespaceTypeName.UncachedTryResolveCaseSensitive(key.RuntimeAssembly, out result);
                     if (typeLoadException != null)
                         return null;
                     else
@@ -377,19 +375,10 @@ namespace System.Reflection.Runtime.TypeParsing
         //
         private struct NamespaceTypeNameKey : IEquatable<NamespaceTypeNameKey>
         {
-            public NamespaceTypeNameKey(ReflectionDomain reflectionDomain, RuntimeAssembly runtimeAssembly, NamespaceTypeName namespaceTypeName)
+            public NamespaceTypeNameKey(RuntimeAssembly runtimeAssembly, NamespaceTypeName namespaceTypeName)
             {
-                _reflectionDomain = reflectionDomain;
                 _runtimeAssembly = runtimeAssembly;
                 _namespaceTypeName = namespaceTypeName;
-            }
-
-            public ReflectionDomain ReflectionDomain
-            {
-                get
-                {
-                    return _reflectionDomain;
-                }
             }
 
             public RuntimeAssembly RuntimeAssembly
@@ -437,7 +426,6 @@ namespace System.Reflection.Runtime.TypeParsing
                 return _namespaceTypeName._name.GetHashCode();
             }
 
-            private ReflectionDomain _reflectionDomain;
             private RuntimeAssembly _runtimeAssembly;
             private NamespaceTypeName _namespaceTypeName;
         }

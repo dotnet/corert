@@ -45,15 +45,11 @@ namespace System.Reflection.Runtime.Assemblies
 
                 foreach (QScopeDefinition scope in AllScopes)
                 {
-                    foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(this.ReflectionDomain, scope.Reader, scope.ScopeDefinition.CustomAttributes))
+                    foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.CustomAttributes))
                         yield return cad;
 
-                    ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-                    if (executionDomain != null)
-                    {
-                        foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(scope.Reader, scope.Handle))
-                            yield return cad;
-                    }
+                    foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(scope.Reader, scope.Handle))
+                        yield return cad;
                 }
             }
         }
@@ -89,13 +85,12 @@ namespace System.Reflection.Runtime.Assemblies
                 {
                     MetadataReader reader = scope.Reader;
                     ScopeDefinition scopeDefinition = scope.ScopeDefinition;
-                    ReflectionDomain reflectionDomain = this.ReflectionDomain;
                     IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
                     IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return reflectionDomain.ResolveTypeDefinition(reader, typeDefinitionHandle).CastToType();
+                        yield return typeDefinitionHandle.ResolveTypeDefinition(reader).CastToType();
                 }
             }
         }
@@ -153,26 +148,17 @@ namespace System.Reflection.Runtime.Assemblies
 
         public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
         }
 
         public sealed override String[] GetManifestResourceNames()
         {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceNames(this);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceNames(this);
         }
 
         public sealed override Stream GetManifestResourceStream(String name)
         {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceStream(this, name);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
         }
 
         public sealed override AssemblyName GetName()
@@ -212,7 +198,7 @@ namespace System.Reflection.Runtime.Assemblies
             }
 
             RuntimeTypeInfo result;
-            Exception typeLoadException = assemblyQualifiedTypeName.TypeName.TryResolve(this.ReflectionDomain, this, ignoreCase, out result);
+            Exception typeLoadException = assemblyQualifiedTypeName.TypeName.TryResolve(this, ignoreCase, out result);
             if (typeLoadException != null)
             {
                 if (throwOnError)
@@ -236,14 +222,6 @@ namespace System.Reflection.Runtime.Assemblies
                 {
                     yield return overflowScope;
                 }
-            }
-        }
-
-        internal ReflectionDomain ReflectionDomain
-        {
-            get
-            {
-                return ReflectionCoreExecution.ExecutionDomain;  //@todo: User Reflection Domains not yet supported.
             }
         }
     }

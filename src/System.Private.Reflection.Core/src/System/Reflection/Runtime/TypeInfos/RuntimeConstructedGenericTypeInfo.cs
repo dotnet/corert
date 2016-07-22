@@ -232,7 +232,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 RuntimeTypeInfo genericTypeDefinition = this.GenericTypeDefinitionTypeInfo;
                 RuntimeNamedTypeInfo genericTypeDefinitionNamedTypeInfo = genericTypeDefinition as RuntimeNamedTypeInfo;
                 if (genericTypeDefinitionNamedTypeInfo == null)
-                    throw this.ReflectionDomain.CreateMissingMetadataException(genericTypeDefinition);
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericTypeDefinition);
                 return genericTypeDefinitionNamedTypeInfo;
             }
         }

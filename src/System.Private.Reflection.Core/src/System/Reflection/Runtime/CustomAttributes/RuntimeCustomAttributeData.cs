@@ -13,6 +13,7 @@ using global::System.Reflection.Runtime.TypeInfos;
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Extensibility;
+using global::Internal.Reflection.Core.Execution;
 using global::Internal.Reflection.Tracing;
 using global::Internal.Metadata.NativeFormat;
 
@@ -114,7 +115,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             if (argumentType == null)
                 return cat.ToString();
 
-            FoundationTypes foundationTypes = argumentType.CastToRuntimeTypeInfo().ReflectionDomain.FoundationTypes;
+            FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
             Object value = cat.Value;
             TypeInfo argumentTypeInfo = argumentType.GetTypeInfo();
             if (argumentTypeInfo.IsEnum)
