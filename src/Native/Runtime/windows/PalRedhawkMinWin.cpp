@@ -1381,7 +1381,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
         {
             proc.Number = (BYTE)affinity->Processor;
             success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
-        }
+        }        
     }
 
     return success;
@@ -1564,7 +1564,7 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
 //  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
 bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
 {
-    return false;
+    return !!::GetProcessAffinityMask(GetCurrentProcess(), (PDWORD_PTR)processMask, (PDWORD_PTR)systemMask);
 }
 
 // Get number of processors assigned to the current process
@@ -1749,7 +1749,7 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     stubParam->GCThreadParam = param;
 
     DWORD thread_id;
-    HANDLE gc_thread = ::CreateThread(0, 4096, GCThreadStub, &stubParam, CREATE_SUSPENDED, &thread_id);
+    HANDLE gc_thread = ::CreateThread(0, 4096, GCThreadStub, stubParam.GetValue(), CREATE_SUSPENDED, &thread_id);
 
     if (!gc_thread)
     {
@@ -1759,6 +1759,24 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     stubParam.SuppressRelease();
 
     SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
+
+    if (affinity->Group != GCThreadAffinity::None)
+    {
+        // @TODO: CPUGroupInfo
+
+        // ASSERT(affinity->Processor != GCThreadAffinity::None);
+        // GROUP_AFFINITY ga;
+        // ga.Group = (WORD)affinity->Group;
+        // ga.Reserved[0] = 0;
+        // ga.Reserved[1] = 0;
+        // ga.Reserved[2] = 0;
+        // ga.Mask = (size_t)1 << affinity->Processor;
+        // CPUGroupInfo::SetThreadGroupAffinity(gc_thread, &ga, NULL);
+    }
+    else if (affinity->Processor != GCThreadAffinity::None)
+    {
+        SetThreadAffinityMask(gc_thread, (DWORD_PTR)1 << affinity->Processor);
+    }
 
     ResumeThread(gc_thread);
     CloseHandle(gc_thread);
