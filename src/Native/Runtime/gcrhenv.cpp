@@ -1361,3 +1361,39 @@ HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, __out_z TCHAR * * 
     *outVal = NULL;
     return 0;
 }
+
+bool NumaNodeInfo::CanEnableGCNumaAware() 
+{ 
+    // @TODO: enable NUMA node support
+    return false; 
+}
+
+void NumaNodeInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t * /*group_number*/, uint16_t * /*group_processor_number*/)
+{
+    ASSERT_UNCONDITIONALLY("NYI: NumaNodeInfo::GetGroupForProcessor");
+}
+
+bool NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER /*proc_no*/, uint16_t * /*node_no*/)
+{
+    ASSERT_UNCONDITIONALLY("NYI: NumaNodeInfo::GetNumaProcessorNodeEx");
+    return false;
+}
+
+bool CPUGroupInfo::CanEnableGCCPUGroups()
+{
+    // @TODO: enable CPU group support
+    return false;
+}
+
+uint32_t CPUGroupInfo::GetNumActiveProcessors() 
+{ 
+    // @TODO: enable CPU group support
+    // NOTE: this API shouldn't be called unless CanEnableGCCPUGroups() returns true
+    ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetNumActiveProcessors");
+    return 0;
+}
+
+void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t * /*group_number*/, uint16_t * /*group_processor_number*/)
+{
+    ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
+}

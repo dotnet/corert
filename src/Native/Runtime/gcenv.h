@@ -194,6 +194,9 @@ public:
     // conservatively report an interior reference inside a GC free object or in the non-valid tail of the
     // heap).
     bool    GetGCConservative()             const { return true; }
+
+    bool    GetGCNoAffinitize()             const { return false; }
+    int     GetGCHeapCount()                const { return 0; }
 };
 extern EEConfig* g_pConfig;
 

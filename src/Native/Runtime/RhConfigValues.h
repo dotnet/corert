@@ -18,6 +18,7 @@ RETAIL_CONFIG_VALUE(HeapVerify)
 RETAIL_CONFIG_VALUE(StressLogLevel)
 RETAIL_CONFIG_VALUE(TotalStressLogSize)
 RETAIL_CONFIG_VALUE(DisableBGC)
+RETAIL_CONFIG_VALUE(UseServerGC)
 DEBUG_CONFIG_VALUE(DisallowRuntimeServicesFallback)
 DEBUG_CONFIG_VALUE(GcStressThrottleMode)    // gcstm_TriggerAlways / gcstm_TriggerOnFirstHit / gcstm_TriggerRandom
 DEBUG_CONFIG_VALUE(GcStressFreqCallsite)    // Number of times to force GC out of GcStressFreqDenom (for GCSTM_RANDOM)
