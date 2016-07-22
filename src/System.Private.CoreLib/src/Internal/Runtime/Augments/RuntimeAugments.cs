@@ -849,14 +849,6 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhCallDescrWorker(callDescr);
         }
 
-        [DebuggerStepThrough]
-        /* TEMP workaround due to bug 149078 */
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void CallDescrWorkerNative(IntPtr callDescr)
-        {
-            RuntimeImports.RhCallDescrWorkerNative(callDescr);
-        }
-
         /// <summary>
         /// This method opens a file if it exists. For console apps, ILC will inject a call to
         /// InitializeDesktopSupport in StartupCodeTrigger. This will set up the
@@ -886,10 +878,6 @@ namespace Internal.Runtime.Augments
         internal class RawCalliHelper
         {
             public static unsafe void Call<T>(System.IntPtr pfn, void* arg1, ref T arg2)
-            {
-                // This will be filled in by an IL transform
-            }
-            public static unsafe void Call<T,U>(System.IntPtr pfn, void* arg1, ref T arg2, ref U arg3)
             {
                 // This will be filled in by an IL transform
             }
@@ -925,43 +913,6 @@ namespace Internal.Runtime.Augments
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T>(pfnTargetToInvoke, region, ref context);
-                System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-
-                RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
-            }
-        }
-
-        /// <summary>
-        /// This method creates a conservatively reported region and calls a function 
-        /// while that region is conservatively reported. 
-        /// </summary>
-        /// <param name="cbBuffer">size of buffer to allocated (buffer size described in bytes)</param>
-        /// <param name="pfnTargetToInvoke">function pointer to execute. Must have the calling convention void(void* pBuffer, ref T context)</param>
-        /// <param name="context">context to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
-        /// <param name="context2">context2 to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
-        [DebuggerGuidedStepThroughAttribute]
-        public static void RunFunctionWithConservativelyReportedBuffer<T,U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2)
-        {
-            RuntimeImports.ConservativelyReportedRegionDesc regionDesc = new RuntimeImports.ConservativelyReportedRegionDesc();
-            RunFunctionWithConservativelyReportedBufferInternal(cbBuffer, pfnTargetToInvoke, ref context, ref context2, ref regionDesc);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-        }
-
-        // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
-        // This function must also not make a p/invoke transition, or the fixed statement reporting of the ConservativelyReportedRegionDesc
-        // will be ignored.
-        [DebuggerGuidedStepThroughAttribute]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T,U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
-        {
-            fixed (RuntimeImports.ConservativelyReportedRegionDesc* pRegionDesc = &regionDesc)
-            {
-                int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
-                // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
-                void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
-                RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
-
-                RawCalliHelper.Call<T,U>(pfnTargetToInvoke, region, ref context, ref context2);
                 System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
 
                 RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
