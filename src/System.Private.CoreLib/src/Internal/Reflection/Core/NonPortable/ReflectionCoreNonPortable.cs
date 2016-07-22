@@ -9,7 +9,12 @@ namespace Internal.Reflection.Core.NonPortable
 {
     public static class ReflectionCoreNonPortable
     {
-        public static Type GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
+        public static TypeLoadException CreateTypeLoadException(String message, String typeName)
+        {
+            return new TypeLoadException(message, typeName);
+        }
+
+        internal static Type GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
         {
             return RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(runtimeTypeHandle);
         }
@@ -17,11 +22,6 @@ namespace Internal.Reflection.Core.NonPortable
         internal static Type GetRuntimeTypeForEEType(EETypePtr eeType)
         {
             return RuntimeTypeUnifier.GetTypeForRuntimeTypeHandle(new RuntimeTypeHandle(eeType));
-        }
-
-        public static TypeLoadException CreateTypeLoadException(String message, String typeName)
-        {
-            return new TypeLoadException(message, typeName);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
