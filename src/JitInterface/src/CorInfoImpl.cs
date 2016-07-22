@@ -1242,21 +1242,24 @@ namespace Internal.JitInterface
 
                         object target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         target = ReadyToRunTargetLocator.GetTargetForFixup(target, fixupKind);
+
+                        MethodDesc sharedMethodBeingCompiled = MethodBeingCompiled.GetSharedRuntimeFormMethodTarget();
+
                         if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
                         {
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromThisObjHelper(MethodBeingCompiled.OwningType, fixupKind, target));
+                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromThisObjHelper(sharedMethodBeingCompiled.OwningType, fixupKind, target));
                         }
                         else
                         {
                             object contextSource;
                             if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
                             {
-                                contextSource = MethodBeingCompiled.OwningType;
+                                contextSource = sharedMethodBeingCompiled.OwningType;
                             }
                             else
                             {
                                 Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-                                contextSource = MethodBeingCompiled;
+                                contextSource = sharedMethodBeingCompiled;
                             }
 
                             pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromDictionaryHelper(contextSource, fixupKind, target));
@@ -2175,6 +2178,12 @@ namespace Internal.JitInterface
                 pResult.lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
 
                 MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+
+                // Do not bother computing the runtime lookup if we are inlining. The JIT is going
+                // to abort the inlining attempt anyway.
+                if (contextMethod != MethodBeingCompiled)
+                    return;
+
                 if (contextMethod.RequiresInstMethodDescArg())
                 {
                     pResult.lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
+using System.Diagnostics;
 
-using Debug = System.Diagnostics.Debug;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -16,22 +16,22 @@ namespace ILCompiler.DependencyAnalysis
 
     public partial class ReadyToRunGenericLookupHelperNode : AssemblyStubNode
     {
-        private object _target;
-        private object _context;
-        private ReadyToRunFixupKind _fixupKind;
+        private object _typeOrMethodContext;
         private GenericContextKind _contextKind;
+        DictionaryEntry _target;
 
-        public ReadyToRunGenericLookupHelperNode(object context, GenericContextKind contextKind, ReadyToRunFixupKind fixupKind, object target)
+        public ReadyToRunGenericLookupHelperNode(object context, GenericContextKind contextKind, DictionaryEntry target)
         {
-            Debug.Assert((context is TypeDesc && ((TypeDesc)context).HasInstantiation)
+            Debug.Assert((context is TypeDesc && ((TypeDesc)context).IsRuntimeDeterminedSubtype)
                 || (context is MethodDesc && ((MethodDesc)context).HasInstantiation));
-
             Debug.Assert(contextKind != GenericContextKind.ThisObj || context is TypeDesc);
 
-            _context = context;
+            // If the target is a concrete type, why is it in a dictionary?
+            Debug.Assert(target.IsRuntimeDetermined);
+
+            _typeOrMethodContext = context;
             _contextKind = contextKind;
             _target = target;
-            _fixupKind = fixupKind;
         }
 
         public override string GetName()
@@ -43,24 +43,30 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                string mangledTargetName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target);
+                string mangledTargetName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target.Target);
 
                 string mangledContextName;
-                if (_context is MethodDesc)
-                    mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_context);
+                if (_typeOrMethodContext is MethodDesc)
+                    mangledContextName = NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_typeOrMethodContext);
                 else
-                    mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_context);
+                    mangledContextName = NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_typeOrMethodContext);
 
                 string prefix = _contextKind == GenericContextKind.Dictionary ?
                     "__GenericLookupFromDict_" : "__GenericLookupFromThis_";
 
-                return string.Concat(prefix, mangledContextName, "_", _fixupKind.ToString(), "_", mangledTargetName);
+                return string.Concat(prefix, mangledContextName, "_", _target.FixupKind.ToString(), "_", mangledTargetName);
             }
         }
 
         public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
         {
             return true;
+        }
+
+        protected override void OnMarked(NodeFactory factory)
+        {
+            // When the helper call gets marked, ensure the generic dictionaries will have this.
+            factory.GenericDictionaryLayout(_typeOrMethodContext).EnsureEntry(_target);
         }
     }
 
