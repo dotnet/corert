@@ -24,9 +24,8 @@ namespace System.Reflection.Runtime.CustomAttributes
     //
     internal sealed class RuntimeNormalCustomAttributeData : RuntimeCustomAttributeData
     {
-        internal RuntimeNormalCustomAttributeData(ReflectionDomain reflectionDomain, MetadataReader reader, CustomAttributeHandle customAttributeHandle)
+        internal RuntimeNormalCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
         {
-            _reflectionDomain = reflectionDomain;
             _reader = reader;
             _customAttribute = customAttributeHandle.GetCustomAttribute(reader);
         }
@@ -38,7 +37,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 Type lazyAttributeType = _lazyAttributeType;
                 if (lazyAttributeType == null)
                 {
-                    lazyAttributeType = _lazyAttributeType = _reflectionDomain.Resolve(_reader, _customAttribute.GetAttributeTypeHandle(_reader), new TypeContext(null, null)).CastToType();
+                    lazyAttributeType = _lazyAttributeType = _customAttribute.GetAttributeTypeHandle(_reader).Resolve(_reader, new TypeContext(null, null)).CastToType();
                 }
                 return lazyAttributeType;
             }
@@ -48,7 +47,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-                return _customAttribute.GetAttributeTypeHandle(_reader).FormatTypeName(_reader, new TypeContext(null, null), _reflectionDomain);
+                return _customAttribute.GetAttributeTypeHandle(_reader).FormatTypeName(_reader, new TypeContext(null, null));
             }
         }
 
@@ -97,7 +96,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                             }
                             Handle typeHandle = lazyCtorTypeHandles[index];
                             Exception exception = null;
-                            RuntimeTypeInfo argumentType = _reflectionDomain.TryResolve(_reader, typeHandle, new TypeContext(null, null), ref exception);
+                            RuntimeTypeInfo argumentType = typeHandle.TryResolve(_reader, new TypeContext(null, null), ref exception);
                             if (argumentType == null)
                             {
                                 if (throwIfMissingMetadata)
@@ -177,7 +176,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             else
             {
                 Exception exception = null;
-                argumentType = _reflectionDomain.TryResolve(reader, fixedArgument.Type, new TypeContext(null, null), ref exception);
+                argumentType = fixedArgument.Type.TryResolve(reader, new TypeContext(null, null), ref exception);
                 if (argumentType == null)
                 {
                     if (throwIfMissingMetadata)
@@ -188,7 +187,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
 
             Object value;
-            Exception e = fixedArgument.Value.TryParseConstantValue(_reflectionDomain, reader, out value);
+            Exception e = fixedArgument.Value.TryParseConstantValue(reader, out value);
             if (e != null)
             {
                 if (throwIfMissingMetadata)
@@ -205,11 +204,6 @@ namespace System.Reflection.Runtime.CustomAttributes
         //
         private CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(Object value, Type argumentType)
         {
-            // To support reflection domains other than the execution domain, we'll have to translate argumentType to one of the values off
-            // _reflectionDomain.FoundationTypes rather than using the direct value of value.GetType(). It's unclear how to do this for 
-            // enum types. Cross that bridge if ever get to it. 
-            Debug.Assert(_reflectionDomain is ExecutionDomain);
-
             if (argumentType.Equals(typeof(Object)))
             {
                 // If the declared attribute type is System.Object, we must report the type based on the runtime value.
@@ -241,7 +235,6 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
         }
 
-        private ReflectionDomain _reflectionDomain;
         private MetadataReader _reader;
         private CustomAttribute _customAttribute;
 

@@ -47,7 +47,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 ScopeDefinitionHandle scopeDefinitionHandle = NamespaceChain.DefiningScope;
                 RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
 
-                return RuntimeAssembly.GetRuntimeAssembly(this.ReflectionDomain, runtimeAssemblyName);
+                return RuntimeAssembly.GetRuntimeAssembly(runtimeAssemblyName);
             }
         }
 
@@ -77,16 +77,12 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
 #endif
 
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.ReflectionDomain, _reader, _typeDefinition.CustomAttributes);
+                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _typeDefinitionHandle))
                 {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _typeDefinitionHandle))
-                    {
-                        yield return cad;
-                    }
+                    yield return cad;
                 }
             }
         }
@@ -137,7 +133,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         if (fahEnumerator.MoveNext())
                             continue;
                         FixedArgument guidStringArgument = guidStringArgumentHandle.GetFixedArgument(_reader);
-                        String guidString = guidStringArgument.Value.ParseConstantValue(this.ReflectionDomain, _reader) as String;
+                        String guidString = guidStringArgument.Value.ParseConstantValue(_reader) as String;
                         if (guidString == null)
                             continue;
                         return new Guid(guidString);
@@ -280,7 +276,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
                 if (!enclosingTypeDefHandle.IsNull(_reader))
                 {
-                    declaringType = ReflectionDomain.ResolveTypeDefinition(_reader, enclosingTypeDefHandle);
+                    declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
                 }
                 return declaringType.CastToType();
             }

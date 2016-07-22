@@ -60,8 +60,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 bool multiDim = this.InternalIsMultiDimArray;
                 int rank = this.GetArrayRank();
 
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
+                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
                 RuntimeTypeInfo arrayType = this;
                 RuntimeTypeInfo countType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
                 RuntimeTypeInfo voidType = foundationTypes.SystemVoid.CastToRuntimeTypeInfo();
@@ -186,8 +185,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 int rank = this.GetArrayRank();
 
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
+                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
                 RuntimeTypeInfo indexType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
                 RuntimeTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
@@ -322,7 +320,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                Debug.Assert(this.ReflectionDomain == ReflectionCoreExecution.ExecutionDomain, "User Reflectable Domains not yet implemented.");
                 RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
                 RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle();
                 return projectionRuntimeTypeForArrays;

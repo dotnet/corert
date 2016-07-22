@@ -119,7 +119,6 @@
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
     <Compile Include="Internal\Reflection\Core\FoundationTypes.cs" />
-    <Compile Include="Internal\Reflection\Core\ReflectionDomain.cs" />
     <Compile Include="Internal\Reflection\Core\ReflectionDomainSetup.cs" />
   </ItemGroup>
   <ItemGroup>

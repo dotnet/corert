@@ -79,14 +79,6 @@ namespace System.Reflection.Runtime.ParameterInfos
         // "ParameterType.ToString()".
         internal abstract String ParameterTypeString { get; }
 
-        protected ReflectionDomain ReflectionDomain
-        {
-            get
-            {
-                return ReflectionCoreExecution.ExecutionDomain; //@TODO: User Reflection Domains not yet supported.
-            }
-        }
-
         private MemberInfo _member;
         private int _position;
     }

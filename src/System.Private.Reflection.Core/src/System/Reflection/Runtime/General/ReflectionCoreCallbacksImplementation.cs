@@ -45,7 +45,7 @@ namespace System.Reflection.Runtime.General
         {
             if (refName == null)
                 throw new ArgumentNullException("assemblyRef");
-            return RuntimeAssembly.GetRuntimeAssembly(ReflectionCoreExecution.ExecutionDomain, refName.ToRuntimeAssemblyName());
+            return RuntimeAssembly.GetRuntimeAssembly(refName.ToRuntimeAssemblyName());
         }
 
         //

@@ -250,9 +250,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(multiDim || rank == 1);
 
-            if (!(elementType.ReflectionDomain is ExecutionDomain))
-                return default(RuntimeTypeHandle);
-
             RuntimeTypeHandle elementTypeHandle = elementType.InternalTypeHandleIfAvailable;
             if (elementTypeHandle.IsNull())
                 return default(RuntimeTypeHandle);
@@ -327,7 +324,7 @@ namespace System.Reflection.Runtime.TypeInfos
             // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
             // type would be an open type.
             if (typeHandle.IsNull() && !elementType.ContainsGenericParameters)
-                throw elementType.ReflectionDomain.CreateMissingArrayTypeException(elementType.AsType(), multiDim, rank);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType.AsType(), multiDim, rank);
         }
     }
 
@@ -370,9 +367,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo elementType)
         {
-            if (!(elementType.ReflectionDomain is ExecutionDomain))
-                return default(RuntimeTypeHandle);
-
             RuntimeTypeHandle elementTypeHandle = elementType.InternalTypeHandleIfAvailable;
             if (elementTypeHandle.IsNull())
                 return default(RuntimeTypeHandle);
@@ -411,9 +405,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
-            if (!(genericTypeDefinition.ReflectionDomain is ExecutionDomain))
-                return default(RuntimeTypeHandle);
-
             RuntimeTypeHandle genericTypeDefinitionHandle = genericTypeDefinition.InternalTypeHandleIfAvailable;
             if (genericTypeDefinitionHandle.IsNull())
                 return default(RuntimeTypeHandle);
@@ -454,7 +445,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
                 // type would be an open type.
                 if (key.TypeHandle.IsNull() && !atLeastOneOpenType)
-                    throw key.GenericTypeDefinition.ReflectionDomain.CreateMissingConstructedGenericTypeException(key.GenericTypeDefinition.AsType(), key.GenericTypeArguments.CloneTypeArray());
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingConstructedGenericTypeException(key.GenericTypeDefinition.AsType(), key.GenericTypeArguments.CloneTypeArray());
 
                 return new RuntimeConstructedGenericTypeInfo(key);
             }
