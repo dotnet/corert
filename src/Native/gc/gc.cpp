@@ -5187,7 +5187,7 @@ void set_thread_affinity_mask_for_heap(int heap_number, GCThreadAffinity* affini
         }
     }
 }
-#endif // !FEATURE_CORECLR
+#endif // !FEATURE_PAL
 
 bool gc_heap::create_gc_thread ()
 {
@@ -17781,7 +17781,7 @@ gc_heap::mark_steal()
                     if (((size_t)o > 4) && !partial_object_p (o))
                     {
                         //this is a normal object, not a partial mark tuple
-                        //success = (FastInterlockCompareExchangePointer (&ref_mark_stack (hp, level), 0, o)==o);
+                        //success = (Interlocked::CompareExchangePointer (&ref_mark_stack (hp, level), 0, o)==o);
                         success = (Interlocked::CompareExchangePointer (&ref_mark_stack (hp, level), (uint8_t*)4, o)==o);
 #ifdef SNOOP_STATS
                         snoop_stat.interlocked_count++;
