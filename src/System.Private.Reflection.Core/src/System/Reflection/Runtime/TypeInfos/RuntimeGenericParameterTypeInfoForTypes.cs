@@ -6,7 +6,6 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Reflection.Runtime.Types;
 using System.Reflection.Runtime.General;
 
 
@@ -18,7 +17,7 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal sealed partial class RuntimeGenericParameterTypeInfoForTypes : RuntimeGenericParameterTypeInfo
     {
-        private RuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeNamedTypeInfo declaringRuntimeNamedTypeInfo)
+        private RuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeInfo declaringRuntimeNamedTypeInfo)
            : base(reader, genericParameterHandle)
         {
             DeclaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
@@ -52,7 +51,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal RuntimeNamedTypeInfo DeclaringRuntimeNamedTypeInfo { get; }
+        internal RuntimeTypeInfo DeclaringRuntimeNamedTypeInfo { get; }
     }
 }
 

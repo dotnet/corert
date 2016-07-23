@@ -11,7 +11,6 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 using global::Internal.Reflection.Extensibility;
 
 using global::Internal.Metadata.NativeFormat;
@@ -79,14 +78,6 @@ namespace System.Reflection.Runtime.ParameterInfos
         // Gets the ToString() output of ParameterType in a pay-to-play-safe way: Other Reflection ToString() methods should always use this rather than
         // "ParameterType.ToString()".
         internal abstract String ParameterTypeString { get; }
-
-        protected ReflectionDomain ReflectionDomain
-        {
-            get
-            {
-                return ReflectionCoreExecution.ExecutionDomain; //@TODO: User Reflection Domains not yet supported.
-            }
-        }
 
         private MemberInfo _member;
         private int _position;

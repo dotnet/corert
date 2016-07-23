@@ -11,7 +11,6 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -22,8 +21,8 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reflectionDomain, reader, typeHandle, typeContext)
+        private RuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+            : base(member, position, reader, typeHandle, typeContext)
         {
             _methodHandle = methodHandle;
             _parameterHandle = parameterHandle;
@@ -42,17 +41,12 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(reflectionDomain, this.Reader, _parameter.CustomAttributes);
+                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = reflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    MethodHandle declaringMethodHandle = _methodHandle;
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(this.Reader, _parameterHandle, declaringMethodHandle))
-                        yield return cad;
-                }
+                MethodHandle declaringMethodHandle = _methodHandle;
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(this.Reader, _parameterHandle, declaringMethodHandle))
+                    yield return cad;
             }
         }
 
@@ -87,9 +81,6 @@ namespace System.Reflection.Runtime.ParameterInfos
                 Tuple<bool, Object> defaultValueInfo = _lazyDefaultValueInfo;
                 if (defaultValueInfo == null)
                 {
-                    if (!(this.ReflectionDomain is ExecutionDomain))
-                        throw new NotSupportedException();
-
                     Object defaultValue;
                     bool hasDefaultValue = ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
                         this.Reader,

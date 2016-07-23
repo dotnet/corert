@@ -11,8 +11,6 @@ using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 
 using global::Internal.Reflection.Tracing;
-using global::Internal.Reflection.Core.NonPortable;
-
 
 namespace System.Reflection.Runtime.TypeInfos
 {

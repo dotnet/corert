@@ -9,7 +9,6 @@ using global::System.Collections.Generic;
 using global::System.Reflection.Runtime.General;
 
 using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -21,8 +20,8 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeThinMethodParameterInfo(MethodBase member, int position, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reflectionDomain, reader, typeHandle, typeContext)
+        private RuntimeThinMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+            : base(member, position, reader, typeHandle, typeContext)
         {
         }
 

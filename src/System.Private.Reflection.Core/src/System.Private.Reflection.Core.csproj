@@ -69,7 +69,6 @@
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeNamespaceInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\General\RuntimeTypeExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
     <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
@@ -120,7 +119,6 @@
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
     <Compile Include="Internal\Reflection\Core\FoundationTypes.cs" />
-    <Compile Include="Internal\Reflection\Core\ReflectionDomain.cs" />
     <Compile Include="Internal\Reflection\Core\ReflectionDomainSetup.cs" />
   </ItemGroup>
   <ItemGroup>

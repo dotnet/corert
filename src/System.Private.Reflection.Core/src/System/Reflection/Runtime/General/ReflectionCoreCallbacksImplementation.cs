@@ -14,7 +14,6 @@ using global::System.Reflection.Runtime.MethodInfos;
 
 using global::Internal.Reflection.Augments;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -46,7 +45,7 @@ namespace System.Reflection.Runtime.General
         {
             if (refName == null)
                 throw new ArgumentNullException("assemblyRef");
-            return RuntimeAssembly.GetRuntimeAssembly(ReflectionCoreExecution.ExecutionDomain, refName.ToRuntimeAssemblyName());
+            return RuntimeAssembly.GetRuntimeAssembly(refName.ToRuntimeAssemblyName());
         }
 
         //
@@ -156,8 +155,7 @@ namespace System.Reflection.Runtime.General
 
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
-            RuntimeTypeInfo declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
-            RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
             return RuntimeFieldInfo.GetRuntimeFieldInfo(fieldHandle, definingTypeInfo, contextTypeInfo);

@@ -10,8 +10,6 @@ using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core.NonPortable;
-
 using OpenMethodInvoker = global::System.Reflection.Runtime.MethodInfos.OpenMethodInvoker;
 
 namespace Internal.Reflection.Core.Execution
@@ -124,11 +122,11 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         internal MethodInvoker GetMethodInvoker(MetadataReader reader, RuntimeTypeInfo declaringType, MethodHandle methodHandle, RuntimeTypeInfo[] genericMethodTypeArguments, MemberInfo exceptionPertainant)
         {
-            if (declaringType.InternalIsOpen)
+            if (declaringType.ContainsGenericParameters)
                 return new OpenMethodInvoker();
             for (int i = 0; i < genericMethodTypeArguments.Length; i++)
             {
-                if (genericMethodTypeArguments[i].InternalIsOpen)
+                if (genericMethodTypeArguments[i].ContainsGenericParameters)
                     return new OpenMethodInvoker();
             }
 
@@ -141,7 +139,7 @@ namespace Internal.Reflection.Core.Execution
             }
             MethodInvoker methodInvoker = TryGetMethodInvoker(reader, typeDefinitionHandle, methodHandle, genericMethodTypeArgumentHandles);
             if (methodInvoker == null)
-                throw declaringType.GetReflectionDomain().CreateNonInvokabilityException(exceptionPertainant);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(exceptionPertainant);
             return methodInvoker;
         }
     }

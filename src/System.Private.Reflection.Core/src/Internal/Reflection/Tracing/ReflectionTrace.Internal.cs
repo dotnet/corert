@@ -15,8 +15,6 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core.NonPortable;
-
 namespace Internal.Reflection.Tracing
 {
     public static partial class ReflectionTrace
@@ -148,7 +146,7 @@ namespace Internal.Reflection.Tracing
             if (!type.IsRuntimeImplemented())
                 return null;
 
-            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType.HasElementType)
             {
                 String elementTypeName = runtimeType.InternalRuntimeElementType.CastToType().NonQualifiedTypeName();
@@ -233,7 +231,7 @@ namespace Internal.Reflection.Tracing
             if (!type.IsRuntimeImplemented())
                 return null;
 
-            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType == null)
                 return null;
             String nonqualifiedTypeName = runtimeType.CastToType().NonQualifiedTypeName();
@@ -250,7 +248,7 @@ namespace Internal.Reflection.Tracing
             if (!type.IsRuntimeImplemented())
                 return null;
 
-            RuntimeTypeInfo runtimeTypeInfo = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeTypeInfo = type.CastToRuntimeTypeInfo();
             if (runtimeTypeInfo is RuntimeNoMetadataNamedTypeInfo)
                 return null;
             return runtimeTypeInfo.Assembly.NameString();

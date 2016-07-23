@@ -6,15 +6,14 @@ using global::System;
 using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.General;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.Assemblies;
 using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core.NonPortable;
 using global::Internal.Reflection.Tracing;
+using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -36,7 +35,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -44,7 +43,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -60,7 +59,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -68,7 +67,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -80,7 +79,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_FullName(this);
 #endif
-                throw ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -88,7 +87,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -108,7 +107,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_Namespace(this);
 #endif
-                throw ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -140,7 +139,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -148,7 +147,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -162,7 +161,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -178,7 +177,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -189,7 +188,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -201,7 +200,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -212,7 +211,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                throw this.ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 

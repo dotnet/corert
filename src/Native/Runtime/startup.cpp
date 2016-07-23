@@ -87,8 +87,13 @@ bool InitDLL(HANDLE hPalInstance)
 
     // @TODO: currently we're always forcing a workstation GC.
     // @TODO: GC per-instance vs per-DLL state separation
-    if (!RedhawkGCInterface::InitializeSubsystems(RedhawkGCInterface::GCType_Workstation))
+    RedhawkGCInterface::GCType gcType = g_pRhConfig->GetUseServerGC()
+        ? RedhawkGCInterface::GCType_Server
+        : RedhawkGCInterface::GCType_Workstation;
+
+    if (!RedhawkGCInterface::InitializeSubsystems(gcType))
         return false;
+
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
 #ifdef STRESS_LOG

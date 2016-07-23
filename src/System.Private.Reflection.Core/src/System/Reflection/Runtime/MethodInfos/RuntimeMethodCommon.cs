@@ -14,7 +14,6 @@ using global::System.Reflection.Runtime.CustomAttributes;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -141,15 +140,11 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _method.CustomAttributes);
+                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _method.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = this.DefiningTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _methodHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _methodHandle, _definingTypeInfo.TypeDefinitionHandle))
+                    yield return cad;
             }
         }
 
@@ -198,9 +193,8 @@ namespace System.Reflection.Runtime.MethodInfos
         public RuntimeMethodParameterInfo[] GetRuntimeParametersAndReturn(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments)
         {
             MetadataReader reader = _reader;
-            TypeContext typeContext = contextMethod.DeclaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>().TypeContext;
+            TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
-            ReflectionDomain reflectionDomain = _definingTypeInfo.ReflectionDomain;
             MethodSignature methodSignature = this.MethodSignature;
             LowLevelList<Handle> typeSignatures = new LowLevelList<Handle>(10);
             typeSignatures.Add(methodSignature.ReturnType.GetReturnTypeSignature(_reader).Type);
@@ -221,7 +215,6 @@ namespace System.Reflection.Runtime.MethodInfos
                         _methodHandle,
                         index - 1,
                         parameterHandle,
-                        reflectionDomain,
                         reader,
                         typeSignatures[index],
                         typeContext);
@@ -234,7 +227,6 @@ namespace System.Reflection.Runtime.MethodInfos
                         RuntimeThinMethodParameterInfo.GetRuntimeThinMethodParameterInfo(
                             contextMethod,
                             i - 1,
-                        reflectionDomain,
                         reader,
                         typeSignatures[i],
                         typeContext);

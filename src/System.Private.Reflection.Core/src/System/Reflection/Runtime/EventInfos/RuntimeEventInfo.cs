@@ -101,14 +101,10 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _event.CustomAttributes))
+                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes))
                     yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _eventHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _eventHandle, _definingTypeInfo.TypeDefinitionHandle))
+                    yield return cad;
             }
         }
 
@@ -148,7 +144,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _definingTypeInfo.ReflectionDomain.Resolve(_reader, _event.Type, _contextTypeInfo.TypeContext).CastToType();
+                return _event.Type.Resolve(_reader, _contextTypeInfo.TypeContext).CastToType();
             }
         }
 

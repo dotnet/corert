@@ -8,14 +8,13 @@ using global::System.Diagnostics;
 using global::System.Collections.Generic;
 
 using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Types;
 using global::System.Reflection.Runtime.TypeInfos;
 using global::System.Reflection.Runtime.Assemblies;
 using global::System.Reflection.Runtime.TypeParsing;
 
 using global::Internal.LowLevelLinq;
 using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
+using global::Internal.Reflection.Core.Execution;
 
 using global::Internal.Metadata.NativeFormat;
 
@@ -29,7 +28,7 @@ namespace System.Reflection.Runtime.General
         //
         // The Project N version takes a raw metadata handle rather than a completed type so that it remains robust in the face of missing metadata.
         //
-        public static String FormatTypeName(this Handle typeDefRefOrSpecHandle, MetadataReader reader, TypeContext typeContext, ReflectionDomain reflectionDomain)
+        public static String FormatTypeName(this Handle typeDefRefOrSpecHandle, MetadataReader reader, TypeContext typeContext)
         {
             try
             {
@@ -37,7 +36,7 @@ namespace System.Reflection.Runtime.General
                 // (non-error exceptions are very annoying when debugging.)
 
                 Exception exception = null;
-                RuntimeTypeInfo runtimeType = reflectionDomain.TryResolve(reader, typeDefRefOrSpecHandle, typeContext, ref exception);
+                RuntimeTypeInfo runtimeType = typeDefRefOrSpecHandle.TryResolve(reader, typeContext, ref exception);
                 if (runtimeType == null)
                     return UnavailableType;
 
@@ -64,8 +63,6 @@ namespace System.Reflection.Runtime.General
                 // Though we wrap this in a try-catch as a failsafe, this code must still strive to avoid triggering MissingMetadata exceptions
                 // (non-error exceptions are very annoying when debugging.)
 
-                ReflectionDomain reflectionDomain = runtimeType.GetReflectionDomain();
-
                 // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
                 // ToString() which contains namespace.
                 RuntimeTypeInfo rootElementType = runtimeType;
@@ -79,11 +76,11 @@ namespace System.Reflection.Runtime.General
 
                 // Legacy: why removing "System"? Is it just because C# has keywords for these types?
                 // If so why don't we change it to lower case to match the C# keyword casing?
-                FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
+                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
                 String typeName = runtimeType.ToString();
                 if (typeName.StartsWith("System."))
                 {
-                    foreach (Type pt in reflectionDomain.PrimitiveTypes)
+                    foreach (Type pt in ReflectionCoreExecution.ExecutionDomain.PrimitiveTypes)
                     {
                         if (pt.Equals(rootElementType) || rootElementType.Equals(foundationTypes.SystemVoid))
                         {
