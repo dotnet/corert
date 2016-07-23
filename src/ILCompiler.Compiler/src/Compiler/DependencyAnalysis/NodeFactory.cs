@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -176,6 +176,14 @@ namespace ILCompiler.DependencyAnalysis
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
+
+            _dependencyOnlyMethods = new NodeCache<MethodDesc, DependencyOnlyMethodNode>(method =>
+            {
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                Debug.Assert(canonMethod != method);
+
+                return new DependencyOnlyMethodNode(method, (DependencyNodeCore<NodeFactory>)MethodEntrypoint(canonMethod));
+            });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
             {
@@ -466,6 +474,13 @@ namespace ILCompiler.DependencyAnalysis
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" }
         };
+
+        private NodeCache<MethodDesc, DependencyOnlyMethodNode> _dependencyOnlyMethods;
+
+        public DependencyOnlyMethodNode DependencyOnlyMethod(MethodDesc method)
+        {
+            return _dependencyOnlyMethods.GetOrAdd(method);
+        }
 
         private ISymbolNode[] _helperEntrypointSymbols;
 

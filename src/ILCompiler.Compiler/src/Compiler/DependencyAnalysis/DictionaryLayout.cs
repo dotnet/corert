@@ -18,10 +18,6 @@ namespace ILCompiler.DependencyAnalysis
         private HashSet<DictionaryEntry> _entries = new HashSet<DictionaryEntry>();
         private DictionaryEntry[] _layout;
 
-#if DEBUG
-        private bool _slotsCommited;
-#endif
-
         public DictionaryLayout(object owningMethodOrType)
         {
             _owningMethodOrType = owningMethodOrType;
@@ -60,22 +56,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EnsureEntry(DictionaryEntry entry)
         {
-#if DEBUG
-            Debug.Assert(!_slotsCommited);
-#endif
-
-            // If the entry is the same for all instantiations, why are we putting it in a dictionary?
-            Debug.Assert(entry.IsRuntimeDetermined);
+            Debug.Assert(_layout == null, "Trying to add entry but layout already computed");
+            Debug.Assert(entry.IsRuntimeDetermined, "Adding a concrete entry to a dictionary");
 
             _entries.Add(entry);
         }
 
         private void ComputeLayout()
         {
-#if DEBUG
-            _slotsCommited = true;
-#endif
-            
             // TODO: deterministic ordering
 
             DictionaryEntry[] layout = new DictionaryEntry[_entries.Count];

@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
 
             AddrMode loadEntry = new AddrMode(
                 encoder.TargetRegister.Arg0, null, dictionarySlot * factory.Target.PointerSize, 0, AddrModeSize.Int64);
-            encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadEntry);
+            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadEntry);
             encoder.EmitRET();
         }
     }

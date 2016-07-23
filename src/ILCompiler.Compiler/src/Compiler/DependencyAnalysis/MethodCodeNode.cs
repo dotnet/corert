@@ -22,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
 
+        private object[] _additionalDependencies;
+
         public MethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
@@ -32,6 +34,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_methodCode == null);
             _methodCode = data;
+        }
+
+        public void SetAdditionalDependencies(object[] dependencies)
+        {
+            Debug.Assert(_additionalDependencies == null);
+            _additionalDependencies = dependencies;
         }
 
         public MethodDesc Method
@@ -103,6 +111,17 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (Relocation reloc in _ehInfo.Relocs)
                 {
                     dependencies.Add(reloc.Target, "reloc");
+                }
+            }
+
+            if (_additionalDependencies != null)
+            {
+                if (dependencies == null)
+                    dependencies = new DependencyList();
+
+                foreach (var additionalDependency in _additionalDependencies)
+                {
+                    dependencies.Add(additionalDependency, "additional dependency");
                 }
             }
 

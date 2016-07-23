@@ -20,10 +20,15 @@ namespace ILCompiler.DependencyAnalysis
         private GenericContextKind _contextKind;
         DictionaryEntry _target;
 
+        public DictionaryEntry Target => _target;
+
         public ReadyToRunGenericLookupHelperNode(object context, GenericContextKind contextKind, DictionaryEntry target)
         {
-            Debug.Assert((context is TypeDesc && ((TypeDesc)context).IsRuntimeDeterminedSubtype)
-                || (context is MethodDesc && ((MethodDesc)context).HasInstantiation));
+            Debug.Assert((
+                context is TypeDesc &&
+                    ((TypeDesc)context).IsCanonicalSubtype(CanonicalFormKind.Any))
+                || (context is MethodDesc &&
+                    ((MethodDesc)context).HasInstantiation && ((MethodDesc)context).IsCanonicalMethod(CanonicalFormKind.Any)));
             Debug.Assert(contextKind != GenericContextKind.ThisObj || context is TypeDesc);
 
             // If the target is a concrete type, why is it in a dictionary?
@@ -58,14 +63,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool ShouldShareNodeAcrossModules(NodeFactory factory) => true;
 
         protected override void OnMarked(NodeFactory factory)
         {
-            // When the helper call gets marked, ensure the generic dictionaries will have this.
+            // When the helper call gets marked, ensure the generic dictionaries will have the entry it's referring to.
             factory.GenericDictionaryLayout(_typeOrMethodContext).EnsureEntry(_target);
         }
     }

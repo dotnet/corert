@@ -270,6 +270,7 @@ namespace Internal.JitInterface
                                                        new ISymbolNode[] { _methodCodeNode });
 
             _methodCodeNode.SetCode(objectData);
+            _methodCodeNode.SetAdditionalDependencies(_nonRelocDependencies.ToArray());
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
             if (_ehClauses != null)
@@ -330,6 +331,8 @@ namespace Internal.JitInterface
 
             _roData = null;
             _roDataBlob = null;
+
+            _nonRelocDependencies = new ArrayBuilder<object>();
 
             _relocs = new ArrayBuilder<Relocation>();
 
@@ -1243,23 +1246,21 @@ namespace Internal.JitInterface
                         object target = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         target = ReadyToRunTargetLocator.GetTargetForFixup(target, fixupKind);
 
-                        MethodDesc sharedMethodBeingCompiled = MethodBeingCompiled.GetSharedRuntimeFormMethodTarget();
-
                         if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ)
                         {
-                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromThisObjHelper(sharedMethodBeingCompiled.OwningType, fixupKind, target));
+                            pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromThisObjHelper(MethodBeingCompiled.OwningType, fixupKind, target));
                         }
                         else
                         {
                             object contextSource;
                             if (pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM)
                             {
-                                contextSource = sharedMethodBeingCompiled.OwningType;
+                                contextSource = MethodBeingCompiled.OwningType;
                             }
                             else
                             {
                                 Debug.Assert(pGenericLookupKind.runtimeLookupKind == CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM);
-                                contextSource = sharedMethodBeingCompiled;
+                                contextSource = MethodBeingCompiled;
                             }
 
                             pLookup.addr = (void*)ObjectToHandle(_compilation.NodeFactory.ReadyToRunGenericLookupFromDictionaryHelper(contextSource, fixupKind, target));
@@ -2410,11 +2411,13 @@ namespace Internal.JitInterface
                 {
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
+                        _nonRelocDependencies.Add(_compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
                         pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetMethodGenericDictionary(concreteMethod));
                     }
                     else if (targetMethod.RequiresInstMethodTableArg())
                     {
+                        _nonRelocDependencies.Add(_compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
                         pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetTypeGenericDictionary(concreteMethod.OwningType));
                     }
@@ -2545,6 +2548,8 @@ namespace Internal.JitInterface
 
         private byte[] _roData;
         private BlobNode _roDataBlob;
+
+        private ArrayBuilder<object> _nonRelocDependencies;
 
         private int _numFrameInfos;
         private int _usedFrameInfos;
