@@ -1323,12 +1323,14 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 
 #ifndef RUNTIME_SERVICES_ONLY
 
-static LARGE_INTEGER performanceFrequency;
+static LARGE_INTEGER g_performanceFrequency;
 
 // Initialize the interface implementation
+// Return:
+//  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
-    if (!::QueryPerformanceFrequency(&performanceFrequency))
+    if (!::QueryPerformanceFrequency(&g_performanceFrequency))
     {
         return false;
     }
@@ -1643,9 +1645,12 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
     return memStatus.ullTotalPhys;
 }
 
-// Get global memory status
+// Get memory status
 // Parameters:
-//  ms - pointer to the structure that will be filled in with the memory status
+//  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
+//      that is in use (0 indicates no memory use and 100 indicates full memory use).
+//  available_physical - The amount of physical memory currently available, in bytes.
+//  available_page_file - The maximum amount of memory the current process can commit, in bytes.
 void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
     MEMORYSTATUSEX memStatus;
@@ -1691,14 +1696,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 //  The counter frequency
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
-    LARGE_INTEGER frequency;
-    if (!::QueryPerformanceFrequency(&frequency))
-    {
-        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
-        RhFailFast();
-    }
-
-    return frequency.QuadPart;
+    return g_performanceFrequency.QuadPart;
 }
 
 // Get a time stamp with a low precision
