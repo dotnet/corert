@@ -463,9 +463,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetUniversalTransitionThunk")]
         internal static extern IntPtr RhGetUniversalTransitionThunk();
 
+        // For Managed to Managed calls
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCallDescrWorker")]
         internal static extern void RhCallDescrWorker(IntPtr callDescr);
+
+        // For Managed to Native calls
+        [DllImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker")]
+        internal static extern void RhCallDescrWorkerNative(IntPtr callDescr);
 
         // Moves memory from smem to dmem. Size must be a positive value.
         // This copy uses an intrinsic to be safe for copying arbitrary bits of
