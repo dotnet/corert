@@ -79,9 +79,7 @@ namespace System
         }
 #endif
 
-#if CORERT
         [Intrinsic]
-#endif
         public Type GetType()
         {
             return ReflectionCoreNonPortable.GetRuntimeTypeForEEType(EETypePtr);

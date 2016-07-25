@@ -394,30 +394,24 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-#if CORERT
         [Intrinsic]
-        [DebuggerStepThrough] // Added by transform on non-CoreRT
-#endif
+        [DebuggerStepThrough]
         internal static object CallIHelperThisCall(object thisPtr, IntPtr methodToCall, object thisPtrForDynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperMethod, ref ArgSetupState argSetupState)
         {
             // Calli the dynamicInvokeHelper method with a bunch of parameters  As this can't actually be defined in C# there is an IL transform that fills this in.
             return null;
         }
 
-#if CORERT
         [Intrinsic]
-        [DebuggerStepThrough] // Added by transform on non-CoreRT
-#endif
+        [DebuggerStepThrough]
         internal static object CallIHelperStaticCall(object thisPtr, IntPtr methodToCall, IntPtr dynamicInvokeHelperMethod, ref ArgSetupState argSetupState, bool isTargetThisCall)
         {
             // Calli the dynamicInvokeHelper method with a bunch of parameters  As this can't actually be defined in C# there is an IL transform that fills this in.
             return null;
         }
 
-#if CORERT
         [Intrinsic]
-        [DebuggerStepThrough] // Added by transform on non-CoreRT
-#endif
+        [DebuggerStepThrough]
         internal static object CallIHelperStaticCallWithInstantiation(object thisPtr, IntPtr methodToCall, IntPtr dynamicInvokeHelperMethod, ref ArgSetupState argSetupState, bool isTargetThisCall, IntPtr dynamicInvokeHelperGenericDictionary)
         {
             // Calli the dynamicInvokeHelper method with a bunch of parameters  As this can't actually be defined in C# there is an IL transform that fills this in.
@@ -512,10 +506,8 @@ namespace System
             return null;
         }
 
-#if CORERT
         [Intrinsic]
-        [DebuggerStepThrough] // Added by transform on non-CoreRT
-#endif
+        [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DynamicInvokeUnboxIntoActualNullable(object actualBoxedNullable, object boxedFillObject, EETypePtr nullableType)
         {
@@ -535,10 +527,8 @@ namespace System
             // ret
         }
 
-#if CORERT
         [Intrinsic]
-        [DebuggerStepThrough] // Added by transform on non-CoreRT
-#endif
+        [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static object DynamicInvokeBoxIntoNonNullable(object actualBoxedNullable)
         {
@@ -559,6 +549,7 @@ namespace System
             return null;
         }
 
+        [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         internal static /* Transform change this into byref to IntPtr*/ IntPtr DynamicInvokeParamHelperIn(RuntimeTypeHandle rth)
         {
@@ -601,6 +592,7 @@ namespace System
             return IntPtr.Zero;
         }
 
+        [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         internal static /* Transform change this into byref to IntPtr*/ IntPtr DynamicInvokeParamHelperRef(RuntimeTypeHandle rth)
         {
