@@ -367,7 +367,7 @@ namespace ILCompiler.CppCodeGen
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
             _compilation.Log.WriteLine("Compiling " + method.ToString());
-
+            // Add owning type here? 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
@@ -1160,6 +1160,10 @@ namespace ILCompiler.CppCodeGen
 
                     EETypeNode typeNode = (EETypeNode)node;
                     TypeDesc nodeType = typeNode.Type;
+
+                    if (nodeType.IsPointer || nodeType.IsByRef)
+                        continue;
+
                     if (_emittedTypes == null)
                     {
                         _emittedTypes = new HashSet<TypeDesc>();
