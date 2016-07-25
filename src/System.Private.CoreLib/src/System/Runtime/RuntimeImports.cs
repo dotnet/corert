@@ -560,13 +560,6 @@ namespace System.Runtime
         internal static extern double fabs(double x);
 #endif // CORERT
 
-#if !CORERT
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "_copysign")]
-        internal static extern double _copysign(double x, double y);
-#endif // !CORERT
-
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "floor")]
