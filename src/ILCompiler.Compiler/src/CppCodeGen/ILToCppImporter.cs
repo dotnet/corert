@@ -2441,6 +2441,16 @@ namespace Internal.IL
 
         private void AddTypeReference(TypeDesc type, bool constructed)
         {
+            if (type.IsPrimitive)
+            {
+                return;
+            }
+            else if(type.IsPointer)
+            {
+                Debug.Assert(type is ParameterizedType);
+                AddTypeReference((type as ParameterizedType).ParameterType, constructed);
+                return;
+            }
             Object node;
 
             if (constructed)
@@ -2480,6 +2490,7 @@ namespace Internal.IL
 
                 _dependencies.Add(node);
             }
+            AddTypeReference(field.FieldType, false);
         }
     }
 }

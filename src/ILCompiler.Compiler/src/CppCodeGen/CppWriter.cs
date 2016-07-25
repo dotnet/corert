@@ -1206,8 +1206,6 @@ namespace ILCompiler.CppCodeGen
                 typeDefinitions.Append(" {");
                 typeDefinitions.AppendLine();
                 typeDefinitions.Append("public:");
-                typeDefinitions.Indent();
-
                 // TODO: Enable once the dependencies are tracked for arrays
                 // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
                 if (!nodeType.IsPointer && !nodeType.IsByRef)
