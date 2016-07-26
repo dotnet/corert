@@ -174,7 +174,7 @@ internal static extern void System.Runtime.RuntimeImports.RhUnbox(object obj, vo
 internal static extern void System.Runtime.RuntimeImports.RhUnregisterGcCallout(System.Runtime.RuntimeImports.GcRestrictedCalloutKind eKind, System.IntPtr pCalloutMethod)
 internal static extern void System.Runtime.RuntimeImports.RhUnregisterRefCountedHandleCallback(System.IntPtr pCalloutMethod, System.EETypePtr pTypeFilter)
 private static extern void System.Runtime.RuntimeImports.RhWaitForPendingFinalizers(int allowReentrantWait)
-internal static extern bool System.Runtime.RuntimeImports.RhYield()
+internal static bool System.Runtime.RuntimeImports.RhYield()
 internal static extern double System.Runtime.RuntimeImports.sin(double x)
 internal static extern double System.Runtime.RuntimeImports.sinh(double x)
 internal static extern double System.Runtime.RuntimeImports.sqrt(double x)
