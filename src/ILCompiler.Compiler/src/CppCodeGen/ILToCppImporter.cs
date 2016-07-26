@@ -480,7 +480,7 @@ namespace Internal.IL
             for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)
             {
                 var parameterType = methodCodeNodeNeedingCode.Method.Signature[i];
-                if (!parameterType.IsByRef && (parameterType.IsTypeDefinition || !parameterType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
+                if ((parameterType.IsTypeDefinition || !parameterType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
                 {
                     AddTypeReference(parameterType, false);
                 }
@@ -2455,14 +2455,23 @@ namespace Internal.IL
 
         private void AddTypeReference(TypeDesc type, bool constructed)
         {
+            AddTypeDependency(type, constructed);
+
+            foreach (var field in type.GetFields())
+            {
+                AddTypeDependency(field.FieldType, false);
+            }
+        }
+        private void AddTypeDependency(TypeDesc type, bool constructed)
+        {
             if (type.IsPrimitive)
             {
                 return;
             }
-            else if(type.IsPointer)
+            else if (type.IsPointer || type.IsByRef)
             {
                 Debug.Assert(type is ParameterizedType);
-                AddTypeReference((type as ParameterizedType).ParameterType, constructed);
+                AddTypeDependency((type as ParameterizedType).ParameterType, constructed);
                 return;
             }
             Object node;
@@ -2474,23 +2483,6 @@ namespace Internal.IL
             if (_dependencies.Contains(node))
                 return;
             _dependencies.Add(node);
-
-            if (type.IsByRef || type.IsPointer)
-            {
-                TypeDesc parameterizedType = ((ParameterizedType)type).ParameterType;
-
-                if (constructed)
-                    node = _nodeFactory.ConstructedTypeSymbol(parameterizedType);
-                else
-                    node = _nodeFactory.NecessaryTypeSymbol(parameterizedType);
-                if (_dependencies.Contains(node))
-                    return;
-                _dependencies.Add(node);
-            }
-            foreach (var field in type.GetFields())
-            {
-                AddTypeReference(field.FieldType, false);
-            }
         }
 
         private void AddMethodReference(MethodDesc method)

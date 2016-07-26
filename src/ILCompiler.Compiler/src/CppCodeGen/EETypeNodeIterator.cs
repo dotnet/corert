@@ -39,6 +39,12 @@ namespace ILCompiler.Compiler.CppCodeGen
                     _typeToNodeMap.TryGetValue(node.Type.BaseType, out baseTypeNode);
                     AddNode(baseTypeNode);
                 }
+                foreach(var field in node.Type.GetFields())
+                {
+                    EETypeNode fieldNode;
+                    _typeToNodeMap.TryGetValue(field.FieldType, out fieldNode);
+                    if(fieldNode != null && !_typeNodes.Contains(node)) _typeNodes.Add(fieldNode);
+                }
                 this._typeNodes.Add(node);
             }
 
