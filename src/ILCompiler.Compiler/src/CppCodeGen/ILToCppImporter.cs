@@ -485,7 +485,7 @@ namespace Internal.IL
                     AddTypeReference(parameterType, false);
                 }
             }
-            
+
             var returnType = methodCodeNodeNeedingCode.Method.Signature.ReturnType;
             if (!returnType.IsByRef && (returnType.IsTypeDefinition || !returnType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
             {
@@ -2461,7 +2461,8 @@ namespace Internal.IL
                 node = _nodeFactory.ConstructedTypeSymbol(type);
             else
                 node = _nodeFactory.NecessaryTypeSymbol(type);
-
+            if (_dependencies.Contains(node))
+                return;
             _dependencies.Add(node);
 
             if (type.IsByRef || type.IsPointer)
@@ -2472,8 +2473,13 @@ namespace Internal.IL
                     node = _nodeFactory.ConstructedTypeSymbol(parameterizedType);
                 else
                     node = _nodeFactory.NecessaryTypeSymbol(parameterizedType);
-
+                if (_dependencies.Contains(node))
+                    return;
                 _dependencies.Add(node);
+            }
+            foreach (var field in type.GetFields())
+            {
+                AddTypeReference(field.FieldType, false);
             }
         }
 

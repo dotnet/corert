@@ -1197,6 +1197,7 @@ namespace ILCompiler.CppCodeGen
                     // Case of a name not starting with ::
                     forwardDefinitions.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
                     typeDefinitions.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                    typeDefinitions.Indent();
                     nesting++;
                 }
                 current = sep + 2;
@@ -1280,6 +1281,7 @@ namespace ILCompiler.CppCodeGen
             {
                 forwardDefinitions.Append("};");
                 typeDefinitions.Append("};");
+                typeDefinitions.Exdent();
                 nesting--;
             }
             typeDefinitions.AppendEmptyLine();
