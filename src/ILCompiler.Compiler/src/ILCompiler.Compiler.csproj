@@ -139,7 +139,8 @@
     <Compile Include="CppCodeGen\EvaluationStack.cs" />
     <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
     <Compile Include="CppCodeGen\CppWriter.cs" />
-    <Compile Include="CppCodeGen\EETypeNodeIterator.cs" />
+    <Compile Include="CppCodeGen\NodeIteration\EETypeNodeIterator.cs" />
+    <Compile Include="CppCodeGen\NodeIteratorStack.cs" />
     <Compile Include="IL\Stubs\MissingMethodBodyILEmitter.cs" />
     <Compile Include="IL\Stubs\StartupCode\StartupCodeMainMethod.cs" />
   </ItemGroup>

@@ -757,15 +757,10 @@ namespace ILCompiler.CppCodeGen
 
                     TypeDesc fieldType = GetFieldTypeOrPlaceholder(field);
                     CppGenerationBuffer builder;
-                    if (nodeByNode)
-                    {
-                        builder = sb;
-                    }
-                    else if (!fieldType.IsValueType)
+                    if (!fieldType.IsValueType)
                     {
                         builder = _gcStatics;
                     }
-
                     else
                     {
                         // TODO: Valuetype statics with GC references
@@ -1386,52 +1381,82 @@ namespace ILCompiler.CppCodeGen
             //Out.Write(sb.ToString());
             //sb.Clear();
 
-            //if (entrypoint != null)
-            //{
-            //    // Stub for main method
-            //    sb.AppendLine();
-            //    if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
-            //    {
-            //        sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
-            //    }
-            //    else
-            //    {
-            //        sb.Append("int main(int argc, char * argv[]) {");
-            //    }
-            //    sb.Indent();
-
-            //    sb.AppendLine();
-            //    sb.Append("if (__initialize_runtime() != 0)");
-            //    sb.Indent();
-            //    sb.AppendLine();
-            //    sb.Append("return -1;");
-            //    sb.Exdent();
-            //    sb.AppendEmptyLine();
-            //    sb.AppendLine();
-            //    sb.Append("ReversePInvokeFrame frame;");
-            //    sb.AppendLine();
-            //    sb.Append("__reverse_pinvoke(&frame);");
-
-            //    sb.AppendEmptyLine();
-            //    sb.AppendLine();
-            //    sb.Append("int ret = ");
-            //    sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
-            //    sb.Append("(argc, (intptr_t)argv);");
-
-            //    sb.AppendEmptyLine();
-            //    sb.AppendLine();
-            //    sb.Append("__reverse_pinvoke_return(&frame);");
-            //    sb.AppendLine();
-            //    sb.Append("__shutdown_runtime();");
-
-            //    sb.AppendLine();
-            //    sb.Append("return ret;");
-            //    sb.Exdent();
-            //    sb.AppendLine();
-            //    sb.Append("}");
-            //}
+            
             //sb.Append("------Node by Node-----");
+            _statics = new CppGenerationBuffer();
+            _statics.Indent();
+            _gcStatics = new CppGenerationBuffer();
+            _gcStatics.Indent();
+            _threadStatics = new CppGenerationBuffer();
+            _threadStatics.Indent();
+            _gcThreadStatics = new CppGenerationBuffer();
+            _gcThreadStatics.Indent();
+
             OutputNodes(nodes, entrypoint, factory, sb);
+            sb.Append(_statics.ToString());
+            sb.Append(_gcStatics.ToString());
+            sb.Append(_threadStatics.ToString());
+            sb.Append(_gcThreadStatics.ToString());
+
+            Out.Write(sb.ToString());
+            sb.Clear();
+            foreach (var externC in _externCSignatureMap)
+            {
+                string importName = externC.Key;
+                // TODO: hacky special-case
+                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
+                {
+                    sb.AppendLine();
+                    sb.Append(GetCppMethodDeclaration(null, false, importName, externC.Value));
+                }
+            }
+            Out.Write(sb.ToString());
+            sb.Clear();
+
+            if (entrypoint != null)
+            {
+                // Stub for main method
+                sb.AppendLine();
+                if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+                {
+                    sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
+                }
+                else
+                {
+                    sb.Append("int main(int argc, char * argv[]) {");
+                }
+                sb.Indent();
+
+                sb.AppendLine();
+                sb.Append("if (__initialize_runtime() != 0)");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("return -1;");
+                sb.Exdent();
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("ReversePInvokeFrame frame;");
+                sb.AppendLine();
+                sb.Append("__reverse_pinvoke(&frame);");
+
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("int ret = ");
+                sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
+                sb.Append("(argc, (intptr_t)argv);");
+
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("__reverse_pinvoke_return(&frame);");
+                sb.AppendLine();
+                sb.Append("__shutdown_runtime();");
+
+                sb.AppendLine();
+                sb.Append("return ret;");
+                sb.Exdent();
+                sb.AppendLine();
+                sb.Append("}");
+            }
             Out.Write(sb.ToString());
             sb.Clear();
             Out.Dispose();
