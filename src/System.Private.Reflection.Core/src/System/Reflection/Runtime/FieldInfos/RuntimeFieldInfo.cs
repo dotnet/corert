@@ -2,24 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.FieldInfos
 {
@@ -66,16 +65,11 @@ namespace System.Reflection.Runtime.FieldInfos
                     ReflectionTrace.FieldInfo_CustomAttributes(this);
 #endif
 
-                ReflectionDomain reflectionDomain = _definingTypeInfo.ReflectionDomain;
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(reflectionDomain, _reader, _field.CustomAttributes);
+                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
+                    yield return cad;
             }
         }
 
@@ -155,7 +149,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             TypeContext typeContext = _contextTypeInfo.TypeContext;
             Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-            return typeHandle.FormatTypeName(_reader, typeContext, _definingTypeInfo.ReflectionDomain) + " " + this.Name;
+            return typeHandle.FormatTypeName(_reader, typeContext) + " " + this.Name;
         }
 
         public sealed override bool Equals(Object obj)
@@ -163,11 +157,11 @@ namespace System.Reflection.Runtime.FieldInfos
             RuntimeFieldInfo other = obj as RuntimeFieldInfo;
             if (other == null)
                 return false;
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._fieldHandle.Equals(other._fieldHandle)))
+            if (!(_fieldHandle.Equals(other._fieldHandle)))
                 return false;
-            if (!(this._contextTypeInfo.Equals(other._contextTypeInfo)))
+            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
                 return false;
             return true;
         }
@@ -202,8 +196,6 @@ namespace System.Reflection.Runtime.FieldInfos
                 {
                     if (this.IsLiteral)
                     {
-                        if (!(_definingTypeInfo.ReflectionDomain is ExecutionDomain))
-                            throw new NotSupportedException(); // Cannot instantiate a boxed enum on a non-execution domain.
                         // Legacy: ECMA335 does not require that the metadata literal match the type of the field that declares it.
                         // For desktop compat, we return the metadata literal as is and do not attempt to convert or validate against the Field type.
 
@@ -224,7 +216,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     {
                         _lazyFieldAccessor = fieldAccessor = ReflectionCoreExecution.ExecutionEnvironment.TryGetFieldAccessor(this.DeclaringType.TypeHandle, this.FieldType.TypeHandle, _fieldHandle);
                         if (fieldAccessor == null)
-                            throw this._definingTypeInfo.ReflectionDomain.CreateNonInvokabilityException(this);
+                            throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(this);
                     }
                 }
                 return fieldAccessor;
@@ -237,7 +229,7 @@ namespace System.Reflection.Runtime.FieldInfos
             {
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
                 Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-                return _definingTypeInfo.ReflectionDomain.Resolve(_reader, typeHandle, typeContext);
+                return typeHandle.Resolve(_reader, typeContext);
             }
         }
 
@@ -258,12 +250,12 @@ namespace System.Reflection.Runtime.FieldInfos
             return this;
         }
 
-        private RuntimeNamedTypeInfo _definingTypeInfo;
-        private FieldHandle _fieldHandle;
-        private RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly FieldHandle _fieldHandle;
+        private readonly RuntimeTypeInfo _contextTypeInfo;
 
-        private MetadataReader _reader;
-        private Field _field;
+        private readonly MetadataReader _reader;
+        private readonly Field _field;
 
         private volatile FieldAccessor _lazyFieldAccessor = null;
 

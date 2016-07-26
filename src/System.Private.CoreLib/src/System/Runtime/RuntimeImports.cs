@@ -264,9 +264,9 @@ namespace System.Runtime
         internal static extern void RhSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhYield")]
-        internal static extern bool RhYield();
+        [DllImport(RuntimeLibrary, EntryPoint = "RhYield", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int _RhYield();
+        internal static bool RhYield() { return (_RhYield() != 0); }
 
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
@@ -463,9 +463,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetUniversalTransitionThunk")]
         internal static extern IntPtr RhGetUniversalTransitionThunk();
 
+        // For Managed to Managed calls
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCallDescrWorker")]
         internal static extern void RhCallDescrWorker(IntPtr callDescr);
+
+        // For Managed to Native calls
+        [DllImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker")]
+        internal static extern void RhCallDescrWorkerNative(IntPtr callDescr);
 
         // Moves memory from smem to dmem. Size must be a positive value.
         // This copy uses an intrinsic to be safe for copying arbitrary bits of
@@ -554,13 +559,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "fabs")]
         internal static extern double fabs(double x);
 #endif // CORERT
-
-#if !CORERT
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "_copysign")]
-        internal static extern double _copysign(double x, double y);
-#endif // !CORERT
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

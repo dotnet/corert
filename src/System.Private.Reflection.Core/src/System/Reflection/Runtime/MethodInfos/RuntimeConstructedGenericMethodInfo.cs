@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
 
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -57,13 +56,13 @@ namespace System.Reflection.Runtime.MethodInfos
             RuntimeConstructedGenericMethodInfo other = obj as RuntimeConstructedGenericMethodInfo;
             if (other == null)
                 return false;
-            if (!this._genericMethodDefinition.Equals(other._genericMethodDefinition))
+            if (!_genericMethodDefinition.Equals(other._genericMethodDefinition))
                 return false;
-            if (this._genericTypeArguments.Length != other._genericTypeArguments.Length)
+            if (_genericTypeArguments.Length != other._genericTypeArguments.Length)
                 return false;
             for (int i = 0; i < _genericTypeArguments.Length; i++)
             {
-                if (!this._genericTypeArguments[i].Equals(other._genericTypeArguments[i]))
+                if (!_genericTypeArguments[i].Equals(other._genericTypeArguments[i]))
                     return false;
             }
             return true;
@@ -163,8 +162,8 @@ namespace System.Reflection.Runtime.MethodInfos
             return _genericMethodDefinition.GetRuntimeParametersAndReturn(this);
         }
 
-        private RuntimeNamedMethodInfo _genericMethodDefinition;
-        private RuntimeTypeInfo[] _genericTypeArguments;
+        private readonly RuntimeNamedMethodInfo _genericMethodDefinition;
+        private readonly RuntimeTypeInfo[] _genericTypeArguments;
     }
 }
 

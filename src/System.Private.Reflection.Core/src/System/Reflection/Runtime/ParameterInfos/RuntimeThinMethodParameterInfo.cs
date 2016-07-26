@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
@@ -21,8 +20,8 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeThinMethodParameterInfo(MethodBase member, int position, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reflectionDomain, reader, typeHandle, typeContext)
+        private RuntimeThinMethodParameterInfo(MethodBase member, int position, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+            : base(member, position, reader, typeHandle, typeContext)
         {
         }
 

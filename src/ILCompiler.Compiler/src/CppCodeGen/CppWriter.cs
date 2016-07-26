@@ -26,6 +26,9 @@ namespace ILCompiler.CppCodeGen
         private void SetWellKnownTypeSignatureName(WellKnownType wellKnownType, string mangledSignatureName)
         {
             var type = _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
+            var typeNode = this._compilation.NodeFactory.ConstructedTypeSymbol(type);
+            AddWellKnownType(typeNode);
+            
             _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
@@ -50,7 +53,7 @@ namespace ILCompiler.CppCodeGen
             SetWellKnownTypeSignatureName(WellKnownType.UIntPtr, "uintptr_t");
             SetWellKnownTypeSignatureName(WellKnownType.Single, "float");
             SetWellKnownTypeSignatureName(WellKnownType.Double, "double");
-
+            
             BuildExternCSignatureMap();
         }
 
@@ -72,8 +75,18 @@ namespace ILCompiler.CppCodeGen
                 mangledName += "*";
 
             _cppSignatureNames.Add(type, mangledName);
-
             return mangledName;
+        }
+
+        private List<IEETypeNode> _wellKnownTypeNodes;
+
+        public void AddWellKnownType(IEETypeNode node)
+        {
+            if (_wellKnownTypeNodes == null)
+            {
+                _wellKnownTypeNodes = new List<IEETypeNode>();
+            }
+            _wellKnownTypeNodes.Add(node);
         }
 
         // extern "C" methods are sometimes referenced via different signatures.
@@ -367,7 +380,6 @@ namespace ILCompiler.CppCodeGen
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
             _compilation.Log.WriteLine("Compiling " + method.ToString());
-            // Add owning type here? 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
@@ -757,15 +769,10 @@ namespace ILCompiler.CppCodeGen
 
                     TypeDesc fieldType = GetFieldTypeOrPlaceholder(field);
                     CppGenerationBuffer builder;
-                    if (nodeByNode)
-                    {
-                        builder = sb;
-                    }
-                    else if (!fieldType.IsValueType)
+                    if (!fieldType.IsValueType)
                     {
                         builder = _gcStatics;
                     }
-
                     else
                     {
                         // TODO: Valuetype statics with GC references
@@ -1145,34 +1152,78 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        public void OutputNodes(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory, CppGenerationBuffer sb)
+        public void OutputNodes(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory, CppGenerationBuffer definitions, CppGenerationBuffer implementation)
         {
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer methodTables = new CppGenerationBuffer();
-            EETypeNodeIterator nodeIterator = new EETypeNodeIterator(nodes);
-
+            DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
+            if (_wellKnownTypeNodes != null)
+            {
+                foreach (var wellKnownTypeNode in _wellKnownTypeNodes)
+                {
+                    if (wellKnownTypeNode is EETypeNode)
+                        OutputTypeNode((EETypeNode)wellKnownTypeNode, forwardDefinitions, typeDefinitions, methodTables);
+                }
+            }
             foreach (var node in nodeIterator.GetNodes())
             {
-                if(node is EETypeNode)
-                    OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions);
+                if (node is EETypeNode)
+                    OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions, methodTables);
             }
 
-            sb.Append(forwardDefinitions.ToString());
-            sb.Append(typeDefinitions.ToString());
-            sb.Append(methodTables.ToString());
+            definitions.Append(forwardDefinitions.ToString());
+            forwardDefinitions.Clear();
+            definitions.Append(typeDefinitions.ToString());
+            typeDefinitions.Clear();
+            definitions.Append(methodTables.ToString());
+            methodTables.Clear();
+            foreach (var node in nodeIterator.GetNodes())
+            {
+                if (node is CppMethodCodeNode)
+                    OutputMethodCode(node as CppMethodCodeNode, implementation);
+            }
         }
-        private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions)
-        {
-            TypeDesc nodeType = typeNode.Type;
-            if (nodeType.IsPointer || nodeType.IsByRef )
-                return;
 
+        private void OutputMethodCode(CppMethodCodeNode methodCodeNode, CppGenerationBuffer methodImplementations)
+        {
+            methodImplementations.AppendLine();
+            methodImplementations.Append(methodCodeNode.CppCode);
+
+            var alternateName = _compilation.NodeFactory.GetSymbolAlternateName(methodCodeNode);
+            if (alternateName != null)
+            {
+                methodImplementations.AppendLine();
+                methodImplementations.Append(GetCppMethodDeclaration(methodCodeNode.Method, true, alternateName));
+                methodImplementations.AppendLine();
+                methodImplementations.Append("{");
+                methodImplementations.Indent();
+                methodImplementations.AppendLine();
+                if (!methodCodeNode.Method.Signature.ReturnType.IsVoid)
+                {
+                    methodImplementations.Append("return ");
+                }
+                methodImplementations.Append(GetCppMethodDeclarationName(methodCodeNode.Method.OwningType, GetCppMethodName(methodCodeNode.Method)));
+                methodImplementations.Append("(");
+                methodImplementations.Append(GetCppMethodCallParamList(methodCodeNode.Method));
+                methodImplementations.Append(");");
+                methodImplementations.Exdent();
+                methodImplementations.AppendLine();
+                methodImplementations.Append("}");
+            }
+        }
+        private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions, CppGenerationBuffer methodTable)
+        {
             if (_emittedTypes == null)
             {
                 _emittedTypes = new HashSet<TypeDesc>();
-                _emittedTypes.Add(nodeType);
             }
+
+            TypeDesc nodeType = typeNode.Type;
+            if (nodeType.IsPointer || nodeType.IsByRef || _emittedTypes.Contains(nodeType))
+                return;
+
+            _emittedTypes.Add(nodeType);
 
 
             // forward type definition
@@ -1261,6 +1312,9 @@ namespace ILCompiler.CppCodeGen
                 {
                     typeDefinitions.AppendLine();
                     typeDefinitions.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
+
+                    _statics.AppendLine();
+                    _statics.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
                 }
 
                 List<MethodDesc> methodList;
@@ -1287,18 +1341,14 @@ namespace ILCompiler.CppCodeGen
             typeDefinitions.AppendEmptyLine();
 
             //// declare method table
-            //methodTables.Append(GetCodeForType(nodeType));
-            //methodTables.AppendEmptyLine();
+            if (!nodeType.IsPointer && !nodeType.IsByRef)
+            {
+                methodTable.Append(GetCodeForType(nodeType));
+                methodTable.AppendEmptyLine();
+            }
             // declare implementation
         }
-        private void OutPutForwardDefinition(EETypeNode node)
-        {
 
-        }
-        private void OutputTypeDefinition(EETypeNode node)
-        {
-
-        }
         private string GenerateMethodCode()
         {
             var methodCode = new CppGenerationBuffer();
@@ -1386,52 +1436,96 @@ namespace ILCompiler.CppCodeGen
             //Out.Write(sb.ToString());
             //sb.Clear();
 
-            //if (entrypoint != null)
-            //{
-            //    // Stub for main method
-            //    sb.AppendLine();
-            //    if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
-            //    {
-            //        sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
-            //    }
-            //    else
-            //    {
-            //        sb.Append("int main(int argc, char * argv[]) {");
-            //    }
-            //    sb.Indent();
 
-            //    sb.AppendLine();
-            //    sb.Append("if (__initialize_runtime() != 0)");
-            //    sb.Indent();
-            //    sb.AppendLine();
-            //    sb.Append("return -1;");
-            //    sb.Exdent();
-            //    sb.AppendEmptyLine();
-            //    sb.AppendLine();
-            //    sb.Append("ReversePInvokeFrame frame;");
-            //    sb.AppendLine();
-            //    sb.Append("__reverse_pinvoke(&frame);");
-
-            //    sb.AppendEmptyLine();
-            //    sb.AppendLine();
-            //    sb.Append("int ret = ");
-            //    sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
-            //    sb.Append("(argc, (intptr_t)argv);");
-
-            //    sb.AppendEmptyLine();
-            //    sb.AppendLine();
-            //    sb.Append("__reverse_pinvoke_return(&frame);");
-            //    sb.AppendLine();
-            //    sb.Append("__shutdown_runtime();");
-
-            //    sb.AppendLine();
-            //    sb.Append("return ret;");
-            //    sb.Exdent();
-            //    sb.AppendLine();
-            //    sb.Append("}");
-            //}
             //sb.Append("------Node by Node-----");
-            OutputNodes(nodes, entrypoint, factory, sb);
+
+            _statics = new CppGenerationBuffer();
+            _statics.Indent();
+            _gcStatics = new CppGenerationBuffer();
+            _gcStatics.Indent();
+            _threadStatics = new CppGenerationBuffer();
+            _threadStatics.Indent();
+            _gcThreadStatics = new CppGenerationBuffer();
+            _gcThreadStatics.Indent();
+            var methodImplementations = new CppGenerationBuffer();
+
+            OutputNodes(nodes, entrypoint, factory, sb, methodImplementations);
+            Out.Write(sb.ToString());
+            sb.Clear();
+
+            Out.Write("struct {");
+            Out.Write(_statics.ToString());
+            Out.Write("} __statics;");
+
+            Out.Write("struct {");
+            Out.Write(_gcStatics.ToString());
+            Out.Write("} __gcStatics;");
+
+            Out.Write("struct {");
+            Out.Write(_gcStatics.ToString());
+            Out.Write("} __gcThreadStatics;");
+
+
+            foreach (var externC in _externCSignatureMap)
+            {
+                string importName = externC.Key;
+                // TODO: hacky special-case
+                if (importName != "memmove" && importName != "malloc") // some methods are already declared by the CRT headers
+                {
+                    sb.AppendLine();
+                    sb.Append(GetCppMethodDeclaration(null, false, importName, externC.Value));
+                }
+            }
+            Out.Write(sb.ToString());
+            sb.Clear();
+
+            Out.Write(methodImplementations.ToString());
+            methodImplementations.Clear();
+
+            if (entrypoint != null)
+            {
+                // Stub for main method
+                sb.AppendLine();
+                if (_compilation.TypeSystemContext.Target.OperatingSystem == TargetOS.Windows)
+                {
+                    sb.Append("int wmain(int argc, wchar_t * argv[]) { ");
+                }
+                else
+                {
+                    sb.Append("int main(int argc, char * argv[]) {");
+                }
+                sb.Indent();
+
+                sb.AppendLine();
+                sb.Append("if (__initialize_runtime() != 0)");
+                sb.Indent();
+                sb.AppendLine();
+                sb.Append("return -1;");
+                sb.Exdent();
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("ReversePInvokeFrame frame;");
+                sb.AppendLine();
+                sb.Append("__reverse_pinvoke(&frame);");
+
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("int ret = ");
+                sb.Append(GetCppMethodDeclarationName(entrypoint.OwningType, GetCppMethodName(entrypoint)));
+                sb.Append("(argc, (intptr_t)argv);");
+
+                sb.AppendEmptyLine();
+                sb.AppendLine();
+                sb.Append("__reverse_pinvoke_return(&frame);");
+                sb.AppendLine();
+                sb.Append("__shutdown_runtime();");
+
+                sb.AppendLine();
+                sb.Append("return ret;");
+                sb.Exdent();
+                sb.AppendLine();
+                sb.Append("}");
+            }
             Out.Write(sb.ToString());
             sb.Clear();
             Out.Dispose();

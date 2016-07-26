@@ -1323,12 +1323,14 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 
 #ifndef RUNTIME_SERVICES_ONLY
 
-static LARGE_INTEGER performanceFrequency;
+static LARGE_INTEGER g_performanceFrequency;
 
 // Initialize the interface implementation
+// Return:
+//  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
-    if (!::QueryPerformanceFrequency(&performanceFrequency))
+    if (!::QueryPerformanceFrequency(&g_performanceFrequency))
     {
         return false;
     }
@@ -1381,7 +1383,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
         {
             proc.Number = (BYTE)affinity->Processor;
             success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
-        }
+        }        
     }
 
     return success;
@@ -1564,7 +1566,7 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
 //  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
 bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
 {
-    return false;
+    return !!::GetProcessAffinityMask(GetCurrentProcess(), (PDWORD_PTR)processMask, (PDWORD_PTR)systemMask);
 }
 
 // Get number of processors assigned to the current process
@@ -1643,9 +1645,12 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
     return memStatus.ullTotalPhys;
 }
 
-// Get global memory status
+// Get memory status
 // Parameters:
-//  ms - pointer to the structure that will be filled in with the memory status
+//  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
+//      that is in use (0 indicates no memory use and 100 indicates full memory use).
+//  available_physical - The amount of physical memory currently available, in bytes.
+//  available_page_file - The maximum amount of memory the current process can commit, in bytes.
 void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
 {
     MEMORYSTATUSEX memStatus;
@@ -1691,14 +1696,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 //  The counter frequency
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
-    LARGE_INTEGER frequency;
-    if (!::QueryPerformanceFrequency(&frequency))
-    {
-        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
-        RhFailFast();
-    }
-
-    return frequency.QuadPart;
+    return g_performanceFrequency.QuadPart;
 }
 
 // Get a time stamp with a low precision
@@ -1749,7 +1747,7 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     stubParam->GCThreadParam = param;
 
     DWORD thread_id;
-    HANDLE gc_thread = ::CreateThread(0, 4096, GCThreadStub, &stubParam, CREATE_SUSPENDED, &thread_id);
+    HANDLE gc_thread = ::CreateThread(0, 4096, GCThreadStub, stubParam.GetValue(), CREATE_SUSPENDED, &thread_id);
 
     if (!gc_thread)
     {
@@ -1759,6 +1757,24 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     stubParam.SuppressRelease();
 
     SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
+
+    if (affinity->Group != GCThreadAffinity::None)
+    {
+        // @TODO: CPUGroupInfo
+
+        // ASSERT(affinity->Processor != GCThreadAffinity::None);
+        // GROUP_AFFINITY ga;
+        // ga.Group = (WORD)affinity->Group;
+        // ga.Reserved[0] = 0;
+        // ga.Reserved[1] = 0;
+        // ga.Reserved[2] = 0;
+        // ga.Mask = (size_t)1 << affinity->Processor;
+        // CPUGroupInfo::SetThreadGroupAffinity(gc_thread, &ga, NULL);
+    }
+    else if (affinity->Processor != GCThreadAffinity::None)
+    {
+        SetThreadAffinityMask(gc_thread, (DWORD_PTR)1 << affinity->Processor);
+    }
 
     ResumeThread(gc_thread);
     CloseHandle(gc_thread);

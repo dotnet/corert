@@ -63,6 +63,17 @@ namespace Internal.TypeSystem
     public abstract partial class GenericParameterDesc : TypeDesc
     {
         /// <summary>
+        /// Gets the name of the generic parameter as defined in the metadata.
+        /// </summary>
+        public virtual string Name
+        {
+            get
+            {
+                return String.Concat("T", Index.ToStringInvariant());
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a type or method generic parameter.
         /// </summary>
         public abstract GenericParameterKind Kind { get; }

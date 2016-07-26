@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.MethodInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.MethodInfos;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 using TargetException = System.ArgumentException;
 
@@ -61,11 +60,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 bool multiDim = this.InternalIsMultiDimArray;
                 int rank = this.GetArrayRank();
 
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
+                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
                 RuntimeTypeInfo arrayType = this;
-                RuntimeTypeInfo countType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>();
-                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                RuntimeTypeInfo countType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
+                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.CastToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] ctorParametersAndReturn = new RuntimeTypeInfo[rank + 1];
@@ -187,12 +185,11 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 int rank = this.GetArrayRank();
 
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
-                RuntimeTypeInfo indexType = foundationTypes.SystemInt32.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
+                RuntimeTypeInfo indexType = foundationTypes.SystemInt32.CastToRuntimeTypeInfo();
                 RuntimeTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
-                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                RuntimeTypeInfo voidType = foundationTypes.SystemVoid.CastToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] getParametersAndReturn = new RuntimeTypeInfo[rank + 1];
@@ -319,14 +316,13 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Arrays don't have a true typedef behind them but for the purpose of reporting base classes and interfaces, we can create a pretender.
         //
-        private RuntimeNamedTypeInfo TypeDefInfoProjectionForArrays
+        private RuntimeTypeInfo TypeDefInfoProjectionForArrays
         {
             get
             {
-                Debug.Assert(this.ReflectionDomain == ReflectionCoreExecution.ExecutionDomain, "User Reflectable Domains not yet implemented.");
                 RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
                 RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle();
-                return projectionRuntimeTypeForArrays.GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
+                return projectionRuntimeTypeForArrays;
             }
         }
 

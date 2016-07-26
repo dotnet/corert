@@ -5,11 +5,11 @@
 // Collection of "qualified handle" tuples.
 //
 
-using global::System;
-using global::System.Collections.Generic;
-using global::System.Diagnostics;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Core
 {
@@ -40,9 +40,9 @@ namespace Internal.Reflection.Core
 
         public bool Equals(QScopeDefinition other)
         {
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._handle.Equals(other._handle)))
+            if (!(_handle.Equals(other._handle)))
                 return false;
             return true;
         }
@@ -52,8 +52,8 @@ namespace Internal.Reflection.Core
             return _handle.GetHashCode();
         }
 
-        private MetadataReader _reader;
-        private ScopeDefinitionHandle _handle;
+        private readonly MetadataReader _reader;
+        private readonly ScopeDefinitionHandle _handle;
     }
 }
 
@@ -79,9 +79,9 @@ namespace System.Reflection.Runtime.General
 
         public bool Equals(QHandle other)
         {
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._handle.Equals(other._handle)))
+            if (!(_handle.Equals(other._handle)))
                 return false;
             return true;
         }
@@ -91,8 +91,8 @@ namespace System.Reflection.Runtime.General
             return _handle.GetHashCode();
         }
 
-        private MetadataReader _reader;
-        private Handle _handle;
+        private readonly MetadataReader _reader;
+        private readonly Handle _handle;
     }
 
 
@@ -116,9 +116,9 @@ namespace System.Reflection.Runtime.General
 
         public bool Equals(QTypeDefinition other)
         {
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._handle.Equals(other._handle)))
+            if (!(_handle.Equals(other._handle)))
                 return false;
             return true;
         }
@@ -128,8 +128,8 @@ namespace System.Reflection.Runtime.General
             return _handle.GetHashCode();
         }
 
-        private MetadataReader _reader;
-        private TypeDefinitionHandle _handle;
+        private readonly MetadataReader _reader;
+        private readonly TypeDefinitionHandle _handle;
     }
 
 
@@ -152,8 +152,8 @@ namespace System.Reflection.Runtime.General
 
         public static readonly QTypeDefRefOrSpec Null = default(QTypeDefRefOrSpec);
 
-        private MetadataReader _reader;
-        private Handle _handle;
+        private readonly MetadataReader _reader;
+        private readonly Handle _handle;
     }
 
     internal struct QGenericParameter : IEquatable<QGenericParameter>
@@ -176,9 +176,9 @@ namespace System.Reflection.Runtime.General
 
         public bool Equals(QGenericParameter other)
         {
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._handle.Equals(other._handle)))
+            if (!(_handle.Equals(other._handle)))
                 return false;
             return true;
         }
@@ -188,7 +188,7 @@ namespace System.Reflection.Runtime.General
             return _handle.GetHashCode();
         }
 
-        private MetadataReader _reader;
-        private GenericParameterHandle _handle;
+        private readonly MetadataReader _reader;
+        private readonly GenericParameterHandle _handle;
     }
 }

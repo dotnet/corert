@@ -472,10 +472,10 @@ namespace Internal.IL
             {
                 string prefix = type.Kind == GenericParameterKind.Type ? "!" : "!!";
                 sb.Append(prefix);
-                sb.Append(type.ToString()); // TODO: should we require a Name property for this?
+                sb.Append(type.Name);
             }
 
-            public override void AppendName(StringBuilder sb, InstantiatedType type)
+            protected override void AppendNameForInstantiatedType(StringBuilder sb, DefType type)
             {
                 AppendName(sb, type.GetTypeDefinition());
                 sb.Append('<');
@@ -504,7 +504,7 @@ namespace Internal.IL
                 sb.Append(']');
             }
 
-            protected override void AppendNameForNamespaceType(StringBuilder sb, MetadataType type)
+            protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
                 switch (type.Category)
                 {
@@ -569,12 +569,10 @@ namespace Internal.IL
 
                 AppendNameForNamespaceTypeWithoutAliases(sb, type);
             }
-            public void AppendNameForNamespaceTypeWithoutAliases(StringBuilder sb, MetadataType type)
+            public void AppendNameForNamespaceTypeWithoutAliases(StringBuilder sb, DefType type)
             {
-                string ns = type.Namespace;
-
-                ModuleDesc owningModule = type.Module;
-                if (owningModule != _thisModule)
+                ModuleDesc owningModule = (type as MetadataType)?.Module;
+                if (owningModule != null && owningModule != _thisModule)
                 {
                     Debug.Assert(owningModule is IAssemblyDesc);
                     string owningModuleName = ((IAssemblyDesc)owningModule).GetName().Name;
@@ -583,6 +581,7 @@ namespace Internal.IL
                     sb.Append(']');
                 }
 
+                string ns = type.Namespace;
                 if (ns.Length > 0)
                 {
                     sb.Append(ns);
@@ -591,7 +590,7 @@ namespace Internal.IL
                 sb.Append(type.Name);
             }
 
-            protected override void AppendNameForNestedType(StringBuilder sb, MetadataType nestedType, MetadataType containingType)
+            protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
             {
                 AppendName(sb, containingType);
                 sb.Append('/');

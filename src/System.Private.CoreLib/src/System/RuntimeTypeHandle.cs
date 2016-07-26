@@ -17,18 +17,6 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct RuntimeTypeHandle
     {
-#if CLR_RUNTIMETYPEHANDLE
-        internal RuntimeTypeHandle(RuntimeType type)
-        {
-            _type = type;
-        }
-
-        internal RuntimeTypeHandle(EETypePtr pEEType)
-        {
-            // CORERT-TODO: RuntimeTypeHandle
-            throw new NotImplementedException();
-        }
-#else
         //
         // Caution: There can be and are multiple EEType for the "same" type (e.g. int[]). That means
         // you can't use the raw IntPtr value for comparisons. 
@@ -38,7 +26,6 @@ namespace System
         {
             _value = pEEType.RawValue;
         }
-#endif
 
         public override bool Equals(Object obj)
         {
@@ -61,9 +48,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(RuntimeTypeHandle handle)
         {
-#if CLR_RUNTIMETYPEHANDLE
-            return Object.ReferenceEquals(_type, handle._type);
-#else
             if (_value == handle._value)
             {
                 return true;
@@ -76,7 +60,6 @@ namespace System
             {
                 return RuntimeImports.AreTypesEquivalent(this.ToEETypePtr(), handle.ToEETypePtr());
             }
-#endif
         }
 
         public static bool operator ==(object left, RuntimeTypeHandle right)
@@ -109,22 +92,14 @@ namespace System
 
         internal EETypePtr ToEETypePtr()
         {
-#if CLR_RUNTIMETYPEHANDLE
-            return _type.ToEETypePtr();
-#else
             return new EETypePtr(_value);
-#endif
         }
 
         internal bool IsNull
         {
             get
             {
-#if CLR_RUNTIMETYPEHANDLE
-                return _type == null;
-#else
                 return _value == new IntPtr(0);
-#endif
             }
         }
 
@@ -151,9 +126,7 @@ namespace System
             }
         }
 
-#if CORERT
         [Intrinsic]
-#endif
         internal static IntPtr GetValueInternal(RuntimeTypeHandle handle)
         {
             return handle.RawValue;
@@ -163,29 +136,11 @@ namespace System
         {
             get
             {
-#if CLR_RUNTIMETYPEHANDLE
-                return ToEETypePtr().RawValue;
-#else
                 return _value;
-#endif
             }
         }
 
-#if CLR_RUNTIMETYPEHANDLE
-        internal RuntimeType RuntimeType
-        {
-            get
-            {
-                return _type;
-            }
-        }
-#endif
-
-#if CLR_RUNTIMETYPEHANDLE
-        private RuntimeType _type;
-#else
         private IntPtr _value;
-#endif
     }
 }
 

@@ -5,7 +5,6 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
-using System.Reflection.Runtime.Types;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core;
@@ -72,7 +71,7 @@ namespace System.Reflection.Runtime.General
                 if (fromTypeInfo.IsSubclassOf(toType))
                     return true;  // T[] is castable to Array or Object.
 
-                if (!toTypeInfo.IsArray) 
+                if (!toTypeInfo.IsArray)
                     return false;
 
                 int rank = fromTypeInfo.GetArrayRank();
@@ -249,7 +248,7 @@ namespace System.Reflection.Runtime.General
             }
             return true;
         }
-        
+
         //
         // A[] can cast to B[] if one of the following are true:
         //
@@ -315,7 +314,7 @@ namespace System.Reflection.Runtime.General
             if (fromTypeInfo.ProvablyAGcReferenceType(foundationTypes))
                 return fromTypeInfo.CanCastTo(toTypeInfo, foundationTypes);
 
-            return false; 
+            return false;
         }
 
         //
@@ -350,7 +349,7 @@ namespace System.Reflection.Runtime.General
                 foreach (Type constraintType in t.GetGenericParameterConstraints())
                 {
                     if (constraintType.GetTypeInfo().ProvablyAGcReferenceTypeHelper(foundationTypes))
-                        return true; 
+                        return true;
                 }
                 return false;
             }

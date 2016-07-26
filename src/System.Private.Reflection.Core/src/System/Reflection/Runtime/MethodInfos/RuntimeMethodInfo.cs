@@ -2,21 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
 
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
+using Internal.Reflection.Tracing;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -269,7 +268,7 @@ namespace System.Reflection.Runtime.MethodInfos
         private Delegate CreateDelegate(Type delegateType, Object target, bool allowClosedInstanceDelegates)
         {
             if (delegateType == null)
-                throw new ArgumentNullException("delegateType");
+                throw new ArgumentNullException(nameof(delegateType));
 
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
             RuntimeTypeHandle delegateTypeHandle = delegateType.TypeHandle;

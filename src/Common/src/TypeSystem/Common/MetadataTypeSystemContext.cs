@@ -41,7 +41,7 @@ namespace Internal.TypeSystem
             "Exception",
         };
 
-        private MetadataType[] _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
+        private MetadataType[] _wellKnownTypes;
 
         public MetadataTypeSystemContext()
         {
@@ -59,6 +59,8 @@ namespace Internal.TypeSystem
             // Sanity check the name table
             Debug.Assert(s_wellKnownTypeNames[(int)WellKnownType.MulticastDelegate - 1] == "MulticastDelegate");
 
+            _wellKnownTypes = new MetadataType[s_wellKnownTypeNames.Length];
+
             // Initialize all well known types - it will save us from checking the name for each loaded type
             for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
             {
@@ -70,6 +72,7 @@ namespace Internal.TypeSystem
 
         public override DefType GetWellKnownType(WellKnownType wellKnownType)
         {
+            Debug.Assert(_wellKnownTypes != null, "Forgot to call SetSystemModule?");
             return _wellKnownTypes[(int)wellKnownType - 1];
         }
     }

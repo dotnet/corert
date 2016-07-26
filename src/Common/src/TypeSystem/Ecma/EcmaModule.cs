@@ -393,14 +393,14 @@ namespace Internal.TypeSystem.Ecma
 
             Object resolutionScope = GetObject(typeReference.ResolutionScope);
 
-            if (resolutionScope is EcmaModule)
+            if (resolutionScope is ModuleDesc)
             {
-                return ((EcmaModule)(resolutionScope)).GetType(_metadataReader.GetString(typeReference.Namespace), _metadataReader.GetString(typeReference.Name));
+                return ((ModuleDesc)(resolutionScope)).GetType(_metadataReader.GetString(typeReference.Namespace), _metadataReader.GetString(typeReference.Name));
             }
             else
-            if (resolutionScope is EcmaType)
+            if (resolutionScope is MetadataType)
             {
-                return ((EcmaType)(resolutionScope)).GetNestedType(_metadataReader.GetString(typeReference.Name));
+                return ((MetadataType)(resolutionScope)).GetNestedType(_metadataReader.GetString(typeReference.Name));
             }
 
             // TODO

@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Collections.ObjectModel;
-using global::System.Reflection.Runtime.Types;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Metadata.NativeFormat;
+using Internal.LowLevelLinq;
+using Internal.Reflection.Core;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.CustomAttributes
 {
@@ -63,8 +61,8 @@ namespace System.Reflection.Runtime.CustomAttributes
 
         // Equals/GetHashCode no need to override (they just implement reference equality but desktop never unified these things.)
 
-        private RuntimeTypeInfo _attributeType;
-        private ReadOnlyCollection<CustomAttributeTypedArgument> _constructorArguments;
-        private ReadOnlyCollection<CustomAttributeNamedArgument> _namedArguments;
+        private readonly RuntimeTypeInfo _attributeType;
+        private readonly ReadOnlyCollection<CustomAttributeTypedArgument> _constructorArguments;
+        private readonly ReadOnlyCollection<CustomAttributeNamedArgument> _namedArguments;
     }
 }

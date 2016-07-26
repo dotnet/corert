@@ -55,10 +55,6 @@ namespace Internal.Reflection.Execution
             ReflectionExecutionDomainCallbacksImplementation runtimeCallbacks = new ReflectionExecutionDomainCallbacksImplementation(executionDomain, executionEnvironment);
             RuntimeAugments.Initialize(runtimeCallbacks);
 
-#if ENABLE_REFLECTION_TRACE
-            ReflectionTracingInitializer.Initialize();
-#endif
-
             DefaultAssemblyNamesForGetType =
                 new String[]
                 {

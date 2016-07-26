@@ -102,9 +102,7 @@ namespace System
             return RuntimeAugments.Callbacks.GetType(typeName, throwOnError, ignoreCase);
         }
 
-#if CORERT
         [Intrinsic]
-#endif
         public static Type GetTypeFromHandle(RuntimeTypeHandle handle)
         {
             return ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(handle);
