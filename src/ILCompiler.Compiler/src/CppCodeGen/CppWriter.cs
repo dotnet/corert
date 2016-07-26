@@ -367,7 +367,7 @@ namespace ILCompiler.CppCodeGen
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
             _compilation.Log.WriteLine("Compiling " + method.ToString());
-
+            // Add owning type here? 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
@@ -1154,137 +1154,142 @@ namespace ILCompiler.CppCodeGen
 
             foreach (var node in nodeIterator.GetNodes())
             {
-
-
-                EETypeNode typeNode = (EETypeNode)node;
-                TypeDesc nodeType = typeNode.Type;
-                if (_emittedTypes == null)
-                {
-                    _emittedTypes = new HashSet<TypeDesc>();
-                    _emittedTypes.Add(nodeType);
-                }
-
-                // forward type definition
-
-                // Create Namespaces
-                string mangledName = GetCppTypeName(nodeType);
-
-                int nesting = 0;
-                int current = 0;
-
-
-                forwardDefinitions.AppendLine();
-                for (;;)
-                {
-                    int sep = mangledName.IndexOf("::", current);
-
-                    if (sep < 0)
-                        break;
-
-                    if (sep != 0)
-                    {
-                        // Case of a name not starting with ::
-                        forwardDefinitions.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
-                        typeDefinitions.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
-                        nesting++;
-                    }
-                    current = sep + 2;
-
-                }
-
-                forwardDefinitions.Append("class " + mangledName.Substring(current) + ";");
-
-                // type definition
-                typeDefinitions.Append("class " + mangledName.Substring(current));
-                if (!nodeType.IsValueType)
-                {
-                    if (nodeType.BaseType != null)
-                    {
-                        typeDefinitions.Append(" : public " + GetCppTypeName(nodeType.BaseType));
-                    }
-                }
-                typeDefinitions.Append(" {");
-                typeDefinitions.AppendLine();
-                typeDefinitions.Append("public:");
-                // TODO: Enable once the dependencies are tracked for arrays
-                // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
-                if (!nodeType.IsPointer && !nodeType.IsByRef)
-                {
-                    typeDefinitions.AppendLine();
-                    typeDefinitions.Append("static MethodTable * __getMethodTable();");
-                }
-                if (typeNode.Constructed)
-                {
-                    IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(nodeType).Slots;
-
-                    int baseSlots = 0;
-                    var baseType = nodeType.BaseType;
-                    while (baseType != null)
-                    {
-                        IReadOnlyList<MethodDesc> baseVirtualSlots = _compilation.NodeFactory.VTable(baseType).Slots;
-                        if (baseVirtualSlots != null)
-                            baseSlots += baseVirtualSlots.Count;
-                        baseType = baseType.BaseType;
-                    }
-
-                    for (int slot = 0; slot < virtualSlots.Count; slot++)
-                    {
-                        MethodDesc virtualMethod = virtualSlots[slot];
-                        typeDefinitions.AppendLine();
-                        typeDefinitions.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
-                    }
-
-                    if (nodeType.IsDelegate)
-                    {
-                        typeDefinitions.AppendLine();
-                        typeDefinitions.Append(GetCodeForDelegate(nodeType));
-                    }
-
-                    OutputTypeFields(typeDefinitions, nodeType, true);
-
-                    if (nodeType.HasStaticConstructor)
-                    {
-                        typeDefinitions.AppendLine();
-                        typeDefinitions.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
-                    }
-
-                    List<MethodDesc> methodList;
-                    if (_methodLists.TryGetValue(nodeType, out methodList))
-                    {
-                        foreach (var m in methodList)
-                        {
-                            if (factory.MethodEntrypoint(m) as CppMethodCodeNode == null)
-                                continue;
-
-                            if (((CppMethodCodeNode)factory.MethodEntrypoint(m)).Marked)
-                                OutputMethod(typeDefinitions, m);
-                        }
-                    }
-                }
-                typeDefinitions.AppendEmptyLine();
-                typeDefinitions.Append("};");
-                typeDefinitions.AppendEmptyLine();
-
-                while (nesting > 0)
-                {
-                    forwardDefinitions.Append("};");
-                    typeDefinitions.Append("};");
-                    nesting--;
-                }
-                typeDefinitions.AppendEmptyLine();
-
-                // declare method table
-                methodTables.Append(GetCodeForType(nodeType));
-                methodTables.AppendEmptyLine();
-                // declare implementation
+                if(node is EETypeNode)
+                    OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions);
             }
+
             sb.Append(forwardDefinitions.ToString());
             sb.Append(typeDefinitions.ToString());
             sb.Append(methodTables.ToString());
         }
-        private void OutputTypeNode(EETypeNode node)
+        private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions)
         {
+            TypeDesc nodeType = typeNode.Type;
+            if (nodeType.IsPointer || nodeType.IsByRef )
+                return;
 
+            if (_emittedTypes == null)
+            {
+                _emittedTypes = new HashSet<TypeDesc>();
+                _emittedTypes.Add(nodeType);
+            }
+
+
+            // forward type definition
+
+            // Create Namespaces
+            string mangledName = GetCppTypeName(nodeType);
+
+            int nesting = 0;
+            int current = 0;
+
+
+            forwardDefinitions.AppendLine();
+            for (;;)
+            {
+                int sep = mangledName.IndexOf("::", current);
+
+                if (sep < 0)
+                    break;
+
+                if (sep != 0)
+                {
+                    // Case of a name not starting with ::
+                    forwardDefinitions.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                    typeDefinitions.Append("namespace " + mangledName.Substring(current, sep - current) + " { ");
+                    typeDefinitions.Indent();
+                    nesting++;
+                }
+                current = sep + 2;
+
+            }
+
+            forwardDefinitions.Append("class " + mangledName.Substring(current) + ";");
+
+            // type definition
+            typeDefinitions.Append("class " + mangledName.Substring(current));
+            if (!nodeType.IsValueType)
+            {
+                if (nodeType.BaseType != null)
+                {
+                    typeDefinitions.Append(" : public " + GetCppTypeName(nodeType.BaseType));
+                }
+            }
+            typeDefinitions.Append(" {");
+            typeDefinitions.AppendLine();
+            typeDefinitions.Append("public:");
+            typeDefinitions.Indent();
+
+            // TODO: Enable once the dependencies are tracked for arrays
+            // if (((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(t)).Marked)
+            if (!nodeType.IsPointer && !nodeType.IsByRef)
+            {
+                typeDefinitions.AppendLine();
+                typeDefinitions.Append("static MethodTable * __getMethodTable();");
+            }
+            if (typeNode.Constructed)
+            {
+
+                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(nodeType).Slots;
+
+                int baseSlots = 0;
+                var baseType = nodeType.BaseType;
+                while (baseType != null)
+                {
+                    IReadOnlyList<MethodDesc> baseVirtualSlots = _compilation.NodeFactory.VTable(baseType).Slots;
+                    if (baseVirtualSlots != null)
+                        baseSlots += baseVirtualSlots.Count;
+                    baseType = baseType.BaseType;
+                }
+
+                for (int slot = 0; slot < virtualSlots.Count; slot++)
+                {
+                    MethodDesc virtualMethod = virtualSlots[slot];
+                    typeDefinitions.AppendLine();
+                    typeDefinitions.Append(GetCodeForVirtualMethod(virtualMethod, baseSlots + slot));
+                }
+
+                if (nodeType.IsDelegate)
+                {
+                    typeDefinitions.AppendLine();
+                    typeDefinitions.Append(GetCodeForDelegate(nodeType));
+                }
+
+                OutputTypeFields(typeDefinitions, nodeType, true);
+
+                if (nodeType.HasStaticConstructor)
+                {
+                    typeDefinitions.AppendLine();
+                    typeDefinitions.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
+                }
+
+                List<MethodDesc> methodList;
+                if (_methodLists.TryGetValue(nodeType, out methodList))
+                {
+                    foreach (var m in methodList)
+                    {
+                        OutputMethod(typeDefinitions, m);
+                    }
+                }
+            }
+            typeDefinitions.AppendEmptyLine();
+            typeDefinitions.Append("};");
+            typeDefinitions.AppendEmptyLine();
+            typeDefinitions.Exdent();
+
+            while (nesting > 0)
+            {
+                forwardDefinitions.Append("};");
+                typeDefinitions.Append("};");
+                typeDefinitions.Exdent();
+                nesting--;
+            }
+            typeDefinitions.AppendEmptyLine();
+
+            //// declare method table
+            //methodTables.Append(GetCodeForType(nodeType));
+            //methodTables.AppendEmptyLine();
+            // declare implementation
         }
         private void OutPutForwardDefinition(EETypeNode node)
         {
