@@ -376,17 +376,31 @@ namespace System
             using (IEnumerator<T> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
-                    return String.Empty;
-
-                StringBuilder result = StringBuilderCache.Acquire();
+                    return string.Empty;
+                
+                // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
-                if (currentValue != null)
+                // Call ToString before calling MoveNext again, since
+                // we want to stay consistent with the below loop
+                // Everything should be called in the order
+                // MoveNext-Current-ToString, unless further optimizations
+                // can be made, to avoid breaking changes
+                string firstString = currentValue?.ToString();
+
+                // If there's only 1 item, simply call ToString on that
+                if (!en.MoveNext())
                 {
-                    result.Append(currentValue.ToString());
+                    // We have to handle the case of either currentValue
+                    // or its ToString being null
+                    return firstString ?? string.Empty;
                 }
 
-                while (en.MoveNext())
+                StringBuilder result = StringBuilderCache.Acquire();
+                
+                result.Append(firstString);
+
+                do
                 {
                     currentValue = en.Current;
 
@@ -396,6 +410,8 @@ namespace System
                         result.Append(currentValue.ToString());
                     }
                 }
+                while (en.MoveNext());
+
                 return StringBuilderCache.GetStringAndRelease(result);
             }
         }
