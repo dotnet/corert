@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Reflection.Runtime.Assemblies;
+using System.Collections.Generic;
 
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Extensibility;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.Modules
 {
@@ -65,7 +65,7 @@ namespace System.Reflection.Runtime.Modules
             RuntimeModule other = o as RuntimeModule;
             if (other == null)
                 return false;
-            return this._assembly.Equals(other._assembly);
+            return _assembly.Equals(other._assembly);
         }
 
         public sealed override int GetHashCode()
@@ -83,7 +83,7 @@ namespace System.Reflection.Runtime.Modules
             return "<Unknown>";
         }
 
-        private Assembly _assembly;
+        private readonly Assembly _assembly;
     }
 }
 

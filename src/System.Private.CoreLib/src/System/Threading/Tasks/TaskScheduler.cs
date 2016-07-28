@@ -509,7 +509,7 @@ namespace System.Threading.Tasks
             Task[] activeTasksArray = activeTasksSource as Task[];
             if (activeTasksArray == null)
             {
-                activeTasksArray = (new List<Task>(activeTasksSource)).ToArray();
+                activeTasksArray = (new LowLevelList<Task>(activeTasksSource)).ToArray();
             }
 
             // touch all Task.Id fields so that the debugger doesn't need to do a lot of cross-proc calls to generate them

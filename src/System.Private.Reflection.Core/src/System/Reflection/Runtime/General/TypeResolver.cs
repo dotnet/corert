@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.TypeParsing;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.TypeParsing;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General
 {
@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.General
         //
         // Main routine to resolve a typeDef/Ref/Spec.
         //
-        internal static RuntimeTypeInfo Resolve(this Handle typeDefRefOrSpec, MetadataReader reader,TypeContext typeContext)
+        internal static RuntimeTypeInfo Resolve(this Handle typeDefRefOrSpec, MetadataReader reader, TypeContext typeContext)
         {
             Exception exception = null;
             RuntimeTypeInfo runtimeType = typeDefRefOrSpec.TryResolve(reader, typeContext, ref exception);
@@ -151,9 +151,9 @@ namespace System.Reflection.Runtime.General
         //
         private static RuntimeTypeInfo TryResolveTypeReference(this TypeReferenceHandle typeReferenceHandle, MetadataReader reader, ref Exception exception)
         {
-           RuntimeTypeHandle resolvedRuntimeTypeHandle;
-           if (ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForTypeReference(reader, typeReferenceHandle, out resolvedRuntimeTypeHandle))
-               return resolvedRuntimeTypeHandle.GetTypeForRuntimeTypeHandle();
+            RuntimeTypeHandle resolvedRuntimeTypeHandle;
+            if (ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForTypeReference(reader, typeReferenceHandle, out resolvedRuntimeTypeHandle))
+                return resolvedRuntimeTypeHandle.GetTypeForRuntimeTypeHandle();
 
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
             String name = typeReference.TypeName.GetString(reader);

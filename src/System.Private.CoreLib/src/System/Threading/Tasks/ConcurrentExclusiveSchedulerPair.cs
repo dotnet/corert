@@ -236,7 +236,7 @@ namespace System.Threading.Tasks
 
             // Store the faulted task's exceptions
             var cs = EnsureCompletionStateInitialized();
-            if (cs.m_exceptions == null) cs.m_exceptions = new List<Exception>();
+            if (cs.m_exceptions == null) cs.m_exceptions = new LowLevelListWithIList<Exception>();
             cs.m_exceptions.AddRange(faultedTask.Exception.InnerExceptions);
 
             // Now that we're doomed, request completion
@@ -465,7 +465,7 @@ namespace System.Threading.Tasks
             /// <summary>Whether completion processing has been queued.</summary>
             internal bool m_completionQueued;
             /// <summary>Unrecoverable exceptions incurred while processing.</summary>
-            internal List<Exception> m_exceptions;
+            internal LowLevelListWithIList<Exception> m_exceptions;
         }
 
         /// <summary>

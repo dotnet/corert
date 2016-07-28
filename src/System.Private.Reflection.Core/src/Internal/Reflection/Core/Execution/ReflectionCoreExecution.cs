@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
+using System;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Augments;
-using global::Internal.Reflection.Core.Execution;
+using Internal.LowLevelLinq;
+using Internal.Reflection.Augments;
+using Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Core.Execution
 {
@@ -22,9 +22,9 @@ namespace Internal.Reflection.Core.Execution
         {
             ExecutionDomain executionDomain = new ExecutionDomain(executionDomainSetup, executionEnvironment);
             //@todo: This check has a race window but since this is a private api targeted by the toolchain, perhaps this is not so critical.
-            if (_executionDomain != null)
+            if (s_executionDomain != null)
                 throw new InvalidOperationException(); // Multiple Initializes not allowed.
-            _executionDomain = executionDomain;
+            s_executionDomain = executionDomain;
 
             ReflectionCoreCallbacks reflectionCallbacks = new ReflectionCoreCallbacksImplementation();
             ReflectionAugments.Initialize(reflectionCallbacks);
@@ -35,7 +35,7 @@ namespace Internal.Reflection.Core.Execution
         {
             get
             {
-                return _executionDomain;
+                return s_executionDomain;
             }
         }
 
@@ -47,6 +47,6 @@ namespace Internal.Reflection.Core.Execution
             }
         }
 
-        private volatile static ExecutionDomain _executionDomain;
+        private volatile static ExecutionDomain s_executionDomain;
     }
 }

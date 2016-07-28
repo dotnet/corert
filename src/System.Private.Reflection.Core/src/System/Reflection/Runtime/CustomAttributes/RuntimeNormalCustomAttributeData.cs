@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections;
-using global::System.Collections.Generic;
-using global::System.Collections.ObjectModel;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Metadata.NativeFormat;
+using Internal.LowLevelLinq;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.CustomAttributes
 {
@@ -235,8 +235,8 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
         }
 
-        private MetadataReader _reader;
-        private CustomAttribute _customAttribute;
+        private readonly MetadataReader _reader;
+        private readonly CustomAttribute _customAttribute;
 
         private volatile Type _lazyAttributeType;
     }

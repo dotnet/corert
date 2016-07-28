@@ -44,19 +44,24 @@ namespace System.Threading
         [ThreadStatic]
         static ExecutionContext t_currentMaybeNull;
 
-        private readonly Dictionary<IAsyncLocal, object> m_localValues;
-        private readonly List<IAsyncLocal> m_localChangeNotifications;
+        private readonly LowLevelDictionaryWithIEnumerable<IAsyncLocal, object> m_localValues;
+        private readonly LowLevelListWithIList<IAsyncLocal> m_localChangeNotifications;
 
         private ExecutionContext()
         {
-            m_localValues = new Dictionary<IAsyncLocal, object>();
-            m_localChangeNotifications = new List<IAsyncLocal>();
+            m_localValues = new LowLevelDictionaryWithIEnumerable<IAsyncLocal, object>();
+            m_localChangeNotifications = new LowLevelListWithIList<IAsyncLocal>();
         }
 
         private ExecutionContext(ExecutionContext other)
         {
-            m_localValues = new Dictionary<IAsyncLocal, object>(other.m_localValues);
-            m_localChangeNotifications = new List<IAsyncLocal>(other.m_localChangeNotifications);
+            m_localValues = new LowLevelDictionaryWithIEnumerable<IAsyncLocal, object>();
+            foreach (KeyValuePair<IAsyncLocal, object> kvp in other.m_localValues)
+            {
+                m_localValues.Add(kvp.Key, kvp.Value);
+            }
+
+            m_localChangeNotifications = new LowLevelListWithIList<IAsyncLocal>(other.m_localChangeNotifications);
         }
 
         public static ExecutionContext Capture()

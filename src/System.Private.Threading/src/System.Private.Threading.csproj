@@ -22,9 +22,7 @@
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
- 
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
@@ -32,80 +30,15 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Helpers.cs" />
-    <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
-    <Compile Include="System\AggregateException.cs" />
-    <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
-    <Compile Include="System\OperationCanceledException.cs" />
-    <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
-    <Compile Include="System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
-    <Compile Include="System\Runtime\CompilerServices\INotifyCompletion.cs" />
-    <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
-    <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
-    <Compile Include="System\Threading\AsyncLocal.cs" />
+    <Compile Include="Internal\Threading\SpinLockTraceCallbacksImplementation.cs" />
+    <Compile Include="Internal\Threading\TaskTraceCallbacksImplementation.cs" />
+    <Compile Include="Internal\Threading\ThreadingTracingInitializer.cs" />
     <Compile Include="System\Threading\Barrier.cs" />
-    <Compile Include="System\Threading\CancellationToken.cs" />
-    <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
-    <Compile Include="System\Threading\CancellationTokenSource.cs" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
-    <Compile Include="System\Threading\ExecutionContext.cs" />
-    <Compile Include="System\Threading\PlatformHelper.cs" />
     <Compile Include="System\Threading\Progress.cs" />
-    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
-    <Compile Include="System\Threading\LockRecursionException.cs" />
-    <Compile Include="System\Threading\ManualResetEventSlim.cs" />
-    <Compile Include="System\Threading\SemaphoreSlim.cs" />
-    <Compile Include="System\Threading\SendOrPostCallback.cs" />
-    <Compile Include="System\Threading\SpinLock.cs" />
-    <Compile Include="System\Threading\SynchronizationContext.cs" />
-    <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
-    <Compile Include="System\Threading\Tasks\DebugHelperRooter.cs" />
-    <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
-    <Compile Include="System\Threading\Tasks\future.cs" />
-    <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
-    <Compile Include="System\Threading\Tasks\ProducerConsumerQueues.cs" />
-    <Compile Include="System\Threading\Tasks\Task.cs" />
-    <Compile Include="System\Threading\Tasks\TaskCanceledException.cs" />
-    <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
-    <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
-    <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
-    <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
-    <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
-    <Compile Include="System\Threading\Tasks\TaskSchedulerException.cs" />
-    <Compile Include="System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
     <Compile Include="System\Threading\Tasks\TPLETWProvider.cs" />
-    <Compile Include="System\Threading\ThreadLocal.cs" />
-    <Compile Include="System\Threading\ThreadPool.cs" />
-    <Compile Include="System\Threading\TimeoutHelper.cs" />
-    <Compile Include="System\Threading\Timer.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
-      <Link>Common\Interop\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.SYSTEM_INFO.cs">
-      <Link>Common\Interop\Interop.SYSTEM_INFO.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.GetNativeSystemInfo.cs">
-      <Link>Common\Interop\Interop.GetNativeSystemInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
-      <Link>Common\Interop\Interop.QueryUnbiasedInterruptTime.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.VirtualQuery.cs">
-      <Link>Common\Interop\Interop.VirtualQuery.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\System\__HResults.cs" >
-      <Link>System\__HResults.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
-      <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
-    </Compile>
+    <Compile Include="TypeForwarders.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

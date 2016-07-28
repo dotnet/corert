@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -131,6 +131,10 @@ namespace System.Reflection.Runtime.TypeInfos
             return GenericParameterHandle.GetHashCode();
         }
 
+        protected GenericParameterHandle GenericParameterHandle { get; }
+
+        protected MetadataReader Reader { get; }
+
         internal sealed override string InternalFullNameOfAssembly
         {
             get
@@ -154,9 +158,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 return default(RuntimeTypeHandle);
             }
         }
-
-        internal GenericParameterHandle GenericParameterHandle { get; }
-        internal MetadataReader Reader { get; }
 
         //
         // Returns the base type as a typeDef, Ref, or Spec. Default behavior is to QTypeDefRefOrSpec.Null, which causes BaseType to return null.

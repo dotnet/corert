@@ -466,9 +466,9 @@ namespace System.Threading
         }
 
         /// <summary>Gets all of the threads' values in a list.</summary>
-        private List<T> GetValuesAsList()
+        private LowLevelListWithIList<T> GetValuesAsList()
         {
-            List<T> valueList = new List<T>();
+            LowLevelListWithIList<T> valueList = new LowLevelListWithIList<T>();
             int id = ~m_idComplement;
             if (id == -1)
             {
@@ -539,7 +539,7 @@ namespace System.Threading
         }
 
         /// <summary>Gets the values of all threads that accessed the ThreadLocal&lt;T&gt;.</summary>
-        internal List<T> ValuesForDebugDisplay // same as Values property, but doesn't throw if disposed
+        internal IList<T> ValuesForDebugDisplay // same as Values property, but doesn't throw if disposed
         {
             get { return GetValuesAsList(); }
         }
@@ -673,7 +673,7 @@ namespace System.Threading
             private int m_nextIdToTry = 0;
 
             // Stores whether each ID is free or not. Additionally, the object is also used as a lock for the IdManager.
-            private List<bool> m_freeIds = new List<bool>();
+            private LowLevelList<bool> m_freeIds = new LowLevelList<bool>();
 
             internal Lock m_lock = new Lock();
 
@@ -807,7 +807,7 @@ namespace System.Threading
         }
 
         /// <summary>Return all values for all threads that have accessed this instance.</summary>
-        public List<T> Values
+        public IList<T> Values
         {
             get
             {

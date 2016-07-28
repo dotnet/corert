@@ -21,6 +21,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 //using System.Runtime.ConstrainedExecution;
 using System.Diagnostics.Contracts;
+using Internal.Threading.Tracing;
 
 namespace System.Threading
 {
@@ -297,9 +298,9 @@ namespace System.Threading
                 startTime = TimeoutHelper.GetTime();
             }
 
-            if (CdsSyncEtwBCLProvider.Log.IsEnabled())
+            if (SpinLockTrace.Enabled)
             {
-                CdsSyncEtwBCLProvider.Log.SpinLock_FastPathFailed(m_owner);
+                SpinLockTrace.SpinLock_FastPathFailed(m_owner);
             }
 
             if (IsThreadOwnerTrackingEnabled)

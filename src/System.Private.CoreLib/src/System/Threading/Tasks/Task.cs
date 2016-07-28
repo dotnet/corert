@@ -23,7 +23,7 @@ using System.Security;
 using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Diagnostics.Tracing;
+using Internal.Threading.Tasks.Tracing;
 
 using AsyncStatus = Internal.Runtime.Augments.AsyncStatus;
 using CausalityRelation = Internal.Runtime.Augments.CausalityRelation;
@@ -238,7 +238,7 @@ namespace System.Threading.Tasks
             internal volatile int m_completionCountdown = 1;
             // A list of child tasks that threw an exception (TCEs don't count),
             // but haven't yet been waited on by the parent, lazily initialized.
-            internal volatile List<Task> m_exceptionalChildren;
+            internal volatile LowLevelListWithIList<Task> m_exceptionalChildren;
 
             /// <summary>
             /// Sets the internal completion event.
@@ -2089,7 +2089,7 @@ namespace System.Threading.Tasks
 
                 // Now is the time to prune exceptional children. We'll walk the list and removes the ones whose exceptions we might have observed after they threw.
                 // we use a local variable for exceptional children here because some other thread may be nulling out m_contingentProperties.m_exceptionalChildren 
-                List<Task> exceptionalChildren = props != null ? props.m_exceptionalChildren : null;
+                LowLevelListWithIList<Task> exceptionalChildren = props != null ? props.m_exceptionalChildren : null;
 
                 if (exceptionalChildren != null)
                 {
@@ -2207,14 +2207,14 @@ namespace System.Threading.Tasks
                 // Lazily initialize the child exception list
                 if (props.m_exceptionalChildren == null)
                 {
-                    Interlocked.CompareExchange(ref props.m_exceptionalChildren, new List<Task>(), null);
+                    Interlocked.CompareExchange(ref props.m_exceptionalChildren, new LowLevelListWithIList<Task>(), null);
                 }
 
                 // In rare situations involving AppDomainUnload, it's possible (though unlikely) for FinishStageTwo() to be called
                 // multiple times for the same task.  In that case, AddExceptionsFromChildren() could be nulling m_exceptionalChildren
                 // out at the same time that we're processing it, resulting in a NullReferenceException here.  We'll protect
                 // ourselves by caching m_exceptionChildren in a local variable.
-                List<Task> tmp = props.m_exceptionalChildren;
+                LowLevelListWithIList<Task> tmp = props.m_exceptionalChildren;
                 if (tmp != null)
                 {
                     lock (tmp)
@@ -2244,7 +2244,7 @@ namespace System.Threading.Tasks
             // being nulled out while it is being processed, which could lead to a NullReferenceException.  To
             // protect ourselves, we'll cache m_exceptionalChildren in a local variable.
             var props = m_contingentProperties;
-            List<Task> tmp = (props != null) ? props.m_exceptionalChildren : null;
+            LowLevelListWithIList<Task> tmp = (props != null) ? props.m_exceptionalChildren : null;
 
             if (tmp != null)
             {
@@ -2371,15 +2371,13 @@ namespace System.Threading.Tasks
             Task previousTask = currentTaskSlot;
 
             // ETW event for Task Started
-            var etwLog = TplEtwProvider.Log;
-            bool etwIsEnabled = etwLog.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1)));
-            if (etwIsEnabled)
+            if (TaskTrace.Enabled)
             {
                 // previousTask holds the actual "current task" we want to report in the event
                 if (previousTask != null)
-                    etwLog.TaskStarted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id);
+                    TaskTrace.TaskStarted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id);
                 else
-                    etwLog.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
+                    TaskTrace.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
             }
 
             if (DebuggerSupport.LoggingOn)
@@ -2411,13 +2409,13 @@ namespace System.Threading.Tasks
             }
 
             // ETW event for Task Completed
-            if (etwIsEnabled)
+            if (TaskTrace.Enabled)
             {
                 // previousTask holds the actual "current task" we want to report in the event
                 if (previousTask != null)
-                    etwLog.TaskCompleted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id, IsFaulted);
+                    TaskTrace.TaskCompleted(previousTask.m_taskScheduler.Id, previousTask.Id, this.Id, IsFaulted);
                 else
-                    etwLog.TaskCompleted(TaskScheduler.Current.Id, 0, this.Id, IsFaulted);
+                    TaskTrace.TaskCompleted(TaskScheduler.Current.Id, 0, this.Id, IsFaulted);
             }
         }
 
@@ -2768,14 +2766,12 @@ namespace System.Threading.Tasks
         internal bool InternalWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             // ETW event for Task Wait Begin
-            var etwLog = TplEtwProvider.Log;
-            bool etwIsEnabled = etwLog.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1)));
-            if (etwIsEnabled)
+            if (TaskTrace.Enabled)
             {
                 Task currentTask = Task.InternalCurrent;
-                etwLog.TaskWaitBegin(
+                TaskTrace.TaskWaitBegin_Synchronous(
                     (currentTask != null ? currentTask.m_taskScheduler.Id : TaskScheduler.Default.Id), (currentTask != null ? currentTask.Id : 0),
-                    this.Id, TplEtwProvider.TaskWaitBehavior.Synchronous);
+                    this.Id);
             }
 
             bool returnValue = IsCompleted;
@@ -2807,16 +2803,16 @@ namespace System.Threading.Tasks
             Contract.Assert(IsCompleted || millisecondsTimeout != Timeout.Infinite);
 
             // ETW event for Task Wait End
-            if (etwIsEnabled)
+            if (TaskTrace.Enabled)
             {
                 Task currentTask = Task.InternalCurrent;
                 if (currentTask != null)
                 {
-                    etwLog.TaskWaitEnd(currentTask.m_taskScheduler.Id, currentTask.Id, this.Id);
+                    TaskTrace.TaskWaitEnd(currentTask.m_taskScheduler.Id, currentTask.Id, this.Id);
                 }
                 else
                 {
-                    etwLog.TaskWaitEnd(TaskScheduler.Default.Id, 0, this.Id);
+                    TaskTrace.TaskWaitEnd(TaskScheduler.Default.Id, 0, this.Id);
                 }
             }
 
@@ -3172,7 +3168,7 @@ namespace System.Threading.Tasks
                 }
 
                 // Not a single; attempt to cast as list
-                List<object> continuations = continuationObject as List<object>;
+                LowLevelListWithIList<object> continuations = continuationObject as LowLevelListWithIList<object>;
 
                 if (continuations == null)
                 {
@@ -4195,10 +4191,10 @@ namespace System.Threading.Tasks
             object oldValue = m_continuationObject;
 
             // Logic for the case where we were previously storing a single continuation
-            if ((oldValue != s_taskCompletionSentinel) && (!(oldValue is List<object>)))
+            if ((oldValue != s_taskCompletionSentinel) && (!(oldValue is LowLevelListWithIList<object>)))
             {
                 // Construct a new TaskContinuation list
-                List<object> newList = new List<object>();
+                LowLevelListWithIList<object> newList = new LowLevelListWithIList<object>();
 
                 // Add in the old single value
                 newList.Add(oldValue);
@@ -4213,7 +4209,7 @@ namespace System.Threading.Tasks
 
             // m_continuationObject is guaranteed at this point to be either a List or
             // s_taskCompletionSentinel.
-            List<object> list = m_continuationObject as List<object>;
+            LowLevelListWithIList<object> list = m_continuationObject as LowLevelListWithIList<object>;
             Contract.Assert((list != null) || (m_continuationObject == s_taskCompletionSentinel),
                 "Expected m_continuationObject to be list or sentinel");
 
@@ -4280,18 +4276,18 @@ namespace System.Threading.Tasks
             // Task is completed. Nothing to do here.
             if (continuationsLocalRef == s_taskCompletionSentinel) return;
 
-            List<object> continuationsLocalListRef = continuationsLocalRef as List<object>;
+            LowLevelListWithIList<object> continuationsLocalListRef = continuationsLocalRef as LowLevelListWithIList<object>;
 
             if (continuationsLocalListRef == null)
             {
                 // This is not a list. If we have a single object (the one we want to remove) we try to replace it with an empty list.
                 // Note we cannot go back to a null state, since it will mess up the AddTaskContinuation logic.
-                if (Interlocked.CompareExchange(ref m_continuationObject, new List<object>(), continuationObject) != continuationObject)
+                if (Interlocked.CompareExchange(ref m_continuationObject, new LowLevelListWithIList<object>(), continuationObject) != continuationObject)
                 {
                     // If we fail it means that either AddContinuationComplex won the race condition and m_continuationObject is now a List
                     // that contains the element we want to remove. Or FinishContinuations set the s_taskCompletionSentinel.
                     // So we should try to get a list one more time
-                    continuationsLocalListRef = m_continuationObject as List<object>;
+                    continuationsLocalListRef = m_continuationObject as LowLevelListWithIList<object>;
                 }
                 else
                 {
@@ -4520,9 +4516,9 @@ namespace System.Threading.Tasks
             // We make sure that the exception behavior of Task.Wait() is replicated the same for tasks handled in either of these codepaths
             //
 
-            List<Exception> exceptions = null;
-            List<Task> waitedOnTaskList = null;
-            List<Task> notificationTasks = null;
+            LowLevelListWithIList<Exception> exceptions = null;
+            LowLevelListWithIList<Task> waitedOnTaskList = null;
+            LowLevelListWithIList<Task> notificationTasks = null;
 
             // If any of the waited-upon tasks end as Faulted or Canceled, set these to true.
             bool exceptionSeen = false, cancellationSeen = false;
@@ -4628,9 +4624,9 @@ namespace System.Threading.Tasks
         /// <param name="item">The item to add.</param>
         /// <param name="list">The list.</param>
         /// <param name="initSize">The size to which to initialize the list if the list is null.</param>
-        private static void AddToList<T>(T item, ref List<T> list, int initSize)
+        private static void AddToList<T>(T item, ref LowLevelListWithIList<T> list, int initSize)
         {
-            if (list == null) list = new List<T>(initSize);
+            if (list == null) list = new LowLevelListWithIList<T>(initSize);
             list.Add(item);
         }
 
@@ -4639,7 +4635,7 @@ namespace System.Threading.Tasks
         /// <param name="millisecondsTimeout">The timeout.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>true if all of the tasks completed; otherwise, false.</returns>
-        private static bool WaitAllBlockingCore(List<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        private static bool WaitAllBlockingCore(LowLevelListWithIList<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Contract.Assert(tasks != null, "Expected a non-null list of tasks");
             Contract.Assert(tasks.Count > 0, "Expected at least one task");
@@ -4707,7 +4703,7 @@ namespace System.Threading.Tasks
         /// If the completed task is canceled or it has other exceptions, here we will add those
         /// into the passed in exception list (which will be lazily initialized here).
         /// </summary>
-        internal static void AddExceptionsForCompletedTask(ref List<Exception> exceptions, Task t)
+        internal static void AddExceptionsForCompletedTask(ref LowLevelListWithIList<Exception> exceptions, Task t)
         {
             AggregateException ex = t.GetExceptions(true);
             if (ex != null)
@@ -4719,7 +4715,7 @@ namespace System.Threading.Tasks
 
                 if (exceptions == null)
                 {
-                    exceptions = new List<Exception>(ex.InnerExceptions.Count);
+                    exceptions = new LowLevelListWithIList<Exception>(ex.InnerExceptions.Count);
                 }
 
                 exceptions.AddRange(ex.InnerExceptions);
@@ -5405,7 +5401,7 @@ namespace System.Threading.Tasks
 
             // Do some argument checking and convert tasks to a List (and later an array).
             if (tasks == null) throw new ArgumentNullException("tasks");
-            List<Task> taskList = new List<Task>();
+            LowLevelListWithIList<Task> taskList = new LowLevelListWithIList<Task>();
             foreach (Task task in tasks)
             {
                 if (task == null) throw new ArgumentException(SR.Task_MultiTaskContinuation_NullTask, "tasks");
@@ -5525,7 +5521,7 @@ namespace System.Threading.Tasks
                 if (Interlocked.Decrement(ref m_count) == 0)
                 {
                     // Set up some accounting variables
-                    List<ExceptionDispatchInfo> observedExceptions = null;
+                    LowLevelListWithIList<ExceptionDispatchInfo> observedExceptions = null;
                     Task canceledTask = null;
 
                     // Loop through antecedents:
@@ -5539,7 +5535,7 @@ namespace System.Threading.Tasks
 
                         if (task.IsFaulted)
                         {
-                            if (observedExceptions == null) observedExceptions = new List<ExceptionDispatchInfo>();
+                            if (observedExceptions == null) observedExceptions = new LowLevelListWithIList<ExceptionDispatchInfo>();
                             observedExceptions.AddRange(task.GetExceptionDispatchInfos());
                         }
                         else if (task.IsCanceled)
@@ -5646,7 +5642,7 @@ namespace System.Threading.Tasks
 
             // Do some argument checking and convert tasks into a List (later an array)
             if (tasks == null) throw new ArgumentNullException("tasks");
-            List<Task<TResult>> taskList = new List<Task<TResult>>();
+            LowLevelListWithIList<Task<TResult>> taskList = new LowLevelListWithIList<Task<TResult>>();
             foreach (Task<TResult> task in tasks)
             {
                 if (task == null) throw new ArgumentException(SR.Task_MultiTaskContinuation_NullTask, "tasks");
@@ -5762,7 +5758,7 @@ namespace System.Threading.Tasks
                 {
                     // Set up some accounting variables
                     T[] results = new T[m_tasks.Length];
-                    List<ExceptionDispatchInfo> observedExceptions = null;
+                    LowLevelListWithIList<ExceptionDispatchInfo> observedExceptions = null;
                     Task canceledTask = null;
 
                     // Loop through antecedents:
@@ -5776,7 +5772,7 @@ namespace System.Threading.Tasks
 
                         if (task.IsFaulted)
                         {
-                            if (observedExceptions == null) observedExceptions = new List<ExceptionDispatchInfo>();
+                            if (observedExceptions == null) observedExceptions = new LowLevelListWithIList<ExceptionDispatchInfo>();
                             observedExceptions.AddRange(task.GetExceptionDispatchInfos());
                         }
                         else if (task.IsCanceled)
@@ -5896,7 +5892,7 @@ namespace System.Threading.Tasks
 
             // Make a defensive copy, as the user may manipulate the tasks collection
             // after we return but before the WhenAny asynchronously completes.
-            List<Task> taskList = new List<Task>();
+            LowLevelListWithIList<Task> taskList = new LowLevelListWithIList<Task>();
             foreach (Task task in tasks)
             {
                 if (task == null) throw new ArgumentException(SR.Task_MultiTaskContinuation_NullTask, "tasks");
@@ -6018,10 +6014,10 @@ namespace System.Threading.Tasks
                     return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
                 }
 
-                List<object> continuationList = continuationObject as List<object>;
+                LowLevelListWithIList<object> continuationList = continuationObject as LowLevelListWithIList<object>;
                 if (continuationList != null)
                 {
-                    List<Delegate> result = new List<Delegate>();
+                    LowLevelListWithIList<Delegate> result = new LowLevelListWithIList<Delegate>();
                     foreach (object obj in continuationList)
                     {
                         Delegate[] innerDelegates = GetDelegatesFromContinuationObject(obj);

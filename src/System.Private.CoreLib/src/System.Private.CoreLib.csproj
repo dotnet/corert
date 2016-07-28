@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
+    <Compile Include="Internal\Helpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
@@ -65,6 +66,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal\Runtime\Augments\SpinLockTraceCallbacks.cs" />
     <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
@@ -75,6 +77,7 @@
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
+    <Compile Include="Internal\Threading\Tracing\SpinLockTrace.cs" />
     <Compile Include="Internal\Toolchain\NonExecutableAttribute.cs" />
     <Compile Include="Internal\DeveloperExperience\DeveloperExperience.cs" />
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
@@ -84,6 +87,7 @@
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\EnumInfo.cs" />
     <Compile Include="Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Include="Internal\Runtime\Augments\TaskTraceCallbacks.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\NonPortable\IRuntimeImplementedType.cs" />
@@ -97,12 +101,15 @@
   <ItemGroup>
     <Compile Include="Internal\Reflection\Extensibility\ExtensibleType.cs" />
     <Compile Include="Internal\Runtime\Augments\WinRTInterop.cs" />
+    <Compile Include="Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
+    <Compile Include="Internal\Threading\Tasks\Tracing\TaskTrace.cs" />
     <Compile Include="Interop\Interop.manual.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
     <Compile Include="System\__Canon.cs" />
     <Compile Include="System\Action.cs" />
     <Compile Include="System\Activator.cs" />
+    <Compile Include="System\AggregateException.cs" />
     <Compile Include="System\ArgumentException.cs" />
     <Compile Include="System\ArgumentNullException.cs" />
     <Compile Include="System\ArgumentOutOfRangeException.cs" />
@@ -118,6 +125,7 @@
     <Compile Include="System\CharEnumerator.cs" />
     <Compile Include="System\CLSCompliantAttribute.cs" />
     <Compile Include="System\Collections\DictionaryEntry.cs" />
+    <Compile Include="System\Collections\Concurrent\LowLevelConcurrentQueue.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="System\Collections\Generic\DebugView.cs" />
     <Compile Include="System\Collections\Generic\ICollection.cs" />
@@ -180,6 +188,7 @@
     <Compile Include="System\IO\FileNotFoundException.cs" />
     <Compile Include="System\IO\IOException.cs" />
     <Compile Include="System\IO\PathTooLongException.cs" />
+    <Compile Include="System\Random.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
     <Compile Include="System\DateTime.cs" />
     <Compile Include="System\DateTimeKind.cs" />
@@ -269,6 +278,7 @@
     <Compile Include="System\Object.cs" />
     <Compile Include="System\ObjectDisposedException.cs" />
     <Compile Include="System\ObsoleteAttribute.cs" />
+    <Compile Include="System\OperationCanceledException.cs" />
     <Compile Include="System\OutOfMemoryException.cs" />
     <Compile Include="System\OverflowException.cs" />
     <Compile Include="System\ParamsArray.cs" />
@@ -320,6 +330,7 @@
     <Compile Include="System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\YieldAwaitable.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
     <Compile Include="System\Runtime\GcSettings.cs" />
@@ -359,6 +370,10 @@
     <Compile Include="System\FlagsAttribute.cs" />
     <Compile Include="System\ParamArrayAttribute.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
+    <Compile Include="System\Runtime\CompilerServices\INotifyCompletion.cs" />
+    <Compile Include="System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <Compile Include="System\StringComparison.cs" />
     <Compile Include="System\Text\ASCIIEncoding.cs" />
     <Compile Include="System\Text\Decoder.cs" />
@@ -387,27 +402,57 @@
     <Compile Include="System\Text\UTF7Encoding.cs" />
     <Compile Include="System\Text\UTF8Encoding.cs" />
     <Compile Include="System\ThreadAttributes.cs" />
+    <Compile Include="System\Threading\AsyncLocal.cs" />
     <Compile Include="System\Threading\AbandonedMutexException.cs" />
     <Compile Include="System\Threading\AutoResetEvent.cs" />
+    <Compile Include="System\Threading\CancellationToken.cs" />
+    <Compile Include="System\Threading\CancellationTokenRegistration.cs" />
+    <Compile Include="System\Threading\CancellationTokenSource.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\LowLevelThread.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\EventResetMode.cs" />
     <Compile Include="System\Threading\EventWaitHandle.cs" />
+    <Compile Include="System\Threading\ExecutionContext.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\LazyInitializer.cs" />
     <Compile Include="System\Threading\LazyThreadSafetyMode.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
+    <Compile Include="System\Threading\LockRecursionException.cs" />
     <Compile Include="System\Threading\ManualResetEvent.cs" />
+    <Compile Include="System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\Mutex.cs" />
+    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\Semaphore.cs" />
     <Compile Include="System\Threading\SemaphoreFullException.cs" />
+    <Compile Include="System\Threading\SemaphoreSlim.cs" />
+    <Compile Include="System\Threading\SendOrPostCallback.cs" />
+    <Compile Include="System\Threading\SpinLock.cs" />
     <Compile Include="System\Threading\SpinWait.cs" />
+    <Compile Include="System\Threading\SynchronizationContext.cs" />
     <Compile Include="System\Threading\SynchronizationLockException.cs" />
+    <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
+    <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
+    <Compile Include="System\Threading\Tasks\DebugHelperRooter.cs" />
+    <Compile Include="System\Threading\Tasks\future.cs" />
+    <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
+    <Compile Include="System\Threading\Tasks\ProducerConsumerQueues.cs" />
+    <Compile Include="System\Threading\Tasks\Task.cs" />
+    <Compile Include="System\Threading\Tasks\TaskCanceledException.cs" />
+    <Compile Include="System\Threading\Tasks\TaskCompletionSource.cs" />
+    <Compile Include="System\Threading\Tasks\TaskContinuation.cs" />
+    <Compile Include="System\Threading\Tasks\TaskExceptionHolder.cs" />
+    <Compile Include="System\Threading\Tasks\TaskFactory.cs" />
+    <Compile Include="System\Threading\Tasks\TaskScheduler.cs" />
+    <Compile Include="System\Threading\Tasks\TaskSchedulerException.cs" />
+    <Compile Include="System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
+    <Compile Include="System\Threading\ThreadLocal.cs" />
+    <Compile Include="System\Threading\ThreadPool.cs" />
     <Compile Include="System\Threading\Timeout.cs" />
     <Compile Include="System\Threading\TimeoutHelper.cs" />
+    <Compile Include="System\Threading\Timer.cs" />
     <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Threading\WaitHandle.cs" />
     <Compile Include="System\Threading\WaitHandleCannotBeOpenedException.cs" />
@@ -487,6 +532,7 @@
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Interop\Windows\mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
+
   </ItemGroup>
   <ItemGroup>
     <!-- CORERT-TODO: Port to Unix -->
@@ -510,6 +556,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.CoCreateGuid.cs">
       <Link>Interop\Windows\mincore\Interop.CoCreateGuid.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs">
+      <Link>Interop\Windows\mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
