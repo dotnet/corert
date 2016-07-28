@@ -40,15 +40,5 @@
     <Compile Include="System\Threading\Tasks\TPLETWProvider.cs" />
     <Compile Include="TypeForwarders.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\System\__HResults.cs" >
-      <Link>System\__HResults.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
-      <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
-    </Compile>
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
