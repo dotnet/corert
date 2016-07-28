@@ -1144,18 +1144,51 @@ namespace ILCompiler.CppCodeGen
         {
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
-            CppGenerationBuffer methodTables = new CppGenerationBuffer();
-            EETypeNodeIterator nodeIterator = new EETypeNodeIterator(nodes);
+            CppGenerationBuffer methodCodeNode = new CppGenerationBuffer();
+            DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
+
+            // Emit main method owning type
+            OutputTypeNode(new EETypeNode(entrypoint.OwningType, true), forwardDefinitions, typeDefinitions);
 
             foreach (var node in nodeIterator.GetNodes())
             {
-                if(node is EETypeNode)
+                if (node is EETypeNode)
                     OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions);
+                else if (node is CppMethodCodeNode)
+                    OutputMethodCode(node as CppMethodCodeNode, methodCodeNode);
             }
 
             sb.Append(forwardDefinitions.ToString());
             sb.Append(typeDefinitions.ToString());
-            sb.Append(methodTables.ToString());
+            sb.Append(methodCodeNode.ToString());
+        }
+
+        private void OutputMethodCode(CppMethodCodeNode methodCodeNode, CppGenerationBuffer methodImplementations)
+        {
+            methodImplementations.AppendLine();
+            methodImplementations.Append(methodCodeNode.CppCode);
+
+            var alternateName = _compilation.NodeFactory.GetSymbolAlternateName(methodCodeNode);
+            if (alternateName != null)
+            {
+                methodImplementations.AppendLine();
+                methodImplementations.Append(GetCppMethodDeclaration(methodCodeNode.Method, true, alternateName));
+                methodImplementations.AppendLine();
+                methodImplementations.Append("{");
+                methodImplementations.Indent();
+                methodImplementations.AppendLine();
+                if (!methodCodeNode.Method.Signature.ReturnType.IsVoid)
+                {
+                    methodImplementations.Append("return ");
+                }
+                methodImplementations.Append(GetCppMethodDeclarationName(methodCodeNode.Method.OwningType, GetCppMethodName(methodCodeNode.Method)));
+                methodImplementations.Append("(");
+                methodImplementations.Append(GetCppMethodCallParamList(methodCodeNode.Method));
+                methodImplementations.Append(");");
+                methodImplementations.Exdent();
+                methodImplementations.AppendLine();
+                methodImplementations.Append("}");
+            }
         }
         private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions)
         {
@@ -1286,14 +1319,7 @@ namespace ILCompiler.CppCodeGen
             //methodTables.AppendEmptyLine();
             // declare implementation
         }
-        private void OutPutForwardDefinition(EETypeNode node)
-        {
 
-        }
-        private void OutputTypeDefinition(EETypeNode node)
-        {
-
-        }
         private string GenerateMethodCode()
         {
             var methodCode = new CppGenerationBuffer();

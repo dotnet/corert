@@ -5,51 +5,56 @@ using System.Collections.Generic;
 
 namespace ILCompiler.Compiler.CppCodeGen
 {
-    public class EETypeNodeIterator
+    public class DependencyNodeIterator
     {
-        private List<DependencyNode> _typeNodes;
+        private List<DependencyNode> _nodes;
         private Dictionary<TypeDesc, EETypeNode> _typeToNodeMap;
 
-        public EETypeNodeIterator(IEnumerable<DependencyNode> nodes)
+        public DependencyNodeIterator(IEnumerable<DependencyNode> nodes)
         {
-            _typeNodes = new List<DependencyNode>();
+            _nodes = new List<DependencyNode>();
             _typeToNodeMap = new Dictionary<TypeDesc, EETypeNode>();
             foreach (var node in nodes)
             {
-                var typeNode = node as EETypeNode;
-                if (typeNode != null)
+                if (node is EETypeNode)
                 {
-                    _typeToNodeMap[typeNode.Type] = typeNode;
+                    var typeNode = node as EETypeNode;
+                    if (typeNode != null)
+                    {
+                        _typeToNodeMap[typeNode.Type] = typeNode;
+                    }
                 }
+                // Assume ordering doesn't matter
+                else if(node is CppMethodCodeNode) _nodes.Add(node);
             }
 
             foreach (var node in _typeToNodeMap.Values)
             {
-                AddNode(node);
+                AddTypeNode(node);
             }
         }
 
-        private void AddNode(EETypeNode node)
+        private void AddTypeNode(EETypeNode node)
         {
-            if (node != null && !_typeNodes.Contains(node))
+            if (node != null && !_nodes.Contains(node))
             {
                 EETypeNode baseTypeNode;
                 if (node.Type.BaseType != null)
                 {
                     _typeToNodeMap.TryGetValue(node.Type.BaseType, out baseTypeNode);
-                    AddNode(baseTypeNode);
+                    AddTypeNode(baseTypeNode);
                 }
                 foreach (var field in node.Type.GetFields())
                 {
                     EETypeNode fieldNode;
                     _typeToNodeMap.TryGetValue(field.FieldType, out fieldNode);
-                    if (fieldNode != null && !_typeNodes.Contains(fieldNode))
+                    if (fieldNode != null && !_nodes.Contains(fieldNode))
                     {
                         if(fieldNode.Type.IsValueType)
                         AddNodeHierarchy(fieldNode);
                     }
                 }
-                if (!_typeNodes.Contains(node)) this._typeNodes.Add(node);
+                if (!_nodes.Contains(node)) this._nodes.Add(node);
             }
 
         }
@@ -66,7 +71,7 @@ namespace ILCompiler.Compiler.CppCodeGen
                 {
                     nodeStack.Push(baseTypeNode);
                     var baseType = baseTypeNode.Type.BaseType;
-                    if (baseType != null && !_typeNodes.Contains(baseTypeNode))
+                    if (baseType != null && !_nodes.Contains(baseTypeNode))
                         _typeToNodeMap.TryGetValue(baseType, out baseTypeNode);
                     else
                         baseTypeNode = null;
@@ -75,13 +80,13 @@ namespace ILCompiler.Compiler.CppCodeGen
             while (nodeStack.Count > 0)
             {
                 var typeNode = nodeStack.Pop();
-                if (!_typeNodes.Contains(typeNode))
-                    _typeNodes.Add(typeNode);
+                if (!_nodes.Contains(typeNode))
+                    _nodes.Add(typeNode);
             }
         }
         public List<DependencyNode> GetNodes()
         {
-            return _typeNodes;
+            return _nodes;
         }
     }
 }
