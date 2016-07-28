@@ -108,12 +108,9 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char[] value);
-#if CORERT
-        private static String Ctor(object unusedThis, char[] value)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static String Ctor(char[] value)
-#endif
         {
             if (value != null && value.Length != 0)
             {
@@ -134,12 +131,9 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char[] value, int startIndex, int length);
-#if CORERT
-        private static String Ctor(object unusedThis, char[] value, int startIndex, int length)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static String Ctor(char[] value, int startIndex, int length)
-#endif
         {
             if (value == null)
                 throw new ArgumentNullException("value");
@@ -174,12 +168,9 @@ namespace System
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(char* value);
-#if CORERT
-        private static unsafe String Ctor(object unusedThis, char* ptr)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static unsafe String Ctor(char* ptr)
-#endif
         {
             if (ptr == null)
                 return String.Empty;
@@ -209,12 +200,9 @@ namespace System
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(char* value, int startIndex, int length);
-#if CORERT
-        private static unsafe String Ctor(object unusedThis, char* ptr, int startIndex, int length)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static unsafe String Ctor(char* ptr, int startIndex, int length)
-#endif
         {
             if (length < 0)
             {
@@ -253,12 +241,9 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
-#if CORERT
-        private static String Ctor(object unusedThis, char c, int count)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static String Ctor(char c, int count)
-#endif
         {
             if (count > 0)
             {
