@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Text;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.IO;
+using System.Text;
+using System.Diagnostics;
+using System.Collections.Generic;
 
-using global::Internal.Reflection.Augments;
+using Internal.Reflection.Augments;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -41,19 +41,19 @@ namespace System.Reflection.Runtime.Assemblies
         }
 
         // Simple name.
-        public String Name { get; private set; }
+        public String Name { get; }
 
         // Optional version.
-        public Version Version { get; private set; }
+        public Version Version { get; }
 
         // Optional culture name.
-        public String CultureName { get; private set; }
+        public String CultureName { get; }
 
         // Optional flags (this is actually an OR of the classic flags and the ContentType.)
-        public AssemblyNameFlags Flags { get; private set; }
+        public AssemblyNameFlags Flags { get; }
 
         // Optional public key (if Flags.PublicKey == true) or public key token.
-        public byte[] PublicKeyOrToken { get; private set; }
+        public byte[] PublicKeyOrToken { get; }
 
         // Equality - this compares every bit of data in the RuntimeAssemblyName which is acceptable for use as keys in a cache
         // where semantic duplication is permissible. This method is *not* meant to define ref->def binding rules or 

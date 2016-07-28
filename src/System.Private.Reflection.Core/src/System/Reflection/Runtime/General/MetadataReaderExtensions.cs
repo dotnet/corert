@@ -2,21 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.TypeParsing;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.TypeParsing;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core;
+using Internal.LowLevelLinq;
+using Internal.Reflection.Core;
 
-using global::Internal.Runtime.Augments;
+using Internal.Runtime.Augments;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General
 {
@@ -291,7 +291,6 @@ namespace System.Reflection.Runtime.General
                         throw new BadImageFormatException();
                 }
             }
-
         }
 
         public static Object ParseConstantValue(this Handle handle, MetadataReader reader)
@@ -517,7 +516,7 @@ namespace System.Reflection.Runtime.General
         public static String ToNamespaceName(this NamespaceDefinitionHandle namespaceDefinitionHandle, MetadataReader reader)
         {
             String ns = "";
-            for (; ;)
+            for (;;)
             {
                 NamespaceDefinition currentNamespaceDefinition = namespaceDefinitionHandle.GetNamespaceDefinition(reader);
                 String name = currentNamespaceDefinition.Name.GetStringOrNull(reader);
@@ -590,7 +589,7 @@ namespace System.Reflection.Runtime.General
         {
             LowLevelList<String> namespaceParts = new LowLevelList<String>(8);
             NamespaceReference namespaceReference;
-            for (; ;)
+            for (;;)
             {
                 namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
                 String namespacePart = namespaceReference.Name.GetStringOrNull(reader);

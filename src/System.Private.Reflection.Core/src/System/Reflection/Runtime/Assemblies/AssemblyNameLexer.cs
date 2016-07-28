@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Text;
-using global::System.Globalization;
-using global::System.Collections.Generic;
-using global::System.Runtime.InteropServices;
+using System;
+using System.IO;
+using System.Text;
+using System.Globalization;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.Assemblies
                 c = _chars[_index++];
             }
 
-            for (; ;)
+            for (;;)
             {
                 if (c == 0)
                 {
@@ -133,7 +133,7 @@ namespace System.Reflection.Runtime.Assemblies
             End = 4,
         }
 
-        private char[] _chars;
+        private readonly char[] _chars;
         private int _index;
     }
 }

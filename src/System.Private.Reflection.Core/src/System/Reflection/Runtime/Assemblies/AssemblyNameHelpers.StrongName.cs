@@ -10,14 +10,14 @@
 **
 ==============================================================*/
 
-using global::System;
-using global::System.IO;
-using global::System.Text;
-using global::System.Collections.Generic;
-using global::Internal.Runtime.Augments;
+using System;
+using System.IO;
+using System.Text;
+using System.Collections.Generic;
+using Internal.Runtime.Augments;
 using Buffer = System.Buffer;
 
-using SecurityException = global::System.Security.SecurityException;
+using SecurityException = System.Security.SecurityException;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -75,7 +75,7 @@ namespace System.Reflection.Runtime.Assemblies
 
             // The ECMA key doesn't look like a valid key so it will fail the below checks. If we were passed that
             // key, then we can skip them.
-            if (ByteArrayEquals(publicKey, EcmaKey))
+            if (ByteArrayEquals(publicKey, s_ecmaKey))
                 return true;
 
             // If a hash algorithm is specified, it must be a sensible value
@@ -130,7 +130,7 @@ namespace System.Reflection.Runtime.Assemblies
 
         private const int PUBLIC_KEY_TOKEN_LEN = 8;
 
-        private static byte[] EcmaKey =
+        private static byte[] s_ecmaKey =
         {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         };

@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Collections.Generic;
-using global::System.Reflection;
-using global::Internal.Metadata.NativeFormat;
-using global::System.Reflection.Runtime.General;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using Internal.Metadata.NativeFormat;
+using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Core
 {

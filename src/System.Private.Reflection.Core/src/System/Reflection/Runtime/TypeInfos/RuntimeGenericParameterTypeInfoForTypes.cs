@@ -20,7 +20,7 @@ namespace System.Reflection.Runtime.TypeInfos
         private RuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeInfo declaringRuntimeNamedTypeInfo)
            : base(reader, genericParameterHandle)
         {
-            DeclaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
+            _declaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
         }
 
         public sealed override MethodBase DeclaringMethod
@@ -39,7 +39,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return DeclaringRuntimeNamedTypeInfo.AsType();
+                return _declaringRuntimeNamedTypeInfo.AsType();
             }
         }
 
@@ -47,11 +47,11 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return DeclaringRuntimeNamedTypeInfo.TypeContext;
+                return _declaringRuntimeNamedTypeInfo.TypeContext;
             }
         }
 
-        internal RuntimeTypeInfo DeclaringRuntimeNamedTypeInfo { get; }
+        private readonly RuntimeTypeInfo _declaringRuntimeNamedTypeInfo;
     }
 }
 

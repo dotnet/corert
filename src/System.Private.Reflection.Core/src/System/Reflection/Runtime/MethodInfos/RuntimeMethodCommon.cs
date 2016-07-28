@@ -2,20 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -268,11 +268,11 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public bool Equals(RuntimeMethodCommon other)
         {
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._methodHandle.Equals(other._methodHandle)))
+            if (!(_methodHandle.Equals(other._methodHandle)))
                 return false;
-            if (!(this._contextTypeInfo.Equals(other._contextTypeInfo)))
+            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
                 return false;
             return true;
         }
@@ -290,12 +290,12 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        private RuntimeNamedTypeInfo _definingTypeInfo;
-        private MethodHandle _methodHandle;
-        private RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly MethodHandle _methodHandle;
+        private readonly RuntimeTypeInfo _contextTypeInfo;
 
-        private MetadataReader _reader;
+        private readonly MetadataReader _reader;
 
-        private Method _method;
+        private readonly Method _method;
     }
 }

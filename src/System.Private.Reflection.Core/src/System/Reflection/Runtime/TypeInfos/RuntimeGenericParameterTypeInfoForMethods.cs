@@ -22,7 +22,7 @@ namespace System.Reflection.Runtime.TypeInfos
         private RuntimeGenericParameterTypeInfoForMethods(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeNamedMethodInfo declaringRuntimeNamedMethodInfo)
            : base(reader, genericParameterHandle)
         {
-            DeclaringRuntimeNamedMethodInfo = declaringRuntimeNamedMethodInfo;
+            _declaringRuntimeNamedMethodInfo = declaringRuntimeNamedMethodInfo;
         }
 
         public sealed override MethodBase DeclaringMethod
@@ -33,7 +33,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_DeclaringMethod(this);
 #endif
-                return DeclaringRuntimeNamedMethodInfo;
+                return _declaringRuntimeNamedMethodInfo;
             }
         }
 
@@ -61,7 +61,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return new UnificationKey(DeclaringRuntimeNamedMethodInfo, Reader, GenericParameterHandle);
+                return new UnificationKey(_declaringRuntimeNamedMethodInfo, Reader, GenericParameterHandle);
             }
         }
 
@@ -69,7 +69,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return DeclaringRuntimeNamedMethodInfo.DeclaringType;
+                return _declaringRuntimeNamedMethodInfo.DeclaringType;
             }
         }
 
@@ -78,11 +78,11 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 TypeContext typeContext = this.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
-                return new TypeContext(typeContext.GenericTypeArguments, DeclaringRuntimeNamedMethodInfo.RuntimeGenericArgumentsOrParameters);
+                return new TypeContext(typeContext.GenericTypeArguments, _declaringRuntimeNamedMethodInfo.RuntimeGenericArgumentsOrParameters);
             }
         }
 
-        internal RuntimeNamedMethodInfo DeclaringRuntimeNamedMethodInfo { get; }
+        private readonly RuntimeNamedMethodInfo _declaringRuntimeNamedMethodInfo;
     }
 }
 

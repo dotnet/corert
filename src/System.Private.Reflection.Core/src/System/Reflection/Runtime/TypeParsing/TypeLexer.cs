@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Collections;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.Assemblies;
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection.Runtime.Assemblies;
 
 namespace System.Reflection.Runtime.TypeParsing
 {
@@ -80,7 +80,7 @@ namespace System.Reflection.Runtime.TypeParsing
             int src = _index;
             char[] buffer = new char[_chars.Length];
             int dst = 0;
-            for (; ;)
+            for (;;)
             {
                 char c = _chars[src];
                 TokenType token = CharToToken(c);
@@ -129,7 +129,7 @@ namespace System.Reflection.Runtime.TypeParsing
             int src = _index;
             char[] buffer = new char[_chars.Length];
             int dst = 0;
-            for (; ;)
+            for (;;)
             {
                 char c = _chars[src];
                 if (c == NUL)
@@ -154,7 +154,7 @@ namespace System.Reflection.Runtime.TypeParsing
             int src = _index;
             char[] buffer = new char[_chars.Length];
             int dst = 0;
-            for (; ;)
+            for (;;)
             {
                 char c = _chars[src];
                 if (c == NUL)
@@ -220,7 +220,7 @@ namespace System.Reflection.Runtime.TypeParsing
 
 
         private int _index;
-        private char[] _chars;
+        private readonly char[] _chars;
         private const char NUL = (char)0;
 
 

@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Collections;
-using global::System.Reflection;
-using global::System.Collections.Generic;
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Reflection;
+using System.Collections.Generic;
 
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core;
+using Internal.Reflection.Core;
 
 using ReflectionCoreNonPortable = Internal.Reflection.Core.NonPortable.ReflectionCoreNonPortable;
 
@@ -48,8 +48,8 @@ namespace System.Reflection.Runtime.TypeParsing
             AssemblyName = assemblyName;
         }
 
-        public NonQualifiedTypeName TypeName { get; private set; }
-        public RuntimeAssemblyName AssemblyName { get; private set; }  // This can return null if the type name was not actually qualified.
+        public NonQualifiedTypeName TypeName { get; }
+        public RuntimeAssemblyName AssemblyName { get; }  // This can return null if the type name was not actually qualified.
 
         public sealed override String ToString()
         {
@@ -291,8 +291,8 @@ namespace System.Reflection.Runtime.TypeParsing
             return dict;
         }
 
-        private String _name;
-        private String[] _namespaceParts;
+        private readonly String _name;
+        private readonly String[] _namespaceParts;
     }
 
     //
@@ -306,8 +306,8 @@ namespace System.Reflection.Runtime.TypeParsing
             DeclaringType = declaringType;
         }
 
-        public String Name { get; private set; }
-        public NamedTypeName DeclaringType { get; private set; }
+        public String Name { get; }
+        public NamedTypeName DeclaringType { get; }
 
         public sealed override String ToString()
         {
@@ -366,7 +366,7 @@ namespace System.Reflection.Runtime.TypeParsing
             ElementTypeName = elementTypeName;
         }
 
-        public TypeName ElementTypeName { get; private set; }
+        public TypeName ElementTypeName { get; }
     }
 
     //
@@ -423,7 +423,7 @@ namespace System.Reflection.Runtime.TypeParsing
             return null;
         }
 
-        private int _rank;
+        private readonly int _rank;
     }
 
     //
@@ -491,8 +491,8 @@ namespace System.Reflection.Runtime.TypeParsing
             GenericArguments = genericArguments;
         }
 
-        public NamedTypeName GenericType { get; private set; }
-        public IEnumerable<TypeName> GenericArguments { get; private set; }
+        public NamedTypeName GenericType { get; }
+        public IEnumerable<TypeName> GenericArguments { get; }
 
         public sealed override String ToString()
         {
