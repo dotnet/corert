@@ -175,10 +175,10 @@ namespace System
             if (ptr == null)
                 return String.Empty;
 
-#if !FEATURE_PAL
+#if !PLATFORM_UNIX
             if (ptr < (char*)64000)
                 throw new ArgumentException(SR.Arg_MustBeStringPtrNotAtom);
-#endif // FEATURE_PAL
+#endif // PLATFORM_UNIX
 
             try
             {
