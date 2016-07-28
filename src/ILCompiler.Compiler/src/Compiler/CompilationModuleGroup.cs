@@ -71,12 +71,6 @@ namespace ILCompiler
 
             AddWellKnownTypes(rootProvider);
             AddReflectionInitializationCode(rootProvider);
-            foreach (var inputFile in _typeSystemContext.ReferenceFilePaths)
-            {
-                var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
-                if (module.Equals(_typeSystemContext.SystemModule)) continue;
-                AddCompilationRootsForExports(module, rootProvider);
-            }
         }
 
         private void AddWellKnownTypes(IRootingServiceProvider rootProvider)
