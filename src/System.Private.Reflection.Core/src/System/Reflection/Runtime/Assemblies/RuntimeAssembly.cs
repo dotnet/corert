@@ -2,24 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Text;
-using global::System.Diagnostics;
-using global::System.Reflection;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Modules;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.TypeParsing;
-using global::System.Reflection.Runtime.CustomAttributes;
-using global::System.Collections.Generic;
+using System;
+using System.IO;
+using System.Text;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeParsing;
+using System.Reflection.Runtime.CustomAttributes;
+using System.Collections.Generic;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -208,9 +208,9 @@ namespace System.Reflection.Runtime.Assemblies
             return result.CastToType();
         }
 
-        internal QScopeDefinition Scope { get; private set; }
+        internal QScopeDefinition Scope { get; }
 
-        internal IEnumerable<QScopeDefinition> OverflowScopes { get; private set; }
+        internal IEnumerable<QScopeDefinition> OverflowScopes { get; }
 
         internal IEnumerable<QScopeDefinition> AllScopes
         {

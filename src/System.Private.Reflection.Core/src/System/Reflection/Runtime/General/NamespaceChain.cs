@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General
 {
@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.General
             ConstantStringValueHandle currentNameHandle = currentNamespaceDefinition.Name;
             Handle currentNamespaceHandle = innerMostNamespaceHandle.ToHandle(reader);
             LowLevelList<String> names = new LowLevelList<String>();
-            for (; ;)
+            for (;;)
             {
                 String name = currentNameHandle.GetStringOrNull(reader);
                 names.Add(name);
@@ -74,8 +74,8 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        internal String NameSpace { get; private set; }
-        internal ScopeDefinitionHandle DefiningScope { get; private set; }
+        internal String NameSpace { get; }
+        internal ScopeDefinitionHandle DefiningScope { get; }
     }
 }
 

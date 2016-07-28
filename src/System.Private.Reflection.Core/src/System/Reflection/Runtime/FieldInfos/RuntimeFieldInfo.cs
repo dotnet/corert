@@ -2,23 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.FieldInfos
 {
@@ -157,11 +157,11 @@ namespace System.Reflection.Runtime.FieldInfos
             RuntimeFieldInfo other = obj as RuntimeFieldInfo;
             if (other == null)
                 return false;
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._fieldHandle.Equals(other._fieldHandle)))
+            if (!(_fieldHandle.Equals(other._fieldHandle)))
                 return false;
-            if (!(this._contextTypeInfo.Equals(other._contextTypeInfo)))
+            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
                 return false;
             return true;
         }
@@ -250,12 +250,12 @@ namespace System.Reflection.Runtime.FieldInfos
             return this;
         }
 
-        private RuntimeNamedTypeInfo _definingTypeInfo;
-        private FieldHandle _fieldHandle;
-        private RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly FieldHandle _fieldHandle;
+        private readonly RuntimeTypeInfo _contextTypeInfo;
 
-        private MetadataReader _reader;
-        private Field _field;
+        private readonly MetadataReader _reader;
+        private readonly Field _field;
 
         private volatile FieldAccessor _lazyFieldAccessor = null;
 

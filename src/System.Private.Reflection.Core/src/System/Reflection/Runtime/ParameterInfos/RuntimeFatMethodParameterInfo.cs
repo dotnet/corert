@@ -2,17 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
@@ -98,9 +98,9 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        private MethodHandle _methodHandle;
-        private ParameterHandle _parameterHandle;
-        private Parameter _parameter;
+        private readonly MethodHandle _methodHandle;
+        private readonly ParameterHandle _parameterHandle;
+        private readonly Parameter _parameter;
         private volatile Tuple<bool, Object> _lazyDefaultValueInfo;
     }
 }

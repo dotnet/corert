@@ -26,7 +26,7 @@ namespace System.Reflection.Runtime.General
 
         private sealed class BlockedRuntimeTypeNameTable : ConcurrentUnifier<RuntimeTypeHandleKey, string>
         {
-            protected override string Factory(RuntimeTypeHandleKey key)
+            protected sealed override string Factory(RuntimeTypeHandleKey key)
             {
                 uint count = s_counter++;
                 return "$BlockedFromReflection_" + count.ToString() + "_" + Guid.NewGuid().ToString().Substring(0, 8);

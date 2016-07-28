@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.TypeParsing;
-using global::System.Reflection.Runtime.CustomAttributes;
-using global::Internal.Metadata.NativeFormat;
+using System;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.TypeParsing;
+using System.Reflection.Runtime.CustomAttributes;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Core.Execution
 {

@@ -2,25 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Collections.Concurrent;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.Dispensers;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.PropertyInfos;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.Dispensers;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.PropertyInfos;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 //=================================================================================================================
 // This file collects the various chokepoints that create the various Runtime*Info objects. This allows
@@ -48,14 +48,14 @@ namespace System.Reflection.Runtime.Assemblies
 
         internal static Exception TryGetRuntimeAssembly(RuntimeAssemblyName assemblyRefName, out RuntimeAssembly result)
         {
-            result = _assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            result = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
             if (result != null)
                 return null;
             else
                 return new FileNotFoundException(SR.Format(SR.FileNotFound_AssemblyNotFound, assemblyRefName.FullName));
         }
 
-        private static Dispenser<RuntimeAssemblyName, RuntimeAssembly> _assemblyRefNameToAssemblyDispenser =
+        private static readonly Dispenser<RuntimeAssemblyName, RuntimeAssembly> s_assemblyRefNameToAssemblyDispenser =
             DispenserFactory.CreateDispenser<RuntimeAssemblyName, RuntimeAssembly>(
                 DispenserScenario.AssemblyRefName_Assembly,
                 delegate (RuntimeAssemblyName assemblyRefName)
@@ -75,10 +75,10 @@ namespace System.Reflection.Runtime.Assemblies
 
         private static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflows)
         {
-            return _scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope, overflows));
+            return s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope, overflows));
         }
 
-        private static Dispenser<RuntimeAssemblyKey, RuntimeAssembly> _scopeToAssemblyDispenser =
+        private static readonly Dispenser<RuntimeAssemblyKey, RuntimeAssembly> s_scopeToAssemblyDispenser =
             DispenserFactory.CreateDispenserV<RuntimeAssemblyKey, RuntimeAssembly>(
                 DispenserScenario.Scope_Assembly,
                 delegate (RuntimeAssemblyKey qScopeDefinition)
@@ -123,9 +123,9 @@ namespace System.Reflection.Runtime.Assemblies
             {
                 // Equality depends only on the canonical definition of an assembly, not
                 // the overflows.
-                if (!(this._reader == other._reader))
+                if (!(_reader == other._reader))
                     return false;
-                if (!(this._handle.Equals(other._handle)))
+                if (!(_handle.Equals(other._handle)))
                     return false;
                 return true;
             }
@@ -335,7 +335,7 @@ namespace System.Reflection.Runtime.TypeParsing
     {
         public sealed override Exception TryResolve(RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeTypeInfo result)
         {
-            result = _runtimeNamespaceTypeByNameDispenser.GetOrAdd(new NamespaceTypeNameKey(currentAssembly, this));
+            result = s_runtimeNamespaceTypeByNameDispenser.GetOrAdd(new NamespaceTypeNameKey(currentAssembly, this));
             if (result != null)
                 return null;
             if (!ignoreCase)
@@ -344,7 +344,7 @@ namespace System.Reflection.Runtime.TypeParsing
             return TryResolveCaseInsensitive(currentAssembly, out result);
         }
 
-        private static Dispenser<NamespaceTypeNameKey, RuntimeTypeInfo> _runtimeNamespaceTypeByNameDispenser =
+        private static readonly Dispenser<NamespaceTypeNameKey, RuntimeTypeInfo> s_runtimeNamespaceTypeByNameDispenser =
             DispenserFactory.CreateDispenserV<NamespaceTypeNameKey, RuntimeTypeInfo>(
                 DispenserScenario.AssemblyAndNamespaceTypeName_Type,
                 delegate (NamespaceTypeNameKey key)
@@ -360,10 +360,10 @@ namespace System.Reflection.Runtime.TypeParsing
 
         private static LowLevelDictionary<String, QHandle> GetCaseInsensitiveTypeDictionary(RuntimeAssembly assembly)
         {
-            return _caseInsensitiveTypeDictionaryDispenser.GetOrAdd(assembly);
+            return s_caseInsensitiveTypeDictionaryDispenser.GetOrAdd(assembly);
         }
 
-        private static Dispenser<RuntimeAssembly, LowLevelDictionary<String, QHandle>> _caseInsensitiveTypeDictionaryDispenser =
+        private static readonly Dispenser<RuntimeAssembly, LowLevelDictionary<String, QHandle>> s_caseInsensitiveTypeDictionaryDispenser =
             DispenserFactory.CreateDispenserV<RuntimeAssembly, LowLevelDictionary<String, QHandle>>(
                 DispenserScenario.RuntimeAssembly_CaseInsensitiveTypeDictionary,
                 CreateCaseInsensitiveTypeDictionary
@@ -406,17 +406,17 @@ namespace System.Reflection.Runtime.TypeParsing
 
             public bool Equals(NamespaceTypeNameKey other)
             {
-                if (!(this._namespaceTypeName._name.Equals(other._namespaceTypeName._name)))
+                if (!(_namespaceTypeName._name.Equals(other._namespaceTypeName._name)))
                     return false;
-                if (!(this._namespaceTypeName._namespaceParts.Length == other._namespaceTypeName._namespaceParts.Length))
+                if (!(_namespaceTypeName._namespaceParts.Length == other._namespaceTypeName._namespaceParts.Length))
                     return false;
-                int count = this._namespaceTypeName._namespaceParts.Length;
+                int count = _namespaceTypeName._namespaceParts.Length;
                 for (int i = 0; i < count; i++)
                 {
-                    if (!(this._namespaceTypeName._namespaceParts[i] == other._namespaceTypeName._namespaceParts[i]))
+                    if (!(_namespaceTypeName._namespaceParts[i] == other._namespaceTypeName._namespaceParts[i]))
                         return false;
                 }
-                if (!(this._runtimeAssembly.Equals(other._runtimeAssembly)))
+                if (!(_runtimeAssembly.Equals(other._runtimeAssembly)))
                     return false;
                 return true;
             }
@@ -426,8 +426,8 @@ namespace System.Reflection.Runtime.TypeParsing
                 return _namespaceTypeName._name.GetHashCode();
             }
 
-            private RuntimeAssembly _runtimeAssembly;
-            private NamespaceTypeName _namespaceTypeName;
+            private readonly RuntimeAssembly _runtimeAssembly;
+            private readonly NamespaceTypeName _namespaceTypeName;
         }
     }
 }

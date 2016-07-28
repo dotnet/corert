@@ -2,24 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.FieldInfos;
-using global::System.Reflection.Runtime.PropertyInfos;
-using global::System.Reflection.Runtime.EventInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.FieldInfos;
+using System.Reflection.Runtime.PropertyInfos;
+using System.Reflection.Runtime.EventInfos;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Reflection.Tracing;
+using Internal.LowLevelLinq;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
+using Internal.Reflection.Tracing;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using RuntimeType = Internal.Reflection.Core.NonPortable.RuntimeType;
@@ -313,7 +313,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredEvent(name);
@@ -327,7 +327,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredField(name);
@@ -341,7 +341,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredMethod(name);
@@ -355,7 +355,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredProperty(name);
@@ -1004,7 +1004,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     debugName = this.GetTraceString();  // If tracing on, call this.GetTraceString() which only gives you useful strings when metadata is available but doesn't pollute the ETW trace.
                 else
 #endif
-                    debugName = this.ToString();
+                debugName = this.ToString();
                 if (debugName == null)
                     debugName = "";
                 _debugName = debugName;

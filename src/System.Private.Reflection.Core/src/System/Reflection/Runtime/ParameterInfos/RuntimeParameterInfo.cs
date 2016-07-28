@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
-using global::System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
@@ -37,9 +37,9 @@ namespace System.Reflection.Runtime.ParameterInfos
             RuntimeParameterInfo other = obj as RuntimeParameterInfo;
             if (other == null)
                 return false;
-            if (this._position != other._position)
+            if (_position != other._position)
                 return false;
-            if (!(this._member.Equals(other._member)))
+            if (!(_member.Equals(other._member)))
                 return false;
             return true;
         }
@@ -79,8 +79,8 @@ namespace System.Reflection.Runtime.ParameterInfos
         // "ParameterType.ToString()".
         internal abstract String ParameterTypeString { get; }
 
-        private MemberInfo _member;
-        private int _position;
+        private readonly MemberInfo _member;
+        private readonly int _position;
     }
 }
 
