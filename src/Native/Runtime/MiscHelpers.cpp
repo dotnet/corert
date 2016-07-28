@@ -54,9 +54,13 @@ COOP_PINVOKE_HELPER(void, RhSpinWait, (Int32 iterations))
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-COOP_PINVOKE_HELPER(Boolean, RhYield, ())
+EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
 {
-    return PalSwitchToThread() ? Boolean_true : Boolean_false;
+    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
+    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
+        "You must p/invoke to RhYield");
+
+    return PalSwitchToThread();
 }
 
 // Return the DispatchMap pointer of a type

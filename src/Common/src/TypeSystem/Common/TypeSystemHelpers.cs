@@ -227,9 +227,9 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Retrieves the namespace qualified name of a <see cref="MetadataType"/>.
+        /// Retrieves the namespace qualified name of a <see cref="DefType"/>.
         /// </summary>
-        public static string GetFullName(this MetadataType metadataType)
+        public static string GetFullName(this DefType metadataType)
         {
             string ns = metadataType.Namespace;
             return ns.Length > 0 ? String.Concat(ns, ".", metadataType.Name) : metadataType.Name;

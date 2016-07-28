@@ -2,21 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.Types;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Dispensers;
-using global::System.Reflection.Runtime.FieldInfos;
-using global::System.Reflection.Runtime.EventInfos;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.PropertyInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.Dispensers;
+using System.Reflection.Runtime.FieldInfos;
+using System.Reflection.Runtime.EventInfos;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.PropertyInfos;
 
-using global::Internal.Reflection.Core.NonPortable;
-
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -60,7 +57,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
 
-        private Dispenser<String, RuntimeMethodInfo> _methodLookupDispenser;
+        private readonly Dispenser<String, RuntimeMethodInfo> _methodLookupDispenser;
 
         private RuntimeMethodInfo LookupDeclaredMethodByName(String name)
         {
@@ -74,7 +71,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return result;
         }
 
-        private Dispenser<String, RuntimeFieldInfo> _fieldLookupDispenser;
+        private readonly Dispenser<String, RuntimeFieldInfo> _fieldLookupDispenser;
 
         private RuntimeFieldInfo LookupDeclaredFieldByName(String name)
         {
@@ -88,7 +85,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return result;
         }
 
-        private Dispenser<String, RuntimePropertyInfo> _propertyLookupDispenser;
+        private readonly Dispenser<String, RuntimePropertyInfo> _propertyLookupDispenser;
 
         private RuntimePropertyInfo LookupDeclaredPropertyByName(String name)
         {
@@ -103,7 +100,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
 
-        private Dispenser<String, RuntimeEventInfo> _eventLookupDispenser;
+        private readonly Dispenser<String, RuntimeEventInfo> _eventLookupDispenser;
 
         private RuntimeEventInfo LookupDeclaredEventByName(String name)
         {
@@ -117,6 +114,6 @@ namespace System.Reflection.Runtime.TypeInfos
             return result;
         }
 
-        private RuntimeTypeInfo _runtimeTypeInfo;
+        private readonly RuntimeTypeInfo _runtimeTypeInfo;
     }
 }

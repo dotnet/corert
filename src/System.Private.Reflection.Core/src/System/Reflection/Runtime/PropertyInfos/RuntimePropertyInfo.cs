@@ -2,26 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
@@ -94,14 +93,10 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _property.CustomAttributes))
+                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes))
                     yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
+                    yield return cad;
             }
         }
 
@@ -123,11 +118,11 @@ namespace System.Reflection.Runtime.PropertyInfos
             RuntimePropertyInfo other = obj as RuntimePropertyInfo;
             if (other == null)
                 return false;
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._propertyHandle.Equals(other._propertyHandle)))
+            if (!(_propertyHandle.Equals(other._propertyHandle)))
                 return false;
-            if (!(this._contextTypeInfo.Equals(other._contextTypeInfo)))
+            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
                 return false;
             return true;
         }
@@ -143,9 +138,6 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetConstantValue(this);
 #endif
-
-            if (!(_definingTypeInfo.ReflectionDomain is ExecutionDomain))
-                throw new NotSupportedException(); // Cannot instantiate a boxed enum on a non-execution domain.
 
             Object defaultValue;
             if (!ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
@@ -241,7 +233,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
                 Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-                return _contextTypeInfo.ReflectionDomain.Resolve(_reader, typeHandle, typeContext).CastToType();
+                return typeHandle.Resolve(_reader, typeContext).CastToType();
             }
         }
 
@@ -294,10 +286,9 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             StringBuilder sb = new StringBuilder(30);
 
-            ReflectionDomain reflectionDomain = _contextTypeInfo.ReflectionDomain;
             TypeContext typeContext = _contextTypeInfo.TypeContext;
             Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-            sb.Append(typeHandle.FormatTypeName(_reader, typeContext, reflectionDomain));
+            sb.Append(typeHandle.FormatTypeName(_reader, typeContext));
             sb.Append(' ');
             sb.Append(this.Name);
             ParameterInfo[] indexParameters = this.GetIndexParameters();
@@ -388,12 +379,12 @@ namespace System.Reflection.Runtime.PropertyInfos
             return this;
         }
 
-        private RuntimeNamedTypeInfo _definingTypeInfo;
-        private PropertyHandle _propertyHandle;
-        private RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly PropertyHandle _propertyHandle;
+        private readonly RuntimeTypeInfo _contextTypeInfo;
 
-        private MetadataReader _reader;
-        private Property _property;
+        private readonly MetadataReader _reader;
+        private readonly Property _property;
 
         private volatile MethodInvoker _lazyGetterInvoker = null;
         private volatile MethodInvoker _lazySetterInvoker = null;

@@ -8,7 +8,7 @@ namespace Internal.TypeSystem
 {
     public static class AlignmentHelper
     {
-        public static int AlignUp(int val, int alignment)
+        public static int AlignUp(this int val, int alignment)
         {
             Debug.Assert(val >= 0 && alignment >= 0);
 

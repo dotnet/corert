@@ -368,9 +368,7 @@ namespace System
             }
         }
 
-#if CORERT
         [Intrinsic]
-#endif
         internal static EETypePtr EETypePtrOf<T>()
         {
             // Compilers are required to provide a low level implementation of this method.

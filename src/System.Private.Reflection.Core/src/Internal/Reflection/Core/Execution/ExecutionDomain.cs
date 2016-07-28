@@ -2,34 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Types;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.TypeParsing;
-using global::System.Reflection.Runtime.CustomAttributes;
-using global::Internal.Metadata.NativeFormat;
+using System;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.TypeParsing;
+using System.Reflection.Runtime.CustomAttributes;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Core.Execution
 {
     //
-    // This singleton class implements the domain used for "execution" reflection objects, e.g. Types obtained from RuntimeTypeHandles.
-    // This class is only instantiated on Project N, as the desktop uses IRC only for LMR.
+    // This singleton class acts as an entrypoint from System.Private.Reflection.Execution to System.Private.Reflection.Core.
     //
-    public sealed class ExecutionDomain : ReflectionDomain
+    public sealed class ExecutionDomain
     {
         internal ExecutionDomain(ReflectionDomainSetup executionDomainSetup, ExecutionEnvironment executionEnvironment)
-            : base(executionDomainSetup, 0)
         {
-            this.ExecutionEnvironment = executionEnvironment;
+            ExecutionEnvironment = executionEnvironment;
+            ReflectionDomainSetup = executionDomainSetup;
         }
 
         //
@@ -77,13 +74,13 @@ namespace Internal.Reflection.Core.Execution
                 else
                 {
                     RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(assemblyName);
-                    Exception e = RuntimeAssembly.TryGetRuntimeAssembly(this, runtimeAssemblyName, out defaultAssembly);
+                    Exception e = RuntimeAssembly.TryGetRuntimeAssembly(runtimeAssemblyName, out defaultAssembly);
                     if (e != null)
                         continue;   // A default assembly such as "System.Runtime" might not "exist" in an app that opts heavily out of pay-for-play metadata. Just go on to the next one.
                 }
 
                 RuntimeTypeInfo result;
-                Exception typeLoadException = assemblyQualifiedTypeName.TryResolve(this, defaultAssembly, ignoreCase, out result);
+                Exception typeLoadException = assemblyQualifiedTypeName.TryResolve(defaultAssembly, ignoreCase, out result);
                 if (typeLoadException == null)
                     return result.CastToType();
                 lastTypeLoadException = typeLoadException;
@@ -107,8 +104,7 @@ namespace Internal.Reflection.Core.Execution
         //
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            RuntimeTypeInfo declaringType = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
-            RuntimeTypeInfo contextTypeInfo = declaringType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             RuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers;
             MetadataReader reader = definingTypeInfo.Reader;
             if (methodHandle.IsConstructor(reader))
@@ -141,7 +137,7 @@ namespace Internal.Reflection.Core.Execution
         {
             if (!attributeType.IsRuntimeImplemented())
                 throw new InvalidOperationException();
-            RuntimeTypeInfo runtimeAttributeType = attributeType.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeAttributeType = attributeType.CastToRuntimeTypeInfo();
             return new RuntimePseudoCustomAttributeData(runtimeAttributeType, constructorArguments, namedArguments);
         }
 
@@ -215,6 +211,39 @@ namespace Internal.Reflection.Core.Execution
         }
 
         //=======================================================================================
+        // MissingMetadataExceptions.
+        //=======================================================================================
+        public Exception CreateMissingMetadataException(Type pertainant)
+        {
+            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
+        }
+
+        public Exception CreateMissingMetadataException(TypeInfo pertainant)
+        {
+            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
+        }
+
+        public Exception CreateMissingMetadataException(TypeInfo pertainant, string nestedTypeName)
+        {
+            return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant, nestedTypeName);
+        }
+
+        public Exception CreateNonInvokabilityException(MemberInfo pertainant)
+        {
+            return this.ReflectionDomainSetup.CreateNonInvokabilityException(pertainant);
+        }
+
+        public Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
+        {
+            return ReflectionDomainSetup.CreateMissingArrayTypeException(elementType, isMultiDim, rank);
+        }
+
+        public Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
+        {
+            return ReflectionDomainSetup.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
+        }
+
+        //=======================================================================================
         // Miscellaneous.
         //=======================================================================================
         public RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
@@ -222,7 +251,7 @@ namespace Internal.Reflection.Core.Execution
             if (!type.IsRuntimeImplemented())
                 return default(RuntimeTypeHandle);
 
-            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType == null)
                 return default(RuntimeTypeHandle);
             return runtimeType.InternalTypeHandleIfAvailable;
@@ -233,7 +262,7 @@ namespace Internal.Reflection.Core.Execution
             if (!type.IsRuntimeImplemented())
                 return false;
 
-            RuntimeTypeInfo runtimeType = type.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (null == runtimeType.InternalNameIfAvailable)
                 return false;
 
@@ -253,6 +282,41 @@ namespace Internal.Reflection.Core.Execution
             return true;
         }
 
-        internal ExecutionEnvironment ExecutionEnvironment { get; private set; }
+        internal ExecutionEnvironment ExecutionEnvironment { get; }
+
+        internal ReflectionDomainSetup ReflectionDomainSetup { get; }
+
+        internal FoundationTypes FoundationTypes
+        {
+            get
+            {
+                return this.ReflectionDomainSetup.FoundationTypes;
+            }
+        }
+
+        internal IEnumerable<Type> PrimitiveTypes
+        {
+            get
+            {
+                FoundationTypes foundationTypes = this.FoundationTypes;
+                return new Type[]
+                {
+                    foundationTypes.SystemBoolean,
+                    foundationTypes.SystemChar,
+                    foundationTypes.SystemSByte,
+                    foundationTypes.SystemByte,
+                    foundationTypes.SystemInt16,
+                    foundationTypes.SystemUInt16,
+                    foundationTypes.SystemInt32,
+                    foundationTypes.SystemUInt32,
+                    foundationTypes.SystemInt64,
+                    foundationTypes.SystemUInt64,
+                    foundationTypes.SystemSingle,
+                    foundationTypes.SystemDouble,
+                    foundationTypes.SystemIntPtr,
+                    foundationTypes.SystemUIntPtr,
+                };
+            }
+        }
     }
 }

@@ -2,22 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.EventInfos
 {
@@ -101,14 +101,10 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _event.CustomAttributes))
+                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes))
                     yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _eventHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _eventHandle, _definingTypeInfo.TypeDefinitionHandle))
+                    yield return cad;
             }
         }
 
@@ -130,11 +126,11 @@ namespace System.Reflection.Runtime.EventInfos
             RuntimeEventInfo other = obj as RuntimeEventInfo;
             if (other == null)
                 return false;
-            if (!(this._reader == other._reader))
+            if (!(_reader == other._reader))
                 return false;
-            if (!(this._eventHandle.Equals(other._eventHandle)))
+            if (!(_eventHandle.Equals(other._eventHandle)))
                 return false;
-            if (!(this._contextTypeInfo.Equals(other._contextTypeInfo)))
+            if (!(_contextTypeInfo.Equals(other._contextTypeInfo)))
                 return false;
             return true;
         }
@@ -148,7 +144,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _definingTypeInfo.ReflectionDomain.Resolve(_reader, _event.Type, _contextTypeInfo.TypeContext).CastToType();
+                return _event.Type.Resolve(_reader, _contextTypeInfo.TypeContext).CastToType();
             }
         }
 
@@ -266,12 +262,12 @@ namespace System.Reflection.Runtime.EventInfos
             return this;
         }
 
-        private RuntimeNamedTypeInfo _definingTypeInfo;
-        private EventHandle _eventHandle;
-        private RuntimeTypeInfo _contextTypeInfo;
+        private readonly RuntimeNamedTypeInfo _definingTypeInfo;
+        private readonly EventHandle _eventHandle;
+        private readonly RuntimeTypeInfo _contextTypeInfo;
 
-        private MetadataReader _reader;
-        private Event _event;
+        private readonly MetadataReader _reader;
+        private readonly Event _event;
 
         private String _debugName;
     }

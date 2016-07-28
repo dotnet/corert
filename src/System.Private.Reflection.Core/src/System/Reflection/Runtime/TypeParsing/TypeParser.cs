@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Collections;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.Assemblies;
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection.Runtime.Assemblies;
 
 namespace System.Reflection.Runtime.TypeParsing
 {
@@ -69,7 +69,7 @@ namespace System.Reflection.Runtime.TypeParsing
             NonQualifiedTypeName typeName = ParseNamedOrConstructedGenericTypeName();
 
             // Iterate through any "has-element" qualifiers ([], &, *).
-            for (; ;)
+            for (;;)
             {
                 TokenType token = _lexer.Peek;
                 if (token == TokenType.End)
@@ -130,7 +130,7 @@ namespace System.Reflection.Runtime.TypeParsing
             {
                 _lexer.Skip();
                 LowLevelListWithIList<TypeName> genericTypeArguments = new LowLevelListWithIList<TypeName>();
-                for (; ;)
+                for (;;)
                 {
                     TypeName genericTypeArgument = ParseGenericTypeArgument();
                     genericTypeArguments.Add(genericTypeArgument);
@@ -204,8 +204,7 @@ namespace System.Reflection.Runtime.TypeParsing
                 throw new ArgumentException();
         }
 
-
-        private TypeLexer _lexer;
+        private readonly TypeLexer _lexer;
     }
 }
 

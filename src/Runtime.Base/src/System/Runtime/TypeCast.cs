@@ -219,7 +219,8 @@ namespace System.Runtime
 
             // compare the array types structurally
 
-            if (CastCache.AreTypesAssignableInternal(pObjType->RelatedParameterType, pTargetType->RelatedParameterType,
+            if (pObjType->ParameterizedTypeShape == pTargetType->ParameterizedTypeShape &&
+                CastCache.AreTypesAssignableInternal(pObjType->RelatedParameterType, pTargetType->RelatedParameterType,
                 AssignmentVariation.AllowSizeEquivalence))
             {
                 return obj;

@@ -1021,11 +1021,6 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 {
 }
 
-void GCToEEInterface::SetGCSpecial(Thread * pThread)
-{
-    pThread->SetGCSpecial(true);
-}
-
 alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
 {
     return pThread->GetAllocContext();
@@ -1065,9 +1060,10 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 // Context passed to the above.
 struct GCBackgroundThreadContext
 {
-    GCBackgroundThreadFunction m_pRealStartRoutine;
-    void *                     m_pRealContext;
-    Thread **                  m_pThread;
+    GCBackgroundThreadFunction  m_pRealStartRoutine;
+    void *                      m_pRealContext;
+    Thread *                    m_pThread;
+    CLREventStatic              m_ThreadStartedEvent;
 };
 
 // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
@@ -1082,37 +1078,48 @@ static uint32_t WINAPI BackgroundGCThreadStub(void * pContext)
     ASSERT(GCHeap::GetGCHeap()->IsGCInProgress());
     ThreadStore::AttachCurrentThread(false);
 
+    Thread * pThread = GetThread();
+    pThread->SetGCSpecial(true);
+
     // Inform the GC which Thread* we are.
-    *pStartContext->m_pThread = GetThread();
+    pStartContext->m_pThread = pThread;
 
     GCBackgroundThreadFunction realStartRoutine = pStartContext->m_pRealStartRoutine;
     void* realContext = pStartContext->m_pRealContext;
 
-    delete pStartContext;
+    pStartContext->m_ThreadStartedEvent.Set();
+
+    STRESS_LOG_RESERVE_MEM (GC_STRESSLOG_MULTIPLY);
 
     // Run the real start procedure and capture its return code on exit.
     return realStartRoutine(realContext);
 }
 
-bool GCToEEInterface::CreateBackgroundThread(Thread** thread, GCBackgroundThreadFunction threadStart, void* arg)
+Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threadStart, void* arg)
 {
-    NewHolder<GCBackgroundThreadContext> context = new (nothrow) GCBackgroundThreadContext();
-    if (context == NULL)
+    GCBackgroundThreadContext threadStubArgs;
+
+    threadStubArgs.m_pThread = NULL;
+    threadStubArgs.m_pRealStartRoutine = threadStart;
+    threadStubArgs.m_pRealContext = arg;
+
+    if (!threadStubArgs.m_ThreadStartedEvent.CreateAutoEventNoThrow(false))
     {
-        return false;
+        return NULL;
     }
 
-    context->m_pThread = thread;
-    context->m_pRealStartRoutine = threadStart;
-    context->m_pRealContext = arg;
-
-    bool success = PalStartBackgroundGCThread(BackgroundGCThreadStub, context.GetValue());
-    if (success)
+    if (!PalStartBackgroundGCThread(BackgroundGCThreadStub, &threadStubArgs))
     {
-        context.SuppressRelease();
+        threadStubArgs.m_ThreadStartedEvent.CloseEvent();
+        return NULL;
     }
 
-    return success;
+    uint32_t res = threadStubArgs.m_ThreadStartedEvent.Wait(INFINITE, FALSE);
+    threadStubArgs.m_ThreadStartedEvent.CloseEvent();
+    ASSERT(res == WAIT_OBJECT_0);
+
+    ASSERT(threadStubArgs.m_pThread != NULL);
+    return threadStubArgs.m_pThread;
 }
 
 #endif // !DACCESS_COMPILE
@@ -1306,11 +1313,6 @@ MethodTable * g_pFreeObjectMethodTable;
 int32_t g_TrapReturningThreads;
 bool g_fFinalizerRunOnShutDown;
 
-void DestroyThread(Thread * /*pThread*/)
-{
-    // TODO: Implement
-}
-
 void StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 {
 }
@@ -1360,4 +1362,40 @@ HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, __out_z TCHAR * * 
 {
     *outVal = NULL;
     return 0;
+}
+
+bool NumaNodeInfo::CanEnableGCNumaAware() 
+{ 
+    // @TODO: enable NUMA node support
+    return false; 
+}
+
+void NumaNodeInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t * /*group_number*/, uint16_t * /*group_processor_number*/)
+{
+    ASSERT_UNCONDITIONALLY("NYI: NumaNodeInfo::GetGroupForProcessor");
+}
+
+bool NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER /*proc_no*/, uint16_t * /*node_no*/)
+{
+    ASSERT_UNCONDITIONALLY("NYI: NumaNodeInfo::GetNumaProcessorNodeEx");
+    return false;
+}
+
+bool CPUGroupInfo::CanEnableGCCPUGroups()
+{
+    // @TODO: enable CPU group support
+    return false;
+}
+
+uint32_t CPUGroupInfo::GetNumActiveProcessors() 
+{ 
+    // @TODO: enable CPU group support
+    // NOTE: this API shouldn't be called unless CanEnableGCCPUGroups() returns true
+    ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetNumActiveProcessors");
+    return 0;
+}
+
+void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t * /*group_number*/, uint16_t * /*group_processor_number*/)
+{
+    ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
 }

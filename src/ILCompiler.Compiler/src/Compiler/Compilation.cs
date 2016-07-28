@@ -119,7 +119,14 @@ namespace ILCompiler
                 NodeFactory.CompilationUnitPrefix = NameMangler.SanitizeName(Path.GetFileNameWithoutExtension(Options.OutputFilePath));
             }
 
-            _nodeFactory = new NodeFactory(_typeSystemContext, _compilationModuleGroup, _options.IsCppCodeGen);
+            if (_options.IsCppCodeGen)
+            {
+                _nodeFactory = new CppCodegenNodeFactory(_typeSystemContext, _compilationModuleGroup);
+            }
+            else
+            {
+                _nodeFactory = new RyuJitNodeFactory(_typeSystemContext, _compilationModuleGroup);
+            }
 
             // Choose which dependency graph implementation to use based on the amount of logging requested.
             if (_options.DgmlLog == null)

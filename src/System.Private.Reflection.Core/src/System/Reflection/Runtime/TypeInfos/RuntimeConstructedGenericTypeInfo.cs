@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Collections.Concurrent;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
 
-using global::Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Tracing;
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.TypeInfos
@@ -233,7 +232,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 RuntimeTypeInfo genericTypeDefinition = this.GenericTypeDefinitionTypeInfo;
                 RuntimeNamedTypeInfo genericTypeDefinitionNamedTypeInfo = genericTypeDefinition as RuntimeNamedTypeInfo;
                 if (genericTypeDefinitionNamedTypeInfo == null)
-                    throw this.ReflectionDomain.CreateMissingMetadataException(genericTypeDefinition);
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericTypeDefinition);
                 return genericTypeDefinitionNamedTypeInfo;
             }
         }

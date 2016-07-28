@@ -2,25 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Collections.Concurrent;
-using global::System.Reflection.Runtime.Types;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.LowLevelLinq;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -49,7 +47,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 ScopeDefinitionHandle scopeDefinitionHandle = NamespaceChain.DefiningScope;
                 RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
 
-                return RuntimeAssembly.GetRuntimeAssembly(this.ReflectionDomain, runtimeAssemblyName);
+                return RuntimeAssembly.GetRuntimeAssembly(runtimeAssemblyName);
             }
         }
 
@@ -79,16 +77,12 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
 #endif
 
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.ReflectionDomain, _reader, _typeDefinition.CustomAttributes);
+                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _typeDefinitionHandle))
                 {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _typeDefinitionHandle))
-                    {
-                        yield return cad;
-                    }
+                    yield return cad;
                 }
             }
         }
@@ -139,7 +133,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         if (fahEnumerator.MoveNext())
                             continue;
                         FixedArgument guidStringArgument = guidStringArgumentHandle.GetFixedArgument(_reader);
-                        String guidString = guidStringArgument.Value.ParseConstantValue(this.ReflectionDomain, _reader) as String;
+                        String guidString = guidStringArgument.Value.ParseConstantValue(_reader) as String;
                         if (guidString == null)
                             continue;
                         return new Guid(guidString);
@@ -157,7 +151,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 // uses the GUID as a dictionary key to look up types.) It will not be the same GUID on multiple runs of the app but so far, there's
                 // no evidence that's needed.
                 //
-                return _namedTypeToGuidTable.GetOrAdd(this).Item1;
+                return s_namedTypeToGuidTable.GetOrAdd(this).Item1;
             }
         }
 
@@ -282,7 +276,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
                 if (!enclosingTypeDefHandle.IsNull(_reader))
                 {
-                    declaringType = ReflectionDomain.ResolveTypeDefinition(_reader, enclosingTypeDefHandle);
+                    declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
                 }
                 return declaringType.CastToType();
             }
@@ -447,7 +441,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private volatile NamespaceChain _lazyNamespaceChain;
 
-        private static NamedTypeToGuidTable _namedTypeToGuidTable = new NamedTypeToGuidTable();
+        private static readonly NamedTypeToGuidTable s_namedTypeToGuidTable = new NamedTypeToGuidTable();
         private sealed class NamedTypeToGuidTable : ConcurrentUnifier<RuntimeNamedTypeInfo, Tuple<Guid>>
         {
             protected sealed override Tuple<Guid> Factory(RuntimeNamedTypeInfo key)
@@ -456,13 +450,13 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        private static char[] charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
+        private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
         // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.
         // Current link is http://msdn.microsoft.com/en-us/library/yfsftwz6(v=vs.110).aspx
         private static string EscapeIdentifier(string identifier)
         {
             // Some characters in a type name need to be escaped
-            if (identifier != null && identifier.IndexOfAny(charsToEscape) != -1)
+            if (identifier != null && identifier.IndexOfAny(s_charsToEscape) != -1)
             {
                 StringBuilder sbEscapedName = new StringBuilder(identifier);
                 sbEscapedName.Replace("\\", "\\\\");

@@ -9,11 +9,11 @@
 **
 ==============================================================*/
 
-using global::System;
-using global::System.Globalization;
-using global::System.IO;
-using global::System.Text;
-using global::System.Collections.Generic;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Collections.Generic;
 
 namespace System.Reflection.Runtime.Assemblies
 {

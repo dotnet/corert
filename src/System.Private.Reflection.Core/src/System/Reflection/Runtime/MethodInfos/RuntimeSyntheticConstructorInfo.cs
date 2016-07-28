@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
 
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -93,16 +92,16 @@ namespace System.Reflection.Runtime.MethodInfos
             RuntimeSyntheticConstructorInfo other = obj as RuntimeSyntheticConstructorInfo;
             if (other == null)
                 return false;
-            if (this._syntheticMethodId != other._syntheticMethodId)
+            if (_syntheticMethodId != other._syntheticMethodId)
                 return false;
-            if (!(this._declaringType.Equals(other._declaringType)))
+            if (!(_declaringType.Equals(other._declaringType)))
                 return false;
             return true;
         }
 
         public sealed override int GetHashCode()
         {
-            return this._declaringType.GetHashCode();
+            return _declaringType.GetHashCode();
         }
 
         public sealed override String ToString()
@@ -145,10 +144,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private volatile RuntimeParameterInfo[] _lazyRuntimeParametersAndReturn;
 
-        private SyntheticMethodId _syntheticMethodId;
-        private RuntimeTypeInfo _declaringType;
-        private RuntimeTypeInfo[] _runtimeParameterTypesAndReturn;
-        private InvokerOptions _options;
-        private Func<Object, Object[], Object> _invoker;
+        private readonly SyntheticMethodId _syntheticMethodId;
+        private readonly RuntimeTypeInfo _declaringType;
+        private readonly RuntimeTypeInfo[] _runtimeParameterTypesAndReturn;
+        private readonly InvokerOptions _options;
+        private readonly Func<Object, Object[], Object> _invoker;
     }
 }

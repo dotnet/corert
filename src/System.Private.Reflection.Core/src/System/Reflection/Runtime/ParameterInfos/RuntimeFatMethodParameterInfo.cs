@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
@@ -22,8 +21,8 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeFatMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reflectionDomain, reader, typeHandle, typeContext)
+        private RuntimeFatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
+            : base(member, position, reader, typeHandle, typeContext)
         {
             _methodHandle = methodHandle;
             _parameterHandle = parameterHandle;
@@ -42,17 +41,12 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(reflectionDomain, this.Reader, _parameter.CustomAttributes);
+                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.Reader, _parameter.CustomAttributes);
                 foreach (CustomAttributeData cad in customAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = reflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    MethodHandle declaringMethodHandle = _methodHandle;
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(this.Reader, _parameterHandle, declaringMethodHandle))
-                        yield return cad;
-                }
+                MethodHandle declaringMethodHandle = _methodHandle;
+                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(this.Reader, _parameterHandle, declaringMethodHandle))
+                    yield return cad;
             }
         }
 
@@ -87,9 +81,6 @@ namespace System.Reflection.Runtime.ParameterInfos
                 Tuple<bool, Object> defaultValueInfo = _lazyDefaultValueInfo;
                 if (defaultValueInfo == null)
                 {
-                    if (!(this.ReflectionDomain is ExecutionDomain))
-                        throw new NotSupportedException();
-
                     Object defaultValue;
                     bool hasDefaultValue = ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
                         this.Reader,
@@ -107,9 +98,9 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        private MethodHandle _methodHandle;
-        private ParameterHandle _parameterHandle;
-        private Parameter _parameter;
+        private readonly MethodHandle _methodHandle;
+        private readonly ParameterHandle _parameterHandle;
+        private readonly Parameter _parameter;
         private volatile Tuple<bool, Object> _lazyDefaultValueInfo;
     }
 }

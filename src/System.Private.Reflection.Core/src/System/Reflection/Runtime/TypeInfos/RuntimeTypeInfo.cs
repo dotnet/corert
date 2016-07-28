@@ -2,26 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Types;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.FieldInfos;
-using global::System.Reflection.Runtime.PropertyInfos;
-using global::System.Reflection.Runtime.EventInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.FieldInfos;
+using System.Reflection.Runtime.PropertyInfos;
+using System.Reflection.Runtime.EventInfos;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Reflection.Tracing;
+using Internal.LowLevelLinq;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
+using Internal.Reflection.Tracing;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
+
+using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
+using RuntimeType = Internal.Reflection.Core.NonPortable.RuntimeType;
+using RuntimeTypeTemporary = System.Reflection.Runtime.Types.RuntimeTypeTemporary;
+
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -103,7 +106,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     // unless that other generic parameter has a "class" constraint.
                     GenericParameterAttributes genericParameterAttributes = baseType.GetTypeInfo().GenericParameterAttributes;
                     if (0 == (genericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint))
-                        baseType = this.ReflectionDomain.FoundationTypes.SystemObject;
+                        baseType = ReflectionCoreExecution.ExecutionDomain.FoundationTypes.SystemObject;
                 }
                 return baseType;
             }
@@ -268,12 +271,6 @@ namespace System.Reflection.Runtime.TypeInfos
             return InternalGetHashCode();
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: This simplifies the conversion to a RuntimeTypeInfo-centric source-base. Once that's done, this can be gotten rid of.
-        public TypeInfo GetTypeInfo()
-        {
-            return this;
-        }
-
         public abstract override string FullName { get; }
 
         //
@@ -316,7 +313,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredEvent(name);
@@ -330,7 +327,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredField(name);
@@ -344,7 +341,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredMethod(name);
@@ -358,7 +355,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
 
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredProperty(name);
@@ -406,10 +403,9 @@ namespace System.Reflection.Runtime.TypeInfos
                     Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk.CastToType();
                     if (baseType != null)
                         result.AddRange(baseType.GetTypeInfo().ImplementedInterfaces);
-                    ReflectionDomain reflectionDomain = this.ReflectionDomain;
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
-                        Type ifc = reflectionDomain.Resolve(directlyImplementedInterface.Reader, directlyImplementedInterface.Handle, typeContext).CastToType();
+                        Type ifc = directlyImplementedInterface.Handle.Resolve(directlyImplementedInterface.Reader, typeContext).CastToType();
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);
@@ -433,9 +429,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (typeInfo == null || !typeInfo.CastToType().IsRuntimeImplemented())
                 return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
 
-            RuntimeTypeInfo fromTypeInfo = typeInfo.GetRuntimeTypeInfo<RuntimeTypeInfo>();
-            if (toTypeInfo.ReflectionDomain != fromTypeInfo.ReflectionDomain)
-                return false;
+            RuntimeTypeInfo fromTypeInfo = typeInfo.CastToRuntimeTypeInfo();
 
             if (toTypeInfo.Equals(fromTypeInfo))
                 return true;
@@ -458,7 +452,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             // If we got here, the types are open, or reduced away, or otherwise lacking in type handles. Perform the IsAssignability check in managed code.
-            return Assignability.IsAssignableFrom(this, typeInfo, fromTypeInfo.ReflectionDomain.FoundationTypes);
+            return Assignability.IsAssignableFrom(this, typeInfo, ReflectionCoreExecution.ExecutionDomain.FoundationTypes);
         }
 
         //
@@ -678,7 +672,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 Type rootCauseForFailure = null;
                 string name = InternalGetNameIfAvailable(ref rootCauseForFailure);
                 if (name == null)
-                    throw ReflectionDomain.CreateMissingMetadataException(rootCauseForFailure);
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(rootCauseForFailure);
                 return name;
             }
         }
@@ -710,7 +704,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 // representation of the type is in the native metadata and there's no EEType at the runtime side.
                 // If you squint hard, this is a missing metadata situation - the metadata is missing on the runtime side - and
                 // the action for the user to take is the same: go mess with RD.XML.
-                throw ReflectionDomain.CreateMissingMetadataException(this);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }
 
@@ -748,14 +742,6 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return this.InternalDeclaringType;
-            }
-        }
-
-        internal ReflectionDomain ReflectionDomain
-        {
-            get
-            {
-                return ReflectionCoreExecution.ExecutionDomain;   //@todo: User Reflection Domains not yet supported.
             }
         }
 
@@ -883,9 +869,6 @@ namespace System.Reflection.Runtime.TypeInfos
         internal abstract string InternalFullNameOfAssembly { get; }
 
         internal abstract string InternalGetNameIfAvailable(ref Type rootCauseForFailure);
-
-        // TODO https://github.com/dotnet/corefx/issues/9805: This was inserted to help facilitate the RuntimeType->RuntimeTypeInfo switchover. Otherwise, it's pretty useless - remove it.
-        internal bool InternalIsOpen => ContainsGenericParameters;
 
         // Left unsealed so that multidim arrays can override.
         internal virtual bool InternalIsMultiDimArray
@@ -1021,7 +1004,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     debugName = this.GetTraceString();  // If tracing on, call this.GetTraceString() which only gives you useful strings when metadata is available but doesn't pollute the ETW trace.
                 else
 #endif
-                    debugName = this.ToString();
+                debugName = this.ToString();
                 if (debugName == null)
                     debugName = "";
                 _debugName = debugName;
@@ -1053,11 +1036,10 @@ namespace System.Reflection.Runtime.TypeInfos
                 QTypeDefRefOrSpec baseTypeDefRefOrSpec = TypeRefDefOrSpecForBaseType;
                 MetadataReader reader = baseTypeDefRefOrSpec.Reader;
                 RuntimeTypeInfo baseType = null;
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
                 if (reader != null)
                 {
                     Handle typeDefRefOrSpec = baseTypeDefRefOrSpec.Handle;
-                    baseType = reflectionDomain.Resolve(reader, typeDefRefOrSpec, this.TypeContext);
+                    baseType = typeDefRefOrSpec.Resolve(reader, this.TypeContext);
                 }
                 return baseType;
             }
@@ -1076,7 +1058,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     Type baseType = this.BaseType;
                     if (baseType != null)
                     {
-                        FoundationTypes foundationTypes = this.ReflectionDomain.FoundationTypes;
+                        FoundationTypes foundationTypes = ReflectionCoreExecution.ExecutionDomain.FoundationTypes;
                         Type enumType = foundationTypes.SystemEnum;
                         Type valueType = foundationTypes.SystemValueType;
 
@@ -1086,7 +1068,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         {
                             classification |= TypeClassification.IsValueType;
                             Type thisType = this.AsType();
-                            foreach (Type primitiveType in this.ReflectionDomain.PrimitiveTypes)
+                            foreach (Type primitiveType in ReflectionCoreExecution.ExecutionDomain.PrimitiveTypes)
                             {
                                 if (thisType.Equals(primitiveType))
                                 {

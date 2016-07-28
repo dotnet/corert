@@ -25,7 +25,7 @@ namespace ILCompiler.Metadata
         private Action<Cts.ArrayType, TypeSpecification> _initArray;
         private Action<Cts.ByRefType, TypeSpecification> _initByRef;
         private Action<Cts.PointerType, TypeSpecification> _initPointer;
-        private Action<Cts.InstantiatedType, TypeSpecification> _initTypeInst;
+        private Action<Cts.TypeDesc, TypeSpecification> _initTypeInst;
         private Action<Cts.SignatureTypeVariable, TypeSpecification> _initTypeVar;
         private Action<Cts.SignatureMethodVariable, TypeSpecification> _initMethodVar;
 
@@ -39,54 +39,53 @@ namespace ILCompiler.Metadata
                 return rec;
             }
 
-            if (type.IsSzArray)
+            switch (type.Category)
             {
-                var arrayType = (Cts.ArrayType)type;
-                rec = _types.Create(arrayType, _initSzArray ?? (_initSzArray = InitializeSzArray));
-            }
-            else if (type.IsArray)
-            {
-                var arrayType = (Cts.ArrayType)type;
-                rec = _types.Create(arrayType, _initArray ?? (_initArray = InitializeArray));
-            }
-            else if (type.IsByRef)
-            {
-                var byRefType = (Cts.ByRefType)type;
-                rec = _types.Create(byRefType, _initByRef ?? (_initByRef = InitializeByRef));
-            }
-            else if (type.IsPointer)
-            {
-                var pointerType = (Cts.PointerType)type;
-                rec = _types.Create(pointerType, _initPointer ?? (_initPointer = InitializePointer));
-            }
-            else if (type is Cts.SignatureTypeVariable)
-            {
-                var variable = (Cts.SignatureTypeVariable)type;
-                rec = _types.Create(variable, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
-            }
-            else if (type is Cts.SignatureMethodVariable)
-            {
-                var variable = (Cts.SignatureMethodVariable)type;
-                rec = _types.Create(variable, _initMethodVar ?? (_initMethodVar = InitializeMethodVariable));
-            }
-            else if (type is Cts.InstantiatedType)
-            {
-                var instType = (Cts.InstantiatedType)type;
-                rec = _types.Create(instType, _initTypeInst ?? (_initTypeInst = InitializeTypeInstance));
-            }
-            else
-            {
-                var metadataType = (Cts.MetadataType)type;
-                if (_policy.GeneratesMetadata(metadataType))
-                {
-                    rec = _types.Create(metadataType, _initTypeDef ?? (_initTypeDef = InitializeTypeDef));
-                }
-                else
-                {
-                    rec = _types.Create(metadataType, _initTypeRef ?? (_initTypeRef = InitializeTypeRef));
-                }
-            }
+                case Cts.TypeFlags.SzArray:
+                    rec = _types.Create((Cts.ArrayType)type, _initSzArray ?? (_initSzArray = InitializeSzArray));
+                    break;
+                case Cts.TypeFlags.Array:
+                    rec = _types.Create((Cts.ArrayType)type, _initArray ?? (_initArray = InitializeArray));
+                    break;
+                case Cts.TypeFlags.ByRef:
+                    rec = _types.Create((Cts.ByRefType)type, _initByRef ?? (_initByRef = InitializeByRef));
+                    break;
+                case Cts.TypeFlags.Pointer:
+                    rec = _types.Create((Cts.PointerType)type, _initPointer ?? (_initPointer = InitializePointer));
+                    break;
+                case Cts.TypeFlags.SignatureTypeVariable:
+                    rec = _types.Create((Cts.SignatureTypeVariable)type, _initTypeVar ?? (_initTypeVar = InitializeTypeVariable));
+                    break;
+                case Cts.TypeFlags.SignatureMethodVariable:
+                    rec = _types.Create((Cts.SignatureMethodVariable)type, _initMethodVar ?? (_initMethodVar = InitializeMethodVariable));
+                    break;
+                default:
+                    {
+                        Debug.Assert(type.IsDefType);
 
+                        if (!type.IsTypeDefinition)
+                        {
+                            // Instantiated generic type
+                            rec = _types.Create(type, _initTypeInst ?? (_initTypeInst = InitializeTypeInstance));
+                        }
+                        else
+                        {
+                            // Type definition
+                            var metadataType = (Cts.MetadataType)type;
+                            if (_policy.GeneratesMetadata(metadataType))
+                            {
+                                rec = _types.Create(metadataType, _initTypeDef ?? (_initTypeDef = InitializeTypeDef));
+                            }
+                            else
+                            {
+                                rec = _types.Create(metadataType, _initTypeRef ?? (_initTypeRef = InitializeTypeRef));
+                            }
+                        }
+                    }
+                    break;
+            }
+            
+ 
             Debug.Assert(rec is TypeDefinition || rec is TypeReference || rec is TypeSpecification);
 
             return rec;
@@ -143,7 +142,7 @@ namespace ILCompiler.Metadata
             };
         }
 
-        private void InitializeTypeInstance(Cts.InstantiatedType entity, TypeSpecification record)
+        private void InitializeTypeInstance(Cts.TypeDesc entity, TypeSpecification record)
         {
             var sig = new TypeInstantiationSignature
             {
@@ -166,7 +165,7 @@ namespace ILCompiler.Metadata
             // references to their definition records (we are avoiding emitting references
             // to things that have a definition within the same blob to save space).
 
-            Cts.MetadataType containingType = entity.ContainingType;
+            Cts.MetadataType containingType = (Cts.MetadataType)entity.ContainingType;
             MetadataRecord parentRecord = HandleType(containingType);
             TypeReference parentReferenceRecord = parentRecord as TypeReference;
             
@@ -218,14 +217,15 @@ namespace ILCompiler.Metadata
         {
             Debug.Assert(entity.IsTypeDefinition);
 
-            if (entity.ContainingType != null)
+            Cts.MetadataType containingType = (Cts.MetadataType)entity.ContainingType;
+            if (containingType != null)
             {
-                var enclosingType = (TypeDefinition)HandleType(entity.ContainingType);
+                var enclosingType = (TypeDefinition)HandleType(containingType);
                 record.EnclosingType = enclosingType;
                 enclosingType.NestedTypes.Add(record);
 
                 var namespaceDefinition =
-                    HandleNamespaceDefinition(_policy.GetModuleOfType(entity.ContainingType), entity.ContainingType.Namespace);
+                    HandleNamespaceDefinition(_policy.GetModuleOfType(containingType), entity.ContainingType.Namespace);
                 record.NamespaceDefinition = namespaceDefinition;
             }
             else

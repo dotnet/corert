@@ -14,18 +14,16 @@ using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class NodeFactory
+    public abstract class NodeFactory
     {
         private TargetDetails _target;
         private CompilerTypeSystemContext _context;
-        private bool _cppCodeGen;
         private CompilationModuleGroup _compilationModuleGroup;
 
-        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, bool cppCodeGen)
+        public NodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
         {
             _target = context.Target;
             _context = context;
-            _cppCodeGen = cppCodeGen;
             _compilationModuleGroup = compilationModuleGroup;
             CreateNodeCaches();
 
@@ -169,43 +167,16 @@ namespace ILCompiler.DependencyAnalysis
                     return new ObjectAndOffsetSymbolNode(key.Item1, key.Item2, key.Item3);
                 });
 
-            _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
-            {
-                if (!_cppCodeGen)
-                {
-                    if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
-                    {
-                        return new RuntimeImportMethodNode(method);
-                    }
-                }
+            _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
 
-                if (_compilationModuleGroup.ContainsMethod(method))
-                {
-                    if (_cppCodeGen)
-                        return new CppMethodCodeNode(method);
-                    else
-                        return new MethodCodeNode(method);
-                }
-                else
-                {
-                    return new ExternMethodSymbolNode(method);
-                }
-            });
-
-            _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
-            {
-                return new UnboxingStubNode(method);
-            });
+            _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
             {
                 return new VirtualMethodUseNode(method);
             });
 
-            _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ReadyToRunHelperNode>((Tuple < ReadyToRunHelperId, Object > helper) =>
-            {
-                return new ReadyToRunHelperNode(helper.Item1, helper.Item2);
-            });
+            _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
 
             _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
             {
@@ -260,12 +231,13 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     return new LazilyBuiltVTableSliceNode(type);
             });
-
-            _jumpThunks = new NodeCache<Tuple<ExternSymbolNode, ISymbolNode>, SingleArgumentJumpThunk>((Tuple<ExternSymbolNode, ISymbolNode> data) =>
-            {
-                return new SingleArgumentJumpThunk(data.Item1, data.Item2);
-            });
         }
+
+        protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
+
+        protected abstract IMethodNode CreateUnboxingStubNode(MethodDesc method);
+
+        protected abstract ISymbolNode CreateReadyToRunHelperNode(Tuple<ReadyToRunHelperId, Object> helperCall);
 
         private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
 
@@ -427,17 +399,6 @@ namespace ILCompiler.DependencyAnalysis
             return _vTableNodes.GetOrAdd(type);
         }
 
-        private NodeCache<Tuple<ExternSymbolNode, ISymbolNode>, SingleArgumentJumpThunk> _jumpThunks;
-        
-        /// <summary>
-        /// Create a thunk that calls an externally defined (e.g., native) function, passing
-        /// a dependency node to the function it calls.
-        /// </summary>
-        internal SingleArgumentJumpThunk JumpThunk(ExternSymbolNode target, ISymbolNode argument)
-        {
-            return _jumpThunks.GetOrAdd(new Tuple<ExternSymbolNode, ISymbolNode>(target, argument));
-        }
-        
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
 
@@ -527,7 +488,7 @@ namespace ILCompiler.DependencyAnalysis
             return _virtMethods.GetOrAdd(decl);
         }
 
-        private NodeCache<Tuple<ReadyToRunHelperId, Object>, ReadyToRunHelperNode> _readyToRunHelpers;
+        private NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode> _readyToRunHelpers;
 
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
         {

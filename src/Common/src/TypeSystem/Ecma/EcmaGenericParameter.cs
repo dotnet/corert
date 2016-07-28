@@ -63,6 +63,15 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override string Name
+        {
+            get
+            {
+                MetadataReader reader = _module.MetadataReader;
+                return reader.GetString(reader.GetGenericParameter(_handle).Name);
+            }
+        }
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;

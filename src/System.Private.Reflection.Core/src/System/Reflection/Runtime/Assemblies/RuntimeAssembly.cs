@@ -2,25 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Text;
-using global::System.Diagnostics;
-using global::System.Reflection;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Modules;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.TypeParsing;
-using global::System.Reflection.Runtime.CustomAttributes;
-using global::System.Collections.Generic;
+using System;
+using System.IO;
+using System.Text;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeParsing;
+using System.Reflection.Runtime.CustomAttributes;
+using System.Collections.Generic;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Extensibility;
+using Internal.Metadata.NativeFormat;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -46,15 +45,11 @@ namespace System.Reflection.Runtime.Assemblies
 
                 foreach (QScopeDefinition scope in AllScopes)
                 {
-                    foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(this.ReflectionDomain, scope.Reader, scope.ScopeDefinition.CustomAttributes))
+                    foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.CustomAttributes))
                         yield return cad;
 
-                    ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-                    if (executionDomain != null)
-                    {
-                        foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(scope.Reader, scope.Handle))
-                            yield return cad;
-                    }
+                    foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPsuedoCustomAttributes(scope.Reader, scope.Handle))
+                        yield return cad;
                 }
             }
         }
@@ -90,13 +85,12 @@ namespace System.Reflection.Runtime.Assemblies
                 {
                     MetadataReader reader = scope.Reader;
                     ScopeDefinition scopeDefinition = scope.ScopeDefinition;
-                    ReflectionDomain reflectionDomain = this.ReflectionDomain;
                     IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
                     IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return reflectionDomain.ResolveTypeDefinition(reader, typeDefinitionHandle).CastToType();
+                        yield return typeDefinitionHandle.ResolveTypeDefinition(reader).CastToType();
                 }
             }
         }
@@ -154,26 +148,17 @@ namespace System.Reflection.Runtime.Assemblies
 
         public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
         }
 
         public sealed override String[] GetManifestResourceNames()
         {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceNames(this);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceNames(this);
         }
 
         public sealed override Stream GetManifestResourceStream(String name)
         {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceStream(this, name);
+            return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
         }
 
         public sealed override AssemblyName GetName()
@@ -213,7 +198,7 @@ namespace System.Reflection.Runtime.Assemblies
             }
 
             RuntimeTypeInfo result;
-            Exception typeLoadException = assemblyQualifiedTypeName.TypeName.TryResolve(this.ReflectionDomain, this, ignoreCase, out result);
+            Exception typeLoadException = assemblyQualifiedTypeName.TypeName.TryResolve(this, ignoreCase, out result);
             if (typeLoadException != null)
             {
                 if (throwOnError)
@@ -223,9 +208,9 @@ namespace System.Reflection.Runtime.Assemblies
             return result.CastToType();
         }
 
-        internal QScopeDefinition Scope { get; private set; }
+        internal QScopeDefinition Scope { get; }
 
-        internal IEnumerable<QScopeDefinition> OverflowScopes { get; private set; }
+        internal IEnumerable<QScopeDefinition> OverflowScopes { get; }
 
         internal IEnumerable<QScopeDefinition> AllScopes
         {
@@ -237,14 +222,6 @@ namespace System.Reflection.Runtime.Assemblies
                 {
                     yield return overflowScope;
                 }
-            }
-        }
-
-        internal ReflectionDomain ReflectionDomain
-        {
-            get
-            {
-                return ReflectionCoreExecution.ExecutionDomain;  //@todo: User Reflection Domains not yet supported.
             }
         }
     }

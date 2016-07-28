@@ -7,8 +7,8 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using Internal.Reflection.Core.NonPortable;
 
+using RuntimeType = Internal.Reflection.Core.NonPortable.RuntimeType;
 
 namespace System.Reflection.Runtime.Types
 {
@@ -41,7 +41,7 @@ namespace System.Reflection.Runtime.Types
                 return true;
 
             // TODO https://github.com/dotnet/corefx/issues/9805: This makes Equals() act as if Type and TypeInfo are already the same instance. This extra check will go away once they actually are the same instance.
-            if (obj is RuntimeTypeInfo && object.ReferenceEquals(this, ((RuntimeTypeInfo)obj).AsType())) 
+            if (obj is RuntimeTypeInfo && object.ReferenceEquals(this, ((RuntimeTypeInfo)obj).AsType()))
                 return true;
 
             return false;

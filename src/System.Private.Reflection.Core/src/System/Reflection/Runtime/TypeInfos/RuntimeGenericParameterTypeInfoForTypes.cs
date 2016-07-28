@@ -6,7 +6,6 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Reflection.Runtime.Types;
 using System.Reflection.Runtime.General;
 
 
@@ -18,10 +17,10 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal sealed partial class RuntimeGenericParameterTypeInfoForTypes : RuntimeGenericParameterTypeInfo
     {
-        private RuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeNamedTypeInfo declaringRuntimeNamedTypeInfo)
+        private RuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeInfo declaringRuntimeNamedTypeInfo)
            : base(reader, genericParameterHandle)
         {
-            DeclaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
+            _declaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
         }
 
         public sealed override MethodBase DeclaringMethod
@@ -40,7 +39,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return DeclaringRuntimeNamedTypeInfo.AsType();
+                return _declaringRuntimeNamedTypeInfo.AsType();
             }
         }
 
@@ -48,11 +47,11 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return DeclaringRuntimeNamedTypeInfo.TypeContext;
+                return _declaringRuntimeNamedTypeInfo.TypeContext;
             }
         }
 
-        internal RuntimeNamedTypeInfo DeclaringRuntimeNamedTypeInfo { get; }
+        private readonly RuntimeTypeInfo _declaringRuntimeNamedTypeInfo;
     }
 }
 

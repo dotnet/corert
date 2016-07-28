@@ -2,22 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Types;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.TypeParsing;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.TypeParsing;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General
 {
@@ -26,24 +24,24 @@ namespace System.Reflection.Runtime.General
         //
         // Main routine to resolve a typeDef/Ref/Spec.
         //
-        internal static RuntimeTypeInfo Resolve(this ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeDefRefOrSpec, TypeContext typeContext)
+        internal static RuntimeTypeInfo Resolve(this Handle typeDefRefOrSpec, MetadataReader reader, TypeContext typeContext)
         {
             Exception exception = null;
-            RuntimeTypeInfo runtimeType = reflectionDomain.TryResolve(reader, typeDefRefOrSpec, typeContext, ref exception);
+            RuntimeTypeInfo runtimeType = typeDefRefOrSpec.TryResolve(reader, typeContext, ref exception);
             if (runtimeType == null)
                 throw exception;
             return runtimeType;
         }
 
-        internal static RuntimeTypeInfo TryResolve(this ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeDefRefOrSpec, TypeContext typeContext, ref Exception exception)
+        internal static RuntimeTypeInfo TryResolve(this Handle typeDefRefOrSpec, MetadataReader reader, TypeContext typeContext, ref Exception exception)
         {
             HandleType handleType = typeDefRefOrSpec.HandleType;
             if (handleType == HandleType.TypeDefinition)
-                return reflectionDomain.ResolveTypeDefinition(reader, typeDefRefOrSpec.ToTypeDefinitionHandle(reader));
+                return typeDefRefOrSpec.ToTypeDefinitionHandle(reader).ResolveTypeDefinition(reader);
             else if (handleType == HandleType.TypeReference)
-                return reflectionDomain.TryResolveTypeReference(reader, typeDefRefOrSpec.ToTypeReferenceHandle(reader), ref exception);
+                return typeDefRefOrSpec.ToTypeReferenceHandle(reader).TryResolveTypeReference(reader, ref exception);
             else if (handleType == HandleType.TypeSpecification)
-                return reflectionDomain.TryResolveTypeSignature(reader, typeDefRefOrSpec.ToTypeSpecificationHandle(reader), typeContext, ref exception);
+                return typeDefRefOrSpec.ToTypeSpecificationHandle(reader).TryResolveTypeSignature(reader, typeContext, ref exception);
             else
                 throw new BadImageFormatException();  // Expected TypeRef, Def or Spec.
         }
@@ -52,7 +50,7 @@ namespace System.Reflection.Runtime.General
         //
         // Main routine to resolve a typeDefinition.
         //
-        internal static RuntimeTypeInfo ResolveTypeDefinition(this ReflectionDomain reflectionDomain, MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle)
+        internal static RuntimeTypeInfo ResolveTypeDefinition(this TypeDefinitionHandle typeDefinitionHandle, MetadataReader reader)
         {
             return typeDefinitionHandle.GetNamedType(reader);
         }
@@ -60,7 +58,7 @@ namespace System.Reflection.Runtime.General
         //
         // Main routine to parse a metadata type specification signature.
         //
-        private static RuntimeTypeInfo TryResolveTypeSignature(this ReflectionDomain reflectionDomain, MetadataReader reader, TypeSpecificationHandle typeSpecHandle, TypeContext typeContext, ref Exception exception)
+        private static RuntimeTypeInfo TryResolveTypeSignature(this TypeSpecificationHandle typeSpecHandle, MetadataReader reader, TypeContext typeContext, ref Exception exception)
         {
             Handle typeHandle = typeSpecHandle.GetTypeSpecification(reader).Signature;
             switch (typeHandle.HandleType)
@@ -71,7 +69,7 @@ namespace System.Reflection.Runtime.General
                         int rank = sig.Rank;
                         if (rank <= 0)
                             throw new BadImageFormatException(); // Bad rank.
-                        RuntimeTypeInfo elementType = reflectionDomain.TryResolve(reader, sig.ElementType, typeContext, ref exception);
+                        RuntimeTypeInfo elementType = sig.ElementType.TryResolve(reader, typeContext, ref exception);
                         if (elementType == null)
                             return null;
                         return elementType.GetMultiDimArrayType(rank);
@@ -80,7 +78,7 @@ namespace System.Reflection.Runtime.General
                 case HandleType.ByReferenceSignature:
                     {
                         ByReferenceSignature sig = typeHandle.ToByReferenceSignatureHandle(reader).GetByReferenceSignature(reader);
-                        RuntimeTypeInfo targetType = reflectionDomain.TryResolve(reader, sig.Type, typeContext, ref exception);
+                        RuntimeTypeInfo targetType = sig.Type.TryResolve(reader, typeContext, ref exception);
                         if (targetType == null)
                             return null;
                         return targetType.GetByRefType();
@@ -95,7 +93,7 @@ namespace System.Reflection.Runtime.General
                 case HandleType.PointerSignature:
                     {
                         PointerSignature sig = typeHandle.ToPointerSignatureHandle(reader).GetPointerSignature(reader);
-                        RuntimeTypeInfo targetType = reflectionDomain.TryResolve(reader, sig.Type, typeContext, ref exception);
+                        RuntimeTypeInfo targetType = sig.Type.TryResolve(reader, typeContext, ref exception);
                         if (targetType == null)
                             return null;
                         return targetType.GetPointerType();
@@ -104,7 +102,7 @@ namespace System.Reflection.Runtime.General
                 case HandleType.SZArraySignature:
                     {
                         SZArraySignature sig = typeHandle.ToSZArraySignatureHandle(reader).GetSZArraySignature(reader);
-                        RuntimeTypeInfo elementType = reflectionDomain.TryResolve(reader, sig.ElementType, typeContext, ref exception);
+                        RuntimeTypeInfo elementType = sig.ElementType.TryResolve(reader, typeContext, ref exception);
                         if (elementType == null)
                             return null;
                         return elementType.GetArrayType();
@@ -112,19 +110,19 @@ namespace System.Reflection.Runtime.General
 
                 case HandleType.TypeDefinition:
                     {
-                        return reflectionDomain.ResolveTypeDefinition(reader, typeHandle.ToTypeDefinitionHandle(reader));
+                        return typeHandle.ToTypeDefinitionHandle(reader).ResolveTypeDefinition(reader);
                     }
 
                 case HandleType.TypeInstantiationSignature:
                     {
                         TypeInstantiationSignature sig = typeHandle.ToTypeInstantiationSignatureHandle(reader).GetTypeInstantiationSignature(reader);
-                        RuntimeTypeInfo genericTypeDefinition = reflectionDomain.TryResolve(reader, sig.GenericType, typeContext, ref exception);
+                        RuntimeTypeInfo genericTypeDefinition = sig.GenericType.TryResolve(reader, typeContext, ref exception);
                         if (genericTypeDefinition == null)
                             return null;
                         LowLevelList<RuntimeTypeInfo> genericTypeArguments = new LowLevelList<RuntimeTypeInfo>();
                         foreach (Handle genericTypeArgumentHandle in sig.GenericTypeArguments)
                         {
-                            RuntimeTypeInfo genericTypeArgument = reflectionDomain.TryResolve(reader, genericTypeArgumentHandle, typeContext, ref exception);
+                            RuntimeTypeInfo genericTypeArgument = genericTypeArgumentHandle.TryResolve(reader, typeContext, ref exception);
                             if (genericTypeArgument == null)
                                 return null;
                             genericTypeArguments.Add(genericTypeArgument);
@@ -134,7 +132,7 @@ namespace System.Reflection.Runtime.General
 
                 case HandleType.TypeReference:
                     {
-                        return reflectionDomain.TryResolveTypeReference(reader, typeHandle.ToTypeReferenceHandle(reader), ref exception);
+                        return typeHandle.ToTypeReferenceHandle(reader).TryResolveTypeReference(reader, ref exception);
                     }
 
                 case HandleType.TypeVariableSignature:
@@ -151,17 +149,11 @@ namespace System.Reflection.Runtime.General
         //
         // Main routine to resolve a typeReference.
         //
-        private static RuntimeTypeInfo TryResolveTypeReference(this ReflectionDomain reflectionDomain, MetadataReader reader, TypeReferenceHandle typeReferenceHandle, ref Exception exception)
+        private static RuntimeTypeInfo TryResolveTypeReference(this TypeReferenceHandle typeReferenceHandle, MetadataReader reader, ref Exception exception)
         {
-            {
-                ExecutionDomain executionDomain = reflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    RuntimeTypeHandle resolvedRuntimeTypeHandle;
-                    if (executionDomain.ExecutionEnvironment.TryGetNamedTypeForTypeReference(reader, typeReferenceHandle, out resolvedRuntimeTypeHandle))
-                        return resolvedRuntimeTypeHandle.GetTypeForRuntimeTypeHandle();
-                }
-            }
+            RuntimeTypeHandle resolvedRuntimeTypeHandle;
+            if (ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForTypeReference(reader, typeReferenceHandle, out resolvedRuntimeTypeHandle))
+                return resolvedRuntimeTypeHandle.GetTypeForRuntimeTypeHandle();
 
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
             String name = typeReference.TypeName.GetString(reader);
@@ -177,10 +169,10 @@ namespace System.Reflection.Runtime.General
             }
             else if (parentType == HandleType.TypeReference)
             {
-                RuntimeTypeInfo outerType = reflectionDomain.TryResolveTypeReference(reader, parent.ToTypeReferenceHandle(reader), ref exception);
+                RuntimeTypeInfo outerType = parent.ToTypeReferenceHandle(reader).TryResolveTypeReference(reader, ref exception);
                 if (outerType == null)
                     return null;
-                outerTypeInfo = outerType.GetTypeInfo();   // Since we got to outerType via a metadata reference, we're assured GetTypeInfo() won't throw a MissingMetadataException.
+                outerTypeInfo = outerType;   // Since we got to outerType via a metadata reference, we're assured GetTypeInfo() won't throw a MissingMetadataException.
             }
             if (outerTypeInfo != null)
             {
@@ -188,10 +180,10 @@ namespace System.Reflection.Runtime.General
                 TypeInfo resolvedTypeInfo = outerTypeInfo.GetDeclaredNestedType(name);
                 if (resolvedTypeInfo == null)
                 {
-                    exception = reflectionDomain.CreateMissingMetadataException(outerTypeInfo, name);
+                    exception = ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(outerTypeInfo, name);
                     return null;
                 }
-                return resolvedTypeInfo.GetRuntimeTypeInfo<RuntimeTypeInfo>();
+                return resolvedTypeInfo.CastToRuntimeTypeInfo();
             }
 
 
@@ -200,7 +192,7 @@ namespace System.Reflection.Runtime.General
             {
                 AssemblyQualifiedTypeName assemblyQualifiedTypeName = parent.ToNamespaceReferenceHandle(reader).ToAssemblyQualifiedTypeName(name, reader);
                 RuntimeTypeInfo runtimeType;
-                exception = assemblyQualifiedTypeName.TryResolve(reflectionDomain, null, /*ignoreCase: */false, out runtimeType);
+                exception = assemblyQualifiedTypeName.TryResolve(null, /*ignoreCase: */false, out runtimeType);
                 if (exception != null)
                     return null;
                 return runtimeType;
