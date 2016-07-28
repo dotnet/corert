@@ -238,7 +238,7 @@ namespace ILCompiler
                     ModuleData actualModuleData = _simpleNameHashtable.AddOrGetExisting(moduleData);
                     if (actualModuleData != moduleData)
                     {
-                        if (actualModuleData.FilePath != filePath)
+                        if (actualModuleData.FilePath != filePath && actualModuleData.SimpleName != "mscorlib")
                             throw new FileNotFoundException("Module with same simple name already exists " + filePath);
                         return actualModuleData.Module;
                     }
