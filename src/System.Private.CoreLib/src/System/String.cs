@@ -104,20 +104,15 @@ namespace System
 
         // String constructors
         // These are special. the implementation methods for these have a different signature from the
-        // declared constructors. We use a RuntimeImport/RuntimeExport combination to workaround this difference.
-        // TODO: Determine a more reasonable solution for this.
+        // declared constructors.
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern String(char[] value);
 #if CORERT
-        public extern String(char[] value);   // CtorCharArray
-
         private static String Ctor(object unusedThis, char[] value)
 #else
-        [RuntimeImport(".", "CtorCharArray")]
-        public extern String(char[] value);   // CtorCharArray
-
-        [RuntimeExport("CtorCharArray")]
-        private static String CtorCharArray(char[] value)
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        private static String Ctor(char[] value)
 #endif
         {
             if (value != null && value.Length != 0)
@@ -138,16 +133,12 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern String(char[] value, int startIndex, int length);
 #if CORERT
-        public extern String(char[] value, int startIndex, int length);   // CtorCharArrayStartLength
-
         private static String Ctor(object unusedThis, char[] value, int startIndex, int length)
 #else
-        [RuntimeImport(".", "CtorCharArrayStartLength")]
-        public extern String(char[] value, int startIndex, int length);   // CtorCharArrayStartLength
-
-        [RuntimeExport("CtorCharArrayStartLength")]
-        private static String CtorCharArrayStartLength(char[] value, int startIndex, int length)
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        private static String Ctor(char[] value, int startIndex, int length)
 #endif
         {
             if (value == null)
@@ -182,16 +173,12 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        unsafe public extern String(char* value);
 #if CORERT
-        unsafe public extern String(char* value);   // CtorCharPtr
-
         private static unsafe String Ctor(object unusedThis, char* ptr)
 #else
-        [RuntimeImport(".", "CtorCharPtr")]
-        unsafe public extern String(char* value);   // CtorCharPtr
-
-        [RuntimeExport("CtorCharPtr")]
-        private static unsafe String CtorCharPtr(char* ptr)
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        private static unsafe String Ctor(char* ptr)
 #endif
         {
             if (ptr == null)
@@ -221,16 +208,12 @@ namespace System
 
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        unsafe public extern String(char* value, int startIndex, int length);
 #if CORERT
-        unsafe public extern String(char* value, int startIndex, int length);   // CtorCharPtrStartLength
-
         private static unsafe String Ctor(object unusedThis, char* ptr, int startIndex, int length)
 #else
-        [RuntimeImport(".", "CtorCharPtrStartLength")]
-        unsafe public extern String(char* value, int startIndex, int length);   // CtorCharPtrStartLength
-
-        [RuntimeExport("CtorCharPtrStartLength")]
-        private static unsafe String CtorCharPtrStartLength(char* ptr, int startIndex, int length)
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        private static unsafe String Ctor(char* ptr, int startIndex, int length)
 #endif
         {
             if (length < 0)
@@ -269,16 +252,12 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern String(char c, int count);
 #if CORERT
-        public extern String(char c, int count);                          // CtorCharCount
-
         private static String Ctor(object unusedThis, char c, int count)
 #else
-        [RuntimeImport(".", "CtorCharCount")]
-        public extern String(char c, int count);                          // CtorCharCount
-
-        [RuntimeExport("CtorCharCount")]
-        private static String CtorCharCount(char c, int count)
+        [System.Runtime.CompilerServices.DependencyReductionRoot]
+        private static String Ctor(char c, int count)
 #endif
         {
             if (count > 0)

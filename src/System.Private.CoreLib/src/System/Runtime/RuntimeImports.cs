@@ -264,9 +264,9 @@ namespace System.Runtime
         internal static extern void RhSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhYield")]
-        internal static extern bool RhYield();
+        [DllImport(RuntimeLibrary, EntryPoint = "RhYield", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int _RhYield();
+        internal static bool RhYield() { return (_RhYield() != 0); }
 
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
@@ -559,13 +559,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "fabs")]
         internal static extern double fabs(double x);
 #endif // CORERT
-
-#if !CORERT
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "_copysign")]
-        internal static extern double _copysign(double x, double y);
-#endif // !CORERT
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
