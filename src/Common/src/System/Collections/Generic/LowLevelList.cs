@@ -503,6 +503,11 @@ namespace System.Collections.Generic
         {
         }
 
+        public LowLevelListWithIList(IEnumerable<T> collection)
+            : base(collection)
+        {
+        }
+
         // Is this List read-only?
         bool ICollection<T>.IsReadOnly
         {

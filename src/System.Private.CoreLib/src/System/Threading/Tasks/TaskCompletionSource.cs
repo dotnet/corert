@@ -188,7 +188,7 @@ namespace System.Threading.Tasks
         {
             if (exceptions == null) throw new ArgumentNullException("exceptions");
 
-            List<Exception> defensiveCopy = new List<Exception>();
+            LowLevelListWithIList<Exception> defensiveCopy = new LowLevelListWithIList<Exception>();
             foreach (Exception e in exceptions)
             {
                 if (e == null)

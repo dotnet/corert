@@ -44,7 +44,7 @@ namespace System.Threading.Tasks
         /// The lazily-initialized list of faulting exceptions.  Volatile
         /// so that it may be read to determine whether any exceptions were stored.
         /// </summary>
-        private volatile List<ExceptionDispatchInfo> m_faultExceptions;
+        private volatile LowLevelListWithIList<ExceptionDispatchInfo> m_faultExceptions;
         /// <summary>An exception that triggered the task to cancel.</summary>
         private ExceptionDispatchInfo m_cancellationException;
         /// <summary>Whether the holder was "observed" and thus doesn't cause finalization behavior.</summary>
@@ -198,7 +198,7 @@ namespace System.Threading.Tasks
 
             // Initialize the exceptions list if necessary.  The list should be non-null iff it contains exceptions.
             var exceptions = m_faultExceptions;
-            if (exceptions == null) m_faultExceptions = exceptions = new List<ExceptionDispatchInfo>(1);
+            if (exceptions == null) m_faultExceptions = exceptions = new LowLevelListWithIList<ExceptionDispatchInfo>(1);
             else Contract.Assert(exceptions.Count > 0, "Expected existing exceptions list to have > 0 exceptions.");
 
             // Handle Exception by capturing it into an ExceptionDispatchInfo and storing that

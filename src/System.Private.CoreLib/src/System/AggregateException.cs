@@ -114,7 +114,7 @@ namespace System
         public AggregateException(string message, IEnumerable<Exception> innerExceptions)
             // If it's already an IList, pass that along (a defensive copy will be made in the delegated ctor).  If it's null, just pass along
             // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along. 
-            : this(message, innerExceptions as IList<Exception> ?? (innerExceptions == null ? (List<Exception>)null : new List<Exception>(innerExceptions)))
+            : this(message, innerExceptions as IList<Exception> ?? (innerExceptions == null ? (IList<Exception>)null : new LowLevelListWithIList<Exception>(innerExceptions)))
         {
         }
 
@@ -202,8 +202,8 @@ namespace System
             // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along. 
             : this(message, innerExceptionInfos as IList<ExceptionDispatchInfo> ??
                                 (innerExceptionInfos == null ?
-                                    (List<ExceptionDispatchInfo>)null :
-                                    new List<ExceptionDispatchInfo>(innerExceptionInfos)))
+                                    (LowLevelListWithIList<ExceptionDispatchInfo>)null :
+                                    new LowLevelListWithIList<ExceptionDispatchInfo>(innerExceptionInfos)))
         {
         }
 
@@ -301,7 +301,7 @@ namespace System
                 throw new ArgumentNullException("predicate");
             }
 
-            List<Exception> unhandledExceptions = null;
+            LowLevelListWithIList<Exception> unhandledExceptions = null;
             for (int i = 0; i < m_innerExceptions.Count; i++)
             {
                 // If the exception was not handled, lazily allocate a list of unhandled
@@ -310,7 +310,7 @@ namespace System
                 {
                     if (unhandledExceptions == null)
                     {
-                        unhandledExceptions = new List<Exception>();
+                        unhandledExceptions = new LowLevelListWithIList<Exception>();
                     }
 
                     unhandledExceptions.Add(m_innerExceptions[i]);
@@ -339,10 +339,10 @@ namespace System
         public AggregateException Flatten()
         {
             // Initialize a collection to contain the flattened exceptions.
-            List<Exception> flattenedExceptions = new List<Exception>();
+            LowLevelListWithIList<Exception> flattenedExceptions = new LowLevelListWithIList<Exception>();
 
             // Create a list to remember all aggregates to be flattened, this will be accessed like a FIFO queue
-            List<AggregateException> exceptionsToFlatten = new List<AggregateException>();
+            LowLevelList<AggregateException> exceptionsToFlatten = new LowLevelList<AggregateException>();
             exceptionsToFlatten.Add(this);
             int nDequeueIndex = 0;
 

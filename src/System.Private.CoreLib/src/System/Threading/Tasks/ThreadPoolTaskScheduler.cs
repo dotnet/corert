@@ -17,8 +17,7 @@ using System.Security;
 using System.Diagnostics.Contracts;
 using System.Collections.Generic;
 using System.Text;
-using System.Diagnostics.Tracing;
-
+using Internal.Threading.Tasks.Tracing;
 
 namespace System.Threading.Tasks
 {
@@ -40,13 +39,12 @@ namespace System.Threading.Tasks
         /// <param name="task">The task to schedule.</param>
         protected internal override void QueueTask(Task task)
         {
-            var etwLog = TplEtwProvider.Log;
-            if (etwLog.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1))))
+            if (TaskTrace.Enabled)
             {
                 Task currentTask = Task.InternalCurrent;
                 Task creatingTask = task.m_parent;
 
-                etwLog.TaskScheduled(this.Id, currentTask == null ? 0 : currentTask.Id,
+                TaskTrace.TaskScheduled(this.Id, currentTask == null ? 0 : currentTask.Id,
                                                  task.Id, creatingTask == null ? 0 : creatingTask.Id,
                                                  (int)task.Options);
             }

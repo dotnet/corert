@@ -43,10 +43,10 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
-using System.Diagnostics.Tracing;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
+using Internal.Threading.Tasks.Tracing;
 
 // NOTE: For performance reasons, initialization is not verified.  If a developer
 //       incorrectly initializes a task awaiter, which should only be done by the compiler,
@@ -204,7 +204,7 @@ namespace System.Runtime.CompilerServices
 
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
-            if (TplEtwProvider.Log.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1))))
+            if (TaskTrace.Enabled)
             {
                 continuation = OutputWaitEtwEvents(task, continuation);
             }
@@ -223,15 +223,14 @@ namespace System.Runtime.CompilerServices
         {
             Contract.Requires(task != null, "Need a task to wait on");
             Contract.Requires(continuation != null, "Need a continuation to invoke when the wait completes");
-            Contract.Assert(TplEtwProvider.Log.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1))), "Should only be used when ETW tracing is enabled");
+            Contract.Assert(TaskTrace.Enabled, "Should only be used when ETW tracing is enabled");
 
             // ETW event for Task Wait Begin
             var currentTaskAtBegin = Task.InternalCurrent;
-            var etwLog = TplEtwProvider.Log;
-            etwLog.TaskWaitBegin(
+            TaskTrace.TaskWaitBegin_Asynchronous(
                 (currentTaskAtBegin != null ? currentTaskAtBegin.m_taskScheduler.Id : TaskScheduler.Default.Id),
                 (currentTaskAtBegin != null ? currentTaskAtBegin.Id : 0),
-                task.Id, TplEtwProvider.TaskWaitBehavior.Asynchronous);
+                task.Id);
 
             // Create a continuation action that outputs the end event and then invokes the user
             // provided delegate.  This incurs the allocations for the closure/delegate, but only if the event
@@ -241,10 +240,10 @@ namespace System.Runtime.CompilerServices
             return () =>
             {
                 // ETW event for Task Wait End.
-                if (etwLog.IsEnabled(EventLevel.Verbose, ((EventKeywords)(-1))))
+                if (TaskTrace.Enabled)
                 {
                     var currentTaskAtEnd = Task.InternalCurrent;
-                    etwLog.TaskWaitEnd(
+                    TaskTrace.TaskWaitEnd(
                         (currentTaskAtEnd != null ? currentTaskAtEnd.m_taskScheduler.Id : TaskScheduler.Default.Id),
                         (currentTaskAtEnd != null ? currentTaskAtEnd.Id : 0),
                         task.Id);
