@@ -188,6 +188,20 @@ internal static void System.Runtime.RuntimeImports.RhWaitForPendingFinalizers(bo
 public static extern void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
 internal static extern T System.Runtime.CompilerServices.RuntimeHelpers.UncheckedCast<T>(object value)
 
+# System.Runtime.CompilerSerivces
+public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Create()
+public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine)
+public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+private void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.EnsureTaskCreated()
+public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Start<TStateMachine>(ref TStateMachine stateMachine)
+public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetResult()
+public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetException(System.Exception exception)
+internal static void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetException(System.Threading.Tasks.Task task, System.Exception exception)
+internal void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetNotificationForWaitCompletion(bool enabled)
+private object System.Runtime.CompilerServices.AsyncTaskMethodBuilder.ObjectIdForDebugger.get
+public System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Task.get
+
 # System.Runtime.CompilerServices.RuntimeHelpers
 public static void System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
 public static int System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(object o)
@@ -233,6 +247,12 @@ private static volatile System.Collections.Generic.ArraySortHelper<TKey, TValue>
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentCulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentUICulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
+private System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncVoidMethodBuilder.m_task
+private System.Threading.Tasks.Task<System.Threading.Tasks.VoidTaskResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder.m_task
+private System.Threading.Tasks.Task<TResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult>.m_task
+private volatile int System.Threading.Tasks.Task.m_taskId
+internal volatile int System.Threading.Tasks.Task.m_stateFlags
+
 
 # SOS
 internal string System.Exception._message

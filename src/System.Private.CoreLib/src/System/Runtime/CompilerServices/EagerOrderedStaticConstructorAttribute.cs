@@ -43,6 +43,9 @@ namespace System.Runtime.CompilerServices
         // Per Module Interop
         McgCurrentModule,
 
+        // System.Private.Threading
+        Threading,
+
         // System.Private.Reflection.Execution
         ReflectionExecution,
     }

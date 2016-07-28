@@ -87,7 +87,7 @@ namespace System.Threading.Tasks
             return task;
         }
 
-        private static readonly Dictionary<int, Task> _activeTasks = new Dictionary<int, Task>();
+        private static readonly LowLevelDictionary<int, Task> _activeTasks = new LowLevelDictionary<int, Task>();
         private static readonly Object _activeTasksLock = new Object();
 
         //==============================================================================================================
