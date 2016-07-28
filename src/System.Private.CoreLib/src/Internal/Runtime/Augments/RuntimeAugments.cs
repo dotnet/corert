@@ -236,11 +236,7 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
         {
-#if CLR_RUNTIMETYPEHANDLE // CORERT-TODO: RuntimeTypeHandle
-            throw new NotImplementedException();
-#else
             return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));
-#endif
         }
 
         public unsafe static IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, IntPtr fieldCookie)
