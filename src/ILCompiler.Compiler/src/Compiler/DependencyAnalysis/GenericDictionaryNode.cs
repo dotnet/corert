@@ -15,11 +15,11 @@ namespace ILCompiler.DependencyAnalysis
     /// at runtime to look up runtime artifacts that depend on the concrete
     /// context the generic type or method was instantiated with.
     /// </summary>
-    class GenericDictionary : ObjectNode, ISymbolNode
+    class GenericDictionaryNode : ObjectNode, ISymbolNode
     {
         private object _owningMethodOrType;
 
-        public GenericDictionary(object owningMethodOrType)
+        public GenericDictionaryNode(object owningMethodOrType)
         {
             _owningMethodOrType = owningMethodOrType;
             Validate();

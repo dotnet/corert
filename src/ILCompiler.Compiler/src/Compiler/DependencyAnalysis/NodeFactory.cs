@@ -256,14 +256,14 @@ namespace ILCompiler.DependencyAnalysis
                     return new LazilyBuiltVTableSliceNode(type);
             });
 
-            _methodGenericDictionaries = new NodeCache<MethodDesc, GenericDictionary>(method =>
+            _methodGenericDictionaries = new NodeCache<MethodDesc, GenericDictionaryNode>(method =>
             {
-                return new GenericDictionary(method);
+                return new GenericDictionaryNode(method);
             });
 
-            _typeGenericDictionaries = new NodeCache<TypeDesc, GenericDictionary>(type =>
+            _typeGenericDictionaries = new NodeCache<TypeDesc, GenericDictionaryNode>(type =>
             {
-                return new GenericDictionary(type);
+                return new GenericDictionaryNode(type);
             });
 
             _genericDictionaryLayouts = new NodeCache<object, DictionaryLayout>(methodOrType =>
@@ -439,14 +439,14 @@ namespace ILCompiler.DependencyAnalysis
             return _vTableNodes.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, GenericDictionary> _methodGenericDictionaries;
-        internal GenericDictionary MethodGenericDictionary(MethodDesc method)
+        private NodeCache<MethodDesc, GenericDictionaryNode> _methodGenericDictionaries;
+        internal GenericDictionaryNode MethodGenericDictionary(MethodDesc method)
         {
             return _methodGenericDictionaries.GetOrAdd(method);
         }
 
-        private NodeCache<TypeDesc, GenericDictionary> _typeGenericDictionaries;
-        internal GenericDictionary TypeGenericDictionary(TypeDesc type)
+        private NodeCache<TypeDesc, GenericDictionaryNode> _typeGenericDictionaries;
+        internal GenericDictionaryNode TypeGenericDictionary(TypeDesc type)
         {
             return _typeGenericDictionaries.GetOrAdd(type);
         }
