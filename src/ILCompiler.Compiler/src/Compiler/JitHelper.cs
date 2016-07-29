@@ -27,7 +27,7 @@ namespace ILCompiler
                     mangledName = "RhpThrowEx";
                     break;
                 case ReadyToRunHelper.Rethrow:
-                    mangledName = "RhRethrow";
+                    mangledName = "RhpRethrow";
                     break;
 
                 case ReadyToRunHelper.Overflow:
