@@ -26,6 +26,8 @@ namespace ILCompiler.CppCodeGen
         private void SetWellKnownTypeSignatureName(WellKnownType wellKnownType, string mangledSignatureName)
         {
             var type = _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
+            var typeNode = this._compilation.NodeFactory.ConstructedTypeSymbol(type);
+            AddWellKnownType(typeNode);
             _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
@@ -51,6 +53,8 @@ namespace ILCompiler.CppCodeGen
             SetWellKnownTypeSignatureName(WellKnownType.Single, "float");
             SetWellKnownTypeSignatureName(WellKnownType.Double, "double");
 
+
+
             BuildExternCSignatureMap();
         }
 
@@ -72,8 +76,18 @@ namespace ILCompiler.CppCodeGen
                 mangledName += "*";
 
             _cppSignatureNames.Add(type, mangledName);
-
             return mangledName;
+        }
+
+        private List<IEETypeNode> _wellKnownTypeNodes;
+
+        public void AddWellKnownType(IEETypeNode node)
+        {
+            if (_wellKnownTypeNodes == null)
+            {
+                _wellKnownTypeNodes = new List<IEETypeNode>();
+            }
+            _wellKnownTypeNodes.Add(node);
         }
 
         // extern "C" methods are sometimes referenced via different signatures.
@@ -367,7 +381,6 @@ namespace ILCompiler.CppCodeGen
             MethodDesc method = methodCodeNodeNeedingCode.Method;
 
             _compilation.Log.WriteLine("Compiling " + method.ToString());
-            // Add owning type here? 
             if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
             {
                 CompileExternMethod(methodCodeNodeNeedingCode, ((EcmaMethod)method).GetRuntimeImportName());
@@ -1140,27 +1153,34 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        public void OutputNodes(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory, CppGenerationBuffer sb)
+        public void OutputNodes(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory, CppGenerationBuffer definitions, CppGenerationBuffer implementation)
         {
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
-            CppGenerationBuffer methodCodeNode = new CppGenerationBuffer();
             DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
-
-            // Emit main method owning type
-            OutputTypeNode(new EETypeNode(entrypoint.OwningType, true), forwardDefinitions, typeDefinitions);
-
+            if (_wellKnownTypeNodes != null)
+            {
+                foreach (var wellKnownTypeNode in _wellKnownTypeNodes)
+                {
+                    if (wellKnownTypeNode is EETypeNode)
+                        OutputTypeNode((EETypeNode)wellKnownTypeNode, forwardDefinitions, typeDefinitions);
+                }
+            }
             foreach (var node in nodeIterator.GetNodes())
             {
                 if (node is EETypeNode)
                     OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions);
-                else if (node is CppMethodCodeNode)
-                    OutputMethodCode(node as CppMethodCodeNode, methodCodeNode);
             }
 
-            sb.Append(forwardDefinitions.ToString());
-            sb.Append(typeDefinitions.ToString());
-            sb.Append(methodCodeNode.ToString());
+            definitions.Append(forwardDefinitions.ToString());
+            forwardDefinitions.Clear();
+            definitions.Append(typeDefinitions.ToString());
+            typeDefinitions.Clear();
+            foreach (var node in nodeIterator.GetNodes())
+            {
+                if (node is CppMethodCodeNode)
+                    OutputMethodCode(node as CppMethodCodeNode, implementation);
+            }
         }
 
         private void OutputMethodCode(CppMethodCodeNode methodCodeNode, CppGenerationBuffer methodImplementations)
@@ -1192,15 +1212,16 @@ namespace ILCompiler.CppCodeGen
         }
         private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions)
         {
-            TypeDesc nodeType = typeNode.Type;
-            if (nodeType.IsPointer || nodeType.IsByRef )
-                return;
-
             if (_emittedTypes == null)
             {
                 _emittedTypes = new HashSet<TypeDesc>();
-                _emittedTypes.Add(nodeType);
             }
+
+            TypeDesc nodeType = typeNode.Type;
+            if (nodeType.IsPointer || nodeType.IsByRef || _emittedTypes.Contains(nodeType))
+                return;
+
+            _emittedTypes.Add(nodeType);
 
 
             // forward type definition
@@ -1289,6 +1310,9 @@ namespace ILCompiler.CppCodeGen
                 {
                     typeDefinitions.AppendLine();
                     typeDefinitions.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
+
+                    _statics.AppendLine();
+                    _statics.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
                 }
 
                 List<MethodDesc> methodList;
@@ -1407,8 +1431,9 @@ namespace ILCompiler.CppCodeGen
             //Out.Write(sb.ToString());
             //sb.Clear();
 
-            
+
             //sb.Append("------Node by Node-----");
+
             _statics = new CppGenerationBuffer();
             _statics.Indent();
             _gcStatics = new CppGenerationBuffer();
@@ -1417,15 +1442,25 @@ namespace ILCompiler.CppCodeGen
             _threadStatics.Indent();
             _gcThreadStatics = new CppGenerationBuffer();
             _gcThreadStatics.Indent();
+            var methodImplementations = new CppGenerationBuffer();
 
-            OutputNodes(nodes, entrypoint, factory, sb);
-            sb.Append(_statics.ToString());
-            sb.Append(_gcStatics.ToString());
-            sb.Append(_threadStatics.ToString());
-            sb.Append(_gcThreadStatics.ToString());
-
+            OutputNodes(nodes, entrypoint, factory, sb, methodImplementations);
             Out.Write(sb.ToString());
             sb.Clear();
+
+            Out.Write("struct {");
+            Out.Write(_statics.ToString());
+            Out.Write("} __statics;");
+
+            Out.Write("struct {");
+            Out.Write(_gcStatics.ToString());
+            Out.Write("} __gcStatics;");
+
+            Out.Write("struct {");
+            Out.Write(_gcStatics.ToString());
+            Out.Write("} __gcThreadStatics;");
+
+
             foreach (var externC in _externCSignatureMap)
             {
                 string importName = externC.Key;
@@ -1438,6 +1473,9 @@ namespace ILCompiler.CppCodeGen
             }
             Out.Write(sb.ToString());
             sb.Clear();
+
+            Out.Write(methodImplementations.ToString());
+            methodImplementations.Clear();
 
             if (entrypoint != null)
             {

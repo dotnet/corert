@@ -90,11 +90,15 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CreateNodeCaches()
         {
+            // Need to be constructed for C++? 
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    return new EETypeNode(type, false);
+                    if (!type.IsPrimitive)
+                        return new EETypeNode(type, false);
+                    else
+                        return new EETypeNode(type, true);
                 }
                 else
                 {

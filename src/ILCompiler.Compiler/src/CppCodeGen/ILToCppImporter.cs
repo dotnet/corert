@@ -230,7 +230,9 @@ namespace Internal.IL
                 case StackValueKind.ObjRef: return "void*";
                 case StackValueKind.Float: return "double";
                 case StackValueKind.ByRef:
-                case StackValueKind.ValueType: return _writer.GetCppSignatureTypeName(type);
+                case StackValueKind.ValueType:
+                    AddTypeReference(type, true);
+                    return _writer.GetCppSignatureTypeName(type);
                 default: throw new NotSupportedException();
             }
         }
@@ -489,9 +491,17 @@ namespace Internal.IL
             var returnType = methodCodeNodeNeedingCode.Method.Signature.ReturnType;
             if (!returnType.IsByRef && (returnType.IsTypeDefinition || !returnType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
             {
-                AddTypeReference(returnType, false);
+                AddTypeReference(returnType, true);
             }
-
+            var owningType = methodCodeNodeNeedingCode.Method.OwningType;
+            if (methodCodeNodeNeedingCode.Method.IsNativeCallable || methodCodeNodeNeedingCode.Method.IsRuntimeExport || methodCodeNodeNeedingCode.Method.IsRuntimeImplemented)
+            {
+                AddTypeReference(owningType, true);
+            }
+            if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && (owningType.IsTypeDefinition || !owningType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
+            {
+                AddTypeReference(owningType, true);
+            }
             ImportBasicBlocks();
 
             if (_sequencePoints != null && _sequencePoints[0].Document != null)
@@ -1703,6 +1713,7 @@ namespace Internal.IL
 
                 // TODO: Remove
                 _writer.GetCppSignatureTypeName(owningType);
+                AddTypeReference(owningType, true);
             }
 
             AppendSemicolon();
@@ -1757,6 +1768,8 @@ namespace Internal.IL
 
                 // TODO: Remove
                 _writer.GetCppSignatureTypeName(owningType);
+                AddTypeReference(owningType, true);
+
             }
 
             AppendSemicolon();
@@ -1808,6 +1821,8 @@ namespace Internal.IL
 
                 // TODO: Remove
                 _writer.GetCppSignatureTypeName(owningType);
+                AddTypeReference(owningType, true);
+
             }
             Append(" = ");
             if (!fieldType.IsValueType)
@@ -2377,6 +2392,7 @@ namespace Internal.IL
             var type = ResolveTypeToken(token);
 
             // TODO: Remove
+            AddTypeReference(type, true);
             _writer.GetCppSignatureTypeName(type);
 
             PushExpression(StackValueKind.Int32, "sizeof(" + _writer.GetCppTypeName(type) + ")");
@@ -2511,7 +2527,7 @@ namespace Internal.IL
 
                 // TODO: Remove once the depedencies for static fields are tracked properly
                 _writer.GetCppSignatureTypeName(owningType);
-
+                AddTypeReference(owningType, true);
                 _dependencies.Add(node);
             }
             AddTypeReference(field.FieldType, false);
