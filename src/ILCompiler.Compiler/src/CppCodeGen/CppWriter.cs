@@ -28,6 +28,7 @@ namespace ILCompiler.CppCodeGen
             var type = _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
             var typeNode = this._compilation.NodeFactory.ConstructedTypeSymbol(type);
             AddWellKnownType(typeNode);
+            
             _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
@@ -52,9 +53,7 @@ namespace ILCompiler.CppCodeGen
             SetWellKnownTypeSignatureName(WellKnownType.UIntPtr, "uintptr_t");
             SetWellKnownTypeSignatureName(WellKnownType.Single, "float");
             SetWellKnownTypeSignatureName(WellKnownType.Double, "double");
-
-
-
+            
             BuildExternCSignatureMap();
         }
 
@@ -1157,25 +1156,28 @@ namespace ILCompiler.CppCodeGen
         {
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
+            CppGenerationBuffer methodTables = new CppGenerationBuffer();
             DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
             if (_wellKnownTypeNodes != null)
             {
                 foreach (var wellKnownTypeNode in _wellKnownTypeNodes)
                 {
                     if (wellKnownTypeNode is EETypeNode)
-                        OutputTypeNode((EETypeNode)wellKnownTypeNode, forwardDefinitions, typeDefinitions);
+                        OutputTypeNode((EETypeNode)wellKnownTypeNode, forwardDefinitions, typeDefinitions, methodTables);
                 }
             }
             foreach (var node in nodeIterator.GetNodes())
             {
                 if (node is EETypeNode)
-                    OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions);
+                    OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions, methodTables);
             }
 
             definitions.Append(forwardDefinitions.ToString());
             forwardDefinitions.Clear();
             definitions.Append(typeDefinitions.ToString());
             typeDefinitions.Clear();
+            definitions.Append(methodTables.ToString());
+            methodTables.Clear();
             foreach (var node in nodeIterator.GetNodes())
             {
                 if (node is CppMethodCodeNode)
@@ -1210,7 +1212,7 @@ namespace ILCompiler.CppCodeGen
                 methodImplementations.Append("}");
             }
         }
-        private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions)
+        private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions, CppGenerationBuffer methodTable)
         {
             if (_emittedTypes == null)
             {
@@ -1339,8 +1341,11 @@ namespace ILCompiler.CppCodeGen
             typeDefinitions.AppendEmptyLine();
 
             //// declare method table
-            //methodTables.Append(GetCodeForType(nodeType));
-            //methodTables.AppendEmptyLine();
+            if (!nodeType.IsPointer && !nodeType.IsByRef)
+            {
+                methodTable.Append(GetCodeForType(nodeType));
+                methodTable.AppendEmptyLine();
+            }
             // declare implementation
         }
 
