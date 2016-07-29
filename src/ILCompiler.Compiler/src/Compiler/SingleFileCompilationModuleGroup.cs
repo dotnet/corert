@@ -27,11 +27,8 @@ namespace ILCompiler
         {
             base.AddCompilationRoots(rootProvider);
 
-            foreach (var inputFile in _typeSystemContext.ReferenceFilePaths)
-            {
-                var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
-                AddCompilationRootsForExports(module, rootProvider);
-            }
+            var coreLib = _typeSystemContext.GetModuleForSimpleName("System.Private.CoreLib");
+            AddCompilationRootsForExports(coreLib, rootProvider);
         }
 
         public override bool IsSingleFileCompilation
