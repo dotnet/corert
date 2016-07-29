@@ -206,6 +206,44 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        /// <summary>
+        /// Gets the managed entrypoint method of this module or null if the module has no managed entrypoint.
+        /// </summary>
+        public MethodDesc EntryPoint
+        {
+            get
+            {
+                CorHeader corHeader = _peReader.PEHeaders.CorHeader;
+                if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0)
+                {
+                    // Entrypoint is an RVA to an unmanaged method
+                    return null;
+                }
+
+                int entryPointToken = corHeader.EntryPointTokenOrRelativeVirtualAddress;
+                if (entryPointToken == 0)
+                {
+                    // No entrypoint
+                    return null;
+                }
+
+                EntityHandle handle = MetadataTokens.EntityHandle(entryPointToken);
+
+                if (handle.Kind == HandleKind.MethodDefinition)
+                {
+                    return GetMethod(handle);
+                }
+                else if (handle.Kind == HandleKind.AssemblyFile)
+                {
+                    // Entrypoint not in the manifest assembly
+                    throw new NotImplementedException();
+                }
+
+                // Bad metadata
+                throw new BadImageFormatException();
+            }
+        }
+
         public sealed override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
         {
             var stringComparer = _metadataReader.StringComparer;
