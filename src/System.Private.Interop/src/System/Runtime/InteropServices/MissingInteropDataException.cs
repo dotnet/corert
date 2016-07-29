@@ -11,21 +11,11 @@ namespace System.Runtime.InteropServices
     /// </summary>
     class MissingInteropDataException : Exception
     {
-        public Type MissingType { get; private set; }
-
-#if ENABLE_WINRT
-        public MissingInteropDataException(string resourceFormat, Type pertainantType)
-           : base(SR.Format(resourceFormat,
-           Internal.Reflection.Execution.PayForPlayExperience.MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(pertainantType)))
-        {
-            MissingType = pertainantType;
-        }
-#else
+        public Type MissingType { get; private set; }        
         public MissingInteropDataException(string resourceFormat, Type pertainantType): 
-            base(SR.Format(resourceFormat, pertainantType.Name))
+            base(SR.Format(resourceFormat, pertainantType.ToString()))
         {
             MissingType = pertainantType;
         }
-#endif //ENABLE_WINRT
     }
 }
