@@ -3,73 +3,280 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
+
+using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
-    public static class ILDisassember
+    // Known shortcomings:
+    // - Escaping identifier names is missing (special characters and ILASM identifier names)
+    // - Array bounds in signatures missing
+    // - Custom modifiers and PINNED constraint not decoded in signatures
+    // - Calling conventions in signatures not decoded
+    // - Vararg signatures
+    // - Floating point numbers are not represented in roundtrippable format
+
+    /// <summary>
+    /// Helper struct to disassemble IL instructions into a textual representation.
+    /// </summary>
+    public struct ILDisassember
     {
-        private static byte ReadILByte(byte[] _ilBytes, ref int _currentOffset)
+        private byte[] _ilBytes;
+        private MethodIL _methodIL;
+        private ILTypeNameFormatter _typeNameFormatter;
+        private int _currentOffset;
+
+        public ILDisassember(MethodIL methodIL)
+        {
+            _methodIL = methodIL;
+            _ilBytes = methodIL.GetILBytes();
+            _currentOffset = 0;
+            _typeNameFormatter = null;
+        }
+
+        #region Type/member/signature name formatting
+        private ILTypeNameFormatter TypeNameFormatter
+        {
+            get
+            {
+                if (_typeNameFormatter == null)
+                {
+                    // Find the owning module so that the type name formatter can remove
+                    // redundant assembly name qualifiers in type names.
+                    TypeDesc owningTypeDefinition = _methodIL.OwningMethod.OwningType;
+                    ModuleDesc owningModule = owningTypeDefinition is MetadataType ?
+                        ((MetadataType)owningTypeDefinition).Module : null;
+
+                    _typeNameFormatter = new ILTypeNameFormatter(owningModule);
+                }
+                return _typeNameFormatter;
+            }
+        }
+
+        public void AppendType(StringBuilder sb, TypeDesc type, bool forceValueClassPrefix = true)
+        {
+            // Types referenced from the IL show as instantiated over generic parameter.
+            // E.g. "initobj !0" becomes "initobj !T"
+            TypeDesc typeInContext = type.InstantiateSignature(
+                _methodIL.OwningMethod.OwningType.Instantiation, _methodIL.OwningMethod.Instantiation);
+            if (typeInContext.HasInstantiation || forceValueClassPrefix)
+                this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, typeInContext);
+            else
+                this.TypeNameFormatter.AppendName(sb, typeInContext);
+        }
+
+        private void AppendOwningType(StringBuilder sb, TypeDesc type)
+        {
+            // Special case primitive types: we don't want to use short names here
+            if (type.IsPrimitive || type.IsString || type.IsObject)
+                _typeNameFormatter.AppendNameForNamespaceTypeWithoutAliases(sb, (MetadataType)type);
+            else
+                AppendType(sb, type, false);
+        }
+
+        private void AppendMethodSignature(StringBuilder sb, MethodDesc method)
+        {
+            // If this is an instantiated generic method, the formatted signature should
+            // be uninstantiated (e.g. "void Foo::Bar<int>(!!0 param)", not "void Foo::Bar<int>(int param)")
+            MethodSignature signature = method.GetMethodDefinition().Signature;
+
+            AppendSignaturePrefix(sb, signature);
+            sb.Append(' ');
+            AppendOwningType(sb, method.OwningType);
+            sb.Append("::");
+            sb.Append(method.Name);
+
+            if (method.HasInstantiation)
+            {
+                sb.Append('<');
+
+                for (int i = 0; i < method.Instantiation.Length; i++)
+                {
+                    if (i != 0)
+                        sb.Append(", ");
+                    _typeNameFormatter.AppendNameWithValueClassPrefix(sb, method.Instantiation[i]);
+                }
+
+                sb.Append('>');
+            }
+
+            sb.Append('(');
+            AppendSignatureArgumentList(sb, signature);
+            sb.Append(')');
+        }
+
+        private void AppendMethodSignature(StringBuilder sb, MethodSignature signature)
+        {
+            AppendSignaturePrefix(sb, signature);
+            sb.Append('(');
+            AppendSignatureArgumentList(sb, signature);
+            sb.Append(')');
+        }
+
+        private void AppendSignaturePrefix(StringBuilder sb, MethodSignature signature)
+        {
+            if (!signature.IsStatic)
+                sb.Append("instance ");
+
+            this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, signature.ReturnType);
+        }
+
+        private void AppendSignatureArgumentList(StringBuilder sb, MethodSignature signature)
+        {
+            for (int i = 0; i < signature.Length; i++)
+            {
+                if (i != 0)
+                    sb.Append(", ");
+
+                this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, signature[i]);
+            }
+        }
+
+        private void AppendFieldSignature(StringBuilder sb, FieldDesc field)
+        {
+            this.TypeNameFormatter.AppendNameWithValueClassPrefix(sb, field.FieldType);
+            sb.Append(' ');
+            AppendOwningType(sb, field.OwningType);
+            sb.Append("::");
+            sb.Append(field.Name);
+        }
+
+        private void AppendStringLiteral(StringBuilder sb, string s)
+        {
+            sb.Append('"');
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (s[i] == '\\')
+                    sb.Append("\\\\");
+                else if (s[i] == '\t')
+                    sb.Append("\\t");
+                else if (s[i] == '"')
+                    sb.Append("\\\"");
+                else if (s[i] == '\n')
+                    sb.Append("\\n");
+                else
+                    sb.Append(s[i]);
+            }
+            sb.Append('"');
+        }
+
+        private void AppendToken(StringBuilder sb, int token)
+        {
+            object obj = _methodIL.GetObject(token);
+            if (obj is MethodDesc)
+                AppendMethodSignature(sb, (MethodDesc)obj);
+            else if (obj is FieldDesc)
+                AppendFieldSignature(sb, (FieldDesc)obj);
+            else if (obj is MethodSignature)
+                AppendMethodSignature(sb, (MethodSignature)obj);
+            else if (obj is TypeDesc)
+                AppendType(sb, (TypeDesc)obj, false);
+            else
+            {
+                Debug.Assert(obj is string, "NYI: " + obj.GetType());
+                AppendStringLiteral(sb, (string)obj);
+            }
+        }
+        #endregion
+
+        #region Instruction decoding
+        private byte ReadILByte()
         {
             return _ilBytes[_currentOffset++];
         }
 
-        private static UInt16 ReadILUInt16(byte[] _ilBytes, ref int _currentOffset)
+        private UInt16 ReadILUInt16()
         {
             UInt16 val = (UInt16)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
             _currentOffset += 2;
             return val;
         }
 
-        private static UInt32 ReadILUInt32(byte[] _ilBytes, ref int _currentOffset)
+        private UInt32 ReadILUInt32()
         {
             UInt32 val = (UInt32)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
             _currentOffset += 4;
             return val;
         }
 
-        private static int ReadILToken(byte[] _ilBytes, ref int _currentOffset)
+        private int ReadILToken()
         {
-            return (int)ReadILUInt32(_ilBytes, ref _currentOffset);
+            return (int)ReadILUInt32();
         }
 
-        private static ulong ReadILUInt64(byte[] _ilBytes, ref int _currentOffset)
+        private ulong ReadILUInt64()
         {
-            ulong value = ReadILUInt32(_ilBytes, ref _currentOffset);
-            value |= (((ulong)ReadILUInt32(_ilBytes, ref _currentOffset)) << 32);
+            ulong value = ReadILUInt32();
+            value |= (((ulong)ReadILUInt32()) << 32);
             return value;
         }
 
-        private static unsafe float ReadILFloat(byte[] _ilBytes, ref int _currentOffset)
+        private unsafe float ReadILFloat()
         {
-            uint value = ReadILUInt32(_ilBytes, ref _currentOffset);
+            uint value = ReadILUInt32();
             return *(float*)(&value);
         }
 
-        private static unsafe double ReadILDouble(byte[] _ilBytes, ref int _currentOffset)
+        private unsafe double ReadILDouble()
         {
-            ulong value = ReadILUInt64(_ilBytes, ref _currentOffset);
+            ulong value = ReadILUInt64();
             return *(double*)(&value);
         }
 
-        public static string FormatOffset(int offset)
+        public static void AppendOffset(StringBuilder sb, int offset)
         {
-            return "IL_" + offset.ToString("X4");
+            sb.Append("IL_");
+            sb.AppendFormat("{0:X4}", offset);
         }
 
-        public static string Disassemble(Func<int, string> tokenResolver, byte[] instructionStream, ref int offset)
+        private static void PadForInstructionArgument(StringBuilder sb)
         {
-            string opCodeName = "";
+            if (sb.Length < 22)
+                sb.Append(' ', 22 - sb.Length);
+            else
+                sb.Append(' ');
+        }
+
+        public bool HasNextInstruction
+        {
+            get
+            {
+                return _currentOffset < _ilBytes.Length;
+            }
+        }
+
+        public int CodeSize
+        {
+            get
+            {
+                return _ilBytes.Length;
+            }
+        }
+
+        public string GetNextInstruction()
+        {
+            StringBuilder decodedInstruction = new StringBuilder();
+            AppendOffset(decodedInstruction, _currentOffset);
+            decodedInstruction.Append(":  ");
 
         again:
 
-            ILOpcode opCode = (ILOpcode)ReadILByte(instructionStream, ref offset);
+            ILOpcode opCode = (ILOpcode)ReadILByte();
             if (opCode == ILOpcode.prefix1)
             {
-                opCode = (ILOpcode)(0x100 + ReadILByte(instructionStream, ref offset));
+                opCode = (ILOpcode)(0x100 + ReadILByte());
             }
 
-            opCodeName += opCode.ToString();
-            opCodeName = opCodeName.Replace("_", ".");
+            // Quick and dirty way to get the opcode name is to convert the enum value to string.
+            // We need some adjustments though.
+            string opCodeString = opCode.ToString().Replace("_", ".");
+            if (opCodeString.EndsWith("."))
+                opCodeString = opCodeString.Substring(0, opCodeString.Length - 1);
+
+            decodedInstruction.Append(opCodeString);
 
             switch (opCode)
             {
@@ -80,10 +287,14 @@ namespace Internal.IL
                 case ILOpcode.ldloca_s:
                 case ILOpcode.stloc_s:
                 case ILOpcode.ldc_i4_s:
-                    return opCodeName + " " + ReadILByte(instructionStream, ref offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILByte());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.unaligned:
-                    opCodeName += " " + ReadILByte(instructionStream, ref offset) + " ";
+                    decodedInstruction.Append(' ');
+                    decodedInstruction.Append(ReadILByte());
+                    decodedInstruction.Append(' ');
                     goto again;
 
                 case ILOpcode.ldarg:
@@ -92,19 +303,29 @@ namespace Internal.IL
                 case ILOpcode.ldloc:
                 case ILOpcode.ldloca:
                 case ILOpcode.stloc:
-                    return opCodeName + " " + ReadILUInt16(instructionStream, ref offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILUInt16());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_i4:
-                    return opCodeName + " " + ReadILUInt32(instructionStream, ref offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILUInt32());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_r4:
-                    return opCodeName + " " + ReadILFloat(instructionStream, ref offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILFloat());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_i8:
-                    return opCodeName + " " + ReadILUInt64(instructionStream, ref offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILUInt64());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_r8:
-                    return opCodeName + " " + ReadILDouble(instructionStream, ref offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    decodedInstruction.Append(ReadILDouble());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.jmp:
                 case ILOpcode.call:
@@ -138,7 +359,9 @@ namespace Internal.IL
                 case ILOpcode.initobj:
                 case ILOpcode.constrained:
                 case ILOpcode.sizeof_:
-                    return opCodeName + " " + tokenResolver(ReadILToken(instructionStream, ref offset));
+                    PadForInstructionArgument(decodedInstruction);
+                    AppendToken(decodedInstruction, ReadILToken());
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.br_s:
                 case ILOpcode.leave_s:
@@ -154,7 +377,9 @@ namespace Internal.IL
                 case ILOpcode.bgt_un_s:
                 case ILOpcode.ble_un_s:
                 case ILOpcode.blt_un_s:
-                    return opCodeName + " " + FormatOffset((sbyte)ReadILByte(instructionStream, ref offset) + offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    AppendOffset(decodedInstruction, (sbyte)ReadILByte() + _currentOffset);
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.br:
                 case ILOpcode.leave:
@@ -170,27 +395,208 @@ namespace Internal.IL
                 case ILOpcode.bgt_un:
                 case ILOpcode.ble_un:
                 case ILOpcode.blt_un:
-                    return opCodeName + " " + FormatOffset((int)ReadILUInt32(instructionStream, ref offset) + offset);
+                    PadForInstructionArgument(decodedInstruction);
+                    AppendOffset(decodedInstruction, (int)ReadILUInt32() + _currentOffset);
+                    return decodedInstruction.ToString();
 
                 case ILOpcode.switch_:
                     {
-                        opCodeName = "switch (";
-                        uint count = ReadILUInt32(instructionStream, ref offset);
-                        int jmpBase = offset + (int)(4 * count);
+                        decodedInstruction.Clear();
+                        decodedInstruction.Append("switch (");
+                        uint count = ReadILUInt32();
+                        int jmpBase = _currentOffset + (int)(4 * count);
                         for (uint i = 0; i < count; i++)
                         {
                             if (i != 0)
-                                opCodeName += ", ";
-                            int delta = (int)ReadILUInt32(instructionStream, ref offset);
-                            opCodeName += FormatOffset(jmpBase + delta);
+                                decodedInstruction.Append(", ");
+                            int delta = (int)ReadILUInt32();
+                            AppendOffset(decodedInstruction, jmpBase + delta);
                         }
-                        opCodeName += ")";
-                        return opCodeName;
+                        decodedInstruction.Append(")");
+                        return decodedInstruction.ToString();
                     }
 
                 default:
-                    return opCodeName;
+                    return decodedInstruction.ToString();
             }
         }
+        #endregion
+
+        #region Helpers
+        private class ILTypeNameFormatter : TypeNameFormatter
+        {
+            private ModuleDesc _thisModule;
+
+            public ILTypeNameFormatter(ModuleDesc thisModule)
+            {
+                _thisModule = thisModule;
+            }
+
+            public void AppendNameWithValueClassPrefix(StringBuilder sb, TypeDesc type)
+            {
+                if (!type.IsSignatureVariable
+                    && type.IsDefType
+                    && !type.IsPrimitive
+                    && !type.IsObject
+                    && !type.IsString)
+                {
+                    string prefix = type.IsValueType ? "valuetype " : "class ";
+                    sb.Append(prefix);
+                    AppendName(sb, type);
+                }
+                else
+                {
+                    AppendName(sb, type);
+                }
+            }
+
+            public override void AppendName(StringBuilder sb, PointerType type)
+            {
+                AppendNameWithValueClassPrefix(sb, type.ParameterType);
+                sb.Append('*');
+            }
+
+            public override void AppendName(StringBuilder sb, SignatureMethodVariable type)
+            {
+                sb.Append("!!");
+                sb.Append(type.Index.ToStringInvariant());
+            }
+
+            public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
+            {
+                sb.Append("!");
+                sb.Append(type.Index.ToStringInvariant());
+            }
+
+            public override void AppendName(StringBuilder sb, GenericParameterDesc type)
+            {
+                string prefix = type.Kind == GenericParameterKind.Type ? "!" : "!!";
+                sb.Append(prefix);
+                sb.Append(type.Name);
+            }
+
+            protected override void AppendNameForInstantiatedType(StringBuilder sb, DefType type)
+            {
+                AppendName(sb, type.GetTypeDefinition());
+                sb.Append('<');
+
+                for (int i = 0; i < type.Instantiation.Length; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    AppendNameWithValueClassPrefix(sb, type.Instantiation[i]);
+                }   
+
+                sb.Append('>');
+            }
+
+            public override void AppendName(StringBuilder sb, ByRefType type)
+            {
+                AppendNameWithValueClassPrefix(sb, type.ParameterType);
+                sb.Append('&');
+            }
+
+            public override void AppendName(StringBuilder sb, ArrayType type)
+            {
+                AppendNameWithValueClassPrefix(sb, type.ElementType);
+                sb.Append('[');
+                sb.Append(',', type.Rank - 1);
+                sb.Append(']');
+            }
+
+            protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
+            {
+                switch (type.Category)
+                {
+                    case TypeFlags.Void:
+                        sb.Append("void");
+                        return;
+                    case TypeFlags.Boolean:
+                        sb.Append("bool");
+                        return;
+                    case TypeFlags.Char:
+                        sb.Append("char");
+                        return;
+                    case TypeFlags.SByte:
+                        sb.Append("int8");
+                        return;
+                    case TypeFlags.Byte:
+                        sb.Append("uint8");
+                        return;
+                    case TypeFlags.Int16:
+                        sb.Append("int16");
+                        return;
+                    case TypeFlags.UInt16:
+                        sb.Append("uint16");
+                        return;
+                    case TypeFlags.Int32:
+                        sb.Append("int32");
+                        return;
+                    case TypeFlags.UInt32:
+                        sb.Append("uint32");
+                        return;
+                    case TypeFlags.Int64:
+                        sb.Append("int64");
+                        return;
+                    case TypeFlags.UInt64:
+                        sb.Append("uint64");
+                        return;
+                    case TypeFlags.IntPtr:
+                        sb.Append("native int");
+                        return;
+                    case TypeFlags.UIntPtr:
+                        sb.Append("native uint");
+                        return;
+                    case TypeFlags.Single:
+                        sb.Append("float32");
+                        return;
+                    case TypeFlags.Double:
+                        sb.Append("float64");
+                        return;
+                }
+
+                if (type.IsString)
+                {
+                    sb.Append("string");
+                    return;
+                }
+
+                if (type.IsObject)
+                {
+                    sb.Append("object");
+                    return;
+                }
+
+                AppendNameForNamespaceTypeWithoutAliases(sb, type);
+            }
+            public void AppendNameForNamespaceTypeWithoutAliases(StringBuilder sb, DefType type)
+            {
+                ModuleDesc owningModule = (type as MetadataType)?.Module;
+                if (owningModule != null && owningModule != _thisModule)
+                {
+                    Debug.Assert(owningModule is IAssemblyDesc);
+                    string owningModuleName = ((IAssemblyDesc)owningModule).GetName().Name;
+                    sb.Append('[');
+                    sb.Append(owningModuleName);
+                    sb.Append(']');
+                }
+
+                string ns = type.Namespace;
+                if (ns.Length > 0)
+                {
+                    sb.Append(ns);
+                    sb.Append('.');
+                }
+                sb.Append(type.Name);
+            }
+
+            protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
+            {
+                AppendName(sb, containingType);
+                sb.Append('/');
+                sb.Append(nestedType.Name);
+            }
+        }
+        #endregion
     }
 }

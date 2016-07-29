@@ -23,19 +23,11 @@ using System.Security;
 
 namespace System
 {
-    //
     // The String class represents a static string of characters.  Many of
     // the String methods perform some type of transformation on the current
     // instance and return the result as a new String. All comparison methods are
     // implemented as a part of String.  As with arrays, character positions
     // (indices) are zero-based.
-    //
-    // When passing a null string into a constructor in VJ and VC, the null should be
-    // explicitly type cast to a String.
-    // For Example:
-    // String s = new String((String)null);
-    // Console.WriteLine(s);
-    //
 
     // STRING LAYOUT
     // -------------
@@ -116,12 +108,9 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char[] value);
-#if CORERT
-        private static String Ctor(object unusedThis, char[] value)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static String Ctor(char[] value)
-#endif
         {
             if (value != null && value.Length != 0)
             {
@@ -142,12 +131,9 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char[] value, int startIndex, int length);
-#if CORERT
-        private static String Ctor(object unusedThis, char[] value, int startIndex, int length)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static String Ctor(char[] value, int startIndex, int length)
-#endif
         {
             if (value == null)
                 throw new ArgumentNullException("value");
@@ -182,20 +168,17 @@ namespace System
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(char* value);
-#if CORERT
-        private static unsafe String Ctor(object unusedThis, char* ptr)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static unsafe String Ctor(char* ptr)
-#endif
         {
             if (ptr == null)
                 return String.Empty;
 
-#if !FEATURE_PAL
+#if !PLATFORM_UNIX
             if (ptr < (char*)64000)
                 throw new ArgumentException(SR.Arg_MustBeStringPtrNotAtom);
-#endif // FEATURE_PAL
+#endif // PLATFORM_UNIX
 
             try
             {
@@ -217,12 +200,9 @@ namespace System
         [CLSCompliant(false)]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe public extern String(char* value, int startIndex, int length);
-#if CORERT
-        private static unsafe String Ctor(object unusedThis, char* ptr, int startIndex, int length)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static unsafe String Ctor(char* ptr, int startIndex, int length)
-#endif
         {
             if (length < 0)
             {
@@ -261,12 +241,9 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
-#if CORERT
-        private static String Ctor(object unusedThis, char c, int count)
-#else
+
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         private static String Ctor(char c, int count)
-#endif
         {
             if (count > 0)
             {
@@ -364,17 +341,31 @@ namespace System
             using (IEnumerator<T> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
-                    return String.Empty;
-
-                StringBuilder result = StringBuilderCache.Acquire();
+                    return string.Empty;
+                
+                // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
-                if (currentValue != null)
+                // Call ToString before calling MoveNext again, since
+                // we want to stay consistent with the below loop
+                // Everything should be called in the order
+                // MoveNext-Current-ToString, unless further optimizations
+                // can be made, to avoid breaking changes
+                string firstString = currentValue?.ToString();
+
+                // If there's only 1 item, simply call ToString on that
+                if (!en.MoveNext())
                 {
-                    result.Append(currentValue.ToString());
+                    // We have to handle the case of either currentValue
+                    // or its ToString being null
+                    return firstString ?? string.Empty;
                 }
 
-                while (en.MoveNext())
+                StringBuilder result = StringBuilderCache.Acquire();
+                
+                result.Append(firstString);
+
+                do
                 {
                     currentValue = en.Current;
 
@@ -384,6 +375,8 @@ namespace System
                         result.Append(currentValue.ToString());
                     }
                 }
+                while (en.MoveNext());
+
                 return StringBuilderCache.GetStringAndRelease(result);
             }
         }
@@ -763,95 +756,120 @@ namespace System
 
         private unsafe static int CompareOrdinalHelper(String strA, String strB)
         {
+            Contract.Requires(strA != null);
+            Contract.Requires(strB != null);
+
+            // NOTE: This may be subject to change if eliminating the check
+            // in the callers makes them small enough to be inlined
+            Contract.Assert(strA._firstChar == strB._firstChar,
+                "For performance reasons, callers of this method should " +
+                "check/short-circuit beforehand if the first char is the same.");
+
             int length = Math.Min(strA.Length, strB.Length);
-            int diffOffset = -1;
 
             fixed (char* ap = &strA._firstChar) fixed (char* bp = &strB._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
 
+                // Check if the second chars are different here
+                // The reason we check if _firstChar is different is because
+                // it's the most common case and allows us to avoid a method call
+                // to here.
+                // The reason we check if the second char is different is because
+                // if the first two chars the same we can increment by 4 bytes,
+                // leaving us word-aligned on both 32-bit (12 bytes into the string)
+                // and 64-bit (16 bytes) platforms.
+        
+                // For empty strings, the second char will be null due to padding.
+                // The start of the string is the EE type pointer + string length,
+                // which takes up 8 bytes on 32-bit, 12 on x64. For empty strings,
+                // the null terminator immediately follows, leaving us with an object
+                // 10/14 bytes in size. Since everything needs to be a multiple
+                // of 4/8, this will get padded and zeroed out.
+                
+                // For one-char strings the second char will be the null terminator.
+
+                // NOTE: If in the future there is a way to read the second char
+                // without pinning the string (e.g. System.Runtime.CompilerServices.Unsafe
+                // is exposed to mscorlib, or a future version of C# allows inline IL),
+                // then do that and short-circuit before the fixed.
+
+                if (*(a + 1) != *(b + 1)) goto DiffOffset1;
+                
+                // Since we know that the first two chars are the same,
+                // we can increment by 2 here and skip 4 bytes.
+                // This leaves us 8-byte aligned, which results
+                // on better perf for 64-bit platforms.
+                length -= 2; a += 2; b += 2;
+
                 // unroll the loop
+#if BIT64
+                while (length >= 12)
+                {
+                    if (*(long*)a != *(long*)b) goto DiffOffset0;
+                    if (*(long*)(a + 4) != *(long*)(b + 4)) goto DiffOffset4;
+                    if (*(long*)(a + 8) != *(long*)(b + 8)) goto DiffOffset8;
+                    length -= 12; a += 12; b += 12;
+                }
+#else // BIT64
                 while (length >= 10)
                 {
-                    if (*(int*)a != *(int*)b)
-                    {
-                        diffOffset = 0;
-                        break;
-                    }
-
-                    if (*(int*)(a + 2) != *(int*)(b + 2))
-                    {
-                        diffOffset = 2;
-                        break;
-                    }
-
-                    if (*(int*)(a + 4) != *(int*)(b + 4))
-                    {
-                        diffOffset = 4;
-                        break;
-                    }
-
-                    if (*(int*)(a + 6) != *(int*)(b + 6))
-                    {
-                        diffOffset = 6;
-                        break;
-                    }
-
-                    if (*(int*)(a + 8) != *(int*)(b + 8))
-                    {
-                        diffOffset = 8;
-                        break;
-                    }
-                    length -= 10;
-                    a += 10;
-                    b += 10;
+                    if (*(int*)a != *(int*)b) goto DiffOffset0;
+                    if (*(int*)(a + 2) != *(int*)(b + 2)) goto DiffOffset2;
+                    if (*(int*)(a + 4) != *(int*)(b + 4)) goto DiffOffset4;
+                    if (*(int*)(a + 6) != *(int*)(b + 6)) goto DiffOffset6;
+                    if (*(int*)(a + 8) != *(int*)(b + 8)) goto DiffOffset8;
+                    length -= 10; a += 10; b += 10; 
                 }
+#endif // BIT64
 
-                if (diffOffset != -1)
-                {
-                    // we already see a difference in the unrolled loop above
-                    a += diffOffset;
-                    b += diffOffset;
-                    int order;
-                    if ((order = (int)*a - (int)*b) != 0)
-                    {
-                        return order;
-                    }
-                    return ((int)*(a + 1) - (int)*(b + 1));
-                }
-
-                // now go back to slower code path and do comparison on 4 bytes at a time.  
-                // This depends on the fact that the String objects are  
-                // always zero terminated and that the terminating zero is not included  
-                // in the length. For odd string sizes, the last compare will include  
-                // the zero terminator.  
-
+                // Fallback loop:
+                // go back to slower code path and do comparison on 4 bytes at a time.
+                // This depends on the fact that the String objects are
+                // always zero terminated and that the terminating zero is not included
+                // in the length. For odd string sizes, the last compare will include
+                // the zero terminator.
                 while (length > 0)
                 {
-                    if (*(int*)a != *(int*)b)
-                    {
-                        break;
-                    }
+                    if (*(int*)a != *(int*)b) goto DiffNextInt;
                     length -= 2;
-                    a += 2;
-                    b += 2;
-                }
-
-                if (length > 0)
-                {
-                    int c;
-                    // found a different int on above loop
-                    if ((c = (int)*a - (int)*b) != 0)
-                    {
-                        return c;
-                    }
-                    return ((int)*(a + 1) - (int)*(b + 1));
+                    a += 2; 
+                    b += 2; 
                 }
 
                 // At this point, we have compared all the characters in at least one string.
                 // The longer string will be larger.
                 return strA.Length - strB.Length;
+                
+#if BIT64
+                DiffOffset8: a += 4; b += 4;
+                DiffOffset4: a += 4; b += 4;
+#else // BIT64
+                // Use jumps instead of falling through, since
+                // otherwise going to DiffOffset8 will involve
+                // 8 add instructions before getting to DiffNextInt
+                DiffOffset8: a += 8; b += 8; goto DiffOffset0;
+                DiffOffset6: a += 6; b += 6; goto DiffOffset0;
+                DiffOffset4: a += 2; b += 2;
+                DiffOffset2: a += 2; b += 2;
+#endif // BIT64
+                
+                DiffOffset0:
+                // If we reached here, we already see a difference in the unrolled loop above
+#if BIT64
+                if (*(int*)a == *(int*)b)
+                {
+                    a += 2; b += 2;
+                }
+#endif // BIT64
+
+                DiffNextInt:
+                if (*a != *b) return *a - *b;
+
+                DiffOffset1:
+                Contract.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
+                return *(a + 1) - *(b + 1);
             }
         }
 
@@ -1732,6 +1750,13 @@ namespace System
                     return FormatProvider.CompareIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
 
                 case StringComparison.Ordinal:
+                    // Most common case: first character is different.
+                    // Returns false for empty strings.
+                    if (strA._firstChar != strB._firstChar)
+                    {
+                        return strA._firstChar - strB._firstChar;
+                    }
+
                     return CompareOrdinalHelper(strA, strB);
 
                 case StringComparison.OrdinalIgnoreCase:
@@ -1914,6 +1939,13 @@ namespace System
             if (strB == null)
             {
                 return 1;
+            }
+
+            // Most common case, first character is different.
+            // This will return false for empty strings.
+            if (strA._firstChar != strB._firstChar)
+            {
+                return strA._firstChar - strB._firstChar;
             }
 
             return CompareOrdinalHelper(strA, strB);
@@ -3278,31 +3310,89 @@ namespace System
         internal static unsafe int wcslen(char* ptr)
         {
             char* end = ptr;
+            
+            // First make sure our pointer is aligned on a word boundary
+            int alignment = IntPtr.Size - 1;
 
-            // The following code is (somewhat surprisingly!) significantly faster than a naive loop,
-            // at least on x86 and the current jit.
-
-            // First make sure our pointer is aligned on a dword boundary
-            while (((uint)end & 3) != 0 && *end != 0)
-                end++;
-            if (*end != 0)
+            // If ptr is at an odd address (e.g. 0x5), this loop will simply iterate all the way
+            while (((uint)end & (uint)alignment) != 0)
             {
-                // The loop condition below works because if "end[0] & end[1]" is non-zero, that means
-                // neither operand can have been zero. If is zero, we have to look at the operands individually,
-                // but we hope this going to fairly rare.
-
-                // In general, it would be incorrect to access end[1] if we haven't made sure
-                // end[0] is non-zero. However, we know the ptr has been aligned by the loop above
-                // so end[0] and end[1] must be in the same page, so they're either both accessible, or both not.
-
-                while ((end[0] & end[1]) != 0 || (end[0] != 0 && end[1] != 0))
-                {
-                    end += 2;
-                }
+                if (*end == 0) goto FoundZero;
+                end++;
             }
-            // finish up with the naive loop
-            for (; *end != 0; end++)
-                ;
+
+#if !BIT64
+            // The loop condition below works because if "end[0] & end[1]" is non-zero, that means
+            // neither operand can have been zero. If is zero, we have to look at the operands individually,
+            // but we hope this going to fairly rare.
+
+            // In general, it would be incorrect to access end[1] if we haven't made sure
+            // end[0] is non-zero. However, we know the ptr has been aligned by the loop above
+            // so end[0] and end[1] must be in the same word (and therefore page), so they're either both accessible, or both not.
+
+            while ((end[0] & end[1]) != 0 || (end[0] != 0 && end[1] != 0))
+            {
+                end += 2;
+            }
+
+            Contract.Assert(end[0] == 0 || end[1] == 0);
+            if (end[0] != 0) end++;
+#else // !BIT64
+            // Based on https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
+
+            // 64-bit implementation: process 1 ulong (word) at a time
+
+            // What we do here is add 0x7fff from each of the
+            // 4 individual chars within the ulong, using MagicMask.
+            // If the char > 0 and < 0x8001, it will have its high bit set.
+            // We then OR with MagicMask, to set all the other bits.
+            // This will result in all bits set (ulong.MaxValue) for any
+            // char that fits the above criteria, and something else otherwise.
+
+            // Note that for any char > 0x8000, this will be a false
+            // positive and we will fallback to the slow path and
+            // check each char individually. This is OK though, since
+            // we optimize for the common case (ASCII chars, which are < 0x80).
+
+            // NOTE: We can access a ulong a time since the ptr is aligned,
+            // and therefore we're only accessing the same word/page. (See notes
+            // for the 32-bit version above.)
+            
+            const ulong MagicMask = 0x7fff7fff7fff7fff;
+
+            while (true)
+            {
+                ulong word = *(ulong*)end;
+                word += MagicMask; // cause high bit to be set if not zero, and <= 0x8000
+                word |= MagicMask; // set everything besides the high bits
+
+                if (word == ulong.MaxValue) // 0xffff...
+                {
+                    // all of the chars have their bits set (and therefore none can be 0)
+                    end += 4;
+                    continue;
+                }
+
+                // at least one of them didn't have their high bit set!
+                // go through each char and check for 0.
+
+                if (end[0] == 0) goto EndAt0;
+                if (end[1] == 0) goto EndAt1;
+                if (end[2] == 0) goto EndAt2;
+                if (end[3] == 0) goto EndAt3;
+
+                // if we reached here, it was a false positive-- just continue
+                end += 4;
+            }
+
+            EndAt3: end++;
+            EndAt2: end++;
+            EndAt1: end++;
+            EndAt0:
+#endif // !BIT64
+
+            FoundZero:
+            Contract.Assert(*end == 0);
 
             int count = (int)(end - ptr);
 

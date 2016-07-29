@@ -43,7 +43,9 @@ namespace Internal.TypeSystem
         ByRef           = 0x19,
         Pointer         = 0x1A,
 
-        GenericParameter = 0x1C,
+        GenericParameter        = 0x1C,
+        SignatureTypeVariable   = 0x1D,
+        SignatureMethodVariable = 0x1E,
 
         ContainsGenericVariables         = 0x100,
         ContainsGenericVariablesComputed = 0x200,

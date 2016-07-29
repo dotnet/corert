@@ -2,7 +2,7 @@
   "dependencies": {
     "NETStandard.Library": "1.5.0-rc2-23911",
     "System.CommandLine": "0.1.0-e160514-1",
-    "Microsoft.NETCore.Jit": "1.0.2-rc4-24204-05",
+    "Microsoft.NETCore.Jit": "1.0.4-beta-24329-01",
     "Microsoft.DotNet.ObjectWriter": "1.0.13-prerelease-00001"
   },
   "frameworks": {

@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyListEntry[] result;
-            if (factory.TypeInitializationManager.HasEagerStaticConstructor(_type))
+            if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
             {
                 result = new DependencyListEntry[3];
                 result[2] = new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");

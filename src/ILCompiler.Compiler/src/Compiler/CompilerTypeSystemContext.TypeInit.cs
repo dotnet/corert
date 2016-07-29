@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -13,12 +12,10 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    /// <summary>
-    /// Manages policies around static constructors (.cctors) and static data initialization.
-    /// </summary>
-    public class TypeInitialization
+    // Manages policies around static constructors (.cctors) and static data initialization.
+    partial class CompilerTypeSystemContext
     {
-        // Eventually, this class will also manage preinitialization (interpreting cctors at compile
+        // Eventually, this will also manage preinitialization (interpreting cctors at compile
         // time and converting them to blobs of preinitialized data), and the various
         // System.Runtime.CompilerServices.PreInitializedAttribute/InitDataBlobAttribute/etc. placed on
         // types and their members by toolchain components.

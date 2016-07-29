@@ -206,6 +206,44 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        /// <summary>
+        /// Gets the managed entrypoint method of this module or null if the module has no managed entrypoint.
+        /// </summary>
+        public MethodDesc EntryPoint
+        {
+            get
+            {
+                CorHeader corHeader = _peReader.PEHeaders.CorHeader;
+                if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0)
+                {
+                    // Entrypoint is an RVA to an unmanaged method
+                    return null;
+                }
+
+                int entryPointToken = corHeader.EntryPointTokenOrRelativeVirtualAddress;
+                if (entryPointToken == 0)
+                {
+                    // No entrypoint
+                    return null;
+                }
+
+                EntityHandle handle = MetadataTokens.EntityHandle(entryPointToken);
+
+                if (handle.Kind == HandleKind.MethodDefinition)
+                {
+                    return GetMethod(handle);
+                }
+                else if (handle.Kind == HandleKind.AssemblyFile)
+                {
+                    // Entrypoint not in the manifest assembly
+                    throw new NotImplementedException();
+                }
+
+                // Bad metadata
+                throw new BadImageFormatException();
+            }
+        }
+
         public sealed override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
         {
             var stringComparer = _metadataReader.StringComparer;
@@ -231,9 +269,9 @@ namespace Internal.TypeSystem.Ecma
                     {
                         Object implementation = GetObject(exportedType.Implementation);
 
-                        if (implementation is EcmaModule)
+                        if (implementation is ModuleDesc)
                         {
-                            return ((EcmaModule)(implementation)).GetType(nameSpace, name);
+                            return ((ModuleDesc)(implementation)).GetType(nameSpace, name);
                         }
 
                         // TODO
@@ -393,14 +431,14 @@ namespace Internal.TypeSystem.Ecma
 
             Object resolutionScope = GetObject(typeReference.ResolutionScope);
 
-            if (resolutionScope is EcmaModule)
+            if (resolutionScope is ModuleDesc)
             {
-                return ((EcmaModule)(resolutionScope)).GetType(_metadataReader.GetString(typeReference.Namespace), _metadataReader.GetString(typeReference.Name));
+                return ((ModuleDesc)(resolutionScope)).GetType(_metadataReader.GetString(typeReference.Namespace), _metadataReader.GetString(typeReference.Name));
             }
             else
-            if (resolutionScope is EcmaType)
+            if (resolutionScope is MetadataType)
             {
-                return ((EcmaType)(resolutionScope)).GetNestedType(_metadataReader.GetString(typeReference.Name));
+                return ((MetadataType)(resolutionScope)).GetNestedType(_metadataReader.GetString(typeReference.Name));
             }
 
             // TODO
@@ -436,17 +474,17 @@ namespace Internal.TypeSystem.Ecma
             ExportedType exportedType = _metadataReader.GetExportedType(handle);
 
             var implementation = GetObject(exportedType.Implementation);
-            if (implementation is EcmaModule)
+            if (implementation is ModuleDesc)
             {
-                var module = (EcmaModule)implementation;
+                var module = (ModuleDesc)implementation;
                 string nameSpace = _metadataReader.GetString(exportedType.Namespace);
                 string name = _metadataReader.GetString(exportedType.Name);
                 return module.GetType(nameSpace, name);
             }
             else
-            if (implementation is TypeDesc)
+            if (implementation is MetadataType)
             {
-                var type = (EcmaType)implementation;
+                var type = (MetadataType)implementation;
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 // TODO: Better error message

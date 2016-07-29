@@ -78,7 +78,26 @@ public class BringUpTest
             counter++;
         }
 
-        if (counter != 5)
+        try
+        {
+            try
+            {
+                throw new Exception("Hello");
+            }
+            catch
+            {
+                counter++;
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message != "Hello")
+                return Fail;
+            counter++;
+        }
+
+        if (counter != 7)
         {
             Console.WriteLine("Unexpected counter value");
             return Fail;

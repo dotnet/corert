@@ -88,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (factory.TypeInitializationManager.HasEagerStaticConstructor(_type))
+            if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
             {
                 var result = new DependencyList();
                 result.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If the type has a class constructor, its non-GC statics section is prefixed  
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
-            if (factory.TypeInitializationManager.HasLazyStaticConstructor(_type))
+            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
             {
                 int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(_type.Context.Target));
                 int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);

@@ -23,19 +23,11 @@ namespace Internal.IL
             Debug.Assert(constructorMethod.IsConstructor);
             Debug.Assert(constructorMethod.OwningType.IsString);
 
-            var constructorSignature = constructorMethod.Signature;
+            var signatureBuilder = new MethodSignatureBuilder(constructorMethod.Signature);
+            signatureBuilder.Flags = MethodSignatureFlags.Static;
+            signatureBuilder.ReturnType = constructorMethod.OwningType;
 
-            // There's an extra (useless) Object as the first arg to match RyuJIT expectations.
-            var parameters = new TypeDesc[constructorSignature.Length + 1];
-            parameters[0] = constructorMethod.Context.GetWellKnownType(WellKnownType.Object);
-            for (int i = 0; i < constructorSignature.Length; i++)
-                parameters[i + 1] = constructorSignature[i];
-
-            MethodSignature sig = new MethodSignature(
-                MethodSignatureFlags.Static, 0, constructorMethod.OwningType, parameters);
-
-            MethodDesc result = constructorMethod.OwningType.GetKnownMethod("Ctor", sig);
-            return result;
+            return constructorMethod.OwningType.GetKnownMethod("Ctor", signatureBuilder.ToSignature());
         }
 
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
