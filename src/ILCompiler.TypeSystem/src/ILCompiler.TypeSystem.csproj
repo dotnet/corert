@@ -239,6 +239,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaGenericParameter.Canon.cs">
       <Link>Ecma\EcmaGenericParameter.Canon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.CodeGen.cs">
+      <Link>Ecma\EcmaModule.CodeGen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaModule.Symbols.cs">
       <Link>Ecma\EcmaModule.Symbols.cs</Link>
     </Compile>
