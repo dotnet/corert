@@ -800,7 +800,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory context)
         {
-            Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
+            //Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
         }
     }
 }

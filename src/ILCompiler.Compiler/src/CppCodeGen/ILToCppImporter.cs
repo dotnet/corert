@@ -297,6 +297,8 @@ namespace Internal.IL
                 Append("(");
                 Append(_writer.GetCppSignatureTypeName(destType));
                 Append(")");
+                AddTypeReference(destType, true);
+
             }
         }
 
@@ -307,6 +309,7 @@ namespace Internal.IL
                 Append("(");
                 Append(_writer.GetCppSignatureTypeName(srcType));
                 Append(")");
+                AddTypeReference(srcType, true);
             }
             else
             if (srcType.IsPointer)
@@ -482,14 +485,14 @@ namespace Internal.IL
             for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)
             {
                 var parameterType = methodCodeNodeNeedingCode.Method.Signature[i];
-                if ((parameterType.IsTypeDefinition || !parameterType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
+                //if ((parameterType.IsTypeDefinition || !parameterType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
                 {
                     AddTypeReference(parameterType, false);
                 }
             }
 
             var returnType = methodCodeNodeNeedingCode.Method.Signature.ReturnType;
-            if (!returnType.IsByRef && (returnType.IsTypeDefinition || !returnType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
+            if (!returnType.IsByRef)
             {
                 AddTypeReference(returnType, true);
             }
@@ -498,7 +501,7 @@ namespace Internal.IL
             {
                 AddTypeReference(owningType, true);
             }
-            if (methodCodeNodeNeedingCode.Method.Signature.IsStatic && (owningType.IsTypeDefinition || !owningType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
+            if (methodCodeNodeNeedingCode.Method.Signature.IsStatic)
             {
                 AddTypeReference(owningType, true);
             }
@@ -527,6 +530,7 @@ namespace Internal.IL
             {
                 AppendLine();
                 Append(_writer.GetCppSignatureTypeName(_locals[i].Type));
+                AddTypeReference(_locals[i].Type, true);
                 Append(" ");
                 Append(GetVarName(i, false));
                 if (initLocals)
@@ -962,7 +966,7 @@ namespace Internal.IL
 
             if (retType == null)
                 retType = methodSignature.ReturnType;
-
+            
             string temp = null;
             StackValueKind retKind = StackValueKind.Unknown;
             var needNewLine = false;
@@ -995,6 +999,7 @@ namespace Internal.IL
             {
                 needNewLine = true;
             }
+            AddTypeReference(method.OwningType, true);
 
             if (opcode == ILOpcode.newobj)
             {
@@ -1660,6 +1665,7 @@ namespace Internal.IL
             PushTemp(GetStackValueKind(type));
             Append("(");
             Append(_writer.GetCppSignatureTypeName(type));
+            AddTypeReference(type, true);
             Append(")");
             Append(op);
             AppendSemicolon();
@@ -1844,7 +1850,8 @@ namespace Internal.IL
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
-
+            else
+                AddTypeReference(type, false);
             var addr = _stack.Pop();
 
             PushTemp(GetStackValueKind(type), type);
@@ -1866,6 +1873,8 @@ namespace Internal.IL
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
+            else
+                AddTypeReference(type, false);
 
             var value = _stack.Pop();
             var addr = _stack.Pop();
@@ -1933,7 +1942,7 @@ namespace Internal.IL
         private void ImportInitObj(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
-
+            AddTypeReference(type, true);
             var addr = _stack.Pop();
             AppendLine();
             Append("memset((void*)");
@@ -2103,6 +2112,8 @@ namespace Internal.IL
             // ldelem_ref
             if (elementType == null)
                 elementType = GetWellKnownType(WellKnownType.Object);
+            else
+                AddTypeReference(elementType, true);
 
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
@@ -2140,7 +2151,8 @@ namespace Internal.IL
             // stelem_ref
             if (elementType == null)
                 elementType = GetWellKnownType(WellKnownType.Object);
-
+            else
+                AddTypeReference(elementType, true);
             var value = _stack.Pop();
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
