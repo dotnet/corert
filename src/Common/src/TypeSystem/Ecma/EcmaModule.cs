@@ -231,9 +231,9 @@ namespace Internal.TypeSystem.Ecma
                     {
                         Object implementation = GetObject(exportedType.Implementation);
 
-                        if (implementation is EcmaModule)
+                        if (implementation is ModuleDesc)
                         {
-                            return ((EcmaModule)(implementation)).GetType(nameSpace, name);
+                            return ((ModuleDesc)(implementation)).GetType(nameSpace, name);
                         }
 
                         // TODO
@@ -436,17 +436,17 @@ namespace Internal.TypeSystem.Ecma
             ExportedType exportedType = _metadataReader.GetExportedType(handle);
 
             var implementation = GetObject(exportedType.Implementation);
-            if (implementation is EcmaModule)
+            if (implementation is ModuleDesc)
             {
-                var module = (EcmaModule)implementation;
+                var module = (ModuleDesc)implementation;
                 string nameSpace = _metadataReader.GetString(exportedType.Namespace);
                 string name = _metadataReader.GetString(exportedType.Name);
                 return module.GetType(nameSpace, name);
             }
             else
-            if (implementation is TypeDesc)
+            if (implementation is MetadataType)
             {
-                var type = (EcmaType)implementation;
+                var type = (MetadataType)implementation;
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 // TODO: Better error message
