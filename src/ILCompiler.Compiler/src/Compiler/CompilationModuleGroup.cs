@@ -146,8 +146,9 @@ namespace ILCompiler
             if (StartupCodeMain != null)
                 throw new Exception("Multiple entrypoint modules");
 
-            int entryPointToken = module.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress;
-            MethodDesc mainMethod = module.GetMethod(MetadataTokens.EntityHandle(entryPointToken));
+            MethodDesc mainMethod = module.EntryPoint;
+            if (mainMethod == null)
+                throw new Exception("No managed entrypoint defined for executable module");
 
             var owningType = module.GetGlobalModuleType();
             StartupCodeMain = new StartupCodeMainMethod(owningType, mainMethod);

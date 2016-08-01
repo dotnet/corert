@@ -8,21 +8,20 @@ This repo contains the .NET Core runtime optimized for AOT compilation
 
 ## How to Engage, Contribute and Provide Feedback
 Some of the best ways to contribute are to try things out, file bugs, and join in design conversations.
-Want to get more familiar with what's going on in the code? Take a look at the active [pull-requests](https://github.com/dotnet/corert/pulls).
 
-Looking for something to work on? The [active issues](https://github.com/dotnet/corert/issues?q=is:open+is:issue+no:assignee) ([Issue Guide](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/issue-guide.md)) are a great place to start or take a look at our [documentation](https://github.com/dotnet/corert/tree/master/Documentation). You are also encouraged to start a discussion by filing an issue or creating a gist.
+Looking for something to work on? The [_up for grabs_](https://github.com/dotnet/corert/labels/UpForGrabs) issues are a great place to start or take a look at our [documentation](Documentation).
+
+This project follows the [.NET Core Contribution Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md).
 
 [![Join the chat at https://gitter.im/dotnet/corert](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/corert?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-You can discuss .NET OSS more generally in the [.NET Foundation forums](http://forums.dotnetfoundation.org).
-
-This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 
 ## License
 The CoreRT Repo is licensed under the [MIT license](https://github.com/dotnet/corert/blob/master/LICENSE.TXT).
 
 ## .NET Foundation
 CoreRT is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
+
+This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 
 ## Related Projects
 There are many .NET related projects on GitHub.

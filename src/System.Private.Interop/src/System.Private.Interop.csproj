@@ -8,6 +8,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);TARGET_CORE_API_SET</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />

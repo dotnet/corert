@@ -909,10 +909,6 @@ namespace Internal.IL
                         // String constructors actually look like regular method calls
                         method = method.GetStringInitializer();
                         opcode = ILOpcode.call;
-
-                        // WORKAROUND: the static method expects an extra arg
-                        // Annoyingly, it needs to be before all the others
-                        _stack.InsertAt(new ExpressionEntry(StackValueKind.ObjRef, "0"), _stack.Top - method.Signature.Length + 1);
                     }
                     else if (owningType.IsArray)
                     {
