@@ -28,7 +28,6 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Foo.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -36,6 +35,8 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Target Name="CopyForRspFile">
-    <Copy SourceFiles="bin\$(Configuration)\dnxcore50\repro.exe" DestinationFiles="bin\$(Configuration)\dnxcore50\repro.dll" />
+    <Copy
+        SourceFiles="bin\$(Configuration)\dnxcore50\repro.exe"
+        DestinationFiles="bin\$(Configuration)\dnxcore50\repro.dll" />
   </Target>
 </Project>
