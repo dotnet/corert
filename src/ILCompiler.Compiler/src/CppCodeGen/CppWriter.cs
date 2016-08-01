@@ -28,12 +28,7 @@ namespace ILCompiler.CppCodeGen
             var type = _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
             var typeNode = this._compilation.NodeFactory.ConstructedTypeSymbol(type);
             AddWellKnownType(typeNode);
-<<<<<<< HEAD
 
-=======
-
-
->>>>>>> origin / CPP - Code - Gen
             _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
