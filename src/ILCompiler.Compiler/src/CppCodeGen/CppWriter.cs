@@ -28,7 +28,12 @@ namespace ILCompiler.CppCodeGen
             var type = _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
             var typeNode = this._compilation.NodeFactory.ConstructedTypeSymbol(type);
             AddWellKnownType(typeNode);
+<<<<<<< HEAD
 
+=======
+
+
+>>>>>>> origin / CPP - Code - Gen
             _cppSignatureNames.Add(type, mangledSignatureName);
         }
 
@@ -955,6 +960,7 @@ namespace ILCompiler.CppCodeGen
                 }
             }
         }
+
         /// <summary>
         /// Output C++ code via a given dependency graph
         /// </summary>
@@ -969,7 +975,8 @@ namespace ILCompiler.CppCodeGen
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer methodTables = new CppGenerationBuffer();
             DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
-            // First output well known types
+            // Output well-known types to avoid build errors
+
             if (_wellKnownTypeNodes != null)
             {
                 foreach (var wellKnownTypeNode in _wellKnownTypeNodes)
@@ -981,7 +988,8 @@ namespace ILCompiler.CppCodeGen
             // Iterate through nodes
             foreach (var node in nodeIterator.GetNodes())
             {
-                if (node is EETypeNode && !_emittedTypes.Contains(((EETypeNode) node).Type))
+                if (node is EETypeNode && !_emittedTypes.Contains(((EETypeNode)node).Type))
+
                     OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions, methodTables);
             }
 
@@ -993,6 +1001,7 @@ namespace ILCompiler.CppCodeGen
             methodTables.Clear();
 
             // Declaration and implementation are output separately. Would be better to avoid looping through code twice.
+
             foreach (var node in nodeIterator.GetNodes())
             {
                 if (node is CppMethodCodeNode)
@@ -1032,14 +1041,6 @@ namespace ILCompiler.CppCodeGen
                 methodImplementations.Append("}");
             }
         }
-
-        /// <summary>
-        /// Output C++ code for a given codeNode. Use multiple CppGenerationBuffers to preserve ordering
-        /// </summary>
-        /// <param name="typeNode">The code node to be output</param>
-        /// <param name="forwardDefinitions">The buffer in which to write out the type's forward definition</param>
-        /// <param name="typeDefinitions">The buffer in which to write out the type's full definition</param>
-        /// <param name="methodTable">The buffer in which to write out the type's method table</param>
         private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions, CppGenerationBuffer methodTable)
         {
             if (_emittedTypes == null)
@@ -1193,6 +1194,7 @@ namespace ILCompiler.CppCodeGen
             Out.WriteLine("#include \"common.h\"");
             Out.WriteLine("#include \"CppCodeGen.h\"");
             Out.WriteLine();
+
 
             _statics = new CppGenerationBuffer();
             _statics.Indent();
