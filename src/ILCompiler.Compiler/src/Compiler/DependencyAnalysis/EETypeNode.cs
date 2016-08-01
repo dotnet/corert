@@ -235,7 +235,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 dependencyList.Add(factory.VTable(_type), "VTable");
-                
+
+                for (DefType baseType = _type.GetClosestDefType(); baseType != null; baseType = baseType.BaseType)
+                {
+                    if (baseType.HasGenericDictionarySlot())
+                        dependencyList.Add(factory.TypeGenericDictionary(baseType), "Type generic dictionary");
+                }
+
                 return dependencyList;
             }
 
@@ -521,6 +527,11 @@ namespace ILCompiler.DependencyAnalysis
                     objData.EmitPointerReloc(factory.MethodEntrypoint(implMethod, implMethod.OwningType.IsValueType));
                 else
                     objData.EmitZeroPointer();
+            }
+
+            if (declType.HasGenericDictionarySlot())
+            {
+                objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
             }
         }
 

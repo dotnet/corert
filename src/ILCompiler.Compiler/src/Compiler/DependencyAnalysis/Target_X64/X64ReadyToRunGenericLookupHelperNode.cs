@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using ILCompiler.DependencyAnalysis.X64;
-
+using Internal.TypeSystem;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
@@ -14,8 +14,17 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (_contextKind == GenericContextKind.ThisObj)
             {
-                //Debug.Assert(false, "Emit code to get dictionary from 'this'");
                 encoder.EmitINT3();
+
+                AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                int vtableSlot = 0;
+                if (!relocsOnly)
+                    vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(factory, (TypeDesc)_typeOrMethodContext);
+                
+                AddrMode loadDictionary = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (vtableSlot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
+                encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadDictionary);
             }
 
             int dictionarySlot = 0;
