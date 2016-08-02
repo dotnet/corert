@@ -27,12 +27,12 @@ namespace ILCompiler
         public bool FullLog;
         public bool Verbose;
     }
-    
+
     public partial class Compilation
     {
         private readonly CompilerTypeSystemContext _typeSystemContext;
         private readonly CompilationOptions _options;
-        
+
         private NodeFactory _nodeFactory;
         private DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
 
@@ -95,7 +95,7 @@ namespace ILCompiler
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
-                _methodILCache= new ILProvider();
+                _methodILCache = new ILProvider();
 
             return _methodILCache.GetMethodIL(method);
         }
@@ -157,7 +157,7 @@ namespace ILCompiler
 
                 var nodes = _dependencyGraph.MarkedNodeList;
 
-                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain);
+                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain, _nodeFactory);
             }
             else
             {
@@ -179,7 +179,7 @@ namespace ILCompiler
                 }
             }
         }
-        
+
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
