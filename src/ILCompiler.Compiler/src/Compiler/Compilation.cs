@@ -27,12 +27,12 @@ namespace ILCompiler
         public bool FullLog;
         public bool Verbose;
     }
-    
+
     public partial class Compilation
     {
         private readonly CompilerTypeSystemContext _typeSystemContext;
         private readonly CompilationOptions _options;
-        
+
         private NodeFactory _nodeFactory;
         private DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
 
@@ -157,7 +157,7 @@ namespace ILCompiler
 
                 var nodes = _dependencyGraph.MarkedNodeList;
 
-                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain);
+                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain, _nodeFactory);
             }
             else
             {
