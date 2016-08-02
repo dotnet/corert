@@ -81,6 +81,13 @@ namespace ILCompiler
             {
                 rootProvider.AddCompilationRoot(stringType, "String type is always generated");
             }
+
+            var coreLib = _typeSystemContext.GetModuleForSimpleName("System.Private.Corelib");
+
+            // Adding for CPP codeGen
+            var eeTypeType = coreLib.GetKnownType("Internal.Runtime", "EEType");
+            rootProvider.AddCompilationRoot(eeTypeType, "Enables C++ Code Generation");
+
         }
 
         private void AddReflectionInitializationCode(IRootingServiceProvider rootProvider)
