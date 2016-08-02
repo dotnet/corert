@@ -230,7 +230,9 @@ namespace Internal.IL
                 case StackValueKind.ObjRef: return "void*";
                 case StackValueKind.Float: return "double";
                 case StackValueKind.ByRef:
-                case StackValueKind.ValueType: return _writer.GetCppSignatureTypeName(type);
+                case StackValueKind.ValueType:
+                    AddTypeReference(type, true);
+                    return _writer.GetCppSignatureTypeName(type);
                 default: throw new NotSupportedException();
             }
         }
@@ -241,7 +243,7 @@ namespace Internal.IL
             return "_" + (_currentTemp++).ToStringInvariant();
         }
 
-      /// <summary>
+        /// <summary>
         /// Push an expression named <paramref name="name"/> of kind <paramref name="kind"/>.
         /// </summary>
         /// <param name="kind">Kind of entry in stack</param>
@@ -295,6 +297,8 @@ namespace Internal.IL
                 Append("(");
                 Append(_writer.GetCppSignatureTypeName(destType));
                 Append(")");
+                AddTypeReference(destType, true);
+
             }
         }
 
@@ -305,6 +309,7 @@ namespace Internal.IL
                 Append("(");
                 Append(_writer.GetCppSignatureTypeName(srcType));
                 Append(")");
+                AddTypeReference(srcType, true);
             }
             else
             if (srcType.IsPointer)
@@ -399,7 +404,7 @@ namespace Internal.IL
         /// </summary>
         private void Exdent()
         {
-            _builder.Exdent();   
+            _builder.Exdent();
         }
 
         private string GetVarName(int index, bool argument)
@@ -477,7 +482,29 @@ namespace Internal.IL
         public void Compile(CppMethodCodeNode methodCodeNodeNeedingCode)
         {
             FindBasicBlocks();
+            for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)
+            {
+                var parameterType = methodCodeNodeNeedingCode.Method.Signature[i];
+                //if ((parameterType.IsTypeDefinition || !parameterType.HasSameTypeDefinition(_compilation.NodeFactory.ArrayOfTClass)))
+                {
+                    AddTypeReference(parameterType, false);
+                }
+            }
 
+            var returnType = methodCodeNodeNeedingCode.Method.Signature.ReturnType;
+            if (!returnType.IsByRef)
+            {
+                AddTypeReference(returnType, true);
+            }
+            var owningType = methodCodeNodeNeedingCode.Method.OwningType;
+            if (methodCodeNodeNeedingCode.Method.IsNativeCallable || methodCodeNodeNeedingCode.Method.IsRuntimeExport || methodCodeNodeNeedingCode.Method.IsRuntimeImplemented)
+            {
+                AddTypeReference(owningType, true);
+            }
+            if (methodCodeNodeNeedingCode.Method.Signature.IsStatic)
+            {
+                AddTypeReference(owningType, true);
+            }
             ImportBasicBlocks();
 
             if (_sequencePoints != null && _sequencePoints[0].Document != null)
@@ -503,6 +530,7 @@ namespace Internal.IL
             {
                 AppendLine();
                 Append(_writer.GetCppSignatureTypeName(_locals[i].Type));
+                AddTypeReference(_locals[i].Type, true);
                 Append(" ");
                 Append(GetVarName(i, false));
                 if (initLocals)
@@ -731,7 +759,7 @@ namespace Internal.IL
                 case "InitializeArray":
                     if (IsTypeName(method, "System.Runtime.CompilerServices", "RuntimeHelpers"))
                     {
-                        var fieldSlot = (LdTokenEntry<FieldDesc>) _stack.Pop();
+                        var fieldSlot = (LdTokenEntry<FieldDesc>)_stack.Pop();
                         var arraySlot = _stack.Pop();
 
                         var fieldDesc = fieldSlot.LdToken;
@@ -787,7 +815,7 @@ namespace Internal.IL
                 case "GetValueInternal":
                     if (IsTypeName(method, "System", "RuntimeTypeHandle"))
                     {
-                        var typeHandleSlot = (LdTokenEntry<TypeDesc>) _stack.Pop();
+                        var typeHandleSlot = (LdTokenEntry<TypeDesc>)_stack.Pop();
                         TypeDesc typeOfEEType = typeHandleSlot.LdToken;
                         PushExpression(StackValueKind.NativeInt, string.Concat("((intptr_t)", _writer.GetCppTypeName(typeOfEEType), "::__getMethodTable())"));
                         return true;
@@ -832,7 +860,7 @@ namespace Internal.IL
             Append(dimensionsTemp);
             Append(")");
             AppendSemicolon();
-       }
+        }
 
         private void ImportCall(ILOpcode opcode, int token)
         {
@@ -934,7 +962,7 @@ namespace Internal.IL
 
             if (retType == null)
                 retType = methodSignature.ReturnType;
-
+            
             string temp = null;
             StackValueKind retKind = StackValueKind.Unknown;
             var needNewLine = false;
@@ -967,6 +995,7 @@ namespace Internal.IL
             {
                 needNewLine = true;
             }
+            AddTypeReference(method.OwningType, true);
 
             if (opcode == ILOpcode.newobj)
             {
@@ -987,7 +1016,7 @@ namespace Internal.IL
                         AddMethodReference(thunkMethod);
 
                         // Update stack with new name.
-                        ((ExpressionEntry) _stack[_stack.Top - 2]).Name = temp;
+                        ((ExpressionEntry)_stack[_stack.Top - 2]).Name = temp;
 
                         var sb = new CppGenerationBuffer();
                         AppendLine();
@@ -1008,7 +1037,7 @@ namespace Internal.IL
             {
                 // While waiting for C# return by ref, get this reference and insert it back
                 // if it is a delegate invoke.
-                ExpressionEntry v = (ExpressionEntry) _stack[_stack.Top - (methodSignature.Length + 1)];
+                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
                 Append("(*");
                 Append(_writer.GetCppTypeName(method.OwningType));
                 Append("::");
@@ -1188,7 +1217,7 @@ namespace Internal.IL
             else
             {
                 Debug.Assert(value >= Int32.MinValue && value <= Int32.MaxValue, "Value too large for an Int32.");
-                _stack.Push(new Int32ConstantEntry(checked((int) value)));
+                _stack.Push(new Int32ConstantEntry(checked((int)value)));
             }
         }
 
@@ -1632,6 +1661,7 @@ namespace Internal.IL
             PushTemp(GetStackValueKind(type));
             Append("(");
             Append(_writer.GetCppSignatureTypeName(type));
+            AddTypeReference(type, true);
             Append(")");
             Append(op);
             AppendSemicolon();
@@ -1685,6 +1715,7 @@ namespace Internal.IL
 
                 // TODO: Remove
                 _writer.GetCppSignatureTypeName(owningType);
+                AddTypeReference(owningType, true);
             }
 
             AppendSemicolon();
@@ -1696,7 +1727,7 @@ namespace Internal.IL
 
             AddFieldReference(field);
 
-            var thisPtr = isStatic ? InvalidEntry.Entry: _stack.Pop();
+            var thisPtr = isStatic ? InvalidEntry.Entry : _stack.Pop();
 
             TypeDesc owningType = field.OwningType;
             TypeDesc fieldType = field.FieldType;
@@ -1739,6 +1770,8 @@ namespace Internal.IL
 
                 // TODO: Remove
                 _writer.GetCppSignatureTypeName(owningType);
+                AddTypeReference(owningType, true);
+
             }
 
             AppendSemicolon();
@@ -1790,6 +1823,8 @@ namespace Internal.IL
 
                 // TODO: Remove
                 _writer.GetCppSignatureTypeName(owningType);
+                AddTypeReference(owningType, true);
+
             }
             Append(" = ");
             if (!fieldType.IsValueType)
@@ -1811,7 +1846,8 @@ namespace Internal.IL
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
-
+            else
+                AddTypeReference(type, false);
             var addr = _stack.Pop();
 
             PushTemp(GetStackValueKind(type), type);
@@ -1833,6 +1869,8 @@ namespace Internal.IL
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
+            else
+                AddTypeReference(type, false);
 
             var value = _stack.Pop();
             var addr = _stack.Pop();
@@ -1900,7 +1938,7 @@ namespace Internal.IL
         private void ImportInitObj(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
-
+            AddTypeReference(type, true);
             var addr = _stack.Pop();
             AppendLine();
             Append("memset((void*)");
@@ -2070,6 +2108,8 @@ namespace Internal.IL
             // ldelem_ref
             if (elementType == null)
                 elementType = GetWellKnownType(WellKnownType.Object);
+            else
+                AddTypeReference(elementType, true);
 
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
@@ -2107,7 +2147,8 @@ namespace Internal.IL
             // stelem_ref
             if (elementType == null)
                 elementType = GetWellKnownType(WellKnownType.Object);
-
+            else
+                AddTypeReference(elementType, true);
             var value = _stack.Pop();
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
@@ -2292,7 +2333,7 @@ namespace Internal.IL
             else if (ldtokenValue is FieldDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeFieldHandle;
-                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc) ldtokenValue, GetWellKnownType(ldtokenKind));
+                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, GetWellKnownType(ldtokenKind));
             }
             else if (ldtokenValue is MethodDesc)
             {
@@ -2359,6 +2400,7 @@ namespace Internal.IL
             var type = ResolveTypeToken(token);
 
             // TODO: Remove
+            AddTypeReference(type, true);
             _writer.GetCppSignatureTypeName(type);
 
             PushExpression(StackValueKind.Int32, "sizeof(" + _writer.GetCppTypeName(type) + ")");
@@ -2437,13 +2479,33 @@ namespace Internal.IL
 
         private void AddTypeReference(TypeDesc type, bool constructed)
         {
+            AddTypeDependency(type, constructed);
+
+            foreach (var field in type.GetFields())
+            {
+                AddTypeDependency(field.FieldType, false);
+            }
+        }
+        private void AddTypeDependency(TypeDesc type, bool constructed)
+        {
+            if (type.IsPrimitive)
+            {
+                return;
+            }
+            else if (type.IsPointer || type.IsByRef)
+            {
+                Debug.Assert(type is ParameterizedType);
+                AddTypeDependency((type as ParameterizedType).ParameterType, constructed);
+                return;
+            }
             Object node;
 
             if (constructed)
                 node = _nodeFactory.ConstructedTypeSymbol(type);
             else
                 node = _nodeFactory.NecessaryTypeSymbol(type);
-
+            if (_dependencies.Contains(node))
+                return;
             _dependencies.Add(node);
         }
 
@@ -2473,9 +2535,10 @@ namespace Internal.IL
 
                 // TODO: Remove once the depedencies for static fields are tracked properly
                 _writer.GetCppSignatureTypeName(owningType);
-
+                AddTypeReference(owningType, true);
                 _dependencies.Add(node);
             }
+            AddTypeReference(field.FieldType, false);
         }
     }
 }

@@ -90,6 +90,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CreateNodeCaches()
         {
+            // Need to be constructed for C++? 
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
                 if (_compilationModuleGroup.ContainsType(type))
@@ -560,7 +561,7 @@ namespace ILCompiler.DependencyAnalysis
         public static NameMangler NameMangler;
         public static string CompilationUnitPrefix;
 
-        public void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
+        public virtual void AttachToDependencyGraph(DependencyAnalysisFramework.DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode(Target);
 
@@ -587,7 +588,7 @@ namespace ILCompiler.DependencyAnalysis
             _compilationModuleGroup.AddCompilationRoots(new RootingServiceProvider(graph, this));
         }
 
-        private class RootingServiceProvider : IRootingServiceProvider
+        protected class RootingServiceProvider : IRootingServiceProvider
         {
             private DependencyAnalyzerBase<NodeFactory> _graph;
             private NodeFactory _factory;
