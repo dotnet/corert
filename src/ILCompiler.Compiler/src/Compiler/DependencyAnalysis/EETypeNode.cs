@@ -8,7 +8,6 @@ using Internal.Runtime;
 using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
-
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
 
@@ -235,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 dependencyList.Add(factory.VTable(_type), "VTable");
-                
+
                 return dependencyList;
             }
 
@@ -505,7 +504,7 @@ namespace ILCompiler.DependencyAnalysis
                 OutputVirtualSlots(factory, ref objData, implType, baseType);
 
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
-            
+
             for (int i = 0; i < virtualSlots.Count; i++)
             {
                 MethodDesc declMethod = virtualSlots[i];
@@ -544,7 +543,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if(_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
             {
                 objData.EmitPointerReloc(factory.EETypeOptionalFields(_optionalFieldsBuilder));
             }
@@ -601,7 +600,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }
-            
+
             if (EETypeBuilderHelpers.ComputeRequiresAlign8(_type))
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
@@ -647,7 +646,7 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: This method is untested (we don't support interfaces yet)
             if (_type.IsInterface)
                 return;
-            
+
             foreach (DefType itf in _type.RuntimeInterfaces)
             {
                 if (itf == factory.ICastableInterface)
@@ -693,7 +692,7 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
-        
+
         public override bool HasDynamicDependencies
         {
             get
@@ -714,7 +713,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void OnMarked(NodeFactory context)
         {
-            Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
+            //Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
         }
     }
 }
