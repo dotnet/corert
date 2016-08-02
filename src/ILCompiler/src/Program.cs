@@ -117,6 +117,7 @@ namespace ILCompiler
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
                 syntax.DefineOptionList("singlemethodgenericarg", ref _singleMethodGenericArgs, "Single method compilation: generic arguments to the method");
+                syntax.DefineOption("nodelog", ref _options.NodeLog, "Save detailed log of generated nodes");
 
                 syntax.DefineParameterList("in", ref inputFiles, "Input file(s) to compile");
             });
