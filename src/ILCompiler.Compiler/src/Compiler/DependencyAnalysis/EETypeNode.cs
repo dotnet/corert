@@ -8,7 +8,7 @@ using Internal.Runtime;
 using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
-
+using System.Text;
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
 
@@ -55,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
-    internal sealed partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode
+    internal sealed partial class EETypeNode : ObjectNode, ISymbolNode, IEETypeNode, IPrintableNode
     {
         private TypeDesc _type;
         private bool _constructed;
@@ -196,6 +196,73 @@ namespace ILCompiler.DependencyAnalysis
             return objData.ToObjectData();
         }
 
+        /// <summary>
+        /// Returns a formatted data string to be written to a log file
+        /// </summary>
+        /// <param name="factory">A node factory created during compilation</param>
+        public string GetFormattedData(NodeFactory factory)
+        {
+            TypeDesc currentType = _type;
+            IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(currentType).Slots;
+
+            StringBuilder formattedString = new StringBuilder();
+            formattedString.AppendLine("<" + this.GetType().Name + ">");
+            formattedString.AppendLine("\t<Name>");
+            formattedString.Append("\t");
+            formattedString.AppendLine(this.GetName());
+            formattedString.AppendLine("\t</Name>");
+
+            UInt16 flags;
+            try
+            {
+                flags = EETypeBuilderHelpers.ComputeFlags(_type);
+            }
+            catch
+            {
+                flags = 0;
+            }
+            formattedString.AppendLine("\t<Flags>");
+            var flagsSet = ComputeFlagsSet(flags);
+            formattedString.AppendLine("\t<BitValue>");
+            formattedString.AppendLine("\t\t0x" + flags.ToStringInvariant("x4"));
+            formattedString.AppendLine("\t</BitValue>");
+            foreach (EETypeFlags flag in flagsSet)
+            {
+                formattedString.AppendLine("\t<Flag>");
+                formattedString.Append("\t");
+                formattedString.AppendLine(flag.ToString());
+                formattedString.AppendLine("\t</Flag>");
+
+            }
+            formattedString.AppendLine();
+            formattedString.AppendLine("\t</Flags>");
+            formattedString.AppendLine("\t<Methods>");
+            
+            // Iterate through type methods
+            for (int i = 0; i < virtualSlots.Count; i++)
+            {
+                formattedString.AppendLine("\t\t<Method>");
+                MethodDesc declMethod = virtualSlots[i];
+                MethodDesc implMethod = _type.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
+                string staticDescription = implMethod.Signature.IsStatic ? " static" : string.Empty;
+                formattedString.Append("\t\t\t<Name>");
+                formattedString.Append(implMethod.Name);
+                formattedString.Append("</Name>");
+                formattedString.Append(staticDescription);
+                formattedString.AppendLine();
+                formattedString.Append("\t\t\t<Returns>");
+                formattedString.Append(implMethod.Signature.ReturnType);
+                formattedString.Append("</Returns>");
+                formattedString.AppendLine();
+                formattedString.AppendLine("\t\t</Method>");
+
+            }
+            formattedString.AppendLine("\t</Methods>");
+            formattedString.AppendLine("</" + this.GetType().Name + ">");
+            return formattedString.ToString();
+
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             if (_constructed)
@@ -235,7 +302,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 dependencyList.Add(factory.VTable(_type), "VTable");
-                
+
                 return dependencyList;
             }
 
@@ -505,7 +572,7 @@ namespace ILCompiler.DependencyAnalysis
                 OutputVirtualSlots(factory, ref objData, implType, baseType);
 
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(declType).Slots;
-            
+
             for (int i = 0; i < virtualSlots.Count; i++)
             {
                 MethodDesc declMethod = virtualSlots[i];
@@ -544,7 +611,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            if(_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
+            if (_optionalFieldsBuilder.IsAtLeastOneFieldUsed())
             {
                 objData.EmitPointerReloc(factory.EETypeOptionalFields(_optionalFieldsBuilder));
             }
@@ -601,7 +668,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }
-            
+
             if (EETypeBuilderHelpers.ComputeRequiresAlign8(_type))
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
@@ -647,7 +714,7 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: This method is untested (we don't support interfaces yet)
             if (_type.IsInterface)
                 return;
-            
+
             foreach (DefType itf in _type.RuntimeInterfaces)
             {
                 if (itf == factory.ICastableInterface)
@@ -693,7 +760,26 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
-        
+
+        List<EETypeFlags> ComputeFlagsSet(UInt16 flags)
+        {
+
+            List<EETypeFlags> flagsSet = new List<EETypeFlags>();
+
+
+            var typeFlags = Enum.GetValues(typeof(EETypeFlags));
+
+            foreach (EETypeFlags flag in typeFlags)
+            {
+                var flagValue = (UInt16)flag;
+                if ((flags & flagValue) == flagValue)
+                {
+                    flagsSet.Add(flag);
+                }
+            }
+            return flagsSet;
+        }
+
         public override bool HasDynamicDependencies
         {
             get

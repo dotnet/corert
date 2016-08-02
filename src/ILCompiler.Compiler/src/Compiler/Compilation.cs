@@ -26,6 +26,7 @@ namespace ILCompiler
         public string DgmlLog;
         public bool FullLog;
         public bool Verbose;
+        public string NodeLog;
     }
     
     public partial class Compilation
@@ -157,7 +158,7 @@ namespace ILCompiler
 
                 var nodes = _dependencyGraph.MarkedNodeList;
 
-                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain);
+                _cppWriter.OutputCode(nodes, _compilationModuleGroup.StartupCodeMain, _nodeFactory);
             }
             else
             {
@@ -176,6 +177,25 @@ namespace ILCompiler
                 {
                     DgmlWriter.WriteDependencyGraphToStream(dgmlOutput, _dependencyGraph);
                     dgmlOutput.Flush();
+                }
+            }
+            if (_options.NodeLog != null)
+            {
+                using(FileStream textOutput = new FileStream(_options.NodeLog, FileMode.Create))
+                {
+                    StreamWriter writer = new StreamWriter(textOutput);
+
+                    var nodes = _dependencyGraph.MarkedNodeList;
+                    
+                    foreach(DependencyNode node in nodes)
+                    {
+                        if(node is IPrintableNode)
+                        {
+                            writer.WriteLine( (node as IPrintableNode).GetFormattedData(_nodeFactory));
+                        }
+                    }
+                    writer.Flush();
+                    
                 }
             }
         }
