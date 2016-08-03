@@ -798,8 +798,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                Debug.Assert(false, "Can't delete this");
-                return methodIL.GetObject((int)pResolvedToken.token);
+                return null;
             }
         }
 
@@ -2397,8 +2396,20 @@ namespace Internal.JitInterface
                 pResult.kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
-                pResult.codePointerOrStubLookup.constLookup.addr =
-                    (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(directMethod));
+                MethodDesc runtimeDeterminedTarget;
+                if ((runtimeDeterminedTarget = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken)) != null &&
+                    runtimeDeterminedTarget.GetCanonMethodTarget(CanonicalFormKind.Specific) != runtimeDeterminedTarget)
+                {
+                    var richReloc = new RichRelocation(
+                        _compilation.NodeFactory.DependencyOnlyMethod(runtimeDeterminedTarget),
+                        _compilation.NodeFactory.MethodEntrypoint(directMethod));
+                    pResult.codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(richReloc);
+                }
+                else
+                {
+                    pResult.codePointerOrStubLookup.constLookup.addr =
+                        (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(directMethod));
+                }
 
                 if (pResult.exactContextNeedsRuntimeLookup)
                 {
@@ -2409,17 +2420,25 @@ namespace Internal.JitInterface
                 }
                 else
                 {
+                    RichRelocation reloc = null;
+
                     if (targetMethod.RequiresInstMethodDescArg())
                     {
-                        _nonRelocDependencies.Add(_compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
-                        pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
-                        pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetMethodGenericDictionary(concreteMethod));
+                        reloc = new RichRelocation(
+                            _compilation.NodeFactory.DependencyOnlyMethod(concreteMethod),
+                            _compilation.GetMethodGenericDictionary(concreteMethod));
                     }
                     else if (targetMethod.RequiresInstMethodTableArg())
                     {
-                        _nonRelocDependencies.Add(_compilation.NodeFactory.DependencyOnlyMethod(concreteMethod));
+                        reloc = new RichRelocation(
+                            _compilation.NodeFactory.DependencyOnlyMethod(concreteMethod),
+                            _compilation.GetTypeGenericDictionary(concreteMethod.OwningType));
+                    }
+
+                    if (reloc != null)
+                    {
                         pResult.instParamLookup.accessType = InfoAccessType.IAT_VALUE;
-                        pResult.instParamLookup.addr = (void*)ObjectToHandle(_compilation.GetTypeGenericDictionary(concreteMethod.OwningType));
+                        pResult.instParamLookup.addr = (void*)ObjectToHandle(reloc);
                     }
                 }
 
@@ -2762,6 +2781,13 @@ namespace Internal.JitInterface
                         throw new NotImplementedException("RuntimeFieldHandle is not implemented");
                     }
 
+                    var richTargetObject = targetObject as RichRelocation;
+                    if (richTargetObject != null)
+                    {
+                        _nonRelocDependencies.Add(richTargetObject.TargetDependencyNode);
+                        targetObject = richTargetObject.TargetArtifactNode;
+                    }
+                    
                     relocTarget = (ISymbolNode)targetObject;
                     break;
             }
@@ -2804,6 +2830,18 @@ namespace Internal.JitInterface
                 flags.corJitFlags2 |= CorJitFlag2.CORJIT_FLG2_REVERSE_PINVOKE;
 
             return (uint)sizeof(CORJIT_FLAGS);
+        }
+
+        private class RichRelocation
+        {
+            public readonly object TargetDependencyNode;
+            public readonly ISymbolNode TargetArtifactNode;
+
+            public RichRelocation(object dependency, ISymbolNode artifact)
+            {
+                TargetDependencyNode = dependency;
+                TargetArtifactNode = artifact;
+            }
         }
     }
 }
