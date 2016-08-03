@@ -1342,15 +1342,20 @@ namespace System.Runtime.InteropServices
         {
             return obj.QueryInterface_NoAddRef_Internal(
                 typeHnd);
-        }
-
+        }     
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType, RuntimeTypeHandle existingType = default(RuntimeTypeHandle))
+        public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType, RuntimeTypeHandle existingType)
         {
             return obj.GetDynamicAdapter(requestedType, existingType);
         }
 
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType)
+        {
+            return obj.GetDynamicAdapter(requestedType,default(RuntimeTypeHandle));
+        }
+        
         #region "PInvoke Delegate"
 
 #if !CORECLR

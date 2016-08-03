@@ -572,9 +572,7 @@ namespace System.Runtime.InteropServices
     {
         internal delegate int AddrOfGetCustomProperty(System.IntPtr pComThis, HSTRING unsafe_name, IntPtr __IntPtr__unsafe_customProperty);
         internal delegate int AddrOfGetIndexedProperty(System.IntPtr pComThis, HSTRING unsafe_name, TypeName unsafe_type, IntPtr __IntPtr__unsafe_customProperty);
-#if !RHTESTCL
-        internal delegate int AddrOfTarget19(IntPtr p0, IntPtr p1, Windows.Foundation.AsyncStatus p2);
-#endif // !RHTESTCL
+        internal delegate int AddrOfTarget19(IntPtr p0, IntPtr p1, int p2);
     }
 #endif // !CORECLR && ENABLE_WINRT
 
