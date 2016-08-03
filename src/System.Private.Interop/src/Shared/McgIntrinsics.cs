@@ -490,6 +490,12 @@ namespace System.Runtime.InteropServices
             return default(IntPtr);
         }
 
+        internal static IntPtr VirtualAddrOf<T>(object o, int methodIndex)
+        {
+            // This method is implemented elsewhere in the toolchain
+            return System.IntPtr.Zero;
+        }
+
         // Apart from AddRef , Release and QI there are lot other functions with same
         // signature but different semantics.So keeping AddrOfTarget1 , AddrOfTarget4 around even though
         // they have the same signature as AddrOfAddRef and AddrOfQueryInterface

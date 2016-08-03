@@ -460,5 +460,15 @@ namespace System.Runtime.InteropServices
         {
             System.Threading.LowLevelThread.RestoreReentrantWaits();
         }
+
+        public static IntPtr MemAlloc(UIntPtr sizeInBytes)
+        {
+            return Interop.MemAlloc(sizeInBytes);
+        }
+
+        public static void MemFree(IntPtr allocatedMemory)
+        {
+            Interop.MemFree(allocatedMemory);
+        }
     }
 }
