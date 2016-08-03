@@ -1735,7 +1735,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        static int Invoke(System.IntPtr pComThis, System.IntPtr _asyncInfo, Windows.Foundation.AsyncStatus asyncStatus)
+        static int Invoke(System.IntPtr pComThis, System.IntPtr _asyncInfo, int asyncStatus)
         {
             int hr = Interop.COM.S_OK;
 
