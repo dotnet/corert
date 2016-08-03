@@ -14,6 +14,52 @@ namespace Internal.NativeFormat
 {
     static public class TypeHashingAlgorithms
     {
+        public struct HashCodeBuilder
+        {
+            private int _hash1;
+            private int _hash2;
+            private int _numCharactersHashed;
+
+            public HashCodeBuilder(string seed)
+            {
+                _hash1 = 0x6DA3B944;
+                _hash2 = 0;
+                _numCharactersHashed = 0;
+
+                Append(seed);
+            }
+
+            public void Append(string src)
+            {
+                if (src.Length == 0)
+                    return;
+
+                int startIndex = 0;
+                if ((_numCharactersHashed & 1) == 1)
+                {
+                    _hash2 = (_hash2 + _rotl(_hash2, 5)) ^ src[0];
+                    startIndex = 1;
+                }
+
+                for (int i = startIndex; i < src.Length; i += 2)
+                {
+                    _hash1 = (_hash1 + _rotl(_hash1, 5)) ^ src[i];
+                    if ((i + 1) < src.Length)
+                        _hash2 = (_hash2 + _rotl(_hash2, 5)) ^ src[i + 1];
+                }
+
+                _numCharactersHashed += src.Length;
+            }
+
+            public int ToHashCode()
+            {
+                int hash1 = _hash1 + _rotl(_hash1, 8);
+                int hash2 = _hash2 + _rotl(_hash2, 8);
+
+                return hash1 ^ hash2;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int _rotl(int value, int shift)
         {
