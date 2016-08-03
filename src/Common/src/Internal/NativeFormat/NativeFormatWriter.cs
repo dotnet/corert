@@ -382,6 +382,18 @@ namespace Internal.NativeFormat
             UnsignedConstant vertex = new UnsignedConstant(value);
             return Unify(vertex);
         }
+
+        public Vertex GetTuple(Vertex item1, Vertex item2)
+        {
+            Tuple vertex = new Tuple(item1, item2);
+            return Unify(vertex);
+        }
+
+        public Vertex GetTuple(Vertex item1, Vertex item2, Vertex item3)
+        {
+            Tuple vertex = new Tuple(item1, item2, item3);
+            return Unify(vertex);
+        }
     }
 
     class PlacedVertex : Vertex
@@ -428,6 +440,52 @@ namespace Internal.NativeFormat
         }
     }
 
+    class Tuple : Vertex
+    {
+        private Vertex _item1;
+        private Vertex _item2;
+        private Vertex _item3;
+
+        public Tuple(Vertex item1, Vertex item2, Vertex item3 = null)
+        {
+            _item1 = item1;
+            _item2 = item2;
+            _item3 = item3;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            _item1.Save(writer);
+            _item2.Save(writer);
+            if (_item3 != null)
+                _item3.Save(writer);
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = _item1.GetHashCode() * 93481 + _item2.GetHashCode() + 3492;
+            if (_item3 != null)
+                hash += (hash << 7) + _item3.GetHashCode() * 34987 + 213;
+            return hash;
+        }
+
+        public override bool Equals(object obj)
+        {
+            Tuple other = obj as Tuple;
+            if (other == null)
+                return false;
+
+            return Object.Equals(_item1, other._item1) &&
+                Object.Equals(_item2, other._item2) &&
+                Object.Equals(_item3, other._item3);
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     class VertexHashtable : Vertex
     {
         struct Entry
