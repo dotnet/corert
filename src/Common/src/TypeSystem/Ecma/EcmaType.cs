@@ -49,18 +49,26 @@ namespace Internal.TypeSystem.Ecma
         public override int GetHashCode()
         {
             if (_hashcode != 0)
-            {
                 return _hashcode;
-            }
-            int nameHash = TypeHashingAlgorithms.ComputeNameHashCode(this.GetFullName());
+            return InitializeHashCode();
+        }
+
+        private int InitializeHashCode()
+        {
             TypeDesc containingType = ContainingType;
             if (containingType == null)
             {
-                _hashcode = nameHash;
+                string ns = Namespace;
+                var hashCodeBuilder = new TypeHashingAlgorithms.HashCodeBuilder(ns);
+                if (ns.Length > 0)
+                    hashCodeBuilder.Append(".");
+                hashCodeBuilder.Append(Name);
+                _hashcode = hashCodeBuilder.ToHashCode();
             }
             else
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNestedTypeHashCode(containingType.GetHashCode(), nameHash);
+                _hashcode = TypeHashingAlgorithms.ComputeNestedTypeHashCode(
+                    containingType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
             }
 
             return _hashcode;
@@ -73,11 +81,6 @@ namespace Internal.TypeSystem.Ecma
                 return _handle;
             }
         }
-
-        // TODO: Use stable hashcode based on the type name?
-        // public override int GetHashCode()
-        // {
-        // }
 
         public override TypeSystemContext Context
         {
