@@ -203,6 +203,9 @@ namespace System
                 GenerateExceptionInformationForDump(exception, IntPtr.Zero);
             }
 
+            if (Interop.mincore.IsDebuggerPresent())
+                Debug.DebugBreak();
+
             uint errorCode = 0x80004005; // E_FAIL
             // To help enable testing to bucket the failures we choose one of the following as errorCode:
             // * RVA of EETypePtr if it is an unhandled managed exception
