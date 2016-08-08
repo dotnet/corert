@@ -653,6 +653,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
       <Link>Internal\Runtime\EEType.Constants.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs">
+      <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
+    </Compile>
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="CoverageSupport.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->

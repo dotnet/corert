@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Core.NonPortable;
 
@@ -113,7 +114,7 @@ namespace System
                 IntPtr rawEEType = eeType.RawValue;
                 IntPtr moduleBase = RuntimeImports.RhGetModuleFromEEType(rawEEType);
                 uint rva = (uint)(rawEEType.ToInt64() - moduleBase.ToInt64());
-                s = "EETypeRva:0x" + rva.ToString("x8");
+                s = "EETypeRva:0x" + rva.LowLevelToString();
 
                 ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.CallbacksIfAvailable;
                 if (callbacks != null)
