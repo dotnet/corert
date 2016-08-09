@@ -49,7 +49,9 @@
       <Link>LowLevelDictionary.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\TypeLoader\ExternalReferencesTable.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\LowLevelStringConverter.cs" >
+      <Link>LowLevelStringConverter.cs</Link>
+    </Compile>
     <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderExtensions.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataTable.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
