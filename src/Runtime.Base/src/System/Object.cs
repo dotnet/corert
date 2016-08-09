@@ -14,6 +14,7 @@
 
 using System.Runtime;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 // TODO: remove when m_pEEType becomes EETypePtr
 using EEType = Internal.Runtime.EEType;
@@ -75,5 +76,20 @@ namespace System
             fixed (EEType** ptr = &m_pEEType)
                 return *(int*)(ptr + 1);
         }
+
+#if CORERT
+        private class RawData
+        {
+// Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
+#pragma warning disable 649
+            public byte Data;
+#pragma warning restore
+        }
+
+        internal ref byte GetRawData()
+        {
+            return ref Unsafe.As<RawData>(this).Data;
+        }
+#endif
     }
 }

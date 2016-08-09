@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.Versioning;
-
 #if BIT64
 using nint = System.Int64;
 #else
@@ -24,7 +22,6 @@ namespace System.Runtime.CompilerServices
     {
 #if CORERT
         [Intrinsic]
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SizeOf<T>()
         {
@@ -39,7 +36,6 @@ namespace System.Runtime.CompilerServices
         /// Casts the given object to the specified type, performs no dynamic type checking.
         /// </summary>
         [Intrinsic]
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T As<T>(Object value) where T : class
         {
@@ -54,7 +50,6 @@ namespace System.Runtime.CompilerServices
         /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
         /// </summary>
         [Intrinsic]
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref TTo As<TFrom, TTo>(ref TFrom source)
         {
@@ -66,7 +61,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ref T AddRaw<T>(ref T source, nint rawOffset)
         {
@@ -79,7 +73,6 @@ namespace System.Runtime.CompilerServices
             // ret
         }
 
-        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
         {

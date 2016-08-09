@@ -201,7 +201,7 @@ namespace System.Runtime
         // Unbox helpers with RyuJIT conventions
         //
         [RuntimeExport("RhUnbox2")]
-        static public unsafe void* RhUnbox2(EETypePtr pUnboxToEEType, Object obj)
+        static public unsafe ref byte RhUnbox2(EETypePtr pUnboxToEEType, Object obj)
         {
             EEType * ptrUnboxToEEType = (EEType *)pUnboxToEEType.ToPointer();
             if (obj.EEType != ptrUnboxToEEType)
@@ -212,32 +212,18 @@ namespace System.Runtime
                     throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
             }
-
-            fixed (void* pObject = &obj.m_pEEType)
-            {
-                // CORERT-TODO: This code has GC hole - the method return type should really be byref.
-                // Requires byref returns in C# to fix cleanly (https://github.com/dotnet/roslyn/issues/118)
-                return (IntPtr*)pObject + 1;
-            }
+            return ref obj.GetRawData();
         }
 
         [RuntimeExport("RhUnboxNullable")]
-        static public unsafe void RhUnboxNullable(ref Hack_o_p data, EETypePtr pUnboxToEEType, Object obj)
+        static public unsafe void RhUnboxNullable(ref byte data, EETypePtr pUnboxToEEType, Object obj)
         {
             EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
-
-            // HACK: we would really want to take the address of o here,
-            // but the rules of the C# language don't let us do that,
-            // so we arrive at the same result by taking the address of p
-            // and going back one pointer-sized unit
-            fixed (IntPtr* pData = &data.p)
+            if ((obj != null) && (obj.EEType != ptrUnboxToEEType->NullableType))
             {
-                if ((obj != null) && (obj.EEType != ptrUnboxToEEType->NullableType))
-                {
-                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
-                }
-                InternalCalls.RhUnbox(obj, pData - 1, ptrUnboxToEEType);
+                throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
+            InternalCalls.RhUnbox(obj, ref data, ptrUnboxToEEType);
         }
 #endif // CORERT
 

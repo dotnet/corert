@@ -49,31 +49,32 @@ namespace Internal.IL
             if (owningType == null)
                 return null;
 
-            string methodName = method.Name;
-
-            if (methodName == "UncheckedCast" && owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices")
+            switch (owningType.Name)
             {
-                return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else
-            if (methodName == "DebugBreak" && owningType.Name == "Debug" && owningType.Namespace == "System.Diagnostics")
-            {
-                return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.break_, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else
-            if ((methodName == "CompareExchange" || methodName == "Exchange") && method.HasInstantiation && owningType.Name == "Interlocked" && owningType.Namespace == "System.Threading")
-            {
-                // TODO: Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
-                return InterlockedIntrinsic.EmitIL(method);
-            }
-            else
-            if (methodName == "EETypePtrOf" && owningType.Name == "EETypePtr" && owningType.Namespace == "System")
-            {
-                return EETypePtrOfIntrinsic.EmitIL(method);
-            }
-            else if (owningType.Name == "InvokeUtils" && owningType.Namespace == "System")
-            {
-                return InvokeUtilsIntrinsics.EmitIL(method);
+                case "Unsafe":
+                    {
+                        if (owningType.Namespace == "System.Runtime.CompilerServices")
+                            return UnsafeIntrinsics.EmitIL(method);
+                    }
+                    break;
+                case "Debug":
+                    {
+                        if (owningType.Namespace == "System.Diagnostics" && method.Name == "DebugBreak")
+                            return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.break_, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
+                    }
+                    break;
+                case "EETypePtr":
+                    {
+                        if (owningType.Namespace == "System" && method.Name == "EETypePtrOf")
+                            return EETypePtrOfIntrinsic.EmitIL(method);
+                    }
+                    break;
+                case "InvokeUtils":
+                    {
+                        if (owningType.Namespace == "System")
+                            return InvokeUtilsIntrinsics.EmitIL(method);
+                    }
+                    break;
             }
 
             return null;

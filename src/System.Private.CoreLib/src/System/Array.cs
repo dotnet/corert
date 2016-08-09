@@ -35,6 +35,11 @@ namespace System
 #pragma warning disable 649
         // This field should be the first field in Array as the runtime/compilers depend on it
         private int _numComponents;
+#if CORERT && BIT64
+        //  The field '{blah}' is never used
+#pragma warning disable 0169
+        private int _padding;
+#endif
 #pragma warning restore
 
 #if BIT64
@@ -199,6 +204,20 @@ namespace System
 #endif
         }
 
+#if CORERT
+        private class RawSzArrayData : Array
+        {
+// Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
+#pragma warning disable 649
+            public byte Data;
+#pragma warning restore
+        }
+
+        internal ref byte GetRawSzArrayData()
+        {
+            return ref Unsafe.As<RawSzArrayData>(this).Data;
+        }
+#endif
 
         //public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array) {
         //    if (array == null) {
