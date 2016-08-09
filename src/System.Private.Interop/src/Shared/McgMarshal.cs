@@ -1256,7 +1256,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowFailed(int hr, System.RuntimeTypeHandle typeHnd)
+        public static void ThrowOnExternalCallFailed(int hr, System.RuntimeTypeHandle typeHnd)
         {
             bool isWinRTScenario
 #if ENABLE_WINRT
