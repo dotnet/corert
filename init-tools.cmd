@@ -12,7 +12,7 @@ set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSI
 set PROJECT_JSON_PATH=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
 set PROJECT_JSON_FILE=%PROJECT_JSON_PATH%\project.json
 set PROJECT_JSON_CONTENTS={ "dependencies": { "Microsoft.DotNet.BuildTools": "%BUILDTOOLS_VERSION%" }, "frameworks": { "dnxcore50": { } } }
-set BUILD_TOOLS_SEMAPHORE=%PROJECT_JSON_PATH%\init-tools.completed
+set BUILD_TOOLS_SEMAPHORE=%PROJECT_JSON_PATH%\init-tools-rev.completed
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
@@ -41,21 +41,21 @@ set DOTNET_ZIP_NAME=dotnet-dev-win-x64.%DOTNET_VERSION%.zip
 set DOTNET_REMOTE_PATH=https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/%DOTNET_VERSION%/%DOTNET_ZIP_NAME%
 set DOTNET_LOCAL_PATH=%DOTNET_PATH%%DOTNET_ZIP_NAME%
 echo Installing '%DOTNET_REMOTE_PATH%' to '%DOTNET_LOCAL_PATH%' >> "%INIT_TOOLS_LOG%"
-powershell -NoProfile -ExecutionPolicy unrestricted -Command "(New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%') } else { (New-Object -com shell.application).namespace('%DOTNET_PATH%').CopyHere((new-object -com shell.application).namespace('%DOTNET_LOCAL_PATH%').Items(),16) }" >> "%INIT_TOOLS_LOG%"
+powershell -NoProfile -ExecutionPolicy unrestricted -Command "$retryCount = 0; $success = $false; do { try { (New-Object Net.WebClient).DownloadFile('%DOTNET_REMOTE_PATH%', '%DOTNET_LOCAL_PATH%'); $success = $true; } catch { if ($retryCount -ge 6) { throw; } else { $retryCount++; Start-Sleep -Seconds (5 * $retryCount); } } } while ($success -eq $false); Add-Type -Assembly 'System.IO.Compression.FileSystem' -ErrorVariable AddTypeErrors; if ($AddTypeErrors.Count -eq 0) { [System.IO.Compression.ZipFile]::ExtractToDirectory('%DOTNET_LOCAL_PATH%', '%DOTNET_PATH%') } else { (New-Object -com shell.application).namespace('%DOTNET_PATH%').CopyHere((new-object -com shell.application).namespace('%DOTNET_LOCAL_PATH%').Items(),16) }" >> "%INIT_TOOLS_LOG%"
 if NOT exist "%DOTNET_LOCAL_PATH%" (
   echo ERROR: Could not install dotnet cli correctly. See '%INIT_TOOLS_LOG%' for more details.
-  goto :EOF
+  exit /b 1
 )
 
 :afterdotnetrestore
 
 if exist "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
 echo Restoring BuildTools version %BUILDTOOLS_VERSION%...
-echo Running: "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
-call "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
+echo Running: "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
+call "%DOTNET_CMD%" restore "%PROJECT_JSON_FILE%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" >> "%INIT_TOOLS_LOG%"
 if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
   echo ERROR: Could not restore build tools correctly. See '%INIT_TOOLS_LOG%' for more details.
-  goto :EOF
+  exit /b 1
 )
 
 :afterbuildtoolsrestore
@@ -63,6 +63,29 @@ if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
 echo Initializing BuildTools ...
 echo Running: "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
 call "%BUILD_TOOLS_PATH%init-tools.cmd" "%~dp0" "%DOTNET_CMD%" "%TOOLRUNTIME_DIR%" >> "%INIT_TOOLS_LOG%"
+
+:: Override Roslyn with newer version. Ideally, we would pick up the compiler update via buildtools update. But new buildtools 
+:: require new CLI as well that we cannot pick up right now because of it is missing the native compilation driver.
+
+set ROSLYN_VERSION_OVERRIDE=2.0.0-beta3
+
+set ROSLYN_PACKAGE=%PACKAGES_DIR%Microsoft.Net.Compilers\%ROSLYN_VERSION_OVERRIDE%\
+
+set ROSLYN_JSON_FILE=%TOOLRUNTIME_DIR%\net45\roslyn\project.json
+set ROSLYN_JSON_CONTENTS={ "dependencies": { "Microsoft.Net.Compilers": "%ROSLYN_VERSION_OVERRIDE%" }, "frameworks": { "net46": { } } }
+echo %ROSLYN_JSON_CONTENTS% > "%ROSLYN_JSON_FILE%"
+
+set ROSLYN_SOURCE=https://api.nuget.org/v3/index.json
+
+echo Restoring Microsoft.Net.Compilers version %ROSLYN_VERSION_OVERRIDE%...
+echo Running: "%DOTNET_CMD%" restore "%ROSLYN_JSON_FILE%" --packages %PACKAGES_DIR% --source %ROSLYN_SOURCE% >> "%INIT_TOOLS_LOG%"
+call "%DOTNET_CMD%" restore "%ROSLYN_JSON_FILE%" --packages %PACKAGES_DIR% --source "%ROSLYN_SOURCE%" >> "%INIT_TOOLS_LOG%"
+if NOT exist "%ROSLYN_PACKAGE%tools\csc.exe" (
+  echo ERROR: Could not restore build tools correctly. See '%INIT_TOOLS_LOG%' for more details.
+  exit /b 1
+)
+
+Robocopy "%ROSLYN_PACKAGE%." "%TOOLRUNTIME_DIR%\net45\roslyn\." /E >> "%INIT_TOOLS_LOG%"
 
 :: Create sempahore file
 echo Done initializing tools.

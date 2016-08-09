@@ -264,7 +264,7 @@ namespace System.Runtime
         internal static extern void RhSpinWait(int iterations);
 
         // Yield the cpu to another thread ready to process, if one is available.
-        [DllImport(RuntimeLibrary, EntryPoint = "RhYield", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(RuntimeLibrary, EntryPoint = "RhYield", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern int _RhYield();
         internal static bool RhYield() { return (_RhYield() != 0); }
 
@@ -469,7 +469,7 @@ namespace System.Runtime
         internal static extern void RhCallDescrWorker(IntPtr callDescr);
 
         // For Managed to Native calls
-        [DllImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker")]
+        [DllImport(RuntimeLibrary, EntryPoint = "RhCallDescrWorker", ExactSpelling = true)]
         internal static extern void RhCallDescrWorkerNative(IntPtr callDescr);
 
         // Moves memory from smem to dmem. Size must be a positive value.

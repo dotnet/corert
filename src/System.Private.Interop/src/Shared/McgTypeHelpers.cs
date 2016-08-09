@@ -685,7 +685,7 @@ namespace System.Runtime.InteropServices
         internal static string GetDisplayName(this RuntimeTypeHandle handle)
         {
 #if ENABLE_WINRT
-            return Internal.Reflection.Execution.PayForPlayExperience.MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(Type.GetTypeFromHandle(handle));
+            return Internal.Runtime.Augments.RuntimeAugments.GetLastResortString(handle);
 #else
             return handle.ToString();
 #endif

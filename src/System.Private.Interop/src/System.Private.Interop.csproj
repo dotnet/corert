@@ -8,6 +8,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);TARGET_CORE_API_SET</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
@@ -20,7 +23,7 @@
     
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Threading\src\System.Private.Threading.csproj" />
-    <ProjectReference Include="..\..\System.Private.Reflection\src\System.Private.Reflection.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection\src\System.Private.Reflection.csproj" />    
 
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Handles.dll" />
@@ -95,7 +98,9 @@
     <Compile Include="Shared\McgTypeHelpers.cs" />    
     <Compile Include="Shared\RCWWalker.cs" />
     <Compile Include="Shared\StandardInterfaces.cs" />
-    <Compile Include="Shared\StringPool.cs" />      
+    <Compile Include="Shared\StringPool.cs" /> 
+    <Compile Include="Shared\McgWindowsRuntimeVersionAttribute.cs" />    
+    <Compile Include="Shared\WindowsRuntimeMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffset.cs" />
@@ -149,13 +154,69 @@
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\VariantWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\ComWeakReferenceHelpers.cs" />
+    <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
+    <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
     <Compile Include="Interop\Interop.Memory.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <!--TODO:Disable under FEATURE_COMN switch , now we need these to compile S.P.Interop.dll-->
-    <Compile Include="System\Runtime\InteropServices\ComTypes\statstg.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\advf.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\bindopts.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\bindptr.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\callconv.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\connectdata.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\datadir.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\desckind.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\dispparams.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\dvaspect.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\elemdesc.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\excepinfo.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\filetime.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\formatetc.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\funcdesc.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\funcflags.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\funckind.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IAdviseSink.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\idldesc.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\idlflag.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumFormatETC.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\impltypeflags.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\invokekind.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\IStream.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\libflags.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\paramdesc.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\paramflag.cs" />  
+    <Compile Include="System\Runtime\InteropServices\ComTypes\statdata.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\statstg.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\syskind.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\typeattr.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\typedesc.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\typeflags.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\typekind.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\typelibattr.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\vardesc.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\varflags.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComTypes\varkind.cs" />       
+        
   </ItemGroup>
 
   <!-- TODO: Unix port https://github.com/dotnet/corert/issues/669
@@ -171,7 +232,28 @@
     <Compile Include="Interop\Interop.COM.Windows.cs" />
     <Compile Include="Interop\Interop.Common.Windows.cs" /> 
     <Compile Include="System\__HResults.cs" />
+    <Compile Include="System\DllNotFoundException.cs" />    
   </ItemGroup>
+  
+
+   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">     
+    <Compile Include="InteropCallbacks.cs"/>
+    <Compile Include="WinRT\ExceptionHelpers.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\DefaultInterfaceAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttribute.cs" />        
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReadOnlyArrayAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeImportAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WriteOnlyArrayAttribute.cs" />
+    <Compile Include="System\Reflection\DispatchProxy.cs" />
+    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
+    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
+    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
+  </ItemGroup> 
+
   
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsProjectKLibrary)' != 'true'">
     <Compile Include="..\..\Common\src\Interop\Windows\mincore\Interop.MemAllocFree.cs">
@@ -205,6 +287,5 @@
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

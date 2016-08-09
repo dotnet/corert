@@ -40,6 +40,16 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs">
+      <Link>MetadataTypeHashingAlgorithms.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeHashingAlgorithms.cs">
+      <Link>TypeHashingAlgorithms.cs</Link>
+    </Compile>
+    <Compile Include="HashCodeTests.cs" />
     <Compile Include="RoundTripTests.cs" />
   </ItemGroup>
   <ItemGroup>
