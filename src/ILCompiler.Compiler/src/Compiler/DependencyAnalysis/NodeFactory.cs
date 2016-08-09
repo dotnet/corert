@@ -97,7 +97,14 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    return new EETypeNode(type, false);
+                    if (type.IsGenericDefinition)
+                    {
+                        return new GenericDefinitionEETypeNode(type);
+                    }
+                    else
+                    {
+                        return new EETypeNode(type);
+                    }
                 }
                 else
                 {
@@ -112,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_compilationModuleGroup.ContainsType(type))
                 {
-                    return new EETypeNode(type, true);
+                    return new ConstructedEETypeNode(type);
                 }
                 else
                 {
