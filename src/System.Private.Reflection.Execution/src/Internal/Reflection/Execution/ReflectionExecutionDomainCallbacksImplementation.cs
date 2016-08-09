@@ -17,6 +17,8 @@ using global::Internal.Reflection.Core.Execution;
 using global::Internal.Reflection.Core.Execution.Binder;
 using global::Internal.Reflection.Execution.PayForPlayExperience;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.Reflection.Execution
 {
     //==========================================================================================================================
@@ -160,6 +162,13 @@ namespace Internal.Reflection.Execution
 
         public sealed override EnumInfo GetEnumInfoIfAvailable(Type enumType)
         {
+            // Handle the weird case of an enum type nested under a generic type that makes the
+            // enum itself generic.
+            if (enumType.IsConstructedGenericType)
+            {
+                enumType = enumType.GetGenericTypeDefinition();
+            }
+
             MetadataReader reader;
             TypeDefinitionHandle typeDefinitionHandle;
             if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(enumType.TypeHandle, out reader, out typeDefinitionHandle))
