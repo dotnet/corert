@@ -36,7 +36,7 @@ namespace ILCompiler.Compiler.CppCodeGen
                     }
                 }
                 // Assume ordering doesn't matter
-                else if (node is CppMethodCodeNode) _nodes.Add(node);
+                else _nodes.Add(node);
             }
 
             foreach (var node in _typeToNodeMap.Values)
