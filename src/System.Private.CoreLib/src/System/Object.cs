@@ -156,6 +156,21 @@ namespace System
         {
             return RuntimeImports.RhMemberwiseClone(this);
         }
+
+#if CORERT
+        private class RawData
+        {
+// Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
+#pragma warning disable 649
+            public byte Data;
+#pragma warning restore
+        }
+
+        internal ref byte GetRawData()
+        {
+            return ref Unsafe.As<RawData>(this).Data;
+        }
+#endif
     }
 }
 

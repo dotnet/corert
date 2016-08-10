@@ -130,6 +130,11 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Sometimes)]
         internal unsafe extern static void RhUnbox(object obj, void* pData, EEType* pUnboxToEEType);
 
+        [RuntimeImport(Redhawk.BaseName, "RhUnbox")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [ManuallyManaged(GcPollPolicy.Sometimes)]
+        internal unsafe extern static void RhUnbox(object obj, ref byte data, EEType* pUnboxToEEType);
+
         [RuntimeImport(Redhawk.BaseName, "RhpCopyObjectContents")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
