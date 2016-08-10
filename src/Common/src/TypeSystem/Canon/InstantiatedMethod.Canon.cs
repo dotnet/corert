@@ -24,11 +24,12 @@ namespace Internal.TypeSystem
             InstantiatedMethod canonicalMethodResult = GetCachedCanonValue(kind);
             if (canonicalMethodResult == null)
             {
-                bool needsChange;
-                Instantiation canonInstantiation = Context.ConvertInstantiationToCanonForm(Instantiation, kind, out needsChange);
-                if (needsChange)
+                bool instantiationChanged;
+                Instantiation canonInstantiation = Context.ConvertInstantiationToCanonForm(Instantiation, kind, out instantiationChanged);
+                MethodDesc openMethodOnCanonicalizedType = _methodDef.GetCanonMethodTarget(kind);
+
+                if (instantiationChanged || (openMethodOnCanonicalizedType != _methodDef))
                 {
-                    MethodDesc openMethodOnCanonicalizedType = _methodDef.GetCanonMethodTarget(kind);
                     canonicalMethodResult = Context.GetInstantiatedMethod(openMethodOnCanonicalizedType, canonInstantiation);
                 }
                 else
