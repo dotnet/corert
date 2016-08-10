@@ -163,7 +163,7 @@ namespace ILCompiler.DependencyAnalysis
             
             return objData.ToObjectData();
         }
-        
+
         /// <summary>
         /// Returns the offset within an EEType of the beginning of VTable entries
         /// </summary>
@@ -388,7 +388,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }
-            
+
             if (EETypeBuilderHelpers.ComputeRequiresAlign8(_type))
             {
                 flags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
@@ -434,7 +434,7 @@ namespace ILCompiler.DependencyAnalysis
             // TODO: This method is untested (we don't support interfaces yet)
             if (_type.IsInterface)
                 return;
-            
+
             foreach (DefType itf in _type.RuntimeInterfaces)
             {
                 if (itf == factory.ICastableInterface)
@@ -480,10 +480,10 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldsElement.ValueTypeFieldPadding, valueTypeFieldPaddingEncoded);
             }
         }
-        
+
         protected override void OnMarked(NodeFactory context)
         {
-            Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
+            //Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
         }
     }
 }

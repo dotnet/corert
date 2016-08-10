@@ -230,7 +230,9 @@ namespace Internal.IL
                 case StackValueKind.ObjRef: return "void*";
                 case StackValueKind.Float: return "double";
                 case StackValueKind.ByRef:
-                case StackValueKind.ValueType: return _writer.GetCppSignatureTypeName(type);
+                case StackValueKind.ValueType:
+                    return GetSignatureTypeNameAndAddReference(type);
+
                 default: throw new NotSupportedException();
             }
         }
@@ -241,7 +243,7 @@ namespace Internal.IL
             return "_" + (_currentTemp++).ToStringInvariant();
         }
 
-      /// <summary>
+        /// <summary>
         /// Push an expression named <paramref name="name"/> of kind <paramref name="kind"/>.
         /// </summary>
         /// <param name="kind">Kind of entry in stack</param>
@@ -293,7 +295,7 @@ namespace Internal.IL
             if ((constant != null) && (constant.IsCastNecessary(destType)) || !destType.IsValueType)
             {
                 Append("(");
-                Append(_writer.GetCppSignatureTypeName(destType));
+                Append(GetSignatureTypeNameAndAddReference(destType));
                 Append(")");
             }
         }
@@ -303,7 +305,7 @@ namespace Internal.IL
             if (dstType == StackValueKind.ByRef)
             {
                 Append("(");
-                Append(_writer.GetCppSignatureTypeName(srcType));
+                Append(GetSignatureTypeNameAndAddReference(srcType));
                 Append(")");
             }
             else
@@ -399,7 +401,7 @@ namespace Internal.IL
         /// </summary>
         private void Exdent()
         {
-            _builder.Exdent();   
+            _builder.Exdent();
         }
 
         private string GetVarName(int index, bool argument)
@@ -477,7 +479,26 @@ namespace Internal.IL
         public void Compile(CppMethodCodeNode methodCodeNodeNeedingCode)
         {
             FindBasicBlocks();
+            for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)
+            {
+                var parameterType = methodCodeNodeNeedingCode.Method.Signature[i];
+                AddTypeReference(parameterType, false);
+            }
 
+            var returnType = methodCodeNodeNeedingCode.Method.Signature.ReturnType;
+            if (!returnType.IsByRef)
+            {
+                AddTypeReference(returnType, true);
+            }
+            var owningType = methodCodeNodeNeedingCode.Method.OwningType;
+            if (methodCodeNodeNeedingCode.Method.IsNativeCallable || methodCodeNodeNeedingCode.Method.IsRuntimeExport || methodCodeNodeNeedingCode.Method.IsRuntimeImplemented)
+            {
+                AddTypeReference(owningType, true);
+            }
+            if (methodCodeNodeNeedingCode.Method.Signature.IsStatic)
+            {
+                AddTypeReference(owningType, true);
+            }
             ImportBasicBlocks();
 
             if (_sequencePoints != null && _sequencePoints[0].Document != null)
@@ -502,7 +523,8 @@ namespace Internal.IL
             for (int i = 0; i < _locals.Length; i++)
             {
                 AppendLine();
-                Append(_writer.GetCppSignatureTypeName(_locals[i].Type));
+                Append(GetSignatureTypeNameAndAddReference(_locals[i].Type));
+
                 Append(" ");
                 Append(GetVarName(i, false));
                 if (initLocals)
@@ -731,7 +753,7 @@ namespace Internal.IL
                 case "InitializeArray":
                     if (IsTypeName(method, "System.Runtime.CompilerServices", "RuntimeHelpers"))
                     {
-                        var fieldSlot = (LdTokenEntry<FieldDesc>) _stack.Pop();
+                        var fieldSlot = (LdTokenEntry<FieldDesc>)_stack.Pop();
                         var arraySlot = _stack.Pop();
 
                         var fieldDesc = fieldSlot.LdToken;
@@ -787,7 +809,7 @@ namespace Internal.IL
                 case "GetValueInternal":
                     if (IsTypeName(method, "System", "RuntimeTypeHandle"))
                     {
-                        var typeHandleSlot = (LdTokenEntry<TypeDesc>) _stack.Pop();
+                        var typeHandleSlot = (LdTokenEntry<TypeDesc>)_stack.Pop();
                         TypeDesc typeOfEEType = typeHandleSlot.LdToken;
                         PushExpression(StackValueKind.NativeInt, string.Concat("((intptr_t)", _writer.GetCppTypeName(typeOfEEType), "::__getMethodTable())"));
                         return true;
@@ -832,7 +854,7 @@ namespace Internal.IL
             Append(dimensionsTemp);
             Append(")");
             AppendSemicolon();
-       }
+        }
 
         private void ImportCall(ILOpcode opcode, int token)
         {
@@ -967,6 +989,7 @@ namespace Internal.IL
             {
                 needNewLine = true;
             }
+            AddTypeReference(method.OwningType, true);
 
             if (opcode == ILOpcode.newobj)
             {
@@ -987,7 +1010,7 @@ namespace Internal.IL
                         AddMethodReference(thunkMethod);
 
                         // Update stack with new name.
-                        ((ExpressionEntry) _stack[_stack.Top - 2]).Name = temp;
+                        ((ExpressionEntry)_stack[_stack.Top - 2]).Name = temp;
 
                         var sb = new CppGenerationBuffer();
                         AppendLine();
@@ -1008,7 +1031,7 @@ namespace Internal.IL
             {
                 // While waiting for C# return by ref, get this reference and insert it back
                 // if it is a delegate invoke.
-                ExpressionEntry v = (ExpressionEntry) _stack[_stack.Top - (methodSignature.Length + 1)];
+                ExpressionEntry v = (ExpressionEntry)_stack[_stack.Top - (methodSignature.Length + 1)];
                 Append("(*");
                 Append(_writer.GetCppTypeName(method.OwningType));
                 Append("::");
@@ -1188,7 +1211,7 @@ namespace Internal.IL
             else
             {
                 Debug.Assert(value >= Int32.MinValue && value <= Int32.MaxValue, "Value too large for an Int32.");
-                _stack.Push(new Int32ConstantEntry(checked((int) value)));
+                _stack.Push(new Int32ConstantEntry(checked((int)value)));
             }
         }
 
@@ -1631,7 +1654,7 @@ namespace Internal.IL
 
             PushTemp(GetStackValueKind(type));
             Append("(");
-            Append(_writer.GetCppSignatureTypeName(type));
+            Append(GetSignatureTypeNameAndAddReference(type));
             Append(")");
             Append(op);
             AppendSemicolon();
@@ -1683,8 +1706,8 @@ namespace Internal.IL
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
 
-                // TODO: Remove
-                _writer.GetCppSignatureTypeName(owningType);
+                GetSignatureTypeNameAndAddReference(owningType);
+
             }
 
             AppendSemicolon();
@@ -1696,7 +1719,7 @@ namespace Internal.IL
 
             AddFieldReference(field);
 
-            var thisPtr = isStatic ? InvalidEntry.Entry: _stack.Pop();
+            var thisPtr = isStatic ? InvalidEntry.Entry : _stack.Pop();
 
             TypeDesc owningType = field.OwningType;
             TypeDesc fieldType = field.FieldType;
@@ -1737,8 +1760,7 @@ namespace Internal.IL
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
 
-                // TODO: Remove
-                _writer.GetCppSignatureTypeName(owningType);
+                GetSignatureTypeNameAndAddReference(owningType);
             }
 
             AppendSemicolon();
@@ -1788,8 +1810,7 @@ namespace Internal.IL
                 Append(")->");
                 Append(_writer.GetCppFieldName(field));
 
-                // TODO: Remove
-                _writer.GetCppSignatureTypeName(owningType);
+                GetSignatureTypeNameAndAddReference(owningType);
             }
             Append(" = ");
             if (!fieldType.IsValueType)
@@ -1811,7 +1832,8 @@ namespace Internal.IL
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
-
+            else
+                AddTypeReference(type, false);
             var addr = _stack.Pop();
 
             PushTemp(GetStackValueKind(type), type);
@@ -1833,6 +1855,8 @@ namespace Internal.IL
         {
             if (type == null)
                 type = GetWellKnownType(WellKnownType.Object);
+            else
+                AddTypeReference(type, false);
 
             var value = _stack.Pop();
             var addr = _stack.Pop();
@@ -1900,13 +1924,12 @@ namespace Internal.IL
         private void ImportInitObj(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
-
             var addr = _stack.Pop();
             AppendLine();
             Append("memset((void*)");
             Append(addr);
             Append(",0,sizeof(");
-            Append(_writer.GetCppSignatureTypeName(type));
+            Append(GetSignatureTypeNameAndAddReference(type));
             Append("))");
             AppendSemicolon();
         }
@@ -2070,6 +2093,8 @@ namespace Internal.IL
             // ldelem_ref
             if (elementType == null)
                 elementType = GetWellKnownType(WellKnownType.Object);
+            else
+                AddTypeReference(elementType, true);
 
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
@@ -2107,7 +2132,8 @@ namespace Internal.IL
             // stelem_ref
             if (elementType == null)
                 elementType = GetWellKnownType(WellKnownType.Object);
-
+            else
+                AddTypeReference(elementType, true);
             var value = _stack.Pop();
             var index = _stack.Pop();
             var arrayPtr = _stack.Pop();
@@ -2292,7 +2318,7 @@ namespace Internal.IL
             else if (ldtokenValue is FieldDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeFieldHandle;
-                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc) ldtokenValue, GetWellKnownType(ldtokenKind));
+                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, GetWellKnownType(ldtokenKind));
             }
             else if (ldtokenValue is MethodDesc)
             {
@@ -2358,8 +2384,7 @@ namespace Internal.IL
         {
             var type = ResolveTypeToken(token);
 
-            // TODO: Remove
-            _writer.GetCppSignatureTypeName(type);
+            GetSignatureTypeNameAndAddReference(type);
 
             PushExpression(StackValueKind.Int32, "sizeof(" + _writer.GetCppTypeName(type) + ")");
         }
@@ -2437,13 +2462,33 @@ namespace Internal.IL
 
         private void AddTypeReference(TypeDesc type, bool constructed)
         {
+            AddTypeDependency(type, constructed);
+
+            foreach (var field in type.GetFields())
+            {
+                AddTypeDependency(field.FieldType, false);
+            }
+        }
+        private void AddTypeDependency(TypeDesc type, bool constructed)
+        {
+            if (type.IsPrimitive)
+            {
+                return;
+            }
+            else if (type.IsPointer || type.IsByRef)
+            {
+                Debug.Assert(type is ParameterizedType);
+                AddTypeDependency((type as ParameterizedType).ParameterType, constructed);
+                return;
+            }
             Object node;
 
             if (constructed)
                 node = _nodeFactory.ConstructedTypeSymbol(type);
             else
                 node = _nodeFactory.NecessaryTypeSymbol(type);
-
+            if (_dependencies.Contains(node))
+                return;
             _dependencies.Add(node);
         }
 
@@ -2472,10 +2517,17 @@ namespace Internal.IL
                 }
 
                 // TODO: Remove once the depedencies for static fields are tracked properly
-                _writer.GetCppSignatureTypeName(owningType);
-
+                GetSignatureTypeNameAndAddReference(owningType, true);
                 _dependencies.Add(node);
             }
+            AddTypeReference(field.FieldType, false);
+        }
+
+        private string GetSignatureTypeNameAndAddReference(TypeDesc type, bool constructed = true)
+        {
+            AddTypeReference(type, constructed);
+            return _writer.GetCppSignatureTypeName(type);
         }
     }
 }
+
