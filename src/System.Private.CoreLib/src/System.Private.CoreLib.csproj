@@ -327,6 +327,7 @@
     <Compile Include="System\Runtime\CompilerServices\EagerOrderedStaticConstructorAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\NetNativeToolsVersionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FakeElementAttribute.cs" />

@@ -36,8 +36,7 @@ namespace System.Threading
         public static unsafe float CompareExchange(ref float location1, float value, float comparand)
         {
             float ret;
-            fixed (float * pLocation = &location1)
-                *(int*)&ret = CompareExchange(ref *(int*)pLocation, *(int*)&value, *(int*)&comparand);
+            *(int*)&ret = CompareExchange(ref Unsafe.As<float, int>(ref location1), *(int*)&value, *(int*)&comparand);
             return ret;
         }
 
@@ -45,26 +44,22 @@ namespace System.Threading
         public static unsafe double CompareExchange(ref double location1, double value, double comparand)
         {
             double ret;
-            fixed (double * pLocation = &location1)
-                *(long*)&ret = CompareExchange(ref *(long*)pLocation, *(long*)&value, *(long*)&comparand);
+            *(long*)&ret = CompareExchange(ref Unsafe.As<double, long>(ref location1), *(long*)&value, *(long*)&comparand);
             return ret;
         }
 
         [Intrinsic]
-        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
-            // This method is implemented elsewhere in the toolchain for now
-            // Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
-            throw new PlatformNotSupportedException();
+            return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<T, Object>(ref location1), value, comparand));
         }
 
         [Intrinsic]
-        internal static T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class
         {
-            // This method is implemented elsewhere in the toolchain for now
-            // Replace with regular implementation once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
-            throw new PlatformNotSupportedException();
+            return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)(location1)), value, comparand));
         }
 
         [Intrinsic]
@@ -120,8 +115,7 @@ namespace System.Threading
         public static unsafe float Exchange(ref float location1, float value)
         {
             float ret;
-            fixed (float * pLocation = &location1)
-                *(int*)&ret = Exchange(ref *(int*)pLocation, *(int*)&value);
+            *(int*)&ret = Exchange(ref Unsafe.As<float, int>(ref location1), *(int*)&value);
             return ret;
         }
 
@@ -129,26 +123,22 @@ namespace System.Threading
         public static unsafe double Exchange(ref double location1, double value)
         {
             double ret;
-            fixed (double* pLocation = &location1)
-                *(long*)&ret = Exchange(ref *(long*)pLocation, *(long*)&value);
+            *(long*)&ret = Exchange(ref Unsafe.As<double, long>(ref location1), *(long*)&value);
             return ret;
         }
 
         [Intrinsic]
-        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
-            // This method is implemented elsewhere in the toolchain for now
-            // Implementat directly once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
-            throw new PlatformNotSupportedException();
+            return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<T, Object>(ref location1), value));
         }
 
         [Intrinsic]
-        internal static T Exchange<T>(IntPtr location1, T value) where T : class
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe T Exchange<T>(IntPtr location1, T value) where T : class
         {
-            // This method is implemented elsewhere in the toolchain for now
-            // Implementat directly once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
-            throw new PlatformNotSupportedException();
+            return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)(location1)), value));
         }
 
         [Intrinsic]

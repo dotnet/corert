@@ -767,24 +767,19 @@ namespace System.Runtime
         }
 
 #if CORERT
-        // CORERT-TODO: Remove once ref locals are available in C# (https://github.com/dotnet/roslyn/issues/118)
         [RuntimeImport(Redhawk.BaseName, "RhpAssignRef")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        static private unsafe extern void RhpAssignRef(IntPtr * address, object obj);
-
-        // Size of array header in number of IntPtr-sized elements
-        private const int ArrayBaseIndex = 2;
+        static private unsafe extern void RhpAssignRef(ref Object address, object obj);
 
         [RuntimeExport("RhpStelemRef")]
-        static public unsafe void StelemRef(Object array, int index, object obj)
+        static public unsafe void StelemRef(Array array, int index, object obj)
         {
             // This is supported only on arrays
             Debug.Assert(array.EEType->IsArray, "first argument must be an array");
 
-            if (index >= array.GetArrayLength())
+            if (index >= array.Length)
             {
-                Exception e = array.EEType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
-                throw e;
+                throw array.EEType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
             }
 
             if (obj != null)
@@ -805,25 +800,23 @@ namespace System.Runtime
                 }
 
                 // Both bounds and type check are ok.
-                fixed (void* pArray = &array.m_pEEType)
-                {
-                    RhpAssignRef((IntPtr*)pArray + ArrayBaseIndex + index, obj);
-                }
+
+                // Call write barrier directly. Assigning object reference would call slower checked write barrier.
+                ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
+                RhpAssignRef(ref Unsafe.Add(ref rawData, index), obj);
             }
             else
             {
-                fixed (void * pArray = &array.m_pEEType)
-                {
-                    // Storing null does not require write barrier
-                    *((IntPtr*)pArray + ArrayBaseIndex + index) = default(IntPtr);
-                }
+                // Storing null does not require write barrier
+                ref IntPtr rawData = ref Unsafe.As<byte, IntPtr>(ref array.GetRawSzArrayData());
+                Unsafe.Add(ref rawData, index) = default(IntPtr);
             }
         }
 
         [RuntimeExport("RhpLdelemaRef")]
-        static public unsafe void * LdelemaRef(Object array, int index, IntPtr elementType)
+        static public unsafe ref Object LdelemaRef(Array array, int index, IntPtr elementType)
         {
-            Debug.Assert(array.EEType->IsArray, "second argument must be an array");
+            Debug.Assert(array.EEType->IsArray, "first argument must be an array");
 
             EEType* elemType = (EEType*)elementType;
             EEType* arrayElemType = array.EEType->RelatedParameterType;
@@ -836,12 +829,8 @@ namespace System.Runtime
                 throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            fixed (void * pArray = &array.m_pEEType)
-            {
-                // CORERT-TODO: This code has GC hole - the method return type should really be byref.
-                // Requires byref returns in C# to fix cleanly (https://github.com/dotnet/roslyn/issues/118)
-                return (IntPtr*)pArray + ArrayBaseIndex + index;
-            }
+            ref Object rawData = ref Unsafe.As<byte, Object>(ref array.GetRawSzArrayData());
+            return ref Unsafe.Add(ref rawData, index);
         }
 #endif
 
