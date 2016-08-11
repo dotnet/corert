@@ -19,16 +19,5 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
-
-#if CORERT
-        internal static T UncheckedCast<T>(Object value) where T : class
-        {
-            // TODO: Replace all uses of RuntimeHelpers.UncheckedCast with Unsafe.As
-            return Unsafe.As<T>(value);
-        }
-#else
-        [Intrinsic]
-        internal static extern T UncheckedCast<T>(Object value) where T : class;
-#endif
     }
 }

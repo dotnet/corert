@@ -56,13 +56,6 @@ namespace System.Threading
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class
-        {
-            return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)(location1)), value, comparand));
-        }
-
-        [Intrinsic]
         public static object CompareExchange(ref object location1, object value, object comparand)
         {
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
@@ -132,13 +125,6 @@ namespace System.Threading
         public static T Exchange<T>(ref T location1, T value) where T : class
         {
             return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<T, Object>(ref location1), value));
-        }
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe T Exchange<T>(IntPtr location1, T value) where T : class
-        {
-            return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)(location1)), value));
         }
 
         [Intrinsic]
@@ -297,9 +283,6 @@ namespace System.Threading
             return CompareExchange<object>(ref location1, value, comparand);
         }
 
-        [Intrinsic]
-        internal static extern T CompareExchange<T>(IntPtr location1, T value, T comparand) where T : class;
-
         #endregion
 
         #region Exchange
@@ -381,9 +364,6 @@ namespace System.Threading
             // We have it here so that you can do "ldftn" on the method or reflection invoke it.
             return Exchange<T>(ref location1, value);
         }
-
-        [Intrinsic]
-        internal static extern T Exchange<T>(IntPtr location1, T value) where T : class;
 
         public static object Exchange(ref object location1, object value)
         {

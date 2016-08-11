@@ -58,9 +58,10 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhBox")]
-        public unsafe static object RhBox(EETypePtr pEEType, void* pData)
+        public unsafe static object RhBox(EETypePtr pEEType, ref byte data)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
+            int dataOffset = 0;
             object result;
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
@@ -68,12 +69,12 @@ namespace System.Runtime
             if (ptrEEType->IsNullable)
             {
                 // The boolean which indicates whether the value is null comes first in the Nullable struct.
-                if (!*(bool*)pData)
+                if (data == 0)
                     return null;
 
                 // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
                 // to the value embedded within the nullable.
-                pData = (byte*)pData + ptrEEType->NullableValueOffset;
+                dataOffset = ptrEEType->NullableValueOffset;
                 ptrEEType = ptrEEType->NullableType;
             }
 
@@ -87,34 +88,22 @@ namespace System.Runtime
             {
                 result = InternalCalls.RhpNewFast(ptrEEType);
             }
-            InternalCalls.RhpBox(result, pData);
+            InternalCalls.RhpBox(result, ref Unsafe.Add(ref data, dataOffset));
             return result;
         }
 
-        // this serves as a kind of union where:
-        // - the field o is used if the struct wraps a reference type
-        // - the field p is used together with pointer arithmetic if the struct is a valuetype
-        public struct Hack_o_p
-        {
-            internal Object o;
-            internal IntPtr p;
-        }
-
         [RuntimeExport("RhBoxAny")]
-        public unsafe static object RhBoxAny(ref Hack_o_p data, EETypePtr pEEType)
+        public unsafe static object RhBoxAny(ref byte data, EETypePtr pEEType)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
             if (ptrEEType->IsValueType)
             {
-                // HACK: we would really want to take the address of o here,
-                // but the rules of the C# language don't let us do that,
-                // so we arrive at the same result by taking the address of p
-                // and going back one pointer-sized unit
-                fixed (IntPtr* pData = &data.p)
-                    return RhBox(pEEType, pData - 1);
+                return RhBox(pEEType, ref data);
             }
             else
-                return data.o;
+            {
+                return Unsafe.As<byte, Object>(ref data);
+            }
         }
 
         private unsafe static bool UnboxAnyTypeCompare(EEType *pEEType, EEType *ptrUnboxToEEType)
@@ -151,52 +140,45 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhUnboxAny")]
-        public unsafe static void RhUnboxAny(object o, ref Hack_o_p data, EETypePtr pUnboxToEEType)
+        public unsafe static void RhUnboxAny(object o, ref byte data, EETypePtr pUnboxToEEType)
         {
             EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
             if (ptrUnboxToEEType->IsValueType)
             {
-                // HACK: we would really want to take the address of o here,
-                // but the rules of the C# language don't let us do that,
-                // so we arrive at the same result by taking the address of p
-                // and going back one pointer-sized unit
-                fixed (IntPtr* pData = &data.p)
+                bool isValid = false;
+
+                if (ptrUnboxToEEType->IsNullable)
                 {
-                    bool isValid = false;
-
-                    if (ptrUnboxToEEType->IsNullable)
-                        isValid = (o == null) || TypeCast.AreTypesEquivalentInternal(o.EEType, ptrUnboxToEEType->NullableType);
-                    else if (o != null)
-                    {
-                        isValid = UnboxAnyTypeCompare(o.EEType, ptrUnboxToEEType);
-                    }
-
-                    if (!isValid)
-                    {
-                        // Throw the invalid cast exception defined by the classlib, using the input unbox EEType* 
-                        // to find the correct classlib.
-
-                        ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-
-                        throw ptrUnboxToEEType->GetClasslibException(exID);
-                    }
-                    InternalCalls.RhUnbox(o, pData - 1, ptrUnboxToEEType);
-                }
-            }
-            else
-            {
-                if (o == null || (TypeCast.IsInstanceOf(o, ptrUnboxToEEType) != null))
-                {
-                    data.o = o;
+                    isValid = (o == null) || TypeCast.AreTypesEquivalentInternal(o.EEType, ptrUnboxToEEType->NullableType);
                 }
                 else
                 {
+                    isValid = (o != null) && UnboxAnyTypeCompare(o.EEType, ptrUnboxToEEType);
+                }
+
+                if (!isValid)
+                {
+                    // Throw the invalid cast exception defined by the classlib, using the input unbox EEType* 
+                    // to find the correct classlib.
+
+                    ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
+
+                    throw ptrUnboxToEEType->GetClasslibException(exID);
+                }
+
+                InternalCalls.RhUnbox(o, ref data, ptrUnboxToEEType);
+            }
+            else
+            {
+                if (o != null && (TypeCast.IsInstanceOf(o, ptrUnboxToEEType) == null))
+                {
                     throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
+
+                Unsafe.As<byte, Object>(ref data) = o;
             }
         }
 
-#if CORERT
         //
         // Unbox helpers with RyuJIT conventions
         //
@@ -225,10 +207,9 @@ namespace System.Runtime
             }
             InternalCalls.RhUnbox(obj, ref data, ptrUnboxToEEType);
         }
-#endif // CORERT
 
         [RuntimeExport("RhArrayStoreCheckAny")]
-        static public unsafe void RhArrayStoreCheckAny(object array, ref Hack_o_p data)
+        static public unsafe void RhArrayStoreCheckAny(object array, ref byte data)
         {
             if (array == null)
             {
@@ -243,17 +224,17 @@ namespace System.Runtime
                 return;
             }
 
-            TypeCast.CheckArrayStore(array, data.o);
+            TypeCast.CheckArrayStore(array, Unsafe.As<byte, Object>(ref data));
         }
 
         [RuntimeExport("RhBoxAndNullCheck")]
-        static public unsafe bool RhBoxAndNullCheck(ref Hack_o_p data, EETypePtr pEEType)
+        static public unsafe bool RhBoxAndNullCheck(ref byte data, EETypePtr pEEType)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
             if (ptrEEType->IsValueType)
                 return true;
             else
-                return data.o != null;
+                return Unsafe.As<byte, Object>(ref data) != null;
         }
 
 #pragma warning disable 169 // The field 'System.Runtime.RuntimeExports.Wrapper.o' is never used. 

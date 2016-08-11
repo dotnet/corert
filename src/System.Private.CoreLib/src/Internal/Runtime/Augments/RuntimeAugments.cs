@@ -27,7 +27,7 @@ using System.Runtime.CompilerServices;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.CompilerServices;
 
-using Interlocked = System.Threading.Interlocked;
+using Volatile = System.Threading.Volatile;
 
 namespace Internal.Runtime.Augments
 {
@@ -274,15 +274,14 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        public static void StoreReferenceTypeField(IntPtr address, Object fieldValue)
+        public static unsafe void StoreReferenceTypeField(IntPtr address, Object fieldValue)
         {
-            // Doing an interlocked exchange makes sure there is a proper memory barrier
-            Interlocked.Exchange<Object>(address, fieldValue);
+            Volatile.Write<Object>(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)address), fieldValue);
         }
 
-        public static Object LoadReferenceTypeField(IntPtr address)
+        public static unsafe Object LoadReferenceTypeField(IntPtr address)
         {
-            return Interlocked.CompareExchange<Object>(address, null, null);
+            return Volatile.Read<Object>(ref Unsafe.As<IntPtr, Object>(ref *(IntPtr *)address));
         }
 
         public unsafe static void StoreReferenceTypeField(Object obj, int fieldOffset, Object fieldValue)

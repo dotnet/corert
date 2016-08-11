@@ -20,7 +20,6 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public static class Unsafe
     {
-#if CORERT
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SizeOf<T>()
@@ -73,11 +72,13 @@ namespace System.Runtime.CompilerServices
             // ret
         }
 
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
         {
             return ref AddRaw(ref source, elementOffset * (nint)SizeOf<T>());
         }
-#endif
     }
 }
