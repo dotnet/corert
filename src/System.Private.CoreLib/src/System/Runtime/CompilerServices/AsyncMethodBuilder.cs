@@ -20,7 +20,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Runtime;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -747,16 +746,8 @@ namespace System.Runtime.CompilerServices
         // state machine type, and they are basically all value types, we end up generating separate copies of this method
         // for every state machine.  This adds up to a *lot* of code for an app that has many async methods.
         //
-        // So, to save code size, we delegate all of the work to a non-generic helper.  The helper requires the address of
-        // the state machine, but we can't write a "fixed" statement in C# that gets a pointer to an arbitrary type.
-        // So we play a little trick.  Our non-generic helper takes two ref arguments, a "ref byte" and a "ref IAsyncStateMachine".
-        // These point to the same state machine, but have different types, so we can use the "fixed" keyword on the "ref byte"
-        // if needed, or we can simply read a reference out of the "ref IAsyncStateMachine" if the state machine is actually
-        // a reference type.  (This never happens in practice - but the public surface does allow it.)
-        //
-        // To call the non-generic method, we have to coerce our "ref TStateMachine" arg into both a "ref byte" and a
-        // "ref IAsyncResult."  We do this by getting the address of the non-generic helper, then calling it indirectly
-        // with a signature that contains "ref TStateMachine" parameters so C# will not complain.
+        // So, to save code size, we delegate all of the work to a non-generic helper. In the non-generic method, we have 
+        // to coerce our "ref TStateMachine" arg into both a "ref byte" and a "ref IAsyncResult."
         //
         // Note that this is only safe because:
         //
@@ -768,48 +759,18 @@ namespace System.Runtime.CompilerServices
         internal static Action GetCompletionAction<TStateMachine>(ref Action cachedMoveNextAction, ref TStateMachine stateMachine, Task taskIfDebuggingEnabled)
             where TStateMachine : IAsyncStateMachine
         {
-            return AwaitIntrinsics.Call(
-                AwaitIntrinsics.AddrOf(new GetCompletionActionHelperDelegate(GetCompletionActionHelper)),
+            return GetCompletionActionHelper(
                 ref cachedMoveNextAction,
-                ref stateMachine,
-                ref stateMachine,
-                typeof(TStateMachine).TypeHandle,
+                ref Unsafe.As<TStateMachine, byte>(ref stateMachine),
+                EETypePtr.EETypePtrOf<TStateMachine>(),
                 taskIfDebuggingEnabled);
         }
-
-        [McgIntrinsics]
-        private static class AwaitIntrinsics
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal static Action Call<TStateMachine>(
-                System.IntPtr pfn,
-                ref Action moveNextAction,
-                ref TStateMachine stateMachineAddress,
-                ref TStateMachine stateMachineAddressAgain,
-                RuntimeTypeHandle stateMachineType,
-                Task taskIfDebuggingEnabled)
-                where TStateMachine : IAsyncStateMachine
-            {
-                // This method is implemented elsewhere in the toolchain
-                throw new PlatformNotSupportedException();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal static System.IntPtr AddrOf<T>(T ftn)
-            {
-                // This method is implemented elsewhere in the toolchain
-                throw new PlatformNotSupportedException();
-            }
-        }
-
-        private delegate Action GetCompletionActionHelperDelegate(ref Action moveNextAction, ref byte stateMachineAddress, ref IAsyncStateMachine stateMachineAddressIfRefType, RuntimeTypeHandle stateMachineType, Task taskIfDebuggingEnabled);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe Action GetCompletionActionHelper(
             ref Action cachedMoveNextAction,
             ref byte stateMachineAddress,
-            ref IAsyncStateMachine stateMachineAddressIfRefType,
-            RuntimeTypeHandle stateMachineType,
+            EETypePtr stateMachineType,
             Task taskIfDebuggingEnabled)
         {
             // Alert a listening debugger that we can't make forward progress unless it slips threads.
@@ -839,28 +800,28 @@ namespace System.Runtime.CompilerServices
 
                 if (DebuggerSupport.LoggingOn)
                 {
-                    IntPtr eeType = RuntimeAugments.GetRuntimeTypeHandleRawValue(stateMachineType);
+                    IntPtr eeType = stateMachineType.RawValue;
                     DebuggerSupport.TraceOperationCreation(CausalityTraceLevel.Required, taskIfDebuggingEnabled, "Async: " + eeType.ToString("x"), 0);
                 }
                 DebuggerSupport.AddToActiveTasks(taskIfDebuggingEnabled);
             }
 
             //
-            // If the state machine is a value type, we need to box it now.  
+            // If the state machine is a value type, we need to box it now.
             //
             IAsyncStateMachine boxedStateMachine;
-            if (RuntimeAugments.IsValueType(stateMachineType))
+            if (stateMachineType.IsValueType)
             {
                 fixed (byte* pStateMachine = &stateMachineAddress)
                 {
-                    object boxed = RuntimeAugments.Box(stateMachineType, (IntPtr)pStateMachine);
+                    object boxed = RuntimeImports.RhBox(stateMachineType, pStateMachine);
                     Debug.Assert(boxed is IAsyncStateMachine);
-                    boxedStateMachine = InteropExtensions.UncheckedCast<IAsyncStateMachine>(boxed);
+                    boxedStateMachine = Unsafe.As<IAsyncStateMachine>(boxed);
                 }
             }
             else
             {
-                boxedStateMachine = stateMachineAddressIfRefType;
+                boxedStateMachine = Unsafe.As<byte, IAsyncStateMachine>(ref stateMachineAddress);
             }
 
             runner.m_stateMachine = boxedStateMachine;
@@ -891,7 +852,7 @@ namespace System.Runtime.CompilerServices
 
                 ExecutionContext.Run(
                     m_executionContext,
-                    state => InteropExtensions.UncheckedCast<IAsyncStateMachine>(state).MoveNext(),
+                    state => Unsafe.As<IAsyncStateMachine>(state).MoveNext(),
                     m_stateMachine);
 
                 if (task != null)

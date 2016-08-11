@@ -186,7 +186,6 @@ internal static System.Runtime.RuntimeImports.RhCorElementTypeInfo System.Runtim
 internal static int System.Runtime.RuntimeImports.RhCompatibleReentrantWaitAny(bool alertable, int timeout, int count, System.IntPtr* handles)
 internal static void System.Runtime.RuntimeImports.RhWaitForPendingFinalizers(bool allowReentrantWait)
 public static extern void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
-internal static extern T System.Runtime.CompilerServices.RuntimeHelpers.UncheckedCast<T>(object value)
 
 # System.Runtime.CompilerSerivces
 public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Create()

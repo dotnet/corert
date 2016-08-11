@@ -123,12 +123,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpBox")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static void RhpBox(object obj, void* pData); // NOTE: returns null on allocation failure
-
-        [RuntimeImport(Redhawk.BaseName, "RhUnbox")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal unsafe extern static void RhUnbox(object obj, void* pData, EEType* pUnboxToEEType);
+        internal unsafe extern static void RhpBox(object obj, ref byte data);
 
         [RuntimeImport(Redhawk.BaseName, "RhUnbox")]
         [MethodImpl(MethodImplOptions.InternalCall)]

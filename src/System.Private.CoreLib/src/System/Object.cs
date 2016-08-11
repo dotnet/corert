@@ -157,7 +157,6 @@ namespace System
             return RuntimeImports.RhMemberwiseClone(this);
         }
 
-#if CORERT
         private class RawData
         {
 // Suppress bogus warning - remove once https://github.com/dotnet/roslyn/issues/10544 is fixed
@@ -170,7 +169,6 @@ namespace System
         {
             return ref Unsafe.As<RawData>(this).Data;
         }
-#endif
     }
 }
 

@@ -19,18 +19,12 @@ namespace System.Threading
 
         public static Boolean Read(ref Boolean location)
         {
-            fixed (Boolean* p = &location)
-            {
-                return ((VolatileBoolean*)p)->Value;
-            }
+            return Unsafe.As<Boolean, VolatileBoolean>(ref location).Value;
         }
 
         public static void Write(ref Boolean location, Boolean value)
         {
-            fixed (Boolean* p = &location)
-            {
-                ((VolatileBoolean*)p)->Value = value;
-            }
+            Unsafe.As<Boolean, VolatileBoolean>(ref location).Value = value;
         }
         #endregion
 
@@ -39,38 +33,25 @@ namespace System.Threading
 
         public static Byte Read(ref Byte location)
         {
-            fixed (Byte* p = &location)
-            {
-                return ((VolatileByte*)p)->Value;
-            }
+            return Unsafe.As<Byte, VolatileByte>(ref location).Value;
         }
 
         public static void Write(ref Byte location, Byte value)
         {
-            fixed (Byte* p = &location)
-            {
-                ((VolatileByte*)p)->Value = value;
-            }
+            Unsafe.As<Byte, VolatileByte>(ref location).Value = value;
         }
         #endregion
 
         #region Double
-
         public static Double Read(ref Double location)
         {
-            fixed (Double* p = &location)
-            {
-                Int64 result = Read(ref *(Int64*)p);
-                return *(double*)&result;
-            }
+            Int64 result = Read(ref Unsafe.As<Double, Int64>(ref location));
+            return *(double*)&result;
         }
 
         public static void Write(ref Double location, Double value)
         {
-            fixed (Double* p = &location)
-            {
-                Write(ref *(Int64*)p, *(Int64*)&value);
-            }
+            Write(ref Unsafe.As<Double, Int64>(ref location), *(Int64*)&value);
         }
         #endregion
 
@@ -79,18 +60,12 @@ namespace System.Threading
 
         public static Int16 Read(ref Int16 location)
         {
-            fixed (Int16* p = &location)
-            {
-                return ((VolatileInt16*)p)->Value;
-            }
+            return Unsafe.As<Int16, VolatileInt16>(ref location).Value;
         }
 
         public static void Write(ref Int16 location, Int16 value)
         {
-            fixed (Int16* p = &location)
-            {
-                ((VolatileInt16*)p)->Value = value;
-            }
+            Unsafe.As<Int16, VolatileInt16>(ref location).Value = value;
         }
         #endregion
 
@@ -99,30 +74,20 @@ namespace System.Threading
 
         public static Int32 Read(ref Int32 location)
         {
-            fixed (Int32* p = &location)
-            {
-                return ((VolatileInt32*)p)->Value;
-            }
+            return Unsafe.As<Int32, VolatileInt32>(ref location).Value;
         }
 
         public static void Write(ref Int32 location, Int32 value)
         {
-            fixed (Int32* p = &location)
-            {
-                ((VolatileInt32*)p)->Value = value;
-            }
+            Unsafe.As<Int32, VolatileInt32>(ref location).Value = value;
         }
         #endregion
 
         #region Int64
-
         public static Int64 Read(ref Int64 location)
         {
 #if BIT64
-            fixed (Int64* p = &location)
-            {
-                return (Int64)Read(ref *(IntPtr*)p);
-            }
+            return (Int64)Unsafe.As<Int64, VolatileIntPtr>(ref location).Value;
 #else
             return Interlocked.CompareExchange(ref location, 0, 0);
 #endif
@@ -131,10 +96,7 @@ namespace System.Threading
         public static void Write(ref Int64 location, Int64 value)
         {
 #if BIT64
-            fixed (Int64* p = &location)
-            {
-                Write(ref *(IntPtr*)p, (IntPtr)value);
-            }
+            Unsafe.As<Int64, VolatileIntPtr>(ref location).Value = (IntPtr)value;
 #else
             Interlocked.Exchange(ref location, value);
 #endif
@@ -146,10 +108,7 @@ namespace System.Threading
 
         public static IntPtr Read(ref IntPtr location)
         {
-            fixed (IntPtr* p = &location)
-            {
-                return ((VolatileIntPtr*)p)->Value;
-            }
+            return Unsafe.As<IntPtr, VolatileIntPtr>(ref location).Value;
         }
 
         public static void Write(ref IntPtr location, IntPtr value)
@@ -167,19 +126,13 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static SByte Read(ref SByte location)
         {
-            fixed (SByte* p = &location)
-            {
-                return ((VolatileSByte*)p)->Value;
-            }
+            return Unsafe.As<SByte, VolatileSByte>(ref location).Value;
         }
 
         [CLSCompliant(false)]
         public static void Write(ref SByte location, SByte value)
         {
-            fixed (SByte* p = &location)
-            {
-                ((VolatileSByte*)p)->Value = value;
-            }
+            Unsafe.As<SByte, VolatileSByte>(ref location).Value = value;
         }
         #endregion
 
@@ -188,18 +141,12 @@ namespace System.Threading
 
         public static Single Read(ref Single location)
         {
-            fixed (Single* p = &location)
-            {
-                return ((VolatileSingle*)p)->Value;
-            }
+            return Unsafe.As<Single, VolatileSingle>(ref location).Value;
         }
 
         public static void Write(ref Single location, Single value)
         {
-            fixed (Single* p = &location)
-            {
-                ((VolatileSingle*)p)->Value = value;
-            }
+            Unsafe.As<Single, VolatileSingle>(ref location).Value = value;
         }
         #endregion
 
@@ -209,19 +156,13 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static UInt16 Read(ref UInt16 location)
         {
-            fixed (UInt16* p = &location)
-            {
-                return ((VolatileUInt16*)p)->Value;
-            }
+            return Unsafe.As<UInt16, VolatileUInt16>(ref location).Value;
         }
 
         [CLSCompliant(false)]
         public static void Write(ref UInt16 location, UInt16 value)
         {
-            fixed (UInt16* p = &location)
-            {
-                ((VolatileUInt16*)p)->Value = value;
-            }
+            Unsafe.As<UInt16, VolatileUInt16>(ref location).Value = value;
         }
         #endregion
 
@@ -231,40 +172,27 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static UInt32 Read(ref UInt32 location)
         {
-            fixed (UInt32* p = &location)
-            {
-                return ((VolatileUInt32*)p)->Value;
-            }
+            return Unsafe.As<UInt32, VolatileUInt32>(ref location).Value;
         }
 
         [CLSCompliant(false)]
         public static void Write(ref UInt32 location, UInt32 value)
         {
-            fixed (UInt32* p = &location)
-            {
-                ((VolatileUInt32*)p)->Value = value;
-            }
+            Unsafe.As<UInt32, VolatileUInt32>(ref location).Value = value;
         }
         #endregion
 
         #region UInt64
-
         [CLSCompliant(false)]
         public static UInt64 Read(ref UInt64 location)
         {
-            fixed (UInt64* p = &location)
-            {
-                return (UInt64)Read(ref *(Int64*)p);
-            }
+            return (UInt64)Read(ref Unsafe.As<UInt64, Int64>(ref location));
         }
 
         [CLSCompliant(false)]
         public static void Write(ref UInt64 location, UInt64 value)
         {
-            fixed (UInt64* p = &location)
-            {
-                Write(ref *(Int64*)p, (Int64)value);
-            }
+            Write(ref Unsafe.As<UInt64, Int64>(ref location), (Int64)value);
         }
         #endregion
 
@@ -274,34 +202,27 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static UIntPtr Read(ref UIntPtr location)
         {
-            fixed (UIntPtr* p = &location)
-            {
-                return ((VolatileUIntPtr*)p)->Value;
-            }
+            return Unsafe.As<UIntPtr, VolatileUIntPtr>(ref location).Value;
         }
 
         [CLSCompliant(false)]
         public static void Write(ref UIntPtr location, UIntPtr value)
         {
-            fixed (UIntPtr* p = &location)
-            {
-                ((VolatileUIntPtr*)p)->Value = value;
-            }
+            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref location).Value = value;
         }
         #endregion
 
         #region T
+        private struct VolatileObject { public volatile Object Value; }
 
         public static T Read<T>(ref T location) where T : class
         {
-            //@TODO: need intrinsic implementation of Volatile.Read<T>, or some way to take the address of a reference.
-            return Interlocked.CompareExchange(ref location, null, null);
+            return Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref location).Value);
         }
 
         public static void Write<T>(ref T location, T value) where T : class
         {
-            //@TODO: need intrinsic implementation of Volatile.Write<T>, or some way to take the address of a reference.
-            Interlocked.Exchange(ref location, value);
+            Unsafe.As<T, VolatileObject>(ref location).Value = value;
         }
         #endregion
     }
