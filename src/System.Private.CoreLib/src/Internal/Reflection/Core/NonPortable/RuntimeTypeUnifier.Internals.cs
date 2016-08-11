@@ -45,21 +45,6 @@ namespace Internal.Reflection.Core.NonPortable
                     }
                     else if (eeType.IsGeneric)
                     {
-                        // Reflection blocked constructed generic types simply pretend to not be generic
-                        // This is reasonable, as the behavior of reflection blocked types is supposed
-                        // to be that they expose the minimal information about a type that is necessary
-                        // for users of Object.GetType to move from that type to a type that isn't
-                        // reflection blocked. By not revealing that reflection blocked types are generic
-                        // we are making it appear as if implementation detail types exposed to user code
-                        // are all non-generic, which is theoretically possible, and by doing so
-                        // we avoid (in all known circumstances) the very complicated case of representing 
-                        // the interfaces, base types, and generic parameter types of reflection blocked 
-                        // generic type definitions.
-                        if (RuntimeAugments.Callbacks.IsReflectionBlocked(runtimeTypeHandle))
-                        {
-                            return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: false);
-                        }
-
 #if !REAL_MULTIDIM_ARRAYS
                         if (RuntimeImports.AreTypesAssignable(eeType, EETypePtr.EETypePtrOf<MDArrayRank2>()))
                              return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, 2);
