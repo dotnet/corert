@@ -18,182 +18,182 @@ namespace Internal.Metadata.NativeFormat.Writer
 {
     internal static partial class MdBinaryWriter
     {
-        public static void Write(this NativeWriter writer, IEnumerable<bool> values)
+        public static void Write(this NativeWriter writer, bool[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (bool value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<char> values)
+        public static void Write(this NativeWriter writer, char[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (char value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<string> values)
+        public static void Write(this NativeWriter writer, string[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (string value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<byte> values)
+        public static void Write(this NativeWriter writer, byte[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (byte value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<sbyte> values)
+        public static void Write(this NativeWriter writer, sbyte[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (sbyte value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<short> values)
+        public static void Write(this NativeWriter writer, short[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (short value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ushort> values)
+        public static void Write(this NativeWriter writer, ushort[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (ushort value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<int> values)
+        public static void Write(this NativeWriter writer, int[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (int value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<uint> values)
+        public static void Write(this NativeWriter writer, uint[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (uint value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<long> values)
+        public static void Write(this NativeWriter writer, long[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (long value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ulong> values)
+        public static void Write(this NativeWriter writer, ulong[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (ulong value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<float> values)
+        public static void Write(this NativeWriter writer, float[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (float value in values)
             {
                 writer.Write(value);
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<double> values)
+        public static void Write(this NativeWriter writer, double[] values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Length);
             foreach (double value in values)
             {
                 writer.Write(value);
@@ -280,14 +280,14 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.WriteUnsigned((uint)value);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<MetadataRecord> values)
+        public static void Write(this NativeWriter writer, List<MetadataRecord> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (MetadataRecord value in values)
             {
                 writer.Write(value);
@@ -302,14 +302,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ArraySignature> values)
+        public static void Write(this NativeWriter writer, List<ArraySignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ArraySignature value in values)
             {
                 writer.Write(value);
@@ -324,14 +324,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ByReferenceSignature> values)
+        public static void Write(this NativeWriter writer, List<ByReferenceSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ByReferenceSignature value in values)
             {
                 writer.Write(value);
@@ -346,14 +346,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantBooleanArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantBooleanArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantBooleanArray value in values)
             {
                 writer.Write(value);
@@ -368,14 +368,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantBooleanValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantBooleanValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantBooleanValue value in values)
             {
                 writer.Write(value);
@@ -390,14 +390,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantBoxedEnumValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantBoxedEnumValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantBoxedEnumValue value in values)
             {
                 writer.Write(value);
@@ -412,14 +412,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantByteArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantByteArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantByteArray value in values)
             {
                 writer.Write(value);
@@ -434,14 +434,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantByteValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantByteValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantByteValue value in values)
             {
                 writer.Write(value);
@@ -456,14 +456,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantCharArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantCharArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantCharArray value in values)
             {
                 writer.Write(value);
@@ -478,14 +478,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantCharValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantCharValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantCharValue value in values)
             {
                 writer.Write(value);
@@ -500,14 +500,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantDoubleArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantDoubleArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantDoubleArray value in values)
             {
                 writer.Write(value);
@@ -522,14 +522,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantDoubleValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantDoubleValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantDoubleValue value in values)
             {
                 writer.Write(value);
@@ -544,14 +544,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantHandleArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantHandleArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantHandleArray value in values)
             {
                 writer.Write(value);
@@ -566,14 +566,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantInt16Array> values)
+        public static void Write(this NativeWriter writer, List<ConstantInt16Array> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantInt16Array value in values)
             {
                 writer.Write(value);
@@ -588,14 +588,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantInt16Value> values)
+        public static void Write(this NativeWriter writer, List<ConstantInt16Value> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantInt16Value value in values)
             {
                 writer.Write(value);
@@ -610,14 +610,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantInt32Array> values)
+        public static void Write(this NativeWriter writer, List<ConstantInt32Array> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantInt32Array value in values)
             {
                 writer.Write(value);
@@ -632,14 +632,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantInt32Value> values)
+        public static void Write(this NativeWriter writer, List<ConstantInt32Value> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantInt32Value value in values)
             {
                 writer.Write(value);
@@ -654,14 +654,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantInt64Array> values)
+        public static void Write(this NativeWriter writer, List<ConstantInt64Array> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantInt64Array value in values)
             {
                 writer.Write(value);
@@ -676,14 +676,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantInt64Value> values)
+        public static void Write(this NativeWriter writer, List<ConstantInt64Value> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantInt64Value value in values)
             {
                 writer.Write(value);
@@ -698,14 +698,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantReferenceValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantReferenceValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantReferenceValue value in values)
             {
                 writer.Write(value);
@@ -720,14 +720,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantSByteArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantSByteArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantSByteArray value in values)
             {
                 writer.Write(value);
@@ -742,14 +742,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantSByteValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantSByteValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantSByteValue value in values)
             {
                 writer.Write(value);
@@ -764,14 +764,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantSingleArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantSingleArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantSingleArray value in values)
             {
                 writer.Write(value);
@@ -786,14 +786,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantSingleValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantSingleValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantSingleValue value in values)
             {
                 writer.Write(value);
@@ -808,14 +808,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantStringArray> values)
+        public static void Write(this NativeWriter writer, List<ConstantStringArray> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantStringArray value in values)
             {
                 writer.Write(value);
@@ -830,14 +830,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantStringValue> values)
+        public static void Write(this NativeWriter writer, List<ConstantStringValue> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantStringValue value in values)
             {
                 writer.Write(value);
@@ -852,14 +852,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantUInt16Array> values)
+        public static void Write(this NativeWriter writer, List<ConstantUInt16Array> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantUInt16Array value in values)
             {
                 writer.Write(value);
@@ -874,14 +874,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantUInt16Value> values)
+        public static void Write(this NativeWriter writer, List<ConstantUInt16Value> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantUInt16Value value in values)
             {
                 writer.Write(value);
@@ -896,14 +896,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantUInt32Array> values)
+        public static void Write(this NativeWriter writer, List<ConstantUInt32Array> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantUInt32Array value in values)
             {
                 writer.Write(value);
@@ -918,14 +918,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantUInt32Value> values)
+        public static void Write(this NativeWriter writer, List<ConstantUInt32Value> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantUInt32Value value in values)
             {
                 writer.Write(value);
@@ -940,14 +940,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantUInt64Array> values)
+        public static void Write(this NativeWriter writer, List<ConstantUInt64Array> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantUInt64Array value in values)
             {
                 writer.Write(value);
@@ -962,14 +962,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ConstantUInt64Value> values)
+        public static void Write(this NativeWriter writer, List<ConstantUInt64Value> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ConstantUInt64Value value in values)
             {
                 writer.Write(value);
@@ -984,14 +984,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<CustomAttribute> values)
+        public static void Write(this NativeWriter writer, List<CustomAttribute> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (CustomAttribute value in values)
             {
                 writer.Write(value);
@@ -1006,14 +1006,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<CustomModifier> values)
+        public static void Write(this NativeWriter writer, List<CustomModifier> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (CustomModifier value in values)
             {
                 writer.Write(value);
@@ -1028,14 +1028,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<Event> values)
+        public static void Write(this NativeWriter writer, List<Event> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (Event value in values)
             {
                 writer.Write(value);
@@ -1050,14 +1050,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<Field> values)
+        public static void Write(this NativeWriter writer, List<Field> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (Field value in values)
             {
                 writer.Write(value);
@@ -1072,14 +1072,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<FieldSignature> values)
+        public static void Write(this NativeWriter writer, List<FieldSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (FieldSignature value in values)
             {
                 writer.Write(value);
@@ -1094,14 +1094,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<FixedArgument> values)
+        public static void Write(this NativeWriter writer, List<FixedArgument> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (FixedArgument value in values)
             {
                 writer.Write(value);
@@ -1116,14 +1116,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<GenericParameter> values)
+        public static void Write(this NativeWriter writer, List<GenericParameter> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (GenericParameter value in values)
             {
                 writer.Write(value);
@@ -1138,14 +1138,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<MemberReference> values)
+        public static void Write(this NativeWriter writer, List<MemberReference> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (MemberReference value in values)
             {
                 writer.Write(value);
@@ -1160,14 +1160,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<Method> values)
+        public static void Write(this NativeWriter writer, List<Method> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (Method value in values)
             {
                 writer.Write(value);
@@ -1182,14 +1182,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<MethodImpl> values)
+        public static void Write(this NativeWriter writer, List<MethodImpl> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (MethodImpl value in values)
             {
                 writer.Write(value);
@@ -1204,14 +1204,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<MethodInstantiation> values)
+        public static void Write(this NativeWriter writer, List<MethodInstantiation> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (MethodInstantiation value in values)
             {
                 writer.Write(value);
@@ -1226,14 +1226,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<MethodSemantics> values)
+        public static void Write(this NativeWriter writer, List<MethodSemantics> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (MethodSemantics value in values)
             {
                 writer.Write(value);
@@ -1248,14 +1248,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<MethodSignature> values)
+        public static void Write(this NativeWriter writer, List<MethodSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (MethodSignature value in values)
             {
                 writer.Write(value);
@@ -1270,14 +1270,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<MethodTypeVariableSignature> values)
+        public static void Write(this NativeWriter writer, List<MethodTypeVariableSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (MethodTypeVariableSignature value in values)
             {
                 writer.Write(value);
@@ -1292,14 +1292,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<NamedArgument> values)
+        public static void Write(this NativeWriter writer, List<NamedArgument> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (NamedArgument value in values)
             {
                 writer.Write(value);
@@ -1314,14 +1314,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<NamespaceDefinition> values)
+        public static void Write(this NativeWriter writer, List<NamespaceDefinition> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (NamespaceDefinition value in values)
             {
                 writer.Write(value);
@@ -1336,14 +1336,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<NamespaceReference> values)
+        public static void Write(this NativeWriter writer, List<NamespaceReference> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (NamespaceReference value in values)
             {
                 writer.Write(value);
@@ -1358,14 +1358,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<Parameter> values)
+        public static void Write(this NativeWriter writer, List<Parameter> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (Parameter value in values)
             {
                 writer.Write(value);
@@ -1380,14 +1380,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ParameterTypeSignature> values)
+        public static void Write(this NativeWriter writer, List<ParameterTypeSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ParameterTypeSignature value in values)
             {
                 writer.Write(value);
@@ -1402,14 +1402,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<PointerSignature> values)
+        public static void Write(this NativeWriter writer, List<PointerSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (PointerSignature value in values)
             {
                 writer.Write(value);
@@ -1424,14 +1424,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<Property> values)
+        public static void Write(this NativeWriter writer, List<Property> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (Property value in values)
             {
                 writer.Write(value);
@@ -1446,14 +1446,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<PropertySignature> values)
+        public static void Write(this NativeWriter writer, List<PropertySignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (PropertySignature value in values)
             {
                 writer.Write(value);
@@ -1468,14 +1468,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<QualifiedField> values)
+        public static void Write(this NativeWriter writer, List<QualifiedField> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (QualifiedField value in values)
             {
                 writer.Write(value);
@@ -1490,14 +1490,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<QualifiedMethod> values)
+        public static void Write(this NativeWriter writer, List<QualifiedMethod> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (QualifiedMethod value in values)
             {
                 writer.Write(value);
@@ -1512,14 +1512,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ReturnTypeSignature> values)
+        public static void Write(this NativeWriter writer, List<ReturnTypeSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ReturnTypeSignature value in values)
             {
                 writer.Write(value);
@@ -1534,14 +1534,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<SZArraySignature> values)
+        public static void Write(this NativeWriter writer, List<SZArraySignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (SZArraySignature value in values)
             {
                 writer.Write(value);
@@ -1556,14 +1556,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ScopeDefinition> values)
+        public static void Write(this NativeWriter writer, List<ScopeDefinition> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ScopeDefinition value in values)
             {
                 writer.Write(value);
@@ -1578,14 +1578,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<ScopeReference> values)
+        public static void Write(this NativeWriter writer, List<ScopeReference> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (ScopeReference value in values)
             {
                 writer.Write(value);
@@ -1600,14 +1600,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<TypeDefinition> values)
+        public static void Write(this NativeWriter writer, List<TypeDefinition> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (TypeDefinition value in values)
             {
                 writer.Write(value);
@@ -1622,14 +1622,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<TypeForwarder> values)
+        public static void Write(this NativeWriter writer, List<TypeForwarder> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (TypeForwarder value in values)
             {
                 writer.Write(value);
@@ -1644,14 +1644,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<TypeInstantiationSignature> values)
+        public static void Write(this NativeWriter writer, List<TypeInstantiationSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (TypeInstantiationSignature value in values)
             {
                 writer.Write(value);
@@ -1666,14 +1666,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<TypeReference> values)
+        public static void Write(this NativeWriter writer, List<TypeReference> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (TypeReference value in values)
             {
                 writer.Write(value);
@@ -1688,14 +1688,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<TypeSpecification> values)
+        public static void Write(this NativeWriter writer, List<TypeSpecification> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (TypeSpecification value in values)
             {
                 writer.Write(value);
@@ -1710,14 +1710,14 @@ namespace Internal.Metadata.NativeFormat.Writer
                 writer.WriteUnsigned(0);
         } // Write
 
-        public static void Write(this NativeWriter writer, IEnumerable<TypeVariableSignature> values)
+        public static void Write(this NativeWriter writer, List<TypeVariableSignature> values)
         {
             if (values == null)
             {
                 writer.WriteUnsigned(0);
                 return;
             }
-            writer.WriteUnsigned((uint)values.Count());
+            writer.WriteUnsigned((uint)values.Count);
             foreach (TypeVariableSignature value in values)
             {
                 writer.Write(value);

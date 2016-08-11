@@ -323,7 +323,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Value = visitor.Visit(this, Value.AsSingleEnumerable()).FirstOrDefault();
+            Value = visitor.Visit(this, Value);
             Type = visitor.Visit(this, Type);
         } // Visit
 
@@ -800,7 +800,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Value = Value.Select(value => visitor.Visit(this, value)).ToList();
+            Value = visitor.Visit(this, Value);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2122,8 +2122,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Constructor = visitor.Visit(this, Constructor);
-            FixedArguments = visitor.Visit(this, FixedArguments.AsEnumerable());
-            NamedArguments = visitor.Visit(this, NamedArguments.AsEnumerable());
+            FixedArguments = visitor.Visit(this, FixedArguments);
+            NamedArguments = visitor.Visit(this, NamedArguments);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2294,10 +2294,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
+            Name = visitor.Visit(this, Name);
             Type = visitor.Visit(this, Type);
-            MethodSemantics = visitor.Visit(this, MethodSemantics.AsEnumerable());
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            MethodSemantics = visitor.Visit(this, MethodSemantics);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2393,10 +2393,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
+            Name = visitor.Visit(this, Name);
+            Signature = visitor.Visit(this, Signature);
             DefaultValue = visitor.Visit(this, DefaultValue);
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2519,7 +2519,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Type = visitor.Visit(this, Type);
-            CustomModifiers = CustomModifiers.Select(value => visitor.Visit(this, value)).ToList();
+            CustomModifiers = visitor.Visit(this, CustomModifiers);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2699,9 +2699,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Constraints = Constraints.Select(value => visitor.Visit(this, value)).ToList();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            Constraints = visitor.Visit(this, Constraints);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2795,9 +2795,9 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Parent = visitor.Visit(this, Parent);
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            Signature = visitor.Visit(this, Signature);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2879,11 +2879,11 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
-            Parameters = visitor.Visit(this, Parameters.AsEnumerable());
-            GenericParameters = visitor.Visit(this, GenericParameters.AsEnumerable());
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            Signature = visitor.Visit(this, Signature);
+            Parameters = visitor.Visit(this, Parameters);
+            GenericParameters = visitor.Visit(this, GenericParameters);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3058,8 +3058,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Method = visitor.Visit(this, Method);
-            GenericTypeArguments = GenericTypeArguments.Select(value => visitor.Visit(this, value)).ToList();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            GenericTypeArguments = visitor.Visit(this, GenericTypeArguments);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3205,8 +3205,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             ReturnType = visitor.Visit(this, ReturnType);
-            Parameters = Parameters.Select(value => visitor.Visit(this, value)).ToList();
-            VarArgParameters = VarArgParameters.Select(value => visitor.Visit(this, value)).ToList();
+            Parameters = visitor.Visit(this, Parameters);
+            VarArgParameters = visitor.Visit(this, VarArgParameters);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3361,8 +3361,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Value = visitor.Visit(this, Value.AsSingleEnumerable()).FirstOrDefault();
+            Name = visitor.Visit(this, Name);
+            Value = visitor.Visit(this, Value);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3435,10 +3435,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            TypeDefinitions = visitor.Visit(this, TypeDefinitions.AsEnumerable());
-            TypeForwarders = visitor.Visit(this, TypeForwarders.AsEnumerable());
-            NamespaceDefinitions = visitor.Visit(this, NamespaceDefinitions.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            TypeDefinitions = visitor.Visit(this, TypeDefinitions);
+            TypeForwarders = visitor.Visit(this, TypeForwarders);
+            NamespaceDefinitions = visitor.Visit(this, NamespaceDefinitions);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3516,7 +3516,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             ParentScopeOrNamespace = visitor.Visit(this, ParentScopeOrNamespace);
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
+            Name = visitor.Visit(this, Name);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3587,9 +3587,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
+            Name = visitor.Visit(this, Name);
             DefaultValue = visitor.Visit(this, DefaultValue);
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3700,7 +3700,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            CustomModifiers = CustomModifiers.Select(value => visitor.Visit(this, value)).ToList();
+            CustomModifiers = visitor.Visit(this, CustomModifiers);
             Type = visitor.Visit(this, Type);
         } // Visit
 
@@ -3840,11 +3840,11 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
-            MethodSemantics = visitor.Visit(this, MethodSemantics.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            Signature = visitor.Visit(this, Signature);
+            MethodSemantics = visitor.Visit(this, MethodSemantics);
             DefaultValue = visitor.Visit(this, DefaultValue);
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -3972,9 +3972,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            CustomModifiers = CustomModifiers.Select(value => visitor.Visit(this, value)).ToList();
+            CustomModifiers = visitor.Visit(this, CustomModifiers);
             Type = visitor.Visit(this, Type);
-            Parameters = Parameters.Select(value => visitor.Visit(this, value)).ToList();
+            Parameters = visitor.Visit(this, Parameters);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4197,7 +4197,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            CustomModifiers = CustomModifiers.Select(value => visitor.Visit(this, value)).ToList();
+            CustomModifiers = visitor.Visit(this, CustomModifiers);
             Type = visitor.Visit(this, Type);
         } // Visit
 
@@ -4337,10 +4337,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Culture = visitor.Visit(this, Culture.AsSingleEnumerable()).FirstOrDefault();
-            RootNamespaceDefinition = visitor.Visit(this, RootNamespaceDefinition.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            Culture = visitor.Visit(this, Culture);
+            RootNamespaceDefinition = visitor.Visit(this, RootNamespaceDefinition);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4446,9 +4446,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            Culture = visitor.Visit(this, Culture.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            Culture = visitor.Visit(this, Culture);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4551,17 +4551,17 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             BaseType = visitor.Visit(this, BaseType);
             NamespaceDefinition = visitor.Visit(this, NamespaceDefinition);
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
+            Name = visitor.Visit(this, Name);
             EnclosingType = visitor.Visit(this, EnclosingType);
-            NestedTypes = visitor.Visit(this, NestedTypes.AsEnumerable());
-            Methods = visitor.Visit(this, Methods.AsEnumerable());
-            Fields = visitor.Visit(this, Fields.AsEnumerable());
-            Properties = visitor.Visit(this, Properties.AsEnumerable());
-            Events = visitor.Visit(this, Events.AsEnumerable());
-            GenericParameters = visitor.Visit(this, GenericParameters.AsEnumerable());
-            Interfaces = Interfaces.Select(value => visitor.Visit(this, value)).ToList();
-            MethodImpls = visitor.Visit(this, MethodImpls.AsEnumerable());
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            NestedTypes = visitor.Visit(this, NestedTypes);
+            Methods = visitor.Visit(this, Methods);
+            Fields = visitor.Visit(this, Fields);
+            Properties = visitor.Visit(this, Properties);
+            Events = visitor.Visit(this, Events);
+            GenericParameters = visitor.Visit(this, GenericParameters);
+            Interfaces = visitor.Visit(this, Interfaces);
+            MethodImpls = visitor.Visit(this, MethodImpls);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4668,9 +4668,9 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Scope = visitor.Visit(this, Scope);
-            Name = visitor.Visit(this, Name.AsSingleEnumerable()).FirstOrDefault();
-            NestedTypes = visitor.Visit(this, NestedTypes.AsEnumerable());
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            Name = visitor.Visit(this, Name);
+            NestedTypes = visitor.Visit(this, NestedTypes);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4745,7 +4745,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             GenericType = visitor.Visit(this, GenericType);
-            GenericTypeArguments = GenericTypeArguments.Select(value => visitor.Visit(this, value)).ToList();
+            GenericTypeArguments = visitor.Visit(this, GenericTypeArguments);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4821,8 +4821,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             ParentNamespaceOrType = visitor.Visit(this, ParentNamespaceOrType);
-            TypeName = visitor.Visit(this, TypeName.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            TypeName = visitor.Visit(this, TypeName);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -4896,8 +4896,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            Signature = visitor.Visit(this, Signature.AsSingleEnumerable()).FirstOrDefault();
-            CustomAttributes = visitor.Visit(this, CustomAttributes.AsEnumerable());
+            Signature = visitor.Visit(this, Signature);
+            CustomAttributes = visitor.Visit(this, CustomAttributes);
         } // Visit
 
         public override sealed bool Equals(Object obj)
