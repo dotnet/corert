@@ -63,17 +63,11 @@ class WriterGen : CsWriter
 
             if ((member.Flags & (MemberDefFlags.Map | MemberDefFlags.Sequence)) != 0)
             {
-                if ((member.Flags & MemberDefFlags.Child) != 0)
-                    WriteLine($"{member.Name} = visitor.Visit(this, {member.Name}.AsEnumerable());");
-                else
-                    WriteLine($"{member.Name} = {member.Name}.Select(value => visitor.Visit(this, value)).ToList();");
+                WriteLine($"{member.Name} = visitor.Visit(this, {member.Name});");
             }
             else
             {
-                if ((member.Flags & MemberDefFlags.Child) != 0)
-                    WriteLine($"{member.Name} = visitor.Visit(this, {member.Name}.AsSingleEnumerable()).FirstOrDefault();");
-                else
-                    WriteLine($"{member.Name} = visitor.Visit(this, {member.Name});");
+                WriteLine($"{member.Name} = visitor.Visit(this, {member.Name});");
             }
         }
         CloseScope("Visit");
