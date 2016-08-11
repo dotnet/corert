@@ -22,7 +22,6 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     public static class Unsafe
     {
-#if CORERT
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,12 +78,31 @@ namespace System.Runtime.CompilerServices
             // ret
         }
 
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
         {
             return ref AddRaw(ref source, elementOffset * (nint)SizeOf<T>());
         }
-#endif
+
+        /// <summary>
+        /// Determines whether the specified references point to the same location.
+        /// </summary>
+        [Intrinsic]
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AreSame<T>(ref T left, ref T right)
+        {
+            // This method is implemented by the toolchain
+            throw new PlatformNotSupportedException();
+
+            // ldarg.0
+            // ldarg.1
+            // ceq
+            // ret
+        }
     }
 }

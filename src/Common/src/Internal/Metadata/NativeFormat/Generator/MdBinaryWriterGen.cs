@@ -57,13 +57,13 @@ class MdBinaryWriterGen : CsWriter
 
     private void EmitWritePrimitiveArray(string typeName)
     {
-        OpenScope($"public static void Write(this NativeWriter writer, IEnumerable<{typeName}> values)");
+        OpenScope($"public static void Write(this NativeWriter writer, {typeName}[] values)");
         WriteLine("if (values == null)");
         WriteLine("{");
         WriteLine("    writer.WriteUnsigned(0);");
         WriteLine("    return;");
         WriteLine("}");
-        WriteLine("writer.WriteUnsigned((uint)values.Count());");
+        WriteLine("writer.WriteUnsigned((uint)values.Length);");
         WriteLine($"foreach ({typeName} value in values)");
         WriteLine("{");
         WriteLine("    writer.Write(value);");
@@ -90,13 +90,13 @@ class MdBinaryWriterGen : CsWriter
 
     private void EmitWriteArray(string typeName)
     {
-        OpenScope($"public static void Write(this NativeWriter writer, IEnumerable<{typeName}> values)");
+        OpenScope($"public static void Write(this NativeWriter writer, List<{typeName}> values)");
         WriteLine("if (values == null)");
         WriteLine("{");
         WriteLine("    writer.WriteUnsigned(0);");
         WriteLine("    return;");
         WriteLine("}");
-        WriteLine("writer.WriteUnsigned((uint)values.Count());");
+        WriteLine("writer.WriteUnsigned((uint)values.Count);");
         WriteLine($"foreach ({typeName} value in values)");
         WriteLine("{");
         WriteLine("    writer.Write(value);");

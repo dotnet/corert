@@ -1078,7 +1078,7 @@ namespace System.Runtime
                 if (s_previousCache.IsAllocated)
                 {
                     // Unchecked cast to avoid recursive dependency on array casting
-                    Entry[] previousCache = RuntimeHelpers.UncheckedCast<Entry[]>(s_previousCache.Target);
+                    Entry[] previousCache = Unsafe.As<Entry[]>(s_previousCache.Target);
                     if (previousCache != null)
                     {
                         Entry previousEntry = LookupInCache(previousCache, ref key);
