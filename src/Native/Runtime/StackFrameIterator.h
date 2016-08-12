@@ -57,11 +57,13 @@ public:
     void GetStackRangeToReportConservatively(PTR_RtuObjectRef * ppLowerBound, PTR_RtuObjectRef * ppUpperBound);
 
 private:
+#ifdef LEGACY_INTERFACE_DISPATCH
     // If our control PC indicates that we're in one of the thunks we use to make managed callouts from the
     // runtime we need to adjust the frame state to that of the managed method that previously called into the
     // runtime (i.e. skip the intervening unmanaged frames).
     // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
     void UnwindManagedCalloutThunk();
+#endif // LEGACY_INTERFACE_DISPATCH
 
     // The invoke of a funclet is a bit special and requires an assembly thunk, but we don't want to break the
     // stackwalk due to this.  So this routine will unwind through the assembly thunks used to invoke funclets.
@@ -107,7 +109,9 @@ private:
         InManagedCode,
         InThrowSiteThunk,
         InFuncletInvokeThunk,
+#ifdef LEGACY_INTERFACE_DISPATCH
         InManagedCalloutThunk,
+#endif // LEGACY_INTERFACE_DISPATCH
         InCallDescrThunk,
         InUniversalTransitionThunk,
     };

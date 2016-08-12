@@ -281,6 +281,10 @@ extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
 }
+extern "C" void RhpUniversalTransition_DebugStepTailCall()
+{
+    throw "RhpUniversalTransition_DebugStepTailCall";
+}
 extern "C" void RhpEtwExceptionThrown()
 {
     throw "RhpEtwExceptionThrown";

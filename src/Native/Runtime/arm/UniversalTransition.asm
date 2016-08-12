@@ -78,7 +78,11 @@
 ;; NOTE: The stack walker guarantees that conservative GC reporting will be applied to
 ;; everything between the base of the ReturnBlock and the top of the StackPassedArgs.
 ;;
-        NESTED_ENTRY RhpUniversalTransition
+
+        MACRO 
+        UNIVERSAL_TRANSITION $FunctionName
+
+        NESTED_ENTRY Rhp$FunctionName
         ;; Save argument registers (including floating point) and the return address.
         ;; NOTE: While we do that, capture the two arguments in the red zone into r12 and r3.
         PROLOG_NOP  ldr r12, [sp, #-4]              ; Capture first argument from red zone into r12
@@ -119,7 +123,7 @@
         ALIGN 4
         add         r0, sp, #DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK  ;; First parameter to target function is a pointer to the return block
         blx         r12
-    LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
+    LABELED_RETURN_ADDRESS ReturnFrom$FunctionName
 
         ;; Move the result (the target address) to r12 so it doesn't get overridden when we restore the
         ;; argument registers. Additionally make sure the thumb2 bit is set.
@@ -136,7 +140,14 @@
         ;; Tailcall to the target address.
         EPILOG_BRANCH_REG r12
 
-        NESTED_END RhpUniversalTransition
+        NESTED_END Rhp$FunctionName
+        MEND
+        
+                ; To enable proper step-in behavior in the debugger, we need to have two instances
+        ; of the thunk. For the first one, the debugger steps into the call in the function, 
+        ; for the other, it steps over it.
+        UNIVERSAL_TRANSITION UniversalTransition
+        UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
 
         END
 
