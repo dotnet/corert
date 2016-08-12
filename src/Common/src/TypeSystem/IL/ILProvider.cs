@@ -69,12 +69,6 @@ namespace Internal.IL
                             return EETypePtrOfIntrinsic.EmitIL(method);
                     }
                     break;
-                case "InvokeUtils":
-                    {
-                        if (owningType.Namespace == "System")
-                            return InvokeUtilsIntrinsics.EmitIL(method);
-                    }
-                    break;
             }
 
             return null;

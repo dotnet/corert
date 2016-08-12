@@ -299,19 +299,19 @@ namespace System
                     if (invokeMethodHelperIsThisCall)
                     {
                         Debug.Assert(methodToCallIsThisCall == true);
-                        result = CallIHelperThisCall(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, ref argSetupState);
+                        result = CalliIntrinsics.Call(dynamicInvokeHelperMethod, thisPtrDynamicInvokeMethod, thisPtr, methodToCall, ref argSetupState);
                         System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                     }
                     else
                     {
                         if (dynamicInvokeHelperGenericDictionary != IntPtr.Zero)
                         {
-                            result = CallIHelperStaticCallWithInstantiation(thisPtr, methodToCall, dynamicInvokeHelperMethod, ref argSetupState, methodToCallIsThisCall, dynamicInvokeHelperGenericDictionary);
+                            result = CalliIntrinsics.Call(dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }
                         else
                         {
-                            result = CallIHelperStaticCall(thisPtr, methodToCall, dynamicInvokeHelperMethod, ref argSetupState, methodToCallIsThisCall);
+                            result = CalliIntrinsics.Call(dynamicInvokeHelperMethod, thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }
                     }
@@ -382,40 +382,51 @@ namespace System
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        public static void DynamicInvokeArgSetupPtrComplete(IntPtr argSetupStatePtr)
+        public unsafe static void DynamicInvokeArgSetupPtrComplete(IntPtr argSetupStatePtr)
         {
-            // Intrinsic filled by the ImplementLibraryDynamicInvokeHelpers transform.
             // argSetupStatePtr is a pointer to a *pinned* ArgSetupState object
-
-            // ldarg.0
-            // call void System.InvokeUtils.DynamicInvokeArgSetupComplete(ref ArgSetupState)
-            // ret
-
-            throw new PlatformNotSupportedException();
+            DynamicInvokeArgSetupComplete(ref Unsafe.As<byte, ArgSetupState>(ref *(byte*)argSetupStatePtr));
         }
 
-        [Intrinsic]
-        [DebuggerStepThrough]
-        internal static object CallIHelperThisCall(object thisPtr, IntPtr methodToCall, object thisPtrForDynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperMethod, ref ArgSetupState argSetupState)
+        [System.Runtime.InteropServices.McgIntrinsicsAttribute]
+        private static class CalliIntrinsics
         {
-            // Calli the dynamicInvokeHelper method with a bunch of parameters  As this can't actually be defined in C# there is an IL transform that fills this in.
-            return null;
-        }
+            [DebuggerStepThrough]
+            internal static object Call(
+                IntPtr dynamicInvokeHelperMethod,
+                object thisPtrForDynamicInvokeHelperMethod,
+                object thisPtr,
+                IntPtr methodToCall,
+                ref ArgSetupState argSetupState)
+            {
+                // This method is implemented elsewhere in the toolchain
+                throw new PlatformNotSupportedException();
+            }
 
-        [Intrinsic]
-        [DebuggerStepThrough]
-        internal static object CallIHelperStaticCall(object thisPtr, IntPtr methodToCall, IntPtr dynamicInvokeHelperMethod, ref ArgSetupState argSetupState, bool isTargetThisCall)
-        {
-            // Calli the dynamicInvokeHelper method with a bunch of parameters  As this can't actually be defined in C# there is an IL transform that fills this in.
-            return null;
-        }
+            [DebuggerStepThrough]
+            internal static object Call(
+                IntPtr dynamicInvokeHelperMethod,
+                object thisPtr,
+                IntPtr methodToCall,
+                ref ArgSetupState argSetupState,
+                bool isTargetThisCall)
+            {
+                // This method is implemented elsewhere in the toolchain
+                throw new PlatformNotSupportedException();
+            }
 
-        [Intrinsic]
-        [DebuggerStepThrough]
-        internal static object CallIHelperStaticCallWithInstantiation(object thisPtr, IntPtr methodToCall, IntPtr dynamicInvokeHelperMethod, ref ArgSetupState argSetupState, bool isTargetThisCall, IntPtr dynamicInvokeHelperGenericDictionary)
-        {
-            // Calli the dynamicInvokeHelper method with a bunch of parameters  As this can't actually be defined in C# there is an IL transform that fills this in.
-            return null;
+            [DebuggerStepThrough]
+            internal static object Call(
+                IntPtr dynamicInvokeHelperMethod,
+                IntPtr dynamicInvokeHelperGenericDictionary,
+                object thisPtr,
+                IntPtr methodToCall,
+                ref ArgSetupState argSetupState,
+                bool isTargetThisCall)
+            {
+                // This method is implemented elsewhere in the toolchain
+                throw new PlatformNotSupportedException();
+            }
         }
 
         // Template function that is used to call dynamically
@@ -506,134 +517,68 @@ namespace System
             return null;
         }
 
-        [Intrinsic]
         [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DynamicInvokeUnboxIntoActualNullable(object actualBoxedNullable, object boxedFillObject, EETypePtr nullableType)
         {
-            // pin the actualBoxedNullable
-            // local0 is object pinned pinnedActualBoxedNullable
-            // ldarg.0
-            // stloc.0
-
-            // ldarg.1 // object to unbox
-            // ldarg.0
-            // ldflda System.Object::m_eetype
-            // sizeof EETypePtr
-            // add // byref to data data region within actualBoxedNullable
-            // ldarg.2
             // get a byref to the data within the actual boxed nullable, and then call RhUnBox with the boxedFillObject as the boxed object, and nullableType as the unbox type, and unbox into the actualBoxedNullable
-            // call static void RuntimeImports.RhUnbox(object obj, void* pData, EETypePtr pUnboxToEEType);
-            // ret
+            RuntimeImports.RhUnbox(boxedFillObject, ref actualBoxedNullable.GetRawData(), nullableType);
         }
 
-        [Intrinsic]
         [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static object DynamicInvokeBoxIntoNonNullable(object actualBoxedNullable)
         {
-            // pin the actualBoxedNullable
-            // local0 is object pinned pinnedActualBoxedNullable
-            // ldarg.0
-            // stloc.0
-            //
             // grab the pointer to data, box using the EEType of the actualBoxedNullable, and then return the boxed object
-            // ldarg.0
-            // ldfld System.Object::m_eetype
-            // ldarg.0
-            // ldflda System.Object::m_eetype
-            // sizeof EETypePtr
-            // add
-            // call RuntimeImports.RhBox(EETypePtr, void*data)
-            // ret
-            return null;
+            return RuntimeImports.RhBox(actualBoxedNullable.EETypePtr, ref actualBoxedNullable.GetRawData());
         }
 
         [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        internal static /* Transform change this into byref to IntPtr*/ IntPtr DynamicInvokeParamHelperIn(RuntimeTypeHandle rth)
+        internal static ref IntPtr DynamicInvokeParamHelperIn(RuntimeTypeHandle rth)
         {
-            // Call DynamicInvokeParamHelperCore as an in parameter, and return a managed byref to the interesting bit. As this can't actually be defined in C# there is an IL transform that fills this in.
+            //
+            // Call DynamicInvokeParamHelperCore as an in parameter, and return a managed byref to the interesting bit.
             //
             // This function exactly matches DynamicInvokeParamHelperRef except for the value of the enum passed to DynamicInvokeParamHelperCore
             // 
-            // zeroinit
-            // local0 is int index
-            // local1 is DynamicInvokeParamLookupType
-            // local2 is object
-            // 
-            // Capture information about the parameter.
-            // ldarg.0 
-            // ldloca 1 // ref DynamicInvokeParamLookupType
-            // ldloca 0 // ref index
-            // ldc.i4.0 // DynamicInvokeParamType.In
-            // call object DynamicInvokeParamHelperCore(RuntimeTypeHandle type, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType paramType)
-            // stloc.2
 
-            // decode output of DynamicInvokeParamHelperCore
-            // if (paramLookupType == DynamicInvokeParamLookupType.ValuetypeObjectReturned)
-            //     return &local2.m_pEEType + sizeof(EETypePtr)
-            // else
-            //     return &(((object[])local2)[index])
-            //
-            // ldloc.1
-            // ldc.i4.0
-            // bne.un arrayCase
-            // ldloc.2
-            // ldflda System.Object::m_eetype
-            // sizeof EETypePtr
-            // add
-            // ret
-            // arrayCase:
-            // ldloc.2
-            // ldloc.0
-            // ldelema System.Object
-            // ret
-            return IntPtr.Zero;
+            int index;
+            DynamicInvokeParamLookupType paramLookupType;
+            object obj = DynamicInvokeParamHelperCore(rth, out paramLookupType, out index, DynamicInvokeParamType.In);
+
+            if (paramLookupType == DynamicInvokeParamLookupType.ValuetypeObjectReturned)
+            {
+                return ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData());
+            }
+            else
+            {
+                return ref Unsafe.As<object, IntPtr>(ref Unsafe.As<object[]>(obj)[index]);
+            }
         }
 
         [DebuggerStepThrough]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        internal static /* Transform change this into byref to IntPtr*/ IntPtr DynamicInvokeParamHelperRef(RuntimeTypeHandle rth)
+        internal static ref IntPtr DynamicInvokeParamHelperRef(RuntimeTypeHandle rth)
         {
+            //
             // Call DynamicInvokeParamHelperCore as a ref parameter, and return a managed byref to the interesting bit. As this can't actually be defined in C# there is an IL transform that fills this in.
             //
             // This function exactly matches DynamicInvokeParamHelperIn except for the value of the enum passed to DynamicInvokeParamHelperCore
             // 
-            // zeroinit
-            // local0 is int index
-            // local1 is DynamicInvokeParamLookupType
-            // local2 is object
-            // 
-            // Capture information about the parameter.
-            // ldarg.0 
-            // ldloca 1 // ref DynamicInvokeParamLookupType
-            // ldloca 0 // ref index
-            // ldc.i4.1 // DynamicInvokeParamType.Ref
-            // call object DynamicInvokeParamHelperCore(RuntimeTypeHandle type, out DynamicInvokeParamLookupType paramLookupType, out int index, DynamicInvokeParamType paramType)
-            // stloc.2
 
-            // decode output of DynamicInvokeParamHelperCore
-            // if (paramLookupType == DynamicInvokeParamLookupType.ValuetypeObjectReturned)
-            //     return &local2.m_pEEType + sizeof(EETypePtr)
-            // else
-            //     return &(((object[])local2)[index])
-            //
-            // ldloc.1
-            // ldc.i4.0
-            // bne.un arrayCase
-            // ldloc.2
-            // ldflda System.Object::m_eetype
-            // sizeof EETypePtr
-            // add
-            // ret
-            // arrayCase:
-            // ldloc.2
-            // ldloc.0
-            // ldelema System.Object
-            // ret
+            int index;
+            DynamicInvokeParamLookupType paramLookupType;
+            object obj = DynamicInvokeParamHelperCore(rth, out paramLookupType, out index, DynamicInvokeParamType.Ref);
 
-            return IntPtr.Zero;
+            if (paramLookupType == DynamicInvokeParamLookupType.ValuetypeObjectReturned)
+            {
+                return ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData());
+            }
+            else
+            {
+                return ref Unsafe.As<object, IntPtr>(ref Unsafe.As<object[]>(obj)[index]);
+            }
         }
 
         internal static object DynamicInvokeBoxedValuetypeReturn(out DynamicInvokeParamLookupType paramLookupType, object boxedValuetype, int index, RuntimeTypeHandle type, DynamicInvokeParamType paramType)
