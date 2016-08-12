@@ -240,14 +240,16 @@ namespace Internal.JitInterface
         CORINFO_LOOKUP_CLASSPARAM,
     }
 
-    public struct CORINFO_LOOKUP_KIND
+    public unsafe struct CORINFO_LOOKUP_KIND
     {
         private byte _needsRuntimeLookup;
         public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
         public CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-        // The 'runtimeLookupFlags' field is just for internal VM / ZAP communication, 
-        // not to be used by the JIT.
+
+        // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields
+        // are just for internal VM / ZAP communication, not to be used by the JIT.
         public ushort runtimeLookupFlags;
+        public void* runtimeLookupArgs;
     }
 
     // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
@@ -291,7 +293,7 @@ namespace Internal.JitInterface
         public CORINFO_LOOKUP_KIND lookupKind;
 
         // If kind.needsRuntimeLookup then this indicates how to do the lookup
-        [FieldOffset(16)]
+        [FieldOffset(24)]
         public CORINFO_RUNTIME_LOOKUP runtimeLookup;
 
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
@@ -299,7 +301,7 @@ namespace Internal.JitInterface
         //     IAT_VALUE --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE --> "addr" stores a pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
-        [FieldOffset(16)]
+        [FieldOffset(24)]
         public CORINFO_CONST_LOOKUP constLookup;
     }
 
