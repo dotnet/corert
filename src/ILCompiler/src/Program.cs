@@ -26,6 +26,7 @@ namespace ILCompiler
         private TargetOS _targetOS;
         private string _systemModuleName = "System.Private.CoreLib";
         private bool _multiFile;
+        private bool _useSharedGenerics;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -113,6 +114,7 @@ namespace ILCompiler
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
+                syntax.DefineOption("usesharedgenerics", ref _useSharedGenerics, "Enable shared generics");
 
                 syntax.DefineOption("singlemethodtypename", ref _singleMethodTypeName, "Single method compilation: name of the owning type");
                 syntax.DefineOption("singlemethodname", ref _singleMethodName, "Single method compilation: name of the method");
@@ -155,7 +157,10 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS));
+            SharedGenericsMode genericsMode = _useSharedGenerics ?
+                SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
+
+            var typeSystemContext = new CompilerTypeSystemContext(new TargetDetails(_targetArchitecture, _targetOS), genericsMode);
             typeSystemContext.InputFilePaths = _inputFilePaths;
             typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
