@@ -812,12 +812,9 @@ namespace System.Runtime.CompilerServices
             IAsyncStateMachine boxedStateMachine;
             if (stateMachineType.IsValueType)
             {
-                fixed (byte* pStateMachine = &stateMachineAddress)
-                {
-                    object boxed = RuntimeImports.RhBox(stateMachineType, pStateMachine);
-                    Debug.Assert(boxed is IAsyncStateMachine);
-                    boxedStateMachine = Unsafe.As<IAsyncStateMachine>(boxed);
-                }
+                object boxed = RuntimeImports.RhBox(stateMachineType, ref stateMachineAddress);
+                Debug.Assert(boxed is IAsyncStateMachine);
+                boxedStateMachine = Unsafe.As<IAsyncStateMachine>(boxed);
             }
             else
             {
