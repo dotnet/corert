@@ -62,6 +62,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\InvokeUtilsIntrinsics.cs">
       <Link>IL\Stubs\InvokeUtilsIntrinsics.cs</Link>
     </Compile>
+    <Compile Include="..\..\JitInterface\src\JitHost.cs">
+      <Link>JitInterface\JitHost.cs</Link>
+    </Compile>
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
