@@ -117,6 +117,7 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 #elif _TARGET_ARM64_
+#pragma warning disable 0169
     struct ReturnBlock
     {
         IntPtr returnValue;
@@ -129,7 +130,6 @@ namespace Internal.Runtime
         IntPtr returnValue8;
     }
 
-#pragma warning disable 0169
     struct CalleeSavedRegisters
     {
         IntPtr x29;
@@ -188,13 +188,13 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 #elif _TARGET_X86_
+#pragma warning disable 0169,0649
     struct ReturnBlock
     {
         public IntPtr returnValue;
         public IntPtr returnValue2;
     }
 
-#pragma warning disable 0169,0649
     struct ArgumentRegisters
     {
         public IntPtr edx;
@@ -228,6 +228,7 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 #elif _TARGET_ARM_
+#pragma warning disable 0169
     struct ReturnBlock
     {
         IntPtr returnValue;
@@ -240,7 +241,6 @@ namespace Internal.Runtime
         IntPtr returnValue8;
     }
 
-#pragma warning disable 0169
     struct ArgumentRegisters
     {
         IntPtr r0;
