@@ -20,6 +20,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // TODO: assert methodRepresented is not runtime determined
             Debug.Assert(!methodRepresented.IsCanonicalMethod(CanonicalFormKind.Any));
+            Debug.Assert(!methodRepresented.OwningType.IsRuntimeDeterminedSubtype);
             _methodRepresented = methodRepresented;
             _canonicalNode = canonicalNode;
         }

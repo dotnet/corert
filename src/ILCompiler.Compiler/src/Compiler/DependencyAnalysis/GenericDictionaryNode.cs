@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -121,6 +122,15 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var entry in layout.Entries)
                 {
                     ISymbolNode targetNode = factory.GetGenericFixupTarget(entry.FixupKind, entry.Target, typeInstantiation, methodInstantiation);
+
+#if DEBUG
+                    var targetDependencyNode = targetNode as DependencyNodeCore<NodeFactory>;
+                    if (targetDependencyNode != null)
+                    {
+                        Debug.Assert(targetDependencyNode.Marked);
+                    }
+#endif
+
                     builder.EmitPointerReloc(targetNode);
                 }
             }

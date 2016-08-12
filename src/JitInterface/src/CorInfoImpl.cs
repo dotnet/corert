@@ -2397,8 +2397,9 @@ namespace Internal.JitInterface
                 pResult.codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
 
                 MethodDesc runtimeDeterminedTarget;
-                if ((runtimeDeterminedTarget = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken)) != null &&
-                    runtimeDeterminedTarget.GetCanonMethodTarget(CanonicalFormKind.Specific) != runtimeDeterminedTarget)
+                if (!pResult.exactContextNeedsRuntimeLookup &&
+                    directMethod.IsCanonicalMethod(CanonicalFormKind.Any) &&
+                    ((runtimeDeterminedTarget = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken)) != null))
                 {
                     var richReloc = new RichRelocation(
                         _compilation.NodeFactory.DependencyOnlyMethod(runtimeDeterminedTarget),
