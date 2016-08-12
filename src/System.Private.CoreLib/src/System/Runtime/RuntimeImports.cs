@@ -251,8 +251,16 @@ namespace System.Runtime
         internal static unsafe extern object RhBox(EETypePtr pEEType, void* pData);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhBox")]
+        internal static unsafe extern object RhBox(EETypePtr pEEType, ref byte data);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhUnbox")]
         internal static unsafe extern void RhUnbox(object obj, void* pData, EETypePtr pUnboxToEEType);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhUnbox")]
+        internal static unsafe extern void RhUnbox(object obj, ref byte data, EETypePtr pUnboxToEEType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhMemberwiseClone")]
