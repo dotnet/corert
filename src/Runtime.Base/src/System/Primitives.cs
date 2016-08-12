@@ -396,6 +396,16 @@ namespace System
         {
             return value1._value != value2._value;
         }
+
+        [Intrinsic]
+        public unsafe static IntPtr operator +(IntPtr pointer, int offset)
+        {
+#if BIT64
+            return new IntPtr((long)pointer._value + offset);
+#else
+            return new IntPtr((int)pointer._value + offset);
+#endif
+        }
     }
 #pragma warning restore 0660, 0661
 

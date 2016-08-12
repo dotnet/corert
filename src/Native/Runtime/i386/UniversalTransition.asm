@@ -55,13 +55,15 @@ ifdef FEATURE_DYNAMIC_CODE
 ; everything between the base of the IntArgRegs and the top of the StackPassedArgs.
 ;
 
-FASTCALL_FUNC RhpUniversalTransition_FAKE_ENTRY, 0        
+UNIVERSAL_TRANSITION macro FunctionName
+
+FASTCALL_FUNC Rhp&FunctionName&_FAKE_ENTRY, 0        
         ; Set up an ebp frame
         push        ebp
         mov         ebp, esp
         push eax
         push eax
-ALTERNATE_ENTRY RhpUniversalTransition@0
+ALTERNATE_ENTRY Rhp&FunctionName&@0
         push ecx
         push edx
 
@@ -72,7 +74,7 @@ ALTERNATE_ENTRY RhpUniversalTransition@0
         mov  edx, [ebp-4]    ; Get the extra argument to pass to the callee
         lea  ecx, [ebp-10h]  ; Get pointer to edx value pushed above
         call eax
-LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
+LABELED_RETURN_ADDRESS ReturnFrom&FunctionName
 
         pop edx
         pop ecx
@@ -81,7 +83,14 @@ LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
         jmp eax
 
 FASTCALL_ENDFUNC
-
+        endm
+        
+        ; To enable proper step-in behavior in the debugger, we need to have two instances
+        ; of the thunk. For the first one, the debugger steps into the call in the function, 
+        ; for the other, it steps over it.
+        UNIVERSAL_TRANSITION UniversalTransition
+        UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
+        
 endif
 
 end

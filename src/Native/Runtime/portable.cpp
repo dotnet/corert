@@ -244,6 +244,10 @@ COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarg
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;
 
+// @TODO Implement UniversalTransition_DebugStepTailCall
+EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
+void * ReturnFromUniversalTransition_DebugStepTailCall;
+
 // @TODO Implement CallDescrThunk
 EXTERN_C void * ReturnFromCallDescrThunk;
 void * ReturnFromCallDescrThunk;
