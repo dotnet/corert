@@ -77,10 +77,12 @@
     <DefineConstants>CORERT;LEGACY_INTERFACE_DISPATCH;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="System\Nullable.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\Runtime\CachedInterfaceDispatch.cs" />
