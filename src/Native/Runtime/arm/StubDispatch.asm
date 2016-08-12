@@ -9,7 +9,8 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-    EXTERN RhpResolveInterfaceMethodCacheMiss
+    EXTERN RhpCidResolve
+    EXTERN RhpUniversalTransition_DebugStepTailCall
 
     ;; Macro that generates code to check a single cache entry.
     MACRO
@@ -96,67 +97,19 @@ CurrentEntry SETA CurrentEntry + 1
 
 
 ;; Cache miss case, call the runtime to resolve the target and update the cache.
-    NESTED_ENTRY RhpInterfaceDispatchSlow
+    LEAF_ENTRY RhpInterfaceDispatchSlow
     ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
-
-        ;; Save argument registers (including floating point) and the return address. Note that we depend on
-        ;; these registers (which may contain GC references) being spilled before we build the
-        ;; PInvokeTransitionFrame below due to the way we build a stack range to report to the GC
-        ;; conservatively during a collection.
-        PROLOG_PUSH {r0-r3,lr}
-        PROLOG_VPUSH {d0-d7}
-
-        ;; Build PInvokeTransitionFrame. This is only required if we end up resolving the interface method via
-        ;; a callout to a managed ICastable method. In that instance we need to be able to cope with garbage
-        ;; collections which in turn need to be able to walk the stack from the ICastable method, skip the
-        ;; unmanaged runtime portions and resume walking at our caller. This frame provides both the means to
-        ;; unwind to that caller and a place to spill callee saved registers in case they contain GC
-        ;; references from the caller.
-
-        PROLOG_STACK_ALLOC 8        ; Align the stack and save space for caller's SP
-        PROLOG_PUSH {r4-r6,r8-r10}  ; Save preserved registers
-        PROLOG_STACK_ALLOC 8        ; Save space for flags and Thread*
-        PROLOG_PUSH {r7}            ; Save caller's FP
-        PROLOG_PUSH {r11,lr}        ; Save caller's frame-chain pointer and PC
-
-        ;; Compute SP value at entry to this method and save it in the last slot of the frame (slot #11).
-        add         r1, sp, #((12 * 4) + 4 + (8 * 8) + (5 * 4))
-        str         r1, [sp, #(11 * 4)]
-
-        ;; Record the bitmask of saved registers in the frame (slot #4).
-        mov         r1, #DEFAULT_FRAME_SAVE_FLAGS
-        str         r1, [sp, #(4 * 4)]
-
-        ;; First argument is the instance we're dispatching on which is already in r0.
-
-        ;; Second argument is the dispatch data cell. 
-        ;; We still have this in r12
-        mov     r1, r12
-
-        ;; The third argument is the address of the transition frame we build above. Currently it's at the top
-        ;; of the stack so sp points to it.
-        mov     r2, sp
-
-        bl    RhpResolveInterfaceMethodCacheMiss
-
-        ;; Move the result (the target address) to r12 so it doesn't get overridden when we restore the
-        ;; argument registers. Additionally make sure the thumb2 bit is set.
-        orr     r12, r0, #1
-
-        ;; Pop the PInvokeTransitionFrame
-        EPILOG_POP  {r11,lr}        ; Restore caller's frame-chain pointer and PC (return address)
-        EPILOG_POP  {r7}            ; Restore caller's FP
-        EPILOG_STACK_FREE 8         ; Discard flags and Thread*
-        EPILOG_POP  {r4-r6,r8-r10}  ; Restore preserved registers
-        EPILOG_STACK_FREE 8         ; Discard caller's SP and stack alignment padding
-
-        ;; Restore the argument registers.
-        EPILOG_VPOP {d0-d7}
-        EPILOG_POP {r0-r3,lr}
-
-        EPILOG_BRANCH_REG r12
-
-    NESTED_END RhpInterfaceDispatchSlow
+        ;; r12 has the interface dispatch cell address in it. 
+        ;; The calling convention of the universal thunk is that the parameter
+        ;; for the universal thunk target is to be placed in sp-8
+        ;; and the universal thunk target address is to be placed in sp-4
+        str    r12, [sp, #-8]
+        ldr     r12, =RhpCidResolve
+        str    r12, [sp, #-4]
+        
+        ;; jump to universal transition thunk
+        b RhpUniversalTransition_DebugStepTailCall
+    LEAF_END RhpInterfaceDispatchSlow
 
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

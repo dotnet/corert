@@ -200,6 +200,21 @@ namespace Internal.Reflection.Core.Execution
             if (!ExecutionEnvironment.TryGetConstructedGenericTypeComponents(typeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
                 throw CreateMissingMetadataException((Type)null);
 
+            // Reflection blocked constructed generic types simply pretend to not be generic
+            // This is reasonable, as the behavior of reflection blocked types is supposed
+            // to be that they expose the minimal information about a type that is necessary
+            // for users of Object.GetType to move from that type to a type that isn't
+            // reflection blocked. By not revealing that reflection blocked types are generic
+            // we are making it appear as if implementation detail types exposed to user code
+            // are all non-generic, which is theoretically possible, and by doing so
+            // we avoid (in all known circumstances) the very complicated case of representing 
+            // the interfaces, base types, and generic parameter types of reflection blocked 
+            // generic type definitions.
+            if (ExecutionEnvironment.IsReflectionBlocked(genericTypeDefinitionHandle))
+            {
+                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false).AsType();
+            }
+
             RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
             int count = genericTypeArgumentHandles.Length;
             RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[count];

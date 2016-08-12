@@ -85,7 +85,9 @@ DISTANCE_FROM_CHILDSP_TO_CALLERSP               equ DISTANCE_FROM_CHILDSP_TO_RET
 ; everything between the base of the ReturnBlock and the top of the StackPassedArgs.
 ;
 
-NESTED_ENTRY RhpUniversalTransition, _TEXT        
+UNIVERSAL_TRANSITION macro FunctionName
+
+NESTED_ENTRY Rhp&FunctionName, _TEXT        
 
         alloc_stack DISTANCE_FROM_CHILDSP_TO_RETADDR
         
@@ -124,7 +126,7 @@ endif ; TRASH_SAVED_ARGUMENT_REGISTERS
         mov  rdx, r11
         lea  rcx, [rsp + DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK]
         call r10
-LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
+LABELED_RETURN_ADDRESS ReturnFrom&FunctionName
 
         ; restore fp argument registers
         movdqa          xmm0, [rsp + DISTANCE_FROM_CHILDSP_TO_FP_REGS      ]
@@ -146,8 +148,16 @@ LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
 
         TAILJMP_RAX
 
-NESTED_END RhpUniversalTransition, _TEXT
+NESTED_END Rhp&FunctionName, _TEXT
 
+        endm
+
+        ; To enable proper step-in behavior in the debugger, we need to have two instances
+        ; of the thunk. For the first one, the debugger steps into the call in the function, 
+        ; for the other, it steps over it.
+        UNIVERSAL_TRANSITION UniversalTransition
+        UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
+        
 endif
 
 end

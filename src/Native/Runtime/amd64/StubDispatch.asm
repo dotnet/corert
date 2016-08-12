@@ -7,7 +7,12 @@ include AsmMacros.inc
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+ifdef LEGACY_INTERFACE_DISPATCH
 EXTERN RhpResolveInterfaceMethodCacheMiss : PROC
+endif ;; LEGACY_INTERFACE_DISPATCH
+
+EXTERN RhpCidResolve : PROC
+EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
 
 
 ;; Macro that generates code to check a single cache entry.
@@ -75,6 +80,22 @@ ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
 
 LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
+ifndef LEGACY_INTERFACE_DISPATCH
+;; Cache miss case, call the runtime to resolve the target and update the cache.
+;; Use universal transition helper to allow an exception to flow out of resolution
+LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
+        ;; r10 contains indirection cell address, move to r11 where it will be passed by
+        ;; the universal transition thunk as an argument to RhpCidResolve
+        mov r11, r10
+        lea r10, RhpCidResolve
+        jmp RhpUniversalTransition_DebugStepTailCall
+EXTERN RhpCidResolve : PROC
+
+LEAF_END RhpInterfaceDispatchSlow, _TEXT
+endif ;; !LEGACY_INTERFACE_DISPATCH
+
+ifdef LEGACY_INTERFACE_DISPATCH
+;; CORE_RT code, which uses legacy RhpResolveInterfaceCacheMissFunction
 ;; Cache miss case, call the runtime to resolve the target and update the cache.
 NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT
 
@@ -161,7 +182,7 @@ RIDS_ReservedStack equ 20h + 60h + 40h + 8h     ;; Scratch space, transition fra
         add     rsp, RIDS_ReservedStack
         TAILJMP_RAX
 NESTED_END RhpInterfaceDispatchSlow, _TEXT
-
+endif ;; LEGACY_INTERFACE_DISPATCH
 
 
 

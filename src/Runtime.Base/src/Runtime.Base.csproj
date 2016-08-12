@@ -74,9 +74,14 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>CORERT;LEGACY_INTERFACE_DISPATCH;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
+      <Link>Common\TransitionBlock.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Nullable.cs" />
     <Compile Include="System\Object.cs" />
@@ -99,6 +104,7 @@
     <Compile Include="System\Primitives.cs" />
     <Compile Include="System\RuntimeHandles.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
+    <Compile Include="System\Runtime\RuntimeAugments.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\ThrowHelpers.cs" />
     <Compile Include="System\Void.cs" />
