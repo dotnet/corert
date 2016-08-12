@@ -20,6 +20,7 @@ struct CORINFO_LOOKUP_KIND
     bool                        needsRuntimeLookup;
     CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
     unsigned short              runtimeLookupFlags;
+    void*                       runtimeLookupArgs;
 };
 
 int JitInterfaceWrapper::FilterException(void* pExceptionPointers)
