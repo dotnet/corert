@@ -29,7 +29,7 @@
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #elif AMD64
-#if UNIXAMD64
+#if PLATFORM_UNIX
 #define UNIX_AMD64_ABI
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #else
@@ -53,6 +53,23 @@ namespace Internal.Runtime
 {
 #if _TARGET_AMD64_
 #pragma warning disable 0169
+#if UNIX_AMD64_ABI
+    struct ReturnBlock
+    {
+        IntPtr returnValue;
+        IntPtr returnValue2;
+    }
+
+    struct ArgumentRegisters
+    {
+        IntPtr rdi;
+        IntPtr rsi;
+        IntPtr rdx;
+        IntPtr rcx;
+        IntPtr r8;
+        IntPtr r9;
+    }
+#else // UNIX_AMD64_ABI
     struct ReturnBlock
     {
         IntPtr returnValue;
@@ -60,20 +77,12 @@ namespace Internal.Runtime
 
     struct ArgumentRegisters
     {
-#if !UNIX_AMD64_ABI
-        IntPtr rcx;
-        IntPtr rdx;
-        IntPtr r8;
-        IntPtr r9;
-#else
-        IntPtr rdi;
-        IntPtr rsi;
         IntPtr rdx;
         IntPtr rcx;
         IntPtr r8;
         IntPtr r9;
-#endif
     }
+#endif // UNIX_AMD64_ABI
 #pragma warning restore 0169
 
 #pragma warning disable 0169
@@ -102,11 +111,10 @@ namespace Internal.Runtime
         // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
         public const int MAX_ARG_SIZE = 0xFFFFFF;
 
-#if !UNIX_AMD64_ABI
-        public const int NUM_ARGUMENT_REGISTERS = 4;
-#endif
 #if UNIX_AMD64_ABI
         public const int NUM_ARGUMENT_REGISTERS = 6;
+#else
+        public const int NUM_ARGUMENT_REGISTERS = 4;
 #endif
         public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 8;
         public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 8;
@@ -188,7 +196,7 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 #elif _TARGET_X86_
-#pragma warning disable 0169,0649
+#pragma warning disable 0169, 0649
     struct ReturnBlock
     {
         public IntPtr returnValue;
@@ -212,7 +220,7 @@ namespace Internal.Runtime
     struct FloatArgumentRegisters
     {
     }
-#pragma warning restore 0169,0649
+#pragma warning restore 0169, 0649
 
     struct ArchitectureConstants
     {
@@ -299,30 +307,37 @@ namespace Internal.Runtime
         IntPtr m_ebp;
         IntPtr m_ReturnAddress;
 #elif _TARGET_AMD64_
+
 #if UNIX_AMD64_ABI
-        ArgumentRegisters m_argumentRegisters;
-#else
+        public ReturnBlock m_returnBlock;
+        public static unsafe int GetOffsetOfReturnValuesBlock()
+        {
+            return 0;
+        }
+
+        public ArgumentRegisters m_argumentRegisters;
+        public static unsafe int GetOffsetOfArgumentRegisters()
+        {
+            return sizeof(ReturnBlock);
+        }
+
+        IntPtr m_alignmentPadding;
+        IntPtr m_ReturnAddress;
+#else // UNIX_AMD64_ABI
         IntPtr m_returnBlockPadding;
-#endif
         ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
         {
-#if UNIX_AMD64_ABI
-#error not yet implemented
-#else
             return sizeof(IntPtr);
-#endif
         }
         IntPtr m_alignmentPadding;
         IntPtr m_ReturnAddress;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {
-#if UNIX_AMD64_ABI
-            return 0;
-#else
             return sizeof(TransitionBlock);
-#endif
         }
+#endif // UNIX_AMD64_ABI
+
 #elif _TARGET_ARM_
         public ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
@@ -341,6 +356,7 @@ namespace Internal.Runtime
         {
             return 0;
         }
+
         public ArgumentRegisters m_argumentRegisters;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {

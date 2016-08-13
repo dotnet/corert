@@ -62,101 +62,12 @@ ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
 LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
 // Cache miss case, call the runtime to resolve the target and update the cache.
-NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT, NoHandler
+// Use universal transition helper to allow an exception to flow out of resolution
+LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
+        // r10 contains indirection cell address, move to r11 where it will be passed by
+        // the universal transition thunk as an argument to RhpCidResolve
+        mov r11, r10
+        lea r10, [rip + C_FUNC(RhpCidResolve)]
+        jmp C_FUNC(RhpUniversalTransition_DebugStepTailCall)
 
-        #define RIDS_ReservedStack 0x108 // 0x50 + 0x80 + 0x30 + 8 => transition frame, xmm registers, argument registers and padding
-
-        rsp_offsetof_xmmregs = 0x50
-        rsp_offsetof_argregs = 0x50 + 0x80
-
-        alloc_stack         RIDS_ReservedStack
-
-        // Preserve the argument registers in the scratch space across the helper call. Note that we depend on these
-        // registers (which may contain GC references) being spilled before we build the PInvokeTransitionFrame below
-        // due to the way we build a stack range to report to the GC conservatively during a collection.
-        mov     [rsp + rsp_offsetof_argregs + 8*0], rdi
-        mov     [rsp + rsp_offsetof_argregs + 8*1], rsi
-        mov     [rsp + rsp_offsetof_argregs + 8*2], rdx
-        mov     [rsp + rsp_offsetof_argregs + 8*3], rcx
-        mov     [rsp + rsp_offsetof_argregs + 8*4], r8
-        mov     [rsp + rsp_offsetof_argregs + 8*5], r9
-
-        save_xmm128_postrsp xmm0, (rsp_offsetof_xmmregs + 16*0)
-        save_xmm128_postrsp xmm1, (rsp_offsetof_xmmregs + 16*1)
-        save_xmm128_postrsp xmm2, (rsp_offsetof_xmmregs + 16*2)
-        save_xmm128_postrsp xmm3, (rsp_offsetof_xmmregs + 16*3)
-        save_xmm128_postrsp xmm4, (rsp_offsetof_xmmregs + 16*4)
-        save_xmm128_postrsp xmm5, (rsp_offsetof_xmmregs + 16*5)
-        save_xmm128_postrsp xmm6, (rsp_offsetof_xmmregs + 16*6)
-        save_xmm128_postrsp xmm7, (rsp_offsetof_xmmregs + 16*7)
-        END_PROLOGUE
-
-        // Build PInvokeTransitionFrame. This is only required if we end up resolving the interface method via
-        // a callout to a managed ICastable method. In that instance we need to be able to cope with garbage
-        // collections which in turn need to be able to walk the stack from the ICastable method, skip the
-        // unmanaged runtime portions and resume walking at our caller. This frame provides both the means to
-        // unwind to that caller and a place to spill callee saved registers in case they contain GC
-        // references from the caller.
-
-        // Save caller's rip.
-        mov     rax, [rsp + RIDS_ReservedStack]
-        mov     [rsp + 8*0], rax
-
-        // Save caller's rbp.
-        mov     [rsp + 8*1], rbp
-
-        // Zero out the Thread*, it's not used by the stackwalker.
-        xor     rax, rax
-        mov     [rsp + 8*2], rax
-
-        // Set the flags.
-        mov     dword ptr [rsp + 8*3], PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
-
-        // Save callee saved registers.
-        mov     [rsp + 8*4], rbx
-        mov     [rsp + 8*5], r12
-        mov     [rsp + 8*6], r13
-        mov     [rsp + 8*7], r14
-        mov     [rsp + 8*8], r15
-
-        // Calculate and store the caller's rsp.
-        lea     rax, [rsp + RIDS_ReservedStack + 8]
-        mov     [rsp + 8*9], rax
-
-        // First argument is the instance we're dispatching on which is already in rdi.
-
-        // Second argument is the dispatch data cell. We still have this in r10
-        mov     rsi, r10
-
-        // The third argument is the address of the transition frame we build above.
-        lea     rdx, [rsp + 30h]
-
-        call    C_FUNC(RhpResolveInterfaceMethodCacheMiss)
-
-        // Recover callee-saved values from the transition frame in case a GC updated them.
-        mov     rbx, [rsp + 8*4]
-        mov     r12, [rsp + 8*5]
-        mov     r13, [rsp + 8*6]
-        mov     r14, [rsp + 8*7]
-        mov     r15, [rsp + 8*8]
-
-        // Restore the argument registers.
-        movdqa  xmm0, [rsp + rsp_offsetof_xmmregs + 16*0]
-        movdqa  xmm1, [rsp + rsp_offsetof_xmmregs + 16*1]
-        movdqa  xmm2, [rsp + rsp_offsetof_xmmregs + 16*2]
-        movdqa  xmm3, [rsp + rsp_offsetof_xmmregs + 16*3]
-        movdqa  xmm4, [rsp + rsp_offsetof_xmmregs + 16*4]
-        movdqa  xmm5, [rsp + rsp_offsetof_xmmregs + 16*5]
-        movdqa  xmm6, [rsp + rsp_offsetof_xmmregs + 16*6]
-        movdqa  xmm7, [rsp + rsp_offsetof_xmmregs + 16*7]
-        mov     r9,   [rsp + rsp_offsetof_argregs + 8*5]
-        mov     r8,   [rsp + rsp_offsetof_argregs + 8*4]
-        mov     rcx,  [rsp + rsp_offsetof_argregs + 8*3]
-        mov     rdx,  [rsp + rsp_offsetof_argregs + 8*2]
-        mov     rsi,  [rsp + rsp_offsetof_argregs + 8*1]
-        mov     rdi,  [rsp + rsp_offsetof_argregs + 8*0]
-
-        add     rsp, RIDS_ReservedStack
-
-        jmp     rax
-NESTED_END RhpInterfaceDispatchSlow, _TEXT
+LEAF_END RhpInterfaceDispatchSlow, _TEXT

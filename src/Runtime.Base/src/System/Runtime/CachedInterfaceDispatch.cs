@@ -12,7 +12,6 @@ namespace System.Runtime
 {
     internal unsafe static class CachedInterfaceDispatch
     {
-#if !LEGACY_INTERFACE_DISPATCH
         [RuntimeExport("RhpCidResolve")]
         unsafe private static IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
@@ -20,36 +19,17 @@ namespace System.Runtime
             object pObject = Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer);            
             return RhpCidResolve_Worker(pObject, pCell);
         }
-#else // LEGACY_INTERFACE_DISPATCH
-        [RuntimeExport("RhpCidResolve")]
-        private static IntPtr RhpCidResolve(object pObject, IntPtr pCell)
-        {
-            return RhpCidResolve_Worker(pObject, pCell);
-        }
-#endif // LEGACY_INTERFACE_DISPATCH
 
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
         {
-#if LEGACY_INTERFACE_DISPATCH
-            try
+            EEType* pInterfaceType;
+            ushort slot;
+            InternalCalls.RhpGetDispatchCellInfo(pCell, &pInterfaceType, &slot);
+            IntPtr pTargetCode = RhResolveDispatchWorker(pObject, pInterfaceType, slot);
+            if (pTargetCode != IntPtr.Zero)
             {
-#endif // LEGACY_INTERFACE_DISPATCH
-                EEType* pInterfaceType;
-                ushort slot;
-                InternalCalls.RhpGetDispatchCellInfo(pCell, &pInterfaceType, &slot);
-                IntPtr pTargetCode = RhResolveDispatchWorker(pObject, pInterfaceType, slot);
-                if (pTargetCode != IntPtr.Zero)
-                {
-                    return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.EEType);
-                }
-#if LEGACY_INTERFACE_DISPATCH
+                return InternalCalls.RhpUpdateDispatchCellCache(pCell, pTargetCode, pObject.EEType);
             }
-            catch
-            {
-                // Exceptions are not permitted to escape from runtime->managed callbacks
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
-            }
-#endif // LEGACY_INTERFACE_DISPATCH
 
             // "Valid method implementation was not found."
             EH.FallbackFailFast(RhFailFastReason.InternalError, null);
