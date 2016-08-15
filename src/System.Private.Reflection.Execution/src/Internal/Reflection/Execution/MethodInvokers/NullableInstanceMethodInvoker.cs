@@ -71,7 +71,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                         break;
 
                     case "GetValueOrDefault":
-                        IEnumerator<ParameterTypeSignatureHandle> parameters = method.Signature.GetMethodSignature(reader).Parameters.GetEnumerator();
+                        IEnumerator<Handle> parameters = method.Signature.GetMethodSignature(reader).Parameters.GetEnumerator();
                         if (parameters.MoveNext())
                             _id = NullableMethodId.GetValueOrDefault_1;
                         else

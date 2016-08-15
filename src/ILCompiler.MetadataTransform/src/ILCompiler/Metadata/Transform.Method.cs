@@ -158,18 +158,14 @@ namespace ILCompiler.Metadata
             {
                 CallingConvention = GetSignatureCallingConvention(signature),
                 GenericParameterCount = signature.GenericParameterCount,
-                ReturnType = new ReturnTypeSignature
-                {
-                    // TODO: CustomModifiers
-                    Type = HandleType(signature.ReturnType)
-                },
+                ReturnType = HandleType(signature.ReturnType),
                 // TODO-NICE: VarArgParameters
             };
 
             result.Parameters.Capacity = signature.Length;
             for (int i = 0; i < signature.Length; i++)
             {
-                result.Parameters.Add(HandleParameterTypeSignature(signature[i]));
+                result.Parameters.Add(HandleType(signature[i]));
             }
 
             return result;

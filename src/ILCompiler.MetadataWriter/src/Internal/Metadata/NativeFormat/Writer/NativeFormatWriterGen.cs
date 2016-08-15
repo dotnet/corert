@@ -2210,78 +2210,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<NamedArgument> NamedArguments = new List<NamedArgument>();
     } // CustomAttribute
 
-    public partial class CustomModifier : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.CustomModifier;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            Type = visitor.Visit(this, Type);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as CustomModifier;
-            if (other == null) return false;
-            if (IsOptional != other.IsOptional) return false;
-            if (!Object.Equals(Type, other.Type)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -282314442;
-            hash = ((hash << 13) - (hash >> 19)) ^ IsOptional.GetHashCode();
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(IsOptional);
-            Debug.Assert(Type == null ||
-                Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
-            writer.Write(Type);
-        } // Save
-
-        internal static CustomModifierHandle AsHandle(CustomModifier record)
-        {
-            if (record == null)
-            {
-                return new CustomModifierHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new CustomModifierHandle Handle
-        {
-            get
-            {
-                return new CustomModifierHandle(HandleOffset);
-            }
-        } // Handle
-
-        public bool IsOptional;
-        public MetadataRecord Type;
-    } // CustomModifier
-
     public partial class Event : MetadataRecord
     {
         public override HandleType HandleType
@@ -2519,7 +2447,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Visit(IRecordVisitor visitor)
         {
             Type = visitor.Visit(this, Type);
-            CustomModifiers = visitor.Visit(this, CustomModifiers);
         } // Visit
 
         public override sealed bool Equals(Object obj)
@@ -2528,7 +2455,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             var other = obj as FieldSignature;
             if (other == null) return false;
             if (!Object.Equals(Type, other.Type)) return false;
-            if (!CustomModifiers.SequenceEqual(other.CustomModifiers)) return false;
             return true;
         } // Equals
 
@@ -2549,9 +2475,9 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(Type == null ||
                 Type.HandleType == HandleType.TypeDefinition ||
                 Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
+                Type.HandleType == HandleType.TypeSpecification ||
+                Type.HandleType == HandleType.ModifiedType);
             writer.Write(Type);
-            writer.Write(CustomModifiers);
         } // Save
 
         internal static FieldSignatureHandle AsHandle(FieldSignature record)
@@ -2575,7 +2501,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         } // Handle
 
         public MetadataRecord Type;
-        public List<CustomModifier> CustomModifiers = new List<CustomModifier>();
     } // FieldSignature
 
     public partial class FixedArgument : MetadataRecord
@@ -3254,8 +3179,23 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             writer.Write(CallingConvention);
             writer.Write(GenericParameterCount);
+            Debug.Assert(ReturnType == null ||
+                ReturnType.HandleType == HandleType.TypeDefinition ||
+                ReturnType.HandleType == HandleType.TypeReference ||
+                ReturnType.HandleType == HandleType.TypeSpecification ||
+                ReturnType.HandleType == HandleType.ModifiedType);
             writer.Write(ReturnType);
+            Debug.Assert(Parameters.TrueForAll(handle => handle == null ||
+                handle.HandleType == HandleType.TypeDefinition ||
+                handle.HandleType == HandleType.TypeReference ||
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(Parameters);
+            Debug.Assert(VarArgParameters.TrueForAll(handle => handle == null ||
+                handle.HandleType == HandleType.TypeDefinition ||
+                handle.HandleType == HandleType.TypeReference ||
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(VarArgParameters);
         } // Save
 
@@ -3281,9 +3221,9 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public CallingConventions CallingConvention;
         public int GenericParameterCount;
-        public ReturnTypeSignature ReturnType;
-        public List<ParameterTypeSignature> Parameters = new List<ParameterTypeSignature>();
-        public List<ParameterTypeSignature> VarArgParameters = new List<ParameterTypeSignature>();
+        public MetadataRecord ReturnType;
+        public List<MetadataRecord> Parameters = new List<MetadataRecord>();
+        public List<MetadataRecord> VarArgParameters = new List<MetadataRecord>();
     } // MethodSignature
 
     public partial class MethodTypeVariableSignature : MetadataRecord
@@ -3348,6 +3288,88 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public int Number;
     } // MethodTypeVariableSignature
+
+    public partial class ModifiedType : MetadataRecord
+    {
+        public override HandleType HandleType
+        {
+            get
+            {
+                return HandleType.ModifiedType;
+            }
+        } // HandleType
+
+        internal override void Visit(IRecordVisitor visitor)
+        {
+            ModifierType = visitor.Visit(this, ModifierType);
+            Type = visitor.Visit(this, Type);
+        } // Visit
+
+        public override sealed bool Equals(Object obj)
+        {
+            if (Object.ReferenceEquals(this, obj)) return true;
+            var other = obj as ModifiedType;
+            if (other == null) return false;
+            if (IsOptional != other.IsOptional) return false;
+            if (!Object.Equals(ModifierType, other.ModifierType)) return false;
+            if (!Object.Equals(Type, other.Type)) return false;
+            return true;
+        } // Equals
+
+        public override sealed int GetHashCode()
+        {
+            if (_hash != 0)
+                return _hash;
+            EnterGetHashCode();
+            int hash = -613299238;
+            hash = ((hash << 13) - (hash >> 19)) ^ IsOptional.GetHashCode();
+            hash = ((hash << 13) - (hash >> 19)) ^ (ModifierType == null ? 0 : ModifierType.GetHashCode());
+            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
+            LeaveGetHashCode();
+            _hash = hash;
+            return _hash;
+        } // GetHashCode
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.Write(IsOptional);
+            Debug.Assert(ModifierType == null ||
+                ModifierType.HandleType == HandleType.TypeDefinition ||
+                ModifierType.HandleType == HandleType.TypeReference ||
+                ModifierType.HandleType == HandleType.TypeSpecification);
+            writer.Write(ModifierType);
+            Debug.Assert(Type == null ||
+                Type.HandleType == HandleType.TypeDefinition ||
+                Type.HandleType == HandleType.TypeReference ||
+                Type.HandleType == HandleType.TypeSpecification ||
+                Type.HandleType == HandleType.ModifiedType);
+            writer.Write(Type);
+        } // Save
+
+        internal static ModifiedTypeHandle AsHandle(ModifiedType record)
+        {
+            if (record == null)
+            {
+                return new ModifiedTypeHandle(0);
+            }
+            else
+            {
+                return record.Handle;
+            }
+        } // AsHandle
+
+        internal new ModifiedTypeHandle Handle
+        {
+            get
+            {
+                return new ModifiedTypeHandle(HandleOffset);
+            }
+        } // Handle
+
+        public bool IsOptional;
+        public MetadataRecord ModifierType;
+        public MetadataRecord Type;
+    } // ModifiedType
 
     public partial class NamedArgument : MetadataRecord
     {
@@ -3688,78 +3710,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // Parameter
 
-    public partial class ParameterTypeSignature : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ParameterTypeSignature;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            CustomModifiers = visitor.Visit(this, CustomModifiers);
-            Type = visitor.Visit(this, Type);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ParameterTypeSignature;
-            if (other == null) return false;
-            if (!CustomModifiers.SequenceEqual(other.CustomModifiers)) return false;
-            if (!Object.Equals(Type, other.Type)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -637529837;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(CustomModifiers);
-            Debug.Assert(Type == null ||
-                Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
-            writer.Write(Type);
-        } // Save
-
-        internal static ParameterTypeSignatureHandle AsHandle(ParameterTypeSignature record)
-        {
-            if (record == null)
-            {
-                return new ParameterTypeSignatureHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ParameterTypeSignatureHandle Handle
-        {
-            get
-            {
-                return new ParameterTypeSignatureHandle(HandleOffset);
-            }
-        } // Handle
-
-        public List<CustomModifier> CustomModifiers = new List<CustomModifier>();
-        public MetadataRecord Type;
-    } // ParameterTypeSignature
-
     public partial class PointerSignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -3801,7 +3751,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(Type == null ||
                 Type.HandleType == HandleType.TypeDefinition ||
                 Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
+                Type.HandleType == HandleType.TypeSpecification ||
+                Type.HandleType == HandleType.ModifiedType);
             writer.Write(Type);
         } // Save
 
@@ -3972,7 +3923,6 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal override void Visit(IRecordVisitor visitor)
         {
-            CustomModifiers = visitor.Visit(this, CustomModifiers);
             Type = visitor.Visit(this, Type);
             Parameters = visitor.Visit(this, Parameters);
         } // Visit
@@ -3983,7 +3933,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             var other = obj as PropertySignature;
             if (other == null) return false;
             if (CallingConvention != other.CallingConvention) return false;
-            if (!CustomModifiers.SequenceEqual(other.CustomModifiers)) return false;
             if (!Object.Equals(Type, other.Type)) return false;
             if (!Parameters.SequenceEqual(other.Parameters)) return false;
             return true;
@@ -4012,12 +3961,17 @@ namespace Internal.Metadata.NativeFormat.Writer
         internal override void Save(NativeWriter writer)
         {
             writer.Write(CallingConvention);
-            writer.Write(CustomModifiers);
             Debug.Assert(Type == null ||
                 Type.HandleType == HandleType.TypeDefinition ||
                 Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
+                Type.HandleType == HandleType.TypeSpecification ||
+                Type.HandleType == HandleType.ModifiedType);
             writer.Write(Type);
+            Debug.Assert(Parameters.TrueForAll(handle => handle == null ||
+                handle.HandleType == HandleType.TypeDefinition ||
+                handle.HandleType == HandleType.TypeReference ||
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(Parameters);
         } // Save
 
@@ -4042,9 +3996,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         } // Handle
 
         public CallingConventions CallingConvention;
-        public List<CustomModifier> CustomModifiers = new List<CustomModifier>();
         public MetadataRecord Type;
-        public List<ParameterTypeSignature> Parameters = new List<ParameterTypeSignature>();
+        public List<MetadataRecord> Parameters = new List<MetadataRecord>();
     } // PropertySignature
 
     public partial class QualifiedField : MetadataRecord
@@ -4185,78 +4138,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public TypeDefinition EnclosingType;
     } // QualifiedMethod
 
-    public partial class ReturnTypeSignature : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.ReturnTypeSignature;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            CustomModifiers = visitor.Visit(this, CustomModifiers);
-            Type = visitor.Visit(this, Type);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as ReturnTypeSignature;
-            if (other == null) return false;
-            if (!CustomModifiers.SequenceEqual(other.CustomModifiers)) return false;
-            if (!Object.Equals(Type, other.Type)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = 2015635549;
-            hash = ((hash << 13) - (hash >> 19)) ^ (Type == null ? 0 : Type.GetHashCode());
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(CustomModifiers);
-            Debug.Assert(Type == null ||
-                Type.HandleType == HandleType.TypeDefinition ||
-                Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
-            writer.Write(Type);
-        } // Save
-
-        internal static ReturnTypeSignatureHandle AsHandle(ReturnTypeSignature record)
-        {
-            if (record == null)
-            {
-                return new ReturnTypeSignatureHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new ReturnTypeSignatureHandle Handle
-        {
-            get
-            {
-                return new ReturnTypeSignatureHandle(HandleOffset);
-            }
-        } // Handle
-
-        public List<CustomModifier> CustomModifiers = new List<CustomModifier>();
-        public MetadataRecord Type;
-    } // ReturnTypeSignature
-
     public partial class SZArraySignature : MetadataRecord
     {
         public override HandleType HandleType
@@ -4298,7 +4179,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(ElementType == null ||
                 ElementType.HandleType == HandleType.TypeDefinition ||
                 ElementType.HandleType == HandleType.TypeReference ||
-                ElementType.HandleType == HandleType.TypeSpecification);
+                ElementType.HandleType == HandleType.TypeSpecification ||
+                ElementType.HandleType == HandleType.ModifiedType);
             writer.Write(ElementType);
         } // Save
 

@@ -27,14 +27,12 @@ namespace Internal.Reflection.Execution.MethodInvokers
             _id = StringConstructorId.None;
             Method method = methodHandle.GetMethod(reader);
             int parameterCount = 0;
-            foreach (ParameterTypeSignatureHandle parameterTypeSignatureHandle in method.Signature.GetMethodSignature(reader).Parameters)
+            foreach (Handle parameterTypeSignatureHandle in method.Signature.GetMethodSignature(reader).Parameters)
             {
-                ParameterTypeSignature parameterTypeSignature = parameterTypeSignatureHandle.GetParameterTypeSignature(reader);
-
                 // If any parameter is a pointer type, bail as we don't support Invokes on pointers.
-                if (parameterTypeSignature.Type.HandleType == HandleType.TypeSpecification)
+                if (parameterTypeSignatureHandle.HandleType == HandleType.TypeSpecification)
                 {
-                    TypeSpecification typeSpecification = parameterTypeSignature.Type.ToTypeSpecificationHandle(reader).GetTypeSpecification(reader);
+                    TypeSpecification typeSpecification = parameterTypeSignatureHandle.ToTypeSpecificationHandle(reader).GetTypeSpecification(reader);
                     if (typeSpecification.Signature.HandleType == HandleType.PointerSignature)
                         return;
                 }

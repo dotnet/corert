@@ -1686,13 +1686,13 @@ namespace Internal.Reflection.Execution
                     // Check the return type for generic vars
                     MethodInfo reflectionMethodInfo = _methodBase as MethodInfo;
                     _returnTypeAndParametersTypesCache[0] = reflectionMethodInfo != null ? reflectionMethodInfo.ReturnType : CommonRuntimeTypes.Void;
-                    _returnTypeAndParametersHandlesCache[0] = signature.ReturnType.GetReturnTypeSignature(_metadataReader).Type;
+                    _returnTypeAndParametersHandlesCache[0] = signature.ReturnType;
 
                     // Check the method parameters for generic vars
                     int index = 1;
-                    foreach (ParameterTypeSignatureHandle paramHandle in signature.Parameters)
+                    foreach (Handle paramSigHandle in signature.Parameters)
                     {
-                        _returnTypeAndParametersHandlesCache[index] = paramHandle.GetParameterTypeSignature(_metadataReader).Type;
+                        _returnTypeAndParametersHandlesCache[index] = paramSigHandle;
                         _returnTypeAndParametersTypesCache[index] = _methodBase.GetParameters()[index - 1].ParameterType;
                         index++;
                     }
