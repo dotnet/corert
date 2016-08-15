@@ -163,6 +163,9 @@ namespace System
             // back into the dispatcher.
             try
             {
+                if (!SafeToPerformRichExceptionSupport)
+                    return;
+
                 if ((reason == RhFailFastReason.PN_UnhandledException) &&
                     (exception != null) &&
                     !(exception is OutOfMemoryException))
@@ -558,6 +561,18 @@ namespace System
             }
         }
 
+        // This returns "true" once enough of the framework has been initialized to safely perform operations
+        // such as filling in the stack frame and generating diagnostic support.
+        public static bool SafeToPerformRichExceptionSupport
+        {
+            get
+            {
+                // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
+                if (RuntimeAugments.CallbacksIfAvailable == null)
+                    return false;
+                return true;
+            }
+        }
 
         private static GCHandle s_ExceptionInfoBufferPinningHandle;
         private static object s_ExceptionInfoBufferLock = new object();
