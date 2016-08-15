@@ -77,9 +77,9 @@ namespace MetadataTransformTests
             var sigRecord = transformResult.Transform.HandleMethodSignature(sig);
 
             // Verify the signature is connected to the existing transformResult world
-            Assert.Same(stringRecord, sigRecord.ReturnType.Type);
+            Assert.Same(stringRecord, sigRecord.ReturnType);
             Assert.Equal(1, sigRecord.Parameters.Count);
-            Assert.Same(singleRecord, sigRecord.Parameters[0].Type);
+            Assert.Same(singleRecord, sigRecord.Parameters[0]);
         }
 
         [Fact]

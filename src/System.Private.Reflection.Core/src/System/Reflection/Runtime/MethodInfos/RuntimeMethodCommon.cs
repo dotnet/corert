@@ -197,10 +197,10 @@ namespace System.Reflection.Runtime.MethodInfos
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
             MethodSignature methodSignature = this.MethodSignature;
             LowLevelList<Handle> typeSignatures = new LowLevelList<Handle>(10);
-            typeSignatures.Add(methodSignature.ReturnType.GetReturnTypeSignature(_reader).Type);
-            foreach (ParameterTypeSignatureHandle parameterTypeSignatureHandle in methodSignature.Parameters)
+            typeSignatures.Add(methodSignature.ReturnType);
+            foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
             {
-                typeSignatures.Add(parameterTypeSignatureHandle.GetParameterTypeSignature(_reader).Type);
+                typeSignatures.Add(parameterTypeSignatureHandle);
             }
             int count = typeSignatures.Count;
 

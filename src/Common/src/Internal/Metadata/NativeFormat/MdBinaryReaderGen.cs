@@ -1374,38 +1374,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out CustomModifierHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new CustomModifierHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out CustomModifierHandle[] values)
-        {
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            #if !NETFX_45
-            if (count == 0)
-            {
-                values = Array.Empty<CustomModifierHandle>();
-            }
-            else
-            #endif
-            {
-                values = new CustomModifierHandle[count];
-                for (uint i = 0; i < count; ++i)
-                {
-                    CustomModifierHandle tmp;
-                    offset = reader.Read(offset, out tmp);
-                    values[i] = tmp;
-                }
-            }
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out EventHandle handle)
         {
             uint value;
@@ -1790,6 +1758,38 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out ModifiedTypeHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new ModifiedTypeHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out ModifiedTypeHandle[] values)
+        {
+            uint count;
+            offset = reader.DecodeUnsigned(offset, out count);
+            #if !NETFX_45
+            if (count == 0)
+            {
+                values = Array.Empty<ModifiedTypeHandle>();
+            }
+            else
+            #endif
+            {
+                values = new ModifiedTypeHandle[count];
+                for (uint i = 0; i < count; ++i)
+                {
+                    ModifiedTypeHandle tmp;
+                    offset = reader.Read(offset, out tmp);
+                    values[i] = tmp;
+                }
+            }
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out NamedArgumentHandle handle)
         {
             uint value;
@@ -1911,38 +1911,6 @@ namespace Internal.Metadata.NativeFormat
                 for (uint i = 0; i < count; ++i)
                 {
                     ParameterHandle tmp;
-                    offset = reader.Read(offset, out tmp);
-                    values[i] = tmp;
-                }
-            }
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ParameterTypeSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ParameterTypeSignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ParameterTypeSignatureHandle[] values)
-        {
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            #if !NETFX_45
-            if (count == 0)
-            {
-                values = Array.Empty<ParameterTypeSignatureHandle>();
-            }
-            else
-            #endif
-            {
-                values = new ParameterTypeSignatureHandle[count];
-                for (uint i = 0; i < count; ++i)
-                {
-                    ParameterTypeSignatureHandle tmp;
                     offset = reader.Read(offset, out tmp);
                     values[i] = tmp;
                 }
@@ -2103,38 +2071,6 @@ namespace Internal.Metadata.NativeFormat
                 for (uint i = 0; i < count; ++i)
                 {
                     QualifiedMethodHandle tmp;
-                    offset = reader.Read(offset, out tmp);
-                    values[i] = tmp;
-                }
-            }
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ReturnTypeSignatureHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new ReturnTypeSignatureHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out ReturnTypeSignatureHandle[] values)
-        {
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            #if !NETFX_45
-            if (count == 0)
-            {
-                values = Array.Empty<ReturnTypeSignatureHandle>();
-            }
-            else
-            #endif
-            {
-                values = new ReturnTypeSignatureHandle[count];
-                for (uint i = 0; i < count; ++i)
-                {
-                    ReturnTypeSignatureHandle tmp;
                     offset = reader.Read(offset, out tmp);
                     values[i] = tmp;
                 }

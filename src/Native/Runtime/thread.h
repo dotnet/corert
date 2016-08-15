@@ -90,7 +90,7 @@ struct ThreadBuffer
 
     // Thread Statics Storage for dynamic types
     UInt32          m_numDynamicTypesTlsCells;
-    PTR_UInt8*      m_pDynamicTypesTlsCells;
+    PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
 };
 
 struct ReversePInvokeFrame
@@ -182,6 +182,7 @@ public:
     bool                IsWithinStackBounds(PTR_VOID p);
 
     PTR_UInt8           AllocateThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset, UInt32 tlsStorageSize, UInt32 numTlsCells);
+	// mrt100 Debugger (dac) has dependencies on the GetThreadLocalStorageForDynamicType method.
     PTR_UInt8           GetThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset);
     PTR_UInt8           GetThreadLocalStorage(UInt32 uTlsIndex, UInt32 uTlsStartOffset);
     PTR_UInt8           GetTEB();
