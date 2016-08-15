@@ -386,6 +386,9 @@ namespace System
             // back into the dispatcher.
             try
             {
+                if (!RuntimeExceptionHelpers.SafeToPerformRichExceptionSupport)
+                    return;
+
                 bool isFirstFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_FRAME) != 0;
                 bool isFirstRethrowFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME) != 0;
 
