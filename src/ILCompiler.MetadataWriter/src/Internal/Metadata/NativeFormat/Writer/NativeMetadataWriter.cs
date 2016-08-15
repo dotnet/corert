@@ -838,27 +838,11 @@ namespace Internal.Metadata.NativeFormat.Writer
         }
     }
 
-    public partial class ParameterTypeSignature
-    {
-        public override string ToString()
-        {
-            return Type.ToString();
-        }
-    }
-
     public partial class ByReferenceSignature
     {
         public override string ToString()
         {
             return "ref " + Type.ToString();
-        }
-    }
-
-    public partial class ReturnTypeSignature
-    {
-        public override string ToString()
-        {
-            return Type.ToString();
         }
     }
 
@@ -955,7 +939,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString()
         {
             return String.Join(" ", Enum.GetName(typeof(CallingConventions), CallingConvention),
-                ToString(CustomModifiers, " "), Type.ToString()) + "(" + ToString(Parameters) + ")";
+                Type.ToString()) + "(" + ToString(Parameters) + ")";
         }
     }
 
@@ -963,15 +947,16 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return ToString(CustomModifiers, " ") + Type.ToString();
+            return Type.ToString();
         }
     }
 
-    public partial class CustomModifier
+    public partial class ModifiedType
     {
         public override string ToString()
         {
-            return "[" + (IsOptional ? "opt : " : "req : ") + Type.ToString() + "]";
+            return "[" + (IsOptional ? "opt : " : "req : ") + ModifierType.ToString() + "] " +
+                Type.ToString();
         }
     }
 

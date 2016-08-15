@@ -108,23 +108,20 @@ namespace Internal.Runtime.TypeLoader
 
             uint parameterCount = parser.GetUnsigned();
 
-            if (!CompareTypeSigWithType(ref parser, _methodSignature.ReturnType
-                .GetReturnTypeSignature(_metadataReader)
-                .Type))
+            if (!CompareTypeSigWithType(ref parser, _methodSignature.ReturnType))
             {
                 return false;
             }
 
             uint parameterIndexToMatch = 0;
-            foreach (ParameterTypeSignatureHandle parameter in _methodSignature.Parameters)
+            foreach (Handle parameterSignature in _methodSignature.Parameters)
             {
                 if (parameterIndexToMatch >= parameterCount)
                 {
                     // The metadata-defined _method has more parameters than the native layout
                     return false;
                 }
-                ParameterTypeSignature parameterSignature = parameter.GetParameterTypeSignature(_metadataReader);
-                if (!CompareTypeSigWithType(ref parser, parameterSignature.Type))
+                if (!CompareTypeSigWithType(ref parser, parameterSignature))
                     return false;
                 parameterIndexToMatch++;
             }

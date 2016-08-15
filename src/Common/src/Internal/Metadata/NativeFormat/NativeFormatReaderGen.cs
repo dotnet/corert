@@ -3493,124 +3493,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // CustomAttributeHandle
 
-    public partial struct CustomModifier
-    {
-        internal MetadataReader _reader;
-        internal CustomModifierHandle _handle;
-
-        public CustomModifierHandle Handle
-        {
-            get
-            {
-                return _handle;
-            }
-        } // Handle
-
-        public bool IsOptional
-        {
-            get
-            {
-                return _isOptional;
-            }
-        } // IsOptional
-
-        internal bool _isOptional;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
-
-        public Handle Type
-        {
-            get
-            {
-                return _type;
-            }
-        } // Type
-
-        internal Handle _type;
-    } // CustomModifier
-
-    public partial struct CustomModifierHandle
-    {
-        public override bool Equals(object obj)
-        {
-            if (obj is CustomModifierHandle)
-                return _value == ((CustomModifierHandle)obj)._value;
-            else if (obj is Handle)
-                return _value == ((Handle)obj)._value;
-            else
-                return false;
-        } // Equals
-
-        public bool Equals(CustomModifierHandle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public bool Equals(Handle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public override int GetHashCode()
-        {
-            return (int)_value;
-        } // GetHashCode
-
-        internal int _value;
-
-        internal CustomModifierHandle(Handle handle) : this(handle._value)
-        {
-        }
-
-        internal CustomModifierHandle(int value)
-        {
-            HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.CustomModifier || hType == HandleType.Null))
-                throw new ArgumentException();
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.CustomModifier) << 24);
-            _Validate();
-        }
-
-        public static implicit operator  Handle(CustomModifierHandle handle)
-        {
-            return new Handle(handle._value);
-        } // Handle
-
-        internal int Offset
-        {
-            get
-            {
-                return (this._value & 0x00FFFFFF);
-            }
-        } // Offset
-
-        public CustomModifier GetCustomModifier(MetadataReader reader)
-        {
-            return reader.GetCustomModifier(this);
-        } // GetCustomModifier
-
-        public bool IsNull(MetadataReader reader)
-        {
-            return reader.IsNull(this);
-        } // IsNull
-
-        public Handle ToHandle(MetadataReader reader)
-        {
-            return reader.ToHandle(this);
-        } // ToHandle
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        internal void _Validate()
-        {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.CustomModifier)
-                throw new ArgumentException();
-        } // _Validate
-
-        public override String ToString()
-        {
-            return String.Format("{0:X8}", _value);
-        } // ToString
-    } // CustomModifierHandle
-
     public partial struct Event
     {
         internal MetadataReader _reader;
@@ -3929,7 +3811,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle Type
         {
@@ -3940,16 +3822,6 @@ namespace Internal.Metadata.NativeFormat
         } // Type
 
         internal Handle _type;
-
-        public IEnumerable<CustomModifierHandle> CustomModifiers
-        {
-            get
-            {
-                return (IEnumerable<CustomModifierHandle>)_customModifiers;
-            }
-        } // CustomModifiers
-
-        internal CustomModifierHandle[] _customModifiers;
     } // FieldSignature
 
     public partial struct FieldSignatureHandle
@@ -5025,8 +4897,9 @@ namespace Internal.Metadata.NativeFormat
         } // GenericParameterCount
 
         internal int _genericParameterCount;
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
-        public ReturnTypeSignatureHandle ReturnType
+        public Handle ReturnType
         {
             get
             {
@@ -5034,27 +4907,29 @@ namespace Internal.Metadata.NativeFormat
             }
         } // ReturnType
 
-        internal ReturnTypeSignatureHandle _returnType;
+        internal Handle _returnType;
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
-        public IEnumerable<ParameterTypeSignatureHandle> Parameters
+        public IEnumerable<Handle> Parameters
         {
             get
             {
-                return (IEnumerable<ParameterTypeSignatureHandle>)_parameters;
+                return (IEnumerable<Handle>)_parameters;
             }
         } // Parameters
 
-        internal ParameterTypeSignatureHandle[] _parameters;
+        internal Handle[] _parameters;
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
-        public IEnumerable<ParameterTypeSignatureHandle> VarArgParameters
+        public IEnumerable<Handle> VarArgParameters
         {
             get
             {
-                return (IEnumerable<ParameterTypeSignatureHandle>)_varArgParameters;
+                return (IEnumerable<Handle>)_varArgParameters;
             }
         } // VarArgParameters
 
-        internal ParameterTypeSignatureHandle[] _varArgParameters;
+        internal Handle[] _varArgParameters;
     } // MethodSignature
 
     public partial struct MethodSignatureHandle
@@ -5246,6 +5121,135 @@ namespace Internal.Metadata.NativeFormat
             return String.Format("{0:X8}", _value);
         } // ToString
     } // MethodTypeVariableSignatureHandle
+
+    public partial struct ModifiedType
+    {
+        internal MetadataReader _reader;
+        internal ModifiedTypeHandle _handle;
+
+        public ModifiedTypeHandle Handle
+        {
+            get
+            {
+                return _handle;
+            }
+        } // Handle
+
+        public bool IsOptional
+        {
+            get
+            {
+                return _isOptional;
+            }
+        } // IsOptional
+
+        internal bool _isOptional;
+        /// One of: TypeDefinition, TypeReference, TypeSpecification
+
+        public Handle ModifierType
+        {
+            get
+            {
+                return _modifierType;
+            }
+        } // ModifierType
+
+        internal Handle _modifierType;
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
+
+        public Handle Type
+        {
+            get
+            {
+                return _type;
+            }
+        } // Type
+
+        internal Handle _type;
+    } // ModifiedType
+
+    public partial struct ModifiedTypeHandle
+    {
+        public override bool Equals(object obj)
+        {
+            if (obj is ModifiedTypeHandle)
+                return _value == ((ModifiedTypeHandle)obj)._value;
+            else if (obj is Handle)
+                return _value == ((Handle)obj)._value;
+            else
+                return false;
+        } // Equals
+
+        public bool Equals(ModifiedTypeHandle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public bool Equals(Handle handle)
+        {
+            return _value == handle._value;
+        } // Equals
+
+        public override int GetHashCode()
+        {
+            return (int)_value;
+        } // GetHashCode
+
+        internal int _value;
+
+        internal ModifiedTypeHandle(Handle handle) : this(handle._value)
+        {
+        }
+
+        internal ModifiedTypeHandle(int value)
+        {
+            HandleType hType = (HandleType)(value >> 24);
+            if (!(hType == 0 || hType == HandleType.ModifiedType || hType == HandleType.Null))
+                throw new ArgumentException();
+            _value = (value & 0x00FFFFFF) | (((int)HandleType.ModifiedType) << 24);
+            _Validate();
+        }
+
+        public static implicit operator  Handle(ModifiedTypeHandle handle)
+        {
+            return new Handle(handle._value);
+        } // Handle
+
+        internal int Offset
+        {
+            get
+            {
+                return (this._value & 0x00FFFFFF);
+            }
+        } // Offset
+
+        public ModifiedType GetModifiedType(MetadataReader reader)
+        {
+            return reader.GetModifiedType(this);
+        } // GetModifiedType
+
+        public bool IsNull(MetadataReader reader)
+        {
+            return reader.IsNull(this);
+        } // IsNull
+
+        public Handle ToHandle(MetadataReader reader)
+        {
+            return reader.ToHandle(this);
+        } // ToHandle
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal void _Validate()
+        {
+            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ModifiedType)
+                throw new ArgumentException();
+        } // _Validate
+
+        public override String ToString()
+        {
+            return String.Format("{0:X8}", _value);
+        } // ToString
+    } // ModifiedTypeHandle
 
     public partial struct NamedArgument
     {
@@ -5788,124 +5792,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // ParameterHandle
 
-    public partial struct ParameterTypeSignature
-    {
-        internal MetadataReader _reader;
-        internal ParameterTypeSignatureHandle _handle;
-
-        public ParameterTypeSignatureHandle Handle
-        {
-            get
-            {
-                return _handle;
-            }
-        } // Handle
-
-        public IEnumerable<CustomModifierHandle> CustomModifiers
-        {
-            get
-            {
-                return (IEnumerable<CustomModifierHandle>)_customModifiers;
-            }
-        } // CustomModifiers
-
-        internal CustomModifierHandle[] _customModifiers;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
-
-        public Handle Type
-        {
-            get
-            {
-                return _type;
-            }
-        } // Type
-
-        internal Handle _type;
-    } // ParameterTypeSignature
-
-    public partial struct ParameterTypeSignatureHandle
-    {
-        public override bool Equals(object obj)
-        {
-            if (obj is ParameterTypeSignatureHandle)
-                return _value == ((ParameterTypeSignatureHandle)obj)._value;
-            else if (obj is Handle)
-                return _value == ((Handle)obj)._value;
-            else
-                return false;
-        } // Equals
-
-        public bool Equals(ParameterTypeSignatureHandle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public bool Equals(Handle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public override int GetHashCode()
-        {
-            return (int)_value;
-        } // GetHashCode
-
-        internal int _value;
-
-        internal ParameterTypeSignatureHandle(Handle handle) : this(handle._value)
-        {
-        }
-
-        internal ParameterTypeSignatureHandle(int value)
-        {
-            HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ParameterTypeSignature || hType == HandleType.Null))
-                throw new ArgumentException();
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ParameterTypeSignature) << 24);
-            _Validate();
-        }
-
-        public static implicit operator  Handle(ParameterTypeSignatureHandle handle)
-        {
-            return new Handle(handle._value);
-        } // Handle
-
-        internal int Offset
-        {
-            get
-            {
-                return (this._value & 0x00FFFFFF);
-            }
-        } // Offset
-
-        public ParameterTypeSignature GetParameterTypeSignature(MetadataReader reader)
-        {
-            return reader.GetParameterTypeSignature(this);
-        } // GetParameterTypeSignature
-
-        public bool IsNull(MetadataReader reader)
-        {
-            return reader.IsNull(this);
-        } // IsNull
-
-        public Handle ToHandle(MetadataReader reader)
-        {
-            return reader.ToHandle(this);
-        } // ToHandle
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        internal void _Validate()
-        {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ParameterTypeSignature)
-                throw new ArgumentException();
-        } // _Validate
-
-        public override String ToString()
-        {
-            return String.Format("{0:X8}", _value);
-        } // ToString
-    } // ParameterTypeSignatureHandle
-
     public partial struct PointerSignature
     {
         internal MetadataReader _reader;
@@ -5918,7 +5804,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle Type
         {
@@ -6194,17 +6080,7 @@ namespace Internal.Metadata.NativeFormat
         } // CallingConvention
 
         internal CallingConventions _callingConvention;
-
-        public IEnumerable<CustomModifierHandle> CustomModifiers
-        {
-            get
-            {
-                return (IEnumerable<CustomModifierHandle>)_customModifiers;
-            }
-        } // CustomModifiers
-
-        internal CustomModifierHandle[] _customModifiers;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle Type
         {
@@ -6215,16 +6091,17 @@ namespace Internal.Metadata.NativeFormat
         } // Type
 
         internal Handle _type;
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
-        public IEnumerable<ParameterTypeSignatureHandle> Parameters
+        public IEnumerable<Handle> Parameters
         {
             get
             {
-                return (IEnumerable<ParameterTypeSignatureHandle>)_parameters;
+                return (IEnumerable<Handle>)_parameters;
             }
         } // Parameters
 
-        internal ParameterTypeSignatureHandle[] _parameters;
+        internal Handle[] _parameters;
     } // PropertySignature
 
     public partial struct PropertySignatureHandle
@@ -6544,124 +6421,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToString
     } // QualifiedMethodHandle
 
-    public partial struct ReturnTypeSignature
-    {
-        internal MetadataReader _reader;
-        internal ReturnTypeSignatureHandle _handle;
-
-        public ReturnTypeSignatureHandle Handle
-        {
-            get
-            {
-                return _handle;
-            }
-        } // Handle
-
-        public IEnumerable<CustomModifierHandle> CustomModifiers
-        {
-            get
-            {
-                return (IEnumerable<CustomModifierHandle>)_customModifiers;
-            }
-        } // CustomModifiers
-
-        internal CustomModifierHandle[] _customModifiers;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
-
-        public Handle Type
-        {
-            get
-            {
-                return _type;
-            }
-        } // Type
-
-        internal Handle _type;
-    } // ReturnTypeSignature
-
-    public partial struct ReturnTypeSignatureHandle
-    {
-        public override bool Equals(object obj)
-        {
-            if (obj is ReturnTypeSignatureHandle)
-                return _value == ((ReturnTypeSignatureHandle)obj)._value;
-            else if (obj is Handle)
-                return _value == ((Handle)obj)._value;
-            else
-                return false;
-        } // Equals
-
-        public bool Equals(ReturnTypeSignatureHandle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public bool Equals(Handle handle)
-        {
-            return _value == handle._value;
-        } // Equals
-
-        public override int GetHashCode()
-        {
-            return (int)_value;
-        } // GetHashCode
-
-        internal int _value;
-
-        internal ReturnTypeSignatureHandle(Handle handle) : this(handle._value)
-        {
-        }
-
-        internal ReturnTypeSignatureHandle(int value)
-        {
-            HandleType hType = (HandleType)(value >> 24);
-            if (!(hType == 0 || hType == HandleType.ReturnTypeSignature || hType == HandleType.Null))
-                throw new ArgumentException();
-            _value = (value & 0x00FFFFFF) | (((int)HandleType.ReturnTypeSignature) << 24);
-            _Validate();
-        }
-
-        public static implicit operator  Handle(ReturnTypeSignatureHandle handle)
-        {
-            return new Handle(handle._value);
-        } // Handle
-
-        internal int Offset
-        {
-            get
-            {
-                return (this._value & 0x00FFFFFF);
-            }
-        } // Offset
-
-        public ReturnTypeSignature GetReturnTypeSignature(MetadataReader reader)
-        {
-            return reader.GetReturnTypeSignature(this);
-        } // GetReturnTypeSignature
-
-        public bool IsNull(MetadataReader reader)
-        {
-            return reader.IsNull(this);
-        } // IsNull
-
-        public Handle ToHandle(MetadataReader reader)
-        {
-            return reader.ToHandle(this);
-        } // ToHandle
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        internal void _Validate()
-        {
-            if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.ReturnTypeSignature)
-                throw new ArgumentException();
-        } // _Validate
-
-        public override String ToString()
-        {
-            return String.Format("{0:X8}", _value);
-        } // ToString
-    } // ReturnTypeSignatureHandle
-
     public partial struct SZArraySignature
     {
         internal MetadataReader _reader;
@@ -6674,7 +6433,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle ElementType
         {
@@ -8194,11 +7953,6 @@ namespace Internal.Metadata.NativeFormat
             return new CustomAttributeHandle(this);
         } // ToCustomAttributeHandle
 
-        public CustomModifierHandle ToCustomModifierHandle(MetadataReader reader)
-        {
-            return new CustomModifierHandle(this);
-        } // ToCustomModifierHandle
-
         public EventHandle ToEventHandle(MetadataReader reader)
         {
             return new EventHandle(this);
@@ -8259,6 +8013,11 @@ namespace Internal.Metadata.NativeFormat
             return new MethodTypeVariableSignatureHandle(this);
         } // ToMethodTypeVariableSignatureHandle
 
+        public ModifiedTypeHandle ToModifiedTypeHandle(MetadataReader reader)
+        {
+            return new ModifiedTypeHandle(this);
+        } // ToModifiedTypeHandle
+
         public NamedArgumentHandle ToNamedArgumentHandle(MetadataReader reader)
         {
             return new NamedArgumentHandle(this);
@@ -8278,11 +8037,6 @@ namespace Internal.Metadata.NativeFormat
         {
             return new ParameterHandle(this);
         } // ToParameterHandle
-
-        public ParameterTypeSignatureHandle ToParameterTypeSignatureHandle(MetadataReader reader)
-        {
-            return new ParameterTypeSignatureHandle(this);
-        } // ToParameterTypeSignatureHandle
 
         public PointerSignatureHandle ToPointerSignatureHandle(MetadataReader reader)
         {
@@ -8308,11 +8062,6 @@ namespace Internal.Metadata.NativeFormat
         {
             return new QualifiedMethodHandle(this);
         } // ToQualifiedMethodHandle
-
-        public ReturnTypeSignatureHandle ToReturnTypeSignatureHandle(MetadataReader reader)
-        {
-            return new ReturnTypeSignatureHandle(this);
-        } // ToReturnTypeSignatureHandle
 
         public SZArraySignatureHandle ToSZArraySignatureHandle(MetadataReader reader)
         {
@@ -8625,15 +8374,6 @@ namespace Internal.Metadata.NativeFormat
             return record;
         } // GetCustomAttribute
 
-        public CustomModifier GetCustomModifier(CustomModifierHandle handle)
-        {
-            var record = new CustomModifier() { _reader = this, _handle = handle };
-            var offset = (uint)handle.Offset;
-            offset = _streamReader.Read(offset, out record._isOptional);
-            offset = _streamReader.Read(offset, out record._type);
-            return record;
-        } // GetCustomModifier
-
         public Event GetEvent(EventHandle handle)
         {
             var record = new Event() { _reader = this, _handle = handle };
@@ -8664,7 +8404,6 @@ namespace Internal.Metadata.NativeFormat
             var record = new FieldSignature() { _reader = this, _handle = handle };
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._type);
-            offset = _streamReader.Read(offset, out record._customModifiers);
             return record;
         } // GetFieldSignature
 
@@ -8764,6 +8503,16 @@ namespace Internal.Metadata.NativeFormat
             return record;
         } // GetMethodTypeVariableSignature
 
+        public ModifiedType GetModifiedType(ModifiedTypeHandle handle)
+        {
+            var record = new ModifiedType() { _reader = this, _handle = handle };
+            var offset = (uint)handle.Offset;
+            offset = _streamReader.Read(offset, out record._isOptional);
+            offset = _streamReader.Read(offset, out record._modifierType);
+            offset = _streamReader.Read(offset, out record._type);
+            return record;
+        } // GetModifiedType
+
         public NamedArgument GetNamedArgument(NamedArgumentHandle handle)
         {
             var record = new NamedArgument() { _reader = this, _handle = handle };
@@ -8807,15 +8556,6 @@ namespace Internal.Metadata.NativeFormat
             return record;
         } // GetParameter
 
-        public ParameterTypeSignature GetParameterTypeSignature(ParameterTypeSignatureHandle handle)
-        {
-            var record = new ParameterTypeSignature() { _reader = this, _handle = handle };
-            var offset = (uint)handle.Offset;
-            offset = _streamReader.Read(offset, out record._customModifiers);
-            offset = _streamReader.Read(offset, out record._type);
-            return record;
-        } // GetParameterTypeSignature
-
         public PointerSignature GetPointerSignature(PointerSignatureHandle handle)
         {
             var record = new PointerSignature() { _reader = this, _handle = handle };
@@ -8842,7 +8582,6 @@ namespace Internal.Metadata.NativeFormat
             var record = new PropertySignature() { _reader = this, _handle = handle };
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._callingConvention);
-            offset = _streamReader.Read(offset, out record._customModifiers);
             offset = _streamReader.Read(offset, out record._type);
             offset = _streamReader.Read(offset, out record._parameters);
             return record;
@@ -8865,15 +8604,6 @@ namespace Internal.Metadata.NativeFormat
             offset = _streamReader.Read(offset, out record._enclosingType);
             return record;
         } // GetQualifiedMethod
-
-        public ReturnTypeSignature GetReturnTypeSignature(ReturnTypeSignatureHandle handle)
-        {
-            var record = new ReturnTypeSignature() { _reader = this, _handle = handle };
-            var offset = (uint)handle.Offset;
-            offset = _streamReader.Read(offset, out record._customModifiers);
-            offset = _streamReader.Read(offset, out record._type);
-            return record;
-        } // GetReturnTypeSignature
 
         public SZArraySignature GetSZArraySignature(SZArraySignatureHandle handle)
         {
@@ -9147,11 +8877,6 @@ namespace Internal.Metadata.NativeFormat
             return new Handle(handle._value);
         } // ToHandle
 
-        internal Handle ToHandle(CustomModifierHandle handle)
-        {
-            return new Handle(handle._value);
-        } // ToHandle
-
         internal Handle ToHandle(EventHandle handle)
         {
             return new Handle(handle._value);
@@ -9212,6 +8937,11 @@ namespace Internal.Metadata.NativeFormat
             return new Handle(handle._value);
         } // ToHandle
 
+        internal Handle ToHandle(ModifiedTypeHandle handle)
+        {
+            return new Handle(handle._value);
+        } // ToHandle
+
         internal Handle ToHandle(NamedArgumentHandle handle)
         {
             return new Handle(handle._value);
@@ -9228,11 +8958,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToHandle
 
         internal Handle ToHandle(ParameterHandle handle)
-        {
-            return new Handle(handle._value);
-        } // ToHandle
-
-        internal Handle ToHandle(ParameterTypeSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // ToHandle
@@ -9258,11 +8983,6 @@ namespace Internal.Metadata.NativeFormat
         } // ToHandle
 
         internal Handle ToHandle(QualifiedMethodHandle handle)
-        {
-            return new Handle(handle._value);
-        } // ToHandle
-
-        internal Handle ToHandle(ReturnTypeSignatureHandle handle)
         {
             return new Handle(handle._value);
         } // ToHandle
@@ -9472,11 +9192,6 @@ namespace Internal.Metadata.NativeFormat
             return new CustomAttributeHandle(handle._value);
         } // ToCustomAttributeHandle
 
-        internal CustomModifierHandle ToCustomModifierHandle(Handle handle)
-        {
-            return new CustomModifierHandle(handle._value);
-        } // ToCustomModifierHandle
-
         internal EventHandle ToEventHandle(Handle handle)
         {
             return new EventHandle(handle._value);
@@ -9537,6 +9252,11 @@ namespace Internal.Metadata.NativeFormat
             return new MethodTypeVariableSignatureHandle(handle._value);
         } // ToMethodTypeVariableSignatureHandle
 
+        internal ModifiedTypeHandle ToModifiedTypeHandle(Handle handle)
+        {
+            return new ModifiedTypeHandle(handle._value);
+        } // ToModifiedTypeHandle
+
         internal NamedArgumentHandle ToNamedArgumentHandle(Handle handle)
         {
             return new NamedArgumentHandle(handle._value);
@@ -9556,11 +9276,6 @@ namespace Internal.Metadata.NativeFormat
         {
             return new ParameterHandle(handle._value);
         } // ToParameterHandle
-
-        internal ParameterTypeSignatureHandle ToParameterTypeSignatureHandle(Handle handle)
-        {
-            return new ParameterTypeSignatureHandle(handle._value);
-        } // ToParameterTypeSignatureHandle
 
         internal PointerSignatureHandle ToPointerSignatureHandle(Handle handle)
         {
@@ -9586,11 +9301,6 @@ namespace Internal.Metadata.NativeFormat
         {
             return new QualifiedMethodHandle(handle._value);
         } // ToQualifiedMethodHandle
-
-        internal ReturnTypeSignatureHandle ToReturnTypeSignatureHandle(Handle handle)
-        {
-            return new ReturnTypeSignatureHandle(handle._value);
-        } // ToReturnTypeSignatureHandle
 
         internal SZArraySignatureHandle ToSZArraySignatureHandle(Handle handle)
         {
@@ -9797,11 +9507,6 @@ namespace Internal.Metadata.NativeFormat
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull
 
-        internal bool IsNull(CustomModifierHandle handle)
-        {
-            return (handle._value & 0x00FFFFFF) == 0;
-        } // IsNull
-
         internal bool IsNull(EventHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
@@ -9862,6 +9567,11 @@ namespace Internal.Metadata.NativeFormat
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull
 
+        internal bool IsNull(ModifiedTypeHandle handle)
+        {
+            return (handle._value & 0x00FFFFFF) == 0;
+        } // IsNull
+
         internal bool IsNull(NamedArgumentHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
@@ -9878,11 +9588,6 @@ namespace Internal.Metadata.NativeFormat
         } // IsNull
 
         internal bool IsNull(ParameterHandle handle)
-        {
-            return (handle._value & 0x00FFFFFF) == 0;
-        } // IsNull
-
-        internal bool IsNull(ParameterTypeSignatureHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull
@@ -9908,11 +9613,6 @@ namespace Internal.Metadata.NativeFormat
         } // IsNull
 
         internal bool IsNull(QualifiedMethodHandle handle)
-        {
-            return (handle._value & 0x00FFFFFF) == 0;
-        } // IsNull
-
-        internal bool IsNull(ReturnTypeSignatureHandle handle)
         {
             return (handle._value & 0x00FFFFFF) == 0;
         } // IsNull

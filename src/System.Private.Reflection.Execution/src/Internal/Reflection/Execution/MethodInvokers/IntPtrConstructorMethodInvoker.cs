@@ -27,16 +27,16 @@ namespace Internal.Reflection.Execution.MethodInvokers
             // Since we control the definition of System.IntPtr, we only do enough analysis of the signature to disambiguate the constructors we support.
             _id = IntPtrConstructorId.None;
             Method method = methodHandle.GetMethod(reader);
-            ParameterTypeSignatureHandle[] parameterTypeSignatureHandles = method.Signature.GetMethodSignature(reader).Parameters.ToArray();
+            Handle[] parameterTypeSignatureHandles = method.Signature.GetMethodSignature(reader).Parameters.ToArray();
             if (parameterTypeSignatureHandles.Length == 1)
             {
-                ParameterTypeSignature parameterTypeSignature = parameterTypeSignatureHandles[0].GetParameterTypeSignature(reader);
+                Handle parameterTypeHandle = parameterTypeSignatureHandles[0];
 
                 // If any parameter is a pointer type, bail as we don't support Invokes on pointers.
-                if (parameterTypeSignature.Type.HandleType != HandleType.TypeDefinition)
+                if (parameterTypeHandle.HandleType != HandleType.TypeDefinition)
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_PointerArguments);
 
-                TypeDefinition typeDefinition = parameterTypeSignature.Type.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
+                TypeDefinition typeDefinition = parameterTypeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
                 String name = typeDefinition.Name.GetString(reader);
                 switch (name)
                 {

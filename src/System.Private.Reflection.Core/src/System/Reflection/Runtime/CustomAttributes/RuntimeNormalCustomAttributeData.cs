@@ -73,7 +73,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                             // parsing the constructor's signature to get the type info. 
                             if (lazyCtorTypeHandles == null)
                             {
-                                IEnumerable<ParameterTypeSignatureHandle> parameterTypeSignatureHandles;
+                                IEnumerable<Handle> parameterTypeSignatureHandles;
                                 HandleType handleType = _customAttribute.Constructor.HandleType;
                                 switch (handleType)
                                 {
@@ -87,11 +87,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                                     default:
                                         throw new BadImageFormatException();
                                 }
-                                LowLevelList<Handle> ctorTypeHandles = new LowLevelList<Handle>();
-                                foreach (ParameterTypeSignatureHandle parameterTypeSignatureHandle in parameterTypeSignatureHandles)
-                                {
-                                    ctorTypeHandles.Add(parameterTypeSignatureHandle.GetParameterTypeSignature(_reader).Type);
-                                }
+                                LowLevelList<Handle> ctorTypeHandles = new LowLevelList<Handle>(parameterTypeSignatureHandles);
                                 lazyCtorTypeHandles = ctorTypeHandles;
                             }
                             Handle typeHandle = lazyCtorTypeHandles[index];

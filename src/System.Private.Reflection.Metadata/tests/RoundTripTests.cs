@@ -111,10 +111,7 @@ namespace System.Private.Reflection.Metadata.Tests
                 Signature = new Writer.MethodSignature
                 {
                     CallingConvention = CallingConventions.HasThis,
-                    ReturnType = new Writer.ReturnTypeSignature
-                    {
-                        Type = voidType
-                    }
+                    ReturnType =  voidType,
                 },
             };
             objectType.Methods.Add(objectCtorMethod);
@@ -129,10 +126,7 @@ namespace System.Private.Reflection.Metadata.Tests
                 Signature = new Writer.MethodSignature
                 {
                     CallingConvention = CallingConventions.HasThis,
-                    ReturnType = new Writer.ReturnTypeSignature
-                    {
-                        Type = voidType
-                    }
+                    ReturnType =  voidType,
                 },
             };
             stringType.Methods.Add(stringCtorMethod);

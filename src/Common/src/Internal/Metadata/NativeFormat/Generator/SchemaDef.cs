@@ -370,6 +370,14 @@ class SchemaDef
         "TypeSpecification",
     };
 
+    private readonly static string[] TypeDefOrRefOrSpecOrMod = new string[]
+    {
+        "TypeDefinition",
+        "TypeReference",
+        "TypeSpecification",
+        "ModifiedType",
+    };
+
     private readonly static string[] TypeSig = new string[]
     {
         "TypeInstantiationSignature",
@@ -637,7 +645,7 @@ class SchemaDef
         new RecordDef(
             name: "SZArraySignature",
             members: new MemberDef[] {
-                new MemberDef("ElementType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("ElementType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(
@@ -658,7 +666,7 @@ class SchemaDef
         new RecordDef(
             name: "PointerSignature",
             members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(
@@ -676,17 +684,15 @@ class SchemaDef
         new RecordDef(
             name: "FieldSignature",
             members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("CustomModifiers", "CustomModifier", MemberDefFlags.List | MemberDefFlags.RecordRef),
+                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(
             name: "PropertySignature",
             members: new MemberDef[] {
                 new MemberDef("CallingConvention", "CallingConventions"),
-                new MemberDef("CustomModifiers", "CustomModifier", MemberDefFlags.List | MemberDefFlags.RecordRef),
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("Parameters", "ParameterTypeSignature", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
+                new MemberDef("Parameters", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
             }
         ),
         new RecordDef(
@@ -694,23 +700,9 @@ class SchemaDef
             members: new MemberDef[] {
                 new MemberDef("CallingConvention", "CallingConventions"),
                 new MemberDef("GenericParameterCount", "int"),
-                new MemberDef("ReturnType", "ReturnTypeSignature", MemberDefFlags.RecordRef),
-                new MemberDef("Parameters", "ParameterTypeSignature", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
-                new MemberDef("VarArgParameters", "ParameterTypeSignature", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
-            }
-        ),
-        new RecordDef(
-            name: "ReturnTypeSignature",
-            members: new MemberDef[] {
-                new MemberDef("CustomModifiers", "CustomModifier", MemberDefFlags.List | MemberDefFlags.RecordRef),
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-            }
-        ),
-        new RecordDef(
-            name: "ParameterTypeSignature",
-            members: new MemberDef[] {
-                new MemberDef("CustomModifiers", "CustomModifier", MemberDefFlags.List | MemberDefFlags.RecordRef),
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("ReturnType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
+                new MemberDef("Parameters", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("VarArgParameters", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
             }
         ),
         new RecordDef(
@@ -723,10 +715,11 @@ class SchemaDef
             }
         ),
         new RecordDef(
-            name: "CustomModifier",
+            name: "ModifiedType",
             members: new MemberDef[] {
                 new MemberDef("IsOptional", "bool"),
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("ModifierType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         )
     }

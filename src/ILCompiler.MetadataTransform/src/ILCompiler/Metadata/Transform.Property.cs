@@ -43,14 +43,13 @@ namespace ILCompiler.Metadata
                 Signature = new PropertySignature
                 {
                     CallingConvention = sig.IsStatic ? CallingConventions.Standard : CallingConventions.HasThis,
-                    // TODO: CustomModifiers
                     Type = HandleType(sig.ReturnType)
                 },
             };
 
             result.Signature.Parameters.Capacity = sig.Length;
             for (int i = 0; i < sig.Length; i++)
-                result.Signature.Parameters.Add(HandleParameterTypeSignature(sig[i]));
+                result.Signature.Parameters.Add(HandleType(sig[i]));
 
             if (getterHasMetadata)
             {

@@ -998,28 +998,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
-        public static void Write(this NativeWriter writer, CustomModifier record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<CustomModifier> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (CustomModifier value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
         public static void Write(this NativeWriter writer, Event record)
         {
             if (record != null)
@@ -1284,6 +1262,28 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Write
 
+        public static void Write(this NativeWriter writer, ModifiedType record)
+        {
+            if (record != null)
+                writer.WriteUnsigned((uint)record.Handle.Offset);
+            else
+                writer.WriteUnsigned(0);
+        } // Write
+
+        public static void Write(this NativeWriter writer, List<ModifiedType> values)
+        {
+            if (values == null)
+            {
+                writer.WriteUnsigned(0);
+                return;
+            }
+            writer.WriteUnsigned((uint)values.Count);
+            foreach (ModifiedType value in values)
+            {
+                writer.Write(value);
+            }
+        } // Write
+
         public static void Write(this NativeWriter writer, NamedArgument record)
         {
             if (record != null)
@@ -1367,28 +1367,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count);
             foreach (Parameter value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ParameterTypeSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<ParameterTypeSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (ParameterTypeSignature value in values)
             {
                 writer.Write(value);
             }
@@ -1499,28 +1477,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
             writer.WriteUnsigned((uint)values.Count);
             foreach (QualifiedMethod value in values)
-            {
-                writer.Write(value);
-            }
-        } // Write
-
-        public static void Write(this NativeWriter writer, ReturnTypeSignature record)
-        {
-            if (record != null)
-                writer.WriteUnsigned((uint)record.Handle.Offset);
-            else
-                writer.WriteUnsigned(0);
-        } // Write
-
-        public static void Write(this NativeWriter writer, List<ReturnTypeSignature> values)
-        {
-            if (values == null)
-            {
-                writer.WriteUnsigned(0);
-                return;
-            }
-            writer.WriteUnsigned((uint)values.Count);
-            foreach (ReturnTypeSignature value in values)
             {
                 writer.Write(value);
             }
