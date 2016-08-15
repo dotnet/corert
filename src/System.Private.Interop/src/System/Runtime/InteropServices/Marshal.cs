@@ -628,7 +628,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static void ThrowExceptionForHR(int errorCode)
         {
-            ThrowExceptionForHRInternal(errorCode, IntPtr.Zero);
+            ThrowExceptionForHRInternal(errorCode, new IntPtr(-1));
         }
 
         public static void ThrowExceptionForHR(int errorCode, IntPtr errorInfo)
