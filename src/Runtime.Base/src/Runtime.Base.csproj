@@ -104,7 +104,6 @@
     <Compile Include="System\Primitives.cs" />
     <Compile Include="System\RuntimeHandles.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
-    <Compile Include="System\Runtime\RuntimeAugments.cs" />
     <Compile Include="System\String.cs" />
     <Compile Include="System\ThrowHelpers.cs" />
     <Compile Include="System\Void.cs" />

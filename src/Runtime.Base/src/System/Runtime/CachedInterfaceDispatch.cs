@@ -4,9 +4,9 @@
 
 using System;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
-using Internal.Runtime.Augments;
 
 namespace System.Runtime
 {
@@ -17,8 +17,7 @@ namespace System.Runtime
         unsafe private static IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
-            IntPtr thisPointerAsIntPtr = *(IntPtr*)locationOfThisPointer;
-            object pObject = RuntimeAugments.ConvertIntPtrToObjectReference(thisPointerAsIntPtr);
+            object pObject = Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer);            
             return RhpCidResolve_Worker(pObject, pCell);
         }
 #else // LEGACY_INTERFACE_DISPATCH
