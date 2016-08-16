@@ -11,6 +11,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using Internal.NativeFormat;
 
 namespace Internal.Metadata.NativeFormat
 {
@@ -48,25 +49,25 @@ namespace Internal.Metadata.NativeFormat
 
         internal int _rank;
 
-        public IEnumerable<int> Sizes
+        public Int32Collection Sizes
         {
             get
             {
-                return (IEnumerable<int>)_sizes;
+                return _sizes;
             }
         } // Sizes
 
-        internal int[] _sizes;
+        internal Int32Collection _sizes;
 
-        public IEnumerable<int> LowerBounds
+        public Int32Collection LowerBounds
         {
             get
             {
-                return (IEnumerable<int>)_lowerBounds;
+                return _lowerBounds;
             }
         } // LowerBounds
 
-        internal int[] _lowerBounds;
+        internal Int32Collection _lowerBounds;
     } // ArraySignature
 
     public partial struct ArraySignatureHandle
@@ -273,15 +274,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<bool> Value
+        public BooleanCollection Value
         {
             get
             {
-                return (IEnumerable<bool>)_value;
+                return _value;
             }
         } // Value
 
-        internal bool[] _value;
+        internal BooleanCollection _value;
     } // ConstantBooleanArray
 
     public partial struct ConstantBooleanArrayHandle
@@ -606,15 +607,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<byte> Value
+        public ByteCollection Value
         {
             get
             {
-                return (IEnumerable<byte>)_value;
+                return _value;
             }
         } // Value
 
-        internal byte[] _value;
+        internal ByteCollection _value;
     } // ConstantByteArray
 
     public partial struct ConstantByteArrayHandle
@@ -820,15 +821,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<char> Value
+        public CharCollection Value
         {
             get
             {
-                return (IEnumerable<char>)_value;
+                return _value;
             }
         } // Value
 
-        internal char[] _value;
+        internal CharCollection _value;
     } // ConstantCharArray
 
     public partial struct ConstantCharArrayHandle
@@ -1034,15 +1035,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<double> Value
+        public DoubleCollection Value
         {
             get
             {
-                return (IEnumerable<double>)_value;
+                return _value;
             }
         } // Value
 
-        internal double[] _value;
+        internal DoubleCollection _value;
     } // ConstantDoubleArray
 
     public partial struct ConstantDoubleArrayHandle
@@ -1248,15 +1249,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<Handle> Value
+        public HandleCollection Value
         {
             get
             {
-                return (IEnumerable<Handle>)_value;
+                return _value;
             }
         } // Value
 
-        internal Handle[] _value;
+        internal HandleCollection _value;
     } // ConstantHandleArray
 
     public partial struct ConstantHandleArrayHandle
@@ -1355,15 +1356,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<short> Value
+        public Int16Collection Value
         {
             get
             {
-                return (IEnumerable<short>)_value;
+                return _value;
             }
         } // Value
 
-        internal short[] _value;
+        internal Int16Collection _value;
     } // ConstantInt16Array
 
     public partial struct ConstantInt16ArrayHandle
@@ -1569,15 +1570,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<int> Value
+        public Int32Collection Value
         {
             get
             {
-                return (IEnumerable<int>)_value;
+                return _value;
             }
         } // Value
 
-        internal int[] _value;
+        internal Int32Collection _value;
     } // ConstantInt32Array
 
     public partial struct ConstantInt32ArrayHandle
@@ -1783,15 +1784,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<long> Value
+        public Int64Collection Value
         {
             get
             {
-                return (IEnumerable<long>)_value;
+                return _value;
             }
         } // Value
 
-        internal long[] _value;
+        internal Int64Collection _value;
     } // ConstantInt64Array
 
     public partial struct ConstantInt64ArrayHandle
@@ -2094,15 +2095,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<sbyte> Value
+        public SByteCollection Value
         {
             get
             {
-                return (IEnumerable<sbyte>)_value;
+                return _value;
             }
         } // Value
 
-        internal sbyte[] _value;
+        internal SByteCollection _value;
     } // ConstantSByteArray
 
     public partial struct ConstantSByteArrayHandle
@@ -2308,15 +2309,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<float> Value
+        public SingleCollection Value
         {
             get
             {
-                return (IEnumerable<float>)_value;
+                return _value;
             }
         } // Value
 
-        internal float[] _value;
+        internal SingleCollection _value;
     } // ConstantSingleArray
 
     public partial struct ConstantSingleArrayHandle
@@ -2522,15 +2523,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<string> Value
+        public StringCollection Value
         {
             get
             {
-                return (IEnumerable<string>)_value;
+                return _value;
             }
         } // Value
 
-        internal string[] _value;
+        internal StringCollection _value;
     } // ConstantStringArray
 
     public partial struct ConstantStringArrayHandle
@@ -2736,15 +2737,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<ushort> Value
+        public UInt16Collection Value
         {
             get
             {
-                return (IEnumerable<ushort>)_value;
+                return _value;
             }
         } // Value
 
-        internal ushort[] _value;
+        internal UInt16Collection _value;
     } // ConstantUInt16Array
 
     public partial struct ConstantUInt16ArrayHandle
@@ -2950,15 +2951,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<uint> Value
+        public UInt32Collection Value
         {
             get
             {
-                return (IEnumerable<uint>)_value;
+                return _value;
             }
         } // Value
 
-        internal uint[] _value;
+        internal UInt32Collection _value;
     } // ConstantUInt32Array
 
     public partial struct ConstantUInt32ArrayHandle
@@ -3164,15 +3165,15 @@ namespace Internal.Metadata.NativeFormat
             }
         } // Handle
 
-        public IEnumerable<ulong> Value
+        public UInt64Collection Value
         {
             get
             {
-                return (IEnumerable<ulong>)_value;
+                return _value;
             }
         } // Value
 
-        internal ulong[] _value;
+        internal UInt64Collection _value;
     } // ConstantUInt64Array
 
     public partial struct ConstantUInt64ArrayHandle
@@ -3389,25 +3390,25 @@ namespace Internal.Metadata.NativeFormat
 
         internal Handle _constructor;
 
-        public IEnumerable<FixedArgumentHandle> FixedArguments
+        public FixedArgumentHandleCollection FixedArguments
         {
             get
             {
-                return (IEnumerable<FixedArgumentHandle>)_fixedArguments;
+                return _fixedArguments;
             }
         } // FixedArguments
 
-        internal FixedArgumentHandle[] _fixedArguments;
+        internal FixedArgumentHandleCollection _fixedArguments;
 
-        public IEnumerable<NamedArgumentHandle> NamedArguments
+        public NamedArgumentHandleCollection NamedArguments
         {
             get
             {
-                return (IEnumerable<NamedArgumentHandle>)_namedArguments;
+                return _namedArguments;
             }
         } // NamedArguments
 
-        internal NamedArgumentHandle[] _namedArguments;
+        internal NamedArgumentHandleCollection _namedArguments;
     } // CustomAttribute
 
     public partial struct CustomAttributeHandle
@@ -3537,25 +3538,25 @@ namespace Internal.Metadata.NativeFormat
 
         internal Handle _type;
 
-        public IEnumerable<MethodSemanticsHandle> MethodSemantics
+        public MethodSemanticsHandleCollection MethodSemantics
         {
             get
             {
-                return (IEnumerable<MethodSemanticsHandle>)_methodSemantics;
+                return _methodSemantics;
             }
         } // MethodSemantics
 
-        internal MethodSemanticsHandle[] _methodSemantics;
+        internal MethodSemanticsHandleCollection _methodSemantics;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // Event
 
     public partial struct EventHandle
@@ -3705,15 +3706,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal uint _offset;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // Field
 
     public partial struct FieldHandle
@@ -4090,25 +4091,25 @@ namespace Internal.Metadata.NativeFormat
         internal ConstantStringValueHandle _name;
         /// One of: TypeDefinition, TypeReference, TypeSpecification
 
-        public IEnumerable<Handle> Constraints
+        public HandleCollection Constraints
         {
             get
             {
-                return (IEnumerable<Handle>)_constraints;
+                return _constraints;
             }
         } // Constraints
 
-        internal Handle[] _constraints;
+        internal HandleCollection _constraints;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // GenericParameter
 
     public partial struct GenericParameterHandle
@@ -4239,15 +4240,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal Handle _signature;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // MemberReference
 
     public partial struct MemberReferenceHandle
@@ -4386,35 +4387,35 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodSignatureHandle _signature;
 
-        public IEnumerable<ParameterHandle> Parameters
+        public ParameterHandleCollection Parameters
         {
             get
             {
-                return (IEnumerable<ParameterHandle>)_parameters;
+                return _parameters;
             }
         } // Parameters
 
-        internal ParameterHandle[] _parameters;
+        internal ParameterHandleCollection _parameters;
 
-        public IEnumerable<GenericParameterHandle> GenericParameters
+        public GenericParameterHandleCollection GenericParameters
         {
             get
             {
-                return (IEnumerable<GenericParameterHandle>)_genericParameters;
+                return _genericParameters;
             }
         } // GenericParameters
 
-        internal GenericParameterHandle[] _genericParameters;
+        internal GenericParameterHandleCollection _genericParameters;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // Method
 
     public partial struct MethodHandle
@@ -4644,25 +4645,25 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _method;
         /// One of: TypeDefinition, TypeReference, TypeSpecification
 
-        public IEnumerable<Handle> GenericTypeArguments
+        public HandleCollection GenericTypeArguments
         {
             get
             {
-                return (IEnumerable<Handle>)_genericTypeArguments;
+                return _genericTypeArguments;
             }
         } // GenericTypeArguments
 
-        internal Handle[] _genericTypeArguments;
+        internal HandleCollection _genericTypeArguments;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // MethodInstantiation
 
     public partial struct MethodInstantiationHandle
@@ -4910,26 +4911,26 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _returnType;
         /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
-        public IEnumerable<Handle> Parameters
+        public HandleCollection Parameters
         {
             get
             {
-                return (IEnumerable<Handle>)_parameters;
+                return _parameters;
             }
         } // Parameters
 
-        internal Handle[] _parameters;
+        internal HandleCollection _parameters;
         /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
-        public IEnumerable<Handle> VarArgParameters
+        public HandleCollection VarArgParameters
         {
             get
             {
-                return (IEnumerable<Handle>)_varArgParameters;
+                return _varArgParameters;
             }
         } // VarArgParameters
 
-        internal Handle[] _varArgParameters;
+        internal HandleCollection _varArgParameters;
     } // MethodSignature
 
     public partial struct MethodSignatureHandle
@@ -5412,35 +5413,35 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringValueHandle _name;
 
-        public IEnumerable<TypeDefinitionHandle> TypeDefinitions
+        public TypeDefinitionHandleCollection TypeDefinitions
         {
             get
             {
-                return (IEnumerable<TypeDefinitionHandle>)_typeDefinitions;
+                return _typeDefinitions;
             }
         } // TypeDefinitions
 
-        internal TypeDefinitionHandle[] _typeDefinitions;
+        internal TypeDefinitionHandleCollection _typeDefinitions;
 
-        public IEnumerable<TypeForwarderHandle> TypeForwarders
+        public TypeForwarderHandleCollection TypeForwarders
         {
             get
             {
-                return (IEnumerable<TypeForwarderHandle>)_typeForwarders;
+                return _typeForwarders;
             }
         } // TypeForwarders
 
-        internal TypeForwarderHandle[] _typeForwarders;
+        internal TypeForwarderHandleCollection _typeForwarders;
 
-        public IEnumerable<NamespaceDefinitionHandle> NamespaceDefinitions
+        public NamespaceDefinitionHandleCollection NamespaceDefinitions
         {
             get
             {
-                return (IEnumerable<NamespaceDefinitionHandle>)_namespaceDefinitions;
+                return _namespaceDefinitions;
             }
         } // NamespaceDefinitions
 
-        internal NamespaceDefinitionHandle[] _namespaceDefinitions;
+        internal NamespaceDefinitionHandleCollection _namespaceDefinitions;
     } // NamespaceDefinition
 
     public partial struct NamespaceDefinitionHandle
@@ -5698,15 +5699,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal Handle _defaultValue;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // Parameter
 
     public partial struct ParameterHandle
@@ -5943,15 +5944,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal PropertySignatureHandle _signature;
 
-        public IEnumerable<MethodSemanticsHandle> MethodSemantics
+        public MethodSemanticsHandleCollection MethodSemantics
         {
             get
             {
-                return (IEnumerable<MethodSemanticsHandle>)_methodSemantics;
+                return _methodSemantics;
             }
         } // MethodSemantics
 
-        internal MethodSemanticsHandle[] _methodSemantics;
+        internal MethodSemanticsHandleCollection _methodSemantics;
         /// One of: TypeDefinition, TypeReference, TypeSpecification, ConstantBooleanArray, ConstantBooleanValue, ConstantByteArray, ConstantByteValue, ConstantCharArray, ConstantCharValue, ConstantDoubleArray, ConstantDoubleValue, ConstantHandleArray, ConstantInt16Array, ConstantInt16Value, ConstantInt32Array, ConstantInt32Value, ConstantInt64Array, ConstantInt64Value, ConstantReferenceValue, ConstantSByteArray, ConstantSByteValue, ConstantSingleArray, ConstantSingleValue, ConstantStringArray, ConstantStringValue, ConstantUInt16Array, ConstantUInt16Value, ConstantUInt32Array, ConstantUInt32Value, ConstantUInt64Array, ConstantUInt64Value
 
         public Handle DefaultValue
@@ -5964,15 +5965,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal Handle _defaultValue;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // Property
 
     public partial struct PropertyHandle
@@ -6093,15 +6094,15 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _type;
         /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
-        public IEnumerable<Handle> Parameters
+        public HandleCollection Parameters
         {
             get
             {
-                return (IEnumerable<Handle>)_parameters;
+                return _parameters;
             }
         } // Parameters
 
-        internal Handle[] _parameters;
+        internal HandleCollection _parameters;
     } // PropertySignature
 
     public partial struct PropertySignatureHandle
@@ -6612,15 +6613,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal ushort _revisionNumber;
 
-        public IEnumerable<byte> PublicKey
+        public ByteCollection PublicKey
         {
             get
             {
-                return (IEnumerable<byte>)_publicKey;
+                return _publicKey;
             }
         } // PublicKey
 
-        internal byte[] _publicKey;
+        internal ByteCollection _publicKey;
 
         public ConstantStringValueHandle Culture
         {
@@ -6642,15 +6643,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamespaceDefinitionHandle _rootNamespaceDefinition;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // ScopeDefinition
 
     public partial struct ScopeDefinitionHandle
@@ -6809,15 +6810,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal ushort _revisionNumber;
 
-        public IEnumerable<byte> PublicKeyOrToken
+        public ByteCollection PublicKeyOrToken
         {
             get
             {
-                return (IEnumerable<byte>)_publicKeyOrToken;
+                return _publicKeyOrToken;
             }
         } // PublicKeyOrToken
 
-        internal byte[] _publicKeyOrToken;
+        internal ByteCollection _publicKeyOrToken;
 
         public ConstantStringValueHandle Culture
         {
@@ -6829,15 +6830,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringValueHandle _culture;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // ScopeReference
 
     public partial struct ScopeReferenceHandle
@@ -7007,96 +7008,96 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeDefinitionHandle _enclosingType;
 
-        public IEnumerable<TypeDefinitionHandle> NestedTypes
+        public TypeDefinitionHandleCollection NestedTypes
         {
             get
             {
-                return (IEnumerable<TypeDefinitionHandle>)_nestedTypes;
+                return _nestedTypes;
             }
         } // NestedTypes
 
-        internal TypeDefinitionHandle[] _nestedTypes;
+        internal TypeDefinitionHandleCollection _nestedTypes;
 
-        public IEnumerable<MethodHandle> Methods
+        public MethodHandleCollection Methods
         {
             get
             {
-                return (IEnumerable<MethodHandle>)_methods;
+                return _methods;
             }
         } // Methods
 
-        internal MethodHandle[] _methods;
+        internal MethodHandleCollection _methods;
 
-        public IEnumerable<FieldHandle> Fields
+        public FieldHandleCollection Fields
         {
             get
             {
-                return (IEnumerable<FieldHandle>)_fields;
+                return _fields;
             }
         } // Fields
 
-        internal FieldHandle[] _fields;
+        internal FieldHandleCollection _fields;
 
-        public IEnumerable<PropertyHandle> Properties
+        public PropertyHandleCollection Properties
         {
             get
             {
-                return (IEnumerable<PropertyHandle>)_properties;
+                return _properties;
             }
         } // Properties
 
-        internal PropertyHandle[] _properties;
+        internal PropertyHandleCollection _properties;
 
-        public IEnumerable<EventHandle> Events
+        public EventHandleCollection Events
         {
             get
             {
-                return (IEnumerable<EventHandle>)_events;
+                return _events;
             }
         } // Events
 
-        internal EventHandle[] _events;
+        internal EventHandleCollection _events;
 
-        public IEnumerable<GenericParameterHandle> GenericParameters
+        public GenericParameterHandleCollection GenericParameters
         {
             get
             {
-                return (IEnumerable<GenericParameterHandle>)_genericParameters;
+                return _genericParameters;
             }
         } // GenericParameters
 
-        internal GenericParameterHandle[] _genericParameters;
+        internal GenericParameterHandleCollection _genericParameters;
         /// One of: TypeDefinition, TypeReference, TypeSpecification
 
-        public IEnumerable<Handle> Interfaces
+        public HandleCollection Interfaces
         {
             get
             {
-                return (IEnumerable<Handle>)_interfaces;
+                return _interfaces;
             }
         } // Interfaces
 
-        internal Handle[] _interfaces;
+        internal HandleCollection _interfaces;
 
-        public IEnumerable<MethodImplHandle> MethodImpls
+        public MethodImplHandleCollection MethodImpls
         {
             get
             {
-                return (IEnumerable<MethodImplHandle>)_methodImpls;
+                return _methodImpls;
             }
         } // MethodImpls
 
-        internal MethodImplHandle[] _methodImpls;
+        internal MethodImplHandleCollection _methodImpls;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // TypeDefinition
 
     public partial struct TypeDefinitionHandle
@@ -7215,25 +7216,25 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringValueHandle _name;
 
-        public IEnumerable<TypeForwarderHandle> NestedTypes
+        public TypeForwarderHandleCollection NestedTypes
         {
             get
             {
-                return (IEnumerable<TypeForwarderHandle>)_nestedTypes;
+                return _nestedTypes;
             }
         } // NestedTypes
 
-        internal TypeForwarderHandle[] _nestedTypes;
+        internal TypeForwarderHandleCollection _nestedTypes;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // TypeForwarder
 
     public partial struct TypeForwarderHandle
@@ -7344,15 +7345,15 @@ namespace Internal.Metadata.NativeFormat
         internal Handle _genericType;
         /// One of: TypeDefinition, TypeReference, TypeSpecification
 
-        public IEnumerable<Handle> GenericTypeArguments
+        public HandleCollection GenericTypeArguments
         {
             get
             {
-                return (IEnumerable<Handle>)_genericTypeArguments;
+                return _genericTypeArguments;
             }
         } // GenericTypeArguments
 
-        internal Handle[] _genericTypeArguments;
+        internal HandleCollection _genericTypeArguments;
     } // TypeInstantiationSignature
 
     public partial struct TypeInstantiationSignatureHandle
@@ -7472,15 +7473,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringValueHandle _typeName;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // TypeReference
 
     public partial struct TypeReferenceHandle
@@ -7590,15 +7591,15 @@ namespace Internal.Metadata.NativeFormat
 
         internal Handle _signature;
 
-        public IEnumerable<CustomAttributeHandle> CustomAttributes
+        public CustomAttributeHandleCollection CustomAttributes
         {
             get
             {
-                return (IEnumerable<CustomAttributeHandle>)_customAttributes;
+                return _customAttributes;
             }
         } // CustomAttributes
 
-        internal CustomAttributeHandle[] _customAttributes;
+        internal CustomAttributeHandleCollection _customAttributes;
     } // TypeSpecification
 
     public partial struct TypeSpecificationHandle
@@ -7790,6 +7791,2414 @@ namespace Internal.Metadata.NativeFormat
             return String.Format("{0:X8}", _value);
         } // ToString
     } // TypeVariableSignatureHandle
+
+    public partial struct FixedArgumentHandleCollection : IReadOnlyCollection<FixedArgumentHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal FixedArgumentHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<FixedArgumentHandle> IEnumerable<FixedArgumentHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<FixedArgumentHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private FixedArgumentHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(FixedArgumentHandle);
+            }
+
+            public FixedArgumentHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // FixedArgumentHandleCollection
+
+    public partial struct NamedArgumentHandleCollection : IReadOnlyCollection<NamedArgumentHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal NamedArgumentHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<NamedArgumentHandle> IEnumerable<NamedArgumentHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<NamedArgumentHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private NamedArgumentHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(NamedArgumentHandle);
+            }
+
+            public NamedArgumentHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // NamedArgumentHandleCollection
+
+    public partial struct MethodSemanticsHandleCollection : IReadOnlyCollection<MethodSemanticsHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal MethodSemanticsHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<MethodSemanticsHandle> IEnumerable<MethodSemanticsHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<MethodSemanticsHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private MethodSemanticsHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(MethodSemanticsHandle);
+            }
+
+            public MethodSemanticsHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // MethodSemanticsHandleCollection
+
+    public partial struct CustomAttributeHandleCollection : IReadOnlyCollection<CustomAttributeHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal CustomAttributeHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<CustomAttributeHandle> IEnumerable<CustomAttributeHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<CustomAttributeHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private CustomAttributeHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(CustomAttributeHandle);
+            }
+
+            public CustomAttributeHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // CustomAttributeHandleCollection
+
+    public partial struct ParameterHandleCollection : IReadOnlyCollection<ParameterHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal ParameterHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<ParameterHandle> IEnumerable<ParameterHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<ParameterHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private ParameterHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(ParameterHandle);
+            }
+
+            public ParameterHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // ParameterHandleCollection
+
+    public partial struct GenericParameterHandleCollection : IReadOnlyCollection<GenericParameterHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal GenericParameterHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<GenericParameterHandle> IEnumerable<GenericParameterHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<GenericParameterHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private GenericParameterHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(GenericParameterHandle);
+            }
+
+            public GenericParameterHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // GenericParameterHandleCollection
+
+    public partial struct TypeDefinitionHandleCollection : IReadOnlyCollection<TypeDefinitionHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal TypeDefinitionHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<TypeDefinitionHandle> IEnumerable<TypeDefinitionHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<TypeDefinitionHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private TypeDefinitionHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(TypeDefinitionHandle);
+            }
+
+            public TypeDefinitionHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // TypeDefinitionHandleCollection
+
+    public partial struct TypeForwarderHandleCollection : IReadOnlyCollection<TypeForwarderHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal TypeForwarderHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<TypeForwarderHandle> IEnumerable<TypeForwarderHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<TypeForwarderHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private TypeForwarderHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(TypeForwarderHandle);
+            }
+
+            public TypeForwarderHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // TypeForwarderHandleCollection
+
+    public partial struct NamespaceDefinitionHandleCollection : IReadOnlyCollection<NamespaceDefinitionHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal NamespaceDefinitionHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<NamespaceDefinitionHandle> IEnumerable<NamespaceDefinitionHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<NamespaceDefinitionHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private NamespaceDefinitionHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(NamespaceDefinitionHandle);
+            }
+
+            public NamespaceDefinitionHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // NamespaceDefinitionHandleCollection
+
+    public partial struct MethodHandleCollection : IReadOnlyCollection<MethodHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal MethodHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<MethodHandle> IEnumerable<MethodHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<MethodHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private MethodHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(MethodHandle);
+            }
+
+            public MethodHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // MethodHandleCollection
+
+    public partial struct FieldHandleCollection : IReadOnlyCollection<FieldHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal FieldHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<FieldHandle> IEnumerable<FieldHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<FieldHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private FieldHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(FieldHandle);
+            }
+
+            public FieldHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // FieldHandleCollection
+
+    public partial struct PropertyHandleCollection : IReadOnlyCollection<PropertyHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal PropertyHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<PropertyHandle> IEnumerable<PropertyHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<PropertyHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private PropertyHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(PropertyHandle);
+            }
+
+            public PropertyHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // PropertyHandleCollection
+
+    public partial struct EventHandleCollection : IReadOnlyCollection<EventHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal EventHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<EventHandle> IEnumerable<EventHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<EventHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private EventHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(EventHandle);
+            }
+
+            public EventHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // EventHandleCollection
+
+    public partial struct MethodImplHandleCollection : IReadOnlyCollection<MethodImplHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal MethodImplHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<MethodImplHandle> IEnumerable<MethodImplHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<MethodImplHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private MethodImplHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(MethodImplHandle);
+            }
+
+            public MethodImplHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // MethodImplHandleCollection
+
+    public partial struct ScopeDefinitionHandleCollection : IReadOnlyCollection<ScopeDefinitionHandle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal ScopeDefinitionHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<ScopeDefinitionHandle> IEnumerable<ScopeDefinitionHandle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<ScopeDefinitionHandle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private ScopeDefinitionHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(ScopeDefinitionHandle);
+            }
+
+            public ScopeDefinitionHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // ScopeDefinitionHandleCollection
+
+    public partial struct BooleanCollection : IReadOnlyCollection<bool>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal BooleanCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<bool> IEnumerable<bool>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<bool>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private bool _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(bool);
+            }
+
+            public bool Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // BooleanCollection
+
+    public partial struct CharCollection : IReadOnlyCollection<char>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal CharCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<char> IEnumerable<char>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<char>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private char _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(char);
+            }
+
+            public char Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // CharCollection
+
+    public partial struct StringCollection : IReadOnlyCollection<string>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal StringCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<string> IEnumerable<string>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<string>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private string _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(string);
+            }
+
+            public string Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // StringCollection
+
+    public partial struct ByteCollection : IReadOnlyCollection<byte>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal ByteCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<byte> IEnumerable<byte>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<byte>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private byte _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(byte);
+            }
+
+            public byte Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // ByteCollection
+
+    public partial struct SByteCollection : IReadOnlyCollection<sbyte>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal SByteCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<sbyte> IEnumerable<sbyte>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<sbyte>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private sbyte _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(sbyte);
+            }
+
+            public sbyte Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // SByteCollection
+
+    public partial struct Int16Collection : IReadOnlyCollection<short>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal Int16Collection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<short> IEnumerable<short>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<short>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private short _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(short);
+            }
+
+            public short Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // Int16Collection
+
+    public partial struct UInt16Collection : IReadOnlyCollection<ushort>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal UInt16Collection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<ushort> IEnumerable<ushort>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<ushort>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private ushort _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(ushort);
+            }
+
+            public ushort Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // UInt16Collection
+
+    public partial struct Int32Collection : IReadOnlyCollection<int>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal Int32Collection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<int> IEnumerable<int>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<int>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private int _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(int);
+            }
+
+            public int Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // Int32Collection
+
+    public partial struct UInt32Collection : IReadOnlyCollection<uint>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal UInt32Collection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<uint> IEnumerable<uint>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<uint>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private uint _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(uint);
+            }
+
+            public uint Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // UInt32Collection
+
+    public partial struct Int64Collection : IReadOnlyCollection<long>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal Int64Collection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<long> IEnumerable<long>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<long>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private long _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(long);
+            }
+
+            public long Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // Int64Collection
+
+    public partial struct UInt64Collection : IReadOnlyCollection<ulong>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal UInt64Collection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<ulong> IEnumerable<ulong>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<ulong>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private ulong _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(ulong);
+            }
+
+            public ulong Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // UInt64Collection
+
+    public partial struct SingleCollection : IReadOnlyCollection<float>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal SingleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<float> IEnumerable<float>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<float>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private float _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(float);
+            }
+
+            public float Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // SingleCollection
+
+    public partial struct DoubleCollection : IReadOnlyCollection<double>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal DoubleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<double> IEnumerable<double>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<double>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private double _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(double);
+            }
+
+            public double Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // DoubleCollection
 
     public partial struct Handle
     {
@@ -8108,6 +10517,92 @@ namespace Internal.Metadata.NativeFormat
             return new TypeVariableSignatureHandle(this);
         } // ToTypeVariableSignatureHandle
     } // Handle
+
+    public partial struct HandleCollection : IReadOnlyCollection<Handle>
+    {
+        private NativeReader _reader;
+        private uint _offset;
+
+        internal HandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        IEnumerator<Handle> IEnumerable<Handle>.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+        public struct Enumerator : IEnumerator<Handle>
+        {
+            private NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private Handle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(Handle);
+            }
+
+            public Handle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            object System.Collections.IEnumerator.Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            void System.Collections.IEnumerator.Reset()
+            {
+                throw new NotSupportedException();
+            } // Reset
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // HandleCollection
 
     public partial class MetadataReader
     {

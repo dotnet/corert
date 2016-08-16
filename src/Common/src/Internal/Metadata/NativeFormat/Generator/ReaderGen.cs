@@ -26,6 +26,7 @@ class ReaderGen : CsWriter
         WriteLine("using System;");
         WriteLine("using System.Reflection;");
         WriteLine("using System.Collections.Generic;");
+        WriteLine("using Internal.NativeFormat;");
         WriteLine();
 
         OpenScope("namespace Internal.Metadata.NativeFormat");
@@ -35,8 +36,19 @@ class ReaderGen : CsWriter
             EmitRecord(record);
             EmitHandle(record);
         }
+        
+        foreach (var typeName in SchemaDef.TypeNamesWithCollectionTypes)
+        {
+            EmitCollection(typeName + "HandleCollection", typeName + "Handle");
+        }
+
+        foreach (var primitiveType in SchemaDef.PrimitiveTypes)
+        {
+            EmitCollection(primitiveType.TypeName + "Collection", primitiveType.Name);
+        }
 
         EmitOpaqueHandle();
+        EmitCollection("HandleCollection", "Handle");
         EmitMetadataReader();
 
         CloseScope("Internal.Metadata.NativeFormat");
@@ -158,6 +170,83 @@ class ReaderGen : CsWriter
         CloseScope("ToString");
 
         CloseScope(handleName);
+    }
+
+    private void EmitCollection(string collectionTypeName, string elementTypeName)
+    {
+        OpenScope($"public partial struct {collectionTypeName} : IReadOnlyCollection<{elementTypeName}>");
+
+        WriteLine("private NativeReader _reader;");
+        WriteLine("private uint _offset;");
+
+        OpenScope($"internal {collectionTypeName}(NativeReader reader, uint offset)");
+        WriteLine("_offset = offset;");
+        WriteLine("_reader = reader;");
+        CloseScope();
+
+        OpenScope("public int Count");
+        OpenScope("get");
+        WriteLine("uint count;");
+        WriteLine("_reader.DecodeUnsigned(_offset, out count);");
+        WriteLine("return (int)count;");
+        CloseScope();
+        CloseScope("Count");
+
+        OpenScope($"public Enumerator GetEnumerator()");
+        WriteLine($"return new Enumerator(_reader, _offset);");
+        CloseScope("GetEnumerator");
+
+        OpenScope($"IEnumerator<{elementTypeName}> IEnumerable<{elementTypeName}>.GetEnumerator()");
+        WriteLine($"return new Enumerator(_reader, _offset);");
+        CloseScope("GetEnumerator");
+
+        OpenScope($"System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()");
+        WriteLine("return new Enumerator(_reader, _offset);");
+        CloseScope("GetEnumerator");
+
+        OpenScope($"public struct Enumerator : IEnumerator<{elementTypeName}>");
+
+        WriteLine("private NativeReader _reader;");
+        WriteLine("private uint _offset;");
+        WriteLine("private uint _remaining;");
+        WriteLine($"private {elementTypeName} _current;");
+
+        OpenScope($"internal Enumerator(NativeReader reader, uint offset)");
+        WriteLine("_reader = reader;");
+        WriteLine("_offset = reader.DecodeUnsigned(offset, out _remaining);");
+        WriteLine($"_current = default({elementTypeName});");
+        CloseScope();
+
+        OpenScope($"public {elementTypeName} Current");
+        OpenScope("get");
+        WriteLine("return _current;");
+        CloseScope();
+        CloseScope("Current");
+
+        OpenScope("object System.Collections.IEnumerator.Current");
+        OpenScope("get");
+        WriteLine("return _current;");
+        CloseScope();
+        CloseScope("Current");
+
+        OpenScope("public bool MoveNext()");
+        WriteLine("if (_remaining == 0)");
+        WriteLine("    return false;");
+        WriteLine("_remaining--;");
+        WriteLine("_offset = _reader.Read(_offset, out _current);");
+        WriteLine("return true;");
+        CloseScope("MoveNext");
+
+        OpenScope("void System.Collections.IEnumerator.Reset()");
+        WriteLine("throw new NotSupportedException();");
+        CloseScope("Reset");
+
+        OpenScope("public void Dispose()");
+        CloseScope("Dispose");
+
+        CloseScope("Enumerator");
+
+        CloseScope(collectionTypeName);
     }
 
     private void EmitOpaqueHandle()

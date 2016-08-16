@@ -34,7 +34,7 @@ class MdBinaryReaderGen : CsWriter
 
         foreach (var primitiveType in SchemaDef.PrimitiveTypes)
         {
-            EmitReadPrimitiveArray(primitiveType.Name);
+            EmitReadPrimitiveCollection(primitiveType.TypeName);
         }
 
         foreach (var enumType in SchemaDef.EnumTypes)
@@ -42,30 +42,53 @@ class MdBinaryReaderGen : CsWriter
             EmitReadEnum(enumType);
         }
 
-        EmitReadArray($"Handle");
+        EmitReadCollection($"Handle");
 
         foreach (var typeName in SchemaDef.HandleSchema)
         {
             EmitRead($"{typeName}Handle");
-            EmitReadArray($"{typeName}Handle");
+        }
+
+        foreach (var typeName in SchemaDef.TypeNamesWithCollectionTypes)
+        {
+            EmitReadCollection($"{typeName}Handle");
         }
 
         CloseScope("MdBinaryReader");
         CloseScope("Internal.Metadata.NativeFormat");
     }
 
-    private void EmitReadPrimitiveArray(string typeName)
+    private void EmitReadCollection(string typeName)
     {
-        OpenScope($"public static uint Read(this NativeReader reader, uint offset, out {typeName}[] values)");
+        string collectionTypeName = $"{typeName}Collection";
+
+        OpenScope($"public static uint Read(this NativeReader reader, uint offset, out {collectionTypeName} values)");
+        WriteLine($"values = new {collectionTypeName}(reader, offset);");
         WriteLine("uint count;");
         WriteLine("offset = reader.DecodeUnsigned(offset, out count);");
-        WriteLine($"values = new {typeName}[count];");
         WriteLine("for (uint i = 0; i < count; ++i)");
         WriteLine("{");
-        WriteLine($"    {typeName} tmp;");
-        WriteLine("    offset = reader.Read(offset, out tmp);");
-        WriteLine("    values[i] = tmp;");
+        WriteLine("    offset = reader.SkipInteger(offset);");
         WriteLine("}");
+        WriteLine("return offset;");
+        CloseScope("Read");
+    }
+
+    private void EmitReadPrimitiveCollection(string typeName)
+    {
+        if (typeName == "String")
+        {
+            EmitReadCollection(typeName);
+            return;
+        }
+
+        string collectionTypeName = $"{typeName}Collection";
+
+        OpenScope($"public static unsafe uint Read(this NativeReader reader, uint offset, out {collectionTypeName} values)");
+        WriteLine($"values = new {collectionTypeName}(reader, offset);");
+        WriteLine("uint count;");
+        WriteLine("offset = reader.DecodeUnsigned(offset, out count);");
+        WriteLine($"offset = checked(offset + count * sizeof({typeName}));");
         WriteLine("return offset;");
         CloseScope("Read");
     }
@@ -87,31 +110,6 @@ class MdBinaryReaderGen : CsWriter
         WriteLine("offset = reader.DecodeUnsigned(offset, out value);");
         WriteLine($"handle = new {typeName}((int)value);");
         WriteLine("handle._Validate();");
-        WriteLine("return offset;");
-        CloseScope("Read");
-    }
-
-    private void EmitReadArray(string typeName)
-    {
-        OpenScope($"public static uint Read(this NativeReader reader, uint offset, out {typeName}[] values)");
-        WriteLine("uint count;");
-        WriteLine("offset = reader.DecodeUnsigned(offset, out count);");
-        WriteLine("#if !NETFX_45");
-        WriteLine("if (count == 0)");
-        WriteLine("{");
-        WriteLine($"    values = Array.Empty<{typeName}>();");
-        WriteLine("}");
-        WriteLine("else");
-        WriteLine("#endif");
-        WriteLine("{");
-        WriteLine($"    values = new {typeName}[count];");
-        WriteLine("    for (uint i = 0; i < count; ++i)");
-        WriteLine("    {");
-        WriteLine($"        {typeName} tmp;");
-        WriteLine("        offset = reader.Read(offset, out tmp);");
-        WriteLine("        values[i] = tmp;");
-        WriteLine("    }");
-        WriteLine("}");
         WriteLine("return offset;");
         CloseScope("Read");
     }

@@ -240,7 +240,7 @@ namespace Internal.Metadata.NativeFormat
         /// <summary>
         /// The set of ScopeDefinitions contained within this metadata resource.
         /// </summary>
-        public ScopeDefinitionHandle[] ScopeDefinitions;
+        public ScopeDefinitionHandleCollection ScopeDefinitions;
 
         public void Decode(NativeReader reader)
         {
