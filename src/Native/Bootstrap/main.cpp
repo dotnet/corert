@@ -275,8 +275,6 @@ extern "C" void RhpCallFinallyFunclet()
 {
     throw "RhpCallFinallyFunclet";
 }
-#endif // CPPCODEGEN
-
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
@@ -285,6 +283,8 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
+#endif // CPPCODEGEN
+
 extern "C" void RhpEtwExceptionThrown()
 {
     throw "RhpEtwExceptionThrown";

@@ -142,12 +142,11 @@
 
         NESTED_END Rhp$FunctionName
         MEND
-        
-                ; To enable proper step-in behavior in the debugger, we need to have two instances
+
+        ; To enable proper step-in behavior in the debugger, we need to have two instances
         ; of the thunk. For the first one, the debugger steps into the call in the function, 
         ; for the other, it steps over it.
         UNIVERSAL_TRANSITION UniversalTransition
         UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
 
         END
-

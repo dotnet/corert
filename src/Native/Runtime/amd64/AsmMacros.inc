@@ -355,13 +355,6 @@ PTFF_RAX_IS_BYREF       equ 00020000h   ;; iff PTFF_SAVE_RAX: set -> eax is ByRe
 
 
 ;;
-;; Offset from FP (rbp) where the managed callout thunk (ManagedCallout2 and possibly others in the future)
-;; store a pointer to a transition frame.
-;;
-MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -8
-
-
-;;
 ;; CONSTANTS -- SYMBOLS
 ;;
 

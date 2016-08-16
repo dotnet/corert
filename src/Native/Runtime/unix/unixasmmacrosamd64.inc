@@ -249,8 +249,6 @@ C_FUNC(\Name):
 #define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 #define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
 
-#define MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET -8
-
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
        .att_syntax
