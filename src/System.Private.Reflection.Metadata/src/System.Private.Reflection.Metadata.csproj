@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Ignore the CLSCompliance of the generated cs files we are using here -->
     <NoWarn>$(NoWarn);3003</NoWarn>
+    <CLSCompliant>false</CLSCompliant>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->

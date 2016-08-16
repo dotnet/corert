@@ -211,14 +211,15 @@ namespace System.Reflection.Runtime.CustomAttributes
                     argumentType = value.GetType();
             }
 
-            Array arrayValue = value as Array;
-            if (arrayValue != null)
+            // Handle the array case
+            IEnumerable enumerableValue = value as IEnumerable;
+            if (enumerableValue != null && !(value is String))
             {
                 if (!argumentType.IsArray)
                     throw new BadImageFormatException();
                 Type reportedElementType = argumentType.GetElementType();
                 LowLevelListWithIList<CustomAttributeTypedArgument> elementTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
-                foreach (Object elementValue in arrayValue)
+                foreach (Object elementValue in enumerableValue)
                 {
                     CustomAttributeTypedArgument elementTypedArgument = WrapInCustomAttributeTypedArgument(elementValue, reportedElementType);
                     elementTypedArguments.Add(elementTypedArgument);

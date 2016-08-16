@@ -107,8 +107,8 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         public MetadataRecord ElementType;
         public int Rank;
-        public int[] Sizes;
-        public int[] LowerBounds;
+        public Int32[] Sizes;
+        public Int32[] LowerBounds;
     } // ArraySignature
 
     public partial class ByReferenceSignature : MetadataRecord
@@ -245,7 +245,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public bool[] Value;
+        public Boolean[] Value;
     } // ConstantBooleanArray
 
     public partial class ConstantBooleanValue : MetadataRecord
@@ -458,7 +458,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public byte[] Value;
+        public Byte[] Value;
     } // ConstantByteArray
 
     public partial class ConstantByteValue : MetadataRecord
@@ -590,7 +590,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public char[] Value;
+        public Char[] Value;
     } // ConstantCharArray
 
     public partial class ConstantCharValue : MetadataRecord
@@ -722,7 +722,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public double[] Value;
+        public Double[] Value;
     } // ConstantDoubleArray
 
     public partial class ConstantDoubleValue : MetadataRecord
@@ -917,7 +917,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public short[] Value;
+        public Int16[] Value;
     } // ConstantInt16Array
 
     public partial class ConstantInt16Value : MetadataRecord
@@ -1049,7 +1049,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public int[] Value;
+        public Int32[] Value;
     } // ConstantInt32Array
 
     public partial class ConstantInt32Value : MetadataRecord
@@ -1181,7 +1181,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public long[] Value;
+        public Int64[] Value;
     } // ConstantInt64Array
 
     public partial class ConstantInt64Value : MetadataRecord
@@ -1372,7 +1372,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public sbyte[] Value;
+        public SByte[] Value;
     } // ConstantSByteArray
 
     public partial class ConstantSByteValue : MetadataRecord
@@ -1504,7 +1504,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public float[] Value;
+        public Single[] Value;
     } // ConstantSingleArray
 
     public partial class ConstantSingleValue : MetadataRecord
@@ -1636,7 +1636,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public string[] Value;
+        public String[] Value;
     } // ConstantStringArray
 
     public partial class ConstantStringValue : MetadataRecord
@@ -1774,7 +1774,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public ushort[] Value;
+        public UInt16[] Value;
     } // ConstantUInt16Array
 
     public partial class ConstantUInt16Value : MetadataRecord
@@ -1906,7 +1906,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public uint[] Value;
+        public UInt32[] Value;
     } // ConstantUInt32Array
 
     public partial class ConstantUInt32Value : MetadataRecord
@@ -2038,7 +2038,7 @@ namespace Internal.Metadata.NativeFormat.Writer
             }
         } // Handle
 
-        public ulong[] Value;
+        public UInt64[] Value;
     } // ConstantUInt64Array
 
     public partial class ConstantUInt64Value : MetadataRecord
@@ -4310,7 +4310,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort MinorVersion;
         public ushort BuildNumber;
         public ushort RevisionNumber;
-        public byte[] PublicKey;
+        public Byte[] PublicKey;
         public ConstantStringValue Culture;
         public NamespaceDefinition RootNamespaceDefinition;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
@@ -4414,7 +4414,7 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort MinorVersion;
         public ushort BuildNumber;
         public ushort RevisionNumber;
-        public byte[] PublicKeyOrToken;
+        public Byte[] PublicKeyOrToken;
         public ConstantStringValue Culture;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // ScopeReference
