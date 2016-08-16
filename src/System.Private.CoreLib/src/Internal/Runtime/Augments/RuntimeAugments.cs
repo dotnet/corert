@@ -839,12 +839,6 @@ namespace Internal.Runtime.Augments
             RuntimeExceptionHelpers.GenerateExceptionInformationForDump(currentException, exceptionCCWPtr);
         }
 
-        [Intrinsic]
-        public static object ConvertIntPtrToObjectReference(IntPtr pointerToObject)
-        {
-            return ConvertIntPtrToObjectReference(pointerToObject);
-        }
-
         public unsafe static RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
             return new RuntimeTypeHandle(obj.EETypePtr);
