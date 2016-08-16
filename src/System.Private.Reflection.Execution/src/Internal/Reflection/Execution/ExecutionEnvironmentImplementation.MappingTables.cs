@@ -242,7 +242,6 @@ namespace Internal.Reflection.Execution
         /// <param name="typeDefHandle">TypeDef handle for the type</param>
         public unsafe sealed override bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeDefinitionHandle typeDefHandle)
         {
-            Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
             return TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out metadataReader, out typeDefHandle);
         }
 
