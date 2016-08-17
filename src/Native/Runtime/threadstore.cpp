@@ -68,13 +68,6 @@ ThreadStore::ThreadStore() :
 
 ThreadStore::~ThreadStore()
 {
-    // @TODO: For now, the approach will be to cleanup everything we can, even in the face of failure in 
-    // individual operations within this method.  We're faced with a difficult situation -- what is the caller
-    // supposed to do on failure?  Wait and try again?  Do nothing?  We will assume they do nothing and 
-    // attempt to free as many of our resources as we can.  If any of those fail, we only leak those parts.
-    // Whereas if we were to fail on the first operation and then return to the caller without doing anymore,
-    // we would have leaked much more.
-
 }
 
 // static 
@@ -121,10 +114,6 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     // thread belongs to), but it hasn't been added to the thread store because doing so takes a lock, which 
     // we want to avoid at construction time because the loader lock is held then.
     Thread * pAttachingThread = RawGetCurrentThread();
-
-    // On CHK build, validate that our GetThread assembly implementation matches the C++ implementation using
-    // TLS.
-    CreateCurrentThreadBuffer();
 
     // The thread was already initialized, so it is already attached
     if (pAttachingThread->IsInitialized())
@@ -305,8 +294,6 @@ void ThreadStore::WaitForSuspendComplete()
 
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
-EXTERN_C Thread * FASTCALL RhpGetThread();
-
 EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 { 
     { 0 },                              // m_rgbAllocContextBuffer
@@ -325,22 +312,6 @@ EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     0,                                  // m_uPalThreadIdForLogging
 };
 
-#ifdef CORERT
-Thread * FASTCALL RhpGetThread()
-{
-    return (Thread *)&tls_CurrentThread;
-}
-#endif
-
-// static
-void * ThreadStore::CreateCurrentThreadBuffer()
-{
-    void * pvBuffer = &tls_CurrentThread;
-
-    ASSERT(RhpGetThread() == pvBuffer);
-
-    return pvBuffer;
-}
 #endif // !DACCESS_COMPILE
 
 
