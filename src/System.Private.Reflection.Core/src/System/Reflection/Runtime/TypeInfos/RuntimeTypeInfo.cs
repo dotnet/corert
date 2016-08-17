@@ -50,6 +50,8 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             _legacyAsType = new RuntimeTypeTemporary(this);
         }
+         
+        public abstract override Assembly Assembly { get; }
 
         public sealed override string AssemblyQualifiedName
         {
@@ -72,6 +74,8 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             return _legacyAsType;
         }
+
+        public abstract override TypeAttributes Attributes { get; }
 
         public sealed override bool IsCOMObject
         {
@@ -345,6 +349,34 @@ namespace System.Reflection.Runtime.TypeInfos
 
             TypeInfoCachedData cachedData = this.TypeInfoCachedData;
             return cachedData.GetDeclaredMethod(name);
+        }
+
+        public sealed override IEnumerable<MethodInfo> GetDeclaredMethods(string name)
+        {
+            foreach (MethodInfo method in DeclaredMethods)
+            {
+                if (method.Name == name)
+                    yield return method;
+            }
+        }
+
+        public sealed override TypeInfo GetDeclaredNestedType(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            TypeInfo match = null;
+            foreach (TypeInfo nestedType in DeclaredNestedTypes)
+            {
+                if (nestedType.Name == name)
+                {
+                    if (match != null)
+                        throw new AmbiguousMatchException();
+
+                    match = nestedType;
+                }
+            }
+            return match;
         }
 
         public sealed override PropertyInfo GetDeclaredProperty(String name)
