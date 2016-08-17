@@ -16,7 +16,7 @@ class ThreadStore
 
 private:
     ThreadStore();
-    static void *           CreateCurrentThreadBuffer();
+
     void                    LockThreadStore();
     void                    UnlockThreadStore();
 
