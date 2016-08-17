@@ -232,14 +232,6 @@ COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-typedef UIntTarget (*TargetFunc2)(UIntTarget, UIntTarget);
-COOP_PINVOKE_HELPER(UIntTarget, ManagedCallout2, (UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame))
-{
-    TargetFunc2 target = (TargetFunc2)pTargetMethod;
-    return (*target)(argument1, argument2);
-}
-#endif // USE_PORTABLE_HELPERS
-
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;
@@ -247,6 +239,8 @@ void * ReturnFromUniversalTransition;
 // @TODO Implement UniversalTransition_DebugStepTailCall
 EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
 void * ReturnFromUniversalTransition_DebugStepTailCall;
+
+#endif // USE_PORTABLE_HELPERS
 
 // @TODO Implement CallDescrThunk
 EXTERN_C void * ReturnFromCallDescrThunk;

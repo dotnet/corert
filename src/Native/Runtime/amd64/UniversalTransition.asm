@@ -87,10 +87,10 @@ DISTANCE_FROM_CHILDSP_TO_CALLERSP               equ DISTANCE_FROM_CHILDSP_TO_RET
 
 UNIVERSAL_TRANSITION macro FunctionName
 
-NESTED_ENTRY Rhp&FunctionName, _TEXT        
+NESTED_ENTRY Rhp&FunctionName, _TEXT
 
         alloc_stack DISTANCE_FROM_CHILDSP_TO_RETADDR
-        
+
         save_reg_postrsp    rcx,   0h + DISTANCE_FROM_CHILDSP_TO_CALLERSP
         save_reg_postrsp    rdx,   8h + DISTANCE_FROM_CHILDSP_TO_CALLERSP
         save_reg_postrsp    r8,   10h + DISTANCE_FROM_CHILDSP_TO_CALLERSP
@@ -100,7 +100,7 @@ NESTED_ENTRY Rhp&FunctionName, _TEXT
         save_xmm128_postrsp xmm1, DISTANCE_FROM_CHILDSP_TO_FP_REGS + 10h
         save_xmm128_postrsp xmm2, DISTANCE_FROM_CHILDSP_TO_FP_REGS + 20h
         save_xmm128_postrsp xmm3, DISTANCE_FROM_CHILDSP_TO_FP_REGS + 30h
-        
+
         END_PROLOGUE
 
 if TRASH_SAVED_ARGUMENT_REGISTERS ne 0
@@ -139,7 +139,7 @@ LABELED_RETURN_ADDRESS ReturnFrom&FunctionName
         mov             rdx, [rsp +  8h + DISTANCE_FROM_CHILDSP_TO_CALLERSP]
         mov             r8,  [rsp + 10h + DISTANCE_FROM_CHILDSP_TO_CALLERSP]
         mov             r9,  [rsp + 18h + DISTANCE_FROM_CHILDSP_TO_CALLERSP]
-        
+
         ; epilog
         nop
 
@@ -157,7 +157,7 @@ NESTED_END Rhp&FunctionName, _TEXT
         ; for the other, it steps over it.
         UNIVERSAL_TRANSITION UniversalTransition
         UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
-        
+
 endif
 
 end

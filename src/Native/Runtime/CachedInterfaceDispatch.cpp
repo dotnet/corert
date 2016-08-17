@@ -36,8 +36,6 @@
 
 #include "CachedInterfaceDispatch.h"
 
-extern "C" UIntTarget __fastcall ManagedCallout2(UIntTarget argument1, UIntTarget argument2, void *pTargetMethod, void *pPreviousManagedFrame);
-
 // We always allocate cache sizes with a power of 2 number of entries. We have a maximum size we support,
 // defined below.
 #define CID_MAX_CACHE_SIZE_LOG2 6
@@ -532,21 +530,5 @@ COOP_PINVOKE_HELPER(void, RhpGetDispatchCellInfo, (InterfaceDispatchCell * pCell
     *ppInterfaceType = pCell->GetInterfaceType();
     *slot = pCell->GetSlotNumber();
 }
-
-#ifdef LEGACY_INTERFACE_DISPATCH
-EXTERN_C PTR_Code FASTCALL RhpCidResolve(Object* pObject, InterfaceDispatchCell* pCell);
-
-// Given an object instance, look up the method on the type of that object that implements the interface
-// method associated with the given InterfaceDispatchCell. This mapping should always exist. Once it's found
-// add the mapping to the currently associated cache. If the cache doesn't yet exist or is full then we
-// allocate one. This version of the routine assumes the cache doesn't already contain the mapping.
-COOP_PINVOKE_HELPER(PTR_Code, RhpResolveInterfaceMethodCacheMiss, (Object * pObject, 
-                                                                   InterfaceDispatchCell * pCell,
-                                                                   PInvokeTransitionFrame * pTransitionFrame))
-{
-    CID_COUNTER_INC(CacheMisses);
-    return (PTR_Code)ManagedCallout2((UIntTarget)pObject, (UIntTarget)pCell, reinterpret_cast<void*>(RhpCidResolve), pTransitionFrame);
-}
-#endif // LEGACY_INTERFACE_DISPATCH
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

@@ -33,14 +33,6 @@
 
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
 
-#ifdef LEGACY_INTERFACE_DISPATCH
-// When we use a thunk to call out to managed code from the runtime the following label is the instruction
-// immediately following the thunk's call instruction. As such it can be used to identify when such a callout
-// has occured as we are walking the stack.
-EXTERN_C void * ReturnFromManagedCallout2;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromManagedCallout2Addr, &ReturnFromManagedCallout2);
-#endif // LEGACY_INTERFACE_DISPATCH
-
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C void * ReturnFromUniversalTransition;
 GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, &ReturnFromUniversalTransition);
@@ -89,9 +81,6 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, &RhpRethrow2);
 #define FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY(msg) { ASSERT_UNCONDITIONALLY(msg); RhFailFast(); }
 #endif
 
-// The managed callout thunk above stashes a transition frame pointer in its FP frame. The following constant
-// is the offset from the FP at which this pointer is stored.
-#define MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET (-(Int32)sizeof(UIntNative))
 
 PTR_PInvokeTransitionFrame GetPInvokeTransitionFrame(PTR_VOID pTransitionFrame)
 {
@@ -727,7 +716,30 @@ struct UniversalTransitionStackFrame
 #define GET_POINTER_TO_FIELD(_FieldName) \
     (PTR_UIntNative)PTR_HOST_MEMBER(UniversalTransitionStackFrame, this, _FieldName)
 
-#ifdef _TARGET_AMD64_
+#if defined(UNIX_AMD64_ABI)
+
+    // Conservative GC reporting must be applied to everything between the base of the
+    // ReturnBlock and the top of the StackPassedArgs.
+private:
+    Fp128 m_fpArgRegs[8];                   // ChildSP+000 CallerSP-0D0 (0x80 bytes)    (xmm0-xmm7)
+    UIntNative m_returnBlock[2];            // ChildSP+080 CallerSP-050 (0x10 bytes)
+    UIntNative m_intArgRegs[4];             // ChildSP+090 CallerSP-040 (0x30 bytes)    (rdi,rsi,rcx,rdx,r8,r9)
+    UIntNative m_alignmentPad;              // ChildSP+0C0 CallerSP-010 (0x8 bytes)
+    UIntNative m_callerRetaddr;             // ChildSP+0C8 CallerSP-008 (0x8 bytes)
+    UIntNative m_stackPassedArgs[1];        // ChildSP+0D0 CallerSP+000 (unknown size)
+
+public:
+    PTR_UIntNative get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
+    PTR_UIntNative get_AddressOfPushedCallerIP() { return GET_POINTER_TO_FIELD(m_callerRetaddr); }
+    PTR_UIntNative get_LowerBoundForConservativeReporting() { return GET_POINTER_TO_FIELD(m_returnBlock[0]); }
+
+    void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        // RhpUniversalTransition does not touch any non-volatile state on amd64.
+        UNREFERENCED_PARAMETER(pRegisterSet);
+    }
+
+#elif defined(_TARGET_AMD64_)
 
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
@@ -1023,68 +1035,6 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
-#ifdef LEGACY_INTERFACE_DISPATCH
-// If our control PC indicates that we're in one of the thunks we use to make managed callouts from the
-// runtime we need to adjust the frame state to that of the managed method that previously called into the
-// runtime (i.e. skip the intervening unmanaged frames).
-//
-// NOTE: This function always publishes a non-NULL conservative stack range lower bound.
-//
-// NOTE: In x86 cases, the unwound callsite often uses a calling convention that expects some amount
-// of stack-passed argument space to be callee-popped before control returns (or unwinds) to the
-// callsite.  Since the callsite signature (and thus the amount of callee-popped space) is unknown,
-// the recovered SP does not account for the callee-popped space is therefore "wrong" for the
-// purposes of unwind.  This implies that any x86 function which might trigger a managed callout
-// (e.g., any function which triggers interface dispatch) must have a frame pointer to ensure that
-// the incorrect SP value is ignored and does not break the unwind.
-void StackFrameIterator::UnwindManagedCalloutThunk()
-{
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable version of managed callout defined
-    return;
-#else // defined(USE_PORTABLE_HELPERS)
-    ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InManagedCalloutThunk);
-
-    // We're in a special thunk we use to call into managed code from unmanaged code in the runtime. This
-    // thunk sets up an FP frame with a pointer to a PInvokeTransitionFrame erected by the managed method
-    // which called into the runtime in the first place (actually a stub called by that managed method).
-    // Thus we can unwind from one managed method to the previous one, skipping all the unmanaged frames
-    // in the middle.
-    //
-    // On all architectures this transition frame pointer is pushed at a well-known offset from FP.
-    PTR_VOID pEntryToRuntimeFrame = *(PTR_PTR_VOID)(m_RegDisplay.GetFP() +
-                                                 MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET);
-
-    // Reload the iterator with the state saved into the PInvokeTransitionFrame.
-    // NOTE: EH stack walks cannot reach this point (since the caller generates a failfast in this case).
-    // NOTE: This call may locate a nested conservative range if the original callsite into the runtime
-    // resides in an assembly thunk and not in normal managed code.  In this case InternalInit will
-    // unwind through the thunk and back to the nearest managed frame, and therefore may see a
-    // conservative range reported by one of the thunks encountered during this "nested" unwind.
-    ASSERT(!(m_dwFlags & ApplyReturnAddressAdjustment));
-    ASSERT(m_pConservativeStackRangeLowerBound == NULL);
-    InternalInit(m_pThread, GetPInvokeTransitionFrame(pEntryToRuntimeFrame), GcStackWalkFlags);
-    ASSERT(m_pInstance->FindCodeManagerByAddress(m_ControlPC));
-    PTR_UIntNative pNestedLowerBound = m_pConservativeStackRangeLowerBound;
-
-    // Additionally the initial managed method (the one that called into the runtime) may have pushed some
-    // arguments containing GC references on the stack. Since the managed callout initiated by the runtime
-    // has an unrelated signature, there's nobody reporting any of these references to the GC. To avoid
-    // having to store signature information for what might be potentially a lot of methods (we use this
-    // mechanism for certain edge cases in interface invoke) we conservatively report a range of the stack
-    // that might contain GC references. Such references will be in either the outgoing stack argument
-    // slots of the calling method or in argument registers spilled to the stack in the prolog of the stub
-    // they use to call into the runtime.
-    //
-    // The lower bound of this range we define as the transition frame itself. We just computed this
-    // address and it's guaranteed to be lower than (but quite close to) that of any spilled argument
-    // register (see comments in the various versions of RhpInterfaceDispatchSlow).
-    PTR_UIntNative pLowerBound = (PTR_UIntNative)pEntryToRuntimeFrame;
-    FAILFAST_OR_DAC_FAIL((pNestedLowerBound == NULL) || (pNestedLowerBound > pLowerBound));
-    m_pConservativeStackRangeLowerBound = pLowerBound;
-#endif // defined(USE_PORTABLE_HELPERS)
-}
-#endif // LEGACY_INTERFACE_DISPATCH
-
 bool StackFrameIterator::IsValid()
 {
     return (m_ControlPC != 0);
@@ -1330,18 +1280,6 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
             UnwindUniversalTransitionThunk();
             ASSERT(m_pConservativeStackRangeLowerBound != NULL);
         }
-#ifdef LEGACY_INTERFACE_DISPATCH
-        else if (category == InManagedCalloutThunk)
-        {
-            // Exception propagation across managed callouts is illegal (i.e., it violates the
-            // fundamental contract that all managed callout implementations must honor).
-            FAILFAST_OR_DAC_FAIL_MSG(!(m_dwFlags & ApplyReturnAddressAdjustment),
-                "EH stack walk is attempting to propagate an exception across a managed callout.");
-
-            UnwindManagedCalloutThunk();
-            ASSERT(m_pConservativeStackRangeLowerBound != NULL);
-        }
-#endif // LEGACY_INTERFACE_DISPATCH
         else
         {
             FAILFAST_OR_DAC_FAIL_UNCONDITIONALLY("Unexpected thunk encountered when unwinding a non-EH thunk sequence.");
@@ -1500,9 +1438,6 @@ bool StackFrameIterator::IsNonEHThunk(ReturnAddressCategory category)
     {
         default:
             return false;
-#ifdef LEGACY_INTERFACE_DISPATCH
-        case InManagedCalloutThunk:
-#endif // LEGACY_INTERFACE_DISPATCH
         case InUniversalTransitionThunk:
         case InCallDescrThunk:
             return true;
@@ -1617,13 +1552,6 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     {
         return InFuncletInvokeThunk;
     }
-
-#ifdef LEGACY_INTERFACE_DISPATCH
-    if (EQUALS_CODE_ADDRESS(returnAddress, ReturnFromManagedCallout2))
-    {
-        return InManagedCalloutThunk;
-    }
-#endif // LEGACY_INTERFACE_DISPATCH
 
     return InManagedCode;
 #endif // defined(USE_PORTABLE_HELPERS)
