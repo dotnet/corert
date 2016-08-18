@@ -33,7 +33,6 @@
 #include "module.h"
 #include "eetype.h"
 #include "ObjectLayout.h"
-#include "GenericInstance.h"
 #include "slist.inl"
 #include "eetype.inl"
 #include "CommonMacros.inl"
@@ -253,32 +252,20 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, T
         // for each dynamically created type with thread statics. The TLS storage size allocated for each type
         // is the size of all the thread statics on that type. We use the field offset to get the thread static
         // data for that field on the current thread.
-        GenericInstanceDesc * pGID = pRuntimeInstance->LookupGenericInstance(pEEType);
-        ASSERT(pGID != NULL);
-        UInt8* pTlsStorage = ThreadStore::GetCurrentThread()->GetThreadLocalStorageForDynamicType(pGID->GetThreadStaticFieldStartOffset());
+        UInt8* pTlsStorage = ThreadStore::GetCurrentThread()->GetThreadLocalStorageForDynamicType(pEEType->get_DynamicThreadStaticOffset());
         ASSERT(pTlsStorage != NULL);
         return (pFieldCookie != NULL ? pTlsStorage + pFieldCookie->FieldOffset : pTlsStorage);
-    }
-    else if (!pRuntimeInstance->IsInStandaloneExeMode() && pEEType->IsGeneric())
-    {
-        // The tricky case is a thread static field on a generic type when we're not in standalone mode. In that
-        // case we need to lookup the GenericInstanceDesc for the type to locate its TLS static base
-        // offset (which unlike the case below has already been fixed up to account for COFF mode linking). The
-        // cookie then contains an offset from that base.
-        GenericInstanceDesc * pGID = pRuntimeInstance->LookupGenericInstance(pEEType);
-        uiFieldOffset = pGID->GetThreadStaticFieldStartOffset() + pFieldCookie->FieldOffset;
-
-        // The TLS index in the GenericInstanceDesc will always be 0 (unless we perform GID unification, which
-        // we don't today), so we'll need to get the TLS index from the header of the type's containing module.
-        Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
-        ASSERT(pModule != NULL);
-        uiTlsIndex = *pModule->GetModuleHeader()->PointerToTlsIndex;
     }
     else
     {
         // In all other cases the field cookie contains an offset from the base of all Redhawk thread statics
         // to the field. The TLS index and offset adjustment (in cases where the module was linked with native
         // code using .tls) is that from the exe module.
+
+        // In the separate compilation case, the generic unification logic should assure
+        // that the pEEType parameter passed in is indeed the "winner" of generic unification,
+        // not one of the "losers".
+        // TODO: come up with an assert to check this.
         Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
         if (pModule == NULL)
             pModule = pRuntimeInstance->FindModuleByDataAddress(pEEType);

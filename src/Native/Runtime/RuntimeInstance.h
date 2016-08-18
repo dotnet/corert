@@ -6,14 +6,10 @@ typedef DPTR(ThreadStore) PTR_ThreadStore;
 class Module;
 typedef DPTR(Module) PTR_Module;
 class ICodeManager;
-struct GenericInstanceDesc;
-typedef SPTR(GenericInstanceDesc) PTR_GenericInstanceDesc;
+struct StaticGcDesc;
+typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 struct ModuleHeader;
 enum GenericVarianceType : UInt8;
-struct UnifiedGenericInstance;
-class GenericTypeHashTable;
-typedef DPTR(GenericTypeHashTable) PTR_GenericTypeHashTable;
-struct StaticGcDesc;
 
 class RuntimeInstance
 {
@@ -59,16 +55,51 @@ class RuntimeInstance
     bool                        m_fProfileThreadCreated;
 #endif
 
-    // List of generic instances that have GC references to report. This list is updated under the hash table
-    // lock above and enumerated without lock during garbage collections (when updates cannot occur). This
-    // list is only used in non-standalone exe mode, i.e. when we're unifying generic types. In standalone
-    // mode we report the GenericInstanceDescs directly from the module itself.
-    PTR_GenericInstanceDesc     m_genericInstReportList;
+    // describes static data areas containing GC pointers
+    // for dynamically loaded types or unified generic instances
+    struct StaticGCRefsDesc
+    {
+        PTR_StaticGcDesc        m_pStaticGcInfo;
+        PTR_UInt8               m_pbStaticData;
+    };
 
-    ReaderWriterLock            m_GenericHashTableLock;
+    // describes a chunk of such descriptors to improve locality
+    struct  StaticGCRefsDescChunk
+    {
+        static const size_t     MAX_DESC_COUNT = 1000;
+        StaticGCRefsDescChunk  *m_pNextChunk;
+        UInt32                  m_uiDescCount;
+        StaticGCRefsDesc        m_rgDesc[MAX_DESC_COUNT];
 
-    // This is used (in standalone mode only) to build an on-demand hash tables of all generic instantiations
-    PTR_GenericTypeHashTable            m_pGenericTypeHashTable;
+        StaticGCRefsDescChunk() : m_uiDescCount(0) {}
+    };
+
+    StaticGCRefsDescChunk      *m_pStaticGCRefsDescChunkList;
+
+    // describes thread static data areas containing GC pointers
+    // for dynamically loaded types or unified generic instances
+    struct ThreadStaticGCRefsDesc
+    {
+        PTR_StaticGcDesc        m_pThreadStaticGcInfo;
+        UInt32                  m_uiTlsIndex;
+        UInt32                  m_uiFieldStartOffset;
+    };
+
+    // describes a chunk of such descriptors to improve locality
+    struct ThreadStaticGCRefsDescChunk
+    {
+        static const size_t     MAX_DESC_COUNT = 100;
+        ThreadStaticGCRefsDescChunk *m_pNextChunk;
+        UInt32                  m_uiDescCount;
+        ThreadStaticGCRefsDesc  m_rgDesc[MAX_DESC_COUNT];
+
+        ThreadStaticGCRefsDescChunk() : m_uiDescCount(0) {}
+    };
+
+    ThreadStaticGCRefsDescChunk *m_pThreadStaticGCRefsDescChunkList;
+
+    // Lock protecting above lists
+    ReaderWriterLock            m_StaticGCRefLock;
 
     bool                        m_conservativeStackReportingEnabled;
 
@@ -119,7 +150,8 @@ public:
     static  RuntimeInstance *   Create(HANDLE hPalInstance);
     void Destroy();
 
-    void EnumGenericStaticGCRefs(PTR_GenericInstanceDesc pInst, void * pfnCallback, void * pvCallbackData, Module *pModule);
+    void EnumStaticGCRefDescs(void * pfnCallback, void * pvCallbackData);
+    void EnumThreadStaticGCRefDescs(void * pfnCallback, void * pvCallbackData);
     void EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackData);
 
     bool ShouldHijackCallsiteForGcStress(UIntNative CallsiteIP);
@@ -127,11 +159,6 @@ public:
 
     void EnableGcPollStress();
     void UnsychronizedResetHijackedLoops();
-
-    // Given the EEType* for an instantiated generic type retrieve the GenericInstanceDesc associated with
-    // that type. This is legal only for types that are guaranteed to have this metadata at runtime; generic
-    // types which have variance over one or more of their type parameters and generic interfaces on array).
-    GenericInstanceDesc * LookupGenericInstance(EEType * pEEType);
 
     // Given the EEType* for an instantiated generic type retrieve instantiation information (generic type
     // definition EEType, arity, type arguments and variance info for each type parameter). Has the same
@@ -146,16 +173,20 @@ public:
                                  UInt32                 arity,
                                  EEType **              pInstantiation);
 
-    bool CreateGenericInstanceDesc(EEType *             pEEType,
-                                   EEType *             pTemplateType,
-                                   UInt32               arity,
-                                   UInt32               nonGcStaticDataSize,
-                                   UInt32               nonGCStaticDataOffset,
-                                   UInt32               gcStaticDataSize,
-                                   UInt32               threadStaticOffset,
-                                   StaticGcDesc *       pGcStaticsDesc,
-                                   StaticGcDesc *       pThreadStaticsDesc,
-                                   UInt32*              pGenericVarianceFlags);
+    bool AddDynamicGcStatics(UInt8 *pGcStaticData, StaticGcDesc *pGcStaticsDesc);
+
+    bool AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiThreadStaticOffset, StaticGcDesc *pGcStaticsDesc);
+
+    bool CreateGenericAndStaticInfo(EEType *             pEEType,
+                                    EEType *             pTemplateType,
+                                    UInt32               arity,
+                                    UInt32               nonGcStaticDataSize,
+                                    UInt32               nonGCStaticDataOffset,
+                                    UInt32               gcStaticDataSize,
+                                    UInt32               threadStaticOffset,
+                                    StaticGcDesc *       pGcStaticsDesc,
+                                    StaticGcDesc *       pThreadStaticsDesc,
+                                    UInt32*              pGenericVarianceFlags);
 
 #ifdef FEATURE_PROFILING
     void InitProfiling(ModuleHeader *pModuleHeader);
