@@ -196,13 +196,14 @@ namespace System.Reflection.Runtime.MethodInfos
             TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
             MethodSignature methodSignature = this.MethodSignature;
-            LowLevelList<Handle> typeSignatures = new LowLevelList<Handle>(10);
-            typeSignatures.Add(methodSignature.ReturnType);
+            Handle[] typeSignatures = new Handle[methodSignature.Parameters.Count + 1];
+            typeSignatures[0] = methodSignature.ReturnType;
+            int paramIndex = 1;
             foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
             {
-                typeSignatures.Add(parameterTypeSignatureHandle);
+                typeSignatures[paramIndex++] = parameterTypeSignatureHandle;
             }
-            int count = typeSignatures.Count;
+            int count = typeSignatures.Length;
 
             RuntimeMethodParameterInfo[] result = new RuntimeMethodParameterInfo[count];
             foreach (ParameterHandle parameterHandle in _method.Parameters)
