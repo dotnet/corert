@@ -12,8 +12,6 @@ struct IndirectionCell;
 struct VSDInterfaceTargetInfo;
 class DispatchMap;
 struct BlobHeader;
-struct GenericInstanceDesc;
-typedef SPTR(struct GenericInstanceDesc) PTR_GenericInstanceDesc;
 
 class Module : public ICodeManager
 {
@@ -88,8 +86,6 @@ public:
                                     PTR_PTR_VOID *   ppvRetAddrLocation,
                                     GCRefKind *      pRetValueKind);
 
-    PTR_GenericInstanceDesc GetGidsWithGcRootsList();
-
     // BEWARE: care must be taken when using these Unsynchronized methods. Only one thread may call this at a time.
     void UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo);
     void UnsynchronizedResetHijackedLoops();
@@ -109,32 +105,6 @@ public:
     BlobHeader * GetReadOnlyBlobs(UInt32 * pcbBlobs);
 
     EEType * GetArrayBaseType();
-
-    enum GenericInstanceDescKind
-    {
-        GenericInstances            = 1,
-        GcRootGenericInstances      = 2,
-        VariantGenericInstances     = 4,
-        All = GenericInstances | GcRootGenericInstances | VariantGenericInstances
-    };
-
-    class GenericInstanceDescEnumerator
-    {
-        Module * m_pModule;
-
-        GenericInstanceDesc * m_pCurrent;
-        GenericInstanceDescKind m_gidEnumKind;
-        UInt32 m_iCurrent;
-        UInt32 m_nCount;
-
-        Int32 m_iSection;
-
-    public:
-        GenericInstanceDescEnumerator(Module * pModule, GenericInstanceDescKind gidKind);
-        GenericInstanceDesc * Next();
-    };
-
-    UInt32 GetGenericInstanceDescCount(GenericInstanceDescKind gidKind);
 
     bool IsFinalizerInitComplete() { return m_fFinalizerInitComplete; }
     void SetFinalizerInitComplete() { m_fFinalizerInitComplete = true; }

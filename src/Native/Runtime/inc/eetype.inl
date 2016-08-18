@@ -434,42 +434,64 @@ inline UInt8 EEType::GetNullableValueOffset()
     return pOptFields->GetNullableValueOffset(0) + 1;
 }
 
-#if CORERT
-inline EEType * EEType::get_GenericDefinition()
+inline void EEType::set_GenericDefinition(EEType *pTypeDef)
 {
     ASSERT(IsGeneric());
 
     UInt32 cbOffset = GetFieldOffset(ETF_GenericDefinition);
 
-    return *(EEType**)((UInt8*)this + cbOffset);
+    *(EEType**)((UInt8*)this + cbOffset) = pTypeDef;
+}
+
+inline EETypeRef & EEType::get_GenericDefinition()
+{
+    ASSERT(IsGeneric());
+
+    UInt32 cbOffset = GetFieldOffset(ETF_GenericDefinition);
+
+    return *(EETypeRef *)((UInt8*)this + cbOffset);
+}
+
+inline void EEType::set_GenericComposition(GenericComposition *pGenericComposition)
+{
+    ASSERT(IsGeneric());
+
+    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
+
+    *(GenericComposition **)((UInt8*)this + cbOffset) = pGenericComposition;
+}
+
+inline EEType::GenericComposition *EEType::get_GenericComposition()
+{
+    ASSERT(IsGeneric());
+
+    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
+
+    GenericComposition *pGenericComposition = *(GenericComposition **)((UInt8*)this + cbOffset);
+
+    return pGenericComposition;
 }
 
 inline UInt32 EEType::get_GenericArity()
 {
-    ASSERT(IsGeneric());
+    GenericComposition *pGenericComposition = get_GenericComposition();
 
-    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
-
-    return **(UInt32**)((UInt8*)this + cbOffset);
+    return pGenericComposition->GetArity();
 }
 
 inline EEType** EEType::get_GenericArguments()
 {
-    ASSERT(IsGeneric());
+    GenericComposition *pGenericComposition = get_GenericComposition();
 
-    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
-
-    return ((*(EEType***)((UInt8*)this + cbOffset)) + 1);
+    return pGenericComposition->GetArguments();
 }
 
 inline GenericVarianceType* EEType::get_GenericVariance()
 {
-    ASSERT(HasGenericVariance());
+    GenericComposition *pGenericComposition = get_GenericComposition();
 
-    // Variance info follows immediatelly after the generic arguments
-    return (GenericVarianceType*)(get_GenericArguments() + get_GenericArity());
+    return pGenericComposition->GetVariance();
 }
-#endif
 
 inline EEType * EEType::get_DynamicTemplateType()
 {
@@ -481,8 +503,49 @@ inline EEType * EEType::get_DynamicTemplateType()
     return *(PTR_PTR_EEType)((dac_cast<TADDR>(this)) + cbOffset);
 #else
     return *(EEType**)((UInt8*)this + cbOffset);
-
 #endif
+}
+
+inline UInt8 ** EEType::get_DynamicGcStaticsPointer()
+{
+    UInt32 cbOffset = GetFieldOffset(ETF_DynamicGcStatics);
+
+    return (UInt8**)((UInt8*)this + cbOffset);
+}
+
+inline void EEType::set_DynamicGcStatics(UInt8 *pStatics)
+{
+    UInt32 cbOffset = GetFieldOffset(ETF_DynamicGcStatics);
+
+    *(UInt8**)((UInt8*)this + cbOffset) = pStatics;
+}
+
+inline UInt8 ** EEType::get_DynamicNonGcStaticsPointer()
+{
+    UInt32 cbOffset = GetFieldOffset(ETF_DynamicNonGcStatics);
+
+    return (UInt8**)((UInt8*)this + cbOffset);
+}
+
+inline void EEType::set_DynamicNonGcStatics(UInt8 *pStatics)
+{
+    UInt32 cbOffset = GetFieldOffset(ETF_DynamicNonGcStatics);
+
+    *(UInt8**)((UInt8*)this + cbOffset) = pStatics;
+}
+
+inline UInt32 EEType::get_DynamicThreadStaticOffset()
+{
+    UInt32 cbOffset = GetFieldOffset(ETF_DynamicThreadStaticOffset);
+
+    return *(UInt32*)((UInt8*)this + cbOffset);
+}
+
+inline void EEType::set_DynamicThreadStaticOffset(UInt32 threadStaticOffset)
+{
+    UInt32 cbOffset = GetFieldOffset(ETF_DynamicThreadStaticOffset);
+
+    *(UInt32*)((UInt8*)this + cbOffset) = threadStaticOffset;
 }
 #endif // !BINDER
 
@@ -495,6 +558,7 @@ inline EEType * EEType::get_DynamicTemplateType()
         ((ArrayClass*)pMT->GetClass())->GetApproxArrayElementTypeHandle().AsMethodTable() :
         NULL;
 
+    bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
     return
         // Do we need a padding size for value types that could be unboxed?
         (pMT->IsValueTypeOrEnum() &&
@@ -514,7 +578,9 @@ inline EEType * EEType::get_DynamicTemplateType()
         (pMT->IsICastable()) ||
         // Is the class a Nullable<T> instantiation (need to store the flag and possibly a field offset)?
         pMT->IsNullable() ||
-        (pMT->HasStaticClassConstructor() && !pMT->HasEagerStaticClassConstructor());
+        (pMT->HasStaticClassConstructor() && !pMT->HasEagerStaticClassConstructor() ||
+        // need a rare flag to indicate presence of sealed virtuals
+        fHasSealedVirtuals);
 }
 #endif
 
@@ -525,7 +591,8 @@ inline EEType * EEType::get_DynamicTemplateType()
                                                  bool fHasFinalizer,
                                                  bool fRequiresOptionalFields,
                                                  bool fRequiresNullableType,
-                                                 bool fHasSealedVirtuals)
+                                                 bool fHasSealedVirtuals,
+                                                 bool fHasGenericInfo)
 {
     // We don't support nullables with sealed virtuals at this time -
     // the issue is that if both the nullable eetype and the sealed virtuals may be present,
@@ -543,7 +610,8 @@ inline EEType * EEType::get_DynamicTemplateType()
         + (fHasFinalizer ? sizeof(UIntTarget) : 0)
         + (fRequiresOptionalFields ? sizeof(UIntTarget) : 0)
         + (fRequiresNullableType ? sizeof(UIntTarget) : 0)
-        + (fHasSealedVirtuals ? sizeof(Int32) : 0);
+        + (fHasSealedVirtuals ? sizeof(Int32) : 0)
+        + (fHasGenericInfo ? sizeof(UIntTarget)*2 : 0);
 }
 
 #if !defined(BINDER) && !defined(DACCESS_COMPILE)
@@ -574,7 +642,7 @@ inline EEType * EEType::GetArrayBaseType()
 #ifdef BINDER
 // Version of the above usable from the binder where all the type layout information can be gleaned from a
 // MethodTable.
-/*static*/ inline UInt32 EEType::GetSizeofEEType(MethodTable *pMT)
+/*static*/ inline UInt32 EEType::GetSizeofEEType(MethodTable *pMT, bool fHasGenericInfo)
 {
     bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
     return GetSizeofEEType(pMT->IsInterface() ? (pMT->HasPerInstInfo() ? 1 : 0) : pMT->GetNumVirtuals(),
@@ -582,12 +650,13 @@ inline EEType * EEType::GetArrayBaseType()
                            pMT->HasFinalizer(),
                            EEType::RequiresOptionalFields(pMT),
                            pMT->IsNullable(),
-                           fHasSealedVirtuals);
+                           fHasSealedVirtuals,
+                           fHasGenericInfo);
 }
 #endif // BINDER
 
 // Calculate the offset of a field of the EEType that has a variable offset.
-/*static*/ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
+__forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
 {
     // First part of EEType consists of the fixed portion followed by the vtable.
     UInt32 cbOffset = offsetof(EEType, m_VTable) + (sizeof(UIntTarget) * m_usNumVtableSlots);
@@ -633,18 +702,22 @@ inline EEType * EEType::GetArrayBaseType()
 
     // Binder does not use DynamicTemplateType
 #ifndef BINDER
-    if (IsNullable() || ((get_RareFlags() & IsDynamicTypeWithSealedVTableEntriesFlag) != 0))
+    UInt32 rareFlags = get_RareFlags();
+    if (IsNullable() || ((rareFlags & IsDynamicTypeWithSealedVTableEntriesFlag) != 0))
         cbOffset += sizeof(UIntTarget);
+
+    // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
+    if (rareFlags & HasSealedVTableEntriesFlag)
+        cbOffset += sizeof(UInt32);
 
     if (eField == ETF_DynamicDispatchMap)
     {
         ASSERT(IsDynamicType());
         return cbOffset;
     }
-    if ((get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0)
+    if ((rareFlags & HasDynamicallyAllocatedDispatchMapFlag) != 0)
         cbOffset += sizeof(UIntTarget);
 
-#if CORERT
     if (eField == ETF_GenericDefinition)
     {
         ASSERT(IsGeneric());
@@ -660,14 +733,39 @@ inline EEType * EEType::GetArrayBaseType()
     }
     if (IsGeneric())
         cbOffset += sizeof(UIntTarget);
-#endif
 
     if (eField == ETF_DynamicTemplateType)
     {
         ASSERT(IsDynamicType());
         return cbOffset;
     }
-#endif
+    if (IsDynamicType())
+        cbOffset += sizeof(UIntTarget);
+
+    if (eField == ETF_DynamicGcStatics)
+    {
+        ASSERT((rareFlags & IsDynamicTypeWithGcStaticsFlag) != 0);
+        return cbOffset;
+    }
+    if ((rareFlags & IsDynamicTypeWithGcStaticsFlag) != 0)
+        cbOffset += sizeof(UIntTarget);
+
+    if (eField == ETF_DynamicNonGcStatics)
+    {
+        ASSERT((rareFlags & IsDynamicTypeWithNonGcStaticsFlag) != 0);
+        return cbOffset;
+    }
+    if ((rareFlags & IsDynamicTypeWithNonGcStaticsFlag) != 0)
+        cbOffset += sizeof(UIntTarget);
+
+    if (eField == ETF_DynamicThreadStaticOffset)
+    {
+        ASSERT((rareFlags & IsDynamicTypeWithThreadStaticsFlag) != 0);
+        return cbOffset;
+    }
+    if ((rareFlags & IsDynamicTypeWithThreadStaticsFlag) != 0)
+        cbOffset += sizeof(UInt32);
+#endif // !BINDER
 
     ASSERT(!"Unknown EEType field type");
     return 0;
@@ -711,11 +809,41 @@ inline EEType * EEType::GetArrayBaseType()
     if (eField == ETF_NullableType)
     {
         return cbOffset;
-}
+    }
 
     // OR, followed by the pointer to the sealed virtual slots
+    bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
     if (eField == ETF_SealedVirtualSlots)
+    {
+        ASSERT(fHasSealedVirtuals);
         return cbOffset;
+    }
+
+    if (fHasSealedVirtuals)
+    {
+        ASSERT(!pMT->IsNullable());
+        cbOffset += sizeof(UInt32);
+    }
+
+    if (pMT->IsNullable())
+    {
+        ASSERT(!fHasSealedVirtuals);
+        cbOffset += sizeof(UIntTarget);
+    }
+
+    if (pMT->HasPerInstInfo())
+    {
+        if (eField == ETF_GenericDefinition)
+        {
+            return cbOffset;
+        }
+        cbOffset += sizeof(UIntTarget);
+
+        if (eField == ETF_GenericComposition)
+        {
+            return cbOffset;
+        }
+    }
 
     // Binder does not use DynamicTemplateType
 
@@ -723,5 +851,24 @@ inline EEType * EEType::GetArrayBaseType()
     return 0;
 }
 #endif
+
+inline size_t EEType::GenericComposition::GetArgumentOffset(UInt32 index)
+{
+    ASSERT(index < m_arity);
+    return offsetof(GenericComposition, m_arguments[index]);
+}
+
+inline GenericVarianceType *EEType::GenericComposition::GetVariance()
+{
+    ASSERT(m_hasVariance);
+    return (GenericVarianceType *)(((UInt8 *)this) + offsetof(GenericComposition, m_arguments[m_arity]));
+}
+
+inline void EEType::GenericComposition::SetVariance(UInt32 index, GenericVarianceType variance)
+{
+    ASSERT(index < m_arity);
+    GenericVarianceType *pVariance = GetVariance();
+    pVariance[index] = variance;
+}
 
 #endif // __eetype_inl__

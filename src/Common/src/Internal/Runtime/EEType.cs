@@ -1107,6 +1107,10 @@ namespace Internal.Runtime
             if (IsNullable || (RareFlags & EETypeRareFlags.IsDynamicTypeWithSealedVTableEntriesFlag) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
+            // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
+            if ((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
+                cbOffset += 4;
+
             if (eField == EETypeField.ETF_DynamicDispatchMap)
             {
                 Debug.Assert(IsDynamicType);
@@ -1115,7 +1119,6 @@ namespace Internal.Runtime
             if ((RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0)
                 cbOffset += (UInt32)IntPtr.Size;
 
-#if CORERT
             if (eField == EETypeField.ETF_GenericDefinition)
             {
                 Debug.Assert(IsGeneric);
@@ -1131,13 +1134,14 @@ namespace Internal.Runtime
             }
             if (IsGeneric)
                 cbOffset += (UInt32)IntPtr.Size;
-#endif
 
             if (eField == EETypeField.ETF_DynamicTemplateType)
             {
                 Debug.Assert(IsDynamicType);
                 return cbOffset;
             }
+
+            // after this we have statics information for dynamic types
 
             Debug.Assert(false, "Unknown EEType field type");
             return 0;
@@ -1150,7 +1154,11 @@ namespace Internal.Runtime
             bool fHasFinalizer,
             bool fRequiresOptionalFields,
             bool fRequiresNullableType,
-            bool fHasSealedVirtuals)
+            bool fHasSealedVirtuals,
+            bool fHasGenericInfo,
+            bool fHasNonGcStatics,
+            bool fHasGcStatics,
+            bool fHasThreadStatics)
         {
             // We don't support nullables with sealed virtuals at this time -
             // the issue is that if both the nullable eetype and the sealed virtuals may be present,
@@ -1168,7 +1176,11 @@ namespace Internal.Runtime
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fRequiresNullableType ? sizeof(IntPtr) : 0) +
-                (fHasSealedVirtuals ? sizeof(IntPtr) : 0));
+                (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
+                (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
+                (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
+                (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
+                (fHasThreadStatics ? sizeof(UInt32) : 0)); // tls offset
         }
 #endif
     }

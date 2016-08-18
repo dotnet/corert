@@ -24,7 +24,6 @@
 #include "shash.h"
 #include "module.h"
 #include "eetype.h"
-#include "GenericInstance.h"
 #include "varint.h"
 #include "DebugEventSource.h"
 
@@ -189,19 +188,30 @@ PTR_RuntimeInstance GetRuntimeInstance()
     return g_pTheRuntimeInstance;
 }
 
-void RuntimeInstance::EnumGenericStaticGCRefs(PTR_GenericInstanceDesc pInst, void * pfnCallback, void * pvCallbackData, Module *pModule)
+void RuntimeInstance::EnumStaticGCRefDescs(void * pfnCallback, void * pvCallbackData)
 {
-    while (pInst)
+    for (StaticGCRefsDescChunk *pChunk = m_pStaticGCRefsDescChunkList; pChunk != nullptr; pChunk = pChunk->m_pNextChunk)
     {
-        if (pInst->HasGcStaticFields())
-            Module::EnumStaticGCRefsBlock(pfnCallback, pvCallbackData,
-                                          pInst->GetGcStaticFieldDesc(), pInst->GetGcStaticFieldData());
-
-        // Thread local statics.
-        if (pInst->HasThreadStaticFields())
+        UInt32 uiDescCount = pChunk->m_uiDescCount;
+        for (UInt32 i = 0; i < uiDescCount; i++)
         {
+            Module::EnumStaticGCRefsBlock(pfnCallback, pvCallbackData, 
+                pChunk->m_rgDesc[i].m_pStaticGcInfo, pChunk->m_rgDesc[i].m_pbStaticData);
+        }
+    }
+}
+
+void RuntimeInstance::EnumThreadStaticGCRefDescs(void * pfnCallback, void * pvCallbackData)
+{
+    for (ThreadStaticGCRefsDescChunk *pChunk = m_pThreadStaticGCRefsDescChunkList; pChunk != nullptr; pChunk = pChunk->m_pNextChunk)
+    {
+        UInt32 uiDescCount = pChunk->m_uiDescCount;
+        for (UInt32 i = 0; i < uiDescCount; i++)
+        {
+            UInt32              uiFieldsStartOffset = pChunk->m_rgDesc[i].m_uiFieldStartOffset;
+            PTR_StaticGcDesc    pThreadStaticGcInfo = pChunk->m_rgDesc[i].m_pThreadStaticGcInfo;
+
             // Special case for dynamic types: TLS storage managed manually by runtime
-            UInt32 uiFieldsStartOffset = pInst->GetThreadStaticFieldStartOffset();
             if (uiFieldsStartOffset & DYNAMIC_TYPE_TLS_OFFSET_FLAG)
             {
                 FOREACH_THREAD(pThread)
@@ -209,7 +219,7 @@ void RuntimeInstance::EnumGenericStaticGCRefs(PTR_GenericInstanceDesc pInst, voi
                     PTR_UInt8 pTLSStorage = pThread->GetThreadLocalStorageForDynamicType(uiFieldsStartOffset);
                     if (pTLSStorage != NULL)
                     {
-                        Module::EnumStaticGCRefsBlock(pfnCallback, pvCallbackData, pInst->GetThreadStaticFieldDesc(), pTLSStorage);
+                        Module::EnumStaticGCRefsBlock(pfnCallback, pvCallbackData, pThreadStaticGcInfo, pTLSStorage);
                     }
                 }
                 END_FOREACH_THREAD
@@ -218,32 +228,16 @@ void RuntimeInstance::EnumGenericStaticGCRefs(PTR_GenericInstanceDesc pInst, voi
             {
                 // See RhGetThreadStaticFieldAddress for details on where TLS fields live.
 
-                UInt32 uiTlsIndex;
-                UInt32 uiFieldOffset;
-
-                if (pModule != NULL)
+                UInt32 uiTlsIndex = pChunk->m_rgDesc[i].m_uiTlsIndex;
+                FOREACH_THREAD(pThread)
                 {
-                    ModuleHeader * pModuleHeader = pModule->GetModuleHeader();
-                    uiTlsIndex = *pModuleHeader->PointerToTlsIndex;
-                    uiFieldOffset = pModuleHeader->TlsStartOffset + uiFieldsStartOffset;
+                    Module::EnumStaticGCRefsBlock(pfnCallback, pvCallbackData,
+                                                  pThreadStaticGcInfo,
+                                                  pThread->GetThreadLocalStorage(uiTlsIndex, uiFieldsStartOffset));
                 }
-                else
-                {
-                    uiTlsIndex = pInst->GetThreadStaticFieldTlsIndex();
-                    uiFieldOffset = uiFieldsStartOffset;
-                }
-
-            FOREACH_THREAD(pThread)
-            {
-                Module::EnumStaticGCRefsBlock(pfnCallback, pvCallbackData,
-                                              pInst->GetThreadStaticFieldDesc(),
-                                              pThread->GetThreadLocalStorage(uiTlsIndex, uiFieldOffset));
+                END_FOREACH_THREAD
             }
-            END_FOREACH_THREAD
         }
-        }
-
-        pInst = pInst->GetNextGidWithGcRoots();
     }
 }
 
@@ -252,103 +246,14 @@ void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackD
     FOREACH_MODULE(pModule)
     {
         pModule->EnumStaticGCRefs(pfnCallback, pvCallbackData);
-
-        EnumGenericStaticGCRefs(pModule->GetGidsWithGcRootsList(), pfnCallback, pvCallbackData, pModule);
     }
     END_FOREACH_MODULE
 
-    EnumGenericStaticGCRefs(m_genericInstReportList, pfnCallback, pvCallbackData, NULL);
+    EnumStaticGCRefDescs(pfnCallback, pvCallbackData);
+    EnumThreadStaticGCRefDescs(pfnCallback, pvCallbackData);
 }
-
-static UInt32 HashEETypeByPointerValue(PTR_EEType pEEType) 
-{ 
-    return (UInt32)dac_cast<TADDR>(pEEType) >> 3;
-}
-
-struct GenericTypeTraits : public DefaultSHashTraits<PTR_GenericInstanceDesc>
-{
-    typedef PTR_EEType key_t;
-
-    static key_t GetKey(const element_t e)
-    {
-        return e->GetEEType();
-    }
-
-    static bool Equals(key_t k1, key_t k2)
-    {
-        return (k1 == k2);
-    }
-
-    static count_t Hash(key_t k)
-    {
-        return HashEETypeByPointerValue(k);
-    }
-
-    static bool IsNull(const element_t e)
-    {
-        return (e == NULL);
-    }
-
-    static const element_t Null()
-    {
-        return NULL; 
-    }
-};
-
-class GenericTypeHashTable : public SHash< NoRemoveSHashTraits < GenericTypeTraits > >
-{
-};
 
 #ifndef DACCESS_COMPILE
-
-bool RuntimeInstance::BuildGenericTypeHashTable()
-{
-    UInt32 nTotalCount = 0;
-
-    FOREACH_MODULE(pModule)
-    {
-        nTotalCount += pModule->GetGenericInstanceDescCount(Module::GenericInstanceDescKind::VariantGenericInstances);
-    }
-    END_FOREACH_MODULE;
-
-    GenericTypeHashTable * pTable = new (nothrow) GenericTypeHashTable();
-    if (pTable == NULL)
-        return false;
-
-    // Preallocate the table to make rehashing unnecessary
-    if(!pTable->CheckGrowth(nTotalCount))
-    {
-        delete pTable;
-        return false;
-    }
-
-    FOREACH_MODULE(pModule)
-    {
-        Module::GenericInstanceDescEnumerator gidEnumerator(pModule, Module::GenericInstanceDescKind::VariantGenericInstances);
-        GenericInstanceDesc * pGid;
-        while ((pGid = gidEnumerator.Next()) != NULL)
-        {
-            if (!pTable->Add(pGid))
-            {
-                delete pTable;
-                return false;
-            }
-        }
-    }
-    END_FOREACH_MODULE;
-
-    // The hash table is initialized. Attempt to publish this version of the table to other threads. If we
-    // lose (another thread has already updated m_pGenericTypeHashTable) then we deallocate our version and
-    // use theirs for the lookup.
-    if (PalInterlockedCompareExchangePointer((void**)&m_pGenericTypeHashTable,
-                                                pTable,
-                                                NULL) != NULL)
-    {
-        delete pTable;
-    }
-
-    return true;
-}
 
 Module * RuntimeInstance::FindModuleByOsHandle(HANDLE hOsHandle)
 {
@@ -366,19 +271,14 @@ RuntimeInstance::RuntimeInstance() :
     m_pThreadStore(NULL),
     m_fStandaloneExeMode(false),
     m_pStandaloneExeModule(NULL),
-    m_pGenericTypeHashTable(NULL),
+    m_pStaticGCRefsDescChunkList(NULL),
+    m_pThreadStaticGCRefsDescChunkList(NULL),
     m_conservativeStackReportingEnabled(false)
 {
 }
 
 RuntimeInstance::~RuntimeInstance()
 {
-    if (m_pGenericTypeHashTable != NULL)
-    {
-        delete m_pGenericTypeHashTable;
-        m_pGenericTypeHashTable = NULL;
-    }
-
     if (NULL != m_pThreadStore)
     {
         delete m_pThreadStore;
@@ -429,20 +329,6 @@ bool RuntimeInstance::RegisterModule(ModuleHeader *pModuleHeader)
 #ifdef FEATURE_PROFILING
     InitProfiling(pModuleHeader);
 #endif // FEATURE_PROFILING
-
-    {
-        // Support for late-loaded modules: flush the generic hashtable to force its regeneration
-        // including the new module.
-        // @TODO: This is obviously not ideal, we would be better of by incrementally adding
-        //        types in the new module to the existing hashtable. Unfortunately today implementation
-        //        doesn't expect the table to be growable.
-        ReaderWriterLock::WriteHolder write(&m_GenericHashTableLock);
-        if (m_pGenericTypeHashTable != nullptr)
-        {
-            delete m_pGenericTypeHashTable;
-            m_pGenericTypeHashTable = nullptr;
-        }
-    }
 
     pModule.SuppressRelease();
     // This event must occur after the module is added to the enumeration
@@ -536,8 +422,6 @@ RuntimeInstance * RuntimeInstance::Create(HANDLE hPalInstance)
     pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
-    pRuntimeInstance->m_genericInstReportList = NULL;
-
 #ifdef FEATURE_PROFILING
     pRuntimeInstance->m_fProfileThreadCreated = false;
 #endif
@@ -594,116 +478,107 @@ void RuntimeInstance::UnsychronizedResetHijackedLoops()
     END_FOREACH_MODULE;
 }
 
-// Given the EEType* for an instantiated generic type retrieve the GenericInstanceDesc associated with that
-// type. This is legal only for types that are guaranteed to have this metadata at runtime; generic types
-// which have variance over one or more of their type parameters and generic interfaces on array).
-GenericInstanceDesc * RuntimeInstance::LookupGenericInstance(EEType * pEEType)
-{
-    // EETypes we will attempt to match against will always be the canonical version. Canonicalize our input
-    // EEType as well if required.
-    if (pEEType->IsCloned())
-        pEEType = pEEType->get_CanonicalEEType();
-
-    if (m_pGenericTypeHashTable == NULL)
-    {
-        if (!BuildGenericTypeHashTable())
-        {
-            // We failed the allocation but we don't want to fail the call (because we build this table lazily
-            // we're doing the allocation at a point the caller doesn't expect can fail). So fall back to the
-            // slow linear scan of all variant GIDs in this case.
-
-            FOREACH_MODULE(pModule)
-            {
-                Module::GenericInstanceDescEnumerator gidEnumerator(pModule, Module::GenericInstanceDescKind::VariantGenericInstances);
-                GenericInstanceDesc * pGid;
-                while ((pGid = gidEnumerator.Next()) != NULL)
-                {
-                    if (pGid->GetEEType() == pEEType)
-                        return pGid;
-                }
-            }
-            END_FOREACH_MODULE;
-
-            // It is not legal to call this API unless you know there is a matching GenericInstanceDesc.
-            UNREACHABLE();
-        }
-    }
-
-    ReaderWriterLock::ReadHolder read(&m_GenericHashTableLock);
-
-    const PTR_GenericInstanceDesc * ppGid = m_pGenericTypeHashTable->LookupPtr(pEEType);
-    if (ppGid != NULL)
-        return *ppGid;
-
-    // It is not legal to call this API unless you know there is a matching GenericInstanceDesc.
-    UNREACHABLE();
-}
-
 // Given the EEType* for an instantiated generic type retrieve instantiation information (generic type
-// definition EEType, arity, type arguments and variance info for each type parameter). Has the same
-// limitations on usage as LookupGenericInstance above.
+// definition EEType, arity, type arguments and variance info for each type parameter).
 EEType * RuntimeInstance::GetGenericInstantiation(EEType *               pEEType,
                                                   UInt32 *               pArity,
                                                   EEType ***             ppInstantiation,
                                                   GenericVarianceType ** ppVarianceInfo)
 {
-    GenericInstanceDesc * pInst = LookupGenericInstance(pEEType);
+    ASSERT(pEEType != NULL && pEEType->IsGeneric());
 
-    ASSERT(pInst != NULL && pInst->HasInstantiation());
+    *pArity = pEEType->get_GenericArity();
+    *ppInstantiation = pEEType->get_GenericArguments();
 
-    *pArity = pInst->GetArity();
-    *ppInstantiation = (EEType**)((UInt8*)pInst + pInst->GetParameterTypeOffset(0));
-
-    if (pInst->HasVariance())
-        *ppVarianceInfo = (GenericVarianceType*)((UInt8*)pInst + pInst->GetParameterVarianceOffset(0));
+    if (pEEType->HasGenericVariance())
+        *ppVarianceInfo = pEEType->get_GenericVariance();
     else
         *ppVarianceInfo = NULL;
 
-    return pInst->GetGenericTypeDef().GetValue();
+    return pEEType->get_GenericDefinition().GetValue();
 }
 
-bool RuntimeInstance::CreateGenericInstanceDesc(EEType *             pEEType,
-                                                EEType *             pTemplateType,
-                                                UInt32               arity,
-                                                UInt32               nonGcStaticDataSize,
-                                                UInt32               nonGCStaticDataOffset,
-                                                UInt32               gcStaticDataSize,
-                                                UInt32               threadStaticOffset,
-                                                StaticGcDesc *       pGcStaticsDesc,
-                                                StaticGcDesc *       pThreadStaticsDesc,
-                                                UInt32*              pGenericVarianceFlags)
+bool RuntimeInstance::AddDynamicGcStatics(UInt8 *pGcStaticData, StaticGcDesc *pGcStaticsDesc)
 {
-    if (m_pGenericTypeHashTable == NULL)
+    ReaderWriterLock::WriteHolder write(&m_StaticGCRefLock);
+
+    StaticGCRefsDescChunk *pChunk = m_pStaticGCRefsDescChunkList;
+    if (pChunk == NULL || pChunk->m_uiDescCount >= StaticGCRefsDescChunk::MAX_DESC_COUNT)
     {
-        if (!BuildGenericTypeHashTable())
+        pChunk = new (nothrow) StaticGCRefsDescChunk();
+        if (pChunk == NULL)
             return false;
+        pChunk->m_pNextChunk = m_pStaticGCRefsDescChunkList;
+        m_pStaticGCRefsDescChunkList = pChunk;
     }
+    UInt32 uiDescCount = pChunk->m_uiDescCount++;
+    pChunk->m_rgDesc[uiDescCount].m_pStaticGcInfo = pGcStaticsDesc;
+    pChunk->m_rgDesc[uiDescCount].m_pbStaticData = pGcStaticData;
 
-    GenericInstanceDesc::OptionalFieldTypes flags = GenericInstanceDesc::GID_Instantiation;
-    
-    if (pTemplateType->HasGenericVariance())
-        flags |= GenericInstanceDesc::GID_Variance;
-    if (gcStaticDataSize > 0)
-        flags |= GenericInstanceDesc::GID_GcStaticFields | GenericInstanceDesc::GID_GcRoots;
-    if (nonGcStaticDataSize > 0)
-        flags |= GenericInstanceDesc::GID_NonGcStaticFields;
-    if (threadStaticOffset != 0)
-        flags |= GenericInstanceDesc::GID_ThreadStaticFields | GenericInstanceDesc::GID_GcRoots;
+    return true;
+}
 
-    // Note: arity is limited to a maximum value of 65535 on the managed layer before CreateGenericInstanceDesc
-    // gets called. With this value, cbGidSize will not exceed 600K, so no need to use safe integers
-    size_t cbGidSize = GenericInstanceDesc::GetSize(flags, arity);
+bool RuntimeInstance::AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiThreadStaticOffset, StaticGcDesc *pThreadStaticsDesc)
+{
+    ReaderWriterLock::WriteHolder write(&m_StaticGCRefLock);
 
-    NewArrayHolder<UInt8> pGidMemory = new (nothrow) UInt8[cbGidSize];
-    if (pGidMemory == NULL)
-        return false;
+    ThreadStaticGCRefsDescChunk *pChunk = m_pThreadStaticGCRefsDescChunkList;
+    if (pChunk == NULL || pChunk->m_uiDescCount >= ThreadStaticGCRefsDescChunk::MAX_DESC_COUNT)
+    {
+        pChunk = new (nothrow) ThreadStaticGCRefsDescChunk();
+        if (pChunk == NULL)
+            return false;
+        pChunk->m_pNextChunk = m_pThreadStaticGCRefsDescChunkList;
+        m_pThreadStaticGCRefsDescChunkList = pChunk;
+    }
+    UInt32 uiDescCount = pChunk->m_uiDescCount++;
+    pChunk->m_rgDesc[uiDescCount].m_pThreadStaticGcInfo = pThreadStaticsDesc;
+    pChunk->m_rgDesc[uiDescCount].m_uiTlsIndex = uiTlsIndex;
+    pChunk->m_rgDesc[uiDescCount].m_uiFieldStartOffset = uiThreadStaticOffset;
 
-    GenericInstanceDesc * pGid = (GenericInstanceDesc *)(UInt8 *)pGidMemory;
-    memset(pGid, 0, cbGidSize);
+    return true;
+}
 
-    pGid->Init(flags);
-    pGid->SetEEType(pEEType);
-    pGid->SetArity(arity);
+bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
+                                                 EEType *             pTemplateType,
+                                                 UInt32               arity,
+                                                 UInt32               nonGcStaticDataSize,
+                                                 UInt32               nonGCStaticDataOffset,
+                                                 UInt32               gcStaticDataSize,
+                                                 UInt32               threadStaticOffset,
+                                                 StaticGcDesc *       pGcStaticsDesc,
+                                                 StaticGcDesc *       pThreadStaticsDesc,
+                                                 UInt32*              pGenericVarianceFlags)
+{
+    NewArrayHolder<UInt8> pGenericCompositionMemory;
+    if (arity != 0)
+    {
+        // Note: arity is limited to a maximum value of 65535 on the managed layer
+        ASSERT(arity == (UInt16)arity);
+        assert(pEEType->IsGeneric());
+
+        // prepare generic composition
+        size_t cbGenericCompositionSize = EEType::GenericComposition::GetSize((UInt16)arity, pTemplateType->HasGenericVariance());
+        pGenericCompositionMemory = new (nothrow) UInt8[cbGenericCompositionSize];
+        if (pGenericCompositionMemory == NULL)
+            return false;
+
+        EEType::GenericComposition *pGenericComposition = (EEType::GenericComposition *)(UInt8 *)pGenericCompositionMemory;
+        pGenericComposition->Init((UInt16)arity, pTemplateType->HasGenericVariance());
+
+        // fill in variance flags
+        if (pTemplateType->HasGenericVariance())
+        {
+            ASSERT(pEEType->HasGenericVariance() && pGenericVarianceFlags != NULL);
+
+            for (UInt32 i = 0; i < arity; i++)
+            {
+                GenericVarianceType variance = (GenericVarianceType)pGenericVarianceFlags[i];
+                pGenericComposition->SetVariance(i, variance);
+            }
+        }
+        pEEType->set_GenericComposition(pGenericComposition);
+    }
 
     NewArrayHolder<UInt8> pNonGcStaticData;
     if (nonGcStaticDataSize > 0)
@@ -715,7 +590,7 @@ bool RuntimeInstance::CreateGenericInstanceDesc(EEType *             pEEType,
         if (pNonGcStaticData == NULL)
             return false;
         memset(pNonGcStaticData, 0, nonGcStaticDataSize);
-        pGid->SetNonGcStaticFieldData(pNonGcStaticData + nonGCStaticDataOffset);
+        pEEType->set_DynamicNonGcStatics(pNonGcStaticData + nonGCStaticDataOffset);
     }
 
     NewArrayHolder<UInt8> pGcStaticData;
@@ -727,43 +602,23 @@ bool RuntimeInstance::CreateGenericInstanceDesc(EEType *             pEEType,
         if (pGcStaticData == NULL)
             return false;
         memset(pGcStaticData, 0, gcStaticDataSize);
-        pGid->SetGcStaticFieldData(pGcStaticData);
-        pGid->SetGcStaticFieldDesc(pGcStaticsDesc);
+        pEEType->set_DynamicGcStatics(pGcStaticData);
+        if (!AddDynamicGcStatics(pGcStaticData, pGcStaticsDesc))
+            return false;
     }
 
     if (threadStaticOffset != 0)
     {
         // Note: TLS index not used for dynamically created types
-        pGid->SetThreadStaticFieldTlsIndex(0);
-        pGid->SetThreadStaticFieldStartOffset(threadStaticOffset);
-
-        // Note: pThreadStaticsDesc can possibly be NULL if the type doesn't have any thread-static reference types
-        pGid->SetThreadStaticFieldDesc(pThreadStaticsDesc);
-    }
-
-    if (pTemplateType->HasGenericVariance())
-    {
-        ASSERT(pGenericVarianceFlags != NULL);
-
-        for (UInt32 i = 0; i < arity; i++)
+        pEEType->set_DynamicThreadStaticOffset(threadStaticOffset);
+        if (pThreadStaticsDesc != NULL)
         {
-            GenericVarianceType variance = (GenericVarianceType)pGenericVarianceFlags[i];
-            pGid->SetParameterVariance(i, variance);
+            if (!AddDynamicThreadStaticGcData(0, threadStaticOffset, pThreadStaticsDesc))
+                return false;
         }
     }
 
-    ReaderWriterLock::WriteHolder write(&m_GenericHashTableLock);
-
-    if (!m_pGenericTypeHashTable->Add(pGid))
-        return false;
-
-    if (gcStaticDataSize > 0 || pGid->HasThreadStaticFields())
-    {
-        pGid->SetNextGidWithGcRoots(m_genericInstReportList);
-        m_genericInstReportList = pGid;
-    }
-
-    pGidMemory.SuppressRelease();
+    pGenericCompositionMemory.SuppressRelease();
     pNonGcStaticData.SuppressRelease();
     pGcStaticData.SuppressRelease();
     return true;
@@ -776,18 +631,15 @@ bool RuntimeInstance::SetGenericInstantiation(EEType *               pEEType,
 {
     ASSERT(pEEType->IsGeneric());
     ASSERT(pEEType->IsDynamicType());
-    ASSERT(m_pGenericTypeHashTable != NULL)
 
-    GenericInstanceDesc * pGid = LookupGenericInstance(pEEType);
-    ASSERT(pGid != NULL);
-    
-    pGid->SetGenericTypeDef((EETypeRef&)pEETypeDef);
+    pEEType->set_GenericDefinition(pEETypeDef);
 
-    // Arity should have been set during the GID creation time
-    ASSERT(pGid->GetArity() == arity);
+    // Arity should have been set during the GenericComposition creation time
+    ASSERT(pEEType->get_GenericArity() == arity);
 
+    EEType **pArgs = pEEType->get_GenericArguments();
     for (UInt32 iArg = 0; iArg < arity; iArg++)
-        pGid->SetParameterType(iArg, (EETypeRef&)pInstantiation[iArg]);
+        pArgs[iArg] = pInstantiation[iArg];
 
     return true;
 }
@@ -797,20 +649,10 @@ COOP_PINVOKE_HELPER(EEType *, RhGetGenericInstantiation, (EEType *              
                                                           EEType ***             ppInstantiation,
                                                           GenericVarianceType ** ppVarianceInfo))
 {
-#if CORERT
-    *pArity = pEEType->get_GenericArity();
-    *ppInstantiation = pEEType->get_GenericArguments();
-    if (pEEType->HasGenericVariance())
-        *ppVarianceInfo = pEEType->get_GenericVariance();
-    else
-        *ppVarianceInfo = NULL;
-    return pEEType->get_GenericDefinition();
-#else
     return GetRuntimeInstance()->GetGenericInstantiation(pEEType,
                                                          pArity,
                                                          ppInstantiation,
                                                          ppVarianceInfo);
-#endif
 }
 
 COOP_PINVOKE_HELPER(bool, RhSetGenericInstantiation, (EEType *               pEEType,
@@ -838,7 +680,7 @@ COOP_PINVOKE_HELPER(bool, RhCreateGenericInstanceDescForType2, (EEType *        
 
     EEType * pTemplateType = pEEType->get_DynamicTemplateType();
 
-    return GetRuntimeInstance()->CreateGenericInstanceDesc(pEEType, pTemplateType, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize,
+    return GetRuntimeInstance()->CreateGenericAndStaticInfo(pEEType, pTemplateType, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize,
         threadStaticsOffset, pGcStaticsDesc, pThreadStaticsDesc, pGenericVarianceFlags);
 }
 
@@ -986,17 +828,11 @@ COOP_PINVOKE_HELPER(void *, RhGetNonGcStaticFieldData, (EEType * pEEType))
 {
     // We shouldn't be attempting to get the gc/non-gc statics data for non-dynamic types...
     // For non-dynamic types, that info should have been hashed in a table and stored in its corresponding blob in the image.
-    // The reason we don't want to do the lookup for non-dynamic types is that LookupGenericInstance will do the lookup in 
-    // a hashtable that *only* has the GIDs with variance. If we were to store all GIDs in that hashtable, we'd be violating
-    // pay-for-play principles
     ASSERT(pEEType->IsDynamicType());
 
-    GenericInstanceDesc * pGid = GetRuntimeInstance()->LookupGenericInstance(pEEType);
-    ASSERT(pGid != NULL);
-
-    if (pGid->HasNonGcStaticFields())
+    if (pEEType->HasDynamicNonGcStatics())
     {
-        return dac_cast<DPTR(TgtPTR_UInt8)>(pGid + pGid->GetNonGcStaticFieldDataOffset());
+        return pEEType->get_DynamicNonGcStaticsPointer();
     }
 
     return NULL;
@@ -1011,12 +847,9 @@ COOP_PINVOKE_HELPER(void *, RhGetGcStaticFieldData, (EEType * pEEType))
     // pay-for-play principles
     ASSERT(pEEType->IsDynamicType());
 
-    GenericInstanceDesc * pGid = GetRuntimeInstance()->LookupGenericInstance(pEEType);
-    ASSERT(pGid != NULL);
-
-    if (pGid->HasGcStaticFields())
+    if (pEEType->HasDynamicGcStatics())
     {
-        return dac_cast<DPTR(TgtPTR_UInt8)>(pGid + pGid->GetGcStaticFieldDataOffset());
+        return pEEType->get_DynamicGcStaticsPointer();
     }
 
     return NULL;

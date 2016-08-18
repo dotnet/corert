@@ -58,7 +58,7 @@ struct ModuleHeader
 
     enum ModuleHeaderConstants : UInt32
     {
-        CURRENT_VERSION             = 1,            // Version of the module header protocol. Increment on
+        CURRENT_VERSION             = 2,            // Version of the module header protocol. Increment on
                                                     // breaking changes
         DELTA_SHORTCUT_TABLE_SIZE   = 16,
         MAX_REGIONS                 = 8,            // Max number of regions described by the Regions array
@@ -83,7 +83,6 @@ struct ModuleHeader
     UInt32  RraStaticsGCDataSection;    // RRA to region containing GC statics
     UInt32  RraStaticsGCInfo;           // RRA to GC info for module statics (an array of StaticGcDesc structs)
     UInt32  RraThreadStaticsGCInfo;     // RRA to GC info for module thread statics (an array of StaticGcDesc structs)
-    UInt32  RraGidsWithGcRootsList;     // RRA to head of list of GenericInstanceDescs which report GC roots
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     UInt32  RraInterfaceDispatchCells;  // RRA to array of cache data structures used to dispatch interface calls
     UInt32  CountInterfaceDispatchCells;// Number of elements in above array
@@ -95,12 +94,6 @@ struct ModuleHeader
     UInt32  RraSystemObjectEEType;      // RRA to the IAT entry for the classlib's System.Object EEType. Zero if this is the classlib itself.
     UInt32  RraUnwindInfoBlob;          // RRA to blob used for unwind infos that are referenced by the method GC info
     UInt32  RraCallsiteInfoBlob;        // RRA to blob used for callsite GC root strings that are referenced by the method GC info
-    UInt32  RraGenericInstances;        // RRA to the list of regular generic instances contained in the module
-    UInt32  CountGenericInstances;      // count of generic instances in the above list
-    UInt32  RraGcRootGenericInstances;  // RRA to the list of generic instances with GC roots to report contained in the module
-    UInt32  CountGcRootGenericInstances;// count of generic instances in the above list
-    UInt32  RraVariantGenericInstances; // RRA to the list of generic instances with variant type parameters contained in the module
-    UInt32  CountVariantGenericInstances; // count of generic instances in the above list
     UInt32  SizeStubCode;               // size, in bytes, of stub code at the end of the TEXT_REGION. See ZapImage::SaveModuleHeader for details.
     UInt32  RraReadOnlyBlobs;           // RRA to list of read-only opaque data blobs
     UInt32  SizeReadOnlyBlobs;          // size, in bytes, of the read-only data blobs above
@@ -164,7 +157,6 @@ struct ModuleHeader
     DEFINE_GET_ACCESSOR(CodeMapInfo,                RDATA_REGION);
     DEFINE_GET_ACCESSOR(StaticsGCInfo,              RDATA_REGION);
     DEFINE_GET_ACCESSOR(ThreadStaticsGCInfo,        RDATA_REGION);
-    DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(GidsWithGcRootsList);
     DEFINE_GET_ACCESSOR(EHInfo,                     RDATA_REGION);
     DEFINE_GET_ACCESSOR(UnwindInfoBlob,             RDATA_REGION);
     DEFINE_GET_ACCESSOR(CallsiteInfoBlob,           RDATA_REGION);
@@ -174,9 +166,6 @@ struct ModuleHeader
     DEFINE_GET_ACCESSOR(InterfaceDispatchCells,     DATA_REGION);
 #endif
     DEFINE_GET_ACCESSOR(FrozenObjects,             DATA_REGION);
-    DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(GenericInstances);
-    DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(GcRootGenericInstances);
-    DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(VariantGenericInstances);
 
     DEFINE_GET_ACCESSOR(LoopIndirCells,             DATA_REGION);
     DEFINE_GET_ACCESSOR(LoopIndirCellChunkBitmap,   DATA_REGION);
@@ -585,40 +574,6 @@ enum GenericVarianceType : UInt8
     GVT_Covariant = 1,
     GVT_Contravariant = 2,
     GVT_ArrayCovariant = 0x20,
-};
-
-// The GenericInstanceDesc structure holds additional type information associated with generic EETypes. The
-// amount of data can potentially get quite large but many of the items can be omitted for most types.
-// Therefore, rather than representing the data as a regular C++ struct with fixed fields, we include one
-// fixed field, a bitmask indicating what sort of data is encoded, and then encode only the required data in a
-// packed form.
-//
-// While this is straightforward enough, we have a lot of fields that now all require accessor methods (get
-// offset of value, get value, set value) and the offset calculations, though simple, are messy and easy to
-// get wrong. In light of this we use a script to write the accessor code. See
-// rh\tools\WriteOptionalFieldsCode.pl for the script and rh\src\inc\GenericInstanceDescFields.src for the
-// definitions of the fields that it takes as input.
-
-struct GenericInstanceDesc
-{
-#include "GenericInstanceDescFields.h"
-
-#ifdef DACCESS_COMPILE
-    static UInt32 DacSize(TADDR addr);
-#endif
-
-    UInt32 GetHashCode()
-    {
-        UInt32 hash = 0;
-        const UInt32 HASH_MULT = 1220703125; // 5**13
-        hash ^= (UInt32)dac_cast<TADDR>(this->GetGenericTypeDef().GetValue());
-        for (UInt32 i = 0; i < this->GetArity(); i++)
-        {
-            hash *= HASH_MULT;
-            hash ^= (UInt32)dac_cast<TADDR>(this->GetParameterType(i).GetValue());
-        }
-        return hash;
-    }
 };
 
 // Blobs are opaque data passed from the compiler, through the binder and into the native image. At runtime we

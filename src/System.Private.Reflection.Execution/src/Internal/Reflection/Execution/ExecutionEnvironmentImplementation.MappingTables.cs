@@ -1614,7 +1614,7 @@ namespace Internal.Reflection.Execution
                             result.Add(CommonRuntimeTypes.IntPtr.TypeHandle);
                         else if (parameterType.IsByRef)
                             result.Add(parameterType.GetElementType().TypeHandle);
-                        else if (parameterType.GetTypeInfo().IsEnum)
+                        else if (parameterType.GetTypeInfo().IsEnum && !parameters[i].HasDefaultValue)
                             result.Add(Enum.GetUnderlyingType(parameterType).TypeHandle);
                         else
                             result.Add(parameterType.TypeHandle);
