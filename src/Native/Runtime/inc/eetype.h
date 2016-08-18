@@ -13,6 +13,7 @@ class MdilModule;
 class EEType;
 class OptionalFields;
 class ModuleManager;
+struct EETypeRef;
 enum GenericVarianceType : UInt8;
 
 //-------------------------------------------------------------------------------------------------
@@ -164,10 +165,11 @@ enum EETypeField
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_DynamicDispatchMap,
-#if CORERT
     ETF_GenericDefinition,
     ETF_GenericComposition,
-#endif
+    ETF_DynamicGcStatics,
+    ETF_DynamicNonGcStatics,
+    ETF_DynamicThreadStaticOffset,
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -306,6 +308,20 @@ public:
 
         // This EEType represents a structure that is an HFA (only ARM currently)
         IsHFAFlag               = 0x00000100,
+
+        // This EEType has sealed vtable entries
+        // This is for statically generated types - we need two different flags because
+        // the sealed vtable entries are reached in different ways in the static and dynamic case
+        HasSealedVTableEntriesFlag = 0x00000200,
+
+        // This dynamically created type has gc statics
+        IsDynamicTypeWithGcStaticsFlag = 0x00000400,
+
+        // This dynamically created type has non gc statics
+        IsDynamicTypeWithNonGcStaticsFlag = 0x00000800,
+
+        // This dynamically created type has thread statics
+        IsDynamicTypeWithThreadStaticsFlag = 0x00001000,
     };
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -531,9 +547,15 @@ public:
     bool HasDynamicallyAllocatedDispatchMap()
         { return (get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0; }
 
-#if CORERT
     // Retrieve the generic type definition EEType for this generic instance
-    EEType * get_GenericDefinition();
+    void set_GenericDefinition(EEType *pTypeDef);
+
+    // Retrieve the generic type definition EEType for this generic instance
+    EETypeRef & get_GenericDefinition();
+
+    class GenericComposition;
+    inline void set_GenericComposition(GenericComposition *);
+    inline GenericComposition *get_GenericComposition();
 
     // Retrieve the number of generic arguments for this generic type instance
     UInt32 get_GenericArity();
@@ -543,10 +565,21 @@ public:
 
     // Retrieve the generic variance associated with this type
     GenericVarianceType* get_GenericVariance();
-#endif
 
     // Retrieve template used to create the dynamic type
     EEType * get_DynamicTemplateType();
+
+    bool HasDynamicGcStatics() { return (get_RareFlags() & IsDynamicTypeWithGcStaticsFlag) != 0; }
+    UInt8 ** get_DynamicGcStaticsPointer();
+    void set_DynamicGcStatics(UInt8 *pStatics);
+
+    bool HasDynamicNonGcStatics() { return (get_RareFlags() & IsDynamicTypeWithNonGcStaticsFlag) != 0; }
+    UInt8 ** get_DynamicNonGcStaticsPointer();
+    void set_DynamicNonGcStatics(UInt8 *pStatics);
+
+    bool HasDynamicThreadStatics() { return (get_RareFlags() & IsDynamicTypeWithThreadStaticsFlag) != 0; }
+    UInt32 get_DynamicThreadStaticOffset();
+    void set_DynamicThreadStaticOffset(UInt32 threadStaticOffset);
 
     UInt32 GetHashCode();
 
@@ -592,12 +625,13 @@ public:
                                          bool fHasFinalizer,
                                          bool fRequiresOptionalFields,
                                          bool fRequiresNullableType,
-                                         bool fHasSealedVirtuals);
+                                         bool fHasSealedVirtuals,
+                                         bool fHasGenericInfo);
 
 #ifdef BINDER
     // Version of the above usable from the binder where all the type layout information can be gleaned from a
     // MethodTable.
-    static inline UInt32 GetSizeofEEType(MethodTable *pMT);
+    static inline UInt32 GetSizeofEEType(MethodTable *pMT, bool fHasGenericInfo);
 #endif // BINDER
 
     // Calculate the offset of a field of the EEType that has a variable offset.
@@ -620,6 +654,52 @@ public:
     // represented - instead the classlib has a common one for all arrays
     EEType * GetArrayBaseType();
 #endif // !defined(BINDER) && !defined(DACCESS_COMPILE)
+
+    class GenericComposition
+    {
+        UInt16              m_arity;
+        UInt8               m_hasVariance;
+#ifdef BINDER
+        UIntTarget          m_arguments[/*arity*/1];  // to make the size come out right for cross-bind
+#else
+        EEType             *m_arguments[/*arity*/1];
+#endif
+        GenericVarianceType m_variance[/*arity*/1];
+
+    public:
+        static size_t GetSize(UInt16 arity, bool hasVariance)
+        {
+            size_t cbSize = offsetof(GenericComposition, m_arguments[arity]);
+            if (hasVariance)
+                cbSize += sizeof(GenericVarianceType)*arity;
+
+            return cbSize;
+        }
+
+        void Init(UInt16 arity, bool hasVariance)
+        {
+            memset(this, 0, GetSize(arity, hasVariance));
+            m_arity = arity;
+            m_hasVariance = hasVariance;
+        }
+
+        UInt32 GetArity()
+        {
+            return m_arity;
+        }
+
+        size_t GetArgumentOffset(UInt32 index);
+
+#ifndef BINDER
+        EEType **GetArguments()
+        {
+            return m_arguments;
+        }
+#endif
+        GenericVarianceType *GetVariance();
+
+        void SetVariance(UInt32 index, GenericVarianceType variance);
+    };
 
 #endif // !RHDUMP
 };

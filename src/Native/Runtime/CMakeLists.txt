@@ -15,7 +15,6 @@ set(COMMON_RUNTIME_SOURCES
     gcrhenv.cpp
     gcrhscan.cpp
     GcStressControl.cpp
-    GenericInstance.cpp
     HandleTableHelpers.cpp
     MathHelpers.cpp
     MiscHelpers.cpp

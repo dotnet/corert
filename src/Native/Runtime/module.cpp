@@ -24,7 +24,6 @@
 #include "RuntimeInstance.h"
 #include "eetype.h"
 #include "ObjectLayout.h"
-#include "GenericInstance.h"
 #include "threadstore.h"
 
 #include "CommonMacros.inl"
@@ -246,14 +245,6 @@ Module::~Module()
 PTR_ModuleHeader Module::GetModuleHeader()
 {
     return m_pModuleHeader;
-}
-
-PTR_GenericInstanceDesc Module::GetGidsWithGcRootsList()
-{
-    if (m_pModuleHeader == NULL)
-        return NULL;
-
-    return dac_cast<PTR_GenericInstanceDesc>(m_pModuleHeader->GetGidsWithGcRootsList());
 }
 
 
@@ -1059,88 +1050,6 @@ BlobHeader * Module::GetReadOnlyBlobs(UInt32 * pcbBlobs)
     return (BlobHeader*)m_pModuleHeader->GetReadOnlyBlobs();
 }
 
-Module::GenericInstanceDescEnumerator::GenericInstanceDescEnumerator(Module * pModule, GenericInstanceDescKind gidKind)
-    : m_pModule(pModule), m_pCurrent(NULL), m_gidEnumKind(gidKind), m_iCurrent(0), m_nCount(0), m_iSection(0)
-{
-}
-
-GenericInstanceDesc * Module::GenericInstanceDescEnumerator::Next()
-{
-    m_iCurrent++;
-
-    if (m_iCurrent >= m_nCount)
-    {
-        ModuleHeader * pModuleHeader = m_pModule->m_pModuleHeader;
-        m_nCount = 0;
-
-        for (;;)
-        {
-            // There can be up to three segments of GenericInstanceDescs, separated to improve locality.
-            switch (m_iSection)
-            {
-            case 0:
-                if ((m_gidEnumKind & GenericInstanceDescKind::GenericInstances) != 0)
-                {
-                    m_pCurrent = (GenericInstanceDesc*)pModuleHeader->GetGenericInstances();
-                    m_nCount = pModuleHeader->CountGenericInstances;
-                }
-                break;
-            case 1:
-                if ((m_gidEnumKind & GenericInstanceDescKind::GcRootGenericInstances) != 0)
-                {
-                    m_pCurrent = (GenericInstanceDesc*)pModuleHeader->GetGcRootGenericInstances();
-                    m_nCount = pModuleHeader->CountGcRootGenericInstances;
-                }
-                break;
-            case 2:
-                if ((m_gidEnumKind & GenericInstanceDescKind::VariantGenericInstances) != 0)
-                {
-                    m_pCurrent = (GenericInstanceDesc*)pModuleHeader->GetVariantGenericInstances();
-                    m_nCount = pModuleHeader->CountVariantGenericInstances;
-                }
-                break;
-            default:
-                return NULL;
-            }
-
-            m_iSection++;
-
-            if (m_nCount > 0)
-                break;
-        }
-
-        m_iCurrent = 0;
-
-        if (m_pCurrent->HasInstantiation())
-            return m_pCurrent;
-    }
-
-    for (;;)
-    {
-        m_pCurrent = (GenericInstanceDesc *)((UInt8*)m_pCurrent + m_pCurrent->GetSize());
-
-        if (m_pCurrent->HasInstantiation())
-            return m_pCurrent;
-
-        // We can get padding GenericInstanceDescs every so often that are inserted to ensure none of the
-        // base relocs associated with a GID straddle a page boundary (which is very inefficient). These
-        // don't have instantiations. They're also not included in the GID count.
-        ASSERT(m_pCurrent->GetFlags() == GenericInstanceDesc::GID_NoFields);
-    }
-}
-
-UInt32 Module::GetGenericInstanceDescCount(GenericInstanceDescKind gidKind)
-{
-    UInt32 count = 0;
-    if ((gidKind & GenericInstanceDescKind::GenericInstances) != 0)
-        count += m_pModuleHeader->CountGenericInstances;
-    if ((gidKind & GenericInstanceDescKind::GcRootGenericInstances) != 0)
-        count += m_pModuleHeader->CountGcRootGenericInstances;
-    if ((gidKind & GenericInstanceDescKind::VariantGenericInstances) != 0)
-        count += m_pModuleHeader->CountVariantGenericInstances;
-    return count;
-}
-
 #ifdef FEATURE_CUSTOM_IMPORTS
 
 #define IMAGE_ORDINAL_FLAG64 0x8000000000000000
@@ -1252,18 +1161,5 @@ UInt32 StaticGcDesc::DacSize(TADDR addr)
     DacReadAll(addr + offsetof(StaticGcDesc, m_numSeries), &numSeries, sizeof(numSeries), true);
 
     return (UInt32)(offsetof(StaticGcDesc, m_series) + (numSeries * sizeof(GCSeries)));
-}
-
-UInt32 GenericInstanceDesc::DacSize(TADDR addr)
-{
-    static_assert(offsetof(GenericInstanceDesc, m_Flags) == 0, "GenericInstanceDesc::m_Flags is expected to be at offset 0");
-
-    GenericInstanceDesc dummyDesc;
-    DacReadAll(addr, &dummyDesc, sizeof(GenericInstanceDesc::OptionalFieldTypes), true);
-
-    UInt32 arity = 0;
-    UInt32 arityOffset = dummyDesc.GetArityOffset();
-    DacReadAll(addr + arityOffset, &arity, sizeof(UInt32), true);
-    return GenericInstanceDesc::GetSize(dummyDesc.GetFlags(), arity);
 }
 #endif // DACCESS_COMPILE

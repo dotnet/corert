@@ -22,7 +22,7 @@ namespace System
     // The UIntPtr type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type void *
     [CLSCompliant(false)]
-    public struct UIntPtr
+    public struct UIntPtr : IEquatable<UIntPtr>
     {
         unsafe private void* _value;
 
@@ -123,6 +123,11 @@ namespace System
         public unsafe static explicit operator ulong (UIntPtr value)
         {
             return (ulong)value._value;
+        }
+
+        unsafe bool IEquatable<UIntPtr>.Equals(UIntPtr value)
+        {
+            return _value == value._value;
         }
 
         [Intrinsic]

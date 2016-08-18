@@ -64,14 +64,14 @@ namespace System.Reflection.Runtime.CustomAttributes
                 String ctorArgs = "";
                 IList<CustomAttributeTypedArgument> constructorArguments = GetConstructorArguments(throwIfMissingMetadata: false);
                 if (constructorArguments == null)
-                    return base.ToString();
+                    return LastResortToString;
                 for (int i = 0; i < constructorArguments.Count; i++)
                     ctorArgs += String.Format(i == 0 ? "{0}" : ", {0}", ComputeTypedArgumentString(constructorArguments[i], typed: false));
 
                 String namedArgs = "";
                 IList<CustomAttributeNamedArgument> namedArguments = GetNamedArguments(throwIfMissingMetadata: false);
                 if (namedArguments == null)
-                    return base.ToString();
+                    return LastResortToString;
                 for (int i = 0; i < namedArguments.Count; i++)
                 {
                     CustomAttributeNamedArgument namedArgument = namedArguments[i];
@@ -90,7 +90,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
             catch (MissingMetadataException)
             {
-                return base.ToString();
+                return LastResortToString;
             }
         }
 
@@ -148,6 +148,15 @@ namespace System.Reflection.Runtime.CustomAttributes
             }
 
             return String.Format(typed ? "{0}" : "({1}){0}", value, argumentType.Name);
+        }
+
+        private string LastResortToString
+        {
+            get
+            {
+                // This emulates Object.ToString() for consistency with prior .Net Native implementations. 
+                return GetType().ToString();
+            }
         }
     }
 }
