@@ -118,7 +118,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodBase_GetParameters(this);
 #endif
 
-            RuntimeParameterInfo[] runtimeParameterInfos = this.GetRuntimeParametersAndReturn(this);
+            RuntimeParameterInfo[] runtimeParameterInfos = this.RuntimeParametersAndReturn;
             if (runtimeParameterInfos.Length == 1)
                 return Array.Empty<ParameterInfo>();
             ParameterInfo[] result = new ParameterInfo[runtimeParameterInfos.Length - 1];
@@ -186,7 +186,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodInfo_ReturnParameter(this);
 #endif
 
-                return this.GetRuntimeParametersAndReturn(this)[0];
+                return this.RuntimeParametersAndReturn[0];
             }
         }
 
@@ -243,6 +243,21 @@ namespace System.Reflection.Runtime.MethodInfos
         // The first element is actually the ReturnParameter value.
         //
         internal abstract RuntimeParameterInfo[] GetRuntimeParametersAndReturn(RuntimeMethodInfo contextMethod);
+
+        internal RuntimeParameterInfo[] RuntimeParametersAndReturn
+        {
+            get
+            {
+                RuntimeParameterInfo[] runtimeParametersAndReturn = _lazyRuntimeParametersAndReturn;
+                if (runtimeParametersAndReturn == null)
+                {
+                    runtimeParametersAndReturn = _lazyRuntimeParametersAndReturn = GetRuntimeParametersAndReturn(this);
+                }
+                return runtimeParametersAndReturn;
+            }
+        }
+
+        private volatile RuntimeParameterInfo[] _lazyRuntimeParametersAndReturn;
 
         internal MethodInvoker MethodInvoker
         {
