@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -191,7 +191,35 @@ namespace System
                 return kind;
             }
 
-            public LowLevelDictionary<string, TimeZoneInfo> m_systemTimeZones;
+            public struct OrdinalIgnoreCaseString : IEquatable<OrdinalIgnoreCaseString>
+            {
+                public static implicit operator string(OrdinalIgnoreCaseString ignoreCaseString)
+                {
+                    return ignoreCaseString._string;
+                }
+
+                public static implicit operator OrdinalIgnoreCaseString(string input)
+                {
+                    return new OrdinalIgnoreCaseString() { _string = input };
+                }
+
+                public override int GetHashCode()
+                {
+                    return FormatProvider.GetHashCodeOrdinalIgnoreCase(_string);
+                }
+
+                public bool Equals(OrdinalIgnoreCaseString other)
+                {
+                    if (_string.Length != other._string.Length)
+                    {
+                        return false;
+                    }
+                    return (String.Compare(_string, other._string, StringComparison.OrdinalIgnoreCase) == 0);                    
+                }
+
+                private string _string;
+            }
+            public LowLevelDictionary<OrdinalIgnoreCaseString, TimeZoneInfo> m_systemTimeZones;
             private volatile ReadOnlyCollection<TimeZoneInfo> _readonlySystemTimeZones;
             public void EnumerateSystemTimes()
             {
@@ -2397,7 +2425,7 @@ namespace System
             if (result == TimeZoneInfoResult.Success)
             {
                 if (cachedData.m_systemTimeZones == null)
-                    cachedData.m_systemTimeZones = new LowLevelDictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase);
+                    cachedData.m_systemTimeZones = new LowLevelDictionary<CachedData.OrdinalIgnoreCaseString, TimeZoneInfo>();
 
                 cachedData.m_systemTimeZones.Add(timeZoneInformation.TimeZoneKeyName, match);
 

@@ -388,8 +388,8 @@ namespace Internal.Runtime
                 UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
                 fixed (EEType* pThis = &this)
                 {
-                    // Number of generic arguments is the first DWORD of the composition stream.
-                    return **(UInt32**)((byte*)pThis + cbOffset);
+                    // Number of generic arguments is the first UInt16 of the composition stream.
+                    return **(UInt16**)((byte*)pThis + cbOffset);
                 }
             }
         }
@@ -402,7 +402,7 @@ namespace Internal.Runtime
                 UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
                 fixed (EEType* pThis = &this)
                 {
-                    // Generic arguments follow after a (padded) DWORD specifying their count
+                    // Generic arguments follow after a (padded) UInt16 specifying their count
                     // in the generic composition stream.
                     return ((*(EEType***)((byte*)pThis + cbOffset)) + 1);
                 }

@@ -42,7 +42,7 @@ namespace System.Threading
     //      NativeMethods.SetThreadCulture(args.CurrentValue.LCID);
     //   });
     //
-    public sealed class AsyncLocal<T> : IAsyncLocal
+    public sealed class AsyncLocal<T> : IAsyncLocal, IEquatable<IAsyncLocal>
     {
         private readonly Action<AsyncLocalValueChangedArgs<T>> m_valueChangedHandler;
 
@@ -82,12 +82,17 @@ namespace System.Threading
             T currentValue = currentValueObj == null ? default(T) : (T)currentValueObj;
             m_valueChangedHandler(new AsyncLocalValueChangedArgs<T>(previousValue, currentValue, contextChanged));
         }
+
+        bool IEquatable<IAsyncLocal>.Equals(IAsyncLocal other)
+        {
+            return this == other;
+        }
     }
 
     //
     // Interface to allow non-generic code in ExecutionContext to call into the generic AsyncLocal<T> type.
     //
-    internal interface IAsyncLocal
+    internal interface IAsyncLocal : IEquatable<IAsyncLocal>
     {
         void OnValueChanged(object previousValue, object currentValue, bool contextChanged);
     }
