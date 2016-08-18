@@ -218,8 +218,13 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                LowLevelList<RuntimeTypeInfo> genericTypeParameters = new LowLevelList<RuntimeTypeInfo>();
                 Method method = _common.MethodHandle.GetMethod(_common.Reader);
+                int genericParametersCount = method.GenericParameters.Count;
+                if (genericParametersCount == 0)
+                    return Array.Empty<RuntimeTypeInfo>();
+
+                RuntimeTypeInfo[] genericTypeParameters = new RuntimeTypeInfo[genericParametersCount];
+                int i = 0;
                 foreach (GenericParameterHandle genericParameterHandle in method.GenericParameters)
                 {
                     RuntimeNamedMethodInfo owningMethod = this;
@@ -230,9 +235,9 @@ namespace System.Reflection.Runtime.MethodInfos
                         owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(MethodHandle, genericTypeDefinition, genericTypeDefinition);
                     }
                     RuntimeTypeInfo genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
-                    genericTypeParameters.Add(genericParameterType);
+                    genericTypeParameters[i++] = genericParameterType;
                 }
-                return genericTypeParameters.ToArray();
+                return genericTypeParameters;
             }
         }
 
