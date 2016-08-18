@@ -88,20 +88,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            var builder = new ObjectDataBuilder(factory);
-            builder.DefinedSymbols.Add(this);
-
-            builder.RequirePointerAlignment();
-
-            builder.EmitInt(_details.Instantiation.Length);
-
-            // TODO: general purpose padding
-            if (factory.Target.PointerSize == 8)
-                builder.EmitInt(0);
-
-            foreach (var typeArg in _details.Instantiation)
-                builder.EmitPointerReloc(factory.NecessaryTypeSymbol(typeArg));
-
             bool hasVariance = false;
             foreach (var argVariance in _details.Variance)
             {
@@ -111,6 +97,23 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 }
             }
+
+            var builder = new ObjectDataBuilder(factory);
+            builder.DefinedSymbols.Add(this);
+
+            builder.RequirePointerAlignment();
+
+            builder.EmitShort((short)checked((UInt16)_details.Instantiation.Length));
+
+            builder.EmitByte((byte)(hasVariance ? 1 : 0));
+
+            // TODO: general purpose padding
+            builder.EmitByte(0);
+            if (factory.Target.PointerSize == 8)
+                builder.EmitInt(0);
+
+            foreach (var typeArg in _details.Instantiation)
+                builder.EmitPointerReloc(factory.NecessaryTypeSymbol(typeArg));
 
             if (hasVariance)
             {

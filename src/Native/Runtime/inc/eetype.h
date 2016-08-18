@@ -658,7 +658,7 @@ public:
     class GenericComposition
     {
         UInt16              m_arity;
-        bool                m_hasVariance;
+        UInt8               m_hasVariance;
 #ifdef BINDER
         UIntTarget          m_arguments[/*arity*/1];  // to make the size come out right for cross-bind
 #else

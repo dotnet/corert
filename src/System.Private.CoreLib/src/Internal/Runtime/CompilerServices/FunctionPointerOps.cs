@@ -11,8 +11,34 @@ namespace Internal.Runtime.CompilerServices
 {
     public static class FunctionPointerOps
     {
-        private struct GenericMethodDescriptorInfo
+        private struct GenericMethodDescriptorInfo : IEquatable<GenericMethodDescriptorInfo>
         {
+            public override bool Equals(object obj)
+            {
+                if (!(obj is GenericMethodDescriptorInfo))
+                    return false;
+
+                return Equals((GenericMethodDescriptorInfo)obj);
+            }
+
+            public bool Equals(GenericMethodDescriptorInfo other)
+            {
+                if (MethodFunctionPointer != other.MethodFunctionPointer)
+                    return false;
+
+                if (InstantiationArgument != other.InstantiationArgument)
+                    return false;
+
+                return true;
+            }
+
+            public override int GetHashCode()
+            {
+                int a = InstantiationArgument.GetHashCode();
+                int b = MethodFunctionPointer.GetHashCode();
+                return (a ^ b) + (a << 11) - (b >> 13);
+            }
+
             public IntPtr MethodFunctionPointer;
             public IntPtr InstantiationArgument;
         }
@@ -40,28 +66,7 @@ namespace Internal.Runtime.CompilerServices
         private const uint c_genericDictionaryChunkSize = 1024;
         private const int c_genericFunctionPointerOffset = 2;
         private static LowLevelList<IntPtr> s_genericFunctionPointerCollection = new LowLevelList<IntPtr>();
-        private static LowLevelDictionary<GenericMethodDescriptorInfo, uint> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, uint>(new GenericMethodFunctionPointerDescriptorHashingType());
-
-        private class GenericMethodFunctionPointerDescriptorHashingType : IEqualityComparer<GenericMethodDescriptorInfo>
-        {
-            bool IEqualityComparer<GenericMethodDescriptorInfo>.Equals(GenericMethodDescriptorInfo x, GenericMethodDescriptorInfo y)
-            {
-                if (x.MethodFunctionPointer != y.MethodFunctionPointer)
-                    return false;
-
-                if (x.InstantiationArgument != y.InstantiationArgument)
-                    return false;
-
-                return true;
-            }
-
-            int IEqualityComparer<GenericMethodDescriptorInfo>.GetHashCode(GenericMethodDescriptorInfo obj)
-            {
-                int a = obj.InstantiationArgument.GetHashCode();
-                int b = obj.MethodFunctionPointer.GetHashCode();
-                return (a ^ b) + (a << 11) - (b >> 13);
-            }
-        }
+        private static LowLevelDictionary<GenericMethodDescriptorInfo, uint> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, uint>();
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
