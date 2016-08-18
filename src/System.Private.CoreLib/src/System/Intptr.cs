@@ -22,7 +22,7 @@ namespace System
     // The IntPtr type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type void *
 
-    public struct IntPtr
+    public struct IntPtr : IEquatable<IntPtr>
     {
         // WARNING: We allow diagnostic tools to directly inspect this member (_value). 
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
@@ -145,6 +145,11 @@ namespace System
 #else
             return (long)(int)value._value;
 #endif
+        }
+
+        unsafe bool IEquatable<IntPtr>.Equals(IntPtr value)
+        {
+            return _value == value._value;
         }
 
         [Intrinsic]
