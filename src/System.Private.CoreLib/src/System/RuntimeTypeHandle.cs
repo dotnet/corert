@@ -16,7 +16,7 @@ using Internal.Reflection.Core.NonPortable;
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct RuntimeTypeHandle
+    public unsafe struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>
     {
         //
         // Caution: There can be and are multiple EEType for the "same" type (e.g. int[]). That means
