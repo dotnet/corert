@@ -9,6 +9,8 @@ using global::System.Diagnostics;
 using global::System.Collections.Generic;
 using global::System.Runtime.InteropServices;
 
+using global::Internal.IO;
+
 using global::Internal.Runtime.Augments;
 
 using global::Internal.Metadata.NativeFormat;
@@ -99,7 +101,7 @@ namespace Internal.Reflection.Execution
 
                         using (Stream s = ReadFileFromAppPackage(extractedResourcesIndexFile))
                         {
-                            StreamReader sr = new StreamReader(s);
+                            LowLevelStreamReader sr = new LowLevelStreamReader(s);
 
                             int index = 0;
                             String line;
