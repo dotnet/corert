@@ -1315,8 +1315,14 @@ namespace Internal.Reflection.Execution
             {
                 FieldAccessor result = TryGetFieldAccessor_Inner(moduleHandle, declaringTypeHandle, fieldTypeHandle, fieldHandle, CanonicalFormKind.Specific);
 
-                if (result == null && RuntimeAugments.IsDynamicType(declaringTypeHandle))
-                    result = TryGetFieldAccessor_Inner(moduleHandle, declaringTypeHandle, fieldTypeHandle, fieldHandle, CanonicalFormKind.Universal);
+                if (result != null)
+                    return result;
+            }
+
+            // If we can't find an specific canonical match, look for a universal match
+            foreach (var moduleHandle in ModuleList.Enumerate(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
+            {
+                FieldAccessor result = TryGetFieldAccessor_Inner(moduleHandle, declaringTypeHandle, fieldTypeHandle, fieldHandle, CanonicalFormKind.Universal);
 
                 if (result != null)
                     return result;
@@ -1340,7 +1346,6 @@ namespace Internal.Reflection.Execution
             CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
             var lookup = fieldHashtable.Lookup(canonWrapper.LookupHashCode);
 
-            bool isDynamicType = RuntimeAugments.IsDynamicType(declaringTypeHandle);
             string fieldName = null;
 
             NativeParser entryParser;
@@ -1356,7 +1361,7 @@ namespace Internal.Reflection.Execution
 
                 RuntimeTypeHandle entryDeclaringTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                 if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle)
-                    && !(isDynamicType && canonWrapper.IsCanonicallyEquivalent(entryDeclaringTypeHandle)))
+                    && !(canonWrapper.IsCanonicallyEquivalent(entryDeclaringTypeHandle)))
                     continue;
 
                 if (entryFlags.HasFlag(FieldTableFlags.HasMetadataHandle))
@@ -1430,7 +1435,44 @@ namespace Internal.Reflection.Execution
                         }
 
                     case FieldTableFlags.ThreadStatic:
-                        if (canonFormKind == CanonicalFormKind.Universal)
+                        bool useFieldOffsetAccessor = false;
+                        IntPtr fieldAddressCookie = IntPtr.Zero;
+
+                        if (canonFormKind != CanonicalFormKind.Universal)
+                        {
+                            fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule, fieldOffset);
+                        }
+
+                        if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
+                        {
+                            // In this case we didn't find an exact match, but we did find a canonically equivalent match
+                            // We might be in the dynamic type case, or the canonically equivalent, but not the same case.
+
+                            if (RuntimeAugments.IsDynamicType(declaringTypeHandle))
+                            {
+                                if (canonFormKind == CanonicalFormKind.Universal)
+                                {
+                                    // If the declaring type is dynamic, and we found a universal canon match, we should use the universal canon path as fieldOffset will be meaningful
+                                    useFieldOffsetAccessor = true;
+                                }
+                                else
+                                {
+                                    // We can use the non-universal path, as the fieldAddressCookie has two fields (field offset, and type offset), and for dynamic types, the type offset is ignored
+                                    useFieldOffsetAccessor = false;
+                                }
+                            }
+                            else
+                            {
+                                // We're working with a statically generated type, but we didn't find an exact match in the tables
+                                if (canonFormKind != CanonicalFormKind.Universal)
+                                    fieldOffset = checked((int)TypeLoaderEnvironment.GetThreadStaticTypeOffsetFromThreadStaticCookie(fieldAddressCookie));
+
+                                fieldAddressCookie = TypeLoaderEnvironment.Instance.TryGetThreadStaticFieldOffsetCookieForTypeAndFieldOffset(declaringTypeHandle, checked((uint)fieldOffset));
+                                useFieldOffsetAccessor = false;
+                            }
+                        }
+
+                        if (useFieldOffsetAccessor)
                         {
                             return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                                 (FieldAccessor)new ValueTypeFieldAccessorForUniversalThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldOffset, fieldTypeHandle) :
@@ -1438,8 +1480,6 @@ namespace Internal.Reflection.Execution
                         }
                         else
                         {
-                            IntPtr fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule, fieldOffset);
-
                             return RuntimeAugments.IsValueType(fieldTypeHandle) ?
                                 (FieldAccessor)new ValueTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAddressCookie, fieldTypeHandle) :
                                 (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(TryGetStaticClassConstructionContext(declaringTypeHandle), declaringTypeHandle, fieldAddressCookie, fieldTypeHandle);
