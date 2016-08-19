@@ -117,19 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="InvalidOperation_NoPublicRemoveMethod" xml:space="preserve">
-    <value>Cannot remove the event handler since no public remove method exists for the event.</value>
-  </data>
-  <data name="InvalidOperation_NoPublicAddMethod" xml:space="preserve">
-    <value>Cannot add the event handler since no public add method exists for the event.</value>
-  </data>
-  <data name="RFLCT_Ambiguous" xml:space="preserve">
-    <value>Ambiguous match found.</value>
-  </data>
-  <data name="InvalidOperation_TooEarly" xml:space="preserve">
-    <value>Internal Error: This operation cannot be invoked in an eager class constructor.</value>
-  </data>
-  <data name="NotSupported_SubclassOverride" xml:space="preserve">
-    <value>Derived classes must provide an implementation.</value>
-  </data>
 </root>

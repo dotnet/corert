@@ -33,7 +33,6 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Extensions.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.TypeExtensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Contracts.dll" />
