@@ -242,6 +242,16 @@ namespace Internal.Runtime.TypeLoader
             throw new NotImplementedException();
         }
 
+        public IntPtr TryGetThreadStaticFieldOffsetCookieForTypeAndFieldOffset(RuntimeTypeHandle runtimeTypeHandle, uint fieldOffset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static uint GetThreadStaticTypeOffsetFromThreadStaticCookie(IntPtr threadStaticFieldCookie)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
             throw new NotImplementedException();
