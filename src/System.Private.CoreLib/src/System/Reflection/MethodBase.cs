@@ -20,7 +20,6 @@ namespace System.Reflection
         {
         }
 
-
         public abstract MethodAttributes Attributes { get; }
 
         public virtual CallingConventions CallingConvention { get { return CallingConventions.Standard; } }

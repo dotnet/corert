@@ -22,9 +22,6 @@ using Internal.Reflection.Tracing;
 using Internal.Metadata.NativeFormat;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
-using RuntimeType = Internal.Reflection.Core.NonPortable.RuntimeType;
-using RuntimeTypeTemporary = System.Reflection.Runtime.Types.RuntimeTypeTemporary;
-
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -48,7 +45,6 @@ namespace System.Reflection.Runtime.TypeInfos
     {
         protected RuntimeTypeInfo()
         {
-            _legacyAsType = new RuntimeTypeTemporary(this);
         }
          
         public abstract override Assembly Assembly { get; }
@@ -72,7 +68,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type AsType()
         {
-            return _legacyAsType;
+            return this;
         }
 
         public abstract override TypeAttributes Attributes { get; }
@@ -260,14 +256,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         public sealed override bool Equals(object obj)
         {
-            if (object.ReferenceEquals(this, obj))
-                return true;
-
-            // TODO https://github.com/dotnet/corefx/issues/9805: This makes Equals() act as if Type and TypeInfo are already the same instance. This extra check will go away once they actually are the same instance.
-            if (obj is RuntimeType && object.ReferenceEquals(_legacyAsType, obj))
-                return true;
-
-            return false;
+            return object.ReferenceEquals(this, obj);
         }
 
         public sealed override int GetHashCode()
@@ -488,11 +477,9 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         //
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once the type hierarchy is switched over, must replace "virtual" with "override".
-        //
         // Left unsealed as constructed generic types must override.
         //
-        public virtual bool IsConstructedGenericType
+        public override bool IsConstructedGenericType
         {
             get
             {
@@ -711,10 +698,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract override string ToString();
 
-        //
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once the type hierarchy is switched over, must add "sealed override".
-        //
-        public RuntimeTypeHandle TypeHandle
+        public sealed override RuntimeTypeHandle TypeHandle
         {
             get
             {
@@ -742,20 +726,26 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected abstract int InternalGetHashCode();
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once IsArrayImpl() is added back to System.Type, this method will need an "override" keyword.
-        protected virtual bool IsArrayImpl()
+        //
+        // Left unsealed since array types must override.
+        //
+        protected override bool IsArrayImpl()
         {
             return false;
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once IsByRefImpl() is added back to System.Type, this method will need an "override" keyword.
-        protected virtual bool IsByRefImpl()
+        //
+        // Left unsealed since byref types must override.
+        //
+        protected override bool IsByRefImpl()
         {
             return false;
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once IsPointerImpl() is added back to System.Type, this method will need an "override" keyword.
-        protected virtual bool IsPointerImpl()
+        //
+        // Left unsealed since pointer types must override.
+        //
+        protected override bool IsPointerImpl()
         {
             return false;
         }
@@ -1199,9 +1189,6 @@ namespace System.Reflection.Runtime.TypeInfos
         private volatile TypeInfoCachedData _lazyTypeInfoCachedData;
 
         private String _debugName;
-
-        // TODO https://github.com/dotnet/corefx/issues/9805: This will go away once Type and TypeInfo are the same object.
-        private readonly RuntimeType _legacyAsType;
     }
 }
 
