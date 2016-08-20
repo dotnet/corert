@@ -63,13 +63,7 @@ namespace Internal.Runtime
                 // instantiation information and use the generic type definition, which will always be module
                 // local. We know this lookup will succeed since we're dealing with a unified generic type
                 // and the unification process requires this metadata.
-                EETypeRef* pInstantiation;
-                int arity;
-                GenericVariance* pVarianceInfo;
-                EEType* pGenericType = InternalCalls.RhGetGenericInstantiation(pThis,
-                                                                                &arity,
-                                                                                &pInstantiation,
-                                                                                &pVarianceInfo);
+                EEType* pGenericType = pThis->GenericDefinition;
 
                 Debug.Assert(pGenericType != null, "Generic type expected");
 
@@ -119,23 +113,6 @@ namespace Internal.Runtime
             }
 
             return false;
-        }
-    }
-
-    // Wrapper around EEType pointers that may be indirected through the IAT if their low bit is set.
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct EETypeRef
-    {
-        private byte* _value;
-
-        public EEType* Value
-        {
-            get
-            {
-                if (((int)_value & 1) == 0)
-                    return (EEType*)_value;
-                return *(EEType**)(_value - 1);
-            }
         }
     }
 

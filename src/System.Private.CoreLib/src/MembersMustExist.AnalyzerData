@@ -166,7 +166,6 @@ internal static extern System.IntPtr System.Runtime.RuntimeImports.RhResolveDisp
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhResolveDispatchOnType(System.EETypePtr instanceType, System.EETypePtr interfaceType, ushort slot)
 internal static extern void* System.Runtime.RuntimeImports.RhSetErrorInfoBuffer(void* pNewBuffer)
 internal static extern void System.Runtime.RuntimeImports.RhSetGcLatencyMode(System.Runtime.GCLatencyMode newLatencyMode)
-internal static extern bool System.Runtime.RuntimeImports.RhSetGenericInstantiation(System.EETypePtr pEEType, System.EETypePtr pEETypeDef, int arity, System.EETypePtr* pInstantiation)
 internal static extern void System.Runtime.RuntimeImports.RhSetLohCompactionMode(int newLohCompactionMode)
 internal static extern void System.Runtime.RuntimeImports.RhSpinWait(int iterations)
 internal static extern void System.Runtime.RuntimeImports.RhSuppressFinalize(object obj)

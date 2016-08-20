@@ -322,13 +322,10 @@ namespace System.Runtime
             if (pTargetType->HasGenericVariance)
             {
                 // Grab details about the instantiation of the target generic interface.
-                EETypeRef* pTargetInstantiation;
-                int targetArity;
-                GenericVariance* pTargetVarianceInfo;
-                EEType* pTargetGenericType = InternalCalls.RhGetGenericInstantiation(pTargetType,
-                                                                                      &targetArity,
-                                                                                      &pTargetInstantiation,
-                                                                                      &pTargetVarianceInfo);
+                EEType* pTargetGenericType = pTargetType->GenericDefinition;
+                EETypeRef* pTargetInstantiation = pTargetType->GenericArguments;
+                int targetArity = (int)pTargetType->GenericArity;
+                GenericVariance* pTargetVarianceInfo = pTargetType->GenericVariance;
 
                 Debug.Assert(pTargetVarianceInfo != null, "did not expect empty variance info");
 
@@ -344,20 +341,18 @@ namespace System.Runtime
                     // are not variant.
                     if (pInterfaceType->HasGenericVariance)
                     {
-                        // Grab instantiation details for the candidate interface.
-                        EETypeRef* pInterfaceInstantiation;
-                        int interfaceArity;
-                        GenericVariance* pInterfaceVarianceInfo;
-                        EEType* pInterfaceGenericType = InternalCalls.RhGetGenericInstantiation(pInterfaceType,
-                                                                                                 &interfaceArity,
-                                                                                                 &pInterfaceInstantiation,
-                                                                                                 &pInterfaceVarianceInfo);
-
-                        Debug.Assert(pInterfaceVarianceInfo != null, "did not expect empty variance info");
+                        EEType* pInterfaceGenericType = pInterfaceType->GenericDefinition;
 
                         // If the generic types aren't the same then the types aren't compatible.
                         if (pInterfaceGenericType != pTargetGenericType)
                             continue;
+
+                        // Grab instantiation details for the candidate interface.
+                        EETypeRef* pInterfaceInstantiation = pInterfaceType->GenericArguments;
+                        int interfaceArity = (int)pInterfaceType->GenericArity;
+                        GenericVariance* pInterfaceVarianceInfo = pInterfaceType->GenericVariance;
+
+                        Debug.Assert(pInterfaceVarianceInfo != null, "did not expect empty variance info");
 
                         // The types represent different instantiations of the same generic type. The
                         // arity of both had better be the same.
@@ -380,29 +375,26 @@ namespace System.Runtime
         // Compare two types to see if they are compatible via generic variance.
         static private unsafe bool TypesAreCompatibleViaGenericVariance(EEType* pSourceType, EEType* pTargetType)
         {
-            // Get generic instantiation metadata for both types.
-
-            EETypeRef* pTargetInstantiation;
-            int targetArity;
-            GenericVariance* pTargetVarianceInfo;
-            EEType* pTargetGenericType = InternalCalls.RhGetGenericInstantiation(pTargetType,
-                                                                                 &targetArity,
-                                                                                 &pTargetInstantiation,
-                                                                                 &pTargetVarianceInfo);
-            Debug.Assert(pTargetVarianceInfo != null, "did not expect empty variance info");
-
-            EETypeRef* pSourceInstantiation;
-            int sourceArity;
-            GenericVariance* pSourceVarianceInfo;
-            EEType* pSourceGenericType = InternalCalls.RhGetGenericInstantiation(pSourceType,
-                                                                                 &sourceArity,
-                                                                                 &pSourceInstantiation,
-                                                                                 &pSourceVarianceInfo);
-            Debug.Assert(pSourceVarianceInfo != null, "did not expect empty variance info");
+            EEType* pTargetGenericType = pTargetType->GenericDefinition;
+            EEType* pSourceGenericType = pSourceType->GenericDefinition;
 
             // If the generic types aren't the same then the types aren't compatible.
             if (pSourceGenericType == pTargetGenericType)
             {
+                // Get generic instantiation metadata for both types.
+
+                EETypeRef* pTargetInstantiation = pTargetType->GenericArguments;
+                int targetArity = (int)pTargetType->GenericArity;
+                GenericVariance* pTargetVarianceInfo = pTargetType->GenericVariance;
+
+                Debug.Assert(pTargetVarianceInfo != null, "did not expect empty variance info");
+
+                EETypeRef* pSourceInstantiation = pSourceType->GenericArguments;
+                int sourceArity = (int)pSourceType->GenericArity;
+                GenericVariance* pSourceVarianceInfo = pSourceType->GenericVariance;
+
+                Debug.Assert(pSourceVarianceInfo != null, "did not expect empty variance info");
+
                 // The types represent different instantiations of the same generic type. The
                 // arity of both had better be the same.
                 Debug.Assert(targetArity == sourceArity, "arity mismatch betweeen generic instantiations");
