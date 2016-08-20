@@ -30,10 +30,8 @@
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
     
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />  
   </ItemGroup>
 
   <ItemGroup>
@@ -115,7 +113,6 @@
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeParser.cs" />
-    <Compile Include="System\Reflection\Runtime\Types\RuntimeTypeTemporary.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
@@ -129,9 +126,6 @@
     <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\InvokerOptions.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeType.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />

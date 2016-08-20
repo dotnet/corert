@@ -26,9 +26,7 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />  
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />  
-    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />  
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />  
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.TypeExtensions.dll" />  
   </ItemGroup>
@@ -57,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
+    <Compile Include="Internal\IO\LowLevelStreamReader.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidator.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />

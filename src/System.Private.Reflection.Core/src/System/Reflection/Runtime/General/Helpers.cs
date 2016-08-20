@@ -36,19 +36,6 @@ namespace System.Reflection.Runtime.General
             return clonedTypes;
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: This overload can and should be deleted once TypeInfo derives from Type again.
-        public static Type[] CloneTypeArray(this TypeInfo[] types)
-        {
-            if (types.Length == 0)
-                return Array.Empty<Type>();
-            Type[] clonedTypes = new Type[types.Length];
-            for (int i = 0; i < types.Length; i++)
-            {
-                clonedTypes[i] = types[i].AsType();
-            }
-            return clonedTypes;
-        }
-
         public static bool IsRuntimeImplemented(this Type type)
         {
             return type is IRuntimeImplementedType;
@@ -73,27 +60,13 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeNamedTypeInfo CastToRuntimeNamedTypeInfo(this Type type)
         {
-            Debug.Assert(type != null);
-            TypeInfo typeInfo = type.GetTypeInfo();
-            Debug.Assert(typeInfo is RuntimeNamedTypeInfo);
-            return (RuntimeNamedTypeInfo)typeInfo;
+            Debug.Assert(type is RuntimeNamedTypeInfo);
+            return (RuntimeNamedTypeInfo)type;
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo and Type are the same instance, this implementation should just cast and not call GetTypeInfo().
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo CastToRuntimeTypeInfo(this Type type)
         {
-            Debug.Assert(type != null);
-            TypeInfo typeInfo = type.GetTypeInfo();
-            Debug.Assert(typeInfo is RuntimeTypeInfo);
-            return (RuntimeTypeInfo)typeInfo;
-        }
-
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo and Type are the same instance, this overload should away.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeTypeInfo CastToRuntimeTypeInfo(this TypeInfo type)
-        {
-            Debug.Assert(type != null);
             Debug.Assert(type is RuntimeTypeInfo);
             return (RuntimeTypeInfo)type;
         }
@@ -102,7 +75,7 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Type CastToType(this TypeInfo typeInfo)
         {
-            return typeInfo == null ? null : typeInfo.AsType();
+            return typeInfo;
         }
     }
 }

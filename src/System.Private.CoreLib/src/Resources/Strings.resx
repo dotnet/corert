@@ -1368,6 +1368,9 @@
   <data name="InvalidOperation_ComputerName" xml:space="preserve">
     <value>Computer name could not be obtained.</value>
   </data>
+  <data name="RFLCT_Ambiguous" xml:space="preserve">
+    <value>Ambiguous match found.</value>
+  </data>
   <data name="AggregateException_ctor_DefaultMessage" xml:space="preserve">
     <value>One or more errors occurred.</value>
   </data>
@@ -1584,5 +1587,26 @@
   </data>
   <data name="SynchronizationLockException_MisMatchedRead" xml:space="preserve">
     <value>The read lock is being released without being held.</value>
+  </data>
+  <data name="InvalidOperation_TimeoutsNotSupported" xml:space="preserve">
+    <value>Timeouts are not supported on this stream.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed Stream.</value>
+  </data>
+  <data name="NotSupported_SubclassOverride" xml:space="preserve">
+    <value>Derived classes must provide an implementation.</value>
+  </data>
+  <data name="InvalidOperation_NoPublicRemoveMethod" xml:space="preserve">
+    <value>Cannot remove the event handler since no public remove method exists for the event.</value>
+  </data>
+  <data name="InvalidOperation_NoPublicAddMethod" xml:space="preserve">
+    <value>Cannot add the event handler since no public add method exists for the event.</value>
   </data>
 </root>
