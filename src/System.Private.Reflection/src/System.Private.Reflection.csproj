@@ -28,17 +28,6 @@
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\SR.Core.cs">
-      <Link>Resources\Common</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\NotImplemented.cs">
-      <Link>System\NotImplemented.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\System\__HResults.cs">
-      <Link>System\__HResults.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="Internal\Reflection\Augments\TypeForwarders.cs" />
     <Compile Include="System\Reflection\TypeForwarders.cs" />
   </ItemGroup>
