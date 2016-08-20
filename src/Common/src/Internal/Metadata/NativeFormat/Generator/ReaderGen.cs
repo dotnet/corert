@@ -277,7 +277,9 @@ class ReaderGen : CsWriter
                 WriteLine("if (IsNull(handle))");
                 WriteLine("    return new ConstantStringValue();");
             }
-            WriteLine($"var record = new {record.Name}() {{ _reader = this, _handle = handle }};");
+            WriteLine($"{record.Name} record;");
+            WriteLine("record._reader = this;");
+            WriteLine("record._handle = handle;");
             WriteLine("var offset = (uint)handle.Offset;");
             foreach (var member in record.Members)
             {

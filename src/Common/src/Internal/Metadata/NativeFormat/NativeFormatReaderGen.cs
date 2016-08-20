@@ -10608,7 +10608,9 @@ namespace Internal.Metadata.NativeFormat
     {
         public ArraySignature GetArraySignature(ArraySignatureHandle handle)
         {
-            var record = new ArraySignature() { _reader = this, _handle = handle };
+            ArraySignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._elementType);
             offset = _streamReader.Read(offset, out record._rank);
@@ -10619,7 +10621,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ByReferenceSignature GetByReferenceSignature(ByReferenceSignatureHandle handle)
         {
-            var record = new ByReferenceSignature() { _reader = this, _handle = handle };
+            ByReferenceSignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._type);
             return record;
@@ -10627,7 +10631,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantBooleanArray GetConstantBooleanArray(ConstantBooleanArrayHandle handle)
         {
-            var record = new ConstantBooleanArray() { _reader = this, _handle = handle };
+            ConstantBooleanArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10635,7 +10641,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantBooleanValue GetConstantBooleanValue(ConstantBooleanValueHandle handle)
         {
-            var record = new ConstantBooleanValue() { _reader = this, _handle = handle };
+            ConstantBooleanValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10643,7 +10651,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantBoxedEnumValue GetConstantBoxedEnumValue(ConstantBoxedEnumValueHandle handle)
         {
-            var record = new ConstantBoxedEnumValue() { _reader = this, _handle = handle };
+            ConstantBoxedEnumValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             offset = _streamReader.Read(offset, out record._type);
@@ -10652,7 +10662,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantByteArray GetConstantByteArray(ConstantByteArrayHandle handle)
         {
-            var record = new ConstantByteArray() { _reader = this, _handle = handle };
+            ConstantByteArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10660,7 +10672,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantByteValue GetConstantByteValue(ConstantByteValueHandle handle)
         {
-            var record = new ConstantByteValue() { _reader = this, _handle = handle };
+            ConstantByteValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10668,7 +10682,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantCharArray GetConstantCharArray(ConstantCharArrayHandle handle)
         {
-            var record = new ConstantCharArray() { _reader = this, _handle = handle };
+            ConstantCharArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10676,7 +10692,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantCharValue GetConstantCharValue(ConstantCharValueHandle handle)
         {
-            var record = new ConstantCharValue() { _reader = this, _handle = handle };
+            ConstantCharValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10684,7 +10702,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantDoubleArray GetConstantDoubleArray(ConstantDoubleArrayHandle handle)
         {
-            var record = new ConstantDoubleArray() { _reader = this, _handle = handle };
+            ConstantDoubleArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10692,7 +10712,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantDoubleValue GetConstantDoubleValue(ConstantDoubleValueHandle handle)
         {
-            var record = new ConstantDoubleValue() { _reader = this, _handle = handle };
+            ConstantDoubleValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10700,7 +10722,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantHandleArray GetConstantHandleArray(ConstantHandleArrayHandle handle)
         {
-            var record = new ConstantHandleArray() { _reader = this, _handle = handle };
+            ConstantHandleArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10708,7 +10732,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantInt16Array GetConstantInt16Array(ConstantInt16ArrayHandle handle)
         {
-            var record = new ConstantInt16Array() { _reader = this, _handle = handle };
+            ConstantInt16Array record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10716,7 +10742,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantInt16Value GetConstantInt16Value(ConstantInt16ValueHandle handle)
         {
-            var record = new ConstantInt16Value() { _reader = this, _handle = handle };
+            ConstantInt16Value record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10724,7 +10752,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantInt32Array GetConstantInt32Array(ConstantInt32ArrayHandle handle)
         {
-            var record = new ConstantInt32Array() { _reader = this, _handle = handle };
+            ConstantInt32Array record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10732,7 +10762,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantInt32Value GetConstantInt32Value(ConstantInt32ValueHandle handle)
         {
-            var record = new ConstantInt32Value() { _reader = this, _handle = handle };
+            ConstantInt32Value record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10740,7 +10772,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantInt64Array GetConstantInt64Array(ConstantInt64ArrayHandle handle)
         {
-            var record = new ConstantInt64Array() { _reader = this, _handle = handle };
+            ConstantInt64Array record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10748,7 +10782,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantInt64Value GetConstantInt64Value(ConstantInt64ValueHandle handle)
         {
-            var record = new ConstantInt64Value() { _reader = this, _handle = handle };
+            ConstantInt64Value record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10756,14 +10792,18 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantReferenceValue GetConstantReferenceValue(ConstantReferenceValueHandle handle)
         {
-            var record = new ConstantReferenceValue() { _reader = this, _handle = handle };
+            ConstantReferenceValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             return record;
         } // GetConstantReferenceValue
 
         public ConstantSByteArray GetConstantSByteArray(ConstantSByteArrayHandle handle)
         {
-            var record = new ConstantSByteArray() { _reader = this, _handle = handle };
+            ConstantSByteArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10771,7 +10811,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantSByteValue GetConstantSByteValue(ConstantSByteValueHandle handle)
         {
-            var record = new ConstantSByteValue() { _reader = this, _handle = handle };
+            ConstantSByteValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10779,7 +10821,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantSingleArray GetConstantSingleArray(ConstantSingleArrayHandle handle)
         {
-            var record = new ConstantSingleArray() { _reader = this, _handle = handle };
+            ConstantSingleArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10787,7 +10831,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantSingleValue GetConstantSingleValue(ConstantSingleValueHandle handle)
         {
-            var record = new ConstantSingleValue() { _reader = this, _handle = handle };
+            ConstantSingleValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10795,7 +10841,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantStringArray GetConstantStringArray(ConstantStringArrayHandle handle)
         {
-            var record = new ConstantStringArray() { _reader = this, _handle = handle };
+            ConstantStringArray record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10805,7 +10853,9 @@ namespace Internal.Metadata.NativeFormat
         {
             if (IsNull(handle))
                 return new ConstantStringValue();
-            var record = new ConstantStringValue() { _reader = this, _handle = handle };
+            ConstantStringValue record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10813,7 +10863,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantUInt16Array GetConstantUInt16Array(ConstantUInt16ArrayHandle handle)
         {
-            var record = new ConstantUInt16Array() { _reader = this, _handle = handle };
+            ConstantUInt16Array record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10821,7 +10873,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantUInt16Value GetConstantUInt16Value(ConstantUInt16ValueHandle handle)
         {
-            var record = new ConstantUInt16Value() { _reader = this, _handle = handle };
+            ConstantUInt16Value record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10829,7 +10883,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantUInt32Array GetConstantUInt32Array(ConstantUInt32ArrayHandle handle)
         {
-            var record = new ConstantUInt32Array() { _reader = this, _handle = handle };
+            ConstantUInt32Array record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10837,7 +10893,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantUInt32Value GetConstantUInt32Value(ConstantUInt32ValueHandle handle)
         {
-            var record = new ConstantUInt32Value() { _reader = this, _handle = handle };
+            ConstantUInt32Value record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10845,7 +10903,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantUInt64Array GetConstantUInt64Array(ConstantUInt64ArrayHandle handle)
         {
-            var record = new ConstantUInt64Array() { _reader = this, _handle = handle };
+            ConstantUInt64Array record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10853,7 +10913,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ConstantUInt64Value GetConstantUInt64Value(ConstantUInt64ValueHandle handle)
         {
-            var record = new ConstantUInt64Value() { _reader = this, _handle = handle };
+            ConstantUInt64Value record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._value);
             return record;
@@ -10861,7 +10923,9 @@ namespace Internal.Metadata.NativeFormat
 
         public CustomAttribute GetCustomAttribute(CustomAttributeHandle handle)
         {
-            var record = new CustomAttribute() { _reader = this, _handle = handle };
+            CustomAttribute record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._constructor);
             offset = _streamReader.Read(offset, out record._fixedArguments);
@@ -10871,7 +10935,9 @@ namespace Internal.Metadata.NativeFormat
 
         public Event GetEvent(EventHandle handle)
         {
-            var record = new Event() { _reader = this, _handle = handle };
+            Event record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._name);
@@ -10883,7 +10949,9 @@ namespace Internal.Metadata.NativeFormat
 
         public Field GetField(FieldHandle handle)
         {
-            var record = new Field() { _reader = this, _handle = handle };
+            Field record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._name);
@@ -10896,7 +10964,9 @@ namespace Internal.Metadata.NativeFormat
 
         public FieldSignature GetFieldSignature(FieldSignatureHandle handle)
         {
-            var record = new FieldSignature() { _reader = this, _handle = handle };
+            FieldSignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._type);
             return record;
@@ -10904,7 +10974,9 @@ namespace Internal.Metadata.NativeFormat
 
         public FixedArgument GetFixedArgument(FixedArgumentHandle handle)
         {
-            var record = new FixedArgument() { _reader = this, _handle = handle };
+            FixedArgument record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._type);
@@ -10914,7 +10986,9 @@ namespace Internal.Metadata.NativeFormat
 
         public GenericParameter GetGenericParameter(GenericParameterHandle handle)
         {
-            var record = new GenericParameter() { _reader = this, _handle = handle };
+            GenericParameter record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._number);
             offset = _streamReader.Read(offset, out record._flags);
@@ -10927,7 +11001,9 @@ namespace Internal.Metadata.NativeFormat
 
         public MemberReference GetMemberReference(MemberReferenceHandle handle)
         {
-            var record = new MemberReference() { _reader = this, _handle = handle };
+            MemberReference record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._parent);
             offset = _streamReader.Read(offset, out record._name);
@@ -10938,7 +11014,9 @@ namespace Internal.Metadata.NativeFormat
 
         public Method GetMethod(MethodHandle handle)
         {
-            var record = new Method() { _reader = this, _handle = handle };
+            Method record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._implFlags);
@@ -10952,7 +11030,9 @@ namespace Internal.Metadata.NativeFormat
 
         public MethodImpl GetMethodImpl(MethodImplHandle handle)
         {
-            var record = new MethodImpl() { _reader = this, _handle = handle };
+            MethodImpl record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._methodBody);
             offset = _streamReader.Read(offset, out record._methodDeclaration);
@@ -10961,7 +11041,9 @@ namespace Internal.Metadata.NativeFormat
 
         public MethodInstantiation GetMethodInstantiation(MethodInstantiationHandle handle)
         {
-            var record = new MethodInstantiation() { _reader = this, _handle = handle };
+            MethodInstantiation record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._method);
             offset = _streamReader.Read(offset, out record._genericTypeArguments);
@@ -10971,7 +11053,9 @@ namespace Internal.Metadata.NativeFormat
 
         public MethodSemantics GetMethodSemantics(MethodSemanticsHandle handle)
         {
-            var record = new MethodSemantics() { _reader = this, _handle = handle };
+            MethodSemantics record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._attributes);
             offset = _streamReader.Read(offset, out record._method);
@@ -10980,7 +11064,9 @@ namespace Internal.Metadata.NativeFormat
 
         public MethodSignature GetMethodSignature(MethodSignatureHandle handle)
         {
-            var record = new MethodSignature() { _reader = this, _handle = handle };
+            MethodSignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._callingConvention);
             offset = _streamReader.Read(offset, out record._genericParameterCount);
@@ -10992,7 +11078,9 @@ namespace Internal.Metadata.NativeFormat
 
         public MethodTypeVariableSignature GetMethodTypeVariableSignature(MethodTypeVariableSignatureHandle handle)
         {
-            var record = new MethodTypeVariableSignature() { _reader = this, _handle = handle };
+            MethodTypeVariableSignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._number);
             return record;
@@ -11000,7 +11088,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ModifiedType GetModifiedType(ModifiedTypeHandle handle)
         {
-            var record = new ModifiedType() { _reader = this, _handle = handle };
+            ModifiedType record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._isOptional);
             offset = _streamReader.Read(offset, out record._modifierType);
@@ -11010,7 +11100,9 @@ namespace Internal.Metadata.NativeFormat
 
         public NamedArgument GetNamedArgument(NamedArgumentHandle handle)
         {
-            var record = new NamedArgument() { _reader = this, _handle = handle };
+            NamedArgument record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._name);
@@ -11020,7 +11112,9 @@ namespace Internal.Metadata.NativeFormat
 
         public NamespaceDefinition GetNamespaceDefinition(NamespaceDefinitionHandle handle)
         {
-            var record = new NamespaceDefinition() { _reader = this, _handle = handle };
+            NamespaceDefinition record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._parentScopeOrNamespace);
             offset = _streamReader.Read(offset, out record._name);
@@ -11032,7 +11126,9 @@ namespace Internal.Metadata.NativeFormat
 
         public NamespaceReference GetNamespaceReference(NamespaceReferenceHandle handle)
         {
-            var record = new NamespaceReference() { _reader = this, _handle = handle };
+            NamespaceReference record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._parentScopeOrNamespace);
             offset = _streamReader.Read(offset, out record._name);
@@ -11041,7 +11137,9 @@ namespace Internal.Metadata.NativeFormat
 
         public Parameter GetParameter(ParameterHandle handle)
         {
-            var record = new Parameter() { _reader = this, _handle = handle };
+            Parameter record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._sequence);
@@ -11053,7 +11151,9 @@ namespace Internal.Metadata.NativeFormat
 
         public PointerSignature GetPointerSignature(PointerSignatureHandle handle)
         {
-            var record = new PointerSignature() { _reader = this, _handle = handle };
+            PointerSignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._type);
             return record;
@@ -11061,7 +11161,9 @@ namespace Internal.Metadata.NativeFormat
 
         public Property GetProperty(PropertyHandle handle)
         {
-            var record = new Property() { _reader = this, _handle = handle };
+            Property record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._name);
@@ -11074,7 +11176,9 @@ namespace Internal.Metadata.NativeFormat
 
         public PropertySignature GetPropertySignature(PropertySignatureHandle handle)
         {
-            var record = new PropertySignature() { _reader = this, _handle = handle };
+            PropertySignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._callingConvention);
             offset = _streamReader.Read(offset, out record._type);
@@ -11084,7 +11188,9 @@ namespace Internal.Metadata.NativeFormat
 
         public QualifiedField GetQualifiedField(QualifiedFieldHandle handle)
         {
-            var record = new QualifiedField() { _reader = this, _handle = handle };
+            QualifiedField record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._field);
             offset = _streamReader.Read(offset, out record._enclosingType);
@@ -11093,7 +11199,9 @@ namespace Internal.Metadata.NativeFormat
 
         public QualifiedMethod GetQualifiedMethod(QualifiedMethodHandle handle)
         {
-            var record = new QualifiedMethod() { _reader = this, _handle = handle };
+            QualifiedMethod record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._method);
             offset = _streamReader.Read(offset, out record._enclosingType);
@@ -11102,7 +11210,9 @@ namespace Internal.Metadata.NativeFormat
 
         public SZArraySignature GetSZArraySignature(SZArraySignatureHandle handle)
         {
-            var record = new SZArraySignature() { _reader = this, _handle = handle };
+            SZArraySignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._elementType);
             return record;
@@ -11110,7 +11220,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ScopeDefinition GetScopeDefinition(ScopeDefinitionHandle handle)
         {
-            var record = new ScopeDefinition() { _reader = this, _handle = handle };
+            ScopeDefinition record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._name);
@@ -11128,7 +11240,9 @@ namespace Internal.Metadata.NativeFormat
 
         public ScopeReference GetScopeReference(ScopeReferenceHandle handle)
         {
-            var record = new ScopeReference() { _reader = this, _handle = handle };
+            ScopeReference record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._name);
@@ -11144,7 +11258,9 @@ namespace Internal.Metadata.NativeFormat
 
         public TypeDefinition GetTypeDefinition(TypeDefinitionHandle handle)
         {
-            var record = new TypeDefinition() { _reader = this, _handle = handle };
+            TypeDefinition record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._flags);
             offset = _streamReader.Read(offset, out record._baseType);
@@ -11167,7 +11283,9 @@ namespace Internal.Metadata.NativeFormat
 
         public TypeForwarder GetTypeForwarder(TypeForwarderHandle handle)
         {
-            var record = new TypeForwarder() { _reader = this, _handle = handle };
+            TypeForwarder record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._scope);
             offset = _streamReader.Read(offset, out record._name);
@@ -11178,7 +11296,9 @@ namespace Internal.Metadata.NativeFormat
 
         public TypeInstantiationSignature GetTypeInstantiationSignature(TypeInstantiationSignatureHandle handle)
         {
-            var record = new TypeInstantiationSignature() { _reader = this, _handle = handle };
+            TypeInstantiationSignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._genericType);
             offset = _streamReader.Read(offset, out record._genericTypeArguments);
@@ -11187,7 +11307,9 @@ namespace Internal.Metadata.NativeFormat
 
         public TypeReference GetTypeReference(TypeReferenceHandle handle)
         {
-            var record = new TypeReference() { _reader = this, _handle = handle };
+            TypeReference record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._parentNamespaceOrType);
             offset = _streamReader.Read(offset, out record._typeName);
@@ -11197,7 +11319,9 @@ namespace Internal.Metadata.NativeFormat
 
         public TypeSpecification GetTypeSpecification(TypeSpecificationHandle handle)
         {
-            var record = new TypeSpecification() { _reader = this, _handle = handle };
+            TypeSpecification record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._signature);
             offset = _streamReader.Read(offset, out record._customAttributes);
@@ -11206,7 +11330,9 @@ namespace Internal.Metadata.NativeFormat
 
         public TypeVariableSignature GetTypeVariableSignature(TypeVariableSignatureHandle handle)
         {
-            var record = new TypeVariableSignature() { _reader = this, _handle = handle };
+            TypeVariableSignature record;
+            record._reader = this;
+            record._handle = handle;
             var offset = (uint)handle.Offset;
             offset = _streamReader.Read(offset, out record._number);
             return record;
