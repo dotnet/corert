@@ -195,17 +195,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal unsafe extern static void* RhpGetClasslibFunction(IntPtr address, EH.ClassLibFunctionId id);
 
-        // Given the EEType* for a generic type, retrieve instantiation information (generic type definition
-        // EEType, arity, type arguments and variance info for each type parameter). If the EEType is not
-        // generic, null will be returned.
-        [RuntimeImport(Redhawk.BaseName, "RhGetGenericInstantiation")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe EEType* RhGetGenericInstantiation(EEType* pEEType,
-                                                                         int* pArity,
-                                                                         EETypeRef** ppInstantiation,
-                                                                         GenericVariance** ppVarianceInfo);
-
         //
         // StackFrameIterator
         //

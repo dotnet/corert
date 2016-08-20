@@ -17,6 +17,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using EEType = Internal.Runtime.EEType;
+using EETypeRef = Internal.Runtime.EETypeRef;
 
 namespace System
 {
@@ -188,7 +189,6 @@ namespace System
             }
         }
 
-#if CORERT
         internal GenericArgumentCollection Instantiation
         {
             get
@@ -204,7 +204,6 @@ namespace System
                 return new EETypePtr((IntPtr)_value->GenericDefinition);
             }
         }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
@@ -407,13 +406,12 @@ namespace System
             }
         }
 
-#if CORERT
         public struct GenericArgumentCollection
         {
-            private EEType** _arguments;
+            private EETypeRef* _arguments;
             private uint _argumentCount;
 
-            internal GenericArgumentCollection(uint argumentCount, EEType** arguments)
+            internal GenericArgumentCollection(uint argumentCount, EETypeRef* arguments)
             {
                 _argumentCount = argumentCount;
                 _arguments = arguments;
@@ -432,10 +430,9 @@ namespace System
                 get
                 {
                     Debug.Assert((uint)index < _argumentCount);
-                    return new EETypePtr((IntPtr)_arguments[index]);
+                    return new EETypePtr((IntPtr)_arguments[index].Value);
                 }
             }
         }
-#endif
     }
 }

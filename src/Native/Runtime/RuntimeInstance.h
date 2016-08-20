@@ -160,19 +160,6 @@ public:
     void EnableGcPollStress();
     void UnsychronizedResetHijackedLoops();
 
-    // Given the EEType* for an instantiated generic type retrieve instantiation information (generic type
-    // definition EEType, arity, type arguments and variance info for each type parameter). Has the same
-    // limitations on usage as LookupGenericInstance above.
-    EEType * GetGenericInstantiation(EEType *               pEEType,
-                                     UInt32 *               pArity,
-                                     EEType ***             ppInstantiation,
-                                     GenericVarianceType ** ppVarianceInfo);
-
-    bool SetGenericInstantiation(EEType *               pEEType,
-                                 EEType *               pEETypeDef,
-                                 UInt32                 arity,
-                                 EEType **              pInstantiation);
-
     bool AddDynamicGcStatics(UInt8 *pGcStaticData, StaticGcDesc *pGcStaticsDesc);
 
     bool AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiThreadStaticOffset, StaticGcDesc *pGcStaticsDesc);

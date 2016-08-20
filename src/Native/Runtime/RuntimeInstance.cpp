@@ -478,26 +478,6 @@ void RuntimeInstance::UnsychronizedResetHijackedLoops()
     END_FOREACH_MODULE;
 }
 
-// Given the EEType* for an instantiated generic type retrieve instantiation information (generic type
-// definition EEType, arity, type arguments and variance info for each type parameter).
-EEType * RuntimeInstance::GetGenericInstantiation(EEType *               pEEType,
-                                                  UInt32 *               pArity,
-                                                  EEType ***             ppInstantiation,
-                                                  GenericVarianceType ** ppVarianceInfo)
-{
-    ASSERT(pEEType != NULL && pEEType->IsGeneric());
-
-    *pArity = pEEType->get_GenericArity();
-    *ppInstantiation = pEEType->get_GenericArguments();
-
-    if (pEEType->HasGenericVariance())
-        *ppVarianceInfo = pEEType->get_GenericVariance();
-    else
-        *ppVarianceInfo = NULL;
-
-    return pEEType->get_GenericDefinition().GetValue();
-}
-
 bool RuntimeInstance::AddDynamicGcStatics(UInt8 *pGcStaticData, StaticGcDesc *pGcStaticsDesc)
 {
     ReaderWriterLock::WriteHolder write(&m_StaticGCRefLock);
@@ -622,48 +602,6 @@ bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
     pNonGcStaticData.SuppressRelease();
     pGcStaticData.SuppressRelease();
     return true;
-}
-
-bool RuntimeInstance::SetGenericInstantiation(EEType *               pEEType,
-                                              EEType *               pEETypeDef,
-                                              UInt32                 arity,
-                                              EEType **              pInstantiation)
-{
-    ASSERT(pEEType->IsGeneric());
-    ASSERT(pEEType->IsDynamicType());
-
-    pEEType->set_GenericDefinition(pEETypeDef);
-
-    // Arity should have been set during the GenericComposition creation time
-    ASSERT(pEEType->get_GenericArity() == arity);
-
-    EEType **pArgs = pEEType->get_GenericArguments();
-    for (UInt32 iArg = 0; iArg < arity; iArg++)
-        pArgs[iArg] = pInstantiation[iArg];
-
-    return true;
-}
-
-COOP_PINVOKE_HELPER(EEType *, RhGetGenericInstantiation, (EEType *               pEEType,
-                                                          UInt32 *               pArity,
-                                                          EEType ***             ppInstantiation,
-                                                          GenericVarianceType ** ppVarianceInfo))
-{
-    return GetRuntimeInstance()->GetGenericInstantiation(pEEType,
-                                                         pArity,
-                                                         ppInstantiation,
-                                                         ppVarianceInfo);
-}
-
-COOP_PINVOKE_HELPER(bool, RhSetGenericInstantiation, (EEType *               pEEType,
-                                                      EEType *               pEETypeDef,
-                                                      UInt32                 arity,
-                                                      EEType **              pInstantiation))
-{
-    return GetRuntimeInstance()->SetGenericInstantiation(pEEType,
-                                                         pEETypeDef,
-                                                         arity,
-                                                         pInstantiation);
 }
 
 COOP_PINVOKE_HELPER(bool, RhCreateGenericInstanceDescForType2, (EEType *        pEEType,

@@ -366,7 +366,6 @@ namespace Internal.Runtime
             }
         }
 
-#if CORERT
         internal EEType* GenericDefinition
         {
             get
@@ -375,9 +374,20 @@ namespace Internal.Runtime
                 UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericDefinition);
                 fixed (EEType* pThis = &this)
                 {
-                    return *(EEType**)((byte*)pThis + cbOffset);
+                    return ((EETypeRef*)((byte*)pThis + cbOffset))->Value;
                 }
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsGeneric && IsDynamicType);
+                UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericDefinition);
+                fixed (EEType* pThis = &this)
+                {
+                    *((EEType**)((byte*)pThis + cbOffset)) = value;
+                }
+            }
+#endif
         }
 
         internal uint GenericArity
@@ -394,7 +404,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal EEType** GenericArguments
+        internal EETypeRef* GenericArguments
         {
             get
             {
@@ -404,7 +414,7 @@ namespace Internal.Runtime
                 {
                     // Generic arguments follow after a (padded) UInt16 specifying their count
                     // in the generic composition stream.
-                    return ((*(EEType***)((byte*)pThis + cbOffset)) + 1);
+                    return ((*(EETypeRef**)((byte*)pThis + cbOffset)) + 1);
                 }
             }
         }
@@ -414,7 +424,10 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGeneric);
-                Debug.Assert(HasGenericVariance);
+
+                if (!HasGenericVariance)
+                    return null;
+
                 UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
                 fixed (EEType* pThis = &this)
                 {
@@ -423,7 +436,6 @@ namespace Internal.Runtime
                 }
             }
         }
-#endif // CORERT
 
         internal bool IsPointerType
         {
@@ -1183,5 +1195,28 @@ namespace Internal.Runtime
                 (fHasThreadStatics ? sizeof(UInt32) : 0)); // tls offset
         }
 #endif
+    }
+
+    // Wrapper around EEType pointers that may be indirected through the IAT if their low bit is set.
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct EETypeRef
+    {
+        private byte* _value;
+
+        public EEType* Value
+        {
+            get
+            {
+                if (((int)_value & 1) == 0)
+                    return (EEType*)_value;
+                return *(EEType**)(_value - 1);
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _value = (byte*)value;
+            }
+#endif
+        }
     }
 }

@@ -136,13 +136,8 @@ namespace System.Runtime
                 // This special case is to allow array enumerators to work
                 if (!fArrayCovariance && pTgtType->HasGenericVariance)
                 {
-                    EETypeRef* pTgtInstantiation;
-                    int tgtEntryArity;
-                    GenericVariance* pTgtVarianceInfo;
-                    EEType* pTgtEntryGenericType = InternalCalls.RhGetGenericInstantiation(pTgtType,
-                                                                                             &tgtEntryArity,
-                                                                                             &pTgtInstantiation,
-                                                                                             &pTgtVarianceInfo);
+                    int tgtEntryArity = (int)pTgtType->GenericArity;
+                    GenericVariance* pTgtVarianceInfo = pTgtType->GenericVariance;
 
                     if ((tgtEntryArity == 1) && pTgtVarianceInfo[0] == GenericVariance.ArrayCovariant)
                     {
@@ -193,25 +188,23 @@ namespace System.Runtime
                         // lazily get this then cache the result since the lookup isn't necessarily cheap).
                         if (pItfOpenGenericType == null)
                         {
-                            pItfOpenGenericType = InternalCalls.RhGetGenericInstantiation(pItfType,
-                                                                         &itfArity,
-                                                                         &pItfInstantiation,
-                                                                         &pItfVarianceInfo);
+                            pItfOpenGenericType = pItfType->GenericDefinition;
+                            itfArity = (int)pItfType->GenericArity;
+                            pItfInstantiation = pItfType->GenericArguments;
+                            pItfVarianceInfo = pItfType->GenericVariance;
                         }
 
                         // Retrieve the unified generic instance for the interface we're looking at in the map.
-                        // Grab instantiation details for the candidate interface.
-                        EETypeRef* pCurEntryInstantiation;
-                        int curEntryArity;
-                        GenericVariance* pCurEntryVarianceInfo;
-                        EEType* pCurEntryGenericType = InternalCalls.RhGetGenericInstantiation(pCurEntryType,
-                                                                                                 &curEntryArity,
-                                                                                                 &pCurEntryInstantiation,
-                                                                                                 &pCurEntryVarianceInfo);
+                        EEType* pCurEntryGenericType = pCurEntryType->GenericDefinition;
 
                         // If the generic types aren't the same then the types aren't compatible.
                         if (pItfOpenGenericType != pCurEntryGenericType)
                             continue;
+
+                        // Grab instantiation details for the candidate interface.
+                        EETypeRef* pCurEntryInstantiation = pCurEntryType->GenericArguments;
+                        int curEntryArity = (int)pCurEntryType->GenericArity;
+                        GenericVariance* pCurEntryVarianceInfo = pCurEntryType->GenericVariance;
 
                         // The types represent different instantiations of the same generic type. The
                         // arity of both had better be the same.

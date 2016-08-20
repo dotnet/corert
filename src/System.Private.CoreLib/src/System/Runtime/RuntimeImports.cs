@@ -305,10 +305,6 @@ namespace System.Runtime
             int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, void* pGcStaticsDesc, void* pThreadStaticsDesc, int* pGenericVarianceFlags);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetGenericInstantiation")]
-        internal static unsafe extern bool RhSetGenericInstantiation(EETypePtr pEEType, EETypePtr pEETypeDef, int arity, EETypePtr* pInstantiation);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewInterfaceDispatchCell")]
         internal static unsafe extern IntPtr RhNewInterfaceDispatchCell(EETypePtr pEEType, int slotNumber);
 
