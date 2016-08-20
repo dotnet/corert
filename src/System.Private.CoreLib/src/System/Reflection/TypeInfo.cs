@@ -14,14 +14,13 @@ using global::System.Collections.Generic;
 
 namespace System.Reflection
 {
-    public abstract class TypeInfo : MemberInfo, IReflectableType
+    public abstract class TypeInfo : Type, IReflectableType
     {
         protected TypeInfo()
         {
         }
 
         public abstract Assembly Assembly { get; }
-        public abstract String AssemblyQualifiedName { get; }
         public abstract TypeAttributes Attributes { get; }
         public abstract Type BaseType { get; }
         public abstract bool ContainsGenericParameters { get; }
@@ -95,10 +94,7 @@ namespace System.Reflection
 
 
         public abstract MethodBase DeclaringMethod { get; }
-        public abstract String FullName { get; }
         public abstract GenericParameterAttributes GenericParameterAttributes { get; }
-        public abstract int GenericParameterPosition { get; }
-        public abstract Type[] GenericTypeArguments { get; }
 
         public virtual Type[] GenericTypeParameters
         {
@@ -116,14 +112,6 @@ namespace System.Reflection
         }
 
         public abstract Guid GUID { get; }
-
-        public bool HasElementType
-        {
-            get
-            {
-                return IsArray || IsPointer || IsByRef;
-            }
-        }
 
         public virtual IEnumerable<Type> ImplementedInterfaces
         {
@@ -151,15 +139,6 @@ namespace System.Reflection
             }
         }
 
-        public bool IsArray
-        {
-            get
-            {
-                return AsType().IsArray;
-            }
-        }
-
-
         public bool IsAutoClass
         {
             get
@@ -173,14 +152,6 @@ namespace System.Reflection
             get
             {
                 return TypeAttributes.AutoLayout == (this.Attributes & TypeAttributes.LayoutMask);
-            }
-        }
-
-        public bool IsByRef
-        {
-            get
-            {
-                return AsType().IsByRef;
             }
         }
 
@@ -204,7 +175,6 @@ namespace System.Reflection
             }
         }
 
-        public abstract bool IsGenericParameter { get; }
         public abstract bool IsGenericType { get; }
         public abstract bool IsGenericTypeDefinition { get; }
 
@@ -235,14 +205,6 @@ namespace System.Reflection
 
         public bool IsMarshalByRef { get { return false; } }
 
-
-        public bool IsNested
-        {
-            get
-            {
-                return this.DeclaringType != null;
-            }
-        }
 
         public bool IsNestedAssembly
         {
@@ -303,14 +265,6 @@ namespace System.Reflection
             get
             {
                 return TypeAttributes.NotPublic == (this.Attributes & TypeAttributes.VisibilityMask);
-            }
-        }
-
-        public bool IsPointer
-        {
-            get
-            {
-                return AsType().IsPointer;
             }
         }
 
@@ -407,14 +361,10 @@ namespace System.Reflection
             }
         }
 
-        public abstract String Namespace { get; }
-
         public virtual Type AsType()
         {
             throw NotImplemented.ByDesign;
         }
-
-        public abstract int GetArrayRank();
 
         public virtual EventInfo GetDeclaredEvent(String name)
         {
@@ -470,9 +420,7 @@ namespace System.Reflection
         }
 
 
-        public abstract Type GetElementType();
         public abstract Type[] GetGenericParameterConstraints();
-        public abstract Type GetGenericTypeDefinition();
 
         public virtual bool IsAssignableFrom(TypeInfo typeInfo)
         {
@@ -527,12 +475,9 @@ namespace System.Reflection
             return false;
         }
 
-
-        public abstract Type MakeArrayType();
-        public abstract Type MakeArrayType(int rank);
-        public abstract Type MakeByRefType();
-        public abstract Type MakeGenericType(params Type[] typeArguments);
-        public abstract Type MakePointerType();
+        // TODO https://github.com/dotnet/corefx/issues/9805: This is inherited from Type and shouldn't need to be redeclared on TypeInfo but 
+        //   TypeInfo.MakeGenericType is a well known method to the reducer.
+        public abstract override Type MakeGenericType(params Type[] typeArguments);
 
         TypeInfo System.Reflection.IReflectableType.GetTypeInfo()
         {

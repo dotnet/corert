@@ -158,6 +158,11 @@ namespace System.Runtime.InteropServices
             {
                 return _fullTypeName.GetHashCode();
             }
+
+            protected override bool IsArrayImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+            protected override bool IsByRefImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+            protected override bool IsPointerImpl() { throw new System.Reflection.MissingMetadataException(_fullTypeName); }
+
 #endif //RHTESTCL
         }
 

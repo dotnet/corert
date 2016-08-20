@@ -9,6 +9,7 @@
 using System;
 using System.Threading;
 using System.Runtime;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ using Internal.Reflection.Core.NonPortable;
 
 namespace System
 {
-    public abstract class Type
+    public abstract class Type : MemberInfo
     {
         protected Type()
         {
@@ -27,7 +28,6 @@ namespace System
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();
 
         public abstract String AssemblyQualifiedName { get; }
-        public abstract Type DeclaringType { get; }
         public abstract String FullName { get; }
         public abstract int GenericParameterPosition { get; }
         public abstract Type[] GenericTypeArguments { get; }
@@ -40,19 +40,19 @@ namespace System
             }
         }
 
-        public virtual bool IsArray
+        public bool IsArray
         {
             get
             {
-                throw NotImplemented.ByDesign;
+                return IsArrayImpl() ;
             }
         }
 
-        public virtual bool IsByRef
+        public bool IsByRef
         {
             get
             {
-                throw NotImplemented.ByDesign;
+                return IsByRefImpl();
             }
         }
 
@@ -67,15 +67,14 @@ namespace System
             }
         }
 
-        public virtual bool IsPointer
+        public bool IsPointer
         {
             get
             {
-                throw NotImplemented.ByDesign;
+                return IsPointerImpl();
             }
         }
 
-        public abstract String Name { get; }
         public abstract String Namespace { get; }
 
         public virtual RuntimeTypeHandle TypeHandle
@@ -141,6 +140,10 @@ namespace System
             throw NotImplemented.ByDesign;
         }
 
+        protected abstract bool IsArrayImpl();
+        protected abstract bool IsByRefImpl();
+        protected abstract bool IsPointerImpl();
+
         internal bool TryGetEEType(out EETypePtr eeType)
         {
             RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
@@ -154,3 +157,4 @@ namespace System
         }
     }
 }
+
