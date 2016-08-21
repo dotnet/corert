@@ -1609,4 +1609,16 @@
   <data name="InvalidOperation_NoPublicAddMethod" xml:space="preserve">
     <value>Cannot add the event handler since no public add method exists for the event.</value>
   </data>
+  <data name="SerializationException" xml:space="preserve">
+    <value>Serialization error.</value>
+  </data>
+  <data name="Serialization_NotFound" xml:space="preserve">
+    <value>Member '{0}' was not found.</value>
+  </data>
+  <data name="Serialization_OptionalFieldVersionValue" xml:space="preserve">
+    <value>Version value must be positive.</value>
+  </data>
+  <data name="Serialization_SameNameTwice" xml:space="preserve">
+    <value>Cannot add the same member twice to a SerializationInfo object.</value>
+  </data>
 </root>
