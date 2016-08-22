@@ -23,6 +23,9 @@ namespace Internal.TypeSystem
         Static = 0x0010,
     }
 
+    /// <summary>
+    /// Represents the parameter types, the return type, and flags of a method.
+    /// </summary>
     public sealed class MethodSignature
     {
         internal MethodSignatureFlags _flags;
@@ -72,7 +75,10 @@ namespace Internal.TypeSystem
             }
         }
 
-        [System.Runtime.CompilerServices.IndexerName("Parameter")]
+        /// <summary>
+        /// Gets the parameter type at the specified index.
+        /// </summary>
+        [IndexerName("Parameter")]
         public TypeDesc this[int index]
         {
             get
@@ -81,6 +87,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the number of parameters of this method signature.
+        /// </summary>
         public int Length
         {
             get
@@ -114,6 +123,12 @@ namespace Internal.TypeSystem
         }
     }
 
+    /// <summary>
+    /// Helper structure for building method signatures by cloning an existing method signature.
+    /// </summary>
+    /// <remarks>
+    /// This can potentially avoid array allocation costs for allocating the parameter type list.
+    /// </remarks>
     public struct MethodSignatureBuilder
     {
         private MethodSignature _template;
@@ -191,6 +206,9 @@ namespace Internal.TypeSystem
         }
     }
 
+    /// <summary>
+    /// Represents the fundamental base type for all methods within the type system.
+    /// </summary>
     public abstract partial class MethodDesc
     {
         public readonly static MethodDesc[] EmptyMethods = new MethodDesc[0];
@@ -242,21 +260,36 @@ namespace Internal.TypeSystem
             return Object.ReferenceEquals(this, o);
         }
 
+        /// <summary>
+        /// Gets the type system context this method belongs to.
+        /// </summary>
         public abstract TypeSystemContext Context
         {
             get;
         }
 
+        /// <summary>
+        /// Gets the type that owns this method. This will be a <see cref="DefType"/> or
+        /// an <see cref="ArrayType"/>.
+        /// </summary>
         public abstract TypeDesc OwningType
         {
             get;
         }
 
+        /// <summary>
+        /// Gets the signature of the method.
+        /// </summary>
         public abstract MethodSignature Signature
         {
             get;
         }
 
+        /// <summary>
+        /// Gets the generic instantiation information of this method.
+        /// For generic definitions, retrieves the generic parameters of the method.
+        /// For generic instantiation, retrieves the generic arguments of the method.
+        /// </summary>
         public virtual Instantiation Instantiation
         {
             get
@@ -265,6 +298,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this method has a generic instantiation.
+        /// This will be true for generic method instantiations and generic definitions.
+        /// </summary>
         public bool HasInstantiation
         {
             get
@@ -273,6 +310,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the method's <see cref="Instantiation"/>
+        /// contains any generic variables.
+        /// </summary>
         public bool ContainsGenericVariables
         {
             get
@@ -289,6 +330,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this method is an instance constructor.
+        /// </summary>
         public bool IsConstructor
         {
             get
@@ -299,6 +343,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this method is a static constructor.
+        /// </summary>
         public bool IsStaticConstructor
         {
             get
@@ -307,6 +354,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the name of the method as specified in the metadata.
+        /// </summary>
         public virtual string Name
         {
             get
@@ -315,6 +365,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the method is virtual.
+        /// </summary>
         public virtual bool IsVirtual
         {
             get
@@ -323,6 +376,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this virtual method should not override any
+        /// virtual methods defined in any of the base classes.
+        /// </summary>
         public virtual bool IsNewSlot
         {
             get
@@ -331,6 +388,10 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this virtual method needs to be overriden
+        /// by all non-abstract classes deriving from the method's owning type.
+        /// </summary>
         public virtual bool IsAbstract
         {
             get
@@ -352,12 +413,20 @@ namespace Internal.TypeSystem
 
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
-        // Strips method instantiation. E.g C<int>.m<string> -> C<int>.m<U>
+        /// <summary>
+        /// Retrieves the uninstantiated form of the method on the method's <see cref="OwningType"/>.
+        /// For generic methods, this strips method instantiation. For non-generic methods, returns 'this'.
+        /// To also strip instantiation of the owning type, use <see cref="GetTypicalMethodDefinition"/>.
+        /// </summary>
         public virtual MethodDesc GetMethodDefinition()
         {
             return this;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a method definition. This property
+        /// is true for non-generic methods and for uninstantiated generic methods.
+        /// </summary>
         public bool IsMethodDefinition
         {
             get
@@ -366,12 +435,19 @@ namespace Internal.TypeSystem
             }
         }
 
-        // Strips both type and method instantiation. E.g C<int>.m<string> -> C<T>.m<U>
+        /// <summary>
+        /// Retrieves the generic definition of the method on the generic definition of the owning type.
+        /// To only uninstantiate the method without uninstantiating the owning type, use <see cref="GetMethodDefinition"/>.
+        /// </summary>
         public virtual MethodDesc GetTypicalMethodDefinition()
         {
             return this;
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this is a typical definition. This property is true
+        /// if neither the owning type, nor the method are instantiated.
+        /// </summary>
         public bool IsTypicalMethodDefinition
         {
             get
