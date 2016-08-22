@@ -59,5 +59,7 @@ namespace System.Reflection
 
         RTSpecialName = 0x00000800,     // Runtime should check name encoding.
         HasSecurity = 0x00040000,     // Class has security associate with it.
+
+        ReservedMask = 0x00040800,
     }
 }

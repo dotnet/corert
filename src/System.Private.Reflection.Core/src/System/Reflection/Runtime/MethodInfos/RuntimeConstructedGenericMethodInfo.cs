@@ -127,7 +127,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(
                         _genericMethodDefinition.Reader,
                         _genericMethodDefinition.RuntimeDeclaringType,
-                        _genericMethodDefinition.MethodHandle,
+                        _genericMethodDefinition.Handle,
                         _genericTypeArguments,
                         this);
             }

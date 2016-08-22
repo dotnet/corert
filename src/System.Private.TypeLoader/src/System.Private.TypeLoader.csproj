@@ -26,7 +26,6 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.TypeExtensions.dll" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />

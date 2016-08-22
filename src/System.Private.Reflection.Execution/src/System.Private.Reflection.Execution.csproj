@@ -28,7 +28,6 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
     <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.dll" />  
     <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />  
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.TypeExtensions.dll" />  
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">

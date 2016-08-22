@@ -16,7 +16,6 @@ using System.Reflection.Runtime.CustomAttributes;
 using Internal.Metadata.NativeFormat;
 
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.EventInfos
@@ -25,7 +24,7 @@ namespace System.Reflection.Runtime.EventInfos
     // The runtime's implementation of EventInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal sealed partial class RuntimeEventInfo : ExtensibleEventInfo, ITraceableTypeMember
+    internal sealed partial class RuntimeEventInfo : EventInfo, ITraceableTypeMember
     {
         //
         // eventHandle    - the "tkEventDef" that identifies the event.

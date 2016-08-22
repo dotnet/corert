@@ -2,64 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  CustomAttributeTypedArgument
-**
-==============================================================*/
-
-using global::System;
-using global::System.Diagnostics.Contracts;
-
 namespace System.Reflection
 {
     public struct CustomAttributeTypedArgument
     {
-        public CustomAttributeTypedArgument(Type argumentType, Object value)
+        public CustomAttributeTypedArgument(object value)
+        {
+            // value cannot be null.
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            Value = CanonicalizeValue(value);
+            ArgumentType = value.GetType();
+        }
+
+        public CustomAttributeTypedArgument(Type argumentType, object value)
         {
             // value can be null.
             if (argumentType == null)
-                throw new ArgumentNullException("argumentType");
+                throw new ArgumentNullException(nameof(argumentType));
 
-            m_value = (value == null) ? null : CanonicalizeValue(value);
-            m_argumentType = argumentType;
+            Value = (value == null) ? null : CanonicalizeValue(value);
+            ArgumentType = argumentType;
         }
 
-        public Type ArgumentType
+        public Type ArgumentType { get; }
+        public object Value { get; }
+
+        public override bool Equals(object obj) => obj == (object)this;
+        public override int GetHashCode() => base.GetHashCode();
+
+        public override string ToString()
         {
-            get
-            {
-                return m_argumentType;
-            }
+            // base.ToString() is a temporary implementation: this silly looking line officially tags this method as needing further work.
+            if (string.Empty.Length > 0) throw new NotImplementedException();
+            return base.ToString();
         }
 
-        public Object Value
+        private static object CanonicalizeValue(object value)
         {
-            get
-            {
-                return m_value;
-            }
-        }
-
-        private static Object CanonicalizeValue(Object value)
-        {
-            Contract.Assert(value != null);
-
-            if (value is Enum)
-            {
-                // Blech.
-                TypeInfo enumTypeInfo = value.GetType().GetTypeInfo();
-                FieldInfo valueField = enumTypeInfo.GetDeclaredField("value__");
-                value = valueField.GetValue(value);
-            }
+            if (value.GetType().GetTypeInfo().IsEnum)
+                return ((Enum)value).GetValue();
             return value;
         }
-
-
-        private Object m_value;
-        private Type m_argumentType;
     }
 }
-
-

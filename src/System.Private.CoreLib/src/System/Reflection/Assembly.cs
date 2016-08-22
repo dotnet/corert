@@ -2,126 +2,160 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Globalization;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
 
-/*============================================================
-**
-  Type:  Assembly
-**
-==============================================================*/
-
-using global::System;
-using global::System.IO;
-using global::System.Collections.Generic;
-using global::Internal.Reflection.Augments;
+using Internal.Reflection.Augments;
 
 namespace System.Reflection
 {
-    public abstract class Assembly
+    public abstract class Assembly : ICustomAttributeProvider, ISerializable
     {
-        protected Assembly()
-        {
-        }
+        protected Assembly() { }
 
-        public virtual IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                throw NotImplemented.ByDesign;
-            }
-        }
 
-        public abstract IEnumerable<TypeInfo> DefinedTypes { get; }
-
-        public virtual IEnumerable<Type> ExportedTypes
+        public virtual IEnumerable<TypeInfo> DefinedTypes
         {
             get
             {
-                throw NotImplemented.ByDesign;
+                Type[] types = GetTypes();
+                TypeInfo[] typeinfos = new TypeInfo[types.Length];
+                for (int i = 0; i < types.Length; i++)
+                {
+                    TypeInfo typeinfo = types[i].GetTypeInfo();
+                    if (typeinfo == null)
+                        throw new NotSupportedException(SR.NotSupported_NoTypeInfo);
+
+                    typeinfos[i] = typeinfo;
+                }
+                return typeinfos;
             }
         }
 
-        public virtual String FullName
+        public virtual Type[] GetTypes()
         {
-            get
+            Module[] m = GetModules(false);
+
+            int numModules = m.Length;
+            int finalLength = 0;
+            Type[][] moduleTypes = new Type[numModules][];
+
+            for (int i = 0; i < numModules; i++)
             {
-                throw NotImplemented.ByDesign;
+                moduleTypes[i] = m[i].GetTypes();
+                finalLength += moduleTypes[i].Length;
             }
-        }
 
-        public virtual bool IsDynamic
-        {
-            get
+            int current = 0;
+            Type[] ret = new Type[finalLength];
+            for (int i = 0; i < numModules; i++)
             {
-                return false;
+                int length = moduleTypes[i].Length;
+                Array.Copy(moduleTypes[i], 0, ret, current, length);
+                current += length;
             }
+
+            return ret;
         }
 
-        public virtual Module ManifestModule
+        public virtual IEnumerable<Type> ExportedTypes => GetExportedTypes();
+        public virtual Type[] GetExportedTypes() { throw NotImplemented.ByDesign; }
+
+        public virtual string CodeBase { get { throw NotImplemented.ByDesign; } }
+        public virtual MethodInfo EntryPoint { get { throw NotImplemented.ByDesign; } }
+        public virtual string FullName { get { throw NotImplemented.ByDesign; } }
+        public virtual string ImageRuntimeVersion { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsDynamic => false;
+        public virtual string Location { get { throw NotImplemented.ByDesign; } }
+        public virtual bool ReflectionOnly { get { throw NotImplemented.ByDesign; } }
+
+        public virtual ManifestResourceInfo GetManifestResourceInfo(string resourceName) { throw NotImplemented.ByDesign; }
+        public virtual string[] GetManifestResourceNames() { throw NotImplemented.ByDesign; }
+        public virtual Stream GetManifestResourceStream(string name) { throw NotImplemented.ByDesign; }
+        public virtual Stream GetManifestResourceStream(Type type, string name) { throw NotImplemented.ByDesign; }
+
+        public virtual AssemblyName GetName() => GetName(copiedName: false);
+        public virtual AssemblyName GetName(bool copiedName) { throw NotImplemented.ByDesign; }
+
+        public virtual Type GetType(string name) => GetType(name, throwOnError: false, ignoreCase: false);
+        public virtual Type GetType(string name, bool throwOnError) => GetType(name, throwOnError: throwOnError, ignoreCase: false);
+        public virtual Type GetType(string name, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
+
+        public virtual bool IsDefined(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
+
+        public virtual IEnumerable<CustomAttributeData> CustomAttributes => GetCustomAttributesData();
+        public virtual IList<CustomAttributeData> GetCustomAttributesData() { throw NotImplemented.ByDesign; }
+
+        public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
+        public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
+
+        public object CreateInstance(string typeName) => CreateInstance(typeName, false, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
+        public object CreateInstance(string typeName, bool ignoreCase) => CreateInstance(typeName, ignoreCase, BindingFlags.Public | BindingFlags.Instance, binder: null, args: null, culture: null, activationAttributes: null);
+        public virtual object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
-            get
-            {
-                throw NotImplemented.ByDesign;
-            }
+            Type t = GetType(typeName, throwOnError: false, ignoreCase: ignoreCase);
+            if (t == null)
+                return null;
+
+            throw new NotImplementedException(); //return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
         }
 
-        public abstract IEnumerable<Module> Modules { get; }
+        public virtual Module ManifestModule { get { throw NotImplemented.ByDesign; } }
+        public virtual Module GetModule(string name) { throw NotImplemented.ByDesign; }
 
-        // Equals() and GetHashCode() implement reference equality for compatibility with desktop.
-        // Unfortunately, this means that implementors who don't unify instances will be on the hook
-        // to override these implementations to test for semantic equivalence.
-        public override bool Equals(Object o)
-        {
-            return base.Equals(o);
-        }
+        public Module[] GetModules() => GetModules(getResourceModules: false);
+        public virtual Module[] GetModules(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public virtual IEnumerable<Module> Modules => GetLoadedModules(getResourceModules: true);
+        public Module[] GetLoadedModules() => GetLoadedModules(getResourceModules: false);
+        public virtual Module[] GetLoadedModules(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
-        public virtual ManifestResourceInfo GetManifestResourceInfo(String resourceName)
-        {
-            throw NotImplemented.ByDesign;
-        }
+        public virtual AssemblyName[] GetReferencedAssemblies() { throw NotImplemented.ByDesign; }
 
-        public virtual String[] GetManifestResourceNames()
-        {
-            throw NotImplemented.ByDesign;
-        }
+        public virtual Assembly GetSatelliteAssembly(CultureInfo culture) { throw NotImplemented.ByDesign; }
+        public virtual Assembly GetSatelliteAssembly(CultureInfo culture, Version version) { throw NotImplemented.ByDesign; }
 
-        public virtual Stream GetManifestResourceStream(String name)
-        {
-            throw NotImplemented.ByDesign;
-        }
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
-        public virtual AssemblyName GetName()
+        public override string ToString()
         {
-            throw NotImplemented.ByDesign;
-        }
-
-        public virtual Type GetType(String name)
-        {
-            return GetType(name, throwOnError: false, ignoreCase: false);
-        }
-
-        public virtual Type GetType(String name, bool throwOnError, bool ignoreCase)
-        {
-            throw NotImplemented.ByDesign;
-        }
-
-        public static Assembly Load(AssemblyName assemblyRef)
-        {
-            return ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef);
-        }
-
-        public override String ToString()
-        {
-            String displayName = FullName;
+            string displayName = FullName;
             if (displayName == null)
                 return base.ToString();
             else
                 return displayName;
         }
+
+        public override bool Equals(object o) => base.Equals(o);
+        public override int GetHashCode() => base.GetHashCode();
+
+        public static string CreateQualifiedName(string assemblyName, string typeName) => typeName + ", " + assemblyName;
+
+        public static Assembly GetAssembly(Type type)
+        {
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
+
+            Module m = type.Module;
+            if (m == null)
+                return null;
+            else
+                return m.Assembly;
+        }
+
+        public static Assembly GetEntryAssembly() { throw new NotImplementedException(); }
+        public static Assembly GetExecutingAssembly() { throw new NotImplementedException(); }
+        public static Assembly GetCallingAssembly() { throw new NotImplementedException(); }
+
+        public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef);
+        public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
+        public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw new NotImplementedException(); }
+        public static Assembly Load(string assemblyString) { throw new NotImplementedException(); }
+
+        public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new NotImplementedException(); }
+        public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new NotImplementedException(); }
+        public static Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw new NotImplementedException(); }
     }
 }
-

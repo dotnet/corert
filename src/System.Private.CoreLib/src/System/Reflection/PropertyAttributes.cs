@@ -17,5 +17,10 @@ namespace System.Reflection
 
         RTSpecialName = 0x0400,     // Runtime(metadata internal APIs) should check name encoding.
         HasDefault = 0x1000,     // Property has default 
+
+        Reserved2 = 0x2000,
+        Reserved3 = 0x4000,
+        Reserved4 = 0x8000,
+        ReservedMask = 0xf400,
     }
 }

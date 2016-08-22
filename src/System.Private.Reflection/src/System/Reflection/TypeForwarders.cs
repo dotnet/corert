@@ -34,3 +34,15 @@
 [assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.TargetException))]
 [assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.TypeFilter))]
 [assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.TypeInfo))]
+
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleAssembly))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleConstructorInfo))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleCustomAttributeData))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleEventInfo))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleFieldInfo))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleMethodInfo))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleModule))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleParameterInfo))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensiblePropertyInfo))]
+[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(Internal.Reflection.Extensibility.ExtensibleTypeInfo))]
+

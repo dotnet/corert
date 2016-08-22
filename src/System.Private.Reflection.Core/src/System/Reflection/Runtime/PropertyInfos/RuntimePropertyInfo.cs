@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
@@ -16,7 +17,6 @@ using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 
 using Internal.Reflection.Tracing;
 
@@ -28,7 +28,7 @@ namespace System.Reflection.Runtime.PropertyInfos
     // The runtime's implementation of PropertyInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal sealed partial class RuntimePropertyInfo : ExtensiblePropertyInfo, ITraceableTypeMember
+    internal sealed partial class RuntimePropertyInfo : PropertyInfo, ITraceableTypeMember
     {
         //
         // propertyHandle - the "tkPropertyDef" that identifies the property.
@@ -181,12 +181,14 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
-        public sealed override Object GetValue(Object obj, Object[] index)
+        public sealed override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
 #endif
+            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
+                throw new NotImplementedException();
 
             if (_lazyGetterInvoker == null)
             {
@@ -250,12 +252,14 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
-        public sealed override void SetValue(Object obj, Object value, Object[] index)
+        public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
 #endif
+            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
+                throw new NotImplementedException();
 
             if (_lazySetterInvoker == null)
             {

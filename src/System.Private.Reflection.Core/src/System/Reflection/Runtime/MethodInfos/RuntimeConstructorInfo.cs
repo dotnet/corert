@@ -5,12 +5,12 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 
 using Internal.Metadata.NativeFormat;
 
@@ -21,7 +21,7 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // The runtime's implementation of ConstructorInfo.
     //
-    internal abstract partial class RuntimeConstructorInfo : ExtensibleConstructorInfo
+    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo
     {
         public abstract override MethodAttributes Attributes { get; }
 
@@ -61,14 +61,17 @@ namespace System.Reflection.Runtime.MethodInfos
             return result;
         }
 
-        public abstract override Object Invoke(Object[] parameters);
+        public abstract override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
-        public sealed override Object Invoke(Object obj, Object[] parameters)
+        public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
+
+            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
+                throw new NotImplementedException();
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();

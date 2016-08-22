@@ -2,44 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  ConstructorInfo
-**
-==============================================================*/
-
-using global::System;
+using System.Globalization;
 
 namespace System.Reflection
 {
-    public abstract class ConstructorInfo : MethodBase
+    public abstract partial class ConstructorInfo : MethodBase
     {
-        protected ConstructorInfo()
-        {
-        }
+        protected ConstructorInfo() { }
 
-        public static readonly String ConstructorName = ".ctor";
+        public override MemberTypes MemberType => MemberTypes.Constructor;
 
-        public static readonly String TypeConstructorName = ".cctor";
+        public object Invoke(object[] parameters) => Invoke(BindingFlags.Default, binder: null, parameters: parameters, culture: null);
+        public abstract object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
-        // Equals() and GetHashCode() implement reference equality for compatibility with desktop.
-        // Unfortunately, this means that implementors who don't unify instances will be on the hook
-        // to override these implementations to test for semantic equivalence.
-        public override bool Equals(object obj)
-        {
-            return base.Equals(obj);
-        }
+        public override bool Equals(object obj) => Equals(obj);
+        public override int GetHashCode() => GetHashCode();
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-
-        public virtual Object Invoke(Object[] parameters)
-        {
-            throw NotImplemented.ByDesign;
-        }
+        public static readonly string ConstructorName = ".ctor";
+        public static readonly string TypeConstructorName = ".cctor";
     }
 }
-

@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection.Runtime.General;
@@ -12,7 +13,6 @@ using System.Reflection.Runtime.TypeInfos;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
-using Internal.Reflection.Extensibility;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 using Internal.Metadata.NativeFormat;
@@ -22,11 +22,20 @@ namespace System.Reflection.Runtime.CustomAttributes
     //
     // Common base class for the Runtime's implementation of CustomAttributeData.
     //
-    internal abstract partial class RuntimeCustomAttributeData : ExtensibleCustomAttributeData
+    internal abstract partial class RuntimeCustomAttributeData : CustomAttributeData
     {
-        public abstract override Type AttributeType
+        // The 2.0 CustomAttributeData.AttributeType is non-overridable and is implemented as { get { return Constructor.DeclaredType; } }
+        // We don't fully support the Constructor property at this time so we'll have it return a dummy ConstructorInfo that only implements DeclaredType
+        // and reintroduce the virtual AttributeType our subclasses expect.
+        public new abstract Type AttributeType { get; }
+
+        public sealed override ConstructorInfo Constructor
         {
-            get;
+            get
+            {
+                if (string.Empty.Length != 0) throw new NotImplementedException(); // This silly looking line marks that this is a tide-over implementation only.
+                return new ConstructorInfoImplementingOnlyDeclaringType(AttributeType);
+            }
         }
 
         public sealed override IList<CustomAttributeTypedArgument> ConstructorArguments
@@ -157,6 +166,46 @@ namespace System.Reflection.Runtime.CustomAttributes
                 // This emulates Object.ToString() for consistency with prior .Net Native implementations. 
                 return GetType().ToString();
             }
+        }
+
+        private sealed class ConstructorInfoImplementingOnlyDeclaringType : ConstructorInfo
+        {
+            internal ConstructorInfoImplementingOnlyDeclaringType(Type declaringType)
+            {
+                _declaringType = declaringType;
+            }
+
+            public sealed override Type DeclaringType => _declaringType;
+
+            public sealed override MethodAttributes Attributes { get { throw NotImplemented.ByDesign; } }
+            public sealed override RuntimeMethodHandle MethodHandle { get { throw NotImplemented.ByDesign; } }
+            public sealed override string Name { get { throw NotImplemented.ByDesign; } }
+            public sealed override Type ReflectedType { get { throw NotImplemented.ByDesign; } }
+            public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) { throw NotImplemented.ByDesign; }
+            public sealed override ParameterInfo[] GetParameters() { throw NotImplemented.ByDesign; }
+            public sealed override MethodImplAttributes GetMethodImplementationFlags() { throw NotImplemented.ByDesign; }
+            public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) { throw NotImplemented.ByDesign; }
+            public sealed override bool IsDefined(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
+            public sealed override object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
+            public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
+
+            public sealed override CallingConventions CallingConvention { get { throw NotImplemented.ByDesign; } }
+            public sealed override bool ContainsGenericParameters { get { throw NotImplemented.ByDesign; } }
+            public sealed override IEnumerable<CustomAttributeData> CustomAttributes { get { throw NotImplemented.ByDesign; } }
+            public sealed override Type[] GetGenericArguments() { throw NotImplemented.ByDesign; }
+            public sealed override MethodBody GetMethodBody() { throw NotImplemented.ByDesign; }
+            public sealed override bool IsGenericMethod { get { throw NotImplemented.ByDesign; } }
+            public sealed override bool IsGenericMethodDefinition { get { throw NotImplemented.ByDesign; } }
+            public sealed override MemberTypes MemberType { get { throw NotImplemented.ByDesign; } }
+            public sealed override int MetadataToken { get { throw NotImplemented.ByDesign; } }
+            public sealed override MethodImplAttributes MethodImplementationFlags { get { throw NotImplemented.ByDesign; } }
+            public sealed override Module Module { get { throw NotImplemented.ByDesign; } }
+
+            public sealed override bool Equals(object obj) { throw NotImplemented.ByDesign; }
+            public sealed override int GetHashCode() { throw NotImplemented.ByDesign; }
+            public sealed override string ToString() => base.ToString();
+
+            private readonly Type _declaringType;
         }
     }
 }
