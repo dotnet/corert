@@ -288,12 +288,12 @@ namespace Internal.IL
                 case ILOpcode.stloc_s:
                 case ILOpcode.ldc_i4_s:
                     PadForInstructionArgument(decodedInstruction);
-                    decodedInstruction.Append(ReadILByte());
+                    decodedInstruction.Append(ReadILByte().ToStringInvariant());
                     return decodedInstruction.ToString();
 
                 case ILOpcode.unaligned:
                     decodedInstruction.Append(' ');
-                    decodedInstruction.Append(ReadILByte());
+                    decodedInstruction.Append(ReadILByte().ToStringInvariant());
                     decodedInstruction.Append(' ');
                     goto again;
 
@@ -304,27 +304,27 @@ namespace Internal.IL
                 case ILOpcode.ldloca:
                 case ILOpcode.stloc:
                     PadForInstructionArgument(decodedInstruction);
-                    decodedInstruction.Append(ReadILUInt16());
+                    decodedInstruction.Append(ReadILUInt16().ToStringInvariant());
                     return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_i4:
                     PadForInstructionArgument(decodedInstruction);
-                    decodedInstruction.Append(ReadILUInt32());
+                    decodedInstruction.Append(ReadILUInt32().ToStringInvariant());
                     return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_r4:
                     PadForInstructionArgument(decodedInstruction);
-                    decodedInstruction.Append(ReadILFloat());
+                    decodedInstruction.Append(ReadILFloat().ToStringInvariant());
                     return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_i8:
                     PadForInstructionArgument(decodedInstruction);
-                    decodedInstruction.Append(ReadILUInt64());
+                    decodedInstruction.Append(ReadILUInt64().ToStringInvariant());
                     return decodedInstruction.ToString();
 
                 case ILOpcode.ldc_r8:
                     PadForInstructionArgument(decodedInstruction);
-                    decodedInstruction.Append(ReadILDouble());
+                    decodedInstruction.Append(ReadILDouble().ToStringInvariant());
                     return decodedInstruction.ToString();
 
                 case ILOpcode.jmp:
