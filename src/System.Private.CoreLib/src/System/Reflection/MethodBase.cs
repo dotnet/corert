@@ -2,46 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  MethodBase
-**
-==============================================================*/
-
-using global::System;
-using global::Internal.Reflection.Augments;
+using System.Globalization;
+using Internal.Reflection.Augments;
 
 namespace System.Reflection
 {
     public abstract class MethodBase : MemberInfo
     {
-        internal MethodBase()
-        {
-        }
+        protected MethodBase() { }
 
+        public abstract ParameterInfo[] GetParameters();
         public abstract MethodAttributes Attributes { get; }
+        public virtual MethodImplAttributes MethodImplementationFlags => GetMethodImplementationFlags();
+        public abstract MethodImplAttributes GetMethodImplementationFlags();
+        public virtual MethodBody GetMethodBody() { throw new InvalidOperationException(); }
+        public virtual CallingConventions CallingConvention => CallingConventions.Standard;
 
-        public virtual CallingConventions CallingConvention { get { return CallingConventions.Standard; } }
-
-        public virtual bool ContainsGenericParameters { get { return false; } }
-
-        public bool IsAbstract
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.Abstract) != 0;
-            }
-        }
-
-        public bool IsAssembly
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Assembly;
-            }
-        }
-
+        public bool IsAbstract => (Attributes & MethodAttributes.Abstract) != 0;
         public bool IsConstructor
         {
             get
@@ -52,140 +29,34 @@ namespace System.Reflection
                         ((Attributes & MethodAttributes.RTSpecialName) == MethodAttributes.RTSpecialName));
             }
         }
+        public bool IsFinal => (Attributes & MethodAttributes.Final) != 0;
+        public bool IsHideBySig => (Attributes & MethodAttributes.HideBySig) != 0;
+        public bool IsSpecialName => (Attributes & MethodAttributes.SpecialName) != 0;
+        public bool IsStatic => (Attributes & MethodAttributes.Static) != 0;
+        public bool IsVirtual => (Attributes & MethodAttributes.Virtual) != 0;
 
-        public bool IsFamily
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Family;
-            }
-        }
+        public bool IsAssembly => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Assembly;
+        public bool IsFamily => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Family;
+        public bool IsFamilyAndAssembly => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamANDAssem;
+        public bool IsFamilyOrAssembly => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamORAssem;
+        public bool IsPrivate => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private;
+        public bool IsPublic => (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
 
-        public bool IsFamilyAndAssembly
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamANDAssem;
-            }
-        }
+        public virtual bool IsGenericMethod => false;
+        public virtual bool IsGenericMethodDefinition => false;
+        public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual bool ContainsGenericParameters => false;
 
-        public bool IsFamilyOrAssembly
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.FamORAssem;
-            }
-        }
+        public object Invoke(object obj, object[] parameters) => Invoke(obj, BindingFlags.Default, binder: null, parameters: parameters, culture: null);
+        public abstract object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
-        public bool IsFinal
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.Final) != 0;
-            }
-        }
+        public abstract RuntimeMethodHandle MethodHandle { get; }
+        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle);
+        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle, declaringType);
 
-        public virtual bool IsGenericMethod
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public static MethodBase GetCurrentMethod() { throw new NotImplementedException(); }
 
-        public virtual bool IsGenericMethodDefinition
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public bool IsHideBySig
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.HideBySig) != 0;
-            }
-        }
-
-        public bool IsPrivate
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Private;
-            }
-        }
-
-        public bool IsPublic
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
-            }
-        }
-
-        public bool IsSpecialName
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.SpecialName) != 0;
-            }
-        }
-
-        public bool IsStatic
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.Static) != 0;
-            }
-        }
-
-        public bool IsVirtual
-        {
-            get
-            {
-                return (Attributes & MethodAttributes.Virtual) != 0;
-            }
-        }
-
-
-        public abstract MethodImplAttributes MethodImplementationFlags { get; }
-
-        public virtual Type[] GetGenericArguments()
-        {
-            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        }
-
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle)
-        {
-            return ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle);
-        }
-
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType)
-        {
-            return ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle, declaringType);
-        }
-
-        public abstract ParameterInfo[] GetParameters();
-
-        public virtual Object Invoke(Object obj, Object[] parameters)
-        {
-            throw NotImplemented.ByDesign;
-        }
-
-        // Equals() and GetHashCode() implement reference equality for compatibility with desktop.
-        // Unfortunately, this means that implementors who don't unify instances will be on the hook
-        // to override these implementations to test for semantic equivalence.
-        public override bool Equals(object obj)
-        {
-            return base.Equals(obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override bool Equals(object obj) => base.Equals(obj);
+        public override int GetHashCode() => GetHashCode();
     }
 }
-

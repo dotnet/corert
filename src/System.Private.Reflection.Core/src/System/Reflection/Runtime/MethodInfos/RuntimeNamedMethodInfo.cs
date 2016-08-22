@@ -169,7 +169,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.ComputeToString(contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
         }
 
-        internal MethodHandle MethodHandle
+        internal MethodHandle Handle
         {
             get
             {
@@ -232,7 +232,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     {
                         // Desktop compat: Constructed generic types and their generic type definitions share the same Type objects for method generic parameters. 
                         RuntimeNamedTypeInfo genericTypeDefinition = DeclaringType.GetGenericTypeDefinition().CastToRuntimeNamedTypeInfo();
-                        owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(MethodHandle, genericTypeDefinition, genericTypeDefinition);
+                        owningMethod = RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(Handle, genericTypeDefinition, genericTypeDefinition);
                     }
                     RuntimeTypeInfo genericParameterType = RuntimeGenericParameterTypeInfoForMethods.GetRuntimeGenericParameterTypeInfoForMethods(owningMethod, owningMethod._common.Reader, genericParameterHandle);
                     genericTypeParameters[i++] = genericParameterType;

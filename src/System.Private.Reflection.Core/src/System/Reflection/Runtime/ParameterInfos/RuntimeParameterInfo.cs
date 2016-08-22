@@ -7,20 +7,12 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
 
-using System.Reflection.Runtime.CustomAttributes;
-
-using Internal.Reflection.Core;
-using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
-
-using Internal.Metadata.NativeFormat;
-
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //
     // Abstract base for all ParameterInfo objects created by the Runtime.
     //
-    internal abstract class RuntimeParameterInfo : ExtensibleParameterInfo
+    internal abstract partial class RuntimeParameterInfo : ParameterInfo
     {
         protected RuntimeParameterInfo(MemberInfo member, int position)
         {

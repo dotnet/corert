@@ -45,5 +45,7 @@ namespace System.Reflection
 
         HasSecurity = 0x4000,     // Method has security associate with it.
         RequireSecObject = 0x8000,     // Method calls another method containing security code.
+
+        ReservedMask = 0xd000,
     }
 }

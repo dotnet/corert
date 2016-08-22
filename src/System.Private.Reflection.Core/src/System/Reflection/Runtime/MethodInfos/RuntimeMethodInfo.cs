@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
@@ -12,7 +13,6 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
 
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.MethodInfos
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract class RuntimeMethodInfo : ExtensibleMethodInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeMethodInfo : MethodInfo, ITraceableTypeMember
     {
         protected RuntimeMethodInfo()
         {
@@ -128,12 +128,14 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public sealed override Object Invoke(Object obj, Object[] parameters)
+        public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
+            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
+                throw new NotImplementedException();
 
             if (parameters == null)
                 parameters = Array.Empty<Object>();

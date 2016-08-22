@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -16,7 +17,6 @@ using Internal.Metadata.NativeFormat;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 
 using Internal.Reflection.Tracing;
 
@@ -26,7 +26,7 @@ namespace System.Reflection.Runtime.FieldInfos
     // The Runtime's implementation of fields.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal sealed partial class RuntimeFieldInfo : ExtensibleFieldInfo, ITraceableTypeMember
+    internal sealed partial class RuntimeFieldInfo : FieldInfo, ITraceableTypeMember
     {
         //
         // fieldHandle    - the "tkFieldDef" that identifies the field.
@@ -134,12 +134,16 @@ namespace System.Reflection.Runtime.FieldInfos
             }
         }
 
-        public sealed override void SetValue(Object obj, Object value)
+        public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.FieldInfo_SetValue(this, obj, value);
 #endif
+
+            // @todo: https://github.com/dotnet/corert/issues/1688 - this should be checking for Type.DefaultBinder - blocked by toolchain bug
+            if (invokeAttr != BindingFlags.Default || binder != null /* Type.DefaultBinder */ || culture != null)
+                throw new NotImplementedException();
 
             FieldAccessor fieldAccessor = this.FieldAccessor;
             fieldAccessor.SetField(obj, value);

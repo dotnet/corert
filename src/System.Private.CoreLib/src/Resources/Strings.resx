@@ -1621,4 +1621,34 @@
   <data name="Serialization_SameNameTwice" xml:space="preserve">
     <value>Cannot add the same member twice to a SerializationInfo object.</value>
   </data>
+  <data name="NotSupported_AbstractNonCLS" xml:space="preserve">
+    <value>This non-CLS method is not implemented.</value>
+  </data>
+  <data name="NotSupported_NoTypeInfo" xml:space="preserve">
+    <value>Cannot resolve {0} to a TypeInfo object.</value>
+  </data>
+  <data name="ReflectionTypeLoad_LoadFailed" xml:space="preserve">
+    <value>Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.</value>
+  </data>
+  <data name="Arg_CustomAttributeFormatException" xml:space="preserve">
+    <value>Binary format of the specified custom attribute was invalid.</value>
+  </data>
+  <data name="Argument_InvalidMemberForNamedArgument" xml:space="preserve">
+    <value>The member must be either a field or a property.</value>
+  </data>
+  <data name="Arg_InvalidFilterCriteriaException" xml:space="preserve">
+    <value>Specified filter criteria was invalid.</value>
+  </data>
+  <data name="Arg_ParmArraySize" xml:space="preserve">
+    <value>Must specify one or more parameters.</value>
+  </data>
+  <data name="Arg_MustBePointer" xml:space="preserve">
+    <value>Type must be a Pointer.</value>
+  </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="Argument_InvalidEnum" xml:space="preserve">
+    <value>The Enum type should contain one and only one instance field.</value>
+  </data>
 </root>

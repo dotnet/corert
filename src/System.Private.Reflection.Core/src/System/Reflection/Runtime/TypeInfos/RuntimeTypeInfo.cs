@@ -382,6 +382,15 @@ namespace System.Reflection.Runtime.TypeInfos
             return cachedData.GetDeclaredProperty(name);
         }
 
+        public sealed override Type[] GetGenericArguments()
+        {
+            if (IsConstructedGenericType)
+                return GenericTypeArguments;
+            if (IsGenericTypeDefinition)
+                return GenericTypeParameters;
+            return Array.Empty<Type>();
+        }
+
         //
         // Implements the correct GUID behavior for all "constructed" types (i.e. returning an all-zero GUID.) Left unsealed
         // so that RuntimeNamedTypeInfo can override.

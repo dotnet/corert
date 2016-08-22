@@ -8,8 +8,6 @@ using System.Diagnostics;
 using System.Reflection.Runtime.Assemblies;
 using System.Collections.Generic;
 
-using Internal.Reflection.Extensibility;
-
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.Modules
@@ -20,7 +18,7 @@ namespace System.Reflection.Runtime.Modules
     // Modules are quite meaningless in ProjectN but we have to keep up the appearances since they still exist in Win8P's surface area.
     // As far as ProjectN is concerned, each Assembly has one module whose name is "<Unknown>".
     //
-    internal sealed partial class RuntimeModule : ExtensibleModule
+    internal sealed partial class RuntimeModule : Module
     {
         private RuntimeModule(RuntimeAssembly assembly)
             : base()

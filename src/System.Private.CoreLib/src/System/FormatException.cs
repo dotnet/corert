@@ -12,6 +12,7 @@
 ===========================================================*/
 
 using System;
+using System.Runtime.Serialization;
 
 namespace System
 {
@@ -34,6 +35,11 @@ namespace System
             : base(message, innerException)
         {
             SetErrorCode(__HResults.COR_E_FORMAT);
+        }
+
+        protected FormatException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
         }
     }
 }
