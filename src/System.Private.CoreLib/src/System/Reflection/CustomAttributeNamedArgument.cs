@@ -64,15 +64,14 @@ namespace System.Reflection
                 MemberInfo memberInfo = _lazyMemberInfo;
                 if (memberInfo == null)
                 {
-                    throw new NotImplementedException(); // Need to finish Type class, before this can be enabled.
-                    //if (IsField)
-                    //    memberInfo = _attributeType.GetField(MemberName, BindingFlags.Public | BindingFlags.Instance);
-                    //else
-                    //    memberInfo = _attributeType.GetProperty(MemberName, BindingFlags.Public | BindingFlags.Instance);
-                    //
-                    //if (memberInfo == null)
-                    //    throw new NotImplementedException(); // @todo: This can only come from bad metadata or missing metadata. Must find a better exception.
-                    //_lazyMemberInfo = memberInfo;
+                    if (IsField)
+                        memberInfo = _attributeType.GetField(MemberName, BindingFlags.Public | BindingFlags.Instance);
+                    else
+                        memberInfo = _attributeType.GetProperty(MemberName, BindingFlags.Public | BindingFlags.Instance);
+                    
+                    if (memberInfo == null)
+                        throw new NotImplementedException(); // @todo: This can only come from bad metadata or missing metadata. Must find a better exception.
+                    _lazyMemberInfo = memberInfo;
                 }
                 return memberInfo;
             }
