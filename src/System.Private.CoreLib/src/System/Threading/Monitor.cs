@@ -20,10 +20,12 @@ namespace System.Threading
 {
     public static class Monitor
     {
-        #region Object->Lock mappings
+        #region Object->Lock/Condition mapping
 
+#if !FEATURE_SYNCTABLE
         private static ConditionalWeakTable<object, Lock> s_lockTable = new ConditionalWeakTable<object, Lock>();
         private static ConditionalWeakTable<object, Lock>.CreateValueCallback s_createLock = (o) => new Lock();
+#endif
 
         private static ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
         private static ConditionalWeakTable<object, Condition>.CreateValueCallback s_createCondition = (o) => new Condition(GetLock(o));
@@ -38,7 +40,11 @@ namespace System.Threading
             if (obj.EETypePtr.RawValue == EETypePtr.EETypePtrOf<Lock>().RawValue)
                 return RuntimeHelpers.UncheckedCast<Lock>(obj);
 
+#if FEATURE_SYNCTABLE
+            return ObjectHeader.GetLockObject(obj);
+#else
             return s_lockTable.GetValue(obj, s_createLock);
+#endif
         }
 
         private static Condition GetCondition(Object obj)
@@ -161,8 +167,13 @@ namespace System.Threading
 
         #region Public Wait/Pulse methods
 
+        // There are no consumers of FEATURE_GET_BLOCKING_OBJECTS at present.  Before enabling, consider
+        // a more efficient implementation that uses a linked list of stack locations.  Also note that
+        // Lock.TryAcquireContended does not create a record in the t_blockingObjects list at present.
+
         public static bool Wait(object obj)
         {
+#if FEATURE_GET_BLOCKING_OBJECTS
             Condition condition = GetCondition(obj);
             int removeCookie = t_blockingObjects.Add(obj, ReasonForBlocking.OnEvent);
             try
@@ -173,10 +184,14 @@ namespace System.Threading
             {
                 t_blockingObjects.Remove(removeCookie);
             }
+#else
+            return GetCondition(obj).Wait();
+#endif
         }
 
         public static bool Wait(object obj, int millisecondsTimeout)
         {
+#if FEATURE_GET_BLOCKING_OBJECTS
             Condition condition = GetCondition(obj);
             int removeCookie = t_blockingObjects.Add(obj, ReasonForBlocking.OnEvent);
             try
@@ -187,10 +202,14 @@ namespace System.Threading
             {
                 t_blockingObjects.Remove(removeCookie);
             }
+#else
+            return GetCondition(obj).Wait(millisecondsTimeout);
+#endif
         }
 
         public static bool Wait(object obj, TimeSpan timeout)
         {
+#if FEATURE_GET_BLOCKING_OBJECTS
             Condition condition = GetCondition(obj);
             int removeCookie = t_blockingObjects.Add(obj, ReasonForBlocking.OnEvent);
             try
@@ -201,6 +220,9 @@ namespace System.Threading
             {
                 t_blockingObjects.Remove(removeCookie);
             }
+#else
+            return GetCondition(obj).Wait(timeout);
+#endif
         }
 
         public static void Pulse(object obj)
@@ -216,8 +238,10 @@ namespace System.Threading
         #endregion
 
         #region Slow path for Entry/TryEnter methods.
+
         private static bool TryAcquireContended(Lock lck, Object obj, int millisecondsTimeout)
         {
+#if FEATURE_GET_BLOCKING_OBJECTS
             int removeCookie = t_blockingObjects.Add(obj, ReasonForBlocking.OnCrst);
             try
             {
@@ -227,15 +251,17 @@ namespace System.Threading
             {
                 t_blockingObjects.Remove(removeCookie);
             }
+#else
+            return lck.TryAcquire(millisecondsTimeout);
+#endif
         }
 
-#pragma warning disable 414 // assigned but never used.
+#if FEATURE_GET_BLOCKING_OBJECTS
         //
         // Do not remove: These fields are examined by the debugger interface to implement ICorDebugThread4::GetBlockingObjects().
         //
         [ThreadStatic]
         private static CorDbgList t_blockingObjects;
-
 
         //
         // A simple LIFO list of blocking objects for the use of the debugger api.
@@ -298,7 +324,7 @@ namespace System.Threading
             OnCrst = 0,
             OnEvent = 1,
         }
-#pragma warning restore 414
+#endif
 
         #endregion
     }
