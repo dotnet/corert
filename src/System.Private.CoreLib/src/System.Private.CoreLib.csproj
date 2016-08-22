@@ -519,6 +519,8 @@
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
     <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
+    <Compile Include="System\Threading\Tasks\DebuggerSupport.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="System\Threading\Tasks\DebuggerSupport.Dummy.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Threading\Tasks\DebugHelperRooter.cs" />
     <Compile Include="System\Threading\Tasks\future.cs" />
     <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
