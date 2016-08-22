@@ -310,26 +310,34 @@ namespace System
             return Join(separator, value, 0, value.Length);
         }
 
-        public static String Join(String separator, params Object[] values)
+        public static string Join(string separator, params object[] values)
         {
             if (values == null)
                 throw new ArgumentNullException("values");
 
             if (values.Length == 0 || values[0] == null)
-                return String.Empty;
+                return string.Empty;
+
+            string firstString = values[0].ToString();
+
+            if (values.Length == 1)
+            {
+                return firstString ?? string.Empty;
+            }
 
             StringBuilder result = StringBuilderCache.Acquire();
-
-            result.Append(values[0].ToString());
+            result.Append(firstString);
 
             for (int i = 1; i < values.Length; i++)
             {
                 result.Append(separator);
-                if (values[i] != null)
+                object value = values[i];
+                if (value != null)
                 {
-                    result.Append(values[i].ToString());
+                    result.Append(value.ToString());
                 }
             }
+
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
@@ -3085,6 +3093,13 @@ namespace System
                 throw new ArgumentNullException("args");
             }
 
+            if (args.Length <= 1)
+            {
+                return args.Length == 0 ?
+                    string.Empty :
+                    args[0]?.ToString() ?? string.Empty;
+            }
+
             // We need to get an intermediary string array
             // to fill with each of the args' ToString(),
             // and then just concat that in one operation.
@@ -3136,41 +3151,81 @@ namespace System
             return result;
         }
 
-        public static String Concat<T>(IEnumerable<T> values)
+        public static string Concat<T>(IEnumerable<T> values)
         {
             if (values == null)
                 throw new ArgumentNullException("values");
 
-            StringBuilder result = StringBuilderCache.Acquire();
             using (IEnumerator<T> en = values.GetEnumerator())
             {
-                while (en.MoveNext())
+                if (!en.MoveNext())
+                    return string.Empty;
+                
+                // We called MoveNext once, so this will be the first item
+                T currentValue = en.Current;
+
+                // Call ToString before calling MoveNext again, since
+                // we want to stay consistent with the below loop
+                // Everything should be called in the order
+                // MoveNext-Current-ToString, unless further optimizations
+                // can be made, to avoid breaking changes
+                string firstString = currentValue?.ToString();
+
+                // If there's only 1 item, simply call ToString on that
+                if (!en.MoveNext())
                 {
-                    T currentValue = en.Current;
+                    // We have to handle the case of either currentValue
+                    // or its ToString being null
+                    return firstString ?? string.Empty;
+                }
+
+                StringBuilder result = StringBuilderCache.Acquire();
+                
+                result.Append(firstString);
+
+                do
+                {
+                    currentValue = en.Current;
 
                     if (currentValue != null)
                     {
                         result.Append(currentValue.ToString());
                     }
                 }
+                while (en.MoveNext());
+
+                return StringBuilderCache.GetStringAndRelease(result);
             }
-            return StringBuilderCache.GetStringAndRelease(result);
         }
 
-        public static String Concat(IEnumerable<String> values)
+        public static string Concat(IEnumerable<string> values)
         {
             if (values == null)
                 throw new ArgumentNullException("values");
 
-            StringBuilder result = StringBuilderCache.Acquire();
-            using (IEnumerator<String> en = values.GetEnumerator())
+            using (IEnumerator<string> en = values.GetEnumerator())
             {
-                while (en.MoveNext())
+                if (!en.MoveNext())
+                    return string.Empty;
+                
+                string firstValue = en.Current;
+
+                if (!en.MoveNext())
+                {
+                    return firstValue ?? string.Empty;
+                }
+
+                StringBuilder result = StringBuilderCache.Acquire();
+                result.Append(firstValue);
+
+                do
                 {
                     result.Append(en.Current);
                 }
+                while (en.MoveNext());
+
+                return StringBuilderCache.GetStringAndRelease(result);
             }
-            return StringBuilderCache.GetStringAndRelease(result);
         }
 
         public static String Concat(String str0, String str1)
@@ -3263,6 +3318,13 @@ namespace System
         {
             if (values == null)
                 throw new ArgumentNullException("values");
+            
+            if (values.Length <= 1)
+            {
+                return values.Length == 0 ?
+                    string.Empty :
+                    values[0] ?? string.Empty;
+            }
 
             // It's possible that the input values array could be changed concurrently on another
             // thread, such that we can't trust that each read of values[i] will be equivalent.
