@@ -39,12 +39,15 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
         HANDLE  lowMemEvent = NULL;
 #if 0 // TODO: hook up low memory notification
         lowMemEvent = pHeap->GetLowMemoryNotificationEvent();
-#endif // 0
         HANDLE  rgWaitHandles[] = { FinalizerThread::GetFinalizerEvent(), lowMemEvent };
         UInt32  cWaitHandles = (fLastEventWasLowMemory || (lowMemEvent == NULL)) ? 1 : 2;
         UInt32  uTimeout = fLastEventWasLowMemory ? 2000 : INFINITE;
 
         UInt32 uResult = PalWaitForMultipleObjectsEx(cWaitHandles, rgWaitHandles, FALSE, uTimeout, FALSE);
+#else
+        UInt32 uResult = PalWaitForSingleObjectEx(FinalizerThread::GetFinalizerEvent(), INFINITE, FALSE);
+#endif
+
         switch (uResult)
         {
         case WAIT_OBJECT_0:
