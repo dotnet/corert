@@ -203,10 +203,8 @@ public System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncTaskMeth
 # System.Runtime.CompilerServices.RuntimeHelpers
 public static void System.Runtime.CompilerServices.RuntimeHelpers.EnsureSufficientExecutionStack()
 public static int System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(object o)
-private static int System.Runtime.CompilerServices.RuntimeHelpers.GetNewHashCode()
 public static object System.Runtime.CompilerServices.RuntimeHelpers.GetObjectValue(object obj)
 private static byte* System.Runtime.CompilerServices.RuntimeHelpers.GetSufficientStackLimit()
-private static int System.Runtime.CompilerServices.RuntimeHelpers.MakeHashCode(object o, int* pSyncBlockIndex)
 public static int System.Runtime.CompilerServices.RuntimeHelpers.OffsetToStringData.get
 public static void System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(System.RuntimeTypeHandle type)
 
