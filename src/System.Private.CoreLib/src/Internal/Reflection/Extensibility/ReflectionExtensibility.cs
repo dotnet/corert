@@ -22,24 +22,24 @@ namespace Internal.Reflection.Extensibility
         {
         }
     }
-    
+
     public abstract class ExtensibleCustomAttributeData : CustomAttributeData
     {
         protected ExtensibleCustomAttributeData()
         {
         }
-        
-        public static CustomAttributeNamedArgument CreateCustomAttributeNamedArgument(System.Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue) 
-        { 
+
+        public static CustomAttributeNamedArgument CreateCustomAttributeNamedArgument(System.Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue)
+        {
             return new CustomAttributeNamedArgument(attributeType, memberName, isField, typedValue);
         }
-        
+
         public static CustomAttributeTypedArgument CreateCustomAttributeTypedArgument(System.Type argumentType, object value)
         {
             return new CustomAttributeTypedArgument(argumentType, value);
         }
     }
-    
+
     public abstract class ExtensibleEventInfo : EventInfo
     {
         protected ExtensibleEventInfo()
@@ -60,14 +60,14 @@ namespace Internal.Reflection.Extensibility
         {
         }
     }
-    
+
     public abstract class ExtensibleModule : Module
     {
         protected ExtensibleModule()
         {
         }
     }
-    
+
     public abstract class ExtensibleParameterInfo : ParameterInfo
     {
         protected ExtensibleParameterInfo()
@@ -125,5 +125,24 @@ namespace Internal.Reflection.Extensibility
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
         public override bool IsDefined(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
         public override Type ReflectedType { get { throw NotImplemented.ByDesign; } }
+
+        protected sealed override bool IsCOMObjectImpl() => IsCOMObject;
+        public new virtual bool IsCOMObject { get { throw NotImplemented.ByDesign; } }
+
+        protected sealed override bool IsPrimitiveImpl() => IsPrimitive;
+        public new virtual bool IsPrimitive { get { throw NotImplemented.ByDesign; } }
+
+        protected sealed override bool IsValueTypeImpl() => IsValueType;
+        public new virtual bool IsValueType { get { throw NotImplemented.ByDesign; } }
+
+        // There is no IsEnumImpl()
+        public new virtual bool IsEnum { get { throw NotImplemented.ByDesign; } }
+
+        protected sealed override TypeAttributes GetAttributeFlagsImpl() => Attributes;
+        public new virtual TypeAttributes Attributes { get { throw NotImplemented.ByDesign; } }
+
+        protected sealed override bool HasElementTypeImpl() => IsArray || IsByRef || IsPointer;
+
+        public sealed override Type UnderlyingSystemType => this;
     }
 }

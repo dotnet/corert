@@ -41,7 +41,7 @@ namespace System.Reflection
 
         private static object CanonicalizeValue(object value)
         {
-            if (value.GetType().GetTypeInfo().IsEnum)
+            if (value.GetType().IsEnum)
                 return ((Enum)value).GetValue();
             return value;
         }

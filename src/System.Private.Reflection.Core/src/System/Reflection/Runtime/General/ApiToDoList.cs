@@ -188,11 +188,43 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public sealed override object[] GetCustomAttributes(bool inherit) { throw new NotImplementedException(); }
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) { throw new NotImplementedException(); }
+        public sealed override Type[] FindInterfaces(TypeFilter filter, object filterCriteria) { throw new NotImplementedException(); }
+        public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria) { throw new NotImplementedException(); }
+        protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotImplementedException(); }
+        public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override object[] GetCustomAttributes(bool inherit) { throw new NotImplementedException(); }
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() { throw new NotImplementedException(); }
+        public sealed override MemberInfo[] GetDefaultMembers() { throw new NotImplementedException(); }
+        public sealed override string GetEnumName(object value) { throw new NotImplementedException(); }
+        public sealed override string[] GetEnumNames() { throw new NotImplementedException(); }
+        public sealed override Type GetEnumUnderlyingType() { throw new NotImplementedException(); }
+        public sealed override Array GetEnumValues() { throw new NotImplementedException(); }
+        public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override EventInfo[] GetEvents() { throw new NotImplementedException(); }
+        public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override Type GetInterface(string name, bool ignoreCase) { throw new NotImplementedException(); }
+        public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) { throw new NotImplementedException(); }
+        public sealed override Type[] GetInterfaces() { throw new NotImplementedException(); }
+        public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotImplementedException(); }
+        public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { throw new NotImplementedException(); }
+        protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) { throw new NotImplementedException(); }
+        protected sealed override TypeCode GetTypeCodeImpl() { throw new NotImplementedException(); }
+        public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotImplementedException(); }
         public sealed override bool IsDefined(Type attributeType, bool inherit) { throw new NotImplementedException(); }
-        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
+        public sealed override bool IsEnumDefined(object value) { throw new NotImplementedException(); }
+        public sealed override bool IsEquivalentTo(Type other) { throw new NotImplementedException(); }
+        public sealed override bool IsInstanceOfType(object o) { throw new NotImplementedException(); }
         public sealed override int MetadataToken { get { throw new NotImplementedException(); } }
+        public sealed override Type ReflectedType { get { throw new NotImplementedException(); } }
+        public sealed override StructLayoutAttribute StructLayoutAttribute { get { throw new NotImplementedException(); } }
     }
 }

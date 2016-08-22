@@ -133,6 +133,7 @@ namespace System.Reflection.Runtime.TypeInfos
     {
 #if DEBUG
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
+        protected sealed override bool IsMarshalByRefImpl() => base.IsMarshalByRefImpl();
         public sealed override MemberTypes MemberType => base.MemberType;
 #endif //DEBUG
     }
