@@ -541,25 +541,6 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        public unsafe static void SetInstantiation(RuntimeTypeHandle typeHandle, RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles)
-        {
-            EETypePtr eeTypeDefinition = CreateEETypePtr(genericTypeDefinitionHandle);
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-
-            int arity = genericTypeArgumentHandles.Length;
-            EETypePtr* eeTypeArguments = stackalloc EETypePtr[genericTypeArgumentHandles.Length];
-            for (int i = 0; i < arity; i++)
-            {
-                eeTypeArguments[i] = CreateEETypePtr(genericTypeArgumentHandles[i]);
-            }
-
-            if (!RuntimeImports.RhSetGenericInstantiation(eeType, eeTypeDefinition, arity, eeTypeArguments))
-            {
-                throw new OutOfMemoryException();
-            }
-        }
-
-#if CORERT
         public unsafe static RuntimeTypeHandle GetGenericInstantiation(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
@@ -575,7 +556,6 @@ namespace Internal.Runtime.Augments
 
             return new RuntimeTypeHandle(eeType.GenericDefinition);
         }
-#endif
 
         public static bool IsGenericType(RuntimeTypeHandle typeHandle)
         {
