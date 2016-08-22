@@ -16,7 +16,6 @@ using System.Collections.Generic;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 using Internal.Metadata.NativeFormat;
 
 using Internal.Reflection.Tracing;
@@ -26,7 +25,7 @@ namespace System.Reflection.Runtime.Assemblies
     //
     // The runtime's implementation of an Assembly. 
     //
-    internal sealed partial class RuntimeAssembly : ExtensibleAssembly, IEquatable<RuntimeAssembly>
+    internal sealed partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>
     {
         private RuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflowScopes)
         {

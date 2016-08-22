@@ -35,5 +35,7 @@ namespace System.Reflection
         HasFieldMarshal = 0x1000,     // Field has marshalling information.
         HasDefault = 0x8000,     // Field has default.
         HasFieldRVA = 0x0100,     // Field has RVA.
+
+        ReservedMask = 0x9500,
     }
 }

@@ -26,7 +26,6 @@ using System.IO;
 using System.Reflection;
 using System.Globalization;
 using System.Collections.Generic;
-using Internal.Reflection.Extensibility;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -34,8 +33,19 @@ namespace System.Reflection.Runtime.Assemblies
     {
 #if DEBUG
         public sealed override Type GetType(string name) => base.GetType(name);
+        public sealed override Type GetType(string name, bool throwOnError) => base.GetType(name, throwOnError);
         public sealed override bool IsDynamic => base.IsDynamic;
         public sealed override string ToString() => base.ToString();
+#endif //DEBUG
+    }
+}
+
+namespace System.Reflection.Runtime.MethodInfos
+{
+    internal abstract partial class RuntimeConstructorInfo
+    {
+#if DEBUG
+        public sealed override MemberTypes MemberType => base.MemberType;
 #endif //DEBUG
     }
 }
@@ -51,12 +61,81 @@ namespace System.Reflection.Runtime.CustomAttributes
     }
 }
 
+namespace System.Reflection.Runtime.EventInfos
+{
+    internal sealed partial class RuntimeEventInfo
+    {
+#if DEBUG
+        public sealed override MemberTypes MemberType => base.MemberType;
+#endif //DEBUG
+    }
+}
+
+namespace System.Reflection.Runtime.FieldInfos
+{
+    internal sealed partial class RuntimeFieldInfo
+    {
+#if DEBUG
+        public sealed override MemberTypes MemberType => base.MemberType;
+
+        public sealed override bool IsSecurityCritical => base.IsSecurityCritical;
+        public sealed override bool IsSecuritySafeCritical => base.IsSecuritySafeCritical;
+        public sealed override bool IsSecurityTransparent => base.IsSecurityTransparent;
+#endif //DEBUG
+    }
+}
+
+namespace System.Reflection.Runtime.MethodInfos
+{
+    internal abstract partial class RuntimeMethodInfo
+    {
+#if DEBUG
+        public sealed override MemberTypes MemberType => base.MemberType;
+#endif //DEBUG
+    }
+}
+
+namespace System.Reflection.Runtime.Modules
+{
+    internal sealed partial class RuntimeModule
+    {
+#if DEBUG
+        public sealed override Type GetType(string className) => base.GetType(className);
+        public sealed override Type GetType(string className, bool ignoreCase) => base.GetType(className, ignoreCase);
+#endif //DEBUG
+    }
+}
+
+namespace System.Reflection.Runtime.ParameterInfos
+{
+    internal abstract partial class RuntimeParameterInfo
+    {
+#if DEBUG
+#endif //DEBUG
+    }
+}
+
+namespace System.Reflection.Runtime.PropertyInfos
+{
+    internal sealed partial class RuntimePropertyInfo
+    {
+#if DEBUG
+        public sealed override MemberTypes MemberType => base.MemberType;
+        public sealed override object GetValue(object obj, object[] index) => base.GetValue(obj, index);
+        public sealed override void SetValue(object obj, object value, object[] index) => base.SetValue(obj, value, index);
+#endif //DEBUG
+    }
+}
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
 #if DEBUG
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
+        public sealed override MemberTypes MemberType => base.MemberType;
 #endif //DEBUG
     }
 }
+
+

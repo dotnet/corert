@@ -16,13 +16,6 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.IO.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Globalization.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />
   </ItemGroup>
   <PropertyGroup>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
@@ -30,9 +23,6 @@
   <ItemGroup>
     <Compile Include="Internal\Reflection\Augments\TypeForwarders.cs" />
     <Compile Include="System\Reflection\TypeForwarders.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Internal\Reflection\Extensibility\ReflectionExtensibility.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

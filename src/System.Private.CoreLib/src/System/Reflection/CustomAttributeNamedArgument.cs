@@ -2,59 +2,93 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  CustomAttributeNamedArgument
-**
-==============================================================*/
-
-using global::System;
-
 namespace System.Reflection
 {
     public struct CustomAttributeNamedArgument
     {
-        public CustomAttributeNamedArgument(Type attributeType, String memberName, bool isField, CustomAttributeTypedArgument typedValue)
+        // This constructor is the one used by .Net Native as the current metadata format only contains the name and the "isField" value,
+        // not the actual member. To keep .Net Native running as before, we'll use the name and isField as the principal data and 
+        // construct the MemberInfo on demand.
+        internal CustomAttributeNamedArgument(Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException("attributeType");
-
-            if (memberName == null)
-                throw new ArgumentNullException("memberName");
-
-            _memberName = memberName;
-            _isField = isField;
-            _typedValue = typedValue;
+            IsField = isField;
+            MemberName = memberName;
+            TypedValue = typedValue;
+            _attributeType = attributeType;
+            _lazyMemberInfo = null;
         }
 
-        public String MemberName
+        public CustomAttributeNamedArgument(MemberInfo memberInfo, object value)
+        {
+            if (memberInfo == null)
+                throw new ArgumentNullException(nameof(memberInfo));
+
+            Type type = null;
+            FieldInfo field = memberInfo as FieldInfo;
+            PropertyInfo property = memberInfo as PropertyInfo;
+
+            if (field != null)
+                type = field.FieldType;
+            else if (property != null)
+                type = property.PropertyType;
+            else
+                throw new ArgumentException(SR.Argument_InvalidMemberForNamedArgument);
+
+            _lazyMemberInfo = memberInfo;
+            _attributeType = memberInfo.DeclaringType;
+            TypedValue = new CustomAttributeTypedArgument(type, value);
+            IsField = field != null;
+            MemberName = memberInfo.Name;
+        }
+
+        public CustomAttributeNamedArgument(MemberInfo memberInfo, CustomAttributeTypedArgument typedArgument)
+        {
+            if (memberInfo == null)
+                throw new ArgumentNullException(nameof(memberInfo));
+
+            _lazyMemberInfo = memberInfo;
+            _attributeType = memberInfo.DeclaringType;
+            TypedValue = typedArgument;
+            IsField = memberInfo is FieldInfo;  // For compat with the desktop, there is no validation that a non-field member is a PropertyInfo.
+            MemberName = memberInfo.Name;
+        }
+
+        public CustomAttributeTypedArgument TypedValue { get; }
+        public bool IsField { get; }
+        public string MemberName { get; }
+
+        public MemberInfo MemberInfo
         {
             get
             {
-                return _memberName;
+                MemberInfo memberInfo = _lazyMemberInfo;
+                if (memberInfo == null)
+                {
+                    throw new NotImplementedException(); // Need to finish Type class, before this can be enabled.
+                    //if (IsField)
+                    //    memberInfo = _attributeType.GetField(MemberName, BindingFlags.Public | BindingFlags.Instance);
+                    //else
+                    //    memberInfo = _attributeType.GetProperty(MemberName, BindingFlags.Public | BindingFlags.Instance);
+                    //
+                    //if (memberInfo == null)
+                    //    throw new NotImplementedException(); // @todo: This can only come from bad metadata or missing metadata. Must find a better exception.
+                    //_lazyMemberInfo = memberInfo;
+                }
+                return memberInfo;
             }
         }
 
-        public bool IsField
+        public override bool Equals(object obj) => obj == (object)this;
+        public override int GetHashCode() => base.GetHashCode();
+
+        public override string ToString()
         {
-            get
-            {
-                return _isField;
-            }
+            // base.ToString() is a temporary implementation: this silly looking line officially tags this method as needing further work.
+            if (string.Empty.Length > 0) throw new NotImplementedException();
+            return base.ToString();
         }
 
-        public CustomAttributeTypedArgument TypedValue
-        {
-            get
-            {
-                return _typedValue;
-            }
-        }
-
-        private String _memberName;
-        private bool _isField;
-        private CustomAttributeTypedArgument _typedValue;
+        private readonly Type _attributeType;
+        private volatile MemberInfo _lazyMemberInfo;
     }
 }
-

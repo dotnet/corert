@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime;
+using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -48,6 +49,10 @@ namespace System
             _innerException = innerException;
         }
 
+        protected Exception(SerializationInfo info, StreamingContext context)
+        {
+            throw new NotImplementedException();
+        }
 
         public virtual String Message
         {

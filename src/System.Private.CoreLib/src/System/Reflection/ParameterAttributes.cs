@@ -22,5 +22,9 @@ namespace System.Reflection
 
         HasDefault = 0x1000,     // Param has default value.
         HasFieldMarshal = 0x2000,     // Param has FieldMarshal.
+
+        Reserved3 = 0x4000,
+        Reserved4 = 0x8000,
+        ReservedMask = 0xf000,
     }
 }

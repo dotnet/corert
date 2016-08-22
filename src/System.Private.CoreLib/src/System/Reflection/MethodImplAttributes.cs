@@ -34,5 +34,7 @@ namespace System.Reflection
         [System.Runtime.InteropServices.ComVisible(false)]
         AggressiveInlining = 0x0100,   // Method should be inlined if possible.
         NoOptimization = 0x0040,   // Method may not be optimized.
+
+        MaxMethodImplVal = 0xffff,
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
@@ -62,8 +63,11 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override Object Invoke(Object[] parameters)
+        public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
+            if (invokeAttr != BindingFlags.Default || binder != null || culture != null)
+                throw new NotImplementedException();
+
             if (parameters == null)
                 parameters = Array.Empty<Object>();
 

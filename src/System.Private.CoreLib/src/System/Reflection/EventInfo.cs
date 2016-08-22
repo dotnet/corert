@@ -2,97 +2,63 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*============================================================
-**
-  Type:  EventInfo
-**
-==============================================================*/
-
-using global::System;
-
 namespace System.Reflection
 {
     public abstract class EventInfo : MemberInfo
     {
-        protected EventInfo()
-        {
-        }
+        protected EventInfo() { }
 
-        public virtual MethodInfo AddMethod
+        public override MemberTypes MemberType => MemberTypes.Event;
+
+        public abstract EventAttributes Attributes { get; }
+        public bool IsSpecialName => (Attributes & EventAttributes.SpecialName) != 0;
+
+        public MethodInfo[] GetOtherMethods() => GetOtherMethods(nonPublic: false);
+        public virtual MethodInfo[] GetOtherMethods(bool nonPublic) { throw NotImplemented.ByDesign; }
+
+        public virtual MethodInfo AddMethod => GetAddMethod(nonPublic: true);
+        public virtual MethodInfo RemoveMethod => GetRemoveMethod(nonPublic: true);
+        public virtual MethodInfo RaiseMethod => GetRaiseMethod(nonPublic: true);
+
+        public MethodInfo GetAddMethod() => GetAddMethod(nonPublic: false);
+        public MethodInfo GetRemoveMethod() => GetRemoveMethod(nonPublic: false);
+        public MethodInfo GetRaiseMethod() => GetRaiseMethod(nonPublic: false);
+
+        public abstract MethodInfo GetAddMethod(bool nonPublic);
+        public abstract MethodInfo GetRemoveMethod(bool nonPublic);
+        public abstract MethodInfo GetRaiseMethod(bool nonPublic);
+
+        public virtual bool IsMulticast
         {
             get
             {
-                throw NotImplemented.ByDesign;
+                Type cl = EventHandlerType;
+                Type mc = typeof(MulticastDelegate);
+                return mc.GetTypeInfo().IsAssignableFrom(cl.GetTypeInfo());
             }
         }
-
-        public abstract EventAttributes Attributes { get; }
 
         public virtual Type EventHandlerType
         {
             get
             {
-                throw NotImplemented.ByDesign;
+                MethodInfo m = GetAddMethod(true);
+                ParameterInfo[] p = m.GetParameters();
+                Type del = typeof(Delegate);
+                for (int i = 0; i < p.Length; i++)
+                {
+                    Type c = p[i].ParameterType;
+                    if (c.GetTypeInfo().IsSubclassOf(del.GetTypeInfo()))
+                        return c;
+                }
+                return null;
             }
         }
 
-        public bool IsSpecialName
-        {
-            get
-            {
-                return (Attributes & EventAttributes.SpecialName) != 0;
-            }
-        }
+        public virtual void AddEventHandler(object target, Delegate handler) { throw new NotImplementedException(); }
+        public virtual void RemoveEventHandler(object target, Delegate handler) { throw new NotImplementedException(); }
 
-        public virtual MethodInfo RaiseMethod
-        {
-            get
-            {
-                throw NotImplemented.ByDesign;
-            }
-        }
-
-        public virtual MethodInfo RemoveMethod
-        {
-            get
-            {
-                throw NotImplemented.ByDesign;
-            }
-        }
-
-
-        public virtual void AddEventHandler(Object target, Delegate handler)
-        {
-            MethodInfo addMethod = AddMethod;
-            if (!addMethod.IsPublic)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
-
-            addMethod.Invoke(target, new object[] { handler });
-        }
-
-        public virtual void RemoveEventHandler(Object target, Delegate handler)
-        {
-            MethodInfo removeMethod = RemoveMethod;
-            if (!removeMethod.IsPublic)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
-
-            removeMethod.Invoke(target, new object[] { handler });
-        }
-
-
-        // Equals() and GetHashCode() implement reference equality for compatibility with desktop.
-        // Unfortunately, this means that implementors who don't unify instances will be on the hook
-        // to override these implementations to test for semantic equivalence.
-        public override bool Equals(object obj)
-        {
-            return base.Equals(obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override bool Equals(object obj) => base.Equals(obj);
+        public override int GetHashCode() => base.GetHashCode();
     }
 }
-

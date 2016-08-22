@@ -4,12 +4,11 @@
 
 using System;
 using System.Reflection;
-
-using Internal.Reflection.Extensibility;
+using System.Collections.Generic;
 
 namespace System.Runtime.InteropServices
 {
-    public class ComAwareEventInfo : ExtensibleEventInfo
+    public class ComAwareEventInfo : EventInfo
     {
 #if FEATURE_COMAWAREEVENTINFO
         #region private fields
@@ -179,6 +178,46 @@ namespace System.Runtime.InteropServices
         }
 
         public override void RemoveEventHandler(object target, Delegate handler)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override object[] GetCustomAttributes(bool inherit)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override bool IsDefined(Type attributeType, bool inherit)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override IList<CustomAttributeData> GetCustomAttributesData()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override Type ReflectedType
+        {
+            get { throw new PlatformNotSupportedException(); }
+        }
+
+        public override MethodInfo GetAddMethod(bool nonPublic)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override MethodInfo GetRemoveMethod(bool nonPublic)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public override MethodInfo GetRaiseMethod(bool nonPublic)
         {
             throw new PlatformNotSupportedException();
         }

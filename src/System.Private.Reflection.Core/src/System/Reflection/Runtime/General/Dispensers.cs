@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     // Assemblies (maps 1-1 with a MetadataReader/ScopeDefinitionHandle.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeAssembly : ExtensibleAssembly
+    internal sealed partial class RuntimeAssembly
     {
         internal static RuntimeAssembly GetRuntimeAssembly(RuntimeAssemblyName assemblyRefName)
         {
@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.Modules
     // Modules (these exist only because Modules still exist in the Win8P surface area. There is a 1-1
     //          mapping between Assemblies and Modules.)
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeModule : ExtensibleModule
+    internal sealed partial class RuntimeModule
     {
         internal static RuntimeModule GetRuntimeModule(RuntimeAssembly assembly)
         {
@@ -162,7 +162,7 @@ namespace System.Reflection.Runtime.FieldInfos
     //-----------------------------------------------------------------------------------------------------------
     // FieldInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeFieldInfo : ExtensibleFieldInfo
+    internal sealed partial class RuntimeFieldInfo
     {
         internal static RuntimeFieldInfo GetRuntimeFieldInfo(FieldHandle fieldHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
@@ -236,7 +236,7 @@ namespace System.Reflection.Runtime.PropertyInfos
     //-----------------------------------------------------------------------------------------------------------
     // PropertyInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimePropertyInfo : ExtensiblePropertyInfo
+    internal sealed partial class RuntimePropertyInfo
     {
         internal static RuntimePropertyInfo GetRuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
@@ -250,7 +250,7 @@ namespace System.Reflection.Runtime.EventInfos
     //-----------------------------------------------------------------------------------------------------------
     // EventInfos
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeEventInfo : ExtensibleEventInfo
+    internal sealed partial class RuntimeEventInfo
     {
         internal static RuntimeEventInfo GetRuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
         {
@@ -311,7 +311,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     //-----------------------------------------------------------------------------------------------------------
     // CustomAttributeData objects returned by various CustomAttributes properties.
     //-----------------------------------------------------------------------------------------------------------
-    internal abstract partial class RuntimeCustomAttributeData : ExtensibleCustomAttributeData
+    internal abstract partial class RuntimeCustomAttributeData
     {
         internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, IEnumerable<CustomAttributeHandle> customAttributeHandles)
         {

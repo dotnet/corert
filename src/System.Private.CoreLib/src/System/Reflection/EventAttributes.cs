@@ -17,5 +17,7 @@ namespace System.Reflection
         SpecialName = 0x0200,     // event is special.  Name describes how.
 
         RTSpecialName = 0x0400,     // Runtime(metadata internal APIs) should check name encoding.
+
+        ReservedMask = 0x0400,
     }
 }

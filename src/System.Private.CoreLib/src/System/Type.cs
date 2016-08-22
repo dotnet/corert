@@ -10,6 +10,7 @@ using System;
 using System.Threading;
 using System.Runtime;
 using System.Reflection;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
@@ -24,6 +25,8 @@ namespace System
         {
         }
 
+        public override MemberTypes MemberType => MemberTypes.TypeInfo;
+
         public static readonly Object Missing = System.Reflection.Missing.Value;
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();
 
@@ -31,6 +34,7 @@ namespace System
         public abstract String FullName { get; }
         public abstract int GenericParameterPosition { get; }
         public abstract Type[] GenericTypeArguments { get; }
+        public virtual Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
         public bool HasElementType
         {
@@ -143,18 +147,6 @@ namespace System
         protected abstract bool IsArrayImpl();
         protected abstract bool IsByRefImpl();
         protected abstract bool IsPointerImpl();
-
-        internal bool TryGetEEType(out EETypePtr eeType)
-        {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            if (typeHandle.IsNull)
-            {
-                eeType = default(EETypePtr);
-                return false;
-            }
-            eeType = typeHandle.ToEETypePtr();
-            return true;
-        }
     }
 }
 
