@@ -13,7 +13,7 @@ internal static partial class Interop
         internal extern static unsafe int LCMapStringEx(
                     string lpLocaleName,
                     uint dwMapFlags,
-                    string lpSrcStr,
+                    char* lpSrcStr,
                     int cchSrc,
                     void*  lpDestStr,
                     int cchDest,
