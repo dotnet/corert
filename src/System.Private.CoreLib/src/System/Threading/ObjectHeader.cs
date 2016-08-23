@@ -32,8 +32,9 @@ namespace System.Threading
         // header (i.e. ends with bit 0) and that (MASK_HASHCODE_INDEX + 1) does not overflow
         // the Int32 type (i.e. the mask may be no longer than 30 bits).
 
-        private  const int BIT_SBLK_IS_HASHCODE = 0x04000000;
-        internal const int MASK_HASHCODE_INDEX  = BIT_SBLK_IS_HASHCODE - 1;
+        private  const int IS_HASHCODE_BIT_NUMBER = 26;
+        private  const int BIT_SBLK_IS_HASHCODE   = 1 << IS_HASHCODE_BIT_NUMBER;
+        internal const int MASK_HASHCODE_INDEX    = BIT_SBLK_IS_HASHCODE - 1;
 
         /// <summary>
         /// Returns the hash code assigned to the object.  If no hash code has yet been assigned,
@@ -121,16 +122,24 @@ namespace System.Threading
         /// Extracts the sync entry index or the hash code from the header value.  Returns true
         /// if the header value stores the sync entry index.
         /// </summary>
+        // Inlining is important for lock performance
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GetSyncEntryIndex(int header, out int hashOrIndex)
         {
             hashOrIndex = header & MASK_HASHCODE_INDEX;
-            return (hashOrIndex != 0) && ((header & BIT_SBLK_IS_HASHCODE) == 0);
+            // The following is equivalent to:
+            //   return (hashOrIndex != 0) && ((header & BIT_SBLK_IS_HASHCODE) == 0);
+            // Shifting the BIT_SBLK_IS_HASHCODE bit to the sign bit saves one branch.
+            int bitAndValue = header & (BIT_SBLK_IS_HASHCODE | MASK_HASHCODE_INDEX);
+            return (bitAndValue << (31 - IS_HASHCODE_BIT_NUMBER)) > 0;
         }
 
         /// <summary>
         /// Returns the Monitor synchronization object assigned to this object.  If no synchronization
         /// object has yet been assigned, it assigns one in a thread-safe way.
         /// </summary>
+        // Called from Monitor.Enter only; inlining is important for lock performance
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Lock GetLockObject(object o)
         {
             fixed (IntPtr* pEEType = &o.m_pEEType)

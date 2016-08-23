@@ -61,6 +61,7 @@ namespace System.Threading
     /// One possible future optimization is recycling Monitor synchronization objects from dead
     /// entries.
     /// </remarks>
+    [EagerStaticClassConstruction]
     internal static class SyncTable
     {
         /// <summary>
@@ -93,7 +94,7 @@ namespace System.Threading
         /// <summary>
         /// The dynamically growing array of sync entries.
         /// </summary>
-        private static Entry[] s_entries = InitializeTable();
+        private static Entry[] s_entries = new Entry[InitialSize];
 
         /// <summary>
         /// The head of the list of freed entries linked using the Next property.
@@ -116,14 +117,11 @@ namespace System.Threading
         /// <summary>
         /// Creates the initial array of entries and the dead entries collector.
         /// </summary>
-        private static Entry[] InitializeTable()
+        static SyncTable()
         {
-            Contract.Assert((0 < InitialSize) && (InitialSize <= ObjectHeader.MASK_HASHCODE_INDEX + 1));
-
             // Create only one collector instance and do not store any references to it, so it may
             // be finalized.  Use GC.KeepAlive to ensure the allocation will not be optimized out.
             GC.KeepAlive(new DeadEntryCollector());
-            return new Entry[InitialSize];
         }
 
         /// <summary>
