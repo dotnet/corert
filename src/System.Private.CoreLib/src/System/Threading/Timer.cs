@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-// 
-
-//
-
 using System;
 using System.Security;
 using System.Runtime.CompilerServices;
@@ -115,16 +109,6 @@ namespace System.Threading
                 if (actualDuration >= remainingDuration)
                     return; //the timer will fire earlier than this request
             }
-#if FEATURE_LEGACYNETCFFAS
-            // If Pause is underway then do not schedule the timers
-            // A later update during resume will re-schedule
-            if (m_pauseTicks != 0)
-            {
-                Contract.Assert(!m_isAppDomainTimerScheduled);
-                Contract.Assert(m_appDomainTimer == null);
-                return true;
-            }
-#endif //FEATURE_LEGACYNETCFFAS
 
             if (m_nativeTimerCallback == null)
             {
@@ -165,89 +149,6 @@ namespace System.Threading
         //
         TimerQueueTimer m_timers;
         readonly internal Lock Lock = new Lock();
-
-#if FEATURE_LEGACYNETCFFAS
-
-        volatile int m_pauseTicks = 0; // Time when Pause was called
-
-        internal void Pause()
-        {
-            using (LockHolder.Hold(Lock))
-            {
-                // Delete the native timer so that no timers are fired in the Pause zone
-                if (m_appDomainTimer != null && !m_appDomainTimer.IsInvalid)
-                {
-                    m_appDomainTimer.Dispose();
-                    m_appDomainTimer = null;
-                    m_isAppDomainTimerScheduled = false;
-                    m_pauseTicks = TickCount;
-                }
-            }
-        }
-
-        internal void Resume()
-        {
-            //
-            // Update timers to adjust their due-time to accomodate Pause/Resume
-            //
-            using (LockHolder.Hold(Lock))
-            {
-                // prevent ThreadAbort while updating state
-                try { }
-                finally
-                {
-                    int pauseTicks = m_pauseTicks;
-                    m_pauseTicks = 0; // Set this to 0 so that now timers can be scheduled
-
-                    int resumedTicks = TickCount;
-                    int pauseDuration = resumedTicks - pauseTicks;
-
-                    bool haveTimerToSchedule = false;
-                    uint nextAppDomainTimerDuration = uint.MaxValue;
-
-                    TimerQueueTimer timer = m_timers;
-                    while (timer != null)
-                    {
-                        Contract.Assert(timer.m_dueTime != Timer.UnsignedInfiniteTimeout);
-                        Contract.Assert(resumedTicks >= timer.m_startTicks);
-
-                        uint elapsed; // How much of the timer dueTime has already elapsed
-
-                        // Timers started before the paused event has to be sufficiently delayed to accomodate 
-                        // for the Pause time. However, timers started after the Paused event shouldnt be adjusted. 
-                        // E.g. ones created by the app in its Activated event should fire when it was designated.
-                        // The Resumed event which is where this routine is executing is after this Activated and hence 
-                        // shouldn't delay this timer
-
-                        if (timer.m_startTicks <= pauseTicks)
-                            elapsed = (uint)(pauseTicks - timer.m_startTicks);
-                        else
-                            elapsed = (uint)(resumedTicks - timer.m_startTicks);
-
-                        // Handling the corner cases where a Timer was already due by the time Resume is happening,
-                        // We shouldn't delay those timers. 
-                        // Example is a timer started in App's Activated event with a very small duration
-                        timer.m_dueTime = (timer.m_dueTime > elapsed) ? timer.m_dueTime - elapsed : 0; ;
-                        timer.m_startTicks = resumedTicks; // re-baseline
-
-                        if (timer.m_dueTime < nextAppDomainTimerDuration)
-                        {
-                            haveTimerToSchedule = true;
-                            nextAppDomainTimerDuration = timer.m_dueTime;
-                        }
-
-                        timer = timer.m_next;
-                    }
-
-                    if (haveTimerToSchedule)
-                    {
-                        EnsureAppDomainTimerFiresBy(nextAppDomainTimerDuration);
-                    }
-                }
-            }
-        }
-
-#endif // FEATURE_LEGACYNETCFFAS
 
         //
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
@@ -742,18 +643,6 @@ namespace System.Threading
 
             m_timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period));
         }
-
-#if FEATURE_LEGACYNETCFFAS
-        internal static void Pause()
-        {
-            TimerQueue.Instance.Pause();
-        }
-
-        internal static void Resume()
-        {
-            TimerQueue.Instance.Resume();
-        }
-#endif // FEATURE_LEGACYNETCFFAS
 
         public bool Change(int dueTime, int period)
         {
