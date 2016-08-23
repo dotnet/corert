@@ -89,7 +89,7 @@ namespace System.Reflection.Runtime.Assemblies
                     IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return typeDefinitionHandle.ResolveTypeDefinition(reader).CastToType();
+                        yield return typeDefinitionHandle.ResolveTypeDefinition(reader);
                 }
             }
         }
@@ -204,7 +204,7 @@ namespace System.Reflection.Runtime.Assemblies
                     throw typeLoadException;
                 return null;
             }
-            return result.CastToType();
+            return result;
         }
 
         internal QScopeDefinition Scope { get; }

@@ -278,7 +278,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
                 }
-                return declaringType.CastToType();
+                return declaringType;
             }
         }
 

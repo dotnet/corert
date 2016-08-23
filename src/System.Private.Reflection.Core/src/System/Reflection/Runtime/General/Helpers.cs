@@ -70,12 +70,5 @@ namespace System.Reflection.Runtime.General
             Debug.Assert(type is RuntimeTypeInfo);
             return (RuntimeTypeInfo)type;
         }
-
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo derives from Type, this helper becomes a NOP and will go away entirely.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Type CastToType(this TypeInfo typeInfo)
-        {
-            return typeInfo;
-        }
     }
 }

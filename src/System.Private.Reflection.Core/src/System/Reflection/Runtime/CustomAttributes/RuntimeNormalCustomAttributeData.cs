@@ -37,7 +37,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 Type lazyAttributeType = _lazyAttributeType;
                 if (lazyAttributeType == null)
                 {
-                    lazyAttributeType = _lazyAttributeType = _customAttribute.GetAttributeTypeHandle(_reader).Resolve(_reader, new TypeContext(null, null)).CastToType();
+                    lazyAttributeType = _lazyAttributeType = _customAttribute.GetAttributeTypeHandle(_reader).Resolve(_reader, new TypeContext(null, null));
                 }
                 return lazyAttributeType;
             }
@@ -191,7 +191,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 else
                     return default(CustomAttributeTypedArgument);
             }
-            return WrapInCustomAttributeTypedArgument(value, argumentType.CastToType());
+            return WrapInCustomAttributeTypedArgument(value, argumentType);
         }
 
         //

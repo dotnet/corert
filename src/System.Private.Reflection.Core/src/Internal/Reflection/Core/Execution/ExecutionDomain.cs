@@ -82,7 +82,7 @@ namespace Internal.Reflection.Core.Execution
                 RuntimeTypeInfo result;
                 Exception typeLoadException = assemblyQualifiedTypeName.TryResolve(defaultAssembly, ignoreCase, out result);
                 if (typeLoadException == null)
-                    return result.CastToType();
+                    return result;
                 lastTypeLoadException = typeLoadException;
             }
 
