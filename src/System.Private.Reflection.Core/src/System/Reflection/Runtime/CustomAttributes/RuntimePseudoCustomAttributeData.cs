@@ -37,7 +37,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-                return _attributeType.CastToType();
+                return _attributeType;
             }
         }
 

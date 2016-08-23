@@ -96,7 +96,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_DeclaringType(this);
 #endif
 
-                return this.RuntimeDeclaringType.CastToType();
+                return this.RuntimeDeclaringType;
             }
         }
 
@@ -211,7 +211,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return this.RuntimeDeclaringType.CastToType();
+                return this.RuntimeDeclaringType;
             }
         }
 

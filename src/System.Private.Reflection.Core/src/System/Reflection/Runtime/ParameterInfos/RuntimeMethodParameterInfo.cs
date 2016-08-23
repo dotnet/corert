@@ -32,7 +32,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _typeHandle.Resolve(this.Reader, _typeContext).CastToType();
+                return _typeHandle.Resolve(this.Reader, _typeContext);
             }
         }
 

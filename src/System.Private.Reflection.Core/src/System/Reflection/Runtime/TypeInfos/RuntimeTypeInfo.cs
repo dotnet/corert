@@ -77,7 +77,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this.CastToType());
+                return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this);
             }
         }
 
@@ -99,7 +99,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         return Type.GetTypeFromHandle(baseTypeHandle);
                 }
 
-                Type baseType = BaseTypeWithoutTheGenericParameterQuirk.CastToType();
+                Type baseType = BaseTypeWithoutTheGenericParameterQuirk;
                 if (baseType != null && baseType.IsGenericParameter)
                 {
                     // Desktop quirk: a generic parameter whose constraint is another generic parameter reports its BaseType as System.Object
@@ -430,12 +430,12 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (!done)
                 {
                     TypeContext typeContext = this.TypeContext;
-                    Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk.CastToType();
+                    Type baseType = this.BaseTypeWithoutTheGenericParameterQuirk;
                     if (baseType != null)
                         result.AddRange(baseType.GetTypeInfo().ImplementedInterfaces);
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
-                        Type ifc = directlyImplementedInterface.Handle.Resolve(directlyImplementedInterface.Reader, typeContext).CastToType();
+                        Type ifc = directlyImplementedInterface.Handle.Resolve(directlyImplementedInterface.Reader, typeContext);
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);
@@ -464,7 +464,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             RuntimeTypeInfo toTypeInfo = this;
 
-            if (typeInfo == null || !typeInfo.CastToType().IsRuntimeImplemented())
+            if (typeInfo == null || !typeInfo.IsRuntimeImplemented())
                 return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
 
             RuntimeTypeInfo fromTypeInfo = typeInfo.CastToRuntimeTypeInfo();
@@ -595,7 +595,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type GetElementType()
         {
-            return InternalRuntimeElementType.CastToType();
+            return InternalRuntimeElementType;
         }
 
         //
