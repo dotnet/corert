@@ -418,7 +418,7 @@
     <Compile Include="System\Runtime\Serialization\OnSerializedAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\OnSerializingAttribute.cs" />
     <Compile Include="System\Runtime\Serialization\OptionalFieldAttribute.cs" />
-    <Compile Include="System\Runtime\Serialization\SerializationException.cs" />
+    <!-- <Compile Include="System\Runtime\Serialization\SerializationException.cs" /> -->
     <Compile Include="System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <Compile Include="System\Runtime\Serialization\StreamingContext.cs" />
