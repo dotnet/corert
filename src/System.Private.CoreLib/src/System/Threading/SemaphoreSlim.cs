@@ -349,7 +349,8 @@ namespace System.Threading
                 try { }
                 finally
                 {
-                    Monitor.Enter(m_lock, ref lockTaken);
+                    m_lock.Acquire();
+                    lockTaken = true;
                     if (lockTaken)
                     {
                         m_waitCount++;
@@ -418,7 +419,7 @@ namespace System.Threading
                 if (lockTaken)
                 {
                     m_waitCount--;
-                    Monitor.Exit(m_lock);
+                    m_lock.Release();
                 }
 
                 // Unregister the cancellation callback.
@@ -635,7 +636,7 @@ namespace System.Threading
         /// <returns>The created task.</returns>
         private TaskNode CreateAndAddAsyncWaiter()
         {
-            Contract.Assert(Monitor.IsEntered(m_lock), "Requires the lock be held");
+            Contract.Assert(m_lock.IsAcquired, "Requires the lock be held");
 
             // Create the task
             var task = new TaskNode();
@@ -665,7 +666,7 @@ namespace System.Threading
         private bool RemoveAsyncWaiter(TaskNode task)
         {
             Contract.Requires(task != null, "Expected non-null task");
-            Contract.Assert(Monitor.IsEntered(m_lock), "Requires the lock be held");
+            Contract.Assert(m_lock.IsAcquired, "Requires the lock be held");
 
             // Is the task in the list?  To be in the list, either it's the head or it has a predecessor that's in the list.
             bool wasInList = m_asyncHead == task || task.Prev != null;
@@ -691,7 +692,7 @@ namespace System.Threading
         private async Task<bool> WaitUntilCountOrTimeoutAsync(TaskNode asyncWaiter, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Contract.Assert(asyncWaiter != null, "Waiter should have been constructed");
-            Contract.Assert(Monitor.IsEntered(m_lock), "Requires the lock be held");
+            Contract.Assert(m_lock.IsAcquired, "Requires the lock be held");
 
             // Wait until either the task is completed, timeout occurs, or cancellation is requested.
             // We need to ensure that the Task.Delay task is appropriately cleaned up if the await
