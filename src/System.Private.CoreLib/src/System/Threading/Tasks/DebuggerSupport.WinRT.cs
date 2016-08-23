@@ -25,7 +25,7 @@ namespace System.Threading.Tasks
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return _loggingOn;
+                return s_loggingOn;
             }
         }
 
@@ -34,7 +34,7 @@ namespace System.Threading.Tasks
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceOperationCreation(traceLevel, CausalitySource.Library, _platformId, task.OperationId(), operationName, relatedContext);
+                WinRTInterop.Callbacks.TraceOperationCreation(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), operationName, relatedContext);
             }
         }
 
@@ -43,7 +43,7 @@ namespace System.Threading.Tasks
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceOperationCompletion(traceLevel, CausalitySource.Library, _platformId, task.OperationId(), status);
+                WinRTInterop.Callbacks.TraceOperationCompletion(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), status);
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.Threading.Tasks
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceOperationRelation(traceLevel, CausalitySource.Library, _platformId, task.OperationId(), relation);
+                WinRTInterop.Callbacks.TraceOperationRelation(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), relation);
             }
         }
 
@@ -61,7 +61,7 @@ namespace System.Threading.Tasks
         {
             if (LoggingOn)
             {
-                WinRTInterop.Callbacks.TraceSynchronousWorkStart(traceLevel, CausalitySource.Library, _platformId, task.OperationId(), work);
+                WinRTInterop.Callbacks.TraceSynchronousWorkStart(traceLevel, CausalitySource.Library, s_platformId, task.OperationId(), work);
             }
         }
 
@@ -83,18 +83,12 @@ namespace System.Threading.Tasks
 
         static DebuggerSupport()
         {
-            _loggingOn = false;
-            WinRTInterop.Callbacks.InitTracingStatusChanged(
-                delegate (bool loggingOn)
-                {
-                    _loggingOn = loggingOn;
-                }
-            );
+            WinRTInterop.Callbacks.InitTracingStatusChanged(loggingOn => s_loggingOn = loggingOn);
         }
 
-        private static bool _loggingOn;
+        private static bool s_loggingOn /*= false*/;
 
         // {4B0171A6-F3D0-41A0-9B33-02550652B995} - Guid that marks our causality events as "Coming from the BCL."
-        private static readonly Guid _platformId = new Guid(0x4B0171A6, unchecked((short)0xF3D0), 0x41A0, 0x9B, 0x33, 0x02, 0x55, 0x06, 0x52, 0xB9, 0x95);
+        private static readonly Guid s_platformId = new Guid(0x4B0171A6, unchecked((short)0xF3D0), 0x41A0, 0x9B, 0x33, 0x02, 0x55, 0x06, 0x52, 0xB9, 0x95);
     }
 }

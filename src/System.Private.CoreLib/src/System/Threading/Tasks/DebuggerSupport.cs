@@ -28,11 +28,10 @@ namespace System.Threading.Tasks
         private static void AddToActiveTasksNonInlined(Task task)
         {
             int id = task.Id;
-            lock (_activeTasksLock)
+            lock (s_activeTasksLock)
             {
-                _activeTasks[id] = task;
+                s_activeTasks[id] = task;
             }
-            return;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,23 +45,22 @@ namespace System.Threading.Tasks
         private static void RemoveFromActiveTasksNonInlined(Task task)
         {
             int id = task.Id;
-            lock (_activeTasksLock)
+            lock (s_activeTasksLock)
             {
-                _activeTasks.Remove(id);
+                s_activeTasks.Remove(id);
             }
-            return;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Task GetActiveTaskFromId(int taskId)
         {
             Task task = null;
-            _activeTasks.TryGetValue(taskId, out task);
+            s_activeTasks.TryGetValue(taskId, out task);
             return task;
         }
 
-        private static readonly LowLevelDictionary<int, Task> _activeTasks = new LowLevelDictionary<int, Task>();
-        private static readonly Object _activeTasksLock = new Object();
+        private static readonly LowLevelDictionary<int, Task> s_activeTasks = new LowLevelDictionary<int, Task>();
+        private static readonly Object s_activeTasksLock = new Object();
 
         //==============================================================================================================
         // This section of the class wraps calls to get the lazy-created Task object for the purpose of reporting
