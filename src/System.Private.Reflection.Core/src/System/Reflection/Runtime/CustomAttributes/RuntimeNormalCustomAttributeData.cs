@@ -13,8 +13,8 @@ using System.Reflection.Runtime.TypeInfos;
 
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
+using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.CustomAttributes
@@ -144,7 +144,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                     Debug.Assert(!throwIfMissingMetadata);
                     return null;
                 }
-                customAttributeNamedArguments.Add(ExtensibleCustomAttributeData.CreateCustomAttributeNamedArgument(this.AttributeType, memberName, isField, typedValue));
+                customAttributeNamedArguments.Add(ReflectionAugments.CreateCustomAttributeNamedArgument(this.AttributeType, memberName, isField, typedValue));
             }
             return customAttributeNamedArguments;
         }
@@ -224,11 +224,11 @@ namespace System.Reflection.Runtime.CustomAttributes
                     CustomAttributeTypedArgument elementTypedArgument = WrapInCustomAttributeTypedArgument(elementValue, reportedElementType);
                     elementTypedArguments.Add(elementTypedArgument);
                 }
-                return ExtensibleCustomAttributeData.CreateCustomAttributeTypedArgument(argumentType, new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments));
+                return new CustomAttributeTypedArgument(argumentType, new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments));
             }
             else
             {
-                return ExtensibleCustomAttributeData.CreateCustomAttributeTypedArgument(argumentType, value);
+                return new CustomAttributeTypedArgument(argumentType, value);
             }
         }
 

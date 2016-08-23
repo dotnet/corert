@@ -32,17 +32,14 @@ namespace System.Reflection.Runtime.TypeInfos
             _rank = rank;
         }
 
-        public sealed override TypeAttributes Attributes
-        {
-            get
-            {
-                return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
-            }
-        }
-
         public sealed override int GetArrayRank()
         {
             return _rank;
+        }
+
+        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        {
+            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
         }
 
         internal sealed override bool InternalIsMultiDimArray

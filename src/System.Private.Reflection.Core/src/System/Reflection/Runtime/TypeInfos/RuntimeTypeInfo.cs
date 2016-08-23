@@ -16,7 +16,6 @@ using System.Reflection.Runtime.EventInfos;
 using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
@@ -41,12 +40,12 @@ namespace System.Reflection.Runtime.TypeInfos
     //     shows up as build error.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract partial class RuntimeTypeInfo : ExtensibleTypeInfo, ITraceableTypeMember, ICloneable, IRuntimeImplementedType
+    internal abstract partial class RuntimeTypeInfo : TypeInfo, ITraceableTypeMember, ICloneable, IRuntimeImplementedType
     {
         protected RuntimeTypeInfo()
         {
         }
-         
+
         public abstract override Assembly Assembly { get; }
 
         public sealed override string AssemblyQualifiedName
@@ -69,16 +68,6 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override Type AsType()
         {
             return this;
-        }
-
-        public abstract override TypeAttributes Attributes { get; }
-
-        public sealed override bool IsCOMObject
-        {
-            get
-            {
-                return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this);
-            }
         }
 
         public sealed override Type BaseType
@@ -504,14 +493,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsEnum
-        {
-            get
-            {
-                return 0 != (Classification & TypeClassification.IsEnum);
-            }
-        }
-
         //
         // Left unsealed as generic parameter types must override.
         //
@@ -542,27 +523,11 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsPrimitive
-        {
-            get
-            {
-                return 0 != (Classification & TypeClassification.IsPrimitive);
-            }
-        }
-
         public sealed override bool IsSerializable
         {
             get
             {
                 return 0 != (this.Attributes & TypeAttributes.Serializable);
-            }
-        }
-
-        public sealed override bool IsValueType
-        {
-            get
-            {
-                return 0 != (Classification & TypeClassification.IsValueType);
             }
         }
 
@@ -741,6 +706,24 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override Type UnderlyingSystemType
+        {
+            get
+            {
+                return this;
+            }
+        }
+
+        protected abstract override TypeAttributes GetAttributeFlagsImpl();
+
+        //
+        // Left unsealed so that RuntimeHasElementTypeInfo can override.
+        //
+        protected override bool HasElementTypeImpl()
+        {
+            return false;
+        }
+
         protected abstract int InternalGetHashCode();
 
         //
@@ -765,6 +748,21 @@ namespace System.Reflection.Runtime.TypeInfos
         protected override bool IsPointerImpl()
         {
             return false;
+        }
+
+        protected sealed override bool IsCOMObjectImpl()
+        {
+            return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this);
+        }
+
+        protected sealed override bool IsPrimitiveImpl()
+        {
+            return 0 != (Classification & TypeClassification.IsPrimitive);
+        }
+
+        protected sealed override bool IsValueTypeImpl()
+        {
+            return 0 != (Classification & TypeClassification.IsValueType);
         }
 
         String ITraceableTypeMember.MemberName

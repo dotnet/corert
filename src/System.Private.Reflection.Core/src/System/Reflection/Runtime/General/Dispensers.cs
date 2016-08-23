@@ -18,7 +18,6 @@ using System.Reflection.Runtime.PropertyInfos;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Extensibility;
 
 using Internal.Metadata.NativeFormat;
 

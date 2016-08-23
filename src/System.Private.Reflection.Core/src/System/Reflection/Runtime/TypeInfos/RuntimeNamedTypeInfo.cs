@@ -51,15 +51,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override TypeAttributes Attributes
-        {
-            get
-            {
-                TypeAttributes attr = _typeDefinition.Flags;
-                return attr;
-            }
-        }
-
         public sealed override bool ContainsGenericParameters
         {
             get
@@ -239,6 +230,12 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 return sb.Append(']').ToString();
             }
+        }
+
+        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        {
+            TypeAttributes attr = _typeDefinition.Flags;
+            return attr;
         }
 
         protected sealed override int InternalGetHashCode()
