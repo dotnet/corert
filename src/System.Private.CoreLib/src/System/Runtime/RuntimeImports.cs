@@ -557,12 +557,12 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
         internal extern static void MemoryBarrier();
+#endif // CORERT
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "fabs")]
         internal static extern double fabs(double x);
-#endif // CORERT
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
