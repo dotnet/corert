@@ -259,7 +259,8 @@ namespace System.Runtime.Serialization
         {
             if (_nameToIndex.Contains(name))
             {
-                throw new SerializationException(SR.Serialization_SameNameTwice);
+                // TODO: Add back
+                // throw new SerializationException(SR.Serialization_SameNameTwice);
             }
             _nameToIndex.Add(name, _count);
 
@@ -292,7 +293,8 @@ namespace System.Runtime.Serialization
             int index = FindElement(name);
             if (index == -1)
             {
-                throw new SerializationException(SR.Format(SR.Serialization_NotFound, name));
+                // TODO: Add back
+                // throw new SerializationException(SR.Format(SR.Serialization_NotFound, name));
             }
 
             Contract.Assert(index < _values.Length);
