@@ -70,6 +70,7 @@ struct RawEEType
     uint16_t    m_usNumVtableSlots;
     uint16_t    m_usNumInterfaces;
     uint32_t    m_uHashCode;
+	void*       m_pIndirectionModule;
 };
 
 struct ReversePInvokeFrame

@@ -134,9 +134,6 @@
     <Compile Include="..\..\Common\src\System\Collections\Generic\Empty.cs" >
       <Link>System\Collections\Generic\Empty.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs" >
-      <Link>System\Runtime\CompilerServices\DeveloperExperienceModeOnlyAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

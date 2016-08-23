@@ -729,190 +729,193 @@ namespace ILCompiler.CppCodeGen
             return sb.ToString();
         }
 
-        private void AppendVirtualSlots(CppGenerationBuffer sb, TypeDesc implType, TypeDesc declType)
+        private String GetCodeForObjectNode(ObjectNode node, NodeFactory factory)
         {
-            var baseType = declType.BaseType;
-            if (baseType != null)
-                AppendVirtualSlots(sb, implType, baseType);
-
-            IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(declType).Slots;
-            for (int i = 0; i < virtualSlots.Count; i++)
-            {
-                MethodDesc declMethod = virtualSlots[i];
-                MethodDesc implMethod = implType.GetClosestDefType().FindVirtualFunctionTargetMethodOnObjectType(declMethod);
-
-                sb.AppendLine();
-                if (implMethod.IsAbstract)
-                {
-                    sb.Append("NULL,");
-                }
-                else
-                {
-                    sb.Append("(void*)&");
-                    sb.Append(GetCppMethodDeclarationName(implMethod.OwningType, GetCppMethodName(implMethod)));
-                    sb.Append(",");
-                }
-            }
-        }
-
-        private String GetCodeForType(TypeDesc type)
-        {
-            var sb = new CppGenerationBuffer();
-
-            int totalSlots = 0;
-
-            TypeDesc t = type;
-            while (t != null)
-            {
-                IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(t).Slots;
-                totalSlots += virtualSlots.Count;
-                t = t.BaseType;
-            }
-
-            UInt16 flags = 0;
-            try
-            {
-                flags = EETypeBuilderHelpers.ComputeFlags(type);
-            }
-            catch
-            {
-                // TODO: Handling of missing dependencies
-                flags = 0;
-            }
-
-            sb.Append("MethodTable * ");
-            sb.Append(GetCppMethodDeclarationName(type, "__getMethodTable"));
-            sb.Append("()");
-            sb.AppendLine();
-            sb.Append("{");
-            sb.Indent();
-
-            sb.AppendLine();
-            sb.Append("static struct {");
-            sb.Indent();
-            // sb.Append(GCDesc);
-            sb.AppendLine();
-            sb.Append("RawEEType EEType;");
-            if (totalSlots != 0)
-            {
-                sb.AppendLine();
-                sb.Append("void * slots[");
-                sb.Append(totalSlots);
-                sb.Append("];");
-            }
-            sb.Exdent();
-            sb.AppendLine();
-            sb.Append("} mt = {");
-            sb.Indent();
-            // gcdesc
-            if (type.IsString)
-            {
-                // String has non-standard layout
-                sb.AppendLine();
-                sb.Append("{");
-                sb.Indent();
-                sb.AppendLine();
-                sb.Append("sizeof(uint16_t),");
-                sb.AppendLine();
-                sb.Append("0x");                             // EEType::_usComponentSize
-                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
-                sb.Append(",");
-                sb.AppendLine();
-                sb.Append("2 * sizeof(void*) + sizeof(int32_t) + 2,");       // EEType::_uBaseSize
-            }
-            else
-            if (type.IsSzArray)
-            {
-                sb.AppendLine();
-                sb.Append("{");
-                sb.Indent();
-                sb.AppendLine();
-                sb.Append("sizeof(");
-                sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // EEType::_usComponentSize
-                sb.Append("),");
-                sb.AppendLine();
-                sb.Append("0x");
-                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
-                sb.Append(",");
-                sb.AppendLine();
-                sb.Append("3 * sizeof(void*),"); // EEType::_uBaseSize
-            }
-            else
-            if (type.IsArray)
-            {
-                sb.AppendLine();
-                sb.Append("{");
-                sb.Indent();
-                sb.AppendLine();
-                sb.Append("sizeof(");
-                sb.Append(GetCppSignatureTypeName(((ArrayType)type).ElementType)); // EEType::_usComponentSize
-                sb.Append("),");
-                sb.AppendLine();
-                sb.Append("0x");
-                sb.Append(flags.ToStringInvariant("x4"));  // EEType::_usFlags
-                sb.Append(",");
-                sb.AppendLine();
-                sb.Append("3 * sizeof(void*) + ");                            // EEType::_uBaseSize
-                sb.Append(((ArrayType)type).Rank.ToStringInvariant());
-                sb.Append("* sizeof(int32_t) * 2,");
-            }
-            else
-            {
-                // sizeof(void*) == size of object header
-                sb.AppendLine();
-                sb.Append("{");
-                sb.Indent();
-                sb.AppendLine();
-                sb.Append("0,");
-                sb.AppendLine();
-                sb.Append("0x");                                           // EEType::_usComponentSize
-                sb.Append(flags.ToStringInvariant("x"));   // EEType::_usFlags
-                sb.Append(",");
-                sb.AppendLine();
-                sb.Append("AlignBaseSize(sizeof(void*)+sizeof(");             // EEType::_uBaseSize
-                sb.Append(GetCppTypeName(type));
-                sb.Append(")),");
-            }
-
-            sb.AppendLine();
-
-            // base type
-            if (type.IsArray)
-            {
-                sb.Append(GetCppMethodDeclarationName(((ArrayType)type).ElementType, "__getMethodTable"));
-                sb.Append("()");
-            }
-            else
-            {
-                var baseType = type.BaseType;
-                if (baseType != null)
-                {
-                    sb.Append(GetCppMethodDeclarationName(type.BaseType, "__getMethodTable"));
-                    sb.Append("()");
-                }
-                else
-                {
-                    sb.Append("NULL");
-                }
-            }
-            sb.Exdent();
-            sb.AppendLine();
-            sb.Append("},");
-
             // virtual slots
-            if (!type.IsGenericDefinition && ((DependencyNode)_compilation.NodeFactory.ConstructedTypeSymbol(type)).Marked)
-                AppendVirtualSlots(sb, type, type);
+            var nodeData = node.GetData(factory, false);
 
-            sb.Exdent();
-            sb.AppendLine();
-            sb.Append("};");
-            sb.AppendLine();
-            sb.Append("return (MethodTable *)&mt.EEType;");
-            sb.Exdent();
-            sb.AppendLine();
+            CppGenerationBuffer nodeCode = new CppGenerationBuffer();
+
+            /* Create list of byte data. Used to divide contents between reloc and byte data
+          * First val - isReloc
+          * Second val - size of byte data if first value of tuple is false
+          */
+
+            List<NodeDataSection> nodeDataSections = new List<NodeDataSection>();
+            byte[] actualData = new byte[nodeData.Data.Length];
+            Relocation[] relocs = nodeData.Relocs;
+
+            int nextRelocOffset = -1;
+            int nextRelocIndex = -1;
+            int lastByteIndex = 0;
+
+            if (relocs.Length > 0)
+            {
+                nextRelocOffset = relocs[0].Offset;
+                nextRelocIndex = 0;
+            }
+
+            int i = 0;
+            int offset = 0;
+            CppGenerationBuffer nodeDataDecl = new CppGenerationBuffer();
+
+            if (node is ISymbolNode)
+            {
+                offset = (node as ISymbolNode).Offset;
+                i = offset;
+                lastByteIndex = offset;
+            }
+            while (i < nodeData.Data.Length)
+            {
+                if (i == nextRelocOffset)
+                {
+                    Relocation reloc = relocs[nextRelocIndex];
+
+                    int size = _compilation.TypeSystemContext.Target.PointerSize;
+                    // Make sure we've gotten the correct size for the reloc
+                    System.Diagnostics.Debug.Assert(reloc.RelocType == (size == 8 ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW));
+
+                    // Update nextRelocIndex/Offset
+                    if (++nextRelocIndex < relocs.Length)
+                    {
+                        nextRelocOffset = relocs[nextRelocIndex].Offset;
+                    }
+                    nodeDataSections.Add(new NodeDataSection(NodeDataSectionType.Relocation, size ));
+                    i += size;
+                    lastByteIndex = i;
+                }
+                else
+                {
+                    i++;
+                    if (i + 1 == nextRelocOffset || i + 1 == nodeData.Data.Length)
+                    {
+                        nodeDataSections.Add(new NodeDataSection( NodeDataSectionType.ByteData,   (i + 1) - lastByteIndex ));
+                    }
+                }
+            }
+
+            nodeCode.Append("MethodTable * ");
+            if (node is EETypeNode)
+            {
+                nodeCode.Append(GetCppMethodDeclarationName((node as EETypeNode).Type, "__getMethodTable"));
+            }
+            else
+            {
+                nodeCode.Append(node.GetName());
+            }
+            nodeCode.Append("()");
+            nodeCode.AppendLine();
+            nodeCode.Append("{");
+            nodeCode.Indent();
+            nodeCode.AppendLine();
+            nodeCode.Append("static struct {");
+
+            nodeCode.AppendLine();
+            nodeCode.Append(GetCodeForNodeStruct(nodeDataSections, node));
+
+            nodeCode.AppendLine();
+            nodeCode.Append("} mt = {");
+            nodeCode.Append(GetCodeForNodeData(nodeDataSections, relocs, nodeData.Data, node, offset));
+
+            nodeCode.Append("};");
+            nodeCode.AppendLine();
+            nodeCode.Append("return (MethodTable *)&mt;");
+            nodeCode.Exdent();
+            nodeCode.AppendLine();
+            nodeCode.Append("}");
+
+            return nodeCode.ToString();
+
+
+        }
+        private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, byte[] byteData, DependencyNode node, int offset)
+        {
+            CppGenerationBuffer nodeDataDecl = new CppGenerationBuffer();
+            int relocCounter = 0;
+            int divisionStartIndex = offset;
+            nodeDataDecl.Indent();
+            nodeDataDecl.AppendLine();
+
+            for (int i = 0; i < nodeDataSections.Count; i++)
+            {
+                nodeDataDecl.Indent();
+
+                if (nodeDataSections[i].SectionType == NodeDataSectionType.Relocation)
+                {
+                    Relocation reloc = relocs[relocCounter];
+                    if (reloc.Target is CppMethodCodeNode)
+                    {
+                        var method = reloc.Target as CppMethodCodeNode;
+
+                        nodeDataDecl.Append("(void*)&");
+                        nodeDataDecl.Append(GetCppMethodDeclarationName(method.Method.OwningType, GetCppMethodName(method.Method)));
+                        nodeDataDecl.Append(",");
+                    }
+                    else if (reloc.Target is EETypeNode && node is EETypeNode && _emittedTypes.Contains((reloc.Target as EETypeNode).Type))
+                    {
+                        nodeDataDecl.Append(GetCppMethodDeclarationName((reloc.Target as EETypeNode).Type, "__getMethodTable"));
+                        nodeDataDecl.Append("(),");
+                    }
+                    else
+                    {
+                        // TODO Add support for other relocs
+                        nodeDataDecl.Append("NULL,");
+                    }
+                    relocCounter++;
+                }
+                else
+                {
+                    GetFormattedByteArray(byteData, divisionStartIndex, divisionStartIndex + nodeDataSections[i].SectionSize, nodeDataDecl);
+                    nodeDataDecl.Append(",");
+                    divisionStartIndex += nodeDataSections[i].SectionSize;
+
+                }
+                nodeDataDecl.AppendLine();
+                nodeDataDecl.Exdent();
+
+
+            }
+            return nodeDataDecl.ToString();
+
+        }
+        private String GetCodeForNodeStruct(List<NodeDataSection> nodeDataDivs, DependencyNode node)
+        {
+            CppGenerationBuffer nodeStructDecl = new CppGenerationBuffer();
+            int relocCounter = 1;
+            int i = 0;
+            nodeStructDecl.Indent();
+
+            for (i = 0; i < nodeDataDivs.Count; i++)
+            {
+                NodeDataSection section = nodeDataDivs[i];
+                if (section.SectionType == NodeDataSectionType.Relocation)
+                {
+                    nodeStructDecl.Append("void* reloc");
+                    nodeStructDecl.Append(relocCounter);
+                    nodeStructDecl.Append(";");
+                    relocCounter++;
+                }
+                else
+                {
+                    nodeStructDecl.Append("unsigned char data");
+                    nodeStructDecl.Append((i + 1) - relocCounter);
+                    nodeStructDecl.Append("[");
+                    nodeStructDecl.Append(section.SectionSize);
+                    nodeStructDecl.Append("];");
+
+                }
+                nodeStructDecl.AppendLine();
+            }
+            nodeStructDecl.Exdent();
+
+            return nodeStructDecl.ToString();
+        }
+        private void GetFormattedByteArray(byte[] array, int startIndex, int endIndex, CppGenerationBuffer sb)
+        {
+            sb.Append("{");
+            sb.Append("0x");
+            sb.Append(BitConverter.ToString(array, startIndex, endIndex - startIndex).Replace("-", ",0x"));
             sb.Append("}");
-
-            return sb.ToString();
         }
 
         private void BuildMethodLists(IEnumerable<DependencyNode> nodes)
@@ -966,6 +969,7 @@ namespace ILCompiler.CppCodeGen
             CppGenerationBuffer forwardDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer typeDefinitions = new CppGenerationBuffer();
             CppGenerationBuffer methodTables = new CppGenerationBuffer();
+            CppGenerationBuffer optionalFields = new CppGenerationBuffer();
             DependencyNodeIterator nodeIterator = new DependencyNodeIterator(nodes);
             // Output well-known types to avoid build errors
 
@@ -973,16 +977,20 @@ namespace ILCompiler.CppCodeGen
             {
                 foreach (var wellKnownTypeNode in _wellKnownTypeNodes)
                 {
-                    if (wellKnownTypeNode is EETypeNode)
-                        OutputTypeNode((EETypeNode)wellKnownTypeNode, forwardDefinitions, typeDefinitions, methodTables);
+                    OutputTypeNode(wellKnownTypeNode, factory, forwardDefinitions, typeDefinitions, methodTables);
                 }
             }
             // Iterate through nodes
             foreach (var node in nodeIterator.GetNodes())
             {
                 if (node is EETypeNode && !_emittedTypes.Contains(((EETypeNode)node).Type))
+                    OutputTypeNode(node as EETypeNode, factory, forwardDefinitions, typeDefinitions, methodTables);
 
-                    OutputTypeNode(node as EETypeNode, forwardDefinitions, typeDefinitions, methodTables);
+                else if (node is CppMethodCodeNode)
+                    OutputMethodNode(node as CppMethodCodeNode, implementation);
+
+                else if (node is EETypeOptionalFieldsNode)
+                    optionalFields.Append(GetCodeForObjectNode(node as EETypeOptionalFieldsNode, factory));
             }
 
             definitions.Append(forwardDefinitions.ToString());
@@ -991,14 +999,8 @@ namespace ILCompiler.CppCodeGen
             typeDefinitions.Clear();
             definitions.Append(methodTables.ToString());
             methodTables.Clear();
-
-            // Declaration and implementation are output separately. Would be better to avoid looping through code twice.
-
-            foreach (var node in nodeIterator.GetNodes())
-            {
-                if (node is CppMethodCodeNode)
-                    OutputMethodCode(node as CppMethodCodeNode, implementation);
-            }
+            definitions.Append(optionalFields.ToString());
+            optionalFields.Clear();
         }
 
         /// <summary>
@@ -1006,7 +1008,7 @@ namespace ILCompiler.CppCodeGen
         /// </summary>
         /// <param name="methodCodeNode">The code node to be output</param>
         /// <param name="methodImplementations">The buffer in which to write out the C++ code</param>
-        private void OutputMethodCode(CppMethodCodeNode methodCodeNode, CppGenerationBuffer methodImplementations)
+        private void OutputMethodNode(CppMethodCodeNode methodCodeNode, CppGenerationBuffer methodImplementations)
         {
             methodImplementations.AppendLine();
             methodImplementations.Append(methodCodeNode.CppCode);
@@ -1033,7 +1035,7 @@ namespace ILCompiler.CppCodeGen
                 methodImplementations.Append("}");
             }
         }
-        private void OutputTypeNode(EETypeNode typeNode, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions, CppGenerationBuffer methodTable)
+        private void OutputTypeNode(IEETypeNode typeNode, NodeFactory factory, CppGenerationBuffer forwardDefinitions, CppGenerationBuffer typeDefinitions, CppGenerationBuffer methodTable)
         {
             if (_emittedTypes == null)
             {
@@ -1049,9 +1051,9 @@ namespace ILCompiler.CppCodeGen
 
             // Create Namespaces
             string mangledName = GetCppTypeName(nodeType);
+
             int nesting = 0;
             int current = 0;
-
 
             forwardDefinitions.AppendLine();
             for (;;)
@@ -1128,9 +1130,6 @@ namespace ILCompiler.CppCodeGen
 
                 if (nodeType.HasStaticConstructor)
                 {
-                    typeDefinitions.AppendLine();
-                    typeDefinitions.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
-
                     _statics.AppendLine();
                     _statics.Append("bool __cctor_" + GetCppTypeName(nodeType).Replace("::", "__") + ";");
                 }
@@ -1161,16 +1160,9 @@ namespace ILCompiler.CppCodeGen
             // declare method table
             if (!nodeType.IsPointer && !nodeType.IsByRef)
             {
-                methodTable.Append(GetCodeForType(nodeType));
+                methodTable.Append(GetCodeForObjectNode(typeNode as ObjectNode, factory));
                 methodTable.AppendEmptyLine();
             }
-        }
-
-        private string GenerateMethodCode()
-        {
-            var methodCode = new CppGenerationBuffer();
-
-            return methodCode.ToString();
         }
 
         public void OutputCode(IEnumerable<DependencyNode> nodes, MethodDesc entrypoint, NodeFactory factory)
