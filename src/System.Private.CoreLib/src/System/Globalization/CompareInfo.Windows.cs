@@ -71,13 +71,16 @@ namespace System.Globalization
 
             int tmpHash = 0;
 
-            if (Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                              LCMAP_HASH | (uint)GetNativeCompareFlags(options),
-                                              source, source.Length,
-                                              &tmpHash, sizeof(int),
-                                              null, null, _sortHandle) == 0)
+            fixed (char* pSource = source)
             {
-                Environment.FailFast("LCMapStringEx failed!");
+                if (Interop.mincore.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                  LCMAP_HASH | (uint)GetNativeCompareFlags(options),
+                                                  pSource, source.Length,
+                                                  &tmpHash, sizeof(int),
+                                                  null, null, _sortHandle) == 0)
+                {
+                    Environment.FailFast("LCMapStringEx failed!");
+                }
             }
 
             return tmpHash;
