@@ -39,14 +39,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override TypeAttributes Attributes
-        {
-            get
-            {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
-            }
-        }
-
         public sealed override bool ContainsGenericParameters
         {
             get
@@ -114,6 +106,11 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string ToString()
         {
             return _typeHandle.LastResortString();
+        }
+
+        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        {
+            throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
         }
 
         protected sealed override int InternalGetHashCode()

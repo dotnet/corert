@@ -33,6 +33,11 @@ namespace Internal.Reflection.Augments
             _reflectionCoreCallbacks = reflectionCoreCallbacks;
         }
 
+        public static CustomAttributeNamedArgument CreateCustomAttributeNamedArgument(Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue)
+        {
+            return new CustomAttributeNamedArgument(attributeType, memberName, isField, typedValue);
+        }
+
         internal static ReflectionCoreCallbacks ReflectionCoreCallbacks
         {
             get

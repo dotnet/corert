@@ -37,14 +37,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override TypeAttributes Attributes
-        {
-            get
-            {
-                return TypeAttributes.Public;
-            }
-        }
-
         public sealed override bool ContainsGenericParameters
         {
             get
@@ -124,6 +116,11 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string ToString()
         {
             return Name;
+        }
+
+        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        {
+            return TypeAttributes.Public;
         }
 
         protected sealed override int InternalGetHashCode()
