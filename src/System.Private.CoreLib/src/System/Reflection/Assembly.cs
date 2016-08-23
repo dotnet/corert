@@ -131,6 +131,22 @@ namespace System.Reflection
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
 
+        public static bool operator ==(Assembly left, Assembly right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if ((object)left == null || (object)right == null)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Assembly left, Assembly right)
+        {
+            return !(left == right);
+        }
+
         public static string CreateQualifiedName(string assemblyName, string typeName) => typeName + ", " + assemblyName;
 
         public static Assembly GetAssembly(Type type)

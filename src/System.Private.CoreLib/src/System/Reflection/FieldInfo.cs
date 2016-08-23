@@ -42,6 +42,19 @@ namespace System.Reflection
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
+        public static bool operator ==(FieldInfo left, FieldInfo right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if ((object)left == null || (object)right == null)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(FieldInfo left, FieldInfo right) => !(left == right);
+
         public abstract object GetValue(object obj);
 
         // @todo: https://github.com/dotnet/corert/issues/1688 - this should be passing Type.DefaultBinder - blocked by toolchain bug

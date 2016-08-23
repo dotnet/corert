@@ -26,5 +26,18 @@ namespace System.Reflection
 
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
+
+        public static bool operator ==(MethodInfo left, MethodInfo right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if ((object)left == null || (object)right == null)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(MethodInfo left, MethodInfo right) => !(left == right);
     }
 }

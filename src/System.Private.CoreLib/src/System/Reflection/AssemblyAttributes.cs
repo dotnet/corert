@@ -4,9 +4,28 @@
 
 using System;
 using System.Diagnostics.Contracts;
+using System.Configuration.Assemblies;
 
 namespace System.Reflection
 {
+    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
+    public unsafe sealed class AssemblyAlgorithmIdAttribute : Attribute
+    {
+        public AssemblyAlgorithmIdAttribute(AssemblyHashAlgorithm algorithmId)
+        {
+            AlgorithmId = (uint)algorithmId;
+        }
+
+        [CLSCompliant(false)]
+        public AssemblyAlgorithmIdAttribute(uint algorithmId)
+        {
+            AlgorithmId = algorithmId;
+        }
+
+        [CLSCompliant(false)]
+        public uint AlgorithmId { get; }
+    }
+
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public sealed class AssemblyCopyrightAttribute : Attribute
@@ -256,15 +275,34 @@ namespace System.Reflection
     {
         private AssemblyNameFlags _flags;
 
-        // This, of course, should be typed as AssemblyNameFlags.  The compat police don't allow such changes.
+        public AssemblyFlagsAttribute(AssemblyNameFlags assemblyFlags)
+        {
+            _flags = assemblyFlags;
+        }
+
         public int AssemblyFlags
         {
             get { return (int)_flags; }
         }
 
-        public AssemblyFlagsAttribute(AssemblyNameFlags assemblyFlags)
+        [Obsolete("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public AssemblyFlagsAttribute(int assemblyFlags)
         {
-            _flags = assemblyFlags;
+            _flags = (AssemblyNameFlags)assemblyFlags;
+        }
+
+        [Obsolete("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [CLSCompliant(false)]
+        public AssemblyFlagsAttribute(uint flags)
+        {
+            _flags = (AssemblyNameFlags)flags;
+        }
+
+        [Obsolete("This property has been deprecated. Please use AssemblyFlags instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [CLSCompliant(false)]
+        public uint Flags
+        {
+            get { return (uint)_flags; }
         }
     }
 

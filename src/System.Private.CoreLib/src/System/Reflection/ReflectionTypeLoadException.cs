@@ -9,11 +9,11 @@
 **
 ==============================================================*/
 
-using global::System;
+using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public sealed class ReflectionTypeLoadException : Exception
+    public sealed class ReflectionTypeLoadException : Exception, ISerializable
     {
         private Type[] _classes;
         private Exception[] _exceptions;
@@ -40,6 +40,11 @@ namespace System.Reflection
         public Exception[] LoaderExceptions
         {
             get { return _exceptions; }
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            throw new NotImplementedException();
         }
     }
 }

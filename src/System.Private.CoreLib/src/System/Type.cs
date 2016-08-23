@@ -332,6 +332,19 @@ namespace System
         }
         public bool Equals(Type o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
+        public static bool operator ==(Type left, Type right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if ((object)left == null || (object)right == null)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Type left, Type right) => !(left == right);
+
         public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new NotImplementedException(); }
 
         public static readonly char Delimiter = '.';

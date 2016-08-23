@@ -31,6 +31,8 @@ namespace System.Reflection
 
         public override bool Equals(object obj) => obj == (object)this;
         public override int GetHashCode() => base.GetHashCode();
+        public static bool operator ==(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => left.Equals(right);
+        public static bool operator !=(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => !(left.Equals(right));
 
         public override string ToString()
         {

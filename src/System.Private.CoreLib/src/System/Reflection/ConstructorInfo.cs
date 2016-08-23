@@ -18,6 +18,19 @@ namespace System.Reflection
         public override bool Equals(object obj) => Equals(obj);
         public override int GetHashCode() => GetHashCode();
 
+        public static bool operator ==(ConstructorInfo left, ConstructorInfo right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if ((object)left == null || (object)right == null)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ConstructorInfo left, ConstructorInfo right) => !(left == right);
+
         public static readonly string ConstructorName = ".ctor";
         public static readonly string TypeConstructorName = ".cctor";
     }
