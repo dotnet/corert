@@ -15,6 +15,15 @@ This project follows the [.NET Core Contribution Guidelines](https://github.com/
 
 [![Join the chat at https://gitter.im/dotnet/corert](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/corert?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+### Reporting security issues and security bugs
+
+Security issues and bugs should be reported privately, via email, to the
+Microsoft Security Response Center (MSRC) <secure@microsoft.com>. You should
+receive a response within 24 hours. If for some reason you do not, please follow
+up via email to ensure we received your original message. Further information,
+including the MSRC PGP key, can be found in the
+[Security TechCenter](https://technet.microsoft.com/en-us/security/ff852094.aspx).
+
 ## License
 The CoreRT Repo is licensed under the [MIT license](https://github.com/dotnet/corert/blob/master/LICENSE.TXT).
 
