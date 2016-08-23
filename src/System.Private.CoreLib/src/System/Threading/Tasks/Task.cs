@@ -5978,6 +5978,7 @@ namespace System.Threading.Tasks
         //
         // This helper routine is targeted by the debugger.
         //
+        [DependencyReductionRoot]
         internal virtual Delegate[] GetDelegateContinuationsForDebugger()
         {
             return GetDelegatesFromContinuationObject(this.m_continuationObject);
@@ -6041,9 +6042,8 @@ namespace System.Threading.Tasks
         //
         // This helper routine is targeted by the debugger.
         //
-        // @todo: Change visibility back to private once the DebugHelperRooter hack is gone. 
-        //
-        internal static Task GetActiveTaskFromId(int taskId)
+        [DependencyReductionRoot]
+        private static Task GetActiveTaskFromId(int taskId)
         {
             return DebuggerSupport.GetActiveTaskFromId(taskId);
         }
