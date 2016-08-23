@@ -35,10 +35,8 @@ namespace System.Threading
             if (obj == null)
                 throw new ArgumentNullException("obj");
 
-            // TODO: Fix framework code to not call Monitor methods on Lock objects and replace this check with an assertion.
-            // The Lock class is sealed and never cloned, therefore it is safe to use raw pointer equality.
-            if (obj.EETypePtr.RawValue == EETypePtr.EETypePtrOf<Lock>().RawValue)
-                return RuntimeHelpers.UncheckedCast<Lock>(obj);
+            Debug.Assert(!(obj is Lock),
+                "Do not use Monitor.Enter or TryEnter on a Lock instance; use Lock methods directly instead.");
 
 #if FEATURE_SYNCTABLE
             return ObjectHeader.GetLockObject(obj);
