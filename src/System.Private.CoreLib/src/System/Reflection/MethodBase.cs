@@ -58,5 +58,26 @@ namespace System.Reflection
 
         public override bool Equals(object obj) => base.Equals(obj);
         public override int GetHashCode() => GetHashCode();
+
+        public static bool operator ==(MethodBase left, MethodBase right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if ((object)left == null || (object)right == null)
+                return false;
+
+            MethodInfo method1, method2;
+            ConstructorInfo constructor1, constructor2;
+
+            if ((method1 = left as MethodInfo) != null && (method2 = right as MethodInfo) != null)
+                return method1 == method2;
+            else if ((constructor1 = left as ConstructorInfo) != null && (constructor2 = right as ConstructorInfo) != null)
+                return constructor1 == constructor2;
+
+            return false;
+        }
+
+        public static bool operator !=(MethodBase left, MethodBase right) => !(left == right);
     }
 }

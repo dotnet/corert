@@ -107,6 +107,19 @@ namespace System.Reflection
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();
 
+        public static bool operator ==(Module left, Module right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            if ((object)left == null || (object)right == null)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Module left, Module right) => !(left == right);
+
         public override string ToString() => ScopeName;
 
         public static readonly TypeFilter FilterTypeName = delegate (Type m, object filterCriteria) { throw new NotImplementedException(); };

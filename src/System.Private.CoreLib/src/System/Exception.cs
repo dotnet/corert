@@ -18,7 +18,7 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    public class Exception
+    public class Exception : ISerializable
     {
         private void Init()
         {
@@ -215,6 +215,10 @@ namespace System
             get { return _innerException; }
         }
 
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            throw new NotImplementedException();
+        }
 
         private string GetStackTrace(bool needFileInfo)
         {
