@@ -452,6 +452,14 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override bool IsAssignableFrom(Type c)
+        {
+            if (c == null)
+                return false;
+
+            return IsAssignableFrom(c.GetTypeInfo());
+        }
+
         public sealed override bool IsAssignableFrom(TypeInfo typeInfo)
         {
             RuntimeTypeInfo toTypeInfo = this;

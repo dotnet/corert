@@ -34,7 +34,7 @@ namespace System.Reflection
             {
                 Type cl = EventHandlerType;
                 Type mc = typeof(MulticastDelegate);
-                return mc.GetTypeInfo().IsAssignableFrom(cl.GetTypeInfo());
+                return mc.IsAssignableFrom(cl);
             }
         }
 
@@ -48,7 +48,7 @@ namespace System.Reflection
                 for (int i = 0; i < p.Length; i++)
                 {
                     Type c = p[i].ParameterType;
-                    if (c.GetTypeInfo().IsSubclassOf(del.GetTypeInfo()))
+                    if (c.IsSubclassOf(del))
                         return c;
                 }
                 return null;

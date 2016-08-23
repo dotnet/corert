@@ -22,10 +22,9 @@ namespace System.Reflection
                 // This check is necessary because for some reason, Type adds a new "Module" property that hides the inherited one instead 
                 // of overriding.
 
-                // @todo: Restore as soon as we finish Type.
-                //Type type = this as Type;
-                //if (type != null)
-                //    return type.Module;
+                Type type = this as Type;
+                if (type != null)
+                    return type.Module;
 
                 throw NotImplemented.ByDesign;
             }

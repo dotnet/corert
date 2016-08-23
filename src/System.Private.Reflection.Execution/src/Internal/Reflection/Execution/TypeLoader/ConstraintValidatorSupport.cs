@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using Internal.Reflection.Extensibility;
 using Debug = global::System.Diagnostics.Debug;
@@ -145,11 +146,25 @@ namespace Internal.Reflection.Execution
             public override String FullName { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override GenericParameterAttributes GenericParameterAttributes { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override int GenericParameterPosition { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+            public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override EventInfo[] GetEvents(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override FieldInfo GetField(string name, BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override FieldInfo[] GetFields(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override Type GetInterface(string name, bool ignoreCase) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override Type[] GetInterfaces() { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override Type GetNestedType(string name, BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override Type[] GetNestedTypes(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Guid GUID { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+            public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override bool IsEnum { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override bool IsGenericParameter { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override bool IsGenericTypeDefinition { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override bool IsSerializable { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+            public override Module Module { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override String Namespace { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override Type[] GetGenericParameterConstraints() { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public sealed override Type MakeArrayType() { Debug.Assert(false); throw NotImplemented.ByDesign; }
@@ -159,6 +174,10 @@ namespace Internal.Reflection.Execution
             public sealed override Type MakePointerType() { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Type DeclaringType { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public sealed override String Name { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
+
+            protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { Debug.Assert(false); throw NotImplemented.ByDesign; }
+            protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) { Debug.Assert(false); throw NotImplemented.ByDesign; }
 
             protected override bool IsArrayImpl()
             {
