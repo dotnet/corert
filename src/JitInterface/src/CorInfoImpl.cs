@@ -352,7 +352,7 @@ namespace Internal.JitInterface
             IntPtr handle;
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
-                handle = (IntPtr)(8 * _handleToObject.Count + handleBase);
+                handle = (IntPtr)(handleMultipler * _handleToObject.Count + handleBase);
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
