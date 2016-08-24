@@ -69,5 +69,9 @@ namespace Internal.Reflection.Augments
         public abstract void InitializeAssemblyName(AssemblyName blank, String fullName);
         public abstract String ComputeAssemblyNameFullName(AssemblyName assemblyName);
         public abstract byte[] ComputePublicKeyToken(byte[] publicKey);
+
+        public abstract EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e);
+        public abstract MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m);
+        public abstract PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p);
     }
 }

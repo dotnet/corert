@@ -5,10 +5,13 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
+using Internal.LowLevelLinq;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.General
@@ -69,6 +72,11 @@ namespace System.Reflection.Runtime.General
         {
             Debug.Assert(type is RuntimeTypeInfo);
             return (RuntimeTypeInfo)type;
+        }
+
+        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
+        {
+            return new ReadOnlyCollection<T>(enumeration.ToArray());
         }
     }
 }
