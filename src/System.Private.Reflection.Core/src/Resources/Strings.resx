@@ -231,4 +231,13 @@
   <data name="InvalidOperation_NotGenericType" xml:space="preserve">
     <value>This operation is only valid on generic types.</value>
   </data>
+  <data name="Arg_GetMethNotFnd" xml:space="preserve">
+    <value>Property get method not found.</value>
+  </data>
+  <data name="Arg_SetMethNotFnd" xml:space="preserve">
+    <value>Property set method not found.</value>
+  </data>
+  <data name="TypeIsNotReflectable" xml:space="preserve">
+    <value>Type instance is not IReflectable.</value>
+  </data>
 </root>

@@ -132,6 +132,7 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract partial class RuntimeTypeInfo
     {
 #if DEBUG
+        public sealed override EventInfo[] GetEvents() => base.GetEvents();
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
         protected sealed override bool IsMarshalByRefImpl() => base.IsMarshalByRefImpl();
         public sealed override MemberTypes MemberType => base.MemberType;

@@ -42,6 +42,10 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\InheritedPropertyInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\LowLevelTypeExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberEnumerator.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeNormalCustomAttributeData.cs" />
     <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimePseudoCustomAttributeData.cs" />
@@ -110,6 +114,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimePointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeBlockedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.BindingFlags.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\TypeInfoCachedData.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
     <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
