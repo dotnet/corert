@@ -68,6 +68,7 @@
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
     <Compile Include="System\Reflection\Runtime\General\NonOverriddenApis.cs" />

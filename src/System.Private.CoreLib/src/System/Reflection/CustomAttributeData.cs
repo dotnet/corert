@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace System.Reflection
 {
-    public class CustomAttributeData
+    public partial class CustomAttributeData
     {
         protected CustomAttributeData() { }
 
@@ -16,38 +16,6 @@ namespace System.Reflection
         public virtual ConstructorInfo Constructor => null;
         public virtual IList<CustomAttributeTypedArgument> ConstructorArguments { get { throw new NullReferenceException(); } }
         public virtual IList<CustomAttributeNamedArgument> NamedArguments => null;
-
-        public static IList<CustomAttributeData> GetCustomAttributes(Assembly target)
-        {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-
-            return target.GetCustomAttributesData();
-        }
-
-        public static IList<CustomAttributeData> GetCustomAttributes(MemberInfo target)
-        {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-
-            return target.GetCustomAttributesData();
-        }
-
-        public static IList<CustomAttributeData> GetCustomAttributes(Module target)
-        {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-
-            return target.GetCustomAttributesData();
-        }
-
-        public static IList<CustomAttributeData> GetCustomAttributes(ParameterInfo target)
-        {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-
-            return target.GetCustomAttributesData();
-        }
 
         public override bool Equals(object obj) => obj == (object)this;
         public override int GetHashCode() => base.GetHashCode();

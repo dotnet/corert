@@ -11,7 +11,7 @@ namespace System
 {
     [AttributeUsageAttribute(AttributeTargets.All, Inherited = true, AllowMultiple = false)]
     [System.Runtime.InteropServices.ComVisible(true)]
-    public abstract class Attribute
+    public abstract partial class Attribute
     {
         protected Attribute() { }
 
