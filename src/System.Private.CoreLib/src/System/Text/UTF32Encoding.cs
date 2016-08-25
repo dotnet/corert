@@ -31,9 +31,12 @@ namespace System.Text
 
             Surrogate:
             Real Unicode value = (HighSurrogate - 0xD800) * 0x400 + (LowSurrogate - 0xDC00) + 0x10000
-         */
+        */
 
-        //
+        // Used by Encoding.UTF32 for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly UTF32Encoding s_default = new UTF32Encoding(bigEndian: false, byteOrderMark: true);
+
         private bool _emitUTF32ByteOrderMark = false;
         private bool _isThrowException = false;
         private bool _bigEndian = false;

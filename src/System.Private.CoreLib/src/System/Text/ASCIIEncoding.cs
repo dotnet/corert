@@ -21,6 +21,10 @@ namespace System.Text
     [System.Runtime.InteropServices.ComVisible(true)]
     public class ASCIIEncoding : Encoding
     {
+        // Used by Encoding.ASCII for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly ASCIIEncoding s_default = new ASCIIEncoding(); 
+
         public ASCIIEncoding() : base(Encoding.CodePageASCII)
         {
         }
