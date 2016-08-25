@@ -80,14 +80,6 @@ namespace System.Text
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Encoding : ICloneable
     {
-        private static volatile Encoding s_unicodeEncoding;
-        private static volatile Encoding s_bigEndianUnicode;
-        private static volatile Encoding s_utf7Encoding;
-        private static volatile Encoding s_utf8Encoding;
-        private static volatile Encoding s_utf32Encoding;
-        private static volatile Encoding s_asciiEncoding;
-        private static volatile Encoding s_latin1Encoding;
-
         private static EncodingCache s_encodings;
 
         // Special Case Code Pages
@@ -596,29 +588,14 @@ namespace System.Text
 
         // Returns an encoding for the ASCII character set. The returned encoding
         // will be an instance of the ASCIIEncoding class.
-        //
 
-        public static Encoding ASCII
-        {
-            get
-            {
-                if (s_asciiEncoding == null) s_asciiEncoding = new ASCIIEncoding();
-                return s_asciiEncoding;
-            }
-        }
+        public static Encoding ASCII => ASCIIEncoding.s_default;
 
         // Returns an encoding for the Latin1 character set. The returned encoding
         // will be an instance of the Latin1Encoding class.
         //
         // This is for our optimizations
-        private static Encoding Latin1
-        {
-            get
-            {
-                if (s_latin1Encoding == null) s_latin1Encoding = new Latin1Encoding();
-                return s_latin1Encoding;
-            }
-        }
+        private static Encoding Latin1 => Latin1Encoding.s_default;
 
         // Returns the number of bytes required to encode the given character
         // array.
@@ -1112,69 +1089,31 @@ namespace System.Text
         //
         // It will use little endian byte order, but will detect
         // input in big endian if it finds a byte order mark per Unicode 2.0.
-        //
 
-        public static Encoding Unicode
-        {
-            get
-            {
-                if (s_unicodeEncoding == null) s_unicodeEncoding = new UnicodeEncoding(false, true);
-                return s_unicodeEncoding;
-            }
-        }
+        public static Encoding Unicode => UnicodeEncoding.s_littleEndianDefault;
 
         // Returns an encoding for Unicode format. The returned encoding will be
         // an instance of the UnicodeEncoding class.
         //
         // It will use big endian byte order, but will detect
         // input in little endian if it finds a byte order mark per Unicode 2.0.
-        //
 
-        public static Encoding BigEndianUnicode
-        {
-            get
-            {
-                if (s_bigEndianUnicode == null) s_bigEndianUnicode = new UnicodeEncoding(true, true);
-                return s_bigEndianUnicode;
-            }
-        }
+        public static Encoding BigEndianUnicode => UnicodeEncoding.s_bigEndianDefault;
 
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
-        //
-        public static Encoding UTF7
-        {
-            get
-            {
-                if (s_utf7Encoding == null) s_utf7Encoding = new UTF7Encoding();
-                return s_utf7Encoding;
-            }
-        }
+        
+        public static Encoding UTF7 => UTF7Encoding.s_default;
 
         // Returns an encoding for the UTF-8 format. The returned encoding will be
         // an instance of the UTF8Encoding class.
-        //
 
-        public static Encoding UTF8
-        {
-            get
-            {
-                if (s_utf8Encoding == null) s_utf8Encoding = new UTF8Encoding(true);
-                return s_utf8Encoding;
-            }
-        }
+        public static Encoding UTF8 => UTF8Encoding.s_default;
 
         // Returns an encoding for the UTF-32 format. The returned encoding will be
         // an instance of the UTF32Encoding class.
-        //
-        public static Encoding UTF32
-        {
-            get
-            {
-                if (s_utf32Encoding == null) s_utf32Encoding = new UTF32Encoding(false, true);
-                return s_utf32Encoding;
-            }
-        }
+
+        public static Encoding UTF32 => UTF32Encoding.s_default;
 
         public override bool Equals(Object value)
         {
