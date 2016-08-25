@@ -169,7 +169,7 @@ namespace System.Runtime.InteropServices
                 //
                 // We guarantee uniqueness in Mcg marshalling code
                 //
-                if (o == this)
+                if (o == (object)this)   // cast to object added so keep C# from warning us that we don't look like we know which operator== we want to call.
                     return true;
 
                 return false;

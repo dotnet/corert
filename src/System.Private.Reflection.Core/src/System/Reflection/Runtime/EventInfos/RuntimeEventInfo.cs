@@ -143,7 +143,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _event.Type.Resolve(_reader, _contextTypeInfo.TypeContext).CastToType();
+                return _event.Type.Resolve(_reader, _contextTypeInfo.TypeContext);
             }
         }
 

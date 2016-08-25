@@ -61,18 +61,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        //
-        // Left unsealed because this implemention is correct for ByRefs and Pointers but not Arrays.
-        //
-        public override TypeAttributes Attributes
-        {
-            get
-            {
-                Debug.Assert(IsByRef || IsPointer);
-                return TypeAttributes.AnsiClass;
-            }
-        }
-
         public sealed override bool ContainsGenericParameters
         {
             get
@@ -111,6 +99,20 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string ToString()
         {
             return _key.ElementType.ToString() + Suffix;
+        }
+
+        //
+        // Left unsealed because this implemention is correct for ByRefs and Pointers but not Arrays.
+        //
+        protected override TypeAttributes GetAttributeFlagsImpl()
+        {
+            Debug.Assert(IsByRef || IsPointer);
+            return TypeAttributes.AnsiClass;
+        }
+
+        protected sealed override bool HasElementTypeImpl()
+        {
+            return true;
         }
 
         protected sealed override int InternalGetHashCode()

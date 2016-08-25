@@ -11,10 +11,10 @@ using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.BindingFlagSupport;
 
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
-
 using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.General
@@ -151,6 +151,21 @@ namespace System.Reflection.Runtime.General
         public sealed override byte[] ComputePublicKeyToken(byte[] publicKey)
         {
             return AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
+        }
+
+        public sealed override EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e)
+        {
+            return e.GetImplicitlyOverriddenBaseClassMember();
+        }
+
+        public sealed override MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m)
+        {
+            return m.GetImplicitlyOverriddenBaseClassMember();
+        }
+
+        public sealed override PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p)
+        {
+            return p.GetImplicitlyOverriddenBaseClassMember();
         }
 
         private FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)

@@ -59,7 +59,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return _declaringType.CastToType();
+                return _declaringType;
             }
         }
 

@@ -235,7 +235,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
                 Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-                return typeHandle.Resolve(_reader, typeContext).CastToType();
+                return typeHandle.Resolve(_reader, typeContext);
             }
         }
 

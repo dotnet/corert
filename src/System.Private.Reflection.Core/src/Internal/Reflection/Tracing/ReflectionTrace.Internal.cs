@@ -149,7 +149,7 @@ namespace Internal.Reflection.Tracing
             RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType.HasElementType)
             {
-                String elementTypeName = runtimeType.InternalRuntimeElementType.CastToType().NonQualifiedTypeName();
+                String elementTypeName = runtimeType.InternalRuntimeElementType.NonQualifiedTypeName();
                 if (elementTypeName == null)
                     return null;
                 String suffix;
@@ -185,7 +185,7 @@ namespace Internal.Reflection.Tracing
                 String sep = "";
                 foreach (RuntimeTypeInfo ga in runtimeType.InternalRuntimeGenericTypeArguments)
                 {
-                    String gaTypeName = ga.CastToType().AssemblyQualifiedTypeName();
+                    String gaTypeName = ga.AssemblyQualifiedTypeName();
                     if (gaTypeName == null)
                         return null;
                     sb.Append(sep + "[" + gaTypeName + "]");
@@ -234,10 +234,10 @@ namespace Internal.Reflection.Tracing
             RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
             if (runtimeType == null)
                 return null;
-            String nonqualifiedTypeName = runtimeType.CastToType().NonQualifiedTypeName();
+            String nonqualifiedTypeName = runtimeType.NonQualifiedTypeName();
             if (nonqualifiedTypeName == null)
                 return null;
-            String assemblyName = runtimeType.CastToType().ContainingAssemblyName();
+            String assemblyName = runtimeType.ContainingAssemblyName();
             if (assemblyName == null)
                 return assemblyName;
             return nonqualifiedTypeName + ", " + assemblyName;

@@ -331,8 +331,6 @@ namespace System
         **Returns the absolute value of it's argument.
         ============================================================================*/
 
-#if CORERT
-
         [CLSCompliant(false)]
         public static sbyte Abs(sbyte value)
         {
@@ -413,59 +411,6 @@ namespace System
         {
             return RuntimeImports.fabs(value);
         }
-
-#else // CORERT
-
-        [CLSCompliant(false)]
-        [Intrinsic]
-        public static sbyte Abs(sbyte value)
-        {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return Abs(value);
-        }
-
-        [Intrinsic]
-        public static short Abs(short value)
-        {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return Abs(value);
-        }
-
-        [Intrinsic]
-        public static int Abs(int value)
-        {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return Abs(value);
-        }
-
-        [Intrinsic]
-        public static long Abs(long value)
-        {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return Abs(value);
-        }
-
-        [Intrinsic]
-        public static float Abs(float value)
-        {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return Abs(value);
-        }
-
-        [Intrinsic]
-        public static double Abs(double value)
-        {
-            // This is actually an intrinsic and not a recursive function call.
-            // We have it here so that you can do "ldftn" on the method or reflection invoke it.
-            return Abs(value);
-        }
-
-#endif // CORERT
 
         public static Decimal Abs(Decimal value)
         {

@@ -198,7 +198,7 @@ namespace System.Reflection.Runtime.General
             ConstantBoxedEnumValue record = handle.GetConstantBoxedEnumValue(reader);
 
             Exception exception = null;
-            Type enumType = record.Type.TryResolve(reader, new TypeContext(null, null), ref exception).CastToType();
+            Type enumType = record.Type.TryResolve(reader, new TypeContext(null, null), ref exception);
             if (enumType == null)
             {
                 value = null;
@@ -351,7 +351,7 @@ namespace System.Reflection.Runtime.General
                 case HandleType.TypeSpecification:
                     {
                         Exception exception = null;
-                        Type type = handle.TryResolve(reader, new TypeContext(null, null), ref exception).CastToType();
+                        Type type = handle.TryResolve(reader, new TypeContext(null, null), ref exception);
                         value = type;
                         return (value == null) ? exception : null;
                     }

@@ -1651,4 +1651,7 @@
   <data name="Argument_InvalidEnum" xml:space="preserve">
     <value>The Enum type should contain one and only one instance field.</value>
   </data>
+  <data name="Argument_MustHaveAttributeBaseClass" xml:space="preserve">
+    <value>Type passed in must be derived from System.Attribute or System.Attribute itself.</value>
+  </data>
 </root>

@@ -86,7 +86,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_DeclaringType(this);
 #endif
 
-                return _common.DeclaringType.CastToType();
+                return _common.DeclaringType;
             }
         }
 

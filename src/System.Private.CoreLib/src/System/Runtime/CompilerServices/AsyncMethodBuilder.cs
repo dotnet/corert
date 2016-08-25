@@ -944,6 +944,7 @@ namespace System.Runtime.CompilerServices
         // This helper routine is targeted by the debugger. Its purpose is to remove any delegate wrappers introduced by the framework
         // that the debugger doesn't want to see.
         //
+        [DependencyReductionRoot]
         internal static Action TryGetStateMachineForDebugger(Action action)
         {
             Object target = action.Target;

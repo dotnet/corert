@@ -98,7 +98,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return this.FieldRuntimeType.CastToType();
+                return this.FieldRuntimeType;
             }
         }
 

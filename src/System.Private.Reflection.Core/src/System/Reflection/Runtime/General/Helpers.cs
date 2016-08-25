@@ -5,10 +5,13 @@
 using System;
 using System.Reflection;
 using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
+using Internal.LowLevelLinq;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.General
@@ -71,11 +74,9 @@ namespace System.Reflection.Runtime.General
             return (RuntimeTypeInfo)type;
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/9805: Once TypeInfo derives from Type, this helper becomes a NOP and will go away entirely.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Type CastToType(this TypeInfo typeInfo)
+        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {
-            return typeInfo;
+            return new ReadOnlyCollection<T>(enumeration.ToArray());
         }
     }
 }

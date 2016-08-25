@@ -101,6 +101,9 @@
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\RuntimeTypeUnifier.Internals.cs" />
     <Compile Include="Internal\Reflection\Core\NonPortable\ReflectionCoreNonPortable.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInheritanceRules.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
     <Compile Include="Internal\Reflection\MetadataTransformedAttribute.cs" />
     <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
   </ItemGroup>
@@ -126,6 +129,7 @@
     <Compile Include="System\Reflection\CallingConventions.cs" />
     <Compile Include="System\Reflection\ConstructorInfo.cs" />
     <Compile Include="System\Reflection\CustomAttributeData.cs" />
+    <Compile Include="System\Reflection\CustomAttributeExtensions.cs" />
     <Compile Include="System\Reflection\CustomAttributeFormatException.cs" />
     <Compile Include="System\Reflection\CustomAttributeNamedArgument.cs" />
     <Compile Include="System\Reflection\CustomAttributeTypedArgument.cs" />
@@ -143,6 +147,7 @@
     <Compile Include="System\Reflection\InvalidFilterCriteriaException.cs" />
     <Compile Include="System\Reflection\IReflect.cs" />
     <Compile Include="System\Reflection\IReflectableType.cs" />
+    <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\LocalVariableInfo.cs" />
     <Compile Include="System\Reflection\ManifestResourceInfo.cs" />
     <Compile Include="System\Reflection\MemberFilter.cs" />
@@ -522,8 +527,7 @@
     <Compile Include="System\Threading\Tasks\DebuggerSupport.cs" />
     <Compile Include="System\Threading\Tasks\DebuggerSupport.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Threading\Tasks\DebuggerSupport.Dummy.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="System\Threading\Tasks\DebugHelperRooter.cs" />
-    <Compile Include="System\Threading\Tasks\future.cs" />
+    <Compile Include="System\Threading\Tasks\Future.cs" />
     <Compile Include="System\Threading\Tasks\FutureFactory.cs" />
     <Compile Include="System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <Compile Include="System\Threading\Tasks\Task.cs" />
@@ -707,6 +711,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\Collections\Concurrent\IKeyedItem.cs">
       <Link>System\Collections\Concurrent\IKeyedItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\LowLevelLinq\LowLevelEnumerable.cs">
+      <Link>Internal\LowLevelLinq\LowLevelEnumerable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
+      <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\System\Diagnostics\Debug.cs">
       <Link>System\Diagnostics\Debug.cs</Link>

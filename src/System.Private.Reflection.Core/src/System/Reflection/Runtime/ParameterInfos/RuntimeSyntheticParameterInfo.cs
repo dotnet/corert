@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _parameterType.CastToType();
+                return _parameterType;
             }
         }
 
