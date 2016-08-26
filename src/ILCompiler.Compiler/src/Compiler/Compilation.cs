@@ -15,6 +15,8 @@ using Internal.JitInterface;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     public class CompilationOptions
@@ -182,8 +184,15 @@ namespace ILCompiler
         
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)
+            foreach (var node in obj)
             {
+                MethodCodeNode methodCodeNodeNeedingCode = node as MethodCodeNode;
+                if (methodCodeNodeNeedingCode == null)
+                {
+                    Debug.Assert(node is DependencyOnlyMethodNode);
+                    continue;
+                }
+
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
 
                 if (_options.Verbose)
@@ -269,6 +278,16 @@ namespace ILCompiler
             // This method looks odd right now, but it's an extensibility point that lets us generate
             // fake debugging information for things that don't have physical symbols.
             return methodIL.GetDebugInfo();
+        }
+
+        public ISymbolNode GetMethodGenericDictionary(MethodDesc method)
+        {
+            return _nodeFactory.MethodGenericDictionary(method);
+        }
+
+        public ISymbolNode GetTypeGenericDictionary(TypeDesc type)
+        {
+            return _nodeFactory.TypeGenericDictionary(type);
         }
     }
 }

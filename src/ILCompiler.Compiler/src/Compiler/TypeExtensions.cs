@@ -38,5 +38,39 @@ namespace ILCompiler
             Debug.Assert(type is DefType);
             return (DefType)type;
         }
+
+        /// <summary>
+        /// Gets a value indicating whether the method requires a hidden instantiation argument in addition
+        /// to the formal arguments defined in the method signature.
+        /// </summary>
+        public static bool RequiresInstArg(this MethodDesc method)
+        {
+            bool result = method.IsCanonicalMethod(CanonicalFormKind.Any) &&
+                (method.HasInstantiation || method.Signature.IsStatic || method.OwningType.IsValueType);
+
+            Debug.Assert(result == (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg()));
+
+            return result;
+        }
+
+        public static bool RequiresInstMethodDescArg(this MethodDesc method)
+        {
+            return method.IsCanonicalMethod(CanonicalFormKind.Any) && method.HasInstantiation;
+        }
+
+        public static bool RequiresInstMethodTableArg(this MethodDesc method)
+        {
+            return method.IsCanonicalMethod(CanonicalFormKind.Any) &&
+                !method.HasInstantiation &&
+                (method.Signature.IsStatic || method.OwningType.IsValueType);
+        }
+
+        public static bool AcquiresInstMethodTableFromThis(this MethodDesc method)
+        {
+            return method.IsCanonicalMethod(CanonicalFormKind.Any) &&
+                !method.HasInstantiation &&
+                !method.Signature.IsStatic &&
+                !method.OwningType.IsValueType;
+        }
     }
 }

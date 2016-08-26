@@ -12,7 +12,7 @@ namespace ILCompiler
     // Constants for fixup signature encoding
     //
 
-    enum ReadyToRunFixupKind
+    public enum ReadyToRunFixupKind
     {
         ThisObjDictionaryLookup    = 0x07,
         TypeDictionaryLookup       = 0x08,

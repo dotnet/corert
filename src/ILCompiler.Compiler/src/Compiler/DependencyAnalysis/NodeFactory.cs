@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -92,6 +92,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
+                Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+                Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     if (type.IsGenericDefinition)
@@ -111,6 +114,9 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
+                Debug.Assert(!type.IsRuntimeDeterminedSubtype);
+                Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+
                 if (_compilationModuleGroup.ContainsType(type))
                 {
                     return new ConstructedEETypeNode(type);
@@ -178,12 +184,30 @@ namespace ILCompiler.DependencyAnalysis
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
 
+            _dependencyOnlyMethods = new NodeCache<MethodDesc, DependencyOnlyMethodNode>(method =>
+            {
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                Debug.Assert(canonMethod != method);
+
+                return new DependencyOnlyMethodNode(method, (DependencyNodeCore<NodeFactory>)MethodEntrypoint(canonMethod));
+            });
+
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
             {
                 return new VirtualMethodUseNode(method);
             });
 
             _readyToRunHelpers = new NodeCache<Tuple<ReadyToRunHelperId, Object>, ISymbolNode>(CreateReadyToRunHelperNode);
+
+            _readyToRunLookupFromDictionaryHelpers = new NodeCache<Tuple<object, DictionaryEntry>, ReadyToRunGenericLookupHelperNode>((Tuple<object, DictionaryEntry> helper) =>
+            {
+                return new ReadyToRunGenericLookupHelperNode(helper.Item1, GenericContextKind.Dictionary, helper.Item2);
+            });
+
+            _readyToRunLookupFromThisObjHelpers = new NodeCache<Tuple<TypeDesc, DictionaryEntry>, ReadyToRunGenericLookupHelperNode>((Tuple<TypeDesc, DictionaryEntry> helper) =>
+            {
+                return new ReadyToRunGenericLookupHelperNode(helper.Item1, GenericContextKind.ThisObj, helper.Item2);
+            });
 
             _stringDataNodes = new NodeCache<string, StringDataNode>((string data) =>
             {
@@ -238,6 +262,22 @@ namespace ILCompiler.DependencyAnalysis
                 else
                     return new LazilyBuiltVTableSliceNode(type);
             });
+
+            _methodGenericDictionaries = new NodeCache<MethodDesc, GenericDictionaryNode>(method =>
+            {
+                return new GenericDictionaryNode(method);
+            });
+
+            _typeGenericDictionaries = new NodeCache<TypeDesc, GenericDictionaryNode>(type =>
+            {
+                return new GenericDictionaryNode(type);
+            });
+
+            _genericDictionaryLayouts = new NodeCache<object, DictionaryLayout>(methodOrType =>
+            {
+                return new DictionaryLayout(methodOrType);
+            });
+
         }
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
@@ -406,6 +446,24 @@ namespace ILCompiler.DependencyAnalysis
             return _vTableNodes.GetOrAdd(type);
         }
 
+        private NodeCache<MethodDesc, GenericDictionaryNode> _methodGenericDictionaries;
+        internal GenericDictionaryNode MethodGenericDictionary(MethodDesc method)
+        {
+            return _methodGenericDictionaries.GetOrAdd(method);
+        }
+
+        private NodeCache<TypeDesc, GenericDictionaryNode> _typeGenericDictionaries;
+        internal GenericDictionaryNode TypeGenericDictionary(TypeDesc type)
+        {
+            return _typeGenericDictionaries.GetOrAdd(type);
+        }
+
+        private NodeCache<object, DictionaryLayout> _genericDictionaryLayouts;
+        internal DictionaryLayout GenericDictionaryLayout(object methodOrType)
+        {
+            return _genericDictionaryLayouts.GetOrAdd(methodOrType);
+        }
+
         private NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
         private NodeCache<MethodDesc, IMethodNode> _unboxingStubs;
 
@@ -423,6 +481,13 @@ namespace ILCompiler.DependencyAnalysis
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" }
         };
+
+        private NodeCache<MethodDesc, DependencyOnlyMethodNode> _dependencyOnlyMethods;
+
+        public DependencyOnlyMethodNode DependencyOnlyMethod(MethodDesc method)
+        {
+            return _dependencyOnlyMethods.GetOrAdd(method);
+        }
 
         private ISymbolNode[] _helperEntrypointSymbols;
 
@@ -500,6 +565,20 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target)
         {
             return _readyToRunHelpers.GetOrAdd(new Tuple<ReadyToRunHelperId, object>(id, target));
+        }
+
+        private NodeCache<Tuple<object, DictionaryEntry>, ReadyToRunGenericLookupHelperNode> _readyToRunLookupFromDictionaryHelpers;
+
+        public ISymbolNode ReadyToRunGenericLookupFromDictionaryHelper(object context, ReadyToRunFixupKind fixupKind, object target)
+        {
+            return _readyToRunLookupFromDictionaryHelpers.GetOrAdd(new Tuple<object, DictionaryEntry>(context, new DictionaryEntry(fixupKind, target)));
+        }
+
+        private NodeCache<Tuple<TypeDesc, DictionaryEntry>, ReadyToRunGenericLookupHelperNode> _readyToRunLookupFromThisObjHelpers;
+
+        public ISymbolNode ReadyToRunGenericLookupFromThisObjHelper(TypeDesc context, ReadyToRunFixupKind fixupKind, object target)
+        {
+            return _readyToRunLookupFromThisObjHelpers.GetOrAdd(new Tuple<TypeDesc, DictionaryEntry>(context, new DictionaryEntry(fixupKind, target)));
         }
 
         private NodeCache<string, StringDataNode> _stringDataNodes;

@@ -30,7 +30,8 @@ namespace ILCompiler
 
         public override bool ContainsMethod(MethodDesc method)
         {
-            return method == _method;
+            // Check the method definition to cover for canonical and runtime determined forms
+            return method.GetTypicalMethodDefinition() == _method.GetTypicalMethodDefinition();
         }
 
         public override bool ContainsType(TypeDesc type)

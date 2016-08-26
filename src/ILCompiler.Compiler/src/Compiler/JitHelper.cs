@@ -75,6 +75,10 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
                     break;
 
+                case ReadyToRunHelper.NewObject:
+                    mangledName = "RhNewObject";
+                    break;
+
                 case ReadyToRunHelper.Stelem_Ref:
                     mangledName = "RhpStelemRef";
                     break;

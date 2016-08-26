@@ -127,7 +127,12 @@ namespace Internal.TypeSystem
 
         public override TypeDesc GetTypeDefinition()
         {
-            return _rawCanonType.GetTypeDefinition();
+            if (_rawCanonType.HasInstantiation)
+            {
+                return _rawCanonType.GetTypeDefinition();
+            }
+
+            return this;
         }
 
         public override int GetHashCode()
