@@ -71,9 +71,25 @@ namespace System.Reflection.Runtime.Modules
             return _assembly.GetHashCode();
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override Type GetType(String name, bool throwOnError, bool ignoreCase)
         {
             return _assembly.GetType(name, throwOnError, ignoreCase);
+        }
+
+        public sealed override Guid ModuleVersionId
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.ModuleVersionIdNotSupported);
+            }
         }
 
         public sealed override String ToString()

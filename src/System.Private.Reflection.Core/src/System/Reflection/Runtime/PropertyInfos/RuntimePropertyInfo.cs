@@ -203,6 +203,14 @@ namespace System.Reflection.Runtime.PropertyInfos
             return _lazyGetterInvoker.Invoke(obj, index);
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
         public sealed override Module Module
         {
             get

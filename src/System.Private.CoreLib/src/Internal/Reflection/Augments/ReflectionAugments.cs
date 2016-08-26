@@ -73,5 +73,7 @@ namespace Internal.Reflection.Augments
         public abstract EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e);
         public abstract MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m);
         public abstract PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p);
+
+        public abstract Binder CreateDefaultBinder();
     }
 }

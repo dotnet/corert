@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 using Internal.Reflection.Core.NonPortable;
 
 namespace System
@@ -355,21 +356,14 @@ namespace System
         public static readonly MemberFilter FilterName = delegate (MemberInfo m, object filterCriteria) { throw new NotImplementedException(); };
         public static readonly MemberFilter FilterNameIgnoreCase = delegate (MemberInfo m, object filterCriteria) { throw new NotImplementedException(); };
 
-        public static Binder DefaultBinder => s_defaultBinder;
-        private static readonly Binder s_defaultBinder = new TemporaryDefaultBinder(); // Needs to be a strict singleton as we do a reference equality check against it in our Invoke() code.
+        public static Binder DefaultBinder => _GetDefaultBinder();
+        private static volatile Binder s_defaultBinder;
+
+        // @todo: https://github.com/dotnet/corert/issues/1688: Hack: For some reason, referencing a property that returns a Binder on System.Type confuses the toolchain.
+        // Until that's fixed, we'll workaround by using a method.
+        [CLSCompliant(false)]
+        public static Binder _GetDefaultBinder() => s_defaultBinder ?? (s_defaultBinder = ReflectionAugments.ReflectionCoreCallbacks.CreateDefaultBinder());
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
-
-        // @todo: Can probably use Common\src\Internal\Reflection\Execution\Binder.cs as is.
-        private sealed class TemporaryDefaultBinder : Binder
-        {
-            public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo culture) { throw new NotImplementedException(); }
-            public sealed override MethodBase BindToMethod(BindingFlags bindingAttr, MethodBase[] match, ref object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] names, out object state) { throw new NotImplementedException(); }
-            public sealed override bool CanChangeType(object value, Type type, CultureInfo culture) { throw new NotImplementedException(); }
-            public sealed override object ChangeType(object value, Type type, CultureInfo culture) { throw new NotImplementedException(); }
-            public sealed override void ReorderArgumentArray(ref object[] args, object state) { throw new NotImplementedException(); }
-            public sealed override MethodBase SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers) { throw new NotImplementedException(); }
-            public sealed override PropertyInfo SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type returnType, Type[] indexes, ParameterModifier[] modifiers) { throw new NotImplementedException(); }
-        }
     }
 }

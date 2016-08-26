@@ -57,8 +57,7 @@ namespace System.Reflection
 
         public abstract object GetValue(object obj);
 
-        // @todo: https://github.com/dotnet/corert/issues/1688 - this should be passing Type.DefaultBinder - blocked by toolchain bug
-        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, null /*Type.DefaultBinder*/, null);
+        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type._GetDefaultBinder(), null);
         public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
 
         public virtual object GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }

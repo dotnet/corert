@@ -42,6 +42,8 @@
     <Compile Include="System\Reflection\Runtime\Assemblies\AssemblyNameParser.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyName.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.LimitedBinder.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\InheritedPropertyInfo.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\LowLevelTypeExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberEnumerator.cs" />
@@ -75,6 +77,7 @@
     <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeNamespaceInfo.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ThunkedApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.cs" />

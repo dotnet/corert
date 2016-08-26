@@ -4,9 +4,11 @@
 
 using System.Text;
 using System.Runtime;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -609,6 +611,19 @@ namespace System
                     del[i] = invocationList[i];
             }
             return del;
+        }
+
+        public MethodInfo Method
+        {
+            get
+            {
+                return GetMethodImpl();
+            }
+        }
+
+        protected virtual MethodInfo GetMethodImpl()
+        {
+            return RuntimeAugments.Callbacks.GetDelegateMethod(this);
         }
 
         public override bool Equals(Object obj)
