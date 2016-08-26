@@ -272,11 +272,6 @@ namespace System.Text
 
             Contract.EndContractBlock();
 
-#if CORERT
-            // CORERT-TODO: For now, always return UTF8 encoding
-            // https://github.com/dotnet/corert/issues/213
-            return UTF8;
-#else
             switch (codepage)
             {
                 case CodePageDefault: return UTF8;               // 0
@@ -306,7 +301,6 @@ namespace System.Text
             }
 
             return UTF8;
-#endif
         }
 
         [Pure]
