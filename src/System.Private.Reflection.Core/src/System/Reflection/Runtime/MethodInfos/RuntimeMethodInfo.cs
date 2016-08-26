@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.BindingFlagSupport;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
@@ -102,14 +103,27 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override bool Equals(object obj);
 
+        public abstract override int GetHashCode();
+
+        public sealed override MethodInfo GetBaseDefinition()
+        {
+            MethodInfo method = this;
+            while (true)
+            {
+                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
+                if (next == null)
+                    return method;
+
+                method = next;
+            }
+        }
+
         public sealed override Type[] GetGenericArguments()
         {
             return RuntimeGenericArgumentsOrParameters.CloneTypeArray();
         }
 
         public abstract override MethodInfo GetGenericMethodDefinition();
-
-        public abstract override int GetHashCode();
 
         public sealed override ParameterInfo[] GetParameters()
         {
@@ -156,6 +170,14 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         public abstract override MethodInfo MakeGenericMethod(params Type[] typeArguments);
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
 
         public abstract override MethodImplAttributes MethodImplementationFlags
         {

@@ -18,6 +18,7 @@
 //    Reflection.Execution.dll
 
 using System;
+using System.Reflection;
 
 namespace Internal.Runtime.Augments
 {
@@ -78,5 +79,7 @@ namespace Internal.Runtime.Augments
 
         public abstract RuntimeTypeHandle GetTypeHandleIfAvailable(Type type);
         public abstract bool SupportsReflection(Type type);
+
+        public abstract MethodInfo GetDelegateMethod(Delegate del);
     }
 }

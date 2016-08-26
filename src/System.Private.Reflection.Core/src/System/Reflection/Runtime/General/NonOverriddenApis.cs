@@ -136,6 +136,8 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
         protected sealed override bool IsMarshalByRefImpl() => base.IsMarshalByRefImpl();
         public sealed override MemberTypes MemberType => base.MemberType;
+        public sealed override bool IsInstanceOfType(object o) => base.IsInstanceOfType(o);
+        public sealed override bool IsSerializable => base.IsSerializable;
 #endif //DEBUG
     }
 }
