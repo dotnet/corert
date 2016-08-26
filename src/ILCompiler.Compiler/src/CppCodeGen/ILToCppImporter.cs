@@ -1909,7 +1909,7 @@ namespace Internal.IL
                         escaped.Append("\\t");
                         break;
                     case '"':
-                        escaped.Append("'\"");
+                        escaped.Append("\\\"");
                         break;
                     default:
                         // TODO: handle all characters < 32
