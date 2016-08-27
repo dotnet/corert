@@ -15,7 +15,7 @@ internal static partial class Interop
 
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal static extern IntPtr HeapAlloc(IntPtr hHeap, uint dwFlags, UIntPtr dwBytes);
- 
+
         [DllImport("api-ms-win-core-heap-l1-1-0.dll")]
         internal static extern int HeapFree(IntPtr hHeap, UInt32 dwFlags, IntPtr lpMem);
     }

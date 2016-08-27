@@ -4,7 +4,6 @@
 
 namespace System.Reflection
 {
-
     // Define the delegate
     [System.Runtime.InteropServices.ComVisible(true)]
     public delegate bool MemberFilter(MemberInfo m, Object filterCriteria);

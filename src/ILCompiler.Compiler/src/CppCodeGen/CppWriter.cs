@@ -26,7 +26,7 @@ namespace ILCompiler.CppCodeGen
         private void SetWellKnownTypeSignatureName(WellKnownType wellKnownType, string mangledSignatureName)
         {
             var type = _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
-            var typeNode = this._compilation.NodeFactory.ConstructedTypeSymbol(type);
+            var typeNode = _compilation.NodeFactory.ConstructedTypeSymbol(type);
             AddWellKnownType(typeNode);
 
             _cppSignatureNames.Add(type, mangledSignatureName);
@@ -780,7 +780,7 @@ namespace ILCompiler.CppCodeGen
                     {
                         nextRelocOffset = relocs[nextRelocIndex].Offset;
                     }
-                    nodeDataSections.Add(new NodeDataSection(NodeDataSectionType.Relocation, size ));
+                    nodeDataSections.Add(new NodeDataSection(NodeDataSectionType.Relocation, size));
                     i += size;
                     lastByteIndex = i;
                 }
@@ -789,7 +789,7 @@ namespace ILCompiler.CppCodeGen
                     i++;
                     if (i + 1 == nextRelocOffset || i + 1 == nodeData.Data.Length)
                     {
-                        nodeDataSections.Add(new NodeDataSection( NodeDataSectionType.ByteData,   (i + 1) - lastByteIndex ));
+                        nodeDataSections.Add(new NodeDataSection(NodeDataSectionType.ByteData, (i + 1) - lastByteIndex));
                     }
                 }
             }
@@ -825,8 +825,6 @@ namespace ILCompiler.CppCodeGen
             nodeCode.Append("}");
 
             return nodeCode.ToString();
-
-
         }
         private String GetCodeForNodeData(List<NodeDataSection> nodeDataSections, Relocation[] relocs, byte[] byteData, DependencyNode node, int offset)
         {
@@ -868,15 +866,11 @@ namespace ILCompiler.CppCodeGen
                     GetFormattedByteArray(byteData, divisionStartIndex, divisionStartIndex + nodeDataSections[i].SectionSize, nodeDataDecl);
                     nodeDataDecl.Append(",");
                     divisionStartIndex += nodeDataSections[i].SectionSize;
-
                 }
                 nodeDataDecl.AppendLine();
                 nodeDataDecl.Exdent();
-
-
             }
             return nodeDataDecl.ToString();
-
         }
         private String GetCodeForNodeStruct(List<NodeDataSection> nodeDataDivs, DependencyNode node)
         {
@@ -902,7 +896,6 @@ namespace ILCompiler.CppCodeGen
                     nodeStructDecl.Append("[");
                     nodeStructDecl.Append(section.SectionSize);
                     nodeStructDecl.Append("];");
-
                 }
                 nodeStructDecl.AppendLine();
             }
@@ -1072,7 +1065,6 @@ namespace ILCompiler.CppCodeGen
                     nesting++;
                 }
                 current = sep + 2;
-
             }
 
             forwardDefinitions.Append("class " + mangledName.Substring(current) + ";");
@@ -1100,7 +1092,6 @@ namespace ILCompiler.CppCodeGen
             }
             if (typeNode is ConstructedEETypeNode)
             {
-
                 IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(nodeType).Slots;
 
                 int baseSlots = 0;

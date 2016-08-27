@@ -120,7 +120,7 @@ namespace Internal.IL
                 MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)method);
                 if (methodIL != null)
                     return methodIL;
-                
+
                 if (!method.IsInternalCall && !method.IsRuntimeImplemented)
                 {
                     return MissingMethodBodyILEmitter.EmitIL(method);

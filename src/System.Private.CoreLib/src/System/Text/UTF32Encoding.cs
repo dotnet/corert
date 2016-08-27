@@ -174,7 +174,7 @@ namespace System.Text
         {
             return EncodingForwarder.GetString(this, bytes, index, count);
         }
-        
+
         // End of overridden methods which use EncodingForwarder
 
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)

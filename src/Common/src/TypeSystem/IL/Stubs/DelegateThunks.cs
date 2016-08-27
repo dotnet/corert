@@ -229,7 +229,7 @@ namespace Internal.IL.Stubs
 
             // Fill in delegateArrayLocal
             // Delegate[] delegateArrayLocal = (Delegate[])this.m_helperObject
-            
+
             // ldarg.0 (this pointer)
             // ldfld Delegate.HelperObjectField
             // castclass Delegate[]
@@ -487,7 +487,7 @@ namespace Internal.IL.Stubs
                     // Everything but pointer types are boxable.
                     localType = ConvertToBoxableType(localType);
                 }
-                
+
                 ILLocalVariable local = emitter.NewLocal(localType.MakeByRefType());
 
                 callSiteSetupStream.EmitLdLoc(local);

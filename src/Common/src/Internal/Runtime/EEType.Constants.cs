@@ -79,7 +79,7 @@ namespace Internal.Runtime
         /// </summary>
         ComplexCastingMask = EETypeKindMask | RelatedTypeViaIATFlag | GenericVarianceFlag
     };
-    
+
     internal enum EETypeKind : ushort
     {
         /// <summary>
@@ -180,7 +180,7 @@ namespace Internal.Runtime
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
     }
-    
+
     internal enum EETypeOptionalFieldsElement : byte
     {
         /// <summary>
@@ -217,7 +217,7 @@ namespace Internal.Runtime
         Count
     }
 
-    enum EETypeField
+    internal enum EETypeField
     {
         ETF_InterfaceMap,
         ETF_Finalizer,
@@ -230,7 +230,7 @@ namespace Internal.Runtime
         ETF_GenericComposition,
     }
 
-    enum CorElementType
+    internal enum CorElementType
     {
         ELEMENT_TYPE_END = 0x00,
 
@@ -263,7 +263,7 @@ namespace Internal.Runtime
         ELEMENT_TYPE_SZARRAY = 0x1d,
     }
 
-    enum EETypeOptionalFieldTag : byte
+    internal enum EETypeOptionalFieldTag : byte
     {
         OFT_RareFlags,
         OFT_ICastableIsInstSlot,
@@ -276,7 +276,7 @@ namespace Internal.Runtime
     }
 
     // Keep this synchronized with GenericVarianceType in rhbinder.h.
-    enum GenericVariance : byte
+    internal enum GenericVariance : byte
     {
         NonVariant = 0,
         Covariant = 1,

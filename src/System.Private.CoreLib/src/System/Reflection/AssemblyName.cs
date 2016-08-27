@@ -17,7 +17,6 @@ using Internal.Reflection.Augments;
 
 namespace System.Reflection
 {
-
     public sealed class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
     {
         public AssemblyName()

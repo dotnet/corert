@@ -6,14 +6,14 @@ using System.Globalization;
 
 namespace System
 {
-    static class FormattingHelpers
+    internal static class FormattingHelpers
     {
-        public static string ToStringInvariant<T>(this T value) where T:IConvertible
+        public static string ToStringInvariant<T>(this T value) where T : IConvertible
         {
             return value.ToString(CultureInfo.InvariantCulture);
         }
 
-        public static string ToStringInvariant<T>(this T value, string format) where T:IFormattable
+        public static string ToStringInvariant<T>(this T value, string format) where T : IFormattable
         {
             return value.ToString(format, CultureInfo.InvariantCulture);
         }
