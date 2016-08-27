@@ -14,7 +14,7 @@ namespace Internal.Threading.Tracing
     public static class SpinLockTrace
     {
         private static SpinLockTraceCallbacks s_callbacks;
-        
+
         public static bool Enabled
         {
             get
@@ -40,6 +40,5 @@ namespace Internal.Threading.Tracing
                 return;
             callbacks.SpinLock_FastPathFailed(ownerID);
         }
-
     }
 }

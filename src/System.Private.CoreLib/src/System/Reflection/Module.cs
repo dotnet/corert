@@ -123,7 +123,7 @@ namespace System.Reflection
         public override string ToString() => ScopeName;
 
         public static readonly TypeFilter FilterTypeName = delegate (Type m, object filterCriteria) { throw new NotImplementedException(); };
-        public static readonly TypeFilter FilterTypeNameIgnoreCase = delegate(Type m, object filterCriteria) { throw new NotImplementedException(); };
+        public static readonly TypeFilter FilterTypeNameIgnoreCase = delegate (Type m, object filterCriteria) { throw new NotImplementedException(); };
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
     }

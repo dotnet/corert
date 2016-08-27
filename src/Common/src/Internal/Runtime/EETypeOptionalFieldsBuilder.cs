@@ -13,17 +13,17 @@ namespace Internal.Runtime
 {
     internal unsafe partial class EETypeOptionalFieldsBuilder
     {
-        NativePrimitiveEncoder _encoder;
-        OptionalField[] _rgFields = new OptionalField[(int)EETypeOptionalFieldsElement.Count];
+        private NativePrimitiveEncoder _encoder;
+        private OptionalField[] _rgFields = new OptionalField[(int)EETypeOptionalFieldsElement.Count];
 
-        struct OptionalField
+        private struct OptionalField
         {
             internal bool _fieldPresent;
             internal UInt32 _value;
         }
 
-        internal EETypeOptionalFieldsBuilder() {}
-        
+        internal EETypeOptionalFieldsBuilder() { }
+
         internal UInt32 GetFieldValue(EETypeOptionalFieldsElement eTag, UInt32 defaultValueIfNotFound)
         {
             return _rgFields[(int)eTag]._fieldPresent ? _rgFields[(int)eTag]._value : defaultValueIfNotFound;
@@ -101,7 +101,7 @@ namespace Internal.Runtime
                 {
                     sb.Append("x");
                 }
-                
+
 
                 if (i != (int)EETypeOptionalFieldsElement.Count - 1)
                 {

@@ -1386,7 +1386,7 @@ namespace System.Globalization
 
                 fixed (char* pFormat = format)
                 {
-                    char * cur = dig;
+                    char* cur = dig;
 
                     while ((ch = pFormat[src++]) != 0 && ch != ';')
                     {

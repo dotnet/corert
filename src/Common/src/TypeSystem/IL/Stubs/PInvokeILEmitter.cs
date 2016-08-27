@@ -564,7 +564,7 @@ namespace Internal.IL.Stubs
 
                 callsiteSetupCodeStream.Emit(ILOpcode.call, _emitter.NewToken(nativeMethod));
             }
-            
+
             _unmarshallingCodestream.Emit(ILOpcode.ret);
 
             return _emitter.Link(_targetMethod);
@@ -605,7 +605,7 @@ namespace Internal.IL.Stubs
     /// </summary>
     internal sealed class PInvokeTargetNativeMethod : MethodDesc
     {
-        private static int nativeMethodCounter;
+        private static int s_nativeMethodCounter;
 
         private TypeDesc _owningType;
         private MethodSignature _signature;
@@ -618,7 +618,7 @@ namespace Internal.IL.Stubs
             _signature = signature;
             _methodMetadata = methodMetadata;
 
-            _sequenceNumber = System.Threading.Interlocked.Increment(ref nativeMethodCounter);
+            _sequenceNumber = System.Threading.Interlocked.Increment(ref s_nativeMethodCounter);
         }
 
         public override TypeSystemContext Context

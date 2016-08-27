@@ -209,7 +209,7 @@ namespace Internal.IL.Stubs
                     _instructions[offset];
 
                 int value = patch.Label.AbsoluteOffset - _startOffsetForLinking - patch.Offset - delta;
-                
+
                 _instructions[offset] = (byte)value;
                 _instructions[offset + 1] = (byte)(value >> 8);
                 _instructions[offset + 2] = (byte)(value >> 16);

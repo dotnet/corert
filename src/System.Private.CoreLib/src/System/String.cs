@@ -350,7 +350,7 @@ namespace System
             {
                 if (!en.MoveNext())
                     return string.Empty;
-                
+
                 // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
@@ -370,7 +370,7 @@ namespace System
                 }
 
                 StringBuilder result = StringBuilderCache.Acquire();
-                
+
                 result.Append(firstString);
 
                 do
@@ -788,14 +788,14 @@ namespace System
                 // if the first two chars the same we can increment by 4 bytes,
                 // leaving us word-aligned on both 32-bit (12 bytes into the string)
                 // and 64-bit (16 bytes) platforms.
-        
+
                 // For empty strings, the second char will be null due to padding.
                 // The start of the string is the EE type pointer + string length,
                 // which takes up 8 bytes on 32-bit, 12 on x64. For empty strings,
                 // the null terminator immediately follows, leaving us with an object
                 // 10/14 bytes in size. Since everything needs to be a multiple
                 // of 4/8, this will get padded and zeroed out.
-                
+
                 // For one-char strings the second char will be the null terminator.
 
                 // NOTE: If in the future there is a way to read the second char
@@ -804,7 +804,7 @@ namespace System
                 // then do that and short-circuit before the fixed.
 
                 if (*(a + 1) != *(b + 1)) goto DiffOffset1;
-                
+
                 // Since we know that the first two chars are the same,
                 // we can increment by 2 here and skip 4 bytes.
                 // This leaves us 8-byte aligned, which results
@@ -828,7 +828,7 @@ namespace System
                     if (*(int*)(a + 4) != *(int*)(b + 4)) goto DiffOffset4;
                     if (*(int*)(a + 6) != *(int*)(b + 6)) goto DiffOffset6;
                     if (*(int*)(a + 8) != *(int*)(b + 8)) goto DiffOffset8;
-                    length -= 10; a += 10; b += 10; 
+                    length -= 10; a += 10; b += 10;
                 }
 #endif // BIT64
 
@@ -842,14 +842,14 @@ namespace System
                 {
                     if (*(int*)a != *(int*)b) goto DiffNextInt;
                     length -= 2;
-                    a += 2; 
-                    b += 2; 
+                    a += 2;
+                    b += 2;
                 }
 
                 // At this point, we have compared all the characters in at least one string.
                 // The longer string will be larger.
                 return strA.Length - strB.Length;
-                
+
 #if BIT64
                 DiffOffset8: a += 4; b += 4;
                 DiffOffset4: a += 4; b += 4;
@@ -887,7 +887,7 @@ namespace System
         {
             if (Object.ReferenceEquals(this, obj))
                 return true;
-                
+
             String str = obj as String;
             if (str == null)
                 return false;
@@ -905,7 +905,7 @@ namespace System
         {
             if (Object.ReferenceEquals(this, value))
                 return true;
-            
+
             // NOTE: No need to worry about casting to object here.
             // If either side of an == comparison between strings
             // is null, Roslyn generates a simple ceq instruction
@@ -2742,12 +2742,12 @@ namespace System
 
             int oldLength = Length;
             int insertLength = value.Length;
-            
+
             if (oldLength == 0)
                 return value;
             if (insertLength == 0)
                 return this;
-            
+
             int newLength = oldLength + insertLength;
             if (newLength < 0)
                 throw new OutOfMemoryException();
@@ -2948,13 +2948,13 @@ namespace System
             int oldLength = this.Length;
             if (count > oldLength - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_IndexCount);
-            
+
             if (count == 0)
                 return this;
             int newLength = oldLength - count;
             if (newLength == 0)
                 return string.Empty;
-            
+
             String result = FastAllocateString(newLength);
             unsafe
             {
@@ -3120,7 +3120,7 @@ namespace System
             // linked-list style implementation)
 
             var strings = new string[args.Length];
-            
+
             int totalLength = 0;
 
             for (int i = 0; i < args.Length; i++)
@@ -3170,7 +3170,7 @@ namespace System
             {
                 if (!en.MoveNext())
                     return string.Empty;
-                
+
                 // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
@@ -3190,7 +3190,7 @@ namespace System
                 }
 
                 StringBuilder result = StringBuilderCache.Acquire();
-                
+
                 result.Append(firstString);
 
                 do
@@ -3217,7 +3217,7 @@ namespace System
             {
                 if (!en.MoveNext())
                     return string.Empty;
-                
+
                 string firstValue = en.Current;
 
                 if (!en.MoveNext())
@@ -3328,7 +3328,7 @@ namespace System
         {
             if (values == null)
                 throw new ArgumentNullException("values");
-            
+
             if (values.Length <= 1)
             {
                 return values.Length == 0 ?
@@ -3390,7 +3390,6 @@ namespace System
             // doing the concatenation again, but this time with a defensive copy. This
             // fall back should be extremely rare.
             return copiedLength == totalLength ? result : Concat((string[])values.Clone());
-
         }
 
         IEnumerator<char> IEnumerable<char>.GetEnumerator()
@@ -3406,7 +3405,7 @@ namespace System
         internal static unsafe int wcslen(char* ptr)
         {
             char* end = ptr;
-            
+
             // First make sure our pointer is aligned on a word boundary
             int alignment = IntPtr.Size - 1;
 

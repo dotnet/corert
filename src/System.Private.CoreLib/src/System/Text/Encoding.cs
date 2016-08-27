@@ -1032,7 +1032,7 @@ namespace System.Text
 
         // Returns an encoding for the UTF-7 format. The returned encoding will be
         // an instance of the UTF7Encoding class.
-        
+
         public static Encoding UTF7 => UTF7Encoding.s_default;
 
         // Returns an encoding for the UTF-8 format. The returned encoding will be

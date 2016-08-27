@@ -193,7 +193,7 @@ namespace System
 
             public struct OrdinalIgnoreCaseString : IEquatable<OrdinalIgnoreCaseString>
             {
-                public static implicit operator string(OrdinalIgnoreCaseString ignoreCaseString)
+                public static implicit operator string (OrdinalIgnoreCaseString ignoreCaseString)
                 {
                     return ignoreCaseString._string;
                 }
@@ -214,7 +214,7 @@ namespace System
                     {
                         return false;
                     }
-                    return (String.Compare(_string, other._string, StringComparison.OrdinalIgnoreCase) == 0);                    
+                    return (String.Compare(_string, other._string, StringComparison.OrdinalIgnoreCase) == 0);
                 }
 
                 private string _string;

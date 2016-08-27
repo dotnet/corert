@@ -76,6 +76,5 @@ namespace ILCompiler
         {
             return method.IsPInvoke && ((method is Internal.IL.Stubs.PInvokeTargetNativeMethod) || Internal.IL.McgInteropSupport.IsPregeneratedInterop(method));
         }
-
     }
 }

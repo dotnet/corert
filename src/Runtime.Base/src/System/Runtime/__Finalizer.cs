@@ -57,7 +57,7 @@ namespace System.Runtime
         {
             // Drain the queue of finalizable objects.
             while (true)
-            { 
+            {
                 Object target = InternalCalls.RhpGetNextFinalizableObject();
                 if (target == null)
                     return;

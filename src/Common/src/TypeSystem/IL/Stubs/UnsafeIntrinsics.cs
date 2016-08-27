@@ -40,7 +40,7 @@ namespace Internal.IL.Stubs
 
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
-            codeStream.Emit(ILOpcode.sizeof_, emit.NewToken(context.GetSignatureVariable(0, method:true)));
+            codeStream.Emit(ILOpcode.sizeof_, emit.NewToken(context.GetSignatureVariable(0, method: true)));
             codeStream.Emit(ILOpcode.ret);
             return emit.Link(method);
         }

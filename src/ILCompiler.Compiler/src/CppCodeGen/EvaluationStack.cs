@@ -71,7 +71,7 @@ namespace Internal.IL
         {
             if (_top >= _stack.Length)
             {
-                Array.Resize(ref _stack, 2*_top + 3);
+                Array.Resize(ref _stack, 2 * _top + 3);
             }
             _stack[_top++] = value;
         }
@@ -88,7 +88,7 @@ namespace Internal.IL
 
             if (_top >= _stack.Length)
             {
-                Array.Resize(ref _stack, 2*_top + 3);
+                Array.Resize(ref _stack, 2 * _top + 3);
             }
             for (int i = _top - 1; i >= pos; i--)
             {
@@ -227,7 +227,6 @@ namespace Internal.IL
                 }
             }
         }
-
     }
 
     /// <summary>
@@ -250,7 +249,7 @@ namespace Internal.IL
         }
     }
 
-    internal abstract class ConstantEntry<T> : ConstantEntry where T:IConvertible
+    internal abstract class ConstantEntry<T> : ConstantEntry where T : IConvertible
     {
         public T Value { get; private set; }
 
@@ -512,5 +511,4 @@ namespace Internal.IL
             s.Append("Invalid Entry");
         }
     }
-
 }

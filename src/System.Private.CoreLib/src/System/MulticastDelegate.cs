@@ -41,7 +41,7 @@ namespace System
                 return true;
             if (!InternalEqualTypes(this, obj))
                 return false;
-            
+
             // Since this is a MulticastDelegate and we know
             // the types are the same, obj should also be a
             // MulticastDelegate

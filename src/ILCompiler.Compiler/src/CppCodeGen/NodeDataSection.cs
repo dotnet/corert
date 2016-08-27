@@ -10,7 +10,8 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.Compiler.CppCodeGen
 {
-    internal enum NodeDataSectionType { 
+    internal enum NodeDataSectionType
+    {
         Relocation,
         ByteData
     }

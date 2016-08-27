@@ -59,7 +59,7 @@ namespace ILCompiler
         public override void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             base.AddCompilationRoots(rootProvider);
-            
+
             if (BuildingLibrary)
             {
                 foreach (var module in InputModules)
@@ -94,7 +94,7 @@ namespace ILCompiler
                 return false;
             }
         }
-        
+
         public override bool ShouldProduceFullType(TypeDesc type)
         {
             // TODO: Remove this once we have delgate constructor transform added and GetMethods() tells us about
@@ -114,7 +114,7 @@ namespace ILCompiler
             // type is fully build.
             if (!ContainsType(type))
                 return true;
-            
+
             return false;
         }
 
@@ -143,7 +143,7 @@ namespace ILCompiler
                 // Skip methods with no IL and uninstantiated generic methods
                 if (method.IsIntrinsic || method.IsAbstract || method.ContainsGenericVariables)
                     continue;
-                
+
                 if (method.IsInternalCall)
                     continue;
 

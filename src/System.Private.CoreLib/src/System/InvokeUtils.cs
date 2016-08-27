@@ -315,7 +315,7 @@ namespace System
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }
                     }
-                    
+
                     return result;
                 }
                 finally

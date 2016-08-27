@@ -30,9 +30,9 @@ namespace System
 
         internal protected object m_firstParameter;
         internal protected object m_helperObject;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]  
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]
         internal protected IntPtr m_extraFunctionPointerOrData;
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]  
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]
         internal protected IntPtr m_functionPointer;
 
         [ThreadStatic]
@@ -51,7 +51,7 @@ namespace System
 
         //
         // If the thunk does not exist, the function will return IntPtr.Zero.
-        protected virtual IntPtr GetThunk(int whichThunk) 
+        protected virtual IntPtr GetThunk(int whichThunk)
         {
 #if DEBUG
             // The GetThunk function should be overriden on all delegate types, except for universal

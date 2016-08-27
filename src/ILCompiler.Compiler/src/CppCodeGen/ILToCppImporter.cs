@@ -1707,7 +1707,6 @@ namespace Internal.IL
                 Append(_writer.GetCppFieldName(field));
 
                 GetSignatureTypeNameAndAddReference(owningType);
-
             }
 
             AppendSemicolon();

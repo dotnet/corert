@@ -65,7 +65,7 @@ namespace System
         {
             get
             {
-                return (EEType *)m_pEEType;
+                return (EEType*)m_pEEType;
             }
         }
 
@@ -74,7 +74,7 @@ namespace System
             Debug.Assert(EEType->IsArray, "this is only supported on arrays");
 
             // m_numComponents is an int field that is directly after _pEEType
-            fixed (IntPtr * ptr = &m_pEEType)
+            fixed (IntPtr* ptr = &m_pEEType)
                 return *(int*)(ptr + 1);
         }
 #endif

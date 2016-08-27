@@ -59,11 +59,13 @@ namespace Internal.Runtime.CompilerHelpers
 
             UInt64 valMid;
 
-            if (val1High == 0) {
+            if (val1High == 0)
+            {
                 // Compute the 'middle' bits of the long multiplication
                 valMid = Mul32x32To64(val2High, (UInt32)i);
             }
-            else {
+            else
+            {
                 if (val2High != 0)
                     goto ThrowExcep;
                 // Compute the 'middle' bits of the long multiplication
@@ -80,12 +82,14 @@ namespace Internal.Runtime.CompilerHelpers
             if (Hi32Bits(ret) < (UInt32)valMid)
                 goto ThrowExcep;
 
-            if (sign >= 0) {
+            if (sign >= 0)
+            {
                 // have we spilled into the sign bit?
                 if (ret < 0)
                     goto ThrowExcep;
             }
-            else {
+            else
+            {
                 ret = -ret;
                 // have we spilled into the sign bit?
                 if (ret > 0)
@@ -108,20 +112,22 @@ namespace Internal.Runtime.CompilerHelpers
 
             UInt64 valMid;
 
-            if (val1High == 0) {
+            if (val1High == 0)
+            {
                 if (val2High == 0)
                     return Mul32x32To64((UInt32)i, (UInt32)j);
                 // Compute the 'middle' bits of the long multiplication
                 valMid = Mul32x32To64(val2High, (UInt32)i);
             }
-            else {
+            else
+            {
                 if (val2High != 0)
                     goto ThrowExcep;
                 // Compute the 'middle' bits of the long multiplication
                 valMid = Mul32x32To64(val1High, (UInt32)j);
             }
 
-                // See if any bits after bit 32 are set
+            // See if any bits after bit 32 are set
             if (Hi32Bits(valMid) != 0)
                 goto ThrowExcep;
 
@@ -152,7 +158,7 @@ namespace Internal.Runtime.CompilerHelpers
         [RuntimeExport("Dbl2LngOvf")]
         public static long Dbl2LngOvf(double val)
         {
-            const double two63  = 2147483648.0 * 4294967296.0;
+            const double two63 = 2147483648.0 * 4294967296.0;
 
             // Note that this expression also works properly for val = NaN case
             // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
@@ -165,8 +171,8 @@ namespace Internal.Runtime.CompilerHelpers
         [RuntimeExport("Dbl2ULngOvf")]
         public static ulong Dbl2ULngOvf(double val)
         {
-            const double two64  = 2.0* 2147483648.0 * 4294967296.0;
- 
+            const double two64 = 2.0 * 2147483648.0 * 4294967296.0;
+
             // Note that this expression also works properly for val = NaN case
             if (val < two64)
                 return unchecked((ulong)val);

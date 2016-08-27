@@ -10,8 +10,8 @@ namespace Internal.NativeFormat
 {
     internal struct NativePrimitiveEncoder
     {
-        byte[] _buffer;
-        int _size;
+        private byte[] _buffer;
+        private int _size;
 
         public void Init()
         {

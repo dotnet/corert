@@ -115,7 +115,7 @@ namespace System.IO
                     // because it would be a breaking change if the stream's override didn't throw before,
                     // or in a different order. So for simplicity, we just set the bufferSize to 1
                     // (not 0 since the default implementation throws for 0) and forward to the virtual method.
-                    bufferSize = 1; 
+                    bufferSize = 1;
                 }
                 else
                 {
@@ -124,7 +124,7 @@ namespace System.IO
                         bufferSize = (int)Math.Min(bufferSize, remaining);
                 }
             }
-            
+
             return CopyToAsync(destination, bufferSize);
         }
 
@@ -180,7 +180,7 @@ namespace System.IO
                         bufferSize = (int)Math.Min(bufferSize, remaining);
                 }
             }
-            
+
             CopyTo(destination, bufferSize);
         }
 
@@ -255,7 +255,7 @@ namespace System.IO
         public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
             TaskToApm.Begin(ReadAsyncInternal(buffer, offset, count), callback, state);
 
-        public virtual int EndRead(IAsyncResult asyncResult) => 
+        public virtual int EndRead(IAsyncResult asyncResult) =>
             TaskToApm.End<int>(asyncResult);
 
         private Task<int> ReadAsyncInternal(Byte[] buffer, int offset, int count)
@@ -302,7 +302,7 @@ namespace System.IO
         public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
             TaskToApm.Begin(WriteAsyncInternal(buffer, offset, count), callback, state);
 
-        public virtual void EndWrite(IAsyncResult asyncResult) => 
+        public virtual void EndWrite(IAsyncResult asyncResult) =>
             TaskToApm.End(asyncResult);
 
         private Task WriteAsyncInternal(Byte[] buffer, int offset, int count)
@@ -362,7 +362,7 @@ namespace System.IO
             oneByteArray[0] = value;
             Write(oneByteArray, 0, 1);
         }
-        
+
         internal void ValidateCopyToArguments(Stream destination, int bufferSize)
         {
             if (destination == null)
@@ -426,13 +426,13 @@ namespace System.IO
                 get { return 0; }
                 set { }
             }
-            
+
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 // Validate arguments for compat, since previously this
                 // method was inherited from Stream, which did check its arguments.
                 ValidateCopyToArguments(destination, bufferSize);
-                
+
                 return cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;
