@@ -124,35 +124,13 @@ namespace System
         {
             if (version == null)
             {
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
-                else
-                {
-#endif
-                    return 1;
-#if FEATURE_LEGACYNETCF
-                }
-#endif
+                return 1;
             }
 
             Version v = version as Version;
             if (v == null)
             {
-#if FEATURE_LEGACYNETCF
-                if (CompatibilitySwitches.IsAppEarlierThanWindowsPhone8)
-                {
-                    throw new InvalidCastException(Sr.Arg_MustBeVersion);
-                }
-                else
-                {
-#endif
-                    throw new ArgumentException(SR.Arg_MustBeVersion);
-#if FEATURE_LEGACYNETCF
-                }
-#endif                
+                throw new ArgumentException(SR.Arg_MustBeVersion);
             }
 
             if (_Major != v._Major)
