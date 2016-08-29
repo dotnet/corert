@@ -15,6 +15,8 @@ using Internal.Reflection.Tracing;
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
+using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -160,6 +162,14 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_Namespace(this);
 #endif
                 return GenericTypeDefinitionTypeInfo.Namespace;
+            }
+        }
+
+        public sealed override StructLayoutAttribute StructLayoutAttribute
+        {
+            get
+            {
+                return GenericTypeDefinitionTypeInfo.StructLayoutAttribute;
             }
         }
 

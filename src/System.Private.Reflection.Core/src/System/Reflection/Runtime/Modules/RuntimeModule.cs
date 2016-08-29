@@ -84,6 +84,12 @@ namespace System.Reflection.Runtime.Modules
             return _assembly.GetType(name, throwOnError, ignoreCase);
         }
 
+        public sealed override Type[] GetTypes()
+        {
+            Debug.Assert(this.Equals(_assembly.ManifestModule)); // We only support single-module assemblies so we have to be the manifest module.
+            return _assembly.GetTypes();
+        }
+
         public sealed override Guid ModuleVersionId
         {
             get

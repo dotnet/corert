@@ -22,6 +22,8 @@ using Internal.Metadata.NativeFormat;
 
 using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 
+using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -689,6 +691,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return name;
             }
         }
+
+        public abstract override StructLayoutAttribute StructLayoutAttribute { get; }
 
         public abstract override string ToString();
 

@@ -168,7 +168,15 @@ namespace System.Reflection
         public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef);
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
         public static Assembly Load(byte[] rawAssembly, byte[] rawSymbolStore) { throw new NotImplementedException(); }
-        public static Assembly Load(string assemblyString) { throw new NotImplementedException(); }
+
+        public static Assembly Load(string assemblyString)
+        {
+            if (assemblyString == null)
+                throw new ArgumentNullException(nameof(assemblyString));
+
+            AssemblyName name = new AssemblyName(assemblyString);
+            return Load(name);
+        }
 
         public static Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw new NotImplementedException(); }
         public static Assembly ReflectionOnlyLoad(string assemblyString) { throw new NotImplementedException(); }

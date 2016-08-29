@@ -17,6 +17,8 @@ using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
 
+using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
@@ -99,6 +101,14 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ReflectionTrace.Enabled)
                     ReflectionTrace.TypeInfo_Namespace(this);
 #endif
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
+            }
+        }
+
+        public sealed override StructLayoutAttribute StructLayoutAttribute
+        {
+            get
+            {
                 throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(this);
             }
         }

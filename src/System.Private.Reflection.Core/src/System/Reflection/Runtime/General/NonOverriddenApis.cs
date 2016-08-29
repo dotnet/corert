@@ -67,6 +67,7 @@ namespace System.Reflection.Runtime.EventInfos
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
+        public sealed override bool IsMulticast => base.IsMulticast;
 #endif //DEBUG
     }
 }
@@ -77,10 +78,6 @@ namespace System.Reflection.Runtime.FieldInfos
     {
 #if DEBUG
         public sealed override MemberTypes MemberType => base.MemberType;
-
-        public sealed override bool IsSecurityCritical => base.IsSecurityCritical;
-        public sealed override bool IsSecuritySafeCritical => base.IsSecuritySafeCritical;
-        public sealed override bool IsSecurityTransparent => base.IsSecurityTransparent;
 #endif //DEBUG
     }
 }
@@ -100,6 +97,7 @@ namespace System.Reflection.Runtime.Modules
     internal sealed partial class RuntimeModule
     {
 #if DEBUG
+        public sealed override Type[] FindTypes(TypeFilter filter, object filterCriteria) => base.FindTypes(filter, filterCriteria);
         public sealed override Type GetType(string className) => base.GetType(className);
         public sealed override Type GetType(string className, bool ignoreCase) => base.GetType(className, ignoreCase);
 #endif //DEBUG
@@ -132,6 +130,8 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract partial class RuntimeTypeInfo
     {
 #if DEBUG
+        public sealed override Type[] FindInterfaces(TypeFilter filter, object filterCriteria) => base.FindInterfaces(filter, filterCriteria);
+        public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria) => base.FindMembers(memberType, bindingAttr, filter, filterCriteria);
         public sealed override EventInfo[] GetEvents() => base.GetEvents();
         public sealed override bool IsSubclassOf(Type c) => base.IsSubclassOf(c);
         protected sealed override bool IsMarshalByRefImpl() => base.IsMarshalByRefImpl();

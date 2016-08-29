@@ -1654,4 +1654,10 @@
   <data name="Argument_MustHaveAttributeBaseClass" xml:space="preserve">
     <value>Type passed in must be derived from System.Attribute or System.Attribute itself.</value>
   </data>
+  <data name="InvalidFilterCriteriaException_CritString" xml:space="preserve">
+    <value>A String must be provided for the filter criteria.</value>
+  </data>
+  <data name="InvalidFilterCriteriaException_CritInt" xml:space="preserve">
+    <value>An Int32 must be provided for the filter criteria.</value>
+  </data>
 </root>

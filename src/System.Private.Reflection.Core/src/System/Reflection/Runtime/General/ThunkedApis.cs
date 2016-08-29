@@ -10,6 +10,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using System.Reflection;
 using System.Globalization;
 using System.Collections.Generic;
@@ -23,10 +24,43 @@ namespace System.Reflection.Runtime.Assemblies
 {
     internal sealed partial class RuntimeAssembly
     {
-        public sealed override Type[] GetExportedTypes() =>  ExportedTypes.ToArray();
+        public sealed override Type[] GetExportedTypes() => ExportedTypes.ToArray();
         public sealed override Module[] GetLoadedModules(bool getResourceModules) => Modules.ToArray();
-        public sealed override Module[] GetModules(bool getResourceModules) =>  Modules.ToArray();
+        public sealed override Module[] GetModules(bool getResourceModules) => Modules.ToArray();
         public sealed override Type[] GetTypes() => DefinedTypes.ToArray();
+
+        // "copiedName" only affects whether CodeBase is set to the assembly location before or after the shadow-copy. 
+        // That concept is meaningless on .NET Native.
+        public sealed override AssemblyName GetName(bool copiedName) => GetName();
+
+        public sealed override Stream GetManifestResourceStream(Type type, string name)
+        {
+            StringBuilder sb = new StringBuilder();
+            if (type == null)
+            {
+                if (name == null)
+                    throw new ArgumentNullException(nameof(type));
+            }
+            else
+            {
+                string nameSpace = type.Namespace;
+                if (nameSpace != null)
+                {
+                    sb.Append(nameSpace);
+                    if (name != null)
+                    {
+                        sb.Append(Type.Delimiter);
+                    }
+                }
+            }
+
+            if (name != null)
+            {
+                sb.Append(name);
+            }
+
+            return GetManifestResourceStream(sb.ToString());
+        }
     }
 }
 
@@ -53,6 +87,7 @@ namespace System.Reflection.Runtime.MethodInfos
     internal abstract partial class RuntimeMethodInfo
     {
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
+        public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes => ReturnParameter;
     }
 }
 
