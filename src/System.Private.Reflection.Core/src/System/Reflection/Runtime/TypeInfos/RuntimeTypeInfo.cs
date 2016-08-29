@@ -17,6 +17,7 @@ using Internal.LowLevelLinq;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
+using Internal.Reflection.Augments;
 
 using Internal.Metadata.NativeFormat;
 
@@ -738,6 +739,11 @@ namespace System.Reflection.Runtime.TypeInfos
         protected override bool HasElementTypeImpl()
         {
             return false;
+        }
+
+        protected sealed override TypeCode GetTypeCodeImpl()
+        {
+            return ReflectionAugments.GetRuntimeTypeCode(this);
         }
 
         protected abstract int InternalGetHashCode();

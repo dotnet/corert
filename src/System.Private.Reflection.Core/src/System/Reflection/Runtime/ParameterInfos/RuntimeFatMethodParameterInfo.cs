@@ -90,7 +90,7 @@ namespace System.Reflection.Runtime.ParameterInfos
                         out defaultValue);
                     if (!hasDefaultValue)
                     {
-                        defaultValue = IsOptional ? Missing.Value : DBNull.Value;
+                        defaultValue = IsOptional ? (object)Missing.Value : (object)DBNull.Value;
                     }
                     defaultValueInfo = _lazyDefaultValueInfo = Tuple.Create(hasDefaultValue, defaultValue);
                 }

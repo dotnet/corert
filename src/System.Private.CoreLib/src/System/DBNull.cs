@@ -2,5 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-[assembly: global::System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.DBNull))]
+namespace System
+{
+    public sealed class DBNull
+    {
+        private DBNull()
+        {
+        }
+
+        public static readonly DBNull Value = new DBNull();
+    }
+}
 
