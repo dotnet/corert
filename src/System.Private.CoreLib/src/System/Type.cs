@@ -352,9 +352,9 @@ namespace System
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();
         public static readonly object Missing = System.Reflection.Missing.Value;
 
-        public static readonly MemberFilter FilterAttribute = delegate (MemberInfo m, object filterCriteria) { throw new NotImplementedException(); };
-        public static readonly MemberFilter FilterName = delegate (MemberInfo m, object filterCriteria) { throw new NotImplementedException(); };
-        public static readonly MemberFilter FilterNameIgnoreCase = delegate (MemberInfo m, object filterCriteria) { throw new NotImplementedException(); };
+        public static readonly MemberFilter FilterAttribute = FilterAttributeImpl;
+        public static readonly MemberFilter FilterName = FilterNameImpl;
+        public static readonly MemberFilter FilterNameIgnoreCase = FilterNameIgnoreCaseImpl;
 
         public static Binder DefaultBinder => _GetDefaultBinder();
         private static volatile Binder s_defaultBinder;

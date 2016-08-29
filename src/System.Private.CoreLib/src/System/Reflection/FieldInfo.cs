@@ -31,9 +31,9 @@ namespace System.Reflection
         public bool IsPrivate => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Private;
         public bool IsPublic => (Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public;
 
-        public virtual bool IsSecurityCritical => false;
-        public virtual bool IsSecuritySafeCritical => false;
-        public virtual bool IsSecurityTransparent => true;
+        public virtual bool IsSecurityCritical { get { throw new NotImplementedException(); } }
+        public virtual bool IsSecuritySafeCritical { get { throw new NotImplementedException(); } }
+        public virtual bool IsSecurityTransparent { get { throw new NotImplementedException(); } }
 
         public abstract RuntimeFieldHandle FieldHandle { get; }
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetFieldFromHandle(handle);

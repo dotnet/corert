@@ -20,6 +20,9 @@ namespace System.Reflection.Runtime.TypeInfos
             if (callConvention != CallingConventions.Any)
                 throw new NotImplementedException();
 
+            if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
+                throw new NotImplementedException();
+
             if (binder == null)
                 binder = Type._GetDefaultBinder();
             ConstructorInfo[] candidates = GetConstructors(bindingAttr);
@@ -52,6 +55,9 @@ namespace System.Reflection.Runtime.TypeInfos
             }
             else
             {
+                if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
+                    throw new NotImplementedException();
+
                 // Group #2: This group of api takes a set of parameter types and an optional binder. 
                 if (callConvention != CallingConventions.Any)
                     throw new NotImplementedException();
@@ -71,6 +77,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(name != null);
 
+            if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
+                throw new NotImplementedException();
+
             // GetPropertyImpl() is a funnel for two groups of api. We can distinguish by comparing "types" to null.
             if (types == null && returnType == null)
             {
@@ -81,12 +90,21 @@ namespace System.Reflection.Runtime.TypeInfos
             }
             else
             {
+                if (!OnlySearchRelatedBitsSet(bindingAttr))  // We don't yet have proper handling for BindingFlags not related to search so throw rather return a wrong result.
+                    throw new NotImplementedException();
+
                 // Group #2: This group of api takes a set of parameter types, a return type (both cannot be null) and an optional binder. 
                 if (binder == null)
                     binder = Type._GetDefaultBinder();
                 PropertyInfo[] candidates = LowLevelTypeExtensions.GetProperties(this, name, bindingAttr);
                 return binder.SelectProperty(bindingAttr, candidates, returnType, types, modifiers);
             }
+        }
+
+        private static bool OnlySearchRelatedBitsSet(BindingFlags bindingFlags)
+        {
+            const BindingFlags SearchRelatedBits = BindingFlags.IgnoreCase | BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+            return (bindingFlags & ~SearchRelatedBits) == 0;
         }
     }
 }
