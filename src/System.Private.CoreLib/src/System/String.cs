@@ -1668,51 +1668,13 @@ namespace System
 
         public static int Compare(String strA, String strB)
         {
-            if ((Object)strA == (Object)strB)
-            {
-                return 0;
-            }
-
-            //they can't both be null;
-            if (strA == null)
-            {
-                return -1;
-            }
-
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            return FormatProvider.Compare(strA, 0, strA.Length, strB, 0, strB.Length);
+            return Compare(strA, strB, StringComparison.CurrentCulture);
         }
 
-        public static int Compare(String strA, String strB, Boolean ignoreCase)
+        public static int Compare(String strA, String strB, bool ignoreCase)
         {
-            if ((Object)strA == (Object)strB)
-            {
-                return 0;
-            }
-
-            //they can't both be null;
-            if (strA == null)
-            {
-                return -1;
-            }
-
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            if (ignoreCase)
-            {
-                return FormatProvider.CompareIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
-            }
-            else
-            {
-                return FormatProvider.Compare(strA, 0, strA.Length, strB, 0, strB.Length);
-            }
+            var comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+            return Compare(strA, strB, comparisonType);
         }
 
         // Provides a more flexible function for string comparision. See StringComparison 
@@ -1723,18 +1685,17 @@ namespace System
             {
                 throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
             }
-
-            if ((Object)strA == (Object)strB)
+            
+            if (object.ReferenceEquals(strA, strB))
             {
                 return 0;
             }
 
-            //they can't both be null;
+            // They can't both be null at this point.
             if (strA == null)
             {
                 return -1;
             }
-
             if (strB == null)
             {
                 return 1;
@@ -1804,69 +1765,40 @@ namespace System
 
             if (strA == null || strB == null)
             {
-                if ((Object)strA == (Object)strB)
-                { //they're both null;
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
                     return 0;
                 }
 
-                return (strA == null) ? -1 : 1; //-1 if A is null, 1 if B is null.
+                return strA == null ? -1 : 1;
             }
 
             // @TODO: Spec#: Figure out what to do here with the return statement above.
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length",
-                                                      SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
             }
 
-            if (indexA < 0)
+            if (indexA < 0 || indexB < 0)
             {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                     SR.ArgumentOutOfRange_Index);
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
 
-            if (indexB < 0)
+            if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
             {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                     SR.ArgumentOutOfRange_Index);
+                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
-
-            if (strA.Length - indexA < 0)
-            {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                      SR.ArgumentOutOfRange_Index);
-            }
-
-            if (strB.Length - indexB < 0)
-            {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                      SR.ArgumentOutOfRange_Index);
-            }
-
-            if ((length == 0) ||
-                ((strA == strB) && (indexA == indexB)))
+            
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
             {
                 return 0;
             }
 
-            int lengthA = length;
-            int lengthB = length;
-
-            if (strA != null)
-            {
-                if (strA.Length - indexA < lengthA)
-                {
-                    lengthA = (strA.Length - indexA);
-                }
-            }
-
-            if (strB != null)
-            {
-                if (strB.Length - indexB < lengthB)
-                {
-                    lengthB = (strB.Length - indexB);
-                }
-            }
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
 
             switch (comparisonType)
             {
@@ -1899,12 +1831,14 @@ namespace System
                 return 1;
             }
 
-            if (!(value is String))
+            string other = value as string;
+
+            if (other == null)
             {
                 throw new ArgumentException(SR.Arg_MustBeString);
             }
 
-            return String.Compare(this, (String)value, StringComparison.CurrentCulture);
+            return CompareTo(other); // will call the string-based overload
         }
 
         // Determines the sorting relation of StrB to the current instance.
@@ -1912,12 +1846,7 @@ namespace System
 
         public int CompareTo(String strB)
         {
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            return FormatProvider.Compare(this, 0, this.Length, strB, 0, strB.Length);
+            return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
         // Compares strA and strB using an ordinal (code-point) comparison.
@@ -1925,17 +1854,16 @@ namespace System
 
         public static int CompareOrdinal(String strA, String strB)
         {
-            if ((Object)strA == (Object)strB)
+            if (object.ReferenceEquals(strA, strB))
             {
                 return 0;
             }
 
-            //they can't both be null;
+            // They can't both be null at this point.
             if (strA == null)
             {
                 return -1;
             }
-
             if (strB == null)
             {
                 return 1;
