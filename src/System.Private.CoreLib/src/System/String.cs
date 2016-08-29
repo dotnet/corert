@@ -466,43 +466,6 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
-        internal static unsafe int nativeCompareOrdinalEx(String strA, int indexA, String strB, int indexB, int count)
-        {
-            // If any of our indices are negative throw an exception.
-            if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
-            if (indexA < 0)
-                throw new ArgumentOutOfRangeException("indexA", SR.ArgumentOutOfRange_Index);
-            if (indexB < 0)
-                throw new ArgumentOutOfRangeException("indexB", SR.ArgumentOutOfRange_Index);
-
-            int countA = count;
-            int countB = count;
-
-            // Do a lot of range checking to make sure that everything is kosher and legit.
-            if (count > (strA.Length - indexA))
-            {
-                countA = strA.Length - indexA;
-                if (countA < 0)
-                    throw new ArgumentOutOfRangeException("indexA", SR.ArgumentOutOfRange_Index);
-            }
-
-            if (count > (strB.Length - indexB))
-            {
-                countB = strB.Length - indexB;
-                if (countB < 0)
-                    throw new ArgumentOutOfRangeException("indexB", SR.ArgumentOutOfRange_Index);
-            }
-
-            // Set up the loop variables.
-            fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)
-            {
-                char* strAChars = pStrA + indexA;
-                char* strBChars = pStrB + indexB;
-                return FastCompareStringHelper((uint*)strAChars, countA, (uint*)strBChars, countB);
-            }
-        }
-
         private static unsafe int FastCompareStringHelper(uint* strAChars, int countA, uint* strBChars, int countB)
         {
             int count = (countA < countB) ? countA : countB;
@@ -878,6 +841,24 @@ namespace System
                 DiffOffset1:
                 Contract.Assert(*(a + 1) != *(b + 1), "This char must be different if we reach here!");
                 return *(a + 1) - *(b + 1);
+            }
+        }
+
+        internal unsafe static int CompareOrdinalHelper(string strA, int indexA, int countA, string strB, int indexB, int countB)
+        {
+            // Argument validation should be handled by callers.
+            Contract.Assert(strA != null && strB != null);
+            Contract.Assert(indexA >= 0 && indexB >= 0);
+            Contract.Assert(countA >= 0 && countB >= 0);
+            Contract.Assert(countA <= strA.Length - indexA);
+            Contract.Assert(countB <= strB.Length - indexB);
+
+            // Set up the loop variables.
+            fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)
+            {
+                char* strAChars = pStrA + indexA;
+                char* strBChars = pStrB + indexB;
+                return FastCompareStringHelper((uint*)strAChars, countA, (uint*)strBChars, countB);
             }
         }
 
@@ -1686,51 +1667,13 @@ namespace System
 
         public static int Compare(String strA, String strB)
         {
-            if ((Object)strA == (Object)strB)
-            {
-                return 0;
-            }
-
-            //they can't both be null;
-            if (strA == null)
-            {
-                return -1;
-            }
-
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            return FormatProvider.Compare(strA, 0, strA.Length, strB, 0, strB.Length);
+            return Compare(strA, strB, StringComparison.CurrentCulture);
         }
 
-        public static int Compare(String strA, String strB, Boolean ignoreCase)
+        public static int Compare(String strA, String strB, bool ignoreCase)
         {
-            if ((Object)strA == (Object)strB)
-            {
-                return 0;
-            }
-
-            //they can't both be null;
-            if (strA == null)
-            {
-                return -1;
-            }
-
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            if (ignoreCase)
-            {
-                return FormatProvider.CompareIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
-            }
-            else
-            {
-                return FormatProvider.Compare(strA, 0, strA.Length, strB, 0, strB.Length);
-            }
+            var comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+            return Compare(strA, strB, comparisonType);
         }
 
         // Provides a more flexible function for string comparision. See StringComparison 
@@ -1741,18 +1684,17 @@ namespace System
             {
                 throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
             }
-
-            if ((Object)strA == (Object)strB)
+            
+            if (object.ReferenceEquals(strA, strB))
             {
                 return 0;
             }
 
-            //they can't both be null;
+            // They can't both be null at this point.
             if (strA == null)
             {
                 return -1;
             }
-
             if (strB == null)
             {
                 return 1;
@@ -1792,25 +1734,48 @@ namespace System
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length)
         {
+            // NOTE: It's important we call the boolean overload, and not the StringComparison
+            // one. The two have some subtly different behavior (see notes in the former).
+            return Compare(strA, indexA, strB, indexB, length, ignoreCase: false);
+        }
+
+        // Determines whether two string regions match.  The substring of strA beginning
+        // at indexA of length count is compared with the substring of strB
+        // beginning at indexB of the same length.  Case sensitivity is determined by the ignoreCase boolean.
+        //
+        
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length, bool ignoreCase)
+        {
+            // Ideally we would just forward to the string.Compare overload that takes
+            // a StringComparison parameter, and just pass in CurrentCulture/CurrentCultureIgnoreCase.
+            // That function will return early if an optimization can be applied, e.g. if
+            // (object)strA == strB && indexA == indexB then it will return 0 straightaway.
+            // There are a couple of subtle behavior differences that prevent us from doing so
+            // however:
+            // - string.Compare(null, -1, null, -1, -1, StringComparison.CurrentCulture) works
+            //   since that method also returns early for nulls before validation. It shouldn't
+            //   for this overload.
+            // - Since we originally forwarded to FormatProvider for all of the argument
+            //   validation logic, the ArgumentOutOfRangeExceptions thrown will contain different
+            //   parameter names.
+            // Therefore, we have to duplicate some of the logic here.
+
             int lengthA = length;
             int lengthB = length;
-
+            
             if (strA != null)
             {
-                if (strA.Length - indexA < lengthA)
-                {
-                    lengthA = (strA.Length - indexA);
-                }
+                lengthA = Math.Min(lengthA, strA.Length - indexA);
             }
 
             if (strB != null)
             {
-                if (strB.Length - indexB < lengthB)
-                {
-                    lengthB = (strB.Length - indexB);
-                }
+                lengthB = Math.Min(lengthB, strB.Length - indexB);
             }
-            return FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
+            
+            return ignoreCase ?
+                FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB) :
+                FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
         }
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType)
@@ -1822,69 +1787,40 @@ namespace System
 
             if (strA == null || strB == null)
             {
-                if ((Object)strA == (Object)strB)
-                { //they're both null;
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
                     return 0;
                 }
 
-                return (strA == null) ? -1 : 1; //-1 if A is null, 1 if B is null.
+                return strA == null ? -1 : 1;
             }
 
             // @TODO: Spec#: Figure out what to do here with the return statement above.
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length",
-                                                      SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
             }
 
-            if (indexA < 0)
+            if (indexA < 0 || indexB < 0)
             {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                     SR.ArgumentOutOfRange_Index);
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
 
-            if (indexB < 0)
+            if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
             {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                     SR.ArgumentOutOfRange_Index);
+                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
-
-            if (strA.Length - indexA < 0)
-            {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                      SR.ArgumentOutOfRange_Index);
-            }
-
-            if (strB.Length - indexB < 0)
-            {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                      SR.ArgumentOutOfRange_Index);
-            }
-
-            if ((length == 0) ||
-                ((strA == strB) && (indexA == indexB)))
+            
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
             {
                 return 0;
             }
 
-            int lengthA = length;
-            int lengthB = length;
-
-            if (strA != null)
-            {
-                if (strA.Length - indexA < lengthA)
-                {
-                    lengthA = (strA.Length - indexA);
-                }
-            }
-
-            if (strB != null)
-            {
-                if (strB.Length - indexB < lengthB)
-                {
-                    lengthB = (strB.Length - indexB);
-                }
-            }
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
 
             switch (comparisonType)
             {
@@ -1895,7 +1831,7 @@ namespace System
                     return FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
 
                 case StringComparison.Ordinal:
-                    return nativeCompareOrdinalEx(strA, indexA, strB, indexB, length);
+                    return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return FormatProvider.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
@@ -1917,12 +1853,14 @@ namespace System
                 return 1;
             }
 
-            if (!(value is String))
+            string other = value as string;
+
+            if (other == null)
             {
                 throw new ArgumentException(SR.Arg_MustBeString);
             }
 
-            return String.Compare(this, (String)value, StringComparison.CurrentCulture);
+            return CompareTo(other); // will call the string-based overload
         }
 
         // Determines the sorting relation of StrB to the current instance.
@@ -1930,12 +1868,7 @@ namespace System
 
         public int CompareTo(String strB)
         {
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            return FormatProvider.Compare(this, 0, this.Length, strB, 0, strB.Length);
+            return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
         // Compares strA and strB using an ordinal (code-point) comparison.
@@ -1943,17 +1876,16 @@ namespace System
 
         public static int CompareOrdinal(String strA, String strB)
         {
-            if ((Object)strA == (Object)strB)
+            if (object.ReferenceEquals(strA, strB))
             {
                 return 0;
             }
 
-            //they can't both be null;
+            // They can't both be null at this point.
             if (strA == null)
             {
                 return -1;
             }
-
             if (strB == null)
             {
                 return 1;
@@ -1973,15 +1905,44 @@ namespace System
         {
             if (strA == null || strB == null)
             {
-                if ((Object)strA == (Object)strB)
-                { //they're both null;
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
                     return 0;
                 }
 
-                return (strA == null) ? -1 : 1; //-1 if A is null, 1 if B is null.
+                return strA == null ? -1 : 1;
             }
 
-            return nativeCompareOrdinalEx(strA, indexA, strB, indexB, length);
+            // COMPAT: Checking for nulls should become before the arguments are validated,
+            // but other optimizations which allow us to return early should come after.
+
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeCount);
+            }
+
+            if (indexA < 0 || indexB < 0)
+            {
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+            
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
+
+            if (lengthA < 0 || lengthB < 0)
+            {
+                string paramName = lengthA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
+            {
+                return 0;
+            }
+
+            return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
         }
 
         public bool Contains(string value)
@@ -2031,7 +1992,7 @@ namespace System
                     return FormatProvider.IsSuffixIgnoreCase(this, value);
 
                 case StringComparison.Ordinal:
-                    return this.Length < value.Length ? false : (nativeCompareOrdinalEx(this, this.Length - value.Length, value, 0, value.Length) == 0);
+                    return this.Length < value.Length ? false : (CompareOrdinalHelper(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return this.Length < value.Length ? false : (FormatProvider.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
