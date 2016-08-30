@@ -414,6 +414,43 @@ namespace System
                     .AppendFormatHelper(provider, format, args));
         }
 
+        public String Insert(int startIndex, String value)
+        {
+            if (value == null)
+                throw new ArgumentNullException("value");
+            if (startIndex < 0 || startIndex > this.Length)
+                throw new ArgumentOutOfRangeException("startIndex");
+
+            int oldLength = Length;
+            int insertLength = value.Length;
+
+            if (oldLength == 0)
+                return value;
+            if (insertLength == 0)
+                return this;
+
+            int newLength = oldLength + insertLength;
+            if (newLength < 0)
+                throw new OutOfMemoryException();
+            String result = FastAllocateString(newLength);
+            unsafe
+            {
+                fixed (char* srcThis = &_firstChar)
+                {
+                    fixed (char* srcInsert = &value._firstChar)
+                    {
+                        fixed (char* dst = &result._firstChar)
+                        {
+                            wstrcpy(dst, srcThis, startIndex);
+                            wstrcpy(dst + startIndex, srcInsert, insertLength);
+                            wstrcpy(dst + startIndex + insertLength, srcThis + startIndex, oldLength - startIndex);
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
