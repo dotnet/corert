@@ -23,12 +23,12 @@ namespace Internal.Runtime.CompilerHelpers
             // CORERT-TODO: Use same encoding as the rest of the interop
             var encoding = Encoding.UTF8;
 
-            fixed (char * pStr = str)
+            fixed (char* pStr = str)
             {
                 int stringLength = str.Length;
                 int bufferLength = encoding.GetByteCount(pStr, stringLength);
                 var buffer = new byte[bufferLength + 1];
-                fixed (byte * pBuffer = buffer)
+                fixed (byte* pBuffer = buffer)
                 {
                     encoding.GetBytes(pStr, stringLength, pBuffer, bufferLength);
                     return buffer;
@@ -57,7 +57,7 @@ namespace Internal.Runtime.CompilerHelpers
             return ResolvePInvokeSlow(pCell);
         }
 
-        internal unsafe static IntPtr ResolvePInvokeSlow(MethodFixupCell *pCell)
+        internal unsafe static IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
         {
             ModuleFixupCell* pModuleCell = pCell->Module;
             IntPtr hModule = pModuleCell->Handle;
@@ -71,7 +71,7 @@ namespace Internal.Runtime.CompilerHelpers
             return pCell->Target;
         }
 
-        internal unsafe static void FixupModuleCell(ModuleFixupCell *pCell)
+        internal unsafe static void FixupModuleCell(ModuleFixupCell* pCell)
         {
 #if !PLATFORM_UNIX
             char* moduleName = (char*)pCell->ModuleName;
@@ -112,9 +112,8 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
         }
 
-        internal unsafe static void FixupMethodCell(IntPtr hModule, MethodFixupCell *pCell)
+        internal unsafe static void FixupMethodCell(IntPtr hModule, MethodFixupCell* pCell)
         {
-
             byte* methodName = (byte*)pCell->MethodName;
 
 #if !PLATFORM_UNIX

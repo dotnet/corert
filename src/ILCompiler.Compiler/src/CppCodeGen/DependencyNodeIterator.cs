@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
@@ -57,7 +58,6 @@ namespace ILCompiler.Compiler.CppCodeGen
                     if (!node.Type.IsPrimitive)
                         AddTypeNode(baseTypeNode);
                     else if (!_nodes.Contains(baseTypeNode)) _nodes.Add(baseTypeNode);
-
                 }
                 foreach (var field in node.Type.GetFields())
                 {
@@ -73,9 +73,8 @@ namespace ILCompiler.Compiler.CppCodeGen
                         }
                     }
                 }
-                if (!_nodes.Contains(node)) this._nodes.Add(node);
+                if (!_nodes.Contains(node)) _nodes.Add(node);
             }
-
         }
         public List<DependencyNode> GetNodes()
         {

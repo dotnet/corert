@@ -350,7 +350,7 @@ namespace System
             {
                 if (!en.MoveNext())
                     return string.Empty;
-                
+
                 // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
@@ -370,7 +370,7 @@ namespace System
                 }
 
                 StringBuilder result = StringBuilderCache.Acquire();
-                
+
                 result.Append(firstString);
 
                 do
@@ -464,43 +464,6 @@ namespace System
             }
 
             return StringBuilderCache.GetStringAndRelease(result);
-        }
-
-        internal static unsafe int nativeCompareOrdinalEx(String strA, int indexA, String strB, int indexB, int count)
-        {
-            // If any of our indices are negative throw an exception.
-            if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
-            if (indexA < 0)
-                throw new ArgumentOutOfRangeException("indexA", SR.ArgumentOutOfRange_Index);
-            if (indexB < 0)
-                throw new ArgumentOutOfRangeException("indexB", SR.ArgumentOutOfRange_Index);
-
-            int countA = count;
-            int countB = count;
-
-            // Do a lot of range checking to make sure that everything is kosher and legit.
-            if (count > (strA.Length - indexA))
-            {
-                countA = strA.Length - indexA;
-                if (countA < 0)
-                    throw new ArgumentOutOfRangeException("indexA", SR.ArgumentOutOfRange_Index);
-            }
-
-            if (count > (strB.Length - indexB))
-            {
-                countB = strB.Length - indexB;
-                if (countB < 0)
-                    throw new ArgumentOutOfRangeException("indexB", SR.ArgumentOutOfRange_Index);
-            }
-
-            // Set up the loop variables.
-            fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)
-            {
-                char* strAChars = pStrA + indexA;
-                char* strBChars = pStrB + indexB;
-                return FastCompareStringHelper((uint*)strAChars, countA, (uint*)strBChars, countB);
-            }
         }
 
         private static unsafe int FastCompareStringHelper(uint* strAChars, int countA, uint* strBChars, int countB)
@@ -788,14 +751,14 @@ namespace System
                 // if the first two chars the same we can increment by 4 bytes,
                 // leaving us word-aligned on both 32-bit (12 bytes into the string)
                 // and 64-bit (16 bytes) platforms.
-        
+
                 // For empty strings, the second char will be null due to padding.
                 // The start of the string is the EE type pointer + string length,
                 // which takes up 8 bytes on 32-bit, 12 on x64. For empty strings,
                 // the null terminator immediately follows, leaving us with an object
                 // 10/14 bytes in size. Since everything needs to be a multiple
                 // of 4/8, this will get padded and zeroed out.
-                
+
                 // For one-char strings the second char will be the null terminator.
 
                 // NOTE: If in the future there is a way to read the second char
@@ -804,7 +767,7 @@ namespace System
                 // then do that and short-circuit before the fixed.
 
                 if (*(a + 1) != *(b + 1)) goto DiffOffset1;
-                
+
                 // Since we know that the first two chars are the same,
                 // we can increment by 2 here and skip 4 bytes.
                 // This leaves us 8-byte aligned, which results
@@ -828,7 +791,7 @@ namespace System
                     if (*(int*)(a + 4) != *(int*)(b + 4)) goto DiffOffset4;
                     if (*(int*)(a + 6) != *(int*)(b + 6)) goto DiffOffset6;
                     if (*(int*)(a + 8) != *(int*)(b + 8)) goto DiffOffset8;
-                    length -= 10; a += 10; b += 10; 
+                    length -= 10; a += 10; b += 10;
                 }
 #endif // BIT64
 
@@ -842,14 +805,14 @@ namespace System
                 {
                     if (*(int*)a != *(int*)b) goto DiffNextInt;
                     length -= 2;
-                    a += 2; 
-                    b += 2; 
+                    a += 2;
+                    b += 2;
                 }
 
                 // At this point, we have compared all the characters in at least one string.
                 // The longer string will be larger.
                 return strA.Length - strB.Length;
-                
+
 #if BIT64
                 DiffOffset8: a += 4; b += 4;
                 DiffOffset4: a += 4; b += 4;
@@ -881,13 +844,31 @@ namespace System
             }
         }
 
+        internal unsafe static int CompareOrdinalHelper(string strA, int indexA, int countA, string strB, int indexB, int countB)
+        {
+            // Argument validation should be handled by callers.
+            Contract.Assert(strA != null && strB != null);
+            Contract.Assert(indexA >= 0 && indexB >= 0);
+            Contract.Assert(countA >= 0 && countB >= 0);
+            Contract.Assert(countA <= strA.Length - indexA);
+            Contract.Assert(countB <= strB.Length - indexB);
+
+            // Set up the loop variables.
+            fixed (char* pStrA = &strA._firstChar, pStrB = &strB._firstChar)
+            {
+                char* strAChars = pStrA + indexA;
+                char* strBChars = pStrB + indexB;
+                return FastCompareStringHelper((uint*)strAChars, countA, (uint*)strBChars, countB);
+            }
+        }
+
         // Determines whether two strings match.
 
         public override bool Equals(Object obj)
         {
             if (Object.ReferenceEquals(this, obj))
                 return true;
-                
+
             String str = obj as String;
             if (str == null)
                 return false;
@@ -905,7 +886,7 @@ namespace System
         {
             if (Object.ReferenceEquals(this, value))
                 return true;
-            
+
             // NOTE: No need to worry about casting to object here.
             // If either side of an == comparison between strings
             // is null, Roslyn generates a simple ceq instruction
@@ -1637,6 +1618,16 @@ namespace System
             return s;
         }
 
+        // This is only intended to be used by char.ToString.
+        // It is necessary to put the code in this class instead of Char, since _firstChar is a private member.
+        // Making _firstChar internal would be dangerous since it would make it much easier to break String's immutability.
+        internal static string CreateFromChar(char c)
+        {
+            string result = FastAllocateString(1);
+            result._firstChar = c;
+            return result;
+        }
+
         internal static String FastAllocateString(int length)
         {
             try
@@ -1676,51 +1667,13 @@ namespace System
 
         public static int Compare(String strA, String strB)
         {
-            if ((Object)strA == (Object)strB)
-            {
-                return 0;
-            }
-
-            //they can't both be null;
-            if (strA == null)
-            {
-                return -1;
-            }
-
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            return FormatProvider.Compare(strA, 0, strA.Length, strB, 0, strB.Length);
+            return Compare(strA, strB, StringComparison.CurrentCulture);
         }
 
-        public static int Compare(String strA, String strB, Boolean ignoreCase)
+        public static int Compare(String strA, String strB, bool ignoreCase)
         {
-            if ((Object)strA == (Object)strB)
-            {
-                return 0;
-            }
-
-            //they can't both be null;
-            if (strA == null)
-            {
-                return -1;
-            }
-
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            if (ignoreCase)
-            {
-                return FormatProvider.CompareIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
-            }
-            else
-            {
-                return FormatProvider.Compare(strA, 0, strA.Length, strB, 0, strB.Length);
-            }
+            var comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+            return Compare(strA, strB, comparisonType);
         }
 
         // Provides a more flexible function for string comparision. See StringComparison 
@@ -1731,18 +1684,17 @@ namespace System
             {
                 throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
             }
-
-            if ((Object)strA == (Object)strB)
+            
+            if (object.ReferenceEquals(strA, strB))
             {
                 return 0;
             }
 
-            //they can't both be null;
+            // They can't both be null at this point.
             if (strA == null)
             {
                 return -1;
             }
-
             if (strB == null)
             {
                 return 1;
@@ -1782,25 +1734,48 @@ namespace System
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length)
         {
+            // NOTE: It's important we call the boolean overload, and not the StringComparison
+            // one. The two have some subtly different behavior (see notes in the former).
+            return Compare(strA, indexA, strB, indexB, length, ignoreCase: false);
+        }
+
+        // Determines whether two string regions match.  The substring of strA beginning
+        // at indexA of length count is compared with the substring of strB
+        // beginning at indexB of the same length.  Case sensitivity is determined by the ignoreCase boolean.
+        //
+        
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length, bool ignoreCase)
+        {
+            // Ideally we would just forward to the string.Compare overload that takes
+            // a StringComparison parameter, and just pass in CurrentCulture/CurrentCultureIgnoreCase.
+            // That function will return early if an optimization can be applied, e.g. if
+            // (object)strA == strB && indexA == indexB then it will return 0 straightaway.
+            // There are a couple of subtle behavior differences that prevent us from doing so
+            // however:
+            // - string.Compare(null, -1, null, -1, -1, StringComparison.CurrentCulture) works
+            //   since that method also returns early for nulls before validation. It shouldn't
+            //   for this overload.
+            // - Since we originally forwarded to FormatProvider for all of the argument
+            //   validation logic, the ArgumentOutOfRangeExceptions thrown will contain different
+            //   parameter names.
+            // Therefore, we have to duplicate some of the logic here.
+
             int lengthA = length;
             int lengthB = length;
-
+            
             if (strA != null)
             {
-                if (strA.Length - indexA < lengthA)
-                {
-                    lengthA = (strA.Length - indexA);
-                }
+                lengthA = Math.Min(lengthA, strA.Length - indexA);
             }
 
             if (strB != null)
             {
-                if (strB.Length - indexB < lengthB)
-                {
-                    lengthB = (strB.Length - indexB);
-                }
+                lengthB = Math.Min(lengthB, strB.Length - indexB);
             }
-            return FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
+            
+            return ignoreCase ?
+                FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB) :
+                FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
         }
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType)
@@ -1812,69 +1787,40 @@ namespace System
 
             if (strA == null || strB == null)
             {
-                if ((Object)strA == (Object)strB)
-                { //they're both null;
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
                     return 0;
                 }
 
-                return (strA == null) ? -1 : 1; //-1 if A is null, 1 if B is null.
+                return strA == null ? -1 : 1;
             }
 
             // @TODO: Spec#: Figure out what to do here with the return statement above.
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length",
-                                                      SR.ArgumentOutOfRange_NegativeLength);
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
             }
 
-            if (indexA < 0)
+            if (indexA < 0 || indexB < 0)
             {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                     SR.ArgumentOutOfRange_Index);
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
 
-            if (indexB < 0)
+            if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
             {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                     SR.ArgumentOutOfRange_Index);
+                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
             }
-
-            if (strA.Length - indexA < 0)
-            {
-                throw new ArgumentOutOfRangeException("indexA",
-                                                      SR.ArgumentOutOfRange_Index);
-            }
-
-            if (strB.Length - indexB < 0)
-            {
-                throw new ArgumentOutOfRangeException("indexB",
-                                                      SR.ArgumentOutOfRange_Index);
-            }
-
-            if ((length == 0) ||
-                ((strA == strB) && (indexA == indexB)))
+            
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
             {
                 return 0;
             }
 
-            int lengthA = length;
-            int lengthB = length;
-
-            if (strA != null)
-            {
-                if (strA.Length - indexA < lengthA)
-                {
-                    lengthA = (strA.Length - indexA);
-                }
-            }
-
-            if (strB != null)
-            {
-                if (strB.Length - indexB < lengthB)
-                {
-                    lengthB = (strB.Length - indexB);
-                }
-            }
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
 
             switch (comparisonType)
             {
@@ -1885,7 +1831,7 @@ namespace System
                     return FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
 
                 case StringComparison.Ordinal:
-                    return nativeCompareOrdinalEx(strA, indexA, strB, indexB, length);
+                    return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return FormatProvider.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
@@ -1907,12 +1853,14 @@ namespace System
                 return 1;
             }
 
-            if (!(value is String))
+            string other = value as string;
+
+            if (other == null)
             {
                 throw new ArgumentException(SR.Arg_MustBeString);
             }
 
-            return String.Compare(this, (String)value, StringComparison.CurrentCulture);
+            return CompareTo(other); // will call the string-based overload
         }
 
         // Determines the sorting relation of StrB to the current instance.
@@ -1920,12 +1868,7 @@ namespace System
 
         public int CompareTo(String strB)
         {
-            if (strB == null)
-            {
-                return 1;
-            }
-
-            return FormatProvider.Compare(this, 0, this.Length, strB, 0, strB.Length);
+            return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
         // Compares strA and strB using an ordinal (code-point) comparison.
@@ -1933,17 +1876,16 @@ namespace System
 
         public static int CompareOrdinal(String strA, String strB)
         {
-            if ((Object)strA == (Object)strB)
+            if (object.ReferenceEquals(strA, strB))
             {
                 return 0;
             }
 
-            //they can't both be null;
+            // They can't both be null at this point.
             if (strA == null)
             {
                 return -1;
             }
-
             if (strB == null)
             {
                 return 1;
@@ -1963,15 +1905,44 @@ namespace System
         {
             if (strA == null || strB == null)
             {
-                if ((Object)strA == (Object)strB)
-                { //they're both null;
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
                     return 0;
                 }
 
-                return (strA == null) ? -1 : 1; //-1 if A is null, 1 if B is null.
+                return strA == null ? -1 : 1;
             }
 
-            return nativeCompareOrdinalEx(strA, indexA, strB, indexB, length);
+            // COMPAT: Checking for nulls should become before the arguments are validated,
+            // but other optimizations which allow us to return early should come after.
+
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeCount);
+            }
+
+            if (indexA < 0 || indexB < 0)
+            {
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+            
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
+
+            if (lengthA < 0 || lengthB < 0)
+            {
+                string paramName = lengthA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
+            {
+                return 0;
+            }
+
+            return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
         }
 
         public bool Contains(string value)
@@ -2021,7 +1992,7 @@ namespace System
                     return FormatProvider.IsSuffixIgnoreCase(this, value);
 
                 case StringComparison.Ordinal:
-                    return this.Length < value.Length ? false : (nativeCompareOrdinalEx(this, this.Length - value.Length, value, 0, value.Length) == 0);
+                    return this.Length < value.Length ? false : (CompareOrdinalHelper(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return this.Length < value.Length ? false : (FormatProvider.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
@@ -2732,12 +2703,12 @@ namespace System
 
             int oldLength = Length;
             int insertLength = value.Length;
-            
+
             if (oldLength == 0)
                 return value;
             if (insertLength == 0)
                 return this;
-            
+
             int newLength = oldLength + insertLength;
             if (newLength < 0)
                 throw new OutOfMemoryException();
@@ -2938,13 +2909,13 @@ namespace System
             int oldLength = this.Length;
             if (count > oldLength - startIndex)
                 throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_IndexCount);
-            
+
             if (count == 0)
                 return this;
             int newLength = oldLength - count;
             if (newLength == 0)
                 return string.Empty;
-            
+
             String result = FastAllocateString(newLength);
             unsafe
             {
@@ -3110,7 +3081,7 @@ namespace System
             // linked-list style implementation)
 
             var strings = new string[args.Length];
-            
+
             int totalLength = 0;
 
             for (int i = 0; i < args.Length; i++)
@@ -3160,7 +3131,7 @@ namespace System
             {
                 if (!en.MoveNext())
                     return string.Empty;
-                
+
                 // We called MoveNext once, so this will be the first item
                 T currentValue = en.Current;
 
@@ -3180,7 +3151,7 @@ namespace System
                 }
 
                 StringBuilder result = StringBuilderCache.Acquire();
-                
+
                 result.Append(firstString);
 
                 do
@@ -3207,7 +3178,7 @@ namespace System
             {
                 if (!en.MoveNext())
                     return string.Empty;
-                
+
                 string firstValue = en.Current;
 
                 if (!en.MoveNext())
@@ -3318,7 +3289,7 @@ namespace System
         {
             if (values == null)
                 throw new ArgumentNullException("values");
-            
+
             if (values.Length <= 1)
             {
                 return values.Length == 0 ?
@@ -3380,7 +3351,6 @@ namespace System
             // doing the concatenation again, but this time with a defensive copy. This
             // fall back should be extremely rare.
             return copiedLength == totalLength ? result : Concat((string[])values.Clone());
-
         }
 
         IEnumerator<char> IEnumerable<char>.GetEnumerator()
@@ -3396,7 +3366,7 @@ namespace System
         internal static unsafe int wcslen(char* ptr)
         {
             char* end = ptr;
-            
+
             // First make sure our pointer is aligned on a word boundary
             int alignment = IntPtr.Size - 1;
 

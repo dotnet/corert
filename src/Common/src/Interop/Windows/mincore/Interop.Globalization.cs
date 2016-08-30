@@ -13,12 +13,12 @@ internal static partial class Interop
         internal extern static unsafe int LCMapStringEx(
                     string lpLocaleName,
                     uint dwMapFlags,
-                    string lpSrcStr,
+                    char* lpSrcStr,
                     int cchSrc,
-                    void*  lpDestStr,
+                    void* lpDestStr,
                     int cchDest,
                     void* lpVersionInformation,
-                    void* lpReserved, 
+                    void* lpReserved,
                     IntPtr sortHandle);
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", EntryPoint = "FindNLSStringEx")]
@@ -70,7 +70,7 @@ internal static partial class Interop
         internal extern static bool EnumSystemLocalesEx(IntPtr lpLocaleEnumProcEx, uint dwFlags, IntPtr lParam, IntPtr lpReserved);
 
         [DllImport("api-ms-win-core-localization-l1-2-0.dll", CharSet = CharSet.Unicode)]
-        internal extern static int ResolveLocaleName(string lpNameToResolve, char * lpLocaleName, int cchLocaleName);
+        internal extern static int ResolveLocaleName(string lpNameToResolve, char* lpLocaleName, int cchLocaleName);
 
         // Wrappers around the GetLocaleInfoEx APIs which handle marshalling the returned
         // data as either and Int or String.

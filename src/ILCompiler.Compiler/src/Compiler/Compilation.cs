@@ -95,7 +95,7 @@ namespace ILCompiler
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
-                _methodILCache= new ILProvider();
+                _methodILCache = new ILProvider();
 
             return _methodILCache.GetMethodIL(method);
         }
@@ -179,7 +179,7 @@ namespace ILCompiler
                 }
             }
         }
-        
+
         private void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
             foreach (MethodCodeNode methodCodeNodeNeedingCode in obj)

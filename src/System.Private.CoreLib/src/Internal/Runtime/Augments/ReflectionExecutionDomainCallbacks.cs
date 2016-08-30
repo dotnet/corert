@@ -30,7 +30,7 @@ namespace Internal.Runtime.Augments
         /// </summary>
         /// <param name="moduleHandle">Handle of module to register</param>
         public abstract void RegisterModule(IntPtr moduleHandle);
-        
+
         // Api's that are exposed in System.Runtime but are really reflection apis.
         public abstract Object ActivatorCreateInstance(Type type, Object[] args);
         public abstract Type GetType(String typeName, bool throwOnError, bool ignoreCase);

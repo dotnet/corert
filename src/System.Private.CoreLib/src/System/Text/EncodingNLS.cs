@@ -51,7 +51,7 @@ namespace System.Text
         {
             return EncodingForwarder.GetByteCount(this, chars, index, count);
         }
-        
+
         public override int GetByteCount(String s)
         {
             return EncodingForwarder.GetByteCount(this, s);
@@ -67,7 +67,7 @@ namespace System.Text
         {
             return EncodingForwarder.GetBytes(this, s, charIndex, charCount, bytes, byteIndex);
         }
-    
+
         // Encodes a range of characters in a character array into a range of bytes
         // in a byte array. An exception occurs if the byte array is not large
         // enough to hold the complete encoding of the characters. The
@@ -76,7 +76,7 @@ namespace System.Text
         // Alternatively, the GetMaxByteCount method can be used to
         // determine the maximum number of bytes that will be produced for a given
         // number of characters, regardless of the actual character values.
-        
+
         public override int GetBytes(char[] chars, int charIndex, int charCount,
                                                byte[] bytes, int byteIndex)
         {
@@ -86,11 +86,11 @@ namespace System.Text
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             return EncodingForwarder.GetBytes(this, chars, charCount, bytes, byteCount);
-        }                                              
+        }
 
         // Returns the number of characters produced by decoding a range of bytes
         // in a byte array.
-        
+
         public override int GetCharCount(byte[] bytes, int index, int count)
         {
             return EncodingForwarder.GetCharCount(this, bytes, index, count);
@@ -99,7 +99,7 @@ namespace System.Text
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             return EncodingForwarder.GetCharCount(this, bytes, count);
-        }        
+        }
 
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
@@ -111,10 +111,10 @@ namespace System.Text
         {
             return EncodingForwarder.GetChars(this, bytes, byteCount, chars, charCount);
         }
-    
+
         // Returns a string containing the decoded representation of a range of
         // bytes in a byte array.
-        
+
         public override String GetString(byte[] bytes, int index, int count)
         {
             return EncodingForwarder.GetString(this, bytes, index, count);

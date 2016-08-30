@@ -27,7 +27,7 @@ namespace Internal.IL.Stubs
             _rank = arrayType.Rank;
             _elementType = arrayType.ElementType;
             _emitter = new ILEmitter();
-            
+
             // This helper field is needed to generate proper GC tracking. There is no direct way
             // to create interior pointer. 
             _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"));
@@ -115,10 +115,10 @@ namespace Internal.IL.Stubs
                     codeStream.EmitLdLoca(thisEEType);
                     codeStream.Emit(ILOpcode.call,
                         _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
-                    
+
                     // EETypePtr expectedElementType = EETypePtr.EETypePtrOf<_elementType>();
                     codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrOfMethod));
-                    
+
                     // if (expectedElementType != actualElementType)
                     //     ThrowHelpers.ThrowArrayTypeMismatchException();
                     codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrType.GetKnownMethod("op_Equality", null)));

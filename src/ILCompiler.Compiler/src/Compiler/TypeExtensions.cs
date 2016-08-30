@@ -9,7 +9,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    static class TypeExtensions
+    internal static class TypeExtensions
     {
         public static bool IsSealed(this TypeDesc type)
         {

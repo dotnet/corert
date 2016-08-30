@@ -62,7 +62,7 @@ namespace Internal.Runtime
         }
 
         public static void EncodeGCDesc<T>(ref T builder, TypeDesc type)
-            where T: struct, ITargetBinaryWriter
+            where T : struct, ITargetBinaryWriter
         {
             int initialBuilderPosition = builder.CountBytes;
 
@@ -119,7 +119,7 @@ namespace Internal.Runtime
         }
 
         public static void EncodeStandardGCDesc<T>(ref T builder, GCPointerMap map, int size, int delta)
-            where T: struct, ITargetBinaryWriter
+            where T : struct, ITargetBinaryWriter
         {
             Debug.Assert(size >= map.Size);
 

@@ -1707,7 +1707,6 @@ namespace Internal.IL
                 Append(_writer.GetCppFieldName(field));
 
                 GetSignatureTypeNameAndAddReference(owningType);
-
             }
 
             AppendSemicolon();
@@ -1907,6 +1906,9 @@ namespace Internal.IL
                         break;
                     case '\t':
                         escaped.Append("\\t");
+                        break;
+                    case '"':
+                        escaped.Append("\\\"");
                         break;
                     default:
                         // TODO: handle all characters < 32

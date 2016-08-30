@@ -68,7 +68,7 @@ namespace System.Reflection
                         memberInfo = _attributeType.GetField(MemberName, BindingFlags.Public | BindingFlags.Instance);
                     else
                         memberInfo = _attributeType.GetProperty(MemberName, BindingFlags.Public | BindingFlags.Instance);
-                    
+
                     if (memberInfo == null)
                         throw new NotImplementedException(); // @todo: This can only come from bad metadata or missing metadata. Must find a better exception.
                     _lazyMemberInfo = memberInfo;

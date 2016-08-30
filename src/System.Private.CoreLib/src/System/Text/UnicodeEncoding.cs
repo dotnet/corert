@@ -15,6 +15,11 @@ namespace System.Text
     [System.Runtime.InteropServices.ComVisible(true)]
     public class UnicodeEncoding : Encoding
     {
+        // Used by Encoding.BigEndianUnicode/Unicode for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly UnicodeEncoding s_bigEndianDefault = new UnicodeEncoding(bigEndian: true, byteOrderMark: true);
+        internal static readonly UnicodeEncoding s_littleEndianDefault = new UnicodeEncoding(bigEndian: false, byteOrderMark: true);
+
         internal bool isThrowException = false;
 
         internal bool bigEndian = false;
@@ -161,7 +166,7 @@ namespace System.Text
         {
             return EncodingForwarder.GetString(this, bytes, index, count);
         }
-        
+
         // End of overridden methods which use EncodingForwarder
 
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS encoder)

@@ -725,6 +725,8 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetMaximumStackBounds(_Out_ void** ppSt
 // Return value:  number of characters in name string
 REDHAWK_PALIMPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
+#if _WIN32
+
 // Various intrinsic declarations needed for the PalGetCurrentTEB implementation below.
 #if defined(_X86_)
 EXTERN_C unsigned long __readfsdword(unsigned long Offset);
@@ -764,6 +766,18 @@ inline UInt8 * PalNtCurrentTeb()
 #else
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x2c
 #endif
+
+#else // _WIN32
+
+inline UInt8 * PalNtCurrentTeb()
+{
+    // UNIXTODO: Implement PalNtCurrentTeb
+    return NULL;
+}
+
+#define OFFSETOF__TEB__ThreadLocalStoragePointer 0
+
+#endif // _WIN32
 
 //
 // Compiler intrinsic definitions. In the interest of performance the PAL doesn't provide exports of these

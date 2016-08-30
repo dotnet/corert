@@ -13,7 +13,7 @@ internal static partial class Interop
         internal uint dwLowDateTime;
         internal uint dwHighDateTime;
     }
-    
+
     internal static unsafe partial class mincore
     {
         [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
