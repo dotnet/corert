@@ -491,11 +491,6 @@ namespace System
             Buffer.Memmove((byte*)dmem, (byte*)smem, ((uint)charCount) * 2);
         }
 
-        public bool Contains(string value)
-        {
-            return (IndexOf(value, StringComparison.Ordinal) >= 0);
-        }
-
         // Returns the index of the first occurrence of value in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
         //
