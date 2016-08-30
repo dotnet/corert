@@ -674,6 +674,55 @@ namespace System
             return result;
         }
 
+        public String Remove(int startIndex, int count)
+        {
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NegativeCount);
+            int oldLength = this.Length;
+            if (count > oldLength - startIndex)
+                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_IndexCount);
+
+            if (count == 0)
+                return this;
+            int newLength = oldLength - count;
+            if (newLength == 0)
+                return string.Empty;
+
+            String result = FastAllocateString(newLength);
+            unsafe
+            {
+                fixed (char* src = &_firstChar)
+                {
+                    fixed (char* dst = &result._firstChar)
+                    {
+                        wstrcpy(dst, src, startIndex);
+                        wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
+                    }
+                }
+            }
+            return result;
+        }
+
+        // a remove that just takes a startindex. 
+        public string Remove(int startIndex)
+        {
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException("startIndex",
+                        SR.ArgumentOutOfRange_StartIndex);
+            }
+
+            if (startIndex >= Length)
+            {
+                throw new ArgumentOutOfRangeException("startIndex",
+                        SR.ArgumentOutOfRange_StartIndexLessThanLength);
+            }
+
+            return Substring(0, startIndex);
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
