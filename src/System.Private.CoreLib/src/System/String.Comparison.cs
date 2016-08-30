@@ -581,5 +581,35 @@ namespace System
                     throw new ArgumentException(SR.NotSupported_StringComparison);
             }
         }
+
+        // Compares this String to another String (cast as object), returning an integer that
+        // indicates the relationship. This method returns a value less than 0 if this is less than value, 0
+        // if this is equal to value, or a value greater than 0 if this is greater than value.
+        //
+
+        int IComparable.CompareTo(Object value)
+        {
+            if (value == null)
+            {
+                return 1;
+            }
+
+            string other = value as string;
+
+            if (other == null)
+            {
+                throw new ArgumentException(SR.Arg_MustBeString);
+            }
+
+            return CompareTo(other); // will call the string-based overload
+        }
+
+        // Determines the sorting relation of StrB to the current instance.
+        //
+
+        public int CompareTo(String strB)
+        {
+            return string.Compare(this, strB, StringComparison.CurrentCulture);
+        }
     }
 }
