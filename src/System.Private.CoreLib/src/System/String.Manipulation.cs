@@ -349,6 +349,71 @@ namespace System
             return copiedLength == totalLength ? result : Concat((string[])values.Clone());
         }
 
+        public static String Format(String format, params Object[] args)
+        {
+            if (args == null)
+            {
+                // To preserve the original exception behavior, throw an exception about format if both
+                // args and format are null. The actual null check for format is in FormatHelper.
+                throw new ArgumentNullException((format == null) ? "format" : "args");
+            }
+
+            return FormatHelper(null, format, new ParamsArray(args));
+        }
+
+        public static String Format(String format, Object arg0)
+        {
+            return FormatHelper(null, format, new ParamsArray(arg0));
+        }
+
+        public static String Format(String format, Object arg0, Object arg1)
+        {
+            return FormatHelper(null, format, new ParamsArray(arg0, arg1));
+        }
+
+        public static String Format(String format, Object arg0, Object arg1, Object arg2)
+        {
+            return FormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+        }
+
+        public static String Format(IFormatProvider provider, String format, params Object[] args)
+        {
+            if (args == null)
+            {
+                // To preserve the original exception behavior, throw an exception about format if both
+                // args and format are null. The actual null check for format is in FormatHelper.
+                throw new ArgumentNullException((format == null) ? "format" : "args");
+            }
+
+            return FormatHelper(provider, format, new ParamsArray(args));
+        }
+
+        public static String Format(IFormatProvider provider, String format, Object arg0)
+        {
+            return FormatHelper(provider, format, new ParamsArray(arg0));
+        }
+
+        public static String Format(IFormatProvider provider, String format, Object arg0, Object arg1)
+        {
+            return FormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        }
+
+        public static String Format(IFormatProvider provider, String format, Object arg0, Object arg1, Object arg2)
+        {
+            return FormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        }
+
+        private static String FormatHelper(IFormatProvider provider, String format, ParamsArray args)
+        {
+            if (format == null)
+                throw new ArgumentNullException("format");
+
+            return StringBuilderCache.GetStringAndRelease(
+                StringBuilderCache
+                    .Acquire(format.Length + args.Length * 8)
+                    .AppendFormatHelper(provider, format, args));
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
