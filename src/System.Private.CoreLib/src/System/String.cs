@@ -741,11 +741,4 @@ namespace System
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
     }
-
-    [Flags]
-    public enum StringSplitOptions
-    {
-        None = 0,
-        RemoveEmptyEntries = 1
-    }
 }

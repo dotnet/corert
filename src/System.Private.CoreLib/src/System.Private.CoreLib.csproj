@@ -443,6 +443,7 @@
     <Compile Include="System\String.Manipulation.cs" />
     <Compile Include="System\String.Searching.cs" />
     <Compile Include="System\StringComparer.cs" />
+    <Compile Include="System\StringSplitOptions.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\MDArray.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\IDisposable.cs" />
