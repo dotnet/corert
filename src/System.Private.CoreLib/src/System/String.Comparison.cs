@@ -908,6 +908,54 @@ namespace System
             return !OrdinalCompareEqualLengthStrings(a, b);
         }
 
+        // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
+        // they will return the same hash code.
+        public override int GetHashCode()
+        {
+            unsafe
+            {
+                fixed (char* src = &_firstChar)
+                {
+#if BIT64
+                    int hash1 = 5381;
+#else
+                    int hash1 = (5381 << 16) + 5381;
+#endif
+                    int hash2 = hash1;
+
+#if BIT64
+                    int c;
+                    char* s = src;
+                    while ((c = s[0]) != 0)
+                    {
+                        hash1 = ((hash1 << 5) + hash1) ^ c;
+                        c = s[1];
+                        if (c == 0)
+                            break;
+                        hash2 = ((hash2 << 5) + hash2) ^ c;
+                        s += 2;
+                    }
+#else
+                    // 32bit machines.
+                    int* pint = (int*)src;
+                    int len = this.Length;
+                    while (len > 0)
+                    {
+                        hash1 = ((hash1 << 5) + hash1 + (hash1 >> 27)) ^ pint[0];
+                        if (len <= 2)
+                        {
+                            break;
+                        }
+                        hash2 = ((hash2 << 5) + hash2 + (hash2 >> 27)) ^ pint[1];
+                        pint += 2;
+                        len -= 4;
+                    }
+#endif
+                    return hash1 + (hash2 * 1566083941);
+                }
+            }
+        }
+
         // Determines whether a specified string is a prefix of the current instance
         //
         public Boolean StartsWith(String value)
