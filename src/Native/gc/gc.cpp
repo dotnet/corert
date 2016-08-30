@@ -11201,6 +11201,8 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size,
                                 alloc_context* acontext, heap_segment* seg,
                                 int align_const, int gen_number)
 {
+    size_t aligned_min_obj_size = Align(min_obj_size, align_const);
+
     //probably should pass seg==0 for free lists.
     if (seg)
     {
@@ -11208,10 +11210,10 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size,
     }
 
     dprintf (3, ("Expanding segment allocation [%Ix, %Ix[", (size_t)start,
-               (size_t)start + limit_size - Align (min_obj_size, align_const)));
+               (size_t)start + limit_size - aligned_min_obj_size));
 
     if ((acontext->alloc_limit != start) &&
-        (acontext->alloc_limit + Align (min_obj_size, align_const))!= start)
+        (acontext->alloc_limit + aligned_min_obj_size)!= start)
     {
         uint8_t*  hole = acontext->alloc_ptr;
         if (hole != 0)
@@ -11220,14 +11222,15 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size,
             dprintf (3, ("filling up hole [%Ix, %Ix[", (size_t)hole, (size_t)hole + size + Align (min_obj_size, align_const)));
             // when we are finishing an allocation from a free list
             // we know that the free area was Align(min_obj_size) larger
-            size_t free_obj_size = size + Align (min_obj_size, align_const);
+            acontext->alloc_bytes -= size;
+            size_t free_obj_size = size + aligned_min_obj_size;
             make_unused_array (hole, free_obj_size);
             generation_free_obj_space (generation_of (gen_number)) += free_obj_size;
         }
         acontext->alloc_ptr = start;
     }
-    acontext->alloc_limit = (start + limit_size - Align (min_obj_size, align_const));
-    acontext->alloc_bytes += limit_size;
+    acontext->alloc_limit = (start + limit_size - aligned_min_obj_size);
+    acontext->alloc_bytes += limit_size - ((gen_number < max_generation + 1) ? aligned_min_obj_size : 0);
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     if (g_fEnableARM)
@@ -36705,12 +36708,8 @@ void initGCShadow()
     if (len > (size_t)(g_GCShadowEnd - g_GCShadow)) 
     {
         deleteGCShadow();
-        g_GCShadowEnd = g_GCShadow = (uint8_t*) GCToOSInterface::VirtualReserve(0, len, 0, 0);
-        if (g_GCShadow && GCToOSInterface::VirtualCommit(g_GCShadow, len))
-        {
-            g_GCShadowEnd += len;
-        }
-        else
+        g_GCShadowEnd = g_GCShadow = (uint8_t *)GCToOSInterface::VirtualReserve(0, len, 0, VirtualReserveFlags::None);
+        if (g_GCShadow == NULL || !GCToOSInterface::VirtualCommit(g_GCShadow, len))
         {
             _ASSERTE(!"Not enough memory to run HeapVerify level 2");
             // If after the assert we decide to allow the program to continue 
@@ -36720,6 +36719,8 @@ void initGCShadow()
             deleteGCShadow();
             return;
         }
+
+        g_GCShadowEnd += len;
     }
 
     // save the value of g_lowest_address at this time.  If this value changes before
