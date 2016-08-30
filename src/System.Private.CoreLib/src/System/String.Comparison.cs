@@ -405,5 +405,181 @@ namespace System
                 return FastCompareStringHelper((uint*)strAChars, countA, (uint*)strBChars, countB);
             }
         }
+
+        public static int Compare(String strA, String strB)
+        {
+            return Compare(strA, strB, StringComparison.CurrentCulture);
+        }
+
+        public static int Compare(String strA, String strB, bool ignoreCase)
+        {
+            var comparisonType = ignoreCase ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+            return Compare(strA, strB, comparisonType);
+        }
+
+        // Provides a more flexible function for string comparision. See StringComparison 
+        // for meaning of different comparisonType.
+        public static int Compare(String strA, String strB, StringComparison comparisonType)
+        {
+            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
+            {
+                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+            }
+            
+            if (object.ReferenceEquals(strA, strB))
+            {
+                return 0;
+            }
+
+            // They can't both be null at this point.
+            if (strA == null)
+            {
+                return -1;
+            }
+            if (strB == null)
+            {
+                return 1;
+            }
+
+
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return FormatProvider.Compare(strA, 0, strA.Length, strB, 0, strB.Length);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return FormatProvider.CompareIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
+
+                case StringComparison.Ordinal:
+                    // Most common case: first character is different.
+                    // Returns false for empty strings.
+                    if (strA._firstChar != strB._firstChar)
+                    {
+                        return strA._firstChar - strB._firstChar;
+                    }
+
+                    return CompareOrdinalHelper(strA, strB);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return FormatProvider.CompareOrdinalIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
+
+                default:
+                    throw new NotSupportedException(SR.NotSupported_StringComparison);
+            }
+        }
+
+        // Determines whether two string regions match.  The substring of strA beginning
+        // at indexA of length length is compared with the substring of strB
+        // beginning at indexB of the same length.
+        //
+
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length)
+        {
+            // NOTE: It's important we call the boolean overload, and not the StringComparison
+            // one. The two have some subtly different behavior (see notes in the former).
+            return Compare(strA, indexA, strB, indexB, length, ignoreCase: false);
+        }
+
+        // Determines whether two string regions match.  The substring of strA beginning
+        // at indexA of length count is compared with the substring of strB
+        // beginning at indexB of the same length.  Case sensitivity is determined by the ignoreCase boolean.
+        //
+        
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length, bool ignoreCase)
+        {
+            // Ideally we would just forward to the string.Compare overload that takes
+            // a StringComparison parameter, and just pass in CurrentCulture/CurrentCultureIgnoreCase.
+            // That function will return early if an optimization can be applied, e.g. if
+            // (object)strA == strB && indexA == indexB then it will return 0 straightaway.
+            // There are a couple of subtle behavior differences that prevent us from doing so
+            // however:
+            // - string.Compare(null, -1, null, -1, -1, StringComparison.CurrentCulture) works
+            //   since that method also returns early for nulls before validation. It shouldn't
+            //   for this overload.
+            // - Since we originally forwarded to FormatProvider for all of the argument
+            //   validation logic, the ArgumentOutOfRangeExceptions thrown will contain different
+            //   parameter names.
+            // Therefore, we have to duplicate some of the logic here.
+
+            int lengthA = length;
+            int lengthB = length;
+            
+            if (strA != null)
+            {
+                lengthA = Math.Min(lengthA, strA.Length - indexA);
+            }
+
+            if (strB != null)
+            {
+                lengthB = Math.Min(lengthB, strB.Length - indexB);
+            }
+            
+            return ignoreCase ?
+                FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB) :
+                FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
+        }
+
+        public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType)
+        {
+            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
+            {
+                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+            }
+
+            if (strA == null || strB == null)
+            {
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
+                    return 0;
+                }
+
+                return strA == null ? -1 : 1;
+            }
+
+            // @TODO: Spec#: Figure out what to do here with the return statement above.
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+            }
+
+            if (indexA < 0 || indexB < 0)
+            {
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+
+            if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
+            {
+                string paramName = strA.Length - indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+            
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
+            {
+                return 0;
+            }
+
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
+
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return FormatProvider.Compare(strA, indexA, lengthA, strB, indexB, lengthB);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return FormatProvider.CompareIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
+
+                case StringComparison.Ordinal:
+                    return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return FormatProvider.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
+
+                default:
+                    throw new ArgumentException(SR.NotSupported_StringComparison);
+            }
+        }
     }
 }
