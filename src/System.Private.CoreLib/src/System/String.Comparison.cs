@@ -611,5 +611,79 @@ namespace System
         {
             return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
+
+        // Compares strA and strB using an ordinal (code-point) comparison.
+        //
+
+        public static int CompareOrdinal(String strA, String strB)
+        {
+            if (object.ReferenceEquals(strA, strB))
+            {
+                return 0;
+            }
+
+            // They can't both be null at this point.
+            if (strA == null)
+            {
+                return -1;
+            }
+            if (strB == null)
+            {
+                return 1;
+            }
+
+            // Most common case, first character is different.
+            // This will return false for empty strings.
+            if (strA._firstChar != strB._firstChar)
+            {
+                return strA._firstChar - strB._firstChar;
+            }
+
+            return CompareOrdinalHelper(strA, strB);
+        }
+
+        public static int CompareOrdinal(String strA, int indexA, String strB, int indexB, int length)
+        {
+            if (strA == null || strB == null)
+            {
+                if (object.ReferenceEquals(strA, strB))
+                {
+                    // They're both null
+                    return 0;
+                }
+
+                return strA == null ? -1 : 1;
+            }
+
+            // COMPAT: Checking for nulls should become before the arguments are validated,
+            // but other optimizations which allow us to return early should come after.
+
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeCount);
+            }
+
+            if (indexA < 0 || indexB < 0)
+            {
+                string paramName = indexA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+            
+            int lengthA = Math.Min(length, strA.Length - indexA);
+            int lengthB = Math.Min(length, strB.Length - indexB);
+
+            if (lengthA < 0 || lengthB < 0)
+            {
+                string paramName = lengthA < 0 ? "indexA" : "indexB";
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+            }
+
+            if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
+            {
+                return 0;
+            }
+
+            return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
+        }
     }
 }
