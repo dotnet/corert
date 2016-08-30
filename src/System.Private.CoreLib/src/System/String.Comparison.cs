@@ -685,5 +685,68 @@ namespace System
 
             return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
         }
+
+        // Determines whether a specified string is a suffix of the the current instance.
+        //
+        // The case-sensitive and culture-sensitive option is set by options,
+        // and the default culture is used.
+        //        
+
+        public Boolean EndsWith(String value)
+        {
+            return EndsWith(value, StringComparison.CurrentCulture);
+        }
+
+        public Boolean EndsWith(String value, StringComparison comparisonType)
+        {
+            if ((Object)value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
+
+            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
+            {
+                throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+            }
+
+            if ((Object)this == (Object)value)
+            {
+                return true;
+            }
+
+            if (value.Length == 0)
+            {
+                return true;
+            }
+
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return FormatProvider.IsSuffix(this, value);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return FormatProvider.IsSuffixIgnoreCase(this, value);
+
+                case StringComparison.Ordinal:
+                    return this.Length < value.Length ? false : (CompareOrdinalHelper(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return this.Length < value.Length ? false : (FormatProvider.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
+
+                default:
+                    throw new ArgumentException(SR.NotSupported_StringComparison, "comparisonType");
+            }
+        }
+
+        internal bool EndsWith(char value)
+        {
+            int thisLen = this.Length;
+            if (thisLen != 0)
+            {
+                if (this[thisLen - 1] == value)
+                    return true;
+            }
+            return false;
+        }
     }
 }
