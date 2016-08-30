@@ -2808,6 +2808,8 @@ namespace System
                 // Api behavior: if newValue is null, instances of oldValue are to be removed.
                 if (newValue == null)
                     newValue = String.Empty;
+                else if (object.ReferenceEquals(oldValue, newValue))
+                    return this;
 
                 int numOccurrences = 0;
                 int[] replacementIndices = new int[this.Length];
