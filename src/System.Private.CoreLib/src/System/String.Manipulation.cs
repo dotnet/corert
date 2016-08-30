@@ -1261,6 +1261,29 @@ namespace System
             return result;
         }
 
+        // Creates a copy of this string in lower case.  The culture is set by culture.
+        public String ToLower()
+        {
+            return FormatProvider.ToLower(this);
+        }
+
+        // Creates a copy of this string in lower case based on invariant culture.
+        public String ToLowerInvariant()
+        {
+            return FormatProvider.ToLowerInvariant(this);
+        }
+
+        public String ToUpper()
+        {
+            return FormatProvider.ToUpper(this);
+        }
+
+        //Creates a copy of this string in upper case based on invariant culture.
+        public String ToUpperInvariant()
+        {
+            return FormatProvider.ToUpperInvariant(this);
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
