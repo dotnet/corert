@@ -1203,6 +1203,64 @@ namespace System
             return foundCount;
         }
 
+        // Returns a substring of this string.
+        //
+        public String Substring(int startIndex)
+        {
+            return this.Substring(startIndex, Length - startIndex);
+        }
+
+        // Returns a substring of this string.
+        //
+        public String Substring(int startIndex, int length)
+        {
+            //Bounds Checking.
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndex);
+            }
+
+            if (startIndex > Length)
+            {
+                throw new ArgumentOutOfRangeException("startIndex", SR.ArgumentOutOfRange_StartIndexLargerThanLength);
+            }
+
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NegativeLength);
+            }
+
+            if (startIndex > Length - length)
+            {
+                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_IndexLength);
+            }
+
+            if (length == 0)
+            {
+                return String.Empty;
+            }
+
+            if (startIndex == 0 && length == this.Length)
+            {
+                return this;
+            }
+
+            return InternalSubString(startIndex, length);
+        }
+
+        private unsafe string InternalSubString(int startIndex, int length)
+        {
+            String result = FastAllocateString(length);
+
+            fixed (char* dest = &result._firstChar)
+                fixed (char* src = &_firstChar)
+            {
+                wstrcpy(dest, src + startIndex, length);
+            }
+
+            return result;
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
