@@ -616,6 +616,64 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(result);
         }
 
+        public String PadLeft(int totalWidth)
+        {
+            return PadLeft(totalWidth, ' ');
+        }
+
+        public String PadLeft(int totalWidth, char paddingChar)
+        {
+            if (totalWidth < 0)
+                throw new ArgumentOutOfRangeException("totalWidth", SR.ArgumentOutOfRange_NeedNonNegNum);
+            int oldLength = Length;
+            int count = totalWidth - oldLength;
+            if (count <= 0)
+                return this;
+            String result = FastAllocateString(totalWidth);
+            unsafe
+            {
+                fixed (char* dst = &result._firstChar)
+                {
+                    for (int i = 0; i < count; i++)
+                        dst[i] = paddingChar;
+                    fixed (char* src = &_firstChar)
+                    {
+                        wstrcpy(dst + count, src, oldLength);
+                    }
+                }
+            }
+            return result;
+        }
+
+        public String PadRight(int totalWidth)
+        {
+            return PadRight(totalWidth, ' ');
+        }
+
+        public String PadRight(int totalWidth, char paddingChar)
+        {
+            if (totalWidth < 0)
+                throw new ArgumentOutOfRangeException("totalWidth", SR.ArgumentOutOfRange_NeedNonNegNum);
+            int oldLength = Length;
+            int count = totalWidth - oldLength;
+            if (count <= 0)
+                return this;
+            String result = FastAllocateString(totalWidth);
+            unsafe
+            {
+                fixed (char* dst = &result._firstChar)
+                {
+                    fixed (char* src = &_firstChar)
+                    {
+                        wstrcpy(dst, src, oldLength);
+                    }
+                    for (int i = 0; i < count; i++)
+                        dst[oldLength + i] = paddingChar;
+                }
+            }
+            return result;
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
