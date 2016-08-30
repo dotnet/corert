@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
+
 namespace System.Reflection
 {
     public struct CustomAttributeNamedArgument
@@ -70,7 +72,7 @@ namespace System.Reflection
                         memberInfo = _attributeType.GetProperty(MemberName, BindingFlags.Public | BindingFlags.Instance);
 
                     if (memberInfo == null)
-                        throw new NotImplementedException(); // @todo: This can only come from bad metadata or missing metadata. Must find a better exception.
+                        throw RuntimeAugments.Callbacks.CreateMissingMetadataException(_attributeType);
                     _lazyMemberInfo = memberInfo;
                 }
                 return memberInfo;

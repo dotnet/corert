@@ -135,7 +135,6 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string[] GetEnumNames() { throw new NotImplementedException(); }
         public sealed override Type GetEnumUnderlyingType() { throw new NotImplementedException(); }
         public sealed override Array GetEnumValues() { throw new NotImplementedException(); }
-        public sealed override Type GetInterface(string name, bool ignoreCase) { throw new NotImplementedException(); }
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) { throw new NotImplementedException(); }
         public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotImplementedException(); }
         public sealed override bool IsEnumDefined(object value) { throw new NotImplementedException(); }
