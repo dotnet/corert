@@ -725,6 +725,175 @@ namespace System
             return Substring(0, startIndex);
         }
 
+        // Replaces all instances of oldChar with newChar.
+        //
+        public String Replace(char oldChar, char newChar)
+        {
+            if (oldChar == newChar)
+                return this;
+
+            unsafe
+            {
+                int remainingLength = Length;
+
+                fixed (char* pChars = &_firstChar)
+                {
+                    char* pSrc = pChars;
+
+                    while (remainingLength > 0)
+                    {
+                        if (*pSrc == oldChar)
+                        {
+                            break;
+                        }
+
+                        remainingLength--;
+                        pSrc++;
+                    }
+                }
+
+                if (remainingLength == 0)
+                    return this;
+
+                String result = FastAllocateString(Length);
+
+                fixed (char* pChars = &_firstChar)
+                {
+                    fixed (char* pResult = &result._firstChar)
+                    {
+                        int copyLength = Length - remainingLength;
+
+                        //Copy the characters already proven not to match.
+                        if (copyLength > 0)
+                        {
+                            wstrcpy(pResult, pChars, copyLength);
+                        }
+
+                        //Copy the remaining characters, doing the replacement as we go.
+                        char* pSrc = pChars + copyLength;
+                        char* pDst = pResult + copyLength;
+
+                        do
+                        {
+                            char currentChar = *pSrc;
+                            if (currentChar == oldChar)
+                                currentChar = newChar;
+                            *pDst = currentChar;
+
+                            remainingLength--;
+                            pSrc++;
+                            pDst++;
+                        } while (remainingLength > 0);
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        public String Replace(String oldValue, String newValue)
+        {
+            unsafe
+            {
+                if (oldValue == null)
+                    throw new ArgumentNullException("oldValue");
+                if (oldValue.Length == 0)
+                    throw new ArgumentException(SR.Format(SR.Argument_StringZeroLength, "oldValue"));
+                // Api behavior: if newValue is null, instances of oldValue are to be removed.
+                if (newValue == null)
+                    newValue = String.Empty;
+
+                int numOccurrences = 0;
+                int[] replacementIndices = new int[this.Length];
+                fixed (char* pThis = &_firstChar)
+                {
+                    fixed (char* pOldValue = &oldValue._firstChar)
+                    {
+                        int idx = 0;
+                        int lastPossibleMatchIdx = this.Length - oldValue.Length;
+                        while (idx <= lastPossibleMatchIdx)
+                        {
+                            int probeIdx = idx;
+                            int oldValueIdx = 0;
+                            bool foundMismatch = false;
+                            while (oldValueIdx < oldValue.Length)
+                            {
+                                Debug.Assert(probeIdx >= 0 && probeIdx < this.Length);
+                                Debug.Assert(oldValueIdx >= 0 && oldValueIdx < oldValue.Length);
+                                if (pThis[probeIdx] != pOldValue[oldValueIdx])
+                                {
+                                    foundMismatch = true;
+                                    break;
+                                }
+                                probeIdx++;
+                                oldValueIdx++;
+                            }
+                            if (!foundMismatch)
+                            {
+                                // Found a match for the string. Record the location of the match and skip over the "oldValue."
+                                replacementIndices[numOccurrences++] = idx;
+                                Debug.Assert(probeIdx == idx + oldValue.Length);
+                                idx = probeIdx;
+                            }
+                            else
+                            {
+                                idx++;
+                            }
+                        }
+                    }
+                }
+
+                if (numOccurrences == 0)
+                    return this;
+
+                int dstLength = checked(this.Length + (newValue.Length - oldValue.Length) * numOccurrences);
+                String dst = FastAllocateString(dstLength);
+                fixed (char* pThis = &_firstChar)
+                {
+                    fixed (char* pDst = &dst._firstChar)
+                    {
+                        fixed (char* pNewValue = &newValue._firstChar)
+                        {
+                            int dstIdx = 0;
+                            int thisIdx = 0;
+
+                            for (int r = 0; r < numOccurrences; r++)
+                            {
+                                int replacementIdx = replacementIndices[r];
+
+                                // Copy over the non-matching portion of the original that precedes this occurrence of oldValue.
+                                int count = replacementIdx - thisIdx;
+                                Debug.Assert(count >= 0);
+                                Debug.Assert(thisIdx >= 0 && thisIdx <= this.Length - count);
+                                Debug.Assert(dstIdx >= 0 && dstIdx <= dst.Length - count);
+                                if (count != 0)
+                                {
+                                    wstrcpy(&(pDst[dstIdx]), &(pThis[thisIdx]), count);
+                                    dstIdx += count;
+                                }
+                                thisIdx = replacementIdx + oldValue.Length;
+
+                                // Copy over newValue to replace the oldValue.
+                                Debug.Assert(thisIdx >= 0 && thisIdx <= this.Length);
+                                Debug.Assert(dstIdx >= 0 && dstIdx <= dst.Length - newValue.Length);
+                                wstrcpy(&(pDst[dstIdx]), pNewValue, newValue.Length);
+                                dstIdx += newValue.Length;
+                            }
+
+                            // Copy over the final non-matching portion at the end of the string.
+                            int tailLength = this.Length - thisIdx;
+                            Debug.Assert(tailLength >= 0);
+                            Debug.Assert(thisIdx == this.Length - tailLength);
+                            Debug.Assert(dstIdx == dst.Length - tailLength);
+                            wstrcpy(&(pDst[dstIdx]), &(pThis[thisIdx]), tailLength);
+                        }
+                    }
+                }
+
+                return dst;
+            }
+        }
+
         // Removes a set of characters from the end of this string.
 
         public String Trim(params char[] trimChars)
